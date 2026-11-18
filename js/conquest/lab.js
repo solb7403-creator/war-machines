@@ -29,17 +29,18 @@ function nodeOf(s,id,now=Date.now()){const r=rsOf(s),L=labOf(s),prem=!!r.acct?.p
  const q=rsQuote(r,id,L.any?L.lv:0,prem,bought);if(q.err)return {st:'locked',why:q.err};
  const have=partsOf(s)[q.part].total;if(have<q.n)return {st:'short',q,have};
  if(L.ruined)return {st:'locked',why:'the Science Lab is ruined: repair it'};if((r.jobs||[]).length>=rsSlots(L.lv,prem))return {st:'busy',q};return {st:'ready',q};}
+// a number keeps its unit on the same line ("1.5 s" never wraps to a lone "s."; UX critic round 2)
+const keepUnits=t=>String(t).replace(/(\d) (s|h|m|min)\b/g,'$1\u00a0$2');
 // the first finished mod whose reveal card has not been shown
 const toReveal=s=>{const r=rsOf(s);return RS_IDS.find(id=>r.done?.[id]&&!r.seen?.[id])||null;};   // the Legendary set mods too, once researched
 function partChip(el,parent,k,P){const c=el('span','cq-lab-part',null,parent);c.style.setProperty('--tc',RTREE.tracks[Object.keys(RTREE.tracks).find(t=>RTREE.tracks[t].part===k)].c);el('b','',P.total+'',c);el('small','',CQ_PARTS[k].n.toUpperCase()+(P.total===1?'':'S')+(P.bonus?' · '+P.bonus+' BONUS':''),c);return c;}
 // the whole screen (d: a container; ctx: {el, button, act(mod) -> Promise<boolean>, close, store(row, kind, info)})
 function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(s),prem=!!r.acct?.prem,slots=rsSlots(L.lv,prem),parts=partsOf(s),live=[];
- d.classList.add('cq-lab');el('p','cq-kicker','SCIENCE LAB · RESEARCH · TANK MODS',d);el('h2','',L.any?'SCIENCE LAB '+ROMAN[L.lv]:'SCIENCE LAB',d);
+ d.classList.add('cq-lab');el('p','cq-kicker','RESEARCH · TANK MODS',d);el('h2','',L.any?'SCIENCE LAB '+ROMAN[L.lv]:'SCIENCE LAB',d);
  if(!s?.plot)el('p','cq-lab-why','Claim your town, then build a Science Lab (Command Center 3). Research turns the parts you find into new mods for every mode.',d);
  else if(!L.any)el('p','cq-lab-why','Build a Science Lab in your town (Command Center 3) to start researching. Research turns the parts you find into new mods for every mode.',d);
  else{el('p','cq-lab-status',(L.ruined?'⚠ RUINED · research paused until you repair it · ':'')+(r.jobs||[]).length+' of '+slots+' research slot'+(slots>1?'s':'')+' running'+(L.lv<3?' · a second slot at Science Lab III':''),d);
-  el('small','cq-lab-pass',prem?'LUNAR PASS PREMIUM · +1 research slot and 25% faster jobs':LAB_STORE_OPEN?'LUNAR PASS PREMIUM adds a research slot, 25% faster jobs and research parts on its tiers':'Coming with the Lab store: LUNAR PASS PREMIUM adds a research slot, 25% faster jobs and research parts on its tiers',d);}
- el('p','cq-lab-explain','Research costs only research parts and time. A finished mod is yours for good: fit it in the garage (one per slot) and it works in every mode, PvP too.',d);
+  }
  const pr=el('div','cq-lab-parts',null,d);for(const k of CQ_PART_ORDER)partChip(el,pr,k,parts[k]);
  // running jobs, with their timers
  for(const j of r.jobs||[]){const F=rmodOf(j.mod).F,left=jobLeft(j,L,now),box=el('div','cq-lab-job',null,d);box.style.setProperty('--tc',RTREE.tracks[F.rs].c);
@@ -49,10 +50,10 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
  // the tree: one fold per track, then the locked fifth track
  for(const t of RTREE.order){const T=RTREE.tracks[t],open=L.lv>=T.lab,f=el('details','cq-map-fold cq-lab-track',null,d),sm=el('summary','',T.n.toUpperCase()+' · '+(open?T.d:'opens at Science Lab '+ROMAN[T.lab]),f);sm.dataset.k='lab-'+t;f.style.setProperty('--tc',T.c);
   if(open&&RTREE.mods[t].some(id=>{const n=nodeOf(s,id,now).st;return n==='ready'||n==='running';}))f.open=true;
-  el('small','cq-lab-uses','Uses '+CQ_PARTS[T.part].n+'s: '+RTREE.cost.slice(0,3).join(', then ')+' for its mods in the order you research them, '+RTREE.cost[3]+' for the set mod · Science Lab '+ROMAN[T.lab]+' for its mods, III for its set mod',f);
+  el('small','cq-lab-uses',CQ_PARTS[T.part].n+'s: '+RTREE.cost.slice(0,3).join(' → ')+' in the order you research, '+RTREE.cost[3]+' for the set mod · Science Lab '+ROMAN[T.lab]+(T.lab<3?' (set mod: III)':''),f);
   for(const id of [...RTREE.mods[t],RTREE.legendary[t]]){const R0=rmodOf(id),F=R0.F,n=nodeOf(s,id,now),row=el('article','cq-lab-node cq-lab-'+n.st+(F.leg?' cq-lab-legnode':''),null,f);
    el('h3','',(F.leg?'★ ':F.set?'◆ ':'')+F.n.toUpperCase(),row);el('small','cq-lab-meta',SLOT_N[R0.slot]+' MOD · '+F.role.toUpperCase()+(F.set?' · SET MOD':'')+(F.leg?' · LEGENDARY':''),row);
-   el('p','cq-lab-what',F.d,row);el('small','cq-lab-cost','Trade-off: '+tradeOff(F),row);
+   el('p','cq-lab-what',keepUnits(F.d),row);el('small','cq-lab-cost','Trade-off: '+tradeOff(F),row);
    if(F.leg)el('small','cq-lab-two','A step stronger than '+rmodOf(RTREE.mods[t][3]).F.n+'. Two ways to own it: research it here ('+RTREE.leg.n+' '+CQ_PARTS[T.part].n+'s, '+fmtT(RTREE.leg.ms)+', Science Lab III, after '+rmodOf(RTREE.mods[t][3]).F.n+'), or buy it in the Lab store.',row);
    if(n.st==='done')el('b','cq-lab-tag','✓ RESEARCHED · in your garage',row);
    else if(n.st==='bought')el('b','cq-lab-tag','★ OWNED · bought in the Lab store · in your garage',row);
@@ -60,9 +61,12 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
    else if(n.st==='locked'){if(F.leg){const b=button('RESEARCH · '+RTREE.leg.n+' '+CQ_PARTS[T.part].n.toUpperCase()+'S · '+fmtT(RTREE.leg.ms),()=>{},'cq-lab-go');b.disabled=true;row.append(b);}   // a Legendary always shows both ways in (owner, Nov 17)
     el('small','cq-lab-lock','🔒 '+String(n.why).replace(/^conquest: /,''),row);}
    else{const q=n.q,pn=CQ_PARTS[q.part].n.toUpperCase(),b=button(n.st==='short'?'NEED '+(q.n-n.have)+' MORE '+pn+(q.n-n.have>1?'S':'')+' ('+n.have+'/'+q.n+')':(n.st==='ready'?'RESEARCH':'SLOTS BUSY')+' · '+q.n+' '+pn+(q.n>1?'S':'')+' · '+fmtT(q.ms),async()=>{b.disabled=true;const ok=await ctx.act(id);if(!ok)b.disabled=false;},'cq-lab-go');
-    b.disabled=n.st!=='ready';row.append(b);if(n.st==='short')el('small','cq-lab-lock','Parts drop from heavy Parasites, raid commanders and Meteor Strikes (one a day counts).',row);}
+    b.disabled=n.st!=='ready';row.append(b);if(n.st==='short')el('small','cq-lab-lock','Parts drop from heavy Parasites, raid commanders and Meteor Strikes (you can earn 1 a day).',row);}
    if(F.leg&&ctx.store&&n.st!=='done'&&n.st!=='bought'&&n.st!=='running')ctx.store(row,'rsleg',{id});}}
  {const Lk=RTREE.locked,f=el('details','cq-map-fold cq-lab-track cq-lab-locked',null,d),sm=el('summary','','🔒 '+Lk.n.toUpperCase()+' · '+Lk.d,f);sm.dataset.k='lab-role';el('small','',Lk.n+' open with Science Lab level '+ROMAN[Lk.lab]+'.',f);}
+ // below the tree (UX critic round 2): how research works, then the pass perk (an offer, so it never sits above the research itself)
+ el('p','cq-lab-explain','Research costs only research parts and time. A finished mod is yours for good: fit it in the garage (one per slot) and it works in every mode, PvP too.',d);
+ if(L.any)el('small','cq-lab-pass',prem?'LUNAR PASS PREMIUM · +1 research slot and 25% faster jobs':LAB_STORE_OPEN?'LUNAR PASS PREMIUM adds a research slot, 25% faster jobs and research parts on its tiers':'Coming with the Lab store: LUNAR PASS PREMIUM adds a research slot, 25% faster jobs and research parts on its tiers',d);
  if(ctx.store)ctx.store(d,'rspack',{});
  tickTimers(d,live,ctx.done);
  return d;}
@@ -75,12 +79,13 @@ function tickTimers(d,live,done){if(!live.length||typeof setInterval!=='function
 // a compact line for the hub and the HOME tab: what is running, what can start
 function line(s,now=Date.now()){const r=rsOf(s),L=labOf(s);if(!L.any)return null;const j=(r.jobs||[])[0];
  if(j){const F=rmodOf(j.mod).F;return 'RESEARCH · '+F.n.toUpperCase()+' · '+(L.ruined?'PAUSED (lab ruined)':fmtT(jobLeft(j,L,now))+' left')+((r.jobs||[]).length>1?' · +'+((r.jobs||[]).length-1):'');}
- const ready=RS_IDS.filter(id=>nodeOf(s,id,now).st==='ready').length;return ready?'RESEARCH · '+ready+' mod'+(ready>1?'s':'')+' ready to research':'RESEARCH · '+Object.keys(r.done||{}).length+' of '+RTREE_ALL.length+' researched';}
+ const ready=RS_IDS.filter(id=>nodeOf(s,id,now).st==='ready').length,free=Math.max(1,rsSlots(L.lv,!!r.acct?.prem)-(r.jobs||[]).length);
+ return ready?'RESEARCH · '+free+' slot'+(free>1?'s':'')+' free · '+ready+' mod'+(ready>1?'s':'')+' to choose from':'RESEARCH · '+Object.keys(r.done||{}).length+' of '+RTREE_ALL.length+' researched';}
 // the reveal card for a finished mod: what it does in plain words, the trade-off, the power change if fitted; FIT asks the
 // garage's own save (server-checked) on the active bay
 function reveal(d,id,ctx){const {el,button}=ctx,R0=rmodOf(id),F=R0.F,T=RTREE.tracks[F.rs];d.classList.add('cq-lab-reveal');d.style.setProperty('--tc',T.c);
  el('p','cq-kicker','RESEARCH COMPLETE · '+T.n.toUpperCase(),d);el('h2','',F.n.toUpperCase(),d);el('small','cq-lab-meta',SLOT_N[R0.slot]+' MOD · '+F.role.toUpperCase()+(F.set?' · SET MOD':''),d);
- el('p','cq-lab-what',F.d,d);el('p','cq-lab-cost','Trade-off: '+tradeOff(F),d);
+ el('p','cq-lab-what',keepUnits(F.d),d);el('p','cq-lab-cost','Trade-off: '+tradeOff(F),d);
  const L=typeof myLoadout==='function'?myLoadout():null;if(L&&typeof powerOf==='function'){const mods={...fittingSelection(L.mods),[R0.slot]:id},f=fittingStats(mods),p0=powerOf(L),p1=powerOf({...L,mods});
   el('p','cq-lab-power',f.weight>FIT_BUDGET.weight||f.power>FIT_BUDGET.power?'Does not fit with your current mods (weight or power budget): swap one in the garage.':'POWER '+p0+' → '+p1+' when you fit it (in the field: at the Refuge)',d);ctx.fitOk=!(f.weight>FIT_BUDGET.weight||f.power>FIT_BUDGET.power);}
  return d;}

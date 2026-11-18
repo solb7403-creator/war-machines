@@ -746,7 +746,7 @@ function labShopSec(){
  return sec('Science Lab','Research parts · Legendary mods')+'<div class="labshop panel"><p class="labshop-note">Not on sale yet: nothing in this section can be bought.</p><p class="mut">For the Science Lab in Conquest. Research is free with the parts you find; these only speed it up. Purchases never give points.</p>'+
   '<h4 class="ptsh">Research part packs · one of each a week</h4>'+packs+
   '<h4 class="ptsh">Legendary set mods · a step stronger than the earned set mod</h4>'+legs+
-  '<h4 class="ptsh">Instant finish · priced by the time left</h4><p class="mut">20 min '+f[0]+' · 2 h '+f[1]+' · 8 h '+f[2]+'. Shown on a running job in the Science Lab.</p></div>';
+  '<h4 class="ptsh">Instant finish · priced by the time left</h4><p class="mut">20 min: '+f[0]+' / 2 h: '+f[1]+' / 8 h: '+f[2]+'. Shown on a running job in the Science Lab.</p></div>';
 }
 function paintCard(id){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=save.paint===id;
@@ -1107,13 +1107,13 @@ function gfxNote(){
  if(typeof R3==='undefined'||R3.failed||!webglOK())return '3D isn’t supported on this device, so the game uses 2D';
  const m=gfxMode();
  if(m==='2d')return 'Classic 2D view';
- if(m==='auto')return '3D, set for your phone'+(R3.auto==='low'?' (Low for speed)':R3.auto==='2d'?' (2D for speed)':'');
+ if(m==='auto')return '3D, set for this device'+(R3.auto==='low'?' (Low for speed)':R3.auto==='2d'?' (2D for speed)':'');
  return m==='high'?'3D, sharpest picture':'3D, smoothest on older phones';
 }
 function openSettings(){
  sheet('settings',()=>'<h3>Settings</h3>'+
   '<div class="list" style="margin-top:8px">'+
-  '<div class="q"><div class="grow"><div class="t">Sound</div><div class="p">Follows your phone’s silent switch</div></div><button class="toggle'+(save.sound!==false?' on':'')+'" data-act="sound" aria-pressed="'+(save.sound!==false)+'"><i></i></button></div>'+
+  '<div class="q"><div class="grow"><div class="t">Sound</div><div class="p">'+(typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches?'Follows your phone’s silent switch':'Game sound and music')+'</div></div><button class="toggle'+(save.sound!==false?' on':'')+'" data-act="sound" aria-pressed="'+(save.sound!==false)+'"><i></i></button></div>'+
   '<div class="q vol'+(save.sound===false?' off':'')+'"><div class="grow"><div class="t">Volume</div><div class="p" id="vol-p">'+volLabel()+'</div></div><input type="range" class="volr" id="vol-r" min="0" max="100" step="5" value="'+Math.round(volLevel()*100)+'" aria-label="Volume"'+(save.sound===false?' disabled':'')+'></div>'+
   '<div class="q"><div class="grow"><div class="t">Vibration</div><div class="p">Buzz on hits, kills and rewards</div></div><button class="toggle'+(save.haptics?' on':'')+'" data-act="haptics" aria-pressed="'+(save.haptics?'true':'false')+'"><i></i></button></div>'+
   '<div class="q gfx"><div class="grow"><div class="t">Graphics</div><div class="p">'+gfxNote()+'</div></div></div>'+

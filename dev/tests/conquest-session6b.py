@@ -82,7 +82,9 @@ async def steps(browser,base,ready,w,h,R):
  if phone:await press(close.last)
  else:await page.keyboard.press('Escape')
  await page.wait_for_timeout(300)
- if await page.locator('.cq-lab').count():await press(close.last)   # Escape closes dialogs where the game supports it; the button always does
+ # UX critic round 2: after an action the Lab redraws; Escape must still close it (the redraw once dropped focus to the page)
+ if not phone:R['escClosed']=not await page.locator('.cq-lab').count()
+ if await page.locator('.cq-lab').count():await press(close.last)
  # into the world (ENTER CONQUEST): the reveal card, the refit at the Refuge and the HUD chip are the world's
  await press(page.locator('.cq-hub-deploy').first)
  await page.wait_for_function('Conquest.view?.authority?.connected',timeout=120000)
@@ -180,6 +182,7 @@ async def main():
   if not (L.get('two') and 'Two ways' in L['two'] and L.get('research') and 'RESEARCH · 30' in L['research'] and L.get('buy') and 'LEGENDARY' in L['buy'] and L.get('off') and 'Not on sale yet' in L['off']):bad.append(t+' Legendary node (research + buy) '+json.dumps(L))
   if not (r['lab']['tracks']>=5 and not r['lab']['wide'] and any('VENT' in x or '1 THERMAL' in x for x in r['lab']['ready']+['']) or r['lab']['ready']):bad.append(t+' lab')
   if not (r['running']['job'] and 'VENT BARREL' in r['running']['job'] and r['running']['finishDisabled']):bad.append(t+' running job / finish row')
+  if r['input']!='touch' and not r.get('escClosed'):bad.append(t+' Escape did not close the Lab after RESEARCH (keyboard focus lost on redraw)')
   if not (r['reveal']['name']=='VENT BARREL' and 'FIT ON MY TANK' in r['reveal']['buttons']):bad.append(t+' reveal')
   if not ('vent' in r['powerPending']['mods'] and r['powerPending']['chip'] and 'at the Refuge' in r['powerPending']['chip']):bad.append(t+' POWER pending '+json.dumps(r['powerPending']))
   if not (r['powerAfter']['chip'] and '→' in r['powerAfter']['chip'] and not r['powerAfter']['pending'] and r['powerAfter']['field']==r['powerPending']['garage']):bad.append(t+' POWER delta '+json.dumps(r['powerAfter']))

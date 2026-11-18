@@ -161,7 +161,7 @@ function supply(){if(!view||panel.querySelector('.cq-dialog'))return;const d=dia
  for(const [key,label] of [['alloy','LUNAR ALLOY'],['biomass','PARASITE BIOMASS'],['helium','HELIUM-3']])el('p','',label+' · BANKED '+(L?.banked?.[key]||0)+' · CARRIED '+(L?.cargo?.[key]||0)+' · AT RISK '+Math.floor((L?.cargo?.[key]||0)/2),d);
  {const m=L?.mn;if(mnText(m,6))el('p','','MINERALS · CARRIED '+mnText(m,6)+' · AT RISK '+mnText(Object.fromEntries(Object.entries(m||{}).map(([k,v])=>[k,Math.floor(v/2)])),6)+' · BANKING SENDS THEM TO YOUR WALLET',d);}
  el('p','','At the physical Refuge terminal, bank all salvage or repair your hull. CP and banked materials survive defeat. Half of each carried stack drops into a personal wreck for ten minutes.',d);
- engineeringCards(d,s);d.append(button('CLOSE SUPPLY',()=>d.remove()));
+ engineeringCards(d,s);d.append(button('CLOSE SUPPLY',()=>d.remove(),'cq-close-bottom'));   // UX critic round 2: it stays in reach at the bottom (sticky)
 }
 // the Conquest engineering ranks and tuning as one bonus line with their real values (owner decision 6), e.g. ENGINEERING +18% heat
 // capacity, +9% range: the tuned values against an untuned tank (combat.js engineeringValues)
@@ -436,6 +436,7 @@ async function labOnly(){const Lb=root.ConquestLab;if(!Lb||!panel||panel.querySe
  const draw=()=>{if(!d.isConnected)return;d.textContent='';
   Lb.screen(d,s,{el,button,store:(row,kind,info)=>root.ConquestLabStore?.row(row,kind,info,{el,button,state:s}),done:async()=>{await load();draw();},act:async id=>{const ok=await act('research-start',{mod:id});if(ok){if(typeof fx==='function')fx('rstart');draw();}return ok;}});
   d.prepend(button('CLOSE',()=>d.remove(),'cq-lab-close-top'));el('p','cq-lab-msg','',d).setAttribute('aria-live','polite');d.append(button('CLOSE',()=>d.remove()));
+  if(!d.contains(document.activeElement))d.focus({preventScroll:true});   // UX critic round 2: a redraw removed the focused button, so focus fell to the page and Escape no longer closed the Lab
   const id=Lb.toReveal(s);if(id)revealOver(id);};
  const revealOver=id=>{const v=dialog(),ctx={el,button};v.classList.add('cq-lab-hub-reveal');Lb.reveal(v,id,ctx);if(typeof fx==='function')fx('research');const seen=()=>act('research-seen',{mod:id}),R0=rmodOf(id);
   if(ctx.fitOk&&typeof baySave==='function'&&typeof gBayId==='function')v.append(button('FIT ON MY TANK',async e=>{e.currentTarget.disabled=true;await seen();try{baySave(gBayId(),p=>{p.mods={...fittingSelection(p.mods),[R0.slot]:id};},R0.F.n+' fitted');}catch(_){}v.remove();draw();},'cq-lab-fit'));

@@ -444,7 +444,7 @@
    as a pill over whatever HUD line sits beneath it; the desktop key hint hides under an open dialog; Supply's chip on its own line */
 .cq-dialog.cq-lab-reveal{top:50%;bottom:auto;transform:translateY(-50%);max-height:calc(100% - 24px)}
 .cq .cq-lab-fit{background:#1d6b4f;border-color:#5fe3a1;color:#eafff3;font-weight:800}
-.cq-dialog .cq-lab-close-top{position:sticky;top:-8px;display:block;width:calc(100% + 16px);margin:-8px -8px 6px;z-index:3;background:#0b1523;border-bottom:1px solid #2a3a4a;border-radius:0}   /* UX critic round 1: a full-width opaque sticky row, never floating over the text */
+.cq-dialog .cq-lab-close-top{position:sticky;top:-18px;display:block;width:calc(100% + 36px);margin:-18px -18px 8px;z-index:3;background:#0b1523;border-bottom:1px solid #2a3a4a;border-radius:0}   /* UX critic round 1: a full-width opaque sticky row, never floating over the text */
 .cq .cq-lab-go,.cq .cq-lab-buy{min-height:44px}
 .cq .cq-rating .cq-rating-next{color:#ffcf6a;opacity:1}
 .cq-reward-ticker:not(:empty){width:fit-content;max-width:calc(100% - 24px);margin:0 auto;padding:3px 10px;border-radius:9px;background:#08121df0;box-shadow:0 0 0 1px #e0c27a55;z-index:6}
@@ -467,3 +467,14 @@
 .cq .cq-hub-research.cq-part-done small{color:#ffc94a}
 .cq .cq-rating .cq-rating-next{background:rgba(5,9,15,.6);border-radius:6px;padding:1px 5px;font-size:11px}
 .cq-dialog.cq-lab-hub{background:#0b1523}
+/* Session 6B finish, UX critic round 2: the sticky CLOSE row meets the dialog's edges (its 18px padding: no strip of cut text above
+   it) and a scrolled-to element is never hidden under it; Supply's CLOSE stays in reach at the bottom (its order is unchanged); the
+   12px floor covers the pass line and the RESEARCHING tag; a ready RESEARCH button reads as the thing to press; on a computer the
+   Lab over the hub dims the hub behind it; ENTER CONQUEST spans the action row like the buttons beside it */
+.cq-dialog.cq-lab{scroll-padding-top:64px}
+.cq-dialog .cq-close-bottom{position:sticky;bottom:-18px;display:block;width:calc(100% + 36px);margin:10px -18px -18px;z-index:3;background:#0b1523;border-top:1px solid #2a3a4a;border-radius:0}
+.cq-dialog.cq-supply{scroll-padding-bottom:64px}
+.cq .cq-lab .cq-lab-pass,.cq .cq-lab-node .cq-lab-tag{font-size:12px}
+.cq .cq-lab-node.cq-lab-ready .cq-lab-go:not(:disabled){background:color-mix(in srgb,var(--tc,#5aa9ff) 50%,#0f1d2b);color:#fff;font-weight:800;box-shadow:0 0 12px color-mix(in srgb,var(--tc,#5aa9ff) 45%,transparent)}
+@media(min-width:700px){.cq-dialog.cq-lab-hub,.cq-dialog.cq-lab-hub-reveal{box-shadow:0 0 0 100vmax #04080ed9,0 16px 80px #000b}}
+.cq .cq-hub-actions .cq-hub-deploy{max-width:none}
