@@ -932,7 +932,7 @@ function openOverlay(kind,html,opt){
  box.setAttribute('role','dialog');
  wrap.appendChild(box);$('#layer').appendChild(wrap);
  const ov={kind,wrap,box,onClose:opt.onClose||null,re:null,key:opt.key||''};
- const fill=h=>{const a=document.activeElement,kb=a&&a.dataset&&a.dataset.act&&box.contains(a)?'[data-act="'+a.dataset.act+'"]'+(a.dataset.arg!==undefined?'[data-arg="'+CSS.escape(a.dataset.arg)+'"]':''):null;
+ const fill=h=>{const a=document.activeElement,kb=a&&a.id&&box.contains(a)?'#'+CSS.escape(a.id):a&&a.dataset&&a.dataset.act&&box.contains(a)?'[data-act="'+a.dataset.act+'"]'+(a.dataset.arg!==undefined?'[data-arg="'+CSS.escape(a.dataset.arg)+'"]':''):null;   /* Session 6B finish: an element with an id (the Volume slider) keeps keyboard focus across the redraw too */
   box.innerHTML=(kind==='sheet'?'<div class="grab"></div>':'')+h;paintArt(box);if(kb){const n=box.querySelector(kb);if(n)n.focus({preventScroll:true});}};   // keyboard focus survives a refresh
  box.innerHTML=(kind==='sheet'?'<div class="grab"></div>':'')+html;
  if(opt.build)ov.re=()=>fill(opt.build());
@@ -1596,7 +1596,7 @@ const ACT={
  lpwallet:()=>openLink('https://solscan.io/account/'+LP_WALLET),
  haptics:()=>{save.haptics=!save.haptics;store();if(save.haptics)fx('tap');},
  sound:()=>{save.sound=save.sound===false;store();if(save.sound){audioResume();setTimeout(()=>fx('tap'),60);}else{sndLabClear();LW.stopAll();}const ov=findOv('sndlab');if(ov&&ov.re)ov.re();
-  /* Session 6B: the toggle and the Volume row follow at once, wherever Settings is drawn (the website's panel does not redraw on uiDirty) */const on=save.sound!==false;document.querySelectorAll('.toggle[data-act="sound"]').forEach(b=>{b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});const vr=document.getElementById('vol-r'),vp=document.getElementById('vol-p');if(vr){vr.disabled=!on;vr.closest('.q')?.classList.toggle('off',!on);}if(vp)vp.textContent=volLabel();},
+  /* Session 6B: the toggle and the Volume row follow at once, wherever Settings is drawn (the sheet redraws on uiDirty; fill() keeps the focused control) */const on=save.sound!==false;document.querySelectorAll('.toggle[data-act="sound"]').forEach(b=>{b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});const vr=document.getElementById('vol-r'),vp=document.getElementById('vol-p');if(vr){vr.disabled=!on;vr.closest('.q')?.classList.toggle('off',!on);}if(vp)vp.textContent=volLabel();},
  remind:()=>setReminders(!save.remind),
  remindyes:()=>{const ov=findOv('remind');if(ov)closeOverlay(ov);setReminders(true);},
  remindno:()=>{save.remindAsked=true;store();const ov=findOv('remind');if(ov)closeOverlay(ov);},

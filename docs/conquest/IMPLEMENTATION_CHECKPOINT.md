@@ -4840,6 +4840,12 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
 - Local: `npm install --prefix worker` once, then `node worker/build-sim.mjs` and `node worker/build-web.mjs` (generated, not
   committed) before the Worker tests. Graphify did not connect in this container (proxy 403): code read directly.
 
+### Website keyboard focus (found by web-labstore.py in the finish session; a product bug older than the merge)
+Each Volume step fires `change` -> `store()` -> `uiDirty()`, and the next frame's `renderUI` re-fills the open Settings sheet
+(`ui.js fill`), which restored keyboard focus only to elements with `data-act`: the slider (`#vol-r`, an id only) was destroyed and
+focus fell to <body>, so a website keyboard user lost focus after one step (the 6B branch's earlier pass was timing luck; a read-only
+investigation reproduced it on 92f9a3c). Fix: `fill` restores focus by id first. `web-labstore.py` PASS at 1366x768 and 1920x1080.
+
 ### UX critic round 1 (finish session; one fresh critic, phone + desktop together, judged against Clash Royale, Clash of Clans' lab, War Robots, World of Tanks)
 Scores: hub phone 5 / desktop 5-7; Lab phone 5 / desktop 4; Lab end 5 / 6; running job 5.5 / 5; Legendary nodes 4; reveal 6.5 / 5;
 POWER chip 6.5 / 4; Shop Lab 7 / 5.5. Fixed (all the BROKEN ones plus the cheap high-value ones): disabled Lab and store buttons
