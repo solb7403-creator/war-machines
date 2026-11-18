@@ -28,14 +28,14 @@
   },
   "sliderFocusedByTab": true,
   "volume": {
-   "vol": 0.7,
-   "label": "70%"
+   "vol": 0.95,
+   "label": "95%"
   },
-  "soundFocused": true,
+  "soundFocused": false,
   "muted": {
-   "sound": false,
-   "slider": true,
-   "label": "Sound is off"
+   "sound": true,
+   "slider": false,
+   "label": "95%"
   },
   "errors": []
  },
@@ -68,14 +68,14 @@
   },
   "sliderFocusedByTab": true,
   "volume": {
-   "vol": 0.7,
-   "label": "70%"
+   "vol": 0.95,
+   "label": "95%"
   },
-  "soundFocused": true,
+  "soundFocused": false,
   "muted": {
-   "sound": false,
-   "slider": true,
-   "label": "Sound is off"
+   "sound": true,
+   "slider": false,
+   "label": "95%"
   },
   "errors": []
  }
