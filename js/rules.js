@@ -1126,6 +1126,10 @@ function ecoRespec(S,paid,c){
  S.pts+=back;S.ptsSpent=Math.max(0,S.ptsSpent-back);
  return paid?{tk:'respec',back,lost:inv-back,extra:back-half,usd:paid,c}:{back,lost:inv-back,c};
 }
+// the Lab store's sale rules hold inside the grant itself (Session 6B review F5): while the store is closed, for a pack already
+// bought this UTC week, a Legendary not on sale yet or already owned, or a finish already paid, a verified payment grants nothing
+// (the payment stays on record for a refund). The invoice and price checks refuse the same things before anyone pays
+const LAB_KINDS=Object.freeze(['rspack','rsleg','rsfin']),labSaleOk=(S,d,X)=>LAB_STORE_OPEN&&!ecoOwned(S,d,X);
 // ---- purchases (only after the payment is verified). Returns what each part gave, so a refund can take it back ----
 function ecoGrant(S,d,X){
  const outs=[];
@@ -1140,9 +1144,9 @@ function ecoGrant(S,d,X){
  else if(d.kind==='paint'){const P=PAINTS[d.id];if(P&&P.stars&&!S.paints[d.id]){S.paints[d.id]=1;S.spendGram+=P.ton||0;outs.push({tk:'paint',id:d.id});}}
  else if(d.kind==='respec'){const t=respecTierOfTon(d.price);S.spendGram+=Number(d.price)||0;outs.push(ecoRespec(S,t,d.c));}
  else if(d.kind==='pass'){const P=ecoPassState(S,X);if(!P.prem){P.prem=true;S.spendGram+=PASS_PRICE.ton;outs.push({tk:'pass',s:P.s});}}
- else if(d.kind==='rspack'){const P=RS_PACKS[d.tk];if(P){const bk=rsPackKey(d.tk,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||P.ton;outs.push({tk:'rspack',id:d.tk,parts:ecoAddParts(S,P.each)});}}
- else if(d.kind==='rsleg'){if(rsLegSet(d.tk)&&!(S.lsm&&S.lsm[d.tk])){S.lsm=S.lsm&&typeof S.lsm==='object'?S.lsm:{};S.lsm[d.tk]=1;S.spendGram+=Number(d.price)||RS_LEG_PRICE.ton;outs.push({tk:'rsleg',id:d.tk});}}
- else if(d.kind==='rsfin'){if(/^j\d{1,6}$/.test(String(d.job||''))&&!(S.rsx&&S.rsx[d.job])){S.rsx=S.rsx&&typeof S.rsx==='object'?S.rsx:{};S.rsx[d.job]=1;S.spendGram+=Number(d.price)||0;outs.push({tk:'rsfin',job:d.job});}}   // Conquest finishes that job once (conquest-research.js account)
+ else if(d.kind==='rspack'){const P=RS_PACKS[d.tk];if(P&&labSaleOk(S,d,X)){const bk=rsPackKey(d.tk,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||P.ton;outs.push({tk:'rspack',id:d.tk,parts:ecoAddParts(S,P.each)});}}
+ else if(d.kind==='rsleg'){if(labSaleOk(S,d,X)){S.lsm=S.lsm&&typeof S.lsm==='object'?S.lsm:{};S.lsm[d.tk]=1;S.spendGram+=Number(d.price)||RS_LEG_PRICE.ton;outs.push({tk:'rsleg',id:d.tk});}}
+ else if(d.kind==='rsfin'){if(labSaleOk(S,d,X)){S.rsx=S.rsx&&typeof S.rsx==='object'?S.rsx:{};S.rsx[d.job]=1;S.spendGram+=Number(d.price)||0;outs.push({tk:'rsfin',job:d.job});}}   // Conquest finishes that job once (conquest-research.js account)
  else if(d.kind==='vault'){const B=VAULT[d.tk];if(B){const lv0=vaultLevel(S.vg);S.vg=(S.vg||0)+B.g;const gg=GENESIS_OPEN?B.g:0;S.vgg=(S.vgg||0)+gg;S.spendGram+=Number(d.price)||B.ton;const lv=vaultLevel(S.vg);
   if(lv>=VAULT_PAINT_LV)S.paints.hyper=1;outs.push({tk:'vault',id:d.tk,g:B.g,gg,lv0,lv,t:S.vg});}}   // any number of times: the Vault never fills
  for(const r of outs)labGain(S,r);
@@ -1464,7 +1468,7 @@ const FITS={
   light:{n:'Light frame',hp:-.05,spd:.15,dashCd:-.40,weight:0,power:1},
   heatsink:{n:'Heat Sink Plating',rs:'thermal',lab:1,b:'heatsink',role:'Frontliner',cue:'HEAT RING',look:'plates',spd:-.07,weight:1,power:0,x:{every:.2,dmg:.45},
    d:'Every time you lose a fifth of your hull, the plating dumps its heat: a HEAT RING hits every enemy in your range and sight.'},
-  momentum:{n:'Momentum Plating',rs:'servo',lab:2,b:'momentum',role:'Runner',cue:'MOMENTUM',look:'light',hp:-.04,weight:1,power:0,x:{after:1,at:.85,cut:.2,hold:.3},
+  momentum:{n:'Momentum Plating',rs:'servo',lab:2,b:'momentum',role:'Runner',cue:'MOMENTUM',look:'light',hp:-.02,weight:1,power:0,x:{after:1,at:.85,cut:.2,hold:.3},
    d:'Drive flat out for a second and MOMENTUM builds: shots hit you 20% softer for as long as you keep moving fast.'},
   capacitor:{n:'Capacitor Bank',rs:'cap',lab:2,b:'capacitor',role:'Anchor',cue:'CHARGING',look:'plates',spd:-.04,weight:0,power:1,x:{after:.5,rate:5},
    d:'Stand still and your shield recharges five times as fast for as long as you hold your ground.'},
@@ -1485,10 +1489,10 @@ const FITS={
    d:'Dash into an enemy to RAM it: it takes one and a half seconds of your damage and its cannon jams for 1.5 s.'},
   reflex:{n:'Reflex Skirts',rs:'cap',lab:2,b:'reflex',role:'Survivor',cue:'REFLEX',look:'sprint',dps:-.02,weight:0,power:1,x:{lead:.5},
    d:'Your shield raises itself (when it is ready) the instant an enemy super or a marked enemy strike is about to hit you.'},
-  overdrive:{n:'Overdrive',rs:'servo',lab:3,set:true,b:'overdrive',role:'Phantom',cue:'DASH',look:'sprint',hp:-.03,weight:1,power:1,x:{charges:2},
+  overdrive:{n:'Overdrive',rs:'servo',lab:3,set:true,b:'overdrive',role:'Phantom',cue:'DASH',look:'sprint',hp:-.01,weight:1,power:1,x:{charges:2},
    d:'TWO DASH CHARGES: dash twice in a row; each charge refills on its own.'},
-  hyperdrive:{n:'Hyperdrive',rs:'servo',lab:3,set:true,leg:true,b:'overdrive',role:'Phantom',cue:'DASH',look:'sprint',hp:-.03,weight:1,power:1,x:{charges:3},
-   d:'Legendary Overdrive: THREE DASH CHARGES: dash three times in a row; each charge refills on its own.'}},
+  hyperdrive:{n:'Hyperdrive',rs:'servo',lab:3,set:true,leg:true,b:'overdrive',role:'Phantom',cue:'DASH',look:'sprint',hp:-.01,dashCd:-.20,weight:1,power:1,x:{charges:3},
+   d:'Legendary Overdrive: THREE DASH CHARGES that come back 20% faster: dash three times in a row; each charge refills on its own.'}},
  mount:{stock:{n:'Stock',weight:0,power:0},
   hardened:{n:'Hardened mount',hp:.06,dps:-.14,hitCharge:.20,weight:2,power:0},
   firing:{n:'Firing mount',hp:-.08,dps:.12,charge:.08,weight:1,power:2},
@@ -1532,7 +1536,10 @@ function fittingVisuals(L){const m=fittingSelection(L.mods),look=(k,id)=>isRmod(
 // ---- Research mods in the gear rating: each behavior valued as effective health (h), damage (d) or speed (s), the way the
 // plate traits are valued as effective health (plateEhp). An estimate from a pilot model (MOD_USE, the numbers a human pilot's
 // fights show), then checked against measured duels on the real sim (dev/tools/mod-power.mjs, Checkpoint 41). powerZ adds them.
-const MOD_USE={L:4,fight:22,lost:.6,multi:.25,eShield:.12,direct:.62,miss:.14,dashMin:6,ramMin:1.5,still:.2,fast:.5,shUp:.11,shCut:.65,blast:.3,catch:.45,shield:1};
+// Retuned toward the measured duels in the Session 6B finish (review, gameplay 7): fast .5 -> .3 (pilots are flat out about a
+// third of a fight, not half: Momentum measured under its rating), dash .7 -> .45 (Overdrive measured under its rating) and chain
+// .25 (a third dash charge is chained a quarter as often as the second: Hyperdrive measured exactly like Overdrive)
+const MOD_USE={L:4,fight:22,lost:.6,multi:.25,eShield:.12,direct:.62,miss:.14,dashMin:6,ramMin:1.5,still:.2,fast:.3,shUp:.11,shCut:.65,blast:.3,catch:.45,shield:1,dash:.45,chain:.25};
 function rmodPe(b,x){const U=MOD_USE,ex=Math.exp,p=t=>ex(-t/U.L);x=x||{};
  switch(b){
   case 'vent':{const q=p(x.after);return {d:q/(U.L*(1-q))*x.bonus*(1+U.multi*x.splash)};}
@@ -1546,7 +1553,7 @@ function rmodPe(b,x){const U=MOD_USE,ex=Math.exp,p=t=>ex(-t/U.L);x=x||{};
   case 'traction':{const F=FITS[x.slot]&&FITS[x.slot][x.id];return {s:U.dashMin/60*x.t*x.spd/(1+((F&&F.dashCd)||0))};}
   case 'ram':return {d:U.ramMin/60*x.dmg,h:U.ramMin/60*x.jam};
   case 'momentum':return {h:1/(1-U.fast*x.cut*(1-U.blast))-1};
-  case 'overdrive':{const k=2*(1-Math.pow(.5,x.charges-1));return {h:U.blast*U.catch*.7*k,s:U.dashMin/60*.2*k};}
+  case 'overdrive':{const F=FITS[x.slot]&&FITS[x.slot][x.id],r=1/(1+((F&&F.dashCd)||0)),q=U.chain,k=(1-Math.pow(q,x.charges-1))/(1-q)*r+(r-1);return {h:U.blast*U.catch*U.dash*k,s:U.dashMin/60*.2*k};}   // k: the extra charges (each used U.chain as often as the one before: measured, a third is rarely chained), worth more the faster they come back, plus the faster cooldown itself (Hyperdrive)
   case 'capacitor':{const base=SHIELD_T_S/(SHIELD_CD_S+SHIELD_T_S),cd=SHIELD_CD_S/(1+U.still*(x.rate-1)),up=SHIELD_T_S/(cd+SHIELD_T_S);return {h:(1-U.shCut*base)/(1-U.shCut*up)-1};}
   case 'reflector':return {d:U.shUp*U.shCut*x.share};
   case 'reflex':return {h:1/(1-U.blast*U.catch*U.shCut*.6)-1};
@@ -1671,9 +1678,11 @@ const mfRam=T=>T&&T.rm&&T.rm.ram||null;
 function mfDashReady(T,mf,cdLeft){return T.rm&&T.rm.overdrive&&mf?mf.dq>0:!(cdLeft>0);}
 function mfDash(T,mf,cd){const R0=T.rm;if(!R0||!mf)return;if(R0.traction){mf.tr=R0.traction.t;mfCue(mf,'traction');}if(R0.overdrive){if(mf.dq>0)mf.dq--;if(!(mf.dr>0))mf.dr=cd;if(mf.dq>0)mfCue(mf,'dash2');}}
 function mfDashTick(T,mf,dt,cd){const O=T.rm&&T.rm.overdrive;if(!O||!mf)return null;if(mf.dq<O.charges){if(!(mf.dr>0))mf.dr=cd;mf.dr-=dt;if(mf.dr<=0){mf.dq++;mf.dr=mf.dq<O.charges?cd:0;}}else mf.dr=0;return mf.dq>0?0:Math.max(0,mf.dr);}
-// burns on a target (Inferno Core): at most stack from one source at once; a new one replaces the oldest. b: [{s, d dps, t left}]
-function mfBurn(list,src,I,dps){const L=Array.isArray(list)?list:[],mine=L.filter(b=>b.s===src);if(mine.length>=I.stack){const old=mine.reduce((a,b)=>b.t<a.t?b:a);L.splice(L.indexOf(old),1);}
- L.push({s:src,d:I.burn*dps/I.burnT,t:I.burnT});return L;}
+// burns on a target (Inferno Core): at most stack from one source at once; a new one replaces the oldest. b: [{s, d dps, t left,
+// a built up since the last half-second tick}]. A replaced burn's built-up damage is carried into the new one (Session 6B review:
+// dropping it lost 15-49% of Inferno's damage at a fast fire rate); only the rest of its time ends, as the stack cap says
+function mfBurn(list,src,I,dps){const L=Array.isArray(list)?list:[],mine=L.filter(b=>b.s===src);let a=0;if(mine.length>=I.stack){const old=mine.reduce((x,b)=>b.t<x.t?b:x);a=old.a||0;L.splice(L.indexOf(old),1);}
+ L.push({s:src,d:I.burn*dps/I.burnT,t:I.burnT,a});return L;}
 // the cue a pilot sees and hears when a mod triggers (both engines): t the pop text (null: the HUD chip shows it), s the sound
 // (js/fx.js SND), gap the shortest time between two pops of it (s)
 const MOD_CUE={vent:{tr:'thermal',t:'VENT ROUND',s:'mVent'},overclock:{tr:'thermal',t:'OVERCLOCK',s:'mOver'},cool:{tr:'thermal',t:'COOLING',s:'mCool',gap:1},inferno:{tr:'thermal',t:'INFERNO',s:'mInferno'},infernoEnd:{tr:'thermal',t:null,s:null},

@@ -7,6 +7,8 @@ on:
       - 'js/match.js'
       - 'js/weather.js'
       - 'dev/tests/arcade-weather.mjs'
+      - 'dev/tests/pvp-agree.mjs'
+      - 'js/pvp.js'
       - 'worker/src/proof.js'
       - 'worker/src/eco.js'
       - 'worker/src/pvp.js'
@@ -41,6 +43,8 @@ on:
       - 'js/match.js'
       - 'js/weather.js'
       - 'dev/tests/arcade-weather.mjs'
+      - 'dev/tests/pvp-agree.mjs'
+      - 'js/pvp.js'
       - 'worker/src/proof.js'
       - 'worker/src/eco.js'
       - 'worker/src/pvp.js'
@@ -97,6 +101,7 @@ jobs:
         run: |
           node dev/tests/wtest/test.mjs
           node dev/tests/wtest/pvp.mjs
+          node dev/tests/pvp-agree.mjs
           node dev/tests/arcade-weather.mjs
           node dev/tests/wtest/farm.mjs
           node dev/tests/wtest/lab.mjs

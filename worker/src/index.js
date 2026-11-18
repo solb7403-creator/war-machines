@@ -351,14 +351,16 @@ async function payLog(env, b, user, pid, now = Date.now()) {
     S.gout = S.gout || {};
     const gk = safeKey(memo);
     if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
-    const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
+    // a Lab store item already owned by now (a second order paid for the same thing, Session 6B review F5): nothing is granted, the
+    // payment is kept for a refund. Other kinds keep their own rule (a chosen item owned when its payment lands is re-rolled, Checkpoint 39)
+    const outs = RULES.LAB_KINDS.includes(desc.kind) && RULES.ecoOwned(S, desc, X) ? [{ none: 1, err: "owned" }] : RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
     if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "gear" || desc.kind === "box") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
     S.gout[gk] = outs.length ? outs : [{ none: 1 }];
     const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
     return { outs };
   }, now);
-  const outs = (t.outs || []).filter((o) => o && !o.none);
-  await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs });
+  const outs = (t.outs || []).filter((o) => o && !o.none), gerr = ((t.outs || []).find((o) => o && o.err) || {}).err || null;
+  await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs, ...(gerr ? { err: gerr } : {}) });   // err "owned": paid, nothing granted (for a refund)
   { const tu = await tonUsd(), usd = tu ? price.ton * tu : Math.min(rec.usd || 0, price.ton * 10); await revAdd(env, usd * 100); }   // the liquidity fund
   // farms: accounts paying from the same wallet are one person's (only a wallet that really paid counts)
   if (src && src !== "payer") {
@@ -606,7 +608,7 @@ async function webhook(req, env) {
       // payment is logged below with the error for the owner. A database failure still throws, so Telegram retries the webhook
       let outs;
       const S0 = JSON.parse(JSON.stringify(S));
-      try { outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X); }
+      try { outs = RULES.LAB_KINDS.includes(desc.kind) && RULES.ecoOwned(S, desc, X) ? [{ none: 1, err: "owned" }] : RULES.ecoGrant(S, { ...desc, price: p.g }, X); }   // a Lab store item already owned by now (two invoices paid, Session 6B review F5): nothing granted, the payment is kept for a refund
       catch (e) { for (const k of Object.keys(S)) delete S[k]; Object.assign(S, S0); outs = [{ none: 1, err: String((e && e.message) || e).slice(0, 80) }]; }
       if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "gear" || desc.kind === "box") && S.L) setLoadout(S, S.L);
       S.gout[charge] = outs.length ? outs : [{ none: 1 }];

@@ -206,7 +206,7 @@ function respawnTick(dt){
   }
   u.dead=(u.dead||0)+dt;
   if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.tkn=0;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.shieldT=0;u.shieldCd=0;u.flash=0;u.trail=[];u.calm=0;u.mf=null;u.burns=null;   // research mod state starts fresh each life
-   u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.hzT=WX_SPAWN_SAFE;u.lh=null;u.lhs=null;   // teleported: live players snap to the spawn. hzT: no map hazard touches a tank that has just come back
+   u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.dq2=null;u.hzT=WX_SPAWN_SAFE;u.lh=null;u.lhs=null;   // teleported: live players snap to the spawn. hzT: no map hazard touches a tank that has just come back
    if(u.brain){u.brain.mode='press';u.brain.t=1;u.brain.spot=null;}
    ev('r',u.id);}
  }
@@ -423,11 +423,11 @@ function moveBullets(dt){
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,omf=owner.rm?modS(owner):null,sure=omf?mfHit(owner,omf,t.id,direct):false;   // Marksman Coil: every 3rd direct hit in a row is a sure critical
    const isCrit=direct&&(sure||random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0));
-   const edge=direct?(isCrit?CRIT_MULT:1):q.eg||GRAZE,aT=armor(t),gross=(q.dps*q.shot*q.dm*edge+(q.mv||0)*(direct?1:q.eg||GRAZE))*cmult(owner,t),dmg=gross*(1-aT);   // q.mv: a vent round's extra seconds of damage
+   const edge=direct?(isCrit?CRIT_MULT:1):q.eg||GRAZE,aT=armor(t),raw=q.dps*q.shot*q.dm*edge+(q.mv||0)*(direct?1:q.eg||GRAZE),gross=raw*cmult(owner,t),dmg=gross*(1-aT);   // q.mv: a vent round's extra seconds of damage
    if(t.st)t.st.arm+=gross*aT;
    q.landed=1;takeHit(t,dmg,owner,null,0,isCrit,direct,q.id,q.rail?1:0);if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}
    if(q.burn&&t.hp>0)t.burns=mfBurn(t.burns,owner.id,q.burn,modDps(owner));   // Inferno Core: the hit sets its target burning
-   if(q.mv){ev('B',q.x,q.y,1.2,0.4,'#ff8a3d');for(const v of units)if(v!==t&&v.team!==owner.team&&v.hp>0&&Math.hypot(v.x-q.x,v.y-q.y)<hitR(v)+2*R)modHurt(owner,v,gross*q.ms,'vent');}   // the vent round bursts on the enemies beside its target
+   if(q.mv){ev('B',q.x,q.y,1.2,0.4,'#ff8a3d');for(const v of units)if(v!==t&&v.team!==owner.team&&v.hp>0&&Math.hypot(v.x-q.x,v.y-q.y)<hitR(v)+2*R)modHurt(owner,v,raw*q.ms,'vent');}   // the vent round bursts on the enemies beside its target (modHurt adds each one's own counter and armor: the target's are not carried over, Session 6B review)
    if(q.rail){q.hit.push(t.id);ev('B',q.x,q.y,0.5,0.25,'#e8f4ff');if(q.hit.length>=q.rail)q.life=0;}else q.life=0;}   // a rail slug passes through the first tank into the next
   }
   q.life-=dt;
@@ -583,7 +583,8 @@ function useDash(u,dx,dy){
 }
 // a dash cooldown step (Overdrive: its charges refill one at a time); a dash that ended next to an enemy rams it (Ram Servo)
 function dashCdStep(u,dt){if(u.rm&&u.rm.overdrive){u.dashCd=mfDashTick(u,modS(u),dt,DASH_CD*(u.dashCdM||1));return;}if(u.dashCd>0)u.dashCd=Math.max(0,u.dashCd-dt);}
-function dashEnd(u){const ram=mfRam(u);if(!ram||u.hp<=0)return;let e=null,bd=1e9;for(const v of units){if(v.team===u.team||v.hp<=0||!lvOK(u,v))continue;const d=Math.hypot(v.x-u.x,v.y-u.y);if(d<hitR(u)+hitR(v)+0.5&&d<bd){bd=d;e=v;}}
+function dashEnd(u){const ram=mfRam(u);if(!ram||u.hp<=0||(typeof pvpOn==='function'&&pvpOn()))return;   // live match: only the room rams (no phantom damage or kills on the phone)
+let e=null,bd=1e9;for(const v of units){if(v.team===u.team||v.hp<=0||!lvOK(u,v))continue;const d=Math.hypot(v.x-u.x,v.y-u.y);if(d<hitR(u)+hitR(v)+0.5&&d<bd){bd=d;e=v;}}
  if(!e)return;modHurt(u,e,ram.dmg*modDps(u),'ram');e.cd=Math.max(e.cd||0,0)+ram.jam;mfCue(modS(u),'ram');ev('B',e.x,e.y,1.1,0.35,'#7be07b');modCues(u);}
 function dashStep(u,dt){   // returns true while dashing
  shieldStep(u,dt);
@@ -724,10 +725,17 @@ function superTick(dt){
 function heading(dt){   // hull turns toward the direction of travel; the turret aims on its own
  for(const r of units){
   const dx=r.x-(r.px===undefined?r.x:r.px),dy=r.y-(r.py===undefined?r.y:r.py);r.px=r.x;r.py=r.y;r.vx=dx/dt;r.vy=dy/dt;aimVel(r,dx,dy,dt);
+  if(r.ctl==='net')netPace(r,dx,dy,dt);
   if(r.hd===undefined)r.hd=r.ang;
   if(Math.hypot(dx,dy)>0.004){let d=Math.atan2(dy,dx)-r.hd;d=Math.atan2(Math.sin(d),Math.cos(d));const st=7*dt;r.hd+=Math.max(-st,Math.min(st,d));}
  }
 }
+// a live pilot's pace for the research mods (Momentum's "flat out", Capacitor's "standing still"; Session 6B review): the room
+// follows their claims in one step about every 100 ms, so the speed is averaged over 0.6 s and never capped (aimVel's capped 0.3 s
+// average dips to 81% of top speed between two claims, under Momentum's 85%: measured by dev/tests/pvp-agree.mjs), and the tank is
+// stopped after 0.2 s without a step (two claim gaps). Minimum of the average at full speed: 94% with claims every 100 ms, 86% at 200 ms
+function netPace(r,dx,dy,dt){const st=Math.hypot(dx,dy);if(st>STAT.speed*spdMult(r)*DASH_SPD*dt*4+0.5){r.msp=0;r.mst=0;return;}   // a jump (resync, respawn) is not pace
+ r.msp=(r.msp||0)+(st/dt-(r.msp||0))*Math.min(1,dt/0.6);r.mst=st>0.002?0:(r.mst||0)+dt;}
 function boxTick(dt){
  for(const r of units){const rg=bsum(r,'reg')+gsum(r,'reg');   // health regeneration buff
   if(rg>0&&r.hp>0&&r.hp<r.mhp){const h=Math.min(r.mhp-r.hp,r.mhp*rg*dt);r.hp+=h;r.rh=(r.rh||0)+h;
@@ -1094,7 +1102,7 @@ const royaleOver=()=>units.filter(u=>u.hp>0).length<=1||timeLeft<=0||(SRV?!units
 const NET_TOL=1.02,NET_BANK=0.6,NET_SNAP=6;   // speed slack (rounding), seconds of movement that can bank up, a claim this far off is not a real move: resync
 function netClaim(u,x,y,k){if(u.ctl!=='net'||k!==(u.tp||0))return;u.claim={x:Math.max(R,Math.min(W-R,+x||0)),y:Math.max(R,Math.min(H-R,+y||0))};}
 function netMove(u,dt){
- if(u.dash){u.dash.t-=dt;if(u.dash.t<=0){u.dash=null;dashEnd(u);}}
+ if(u.dash){u.dash.t-=dt;if(u.dash.t<=0){u.dash=null;dashEnd(u);if(u.dq2){const q=u.dq2;u.dq2=null;netDash(u,q.dx,q.dy);}}}
  dashCdStep(u,dt);
  shieldStep(u,dt);
  if(u.mbxT>0){u.mbxT-=dt;if(u.mbxT<=0)u.mbx=0;}
@@ -1110,9 +1118,13 @@ function netMove(u,dt){
  // blocked short of the claim (a corner the phone slid around, or cover it didn't know about): give it a moment, then resync the phone
  if(Math.hypot(c.x-u.x,c.y-u.y)>0.6&&moved<go*0.5){u.stuck=(u.stuck||0)+dt;if(u.stuck>0.35)netResync(u);}else u.stuck=0;
 }
-function netResync(u){u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.stuck=0;}   // the phone snaps its tank to the server's spot
+function netResync(u){u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.stuck=0;u.dq2=null;}   // the phone snaps its tank to the server's spot
 function netShield(u){return useShield(u);}   // a live player raised their shield: same cooldown as everyone
+// Overdrive (Session 6B review): the phone's dash lasts 0.2 s of its own frames, the room's 7 ticks (0.233 s), so a second charge
+// pressed the moment the first ends on the phone can reach the room one tick before its dash is over: it is held and starts then
+const NET_DASH_Q=1/30+1e-6;
 function netDash(u,dx,dy){   // a live player dashed: same cooldown as everyone; their claims may run ahead for the burst
+ if(u.dash&&u.dash.t<=NET_DASH_Q){if(!u.dq2)u.dq2={dx:+dx||0,dy:+dy||0};return true;}
  if(!useDash(u,dx,dy))return false;
  u.mbx=STAT.speed*DASH_SPD*DASH_T*NET_TOL;u.mbxT=0.6;u.mb=(u.mb||0)+u.mbx;
  return true;
@@ -1123,7 +1135,7 @@ const modS=u=>u&&u.rm?(u.mf||(u.mf=mfNew(u))):null;
 const modDps=u=>Math.max(1,(u.wdps||STAT.dps)*dmgMult(u)*rofMult(u)*projectileImpactMult(u));   // the tank's own clean damage per second
 let modQ=[];   // heat rings and reflections owed: they land after the hit that caused them (never inside it: no chains)
 function modHurt(src,e,amt,why){if(!(amt>0)||!e||e.hp<=0)return 0;const g=amt*cmult(src,e),aE=armor(e),d=g*(1-aE);if(e.st)e.st.arm+=g*aE;takeHit(e,d,src,why,0,false,true,0);if(src&&src.st){src.st.dmg+=d;if(d>src.st.best)src.st.best=d;}return d;}
-function modCues(u){const q=u&&u.mf&&u.mf.q;if(!q||!q.length)return;for(const k of q)ev('Q',u.id,k);q.length=0;}   // 'Q': its own event code ('m' is the meteor / megatank impact, and live rooms flip 'm' positions)
+function modCues(u){const q=u&&u.mf&&u.mf.q;if(!q||!q.length)return;if(typeof pvpOn==='function'&&pvpOn()){q.length=0;return;}for(const k of q)ev('Q',u.id,k);q.length=0;}   // live match: the room's cues only (the phone's predicted dash would play them twice)   // 'Q': its own event code ('m' is the meteor / megatank impact, and live rooms flip 'm' positions)
 // Reflex Skirts: a marked blast about to land on u (an enemy super in its last moments, a megatank stomp or shell). Never a map
 // hazard: hazards pass every shield (Session 6B ruling), so raising it for one would only waste it
 function modDanger(u,lead){
@@ -1140,7 +1152,10 @@ function modTick(dt){
    if(u.bT>=0.5||u.burns.every(b=>b.t<=0)){u.bT=0;for(const b of u.burns)if(b.a>0){const src=units[b.s];if(src&&u.hp>0){const d=b.a*cmult(src,u)*(1-armor(u));takeHit(u,d,src,'burn',0,false,true,0);if(src.st)src.st.dmg+=d;}b.a=0;}}
    u.burns=u.burns.filter(b=>b.t>0||b.a>0);}
   if(!u.rm||u.hp<=0)continue;const mf=modS(u),top=STAT.speed*spdMult(u)*(u.sup?0.6:1);
-  mfStep(u,mf,dt,{spd:u.dash?1:Math.hypot(u.vx||0,u.vy||0)/Math.max(0.1,top)});
+  // a live pilot's tank moves in steps (their claims, about every 100 ms, followed by the room at 30 ticks a second): its pace is
+  // netPace's (heading), or Momentum would never build and Capacitor would count the gaps between claims as standing still
+  const v=u.ctl==='net'?((u.mst||0)>=0.2?0:(u.msp||0)):Math.hypot(u.vx||0,u.vy||0);
+  mfStep(u,mf,dt,{spd:u.dash?1:v/Math.max(0.1,top)});
   if(u.rm.reflex&&(u.shieldCd||0)<=0&&(u.shieldT||0)<=0&&state==='play'&&modDanger(u,u.rm.reflex.lead)){if(useShield(u))mfCue(mf,'reflex');}
   modCues(u);}}
 function modFlush(){
@@ -1331,7 +1346,7 @@ function simRound(){
  setMap(curMap);   // fresh crates
  bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];feed=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;
  for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
-  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.mf=null;u.burns=null;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;
+  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.mf=null;u.burns=null;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.dq2=null;
   if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
  state='play';wxStart();
 }

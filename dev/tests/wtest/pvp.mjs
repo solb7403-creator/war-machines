@@ -150,7 +150,7 @@ const say = (room, pid, s, o) => room.onMessage(pid, s, JSON.stringify(o));
   const n1 = A.msgs.filter((m) => m.k === 's').length;
   t(n1 - n0 >= 13 && n1 - n0 <= 17, 'about 15 snapshots a second: ' + (n1 - n0));
   const s1 = last(A, 's');
-  t(Array.isArray(s1.s.u) && s1.s.u.length === 2 && s1.s.u[0].length === 19 && s1.s.u[0][17] === 0 && s1.s.u[0][18] === 0 && typeof s1.s.tl === 'number', 'snapshot layout (the 18th field: supers used this round; the 19th (Session 6B): research mod state, 0 without research mods)');
+  t(Array.isArray(s1.s.u) && s1.s.u.length === 2 && s1.s.u[0].length === 20 && s1.s.u[0][17] === 0 && s1.s.u[0][18] === 0 && JSON.stringify(s1.s.u[0][19]) === '[0,0]' && typeof s1.s.tl === 'number', 'snapshot layout (the 18th field: supers used this round; the 19th (Session 6B): research mod state, 0 without research mods; the 20th (6B review): a live pilot\'s own shield [up x10, cooldown x10])');
   // claims: B is at (10,4); in B's view that's (10,28). B drives "up" its screen to (10,26) = canonical (10,6)
   const ub = room.sim.units[1], ua = room.sim.units[0];
   for (let i = 0; i < 6; i++) { say(room, 'b', B, { k: 'm', x: 10, y: 28 - (i + 1) * 0.35, tp: 0 }); await run(100); }

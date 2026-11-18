@@ -4820,8 +4820,12 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
   sets of options), `worker/src/proof.js` (both allowances: the 5E-2e shove at a train / tornado strike and 6B's Traction boost +
   Overdrive dash charges, in one speed limit), this file (Checkpoints 41 and 42 both kept, in number order).
 - Slice F1 also: the mod-vs-hazard rulings (table "Mods and hazards" below), `dev/tests/arcade-weather.mjs` sections 3c and 7c,
-  roadmap row 6B-V and the 7.8 line. Next: slice F2 = Checkpoint 41 "NEXT" 1-6 (the reviewer fixes), then F3 research economy,
-  F4 Legendary research path, F5 owner rules + model + Worker tests, F6 browser + critic, F7 reviews, F8 release.
+  roadmap row 6B-V and the 7.8 line (commit `14ca0dd`).
+- Slice F2 DONE (the reviewer fixes, "NEXT" 1-6; table "Reviewer fixes" below), except the re-measured duels: `dev/tools/mod-power.mjs
+  --write` runs in a worktree at the F2 commit (about an hour), then RESOURCE_ECONOMY §6.5 and `docs/conquest/session6b/mod-power.json`.
+  New test `dev/tests/pvp-agree.mjs` (216 checks, every mod, CI: equipment-balance + deploy-worker).
+- Next: F3 research economy, F4 Legendary research path, F5 owner rules + model + Worker tests, F6 browser + critic, F7 reviews,
+  F8 release.
 - Local: `npm install --prefix worker` once, then `node worker/build-sim.mjs` and `node worker/build-web.mjs` (generated, not
   committed) before the Worker tests. Graphify did not connect in this container (proxy 403): code read directly.
 
@@ -4852,6 +4856,28 @@ Also checked with every mod on (`arcade-weather.mjs` 3c): 24 seeded live rooms w
 phone build event for event (hazard hits, burns, rings, reflections, rams). Test changes from this merge (a decision changed their
 rule, nothing loosened): `hf-collection.mjs` walks the fitting looks only (`isLook`; research mods borrow the free looks) and its
 `fittings 243` check is live again (it had been swallowed by a 5E-2e comment; found by the 6B owner-rules lint).
+
+### Reviewer fixes (Session 6B finish, slice F2: Checkpoint 41 "NEXT" 1-6; every one is caught by a test that fails on the old code)
+
+| # | Finding | Fix | Test |
+|---|---|---|---|
+| 1a | Momentum never built for a live pilot | the room follows a live pilot's claims in one step every ~100 ms, so the capped 0.3 s average (`avx`) dips to 81% of top speed between claims, under Momentum's 85%: a live pilot now has its own pace for the mods (`game.js netPace`: uncapped 0.6 s average, minimum 94% at full speed with claims every 100 ms, 86% at 200 ms; "stopped" after 0.2 s without a step, for Capacitor) | `pvp-agree.mjs` momentum (mutation: fails) |
+| 1b/c | Capacitor's faster recharge and Reflex's auto-raise happen on the room; the phone never knew (a ready shield refused, a raised one not shown) | snapshot field 20 (append-only): a live pilot's own shield [up, cooldown]; the phone adopts it unless its own press is still in flight (1 s) | `pvp-agree.mjs` capacitor, reflex, every mod's shield gaps (<= 100 ms measured) |
+| 1d | the phone rammed in a live match (phantom damage and kills) | `dashEnd`: only the room rams in a live match | `pvp-agree.mjs` ram (mutation: local "h" and "B" events) |
+| 1e | Overdrive's second dash reached the room one tick before its first dash ended (the phone's dash is 0.217 s of frames, the room's 7 ticks) and was refused | the room holds a dash that arrives within one tick of the current one ending and starts it then (`NET_DASH_Q`) | `pvp-agree.mjs` overdrive / hyperdrive (mutation: a refused dash) |
+| 1f | team-0 pilots heard every mod cue twice (local prediction + the room) | one source in live rooms: the room's `Q` events; the phone drops its own | `pvp-agree.mjs` every mod (mutation: 1 cue of its own) |
+| 1+ (found here) | in a live match the phone never ran out its own Traction boost (`mfStep` only runs in the AI-match loop): after one dash it predicted +60% speed forever and the room snapped it back | `pvpFrame` ticks the pilot's Traction timer | `pvp-agree.mjs` traction (mutation: boost left 2 s) |
+| 1+ (found here) | after a respawn the room rebuilt the pilot's mod state (full dash charges) but the phone kept its old charges | snapshot field 19 also carries Overdrive's refill timer; the phone adopts the room's charges and cooldown unless its own dash is in flight (0.6 s) | `pvp-agree.mjs` (a scripted death; mutation: 6 s disagreement) |
+| 2 | a replaced burn's built-up damage was dropped (Inferno lost 15-49%); Conquest dropped a burn's last half second | `mfBurn` carries it into the new burn; Conquest keeps a burn while it has time or damage left | `mod-behaviors.mjs` (every bit of burn damage dealt at 0.09 / 0.2 s fire intervals) |
+| 3 | the phone writes the record's dash flag: a flag on every sample bought dash pace all match (and Traction's window) | `proof.js`: dashes are charges the cooldown gives back (the server loadout's cooldown, 15% slack, up to the charges at once); one run of flagged samples is one burst; only a dash backed by a charge opens Traction's window; `eco.js` passes the most lenient values over the ticket's chassis | `wtest/proof-mods.mjs` 11 checks (5 new, all fail on the old code) |
+| 4 | duels contradicted the rating for Overdrive / Momentum; Hyperdrive measured exactly like Overdrive | rating toward the duels (`MOD_USE` fast .5 -> .3, dash .7 -> .45, chain .25: a third charge is chained a quarter as often as the second) and lighter trade-offs so the mods are not net-negative in a fight (Momentum -4% -> -2% hull, Overdrive and Hyperdrive -3% -> -1%); Hyperdrive's real step: its charges come back 20% faster (3.2 s). Legend kit: best free 240 -> best research 259 (+7.92%) -> best Legendary 278 (+7.34%) | `owner-rules.mjs`; duels re-measured (`mod-power.mjs --write`, pending) |
+| 5 | vent splash applied the counter bonus twice (Conquest: counter and armor twice); reflection: the shooter's armor in the Arcade, none in Conquest; burns ignored Conquest's barrier but not Arcade shields; Lab timers stood still while open; hub RESEARCH loaded the 3D world first | splash from the raw damage (each target's own counter and armor); Conquest reflection applies the shooter's armor; the barrier cuts a burn tick like a shot (Penetrator gets most through); the Lab's timers tick every second and refetch when one ends; the hub's RESEARCH opens the Lab over the hub with the session state alone (no 3D engine, no world), with the reveal card and FIT ON MY TANK | `mod-behaviors`, conquest suites, browser journey (F6) |
+| 6 (F5) | the Lab sale rules lived only in the invoice/price checks | `ecoGrant` enforces them itself (`labSaleOk`: store open and not `ecoOwned`); both payment grant paths call `ecoOwned` for the Lab kinds and keep a refused payment on record (`err: "owned"`) for a refund. Other kinds keep their own released rule (a chosen item owned when its payment lands is re-rolled, Checkpoint 39) | `wtest/lab-store.mjs` 38 (closed store: nothing granted; an open-store copy of the rules: weekly pack, Legendary gate, double finish refused) |
+
+Tests changed because a decision changed their rule: `wtest/pvp.mjs` and `mod-behaviors.mjs` snapshot layout (field 20; field 19 gains
+the refill timer: append-only, PVP_V unchanged); `wtest/proof-mods.mjs` case 4 (four double dashes 1.5 s apart were let through: now
+the cheat case; honest double dashes are 8.5 s apart); `wtest/lab-store.mjs` section 5 (grants with the store closed are refused; the
+grant behavior is checked on an open-store copy of the rules).
 
 ### Earlier slices (Nov 16-17, done; the original resume point)
 - DONE slice 1 (research engine + mods, Worker): `js/rules.js` FITS research options (16 earned + 4 Legendary), RS tree, rsQuote /

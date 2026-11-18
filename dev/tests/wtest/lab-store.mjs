@@ -2,8 +2,10 @@
 // CHECKOUT IS OFF in every currency: no Stars invoice, a Telegram-confirmed payment naming a Lab item grants nothing, a TON payment
 // log grants nothing, and a phone can never sync the server-owned ownership (Legendary set mods, bonus parts, finish credits).
 // The grants themselves (for the day the owner opens checkout) only ever run from ecoGrant, give no points, and a Legendary set mod
-// is on sale only after its track's earned set mod. Lunar Pass premium tiers 10/20/30 add research parts, never points.
+// is on sale only after its track's earned set mod; ecoGrant enforces those sale rules itself (review F5). Lunar Pass premium tiers 10/20/30 add research parts, never points.
 import { createHmac } from 'node:crypto';
+import fs from 'node:fs';
+import vm from 'node:vm';
 import { makeDB } from './fakedb.mjs';
 import { buildSim } from '../../../worker/build-sim.mjs';
 buildSim();
@@ -72,20 +74,33 @@ for (const pl of [{ u: P.id, k: 'rsleg', t: 'sunfire', g: 9.6 }, { u: P.id, k: '
   t(st === 200 && snap() === before, 'a synced save cannot grant Legendary set mods, bonus parts or finish credits'); }
 { const S = R.ecoNorm(JSON.parse(J(E()))), spec = R.labSpec(R.ecoLoadout(S)), v = R.labValidate(S, { ...spec, catalog: R.FIT_VERSION, mods: { mount: 'sunfire' } }), v2 = R.labValidate(S, { ...spec, catalog: R.FIT_VERSION, mods: { mount: 'inferno' } });
   t(v === 'owned' && v2 !== 'owned', 'the garage refuses the unowned Legendary Sunfire (' + v + ') but takes the researched Inferno (' + v2 + ')'); }
-// ---- 5. the grants (for the day checkout opens): server-only, no points ----
-{ const S = R.ecoNorm(JSON.parse(J(E()))), pts0 = [S.pts, S.earned, S.dailyPts, S.weeklyPts].join();
-  const o1 = R.ecoGrant(S, { kind: 'rspack', tk: 'crate', price: 4 }, X);
-  t(o1[0]?.tk === 'rspack' && R.CQ_PART_ORDER.every(k => S.bpt[k] === 3), 'a Lab crate adds 3 of every research part to the account\'s bonus parts');
-  t(R.ecoOwned(S, { kind: 'rspack', tk: 'crate' }, X) && !R.ecoOwned(S, { kind: 'rspack', tk: 'crate' }, { ...X, week: X.week + 1 }), 'one of each pack a UTC week');
-  const S2 = R.ecoNorm({}); S2.rm = { vent: 1, overclock: 1, heatsink: 1 };
-  t(R.ecoOwned(S2, { kind: 'rsleg', tk: 'sunfire' }, X), 'Sunfire is not on sale before its track\'s set mod (Inferno) is researched');
-  R.ecoGrant(S, { kind: 'rsleg', tk: 'sunfire', price: 9.6 }, X);
-  t(S.lsm.sunfire === 1 && R.ecoOwned(S, { kind: 'rsleg', tk: 'sunfire' }, X) && R.rmodOwned(S, 'mount', 'sunfire'), 'a granted Legendary is owned on the server record and fits in the garage');
-  R.ecoGrant(S, { kind: 'rsfin', job: 'j3', price: 1.6 }, X);
-  t(S.rsx.j3 === 1 && R.ecoOwned(S, { kind: 'rsfin', job: 'j3' }, X) && R.ecoOwned(S, { kind: 'rsfin', job: '../x' }, X), 'an instant finish is a one-time credit for that job id only');
+// ---- 5. the grants: server-only, no points, and the sale rules hold inside the grant itself (Session 6B review F5) ----
+// while the Lab store is closed, even a payment that somehow verified grants nothing (the invoice and price checks refuse it first)
+{ const S = R.ecoNorm(JSON.parse(J(E()))), b0 = J(S);
+  for (const d of [{ kind: 'rspack', tk: 'crate', price: 4 }, { kind: 'rsleg', tk: 'sunfire', price: 9.6 }, { kind: 'rsfin', job: 'j3', price: 1.6 }])
+    t(R.ecoGrant(S, d, X).length === 0, 'Lab store closed: a verified ' + d.kind + ' payment grants nothing (ecoGrant checks it itself)');
+  t(J(S) === b0 && J(R.LAB_KINDS) === J(['rspack', 'rsleg', 'rsfin']), '... and changes nothing on the record'); }
+// the day the owner opens checkout: js/rules.js with LAB_STORE_OPEN true (a test-only copy; the shipped flag stays false)
+const O = (() => { const ctx = vm.createContext({ console }), src = fs.readFileSync(new URL('../../../js/rules.js', import.meta.url), 'utf8');
+  if (!src.includes('const LAB_STORE_OPEN=false;')) throw new Error('LAB_STORE_OPEN flag not found');
+  vm.runInContext(src.replace('const LAB_STORE_OPEN=false;', 'const LAB_STORE_OPEN=true;') + '\n;globalThis.__R={ecoNorm,ecoGrant,ecoOwned,ecoRefund,rmodOwned,CQ_PART_ORDER,LAB_STORE_OPEN};', ctx); return ctx.__R; })();
+{ const S = O.ecoNorm(JSON.parse(J(E()))), pts0 = [S.pts, S.earned, S.dailyPts, S.weeklyPts].join();
+  t(O.LAB_STORE_OPEN === true, 'open-store copy of the rules');
+  const o1 = O.ecoGrant(S, { kind: 'rspack', tk: 'crate', price: 4 }, X);
+  t(o1[0]?.tk === 'rspack' && O.CQ_PART_ORDER.every(k => S.bpt[k] === 3), 'a Lab crate adds 3 of every research part to the account\'s bonus parts');
+  t(O.ecoOwned(S, { kind: 'rspack', tk: 'crate' }, X) && !O.ecoOwned(S, { kind: 'rspack', tk: 'crate' }, { ...X, week: X.week + 1 }), 'one of each pack a UTC week');
+  t(O.ecoGrant(S, { kind: 'rspack', tk: 'crate', price: 4 }, X).length === 0 && O.CQ_PART_ORDER.every(k => S.bpt[k] === 3), 'a second Lab crate paid the same week grants nothing (the grant checks the weekly rule itself)');
+  const S2 = O.ecoNorm({}); S2.rm = { vent: 1, overclock: 1, heatsink: 1 };
+  t(O.ecoOwned(S2, { kind: 'rsleg', tk: 'sunfire' }, X) && O.ecoGrant(S2, { kind: 'rsleg', tk: 'sunfire', price: 9.6 }, X).length === 0 && !(S2.lsm && S2.lsm.sunfire), 'Sunfire is not on sale before its track\'s set mod (Inferno) is researched, and a paid order grants nothing');
+  S.rm = { ...(S.rm || {}), inferno: 1 }; O.ecoGrant(S, { kind: 'rsleg', tk: 'sunfire', price: 9.6 }, X);
+  t(S.lsm.sunfire === 1 && O.ecoOwned(S, { kind: 'rsleg', tk: 'sunfire' }, X) && O.rmodOwned(S, 'mount', 'sunfire'), 'a granted Legendary is owned on the server record and fits in the garage');
+  t(O.ecoGrant(S, { kind: 'rsleg', tk: 'sunfire', price: 9.6 }, X).length === 0, 'a second paid order for an owned Legendary grants nothing');
+  O.ecoGrant(S, { kind: 'rsfin', job: 'j3', price: 1.6 }, X);
+  t(S.rsx.j3 === 1 && O.ecoOwned(S, { kind: 'rsfin', job: 'j3' }, X) && O.ecoOwned(S, { kind: 'rsfin', job: '../x' }, X), 'an instant finish is a one-time credit for that job id only');
+  t(O.ecoGrant(S, { kind: 'rsfin', job: 'j3', price: 1.6 }, X).length === 0 && O.ecoGrant(S, { kind: 'rsfin', job: '../x', price: 1.6 }, X).length === 0, 'the same finish paid twice, or a forged job id: nothing granted');
   t([S.pts, S.earned, S.dailyPts, S.weeklyPts].join() === pts0, 'no Lab purchase gives points');
-  R.ecoRefund(S, 'rsleg', [{ tk: 'rsleg', id: 'sunfire' }]); R.ecoRefund(S, 'rspack', o1);
-  t(!S.lsm.sunfire && R.CQ_PART_ORDER.every(k => S.bpt[k] === 0), 'a refund takes back the Legendary and the parts'); }
+  O.ecoRefund(S, 'rsleg', [{ tk: 'rsleg', id: 'sunfire' }]); O.ecoRefund(S, 'rspack', o1);
+  t(!S.lsm.sunfire && O.CQ_PART_ORDER.every(k => S.bpt[k] === 0), 'a refund takes back the Legendary and the parts'); }
 // ---- 6. Lunar Pass premium tiers add research parts, never points (the real claim route) ----
 { const Xn = { day: Math.floor(Date.now() / 864e5) }, sn = R.ecoSeason ? R.ecoSeason(Xn) : null;
   E().pass = { s: sn, xp: R.PASS_XP * 12, prem: true, cf: [], cp: [] };

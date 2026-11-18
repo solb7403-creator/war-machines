@@ -169,12 +169,12 @@ class Battle {
  const owner=q.stats,direct=off<r*.4,mine=q.team==='player'&&owner.rm,sure=mine?mfHit(owner,this.modState(),t.id,direct):false;   // Marksman Coil (Session 6B): every 3rd direct hit in a row is a sure critical
  const isCrit=direct&&(sure||this.random()<CRIT_BASE+gsum(owner,'lck')+(owner.critB||0)),edge=direct?(isCrit?CRIT_MULT:1):owner.wedge||GRAZE;
  const defender=q.team==='player'?t.stats:t===this.player?this.playerStats:null;
- let damage=(owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*(q.railM||1)*edge+(q.mv||0)*(direct?1:owner.wedge||GRAZE))*(defender?cmult(owner,defender)*(1-armor(defender)):1);   // q.mv: a vent round's extra seconds of damage
+ const rawD=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*(q.railM||1)*edge+(q.mv||0)*(direct?1:owner.wedge||GRAZE);let damage=rawD*(defender?cmult(owner,defender)*(1-armor(defender)):1);   // q.mv: a vent round's extra seconds of damage
  let blocked=0;if(q.team!=='player'&&t===this.player){if(this.shieldT>0){blocked=damage*(1-SHIELD_MULT);damage*=SHIELD_MULT;}damage*=plateTaken(this.playerStats,q.kind==='pulse',false);const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
  if(q.team==='player'&&t.pattern==='shield'&&this.time%8<3){const keep=Math.max(q.rail?1:0,mfPierce(owner));damage*=.35+keep*.65;if(keep>0&&!q.rail&&mine)mfCue(this.modState(),'pierce');}   // Penetrator Coil and rail slugs get through the shield commander's barrier
  if(q.team==='player'){this.alert(t);this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7,at:this.time});}
   if(q.burn&&t.hp>0)t.burns=mfBurn(t.burns,0,q.burn,this.modDps());   // Inferno Core: the hit sets its target burning
-  if(q.mv){this.effects.push({kind:'destroy',k:'siege0',oc:0,x:q.x,y:q.y,z:q.z,r:5,life:.5,at:this.time});for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5)this.modHurt(e,damage*q.ms);}}   // the vent round bursts on the Parasites beside its target
+  if(q.mv){this.effects.push({kind:'destroy',k:'siege0',oc:0,x:q.x,y:q.y,z:q.z,r:5,life:.5,at:this.time});for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5)this.modHurt(e,rawD*q.ms);}}   // the vent round bursts on the Parasites beside its target (modHurt adds each one's own counter and armor; the target's are not carried over, as in the Arcade)
  else if(t===this.player){this.hitBy=q.owner;if(this.playerStats.rm){const M=mfTaken(this.playerStats,this.modState(),damage,0,blocked,this.playerMax);damage=M.amt;if(M.ring)this.modQ.push({k:'ring',n:M.ring});if(M.refl>0)this.modQ.push({k:'refl',e:q.owner,d:M.refl});}   // Momentum, the overshield; heat rings and reflections land after this hit
   this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage*(this.defenseConfig==='shield'?.6:1));
  this.effects.push({kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15,weapon:q.kind});
@@ -228,8 +228,9 @@ class Battle {
   this.charge=Math.min(SUPER_MAX,this.charge+Math.min(e.hp,d)*FILL_DEALT*(t.fillM||1));e.hp=Math.max(0,e.hp-d);if(old>0&&!e.hp){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}return d;}
  modTick(dt){
   for(const e of this.enemies){if(!e.burns||!e.burns.length)continue;e.bT=(e.bT||0)+dt;for(const b of e.burns){const h=Math.min(dt,b.t);b.a=(b.a||0)+b.d*h;b.t-=h;}   // Inferno Core burns, dealt every half second
-   if(e.bT>=.5||e.burns.every(b=>b.t<=0)){e.bT=0;let a=0;for(const b of e.burns){a+=b.a||0;b.a=0;}if(a>0&&e.hp>0){this.modHurt(e,a);this.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.2,weapon:'siege'});}}
-   e.burns=e.burns.filter(b=>b.t>0);if(!e.burns.length)delete e.burns;}
+   if(e.bT>=.5||e.burns.every(b=>b.t<=0)){e.bT=0;let a=0;for(const b of e.burns){a+=b.a||0;b.a=0;}if(e.pattern==='shield'&&this.time%8<3)a*=.35+mfPierce(this.playerStats)*.65;   // the shield commander's barrier cuts a burn tick like a shot (Penetrator Coil gets most through), as a raised shield does in the Arcade
+   if(a>0&&e.hp>0){this.modHurt(e,a);this.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.2,weapon:'siege'});}}
+   e.burns=e.burns.filter(b=>b.t>0||b.a>0);if(!e.burns.length)delete e.burns;}   // a burn whose time ran out between two ticks still deals what it built up (as in the Arcade sim)
   const t=this.playerStats;if(!t.rm||this.playerHp<=0)return;const mf=this.modState(),p=this.player,lp=this.mfP;
   const v=lp&&dt>0?Math.hypot(p.x-lp.x,p.z-lp.z)/dt:0;this.mfP={x:p.x,z:p.z};
   mfStep(t,mf,dt,{spd:this.dashState?1:v/Math.max(.1,this.combatSpeed*mfSpeed(t,mf))});
@@ -238,7 +239,7 @@ class Battle {
   const Q=this.modQ||[];this.modQ=[];
   for(const m of Q){if(m.k==='ring'){const dmg=m.n*t.rm.heatsink.dmg*this.modDps(),R=engineeringValues(t,this.engineering).range;this.effects.push({kind:'nova',k:'twin1',oc:0,x:p.x,y:p.y-2.2,z:p.z,r:8,life:.45,at:this.time});
     for(const e of this.enemies)if(e.hp>0&&dist(center(e),p)<=R&&lineClear(p,center(e))){this.modHurt(e,dmg);this.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25,weapon:'siege'});}}   // Heat Sink Plating: every Parasite in range and sight
-   else if(m.k==='refl'){const e=this.enemies.find(x=>x.id===m.e);if(e&&e.hp>0){this.modHurt(e,m.d,true);this.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25,weapon:'pulse'});}}}}   // Reflector Field: back at the shooter
+   else if(m.k==='refl'){const e=this.enemies.find(x=>x.id===m.e);if(e&&e.hp>0){this.modHurt(e,m.d*(1-armor(e.stats)),true);this.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25,weapon:'pulse'});}}}}   // Reflector Field: back at the shooter
  // Decoy Beacon (Session 6 consumable, rules.js CQ_ITEMS.decoy): while it lives, every Parasite within its radius drives to the
  // beacon and fires at it instead of the pilot. Position only: it never reads the pilot's gear (the 5D fairness rule).
  lure(e){const d=this.decoy;if(!d||!(d.t>0)||Math.hypot(e.x-d.x,e.z-d.z)>d.r)return false;const a=archetypes[e.kind],dx=d.x-e.x,dz=d.z-e.z,l=Math.hypot(dx,dz)||1;

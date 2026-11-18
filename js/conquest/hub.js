@@ -21,7 +21,7 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
  const acts=el('div','cq-hub-actions',null,panel);
  const deploy=button('ENTER CONQUEST',()=>o.enter(),'cq-enter cq-hub-deploy');acts.append(deploy);
  acts.append(button('FAST TRAVEL',()=>o.enter('travel'),'cq-hub-act'),button('MY BASE',()=>o.enter('base'),'cq-hub-act'));
- const rs=button('RESEARCH',()=>o.enter('research'),'cq-hub-act cq-hub-research');rs.title='The Science Lab: research new tank mods from the parts you find';acts.append(rs);   // Session 6B: live
+ const rs=button('RESEARCH',()=>o.research?o.research():o.enter('research'),'cq-hub-act cq-hub-research');rs.title='The Science Lab: research new tank mods from the parts you find';acts.append(rs);   // Session 6B: live
  el('div','cq-hub-foot',null,panel).append(button('WORLD INTEL',()=>o.map(),'cq-secondary'));
  let cached=null;try{cached=JSON.parse(localStorage.getItem(CACHE)||'null');}catch(e){}status(cached,true);
  // after first paint: live status, then the 3D hero

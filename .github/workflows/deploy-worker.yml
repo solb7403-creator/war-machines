@@ -49,6 +49,7 @@ jobs:
           node dev/tests/wtest/test.mjs
           node dev/tests/wtest/referrals.mjs
           node dev/tests/wtest/pvp.mjs
+          node dev/tests/pvp-agree.mjs
           node dev/tests/arcade-weather.mjs
           node dev/tests/wtest/farm.mjs
           node dev/tests/wtest/web-auth.mjs

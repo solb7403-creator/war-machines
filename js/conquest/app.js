@@ -17,7 +17,7 @@ function closeWorld(){sessionEnd();root.ConquestPlotView?.close();transmissionCl
 function clear(){root.ConquestHub?.close();if(panel)panel.replaceChildren();}
 // Session 5: the Conquest Command hub page (js/conquest/hub.js). The four actions: deploy, fast travel, base, research (Session 6).
 let afterEnter=null;
-function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),enter:mode=>{afterEnter=mode||null;enter();}});pageNav();return;}legacyHub();}
+function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),research:labOnly,enter:mode=>{afterEnter=mode||null;enter();}});pageNav();return;}legacyHub();}
 // Conquest as its own page (owner, Nov 8): the hub carries the app's bottom bar with CONQUEST lit; any other tab leaves
 // Conquest straight to that page. The world itself (ENTER CONQUEST) stays full screen.
 function pageNav(){if(typeof tabBarHtml!=='function'||!panel)return;const nav=el('nav','tabbar cq-pagenav',null,panel);nav.setAttribute('aria-label','Main');nav.innerHTML=tabBarHtml('conquest');panel.classList.add('cq-with-nav');
@@ -423,8 +423,25 @@ function lootScreen(){if(!view||panel.querySelector('.cq-dialog'))return;view.re
  d.append(button('PERMANENT COLLECTION',()=>{d.remove();collection();}),button('CLOSE',()=>d.remove()));}
 // Session 6B: the Science Lab screen (js/conquest/lab.js draws it; the Worker runs every job) and the reveal card when one finishes
 function researchScreen(){if(!view||panel.querySelector('.cq-dialog'))return;view.reset();const d=dialog(),s=view.authority?.state,Lb=root.ConquestLab;if(!Lb)return;
- Lb.screen(d,s,{el,button,store:labStore,act:async id=>{const ok=await view.requestAction('research-start',{mod:id});if(ok){if(typeof fx==='function')fx('rstart');d.remove();researchScreen();}else say(String(view.authority?.error||'UNAVAILABLE').replace(/^conquest: /,'').toUpperCase());return ok;}});
+ Lb.screen(d,s,{el,button,store:labStore,done:()=>{d.remove();researchScreen();},act:async id=>{const ok=await view.requestAction('research-start',{mod:id});if(ok){if(typeof fx==='function')fx('rstart');d.remove();researchScreen();}else say(String(view.authority?.error||'UNAVAILABLE').replace(/^conquest: /,'').toUpperCase());return ok;}});
  d.prepend(button('CLOSE',()=>d.remove(),'cq-lab-close-top'));d.append(button('CLOSE',()=>d.remove()));}   // a long screen: CLOSE at the top too (it stays in view while scrolling)
+// Session 6B finish (review, low item): the hub's RESEARCH opens the Science Lab over the hub with the session state alone: no 3D
+// engine, no world, no terrain to stream. Its actions go to the Worker as the world's session sends them (seq + 1); the screen fetches
+// the record again when a job's timer runs out, and shows the reveal card for a finished mod (FIT ON MY TANK, SCIENCE LAB, LATER)
+const cqCall=async(path,body)=>{const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),10000);try{const r=await apiFetch(path,body,abort.signal),j=await r.json();if(!r.ok){if(typeof IN_WEB!=='undefined'&&IN_WEB&&r.status===401)window.dispatchEvent(new Event('lunar-session-expired'));throw Object.assign(Error(j.error||'Conquest connection unavailable'),{status:r.status});}return j;}finally{clearTimeout(timer);}};
+async function labOnly(){const Lb=root.ConquestLab;if(!Lb||!panel||panel.querySelector('.cq-dialog'))return;
+ const d=dialog();d.classList.add('cq-lab-hub');el('p','cq-load','Opening the Science Lab…',d);let s=null,busy=false;
+ const load=async()=>{try{s=(await cqCall('/api/conquest/session',{})).state;return !!s;}catch(e){return false;}};
+ const act=async(action,extra)=>{if(busy)return false;busy=true;try{const r=await cqCall('/api/conquest/action',{seq:s.seq+1,action,...extra});s=r.state;return true;}catch(e){const m=d.querySelector('.cq-lab-msg');if(m)m.textContent=String(e.message||'UNAVAILABLE').replace(/^conquest: /,'').toUpperCase();return false;}finally{busy=false;}};
+ const draw=()=>{if(!d.isConnected)return;d.textContent='';
+  Lb.screen(d,s,{el,button,store:(row,kind,info)=>root.ConquestLabStore?.row(row,kind,info,{el,button,state:s}),done:async()=>{await load();draw();},act:async id=>{const ok=await act('research-start',{mod:id});if(ok){if(typeof fx==='function')fx('rstart');draw();}return ok;}});
+  d.prepend(button('CLOSE',()=>d.remove(),'cq-lab-close-top'));el('p','cq-lab-msg','',d).setAttribute('aria-live','polite');d.append(button('CLOSE',()=>d.remove()));
+  const id=Lb.toReveal(s);if(id)revealOver(id);};
+ const revealOver=id=>{const v=dialog(),ctx={el,button};v.classList.add('cq-lab-hub-reveal');Lb.reveal(v,id,ctx);if(typeof fx==='function')fx('research');const seen=()=>act('research-seen',{mod:id}),R0=rmodOf(id);
+  if(ctx.fitOk&&typeof baySave==='function'&&typeof gBayId==='function')v.append(button('FIT ON MY TANK',async e=>{e.currentTarget.disabled=true;await seen();try{baySave(gBayId(),p=>{p.mods={...fittingSelection(p.mods),[R0.slot]:id};},R0.F.n+' fitted');}catch(_){}v.remove();draw();},'cq-lab-fit'));
+  v.append(button('SCIENCE LAB',async()=>{await seen();v.remove();draw();}),button('LATER',async()=>{await seen();v.remove();d.remove();}));};
+ if(!await load()){if(!d.isConnected)return;d.textContent='';el('p','cq-lab-why','The Science Lab needs a connection to the game server. Try again in a moment.',d);d.append(button('CLOSE',()=>d.remove()));return;}
+ draw();}
 function labStore(row,kind,info){root.ConquestLabStore?.row(row,kind,info,{el,button,state:view?.authority?.state});}   // the store entries (checkout off)
 // a finished job's reveal card: once per mod (the Worker keeps 'seen'), never over a fight or another screen
 function revealStep(state){const Lb=root.ConquestLab;if(!Lb||!state||!view||view.battle||panel.querySelector('.cq-dialog,.cq-plot,.cq-map,.cq-radio'))return;const id=Lb.toReveal(state);if(!id||view.revealing===id)return;view.revealing=id;

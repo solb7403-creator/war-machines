@@ -30,7 +30,7 @@ function nodeOf(s,id,now=Date.now()){const r=rsOf(s),L=labOf(s),prem=!!r.acct?.p
 const toReveal=s=>{const r=rsOf(s);return RTREE_ALL.find(id=>r.done?.[id]&&!r.seen?.[id])||null;};
 function partChip(el,parent,k,P){const c=el('span','cq-lab-part',null,parent);c.style.setProperty('--tc',RTREE.tracks[Object.keys(RTREE.tracks).find(t=>RTREE.tracks[t].part===k)].c);el('b','',P.total+'',c);el('small','',CQ_PARTS[k].n.toUpperCase()+(P.total===1?'':'S')+(P.bonus?' · '+P.bonus+' BONUS':''),c);return c;}
 // the whole screen (d: a container; ctx: {el, button, act(mod) -> Promise<boolean>, close, store(row, kind, info)})
-function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(s),prem=!!r.acct?.prem,slots=rsSlots(L.lv,prem),parts=partsOf(s);
+function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(s),prem=!!r.acct?.prem,slots=rsSlots(L.lv,prem),parts=partsOf(s),live=[];
  d.classList.add('cq-lab');el('p','cq-kicker','SCIENCE LAB · RESEARCH · TANK MODS',d);el('h2','',L.any?'SCIENCE LAB '+ROMAN[L.lv]:'SCIENCE LAB',d);
  if(!s?.plot)el('p','cq-lab-why','Claim your town, then build a Science Lab (Command Center 3). Research turns the parts you find into new mods for every mode.',d);
  else if(!L.any)el('p','cq-lab-why','Build a Science Lab in your town (Command Center 3) to start researching. Research turns the parts you find into new mods for every mode.',d);
@@ -40,7 +40,8 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
  const pr=el('div','cq-lab-parts',null,d);for(const k of CQ_PART_ORDER)partChip(el,pr,k,parts[k]);
  // running jobs, with their timers
  for(const j of r.jobs||[]){const F=rmodOf(j.mod).F,left=jobLeft(j,L,now),box=el('div','cq-lab-job',null,d);box.style.setProperty('--tc',RTREE.tracks[F.rs].c);
-  el('b','',F.n.toUpperCase()+' · '+(L.ruined?'PAUSED':fmtT(left)+' left'),box);const bar=el('progress','',null,box);bar.max=1;bar.value=Math.max(0,Math.min(1,1-left/Math.max(1,j.ms)));bar.setAttribute('aria-label',F.n+' research progress');
+  const tb=el('b','',F.n.toUpperCase()+' · '+(L.ruined?'PAUSED':fmtT(left)+' left'),box);const bar=el('progress','',null,box);bar.max=1;bar.value=Math.max(0,Math.min(1,1-left/Math.max(1,j.ms)));bar.setAttribute('aria-label',F.n+' research progress');
+  if(!L.ruined)live.push({t:tb,pre:F.n.toUpperCase()+' · ',end:now+left,bar,ms:j.ms});
   if(ctx.store)ctx.store(box,'rsfin',{job:j,left});}
  // the tree: one fold per track, then the locked fifth track
  for(const t of RTREE.order){const T=RTREE.tracks[t],open=L.lv>=T.lab,f=el('details','cq-map-fold cq-lab-track',null,d),sm=el('summary','',T.n.toUpperCase()+' · '+(open?T.d:'opens at Science Lab '+ROMAN[T.lab]),f);sm.dataset.k='lab-'+t;f.style.setProperty('--tc',T.c);
@@ -50,14 +51,21 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
    el('h3','',(F.leg?'★ ':F.set?'◆ ':'')+F.n.toUpperCase(),row);el('small','cq-lab-meta',SLOT_N[R0.slot]+' MOD · '+F.role.toUpperCase()+(F.set?' · SET MOD':'')+(F.leg?' · LEGENDARY':''),row);
    el('p','cq-lab-what',F.d,row);el('small','cq-lab-cost','Trade-off: '+tradeOff(F),row);
    if(n.st==='done')el('b','cq-lab-tag','✓ RESEARCHED · in your garage',row);
-   else if(n.st==='running')el('b','cq-lab-tag','RESEARCHING · '+(L.ruined?'paused':fmtT(n.left)+' left'),row);
+   else if(n.st==='running'){const tg=el('b','cq-lab-tag','RESEARCHING · '+(L.ruined?'paused':fmtT(n.left)+' left'),row);if(!L.ruined)live.push({t:tg,pre:'RESEARCHING · ',end:now+n.left});}
    else if(n.st==='locked')el('small','cq-lab-lock','🔒 '+String(n.why).replace(/^conquest: /,''),row);
    else if(n.st==='legendary'){el('small','cq-lab-lock','A step stronger than '+rmodOf(RTREE.mods[t][3]).F.n+'. Bought, never researched.',row);if(ctx.store)ctx.store(row,'rsleg',{id});}
    else{const q=n.q,b=button((n.st==='ready'?'RESEARCH':n.st==='busy'?'SLOTS BUSY':'NEED '+q.n)+' · '+q.n+' '+CQ_PARTS[q.part].n.toUpperCase()+(q.n>1?'S':'')+' · '+fmtT(q.ms),async()=>{b.disabled=true;const ok=await ctx.act(id);if(!ok)b.disabled=false;},'cq-lab-go');
     b.disabled=n.st!=='ready';row.append(b);if(n.st==='short')el('small','cq-lab-lock','You have '+n.have+'. Parts drop from heavy Parasites, raid commanders and Meteor Strikes.',row);}}}
  {const Lk=RTREE.locked,f=el('details','cq-map-fold cq-lab-track cq-lab-locked',null,d),sm=el('summary','','🔒 '+Lk.n.toUpperCase()+' · '+Lk.d,f);sm.dataset.k='lab-role';el('small','',Lk.n+' open with Science Lab level '+ROMAN[Lk.lab]+'.',f);}
  if(ctx.store)ctx.store(d,'rspack',{});
+ tickTimers(d,live,ctx.done);
  return d;}
+// the running jobs' timers count down while the screen is open (Session 6B review: they stood still); when one reaches zero the
+// caller's done() fetches the finished job (the Worker finishes it on its own clock). Stops when the screen leaves the page
+function tickTimers(d,live,done){if(!live.length||typeof setInterval!=='function'||d.isConnected===undefined)return;let fired=false;
+ const iv=setInterval(()=>{if(!d.isConnected){clearInterval(iv);return;}const t=Date.now();let zero=false;
+  for(const x of live){const left=Math.max(0,x.end-t);x.t.textContent=x.pre+(left>0?fmtT(left)+' left':'finishing…');if(x.bar)x.bar.value=Math.max(0,Math.min(1,1-left/Math.max(1,x.ms)));if(left<=0)zero=true;}
+  if(zero&&!fired&&typeof done==='function'){fired=true;clearInterval(iv);setTimeout(()=>{if(d.isConnected)done();},1200);}},1000);}
 // a compact line for the hub and the HOME tab: what is running, what can start
 function line(s,now=Date.now()){const r=rsOf(s),L=labOf(s);if(!L.any)return null;const j=(r.jobs||[])[0];
  if(j){const F=rmodOf(j.mod).F;return 'RESEARCH · '+F.n.toUpperCase()+' · '+(L.ruined?'PAUSED (lab ruined)':fmtT(jobLeft(j,L,now))+' left')+((r.jobs||[]).length>1?' · +'+((r.jobs||[]).length-1):'');}

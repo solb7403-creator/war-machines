@@ -109,8 +109,13 @@ export function checkProof(pf, c) {
     return 0; };
   // movement: no tank goes faster than the game allows (a dash, a respawn or a new round excused)
   // research mods (Session 6B): Overdrive's dash charges back to back (c.dashN), and Traction Servo's boost (c.modSpd), allowed only
-  // in the samples right after a dash: the dash itself plus the boost's 2 s (FITS.mobility.traction.x.t) and one sample of slack
-  const dash = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15 * Math.max(1, Math.min(3, c.dashN || 1)), msp = Math.max(1, Math.min(2, c.modSpd || 1));
+  // in the samples right after a dash: the dash itself plus the boost's 2 s (FITS.mobility.traction.x.t) and one sample of slack.
+  // Dashes are CHARGES (Session 6B review, gameplay 4): the phone writes the dash flag, so the record may claim a dash only when the
+  // dash cooldown has given one back (c.dashCdM: the server loadout's cooldown multiplier, 15% slack), up to c.dashN at once; one run
+  // of flagged samples is one burst and may spend every charge left, and only a dash backed by a charge opens Traction's window
+  const dash1 = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15, dashN = Math.max(1, Math.min(3, c.dashN || 1)), dash = dash1 * dashN, msp = Math.max(1, Math.min(2, c.modSpd || 1));
+  const dashCd = (L.DASH_CD || 4) * Math.max(0.3, Math.min(2, Number(c.dashCdM) || 1)), refill = PROOF.DT / dashCd * 1.15;
+  let tok = dashN, burst = 0, burstN = 0, badEdge = 0;
   const tracWin = Math.ceil((L.DASH_T + 2) / PROOF.DT) + 1;
   const vBase = L.STAT.speed * Math.max(0.5, Math.min(2, c.spdM || 1)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT, vMe = vBase + PROOF.QUANT;
   let lastDash = -1e9;
@@ -119,14 +124,23 @@ export function checkProof(pf, c) {
   for (let s = 1; s < k; s++) {
     const fl = FL(s), round = fl & 64;
     touches += b[P(s) + 5];
+    tok = round || (HP(s - 1, 0) === 0 && HP(s, 0) > 0) ? dashN : Math.min(dashN, tok + refill);   // a new round or a respawn: every charge back
     for (let i = 0; i < n; i++) {
       if (HP(s - 1, i) === 0 || round) continue;   // respawned, or a new round
       const d = Math.hypot(X(s, i) - X(s - 1, i), Y(s, i) - Y(s - 1, i));
       if (i === 0) {
-        if (fl & 2) lastDash = s;
+        const edge = (fl & 2) && !(FL(s - 1) & 2);
+        if (edge) { if (tok >= 1 - 0.05) { tok = Math.max(0, tok - 1); burst = dash1; burstN = 1; lastDash = s; } else { burst = 0; burstN = dashN; badEdge++; } }   // a dash with no charge back yet: no allowance, no Traction window
+        else if (!(fl & 2) && !(FL(s - 1) & 2)) { burst = 0; burstN = 0; }
         const boost = msp > 1 && s - lastDash <= tracWin ? msp : 1;
         const speedLimit = (variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT : vBase) * boost + PROOF.QUANT;
-        const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0) + shoveAt(s, i);   // both allowances: 6B's dash charges and Traction boost, 5E-2e's shove at a train or tornado strike
+        const base = speedLimit + shoveAt(s, i);   // 5E-2e's shove at a train or tornado strike
+        let lim0 = base;
+        if ((fl & 2) || (FL(s - 1) & 2)) {   // in a burst: the excess over the pace is paid from the burst, which may draw the charges left
+          let ex = Math.max(0, d - base);
+          while (ex > burst && burstN < dashN && tok >= 1 - 0.05) { tok = Math.max(0, tok - 1); burst += dash1; burstN++; lastDash = s; }
+          const use = Math.min(ex, burst); burst -= use; lim0 = base + use;
+        }
         if (d > lim0) badMe++;
         if (d > 0.4 && !(fl & 2)) { moving++; if (Math.hypot(IX(s), IY(s)) < 0.05 && !(fl & 1)) noIn++; }
       } else { stepsOther++; if (d > vAny + dash + shoveAt(s, i)) badOther++; }
@@ -278,5 +292,5 @@ export function checkProof(pf, c) {
     const q = mg < 0.1 ? 0 : 1 + (((Math.round((Math.atan2(iy, ix) / (Math.PI * 2)) * 16) % 16) + 16) % 16) * 3 + (mg > 0.9 ? 2 : mg > 0.5 ? 1 : 0);
     hsh = Math.imul(hsh ^ q, 16777619) >>> 0;
   }
-  return { ok: true, fix, sig: { simT, moving, ni: moving >= 12 ? noIn / moving : 0, touches, ih: k >= PROOF.IH_N && withIn >= PROOF.IH_N / 2 ? hsh.toString(16) : null, ratio: lost > 0 ? total / lost : 0, reachBad: total ? bad / total : 0 } };
+  return { ok: true, fix, sig: { simT, moving, ni: moving >= 12 ? noIn / moving : 0, touches, ih: k >= PROOF.IH_N && withIn >= PROOF.IH_N / 2 ? hsh.toString(16) : null, ratio: lost > 0 ? total / lost : 0, reachBad: total ? bad / total : 0, dashBad: badEdge } };   // dashBad: dash flags with no charge back (they bought nothing)
 }

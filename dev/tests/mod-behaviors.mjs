@@ -20,6 +20,13 @@ const slotOf=id=>R.rmodOf(id).slot,one=id=>({[slotOf(id)]:id});
 {const T=R.tankOf(KIT(one('inferno')),1),mf=R.mfNew(T);let burns=0,first=null;for(let i=0;i<60;i++){R.mfStep(T,mf,0.2,{});const o=R.mfShot(T,mf,0.2);if(o&&o.burn){burns++;if(first===null)first=i;}}
  ok(first===13&&burns>0,'Inferno Core: ignites after 2.5 s of fire (shot '+first+') and its hits carry burns ('+burns+' of 60 shots)');
  let L=[];for(let i=0;i<5;i++)L=R.mfBurn(L,7,T.rm.inferno,100);ok(L.length===2&&L.every(b=>near(b.d,0.32*100/2,1e-9)),'two burns from one tank at once (the oldest is replaced), each 0.32 s of damage over 2 s');}
+ // Session 6B review (gameplay 3): a replaced burn's built-up damage moves into the new burn, so a fast weapon loses none of it.
+ // The tick loop as both engines run it (accrue every step, deal every half second, keep a burn while it has time OR damage left)
+ {const T=R.tankOf(KIT(one('inferno')),1);let L2=R.mfBurn(R.mfBurn([],7,T.rm.inferno,100),7,T.rm.inferno,100);L2[0].a=5;L2[1].a=3;L2=R.mfBurn(L2,7,T.rm.inferno,100);ok(L2.length===2&&L2[1].a===5,'a replaced burn hands its built-up damage (5) to the burn that replaces it');}
+ for(const [id,iv] of [['inferno',0.09],['inferno',0.2],['sunfire',0.09]]){const I=R.tankOf(KIT(one(id)),1).rm.inferno;let L3=[],acc=0,dealt=0,bT=0,next=0;
+  for(let t=0;t<12;t+=1/60){if(t>=next&&t<8){L3=R.mfBurn(L3,7,I,100);next+=iv;}bT+=1/60;for(const b of L3){const h=Math.min(1/60,b.t);b.a=(b.a||0)+b.d*h;acc+=b.d*h;b.t-=h;}
+   if(bT>=0.5||L3.every(b=>b.t<=0)){bT=0;for(const b of L3){dealt+=b.a;b.a=0;}}L3=L3.filter(b=>b.t>0||b.a>0);}
+  ok(near(dealt,acc,1e-6)&&acc>0,id+' at a '+iv+' s fire interval: every bit of burn damage that built up is dealt ('+dealt.toFixed(2)+' of '+acc.toFixed(2)+')');}
 {const T=R.tankOf(KIT(one('rail')),1),mf=R.mfNew(T),k=[];for(let i=1;i<=18;i++){R.mfStep(T,mf,0.2,{});const o=R.mfShot(T,mf,0.2);if(o&&o.rail)k.push(i);}ok(k.join()==='6,12,18','Rail Driver: every 6th shot is a rail slug');}
 {const T=R.tankOf(KIT(one('marksman')),1),mf=R.mfNew(T),seq=[[1,1],[1,1],[1,1],[1,1],[1,0],[1,1],[1,1],[2,1],[2,1],[2,1]],c=seq.map(([id,d])=>R.mfHit(T,mf,id,!!d)?1:0);
  ok(c.join('')==='0010000001','Marksman Coil: the 3rd direct hit in a row on one target is a sure critical; a graze or a new target restarts it');R.mfHit(T,mf,3,true);R.mfHit(T,mf,3,true);R.mfMiss(T,mf);ok(!R.mfHit(T,mf,3,true),'a miss restarts it too');}
@@ -63,7 +70,7 @@ const first=(log,k)=>log.find(e=>e.k===k);
 // live matches: the room's roster carries each tank's research mods (the phone predicts its own Traction and Overdrive with the
 // same rules) and the snapshot carries the server's mod state for the HUD (field 19)
 {const {sim,A}=arcade({mount:'vent',mobility:'overdrive'},{secs:4});const ro=sim.roster();ok(ro[0].rm&&ro[0].rm.vent&&ro[0].rm.overdrive&&!ro[1].rm,'live roster: the research mods of the tank that fits them, nothing for the other');
- const sn=sim.snap(),m=sn.u[0][18];ok(Array.isArray(m)&&m.length===6&&m[4]===2&&sn.u[1][18]===0,'live snapshot: the 19th field carries the mod state (dash charges '+(m&&m[4])+'), 0 without mods');}
+ const sn=sim.snap(),m=sn.u[0][18];ok(Array.isArray(m)&&m.length===7&&m[4]===2&&m[6]===0&&sn.u[1][18]===0,'live snapshot: the 19th field carries the mod state (dash charges '+(m&&m[4])+', the refill timer last: the phone takes both from the room, Session 6B review), 0 without mods');}
 {const {sim,A}=arcade(one('traction'),{secs:0.1});A.claim=null;sim.netDash(A,0,-1);for(let i=0;i<13;i++)sim.step(1/60);const v0=sim.R.STAT.speed;
  const x0=A.x,y0=A.y;sim.netClaim(A,A.x,A.y-3,A.tp||0);for(let i=0;i<30;i++)sim.step(1/60);const d=Math.hypot(A.x-x0,A.y-y0);ok(d>v0*0.5*1.3,'live: the server lets a Traction tank drive at its boosted speed ('+(d/0.5).toFixed(2)+' u/s vs '+v0.toFixed(2)+')');}
 // ---- C. the same scenarios in Conquest (the Worker's engine) ----
