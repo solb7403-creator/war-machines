@@ -51,6 +51,13 @@ class Session{
  try{while(this.busy)await sleep(20);while(this.sent<cut&&this.connected){const before=this.sent;await this.flush(cut-this.sent);if(this.sent===before)await sleep(25);}if(!this.connected)throw Error(this.error||'connection lost');this.busy=true;
  const body={seq:this.state.seq+1,action,...parameters};let r;try{r=await this.transport('/api/conquest/action',body);}catch(first){if(rejected(first))throw first;if(retryWait(first))await sleep(retryWait(first));r=await this.transport('/api/conquest/action',body);}this.apply(r.state);this.status='SECURED';return true;
  }catch(e){this.error=String(e.message);this.status='ACTION UNAVAILABLE';this.busy=false;if(!rejected(e))await this.connect();return false;}finally{this.busy=false;this.actionBusy=false;}}
+ // A session sync that loses no input (Session 6B finish, CI transmission: the Refuge refit asked for its sync through connect(),
+ // which drops the unsent commands as a lost link must, so a SHIELD or DASH pressed in that moment never reached the Worker): the
+ // commands recorded before it go first (as before an action), the ones made while it is in flight stay queued and are replayed
+ refresh(){if(this.disposed||!this.connected||this.actionBusy)return Promise.resolve(false);this.actionBusy=true;const cut=this.pushed;
+  return (async()=>{try{while(this.busy)await sleep(20);while(this.sent<cut&&this.connected){const before=this.sent;await this.flush(cut-this.sent);if(this.sent===before)await sleep(25);}if(!this.connected)return false;this.busy=true;
+   const r=await this.transport('/api/conquest/session',{});if(!this.disposed){this.apply(r.state);this.status='SECURED';}return true;
+  }catch(e){this.error=String(e.message);return false;}finally{this.busy=false;this.actionBusy=false;}})();}
  dispose(){this.disposed=true;this.queue=[];this.connected=false;}
 }
 root.ConquestSession=Session;

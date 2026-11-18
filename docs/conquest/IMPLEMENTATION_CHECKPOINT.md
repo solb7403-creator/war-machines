@@ -4842,6 +4842,25 @@ Local runs: the full list from the finish brief, one command each, on `eceff5a`.
 - `python3 dev/tests/web-labstore.py`: PASS at 1366x768 and 1920x1080 (the website build)
 - Tests changed only where a decision in the brief changed their rule, each recorded in Checkpoint 41. New checks were added; nothing was skipped, deleted or loosened.
 
+### CI on the release PR (#142): two real failures my local list missed, both fixed
+- `conquest` job: `dev/tests/conquest-discovery.mjs` threw "tankPower is not defined". Its map harness copies a slice of
+  app.js, and the 6B zone-bands fold in `map()` reads the pilot's POWER through `tankPower`, defined outside that slice. The
+  harness now loads the production helper (no loadout there: it returns null). Then every `node` command named in the
+  workflows (conquest-check, deploy-worker, equipment-balance, website-check, lab-ui-check: 146) was run locally: all PASS.
+- `transmission` (chromium + webkit) job: `conquest-session-032.py` timed out waiting for the Worker's shield cooldown after a
+  SHIELD tap, at the 4th size in both engines (it passed locally). Root cause, a real 6B bug: the Refuge refit asked for its
+  session sync through `session.connect()`, which drops every unsent command (right for a lost link). A pilot standing at the
+  spawn or the Refuge with a refit pending (garage POWER differs from the field tank) got up to three such syncs, 5 s apart, and a
+  SHIELD, DASH or FIRE press queued at that moment never reached the Worker (the test's fixture tank is STOCK_L, POWER 68, while
+  its fresh garage is 59, so the refit was pending during its control checks). Fix: `Session.refresh()` (js/conquest/session.js),
+  built like `action()`: the commands recorded before it go first, the ones made while it is in flight stay queued and are
+  replayed on the answer. `refitStep` uses it and never asks while a request is in flight. `dev/tests/conquest-session.mjs`
+  checks it against the real Worker reducer: a SHIELD queued before the sync reaches the Worker first, a DASH pressed during
+  it reaches the Worker next, `connect()` would drop that DASH, and the refit asks through `refresh()`. It fails on the old code
+  (`s2.refresh is not a function`). Build 20261118095128.
+- Recorded, not changed (older than this branch, on main since Session 5E-1): the town view's builder-job sync
+  (`plotview.js`) also calls `connect()` and could drop a press made in that moment; it should use `refresh()` too.
+
 ### Finish-session reviews (two fresh read-only reviewers on `ecc726e`, given the brief, the branch and this checkpoint only)
 - Reviewer 1 (PvP sync, fairness, security): every rule PASS (incl. the owner's Nov 16/17 goal rules) except 1 BLOCKER: under network
   jitter the room refused some chained Overdrive / Hyperdrive dashes (the hold was one tick: 9 of 200 refused at 0-100 ms). Fixed:

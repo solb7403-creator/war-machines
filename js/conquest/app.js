@@ -462,9 +462,9 @@ const fitMemo={at:0,p:null};function fitPending(state){const now=performance.now
 // the terminal, or 20 m of the spawn), so ask for one sync when the tank stands there with a fitted change pending (three tries per
 // change, five seconds apart: the server decides, nothing here refits)
 const refitAsk={key:'',n:0,at:0};
-function refitStep(state){const g=fitPending(state);if(g===null||!view?.authority?.connected||view.battle)return;const T0=root.ConquestCombat?.refuge,p=view.p,sp=W.spawn;
+function refitStep(state){const g=fitPending(state),A=view?.authority;if(g===null||!A?.connected||A.busy||A.actionBusy||view.battle)return;const T0=root.ConquestCombat?.refuge,p=view.p,sp=W.spawn;
  const safe=!!T0&&Math.hypot(p.x-T0.x,p.z-T0.z)<=11||!!sp&&Math.hypot(p.x-sp.x,p.z-sp.z)<19;if(!safe)return;
- const k=String(g),now=Date.now();if(refitAsk.key!==k){refitAsk.key=k;refitAsk.n=0;}if(refitAsk.n>=3||now-refitAsk.at<5000)return;refitAsk.n++;refitAsk.at=now;view.authority.connect?.();}
+ const k=String(g),now=Date.now();if(refitAsk.key!==k){refitAsk.key=k;refitAsk.n=0;}if(refitAsk.n>=3||now-refitAsk.at<5000)return;refitAsk.n++;refitAsk.at=now;A.refresh?.();}   // refresh, never connect: connect drops the unsent commands (a SHIELD or DASH pressed then was lost)
 function tankPower(state){const L=state?.loadout||(typeof myLoadout==='function'?myLoadout():null);if(!L||typeof powerOf!=='function')return null;if(powerMemo.L===L)return powerMemo.p;let p=null;try{p=powerOf(L);}catch(_){}powerMemo={L,p};return p;}
 function modStrip(){const box=el('div','cq-mods',null,panel);box.id='cq-mods';box.hidden=true;box.setAttribute('aria-hidden','true');el('div','cq-modpop','',panel);}
 const modPopAt={};

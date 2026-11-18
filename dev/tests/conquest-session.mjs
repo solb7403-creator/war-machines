@@ -7,5 +7,18 @@ state.hp=123;state.battle.playerHp=123;assert(await session.connect());assert.eq
 session.queue=[];session.sample(.01,{x:0,z:0,super:true,tapFire:true});session.sample(.04,{x:0,z:0});assert.equal(session.queue.length,1);assert(session.queue[0].super&&session.queue[0].tapFire,'short button edge survives50ms sampling');clientMs+=50;await session.flush();
 // A delayed response does not give the client a fresh full-second server budget.
 state.creditMs=0;await session.connect();session.sample(1,{x:0,z:0});const queued=session.queue.length;clientMs+=200;await session.flush();assert.equal(calls.at(-1)[1].commands.length,4,'send only elapsed acknowledged command budget');assert.equal(session.queue.length,queued-4,'retain later prediction for the next legal batch');
+// Session 6B finish (CI transmission): the Refuge refit's session sync loses no input. connect() drops the unsent commands (a lost
+// link), so a SHIELD pressed as the refit asked for its sync never reached the Worker; refresh() sends the commands recorded before
+// it first and keeps the ones made while it is in flight, which go next
+{let hold=null,release=null;const slow=async(path,b)=>{if(path.endsWith('/session')&&hold){const h=hold;hold=null;await h;}return transport(path,b);};
+ state=createState(R.STOCK_L,now);const v2={p:state.position,syncLoadout(){},flushHealth(){},progress:{complete(){}}},s2=new context.ConquestSession(v2,slow);assert(await s2.connect());
+ clientMs+=1000;s2.sample(.05,{x:0,z:0,shield:true});assert(s2.queue.some(c=>c.shield),'the SHIELD press is queued');
+ hold=new Promise(r=>release=r);const pending=s2.refresh();for(let i=0;i<50&&hold;i++)await new Promise(r=>setTimeout(r,1));
+ assert(state.battle.shieldCd>20,'the SHIELD recorded before the refit sync reached the Worker first: '+state.battle.shieldCd);
+ s2.enqueue(context.ConquestControl.command({x:0,z:0,aimYaw:0,dash:true}));release();assert.equal(await pending,true,'refresh answered');   // the DASH goes in through the view's own path (view.js: one fixed-step command a step)
+ assert(s2.queue.some(c=>c.dash),'a DASH pressed while the sync was in flight stays queued');clientMs+=1000;await s2.flush();assert(state.battle.dashCd>0,'and reaches the Worker next');
+ // the old call: connect() empties the queue, the same press is lost
+ s2.enqueue(context.ConquestControl.command({x:0,z:0,aimYaw:0,dash:true}));assert(s2.queue.some(c=>c.dash));await s2.connect();assert(!s2.queue.some(c=>c.dash),'connect() drops it (why the refit never uses connect)');
+ assert(/A\.refresh\?\.\(\)/.test(fs.readFileSync('js/conquest/app.js','utf8').match(/function refitStep[^\n]*\n[^\n]*\n[^\n]*/)[0]),'the Refuge refit asks through refresh()');s2.dispose();}
 session.dispose();const count=calls.length;session.sample(1,{x:1,z:0});await session.flush();assert.equal(calls.length,count,'disposed session stops');
-console.log('PASS authenticated client reconciliation, identical retry after commit, canonical health/location, short touch edges and cleanup');
+console.log('PASS authenticated client reconciliation, identical retry after commit, canonical health/location, short touch edges, a refit sync that loses no input, and cleanup');
