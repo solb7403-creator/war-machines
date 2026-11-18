@@ -4858,6 +4858,14 @@ Local runs: the full list from the finish brief, one command each, on `eceff5a`.
   checks it against the real Worker reducer: a SHIELD queued before the sync reaches the Worker first, a DASH pressed during
   it reaches the Worker next, `connect()` would drop that DASH, and the refit asks through `refresh()`. It fails on the old code
   (`s2.refresh is not a function`). Build 20261118095128.
+- The next CI run passed 032 and then failed `conquest-session-033.py` (the Supply's UPGRADE HEAT CAPACITY never reached the
+  Worker): the first `refresh()` held `actionBusy` as its lock, and `action()` refuses while it is set, so an upgrade, bank or
+  repair tapped during a refit sync was refused (the test's fixture tank stood near the Refuge with a refit pending). Fix:
+  `refresh()` keeps its own `refreshing` flag, waits for any request or action in flight, and takes `busy` only for its own
+  session request, so an action tapped meanwhile waits for it and goes through. `conquest-session.mjs` adds: the sync never
+  holds `actionBusy`, and an action tapped during it is sent after it; it fails on the first `refresh()` (`the sync never holds
+  actionBusy`). `conquest-hub-browser.py` (same CI job) still expected "RESEARCH · COMING SOON (disabled)": 6B opened the Lab,
+  so it now expects the live RESEARCH button with today's part. Build 20261118100557.
 - Recorded, not changed (older than this branch, on main since Session 5E-1): the town view's builder-job sync
   (`plotview.js`) also calls `connect()` and could drop a press made in that moment; it should use `refresh()` too.
 

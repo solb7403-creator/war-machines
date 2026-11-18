@@ -17,6 +17,11 @@ state.creditMs=0;await session.connect();session.sample(1,{x:0,z:0});const queue
  assert(state.battle.shieldCd>20,'the SHIELD recorded before the refit sync reached the Worker first: '+state.battle.shieldCd);
  s2.enqueue(context.ConquestControl.command({x:0,z:0,aimYaw:0,dash:true}));release();assert.equal(await pending,true,'refresh answered');   // the DASH goes in through the view's own path (view.js: one fixed-step command a step)
  assert(s2.queue.some(c=>c.dash),'a DASH pressed while the sync was in flight stays queued');clientMs+=1000;await s2.flush();assert(state.battle.dashCd>0,'and reaches the Worker next');
+ // an action tapped while the sync is in flight waits for it and is sent (CI conquest-session-033: refresh once held actionBusy,
+ // so the Supply's UPGRADE tapped then was refused)
+ hold=new Promise(r=>release=r);const p2=s2.refresh();for(let i=0;i<50&&hold;i++)await new Promise(r=>setTimeout(r,1));
+ assert(!s2.actionBusy,'the sync never holds actionBusy');const c0=calls.length,act=s2.action('respawn');release();await p2;await act;
+ assert(calls.slice(c0).some(c=>c[0].endsWith('/action')),'an action tapped during the sync is sent after it, never refused');assert(s2.connected||await s2.connect());
  // the old call: connect() empties the queue, the same press is lost
  s2.enqueue(context.ConquestControl.command({x:0,z:0,aimYaw:0,dash:true}));assert(s2.queue.some(c=>c.dash));await s2.connect();assert(!s2.queue.some(c=>c.dash),'connect() drops it (why the refit never uses connect)');
  assert(/A\.refresh\?\.\(\)/.test(fs.readFileSync('js/conquest/app.js','utf8').match(/function refitStep[^\n]*\n[^\n]*\n[^\n]*/)[0]),'the Refuge refit asks through refresh()');s2.dispose();}

@@ -53,11 +53,14 @@ class Session{
  }catch(e){this.error=String(e.message);this.status='ACTION UNAVAILABLE';this.busy=false;if(!rejected(e))await this.connect();return false;}finally{this.busy=false;this.actionBusy=false;}}
  // A session sync that loses no input (Session 6B finish, CI transmission: the Refuge refit asked for its sync through connect(),
  // which drops the unsent commands as a lost link must, so a SHIELD or DASH pressed in that moment never reached the Worker): the
- // commands recorded before it go first (as before an action), the ones made while it is in flight stay queued and are replayed
- refresh(){if(this.disposed||!this.connected||this.actionBusy)return Promise.resolve(false);this.actionBusy=true;const cut=this.pushed;
-  return (async()=>{try{while(this.busy)await sleep(20);while(this.sent<cut&&this.connected){const before=this.sent;await this.flush(cut-this.sent);if(this.sent===before)await sleep(25);}if(!this.connected)return false;this.busy=true;
+ // commands recorded before it go first, the ones made while it is in flight stay queued and are replayed on the answer. It never
+ // holds actionBusy (an action tapped meanwhile waits for it instead of being refused) and takes busy only for its own request
+ refresh(){if(this.disposed||!this.connected||this.refreshing)return Promise.resolve(false);this.refreshing=true;const cut=this.pushed;
+  return (async()=>{try{
+   while(this.connected&&!this.disposed){if(this.busy||this.actionBusy){await sleep(20);continue;}if(this.sent<cut){const before=this.sent;await this.flush(cut-this.sent);if(this.sent===before)await sleep(25);continue;}break;}
+   if(!this.connected||this.disposed)return false;this.busy=true;   // in the same turn as the checks above: no flush or action starts in between
    const r=await this.transport('/api/conquest/session',{});if(!this.disposed){this.apply(r.state);this.status='SECURED';}return true;
-  }catch(e){this.error=String(e.message);return false;}finally{this.busy=false;this.actionBusy=false;}})();}
+  }catch(e){this.error=String(e.message);return false;}finally{this.busy=false;this.refreshing=false;}})();}
  dispose(){this.disposed=true;this.queue=[];this.connected=false;}
 }
 root.ConquestSession=Session;
