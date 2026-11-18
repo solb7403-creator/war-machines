@@ -4891,6 +4891,31 @@ fold on phones (the always-visible RESEARCH button now carries "PART 0/1 TODAY",
 a 12 px floor for the Lab's small text (13 px trade-offs); an opaque Lab panel over the hub. Left for a later visual pass (not
 broken, recorded for 6B-V): the desktop two-column Lab and Shop, the Shop's repeated "Not on sale yet", the 8 s POWER delta hold.
 
+### UX critic round 2 (finish session, the last allowed round; a fresh critic on the post-round-1 captures at all five sizes)
+Scores now (phone / desktop; round 1 in brackets): hub 6 / 5.5 (5 / 5-7); Lab 6 / 5 (5 / 4); Lab end 6.5 / 6 (5 / 6); running job
+6.5 / 6 (5.5 / 5); Legendary nodes 6.5 / 6.5 (4); reveal 7 / 5.5 (6.5 / 5); POWER chip 7 / 5 (6.5 / 4); Shop Lab 7 / 6 (7 / 5.5),
+website 6.5; Supply 5.5 / 6; Settings 7.5 / 7. Round-1 fixes verified FIXED except two PARTLY (the sticky row, the 12 px floor).
+Verdict: meets the bar for a logic-half session once its two BROKEN items are fixed. Fixed (commit `dd939f1`):
+- BROKEN 1: the sticky CLOSE row left a ~10 px strip of cut text above it at every size (offset 8 px against the dialog's 18 px
+  padding): now -18 px / +36 px, plus `scroll-padding-top` so a scrolled-to job is never hidden under it.
+- BROKEN 2: on a computer, after any action in the Lab over the hub, Escape no longer closed it (the redraw removed the focused
+  button and focus fell to the page; the journey's CLOSE fallback hid it): `draw()` puts focus back on the dialog.
+  `conquest-session6b.py` now records and checks that Escape closes the Lab after RESEARCH at both desktop sizes (proven to
+  fail on the old code: see the journey note below).
+- SHOULD done: research first on a phone (the explainer and the pass offer moved below the tree; a one-line kicker; a shorter cost
+  line "Thermal Cores: 2 → 4 → 5 in the order you research, 9 for the set mod"); an honest hub count ("1 slot free · 9 mods to
+  choose from", was "9 mods ready to research" although costs rise and slots are 1-2); the instant-finish prices read "20 min: 8 ⭐
+  / 2 h: 31 ⭐ / 8 h: 100 ⭐"; the 12 px floor covers the pass line and the RESEARCHING tag; a ready RESEARCH button is a 50% tint
+  with a glow in its track colour; on a computer the Lab over the hub dims the hub behind it; Supply's CLOSE SUPPLY stays in reach
+  (sticky at the bottom, its order unchanged); ENTER CONQUEST spans the hub's action row on desktop; "(you can earn 1 a day)";
+  numbers keep their units on one line in the Lab ("1.5 s"); Settings says "set for this device" and, without a touch screen,
+  "Game sound and music" instead of the phone's silent switch.
+- Left (recorded for 6B-V; not broken): the Lab as a visual tree with icons and compact nodes (4,079 px tall at 390x844), the reveal
+  as a real moment (scrim, art, an animated POWER tick), the HUD scaled for desktop (the AIRDROP / MY BASE lines without a plate),
+  a charge fill on the VENT pill, Supply's "Thermal Systems" / "Ballistics" names next to the Lab's tracks, the hub's part pill
+  repeating the RESEARCH button on desktop, and the website's "/paysupport to the bot" line (the website support path is the
+  owner's call).
+
 ### Owner correction (Nov 18): every ruling re-checked against the goal rules
 The owner's correction (stored verbatim in `docs/conquest/audit/SESSION_06B_FINISH_PROMPT.md`) adds the goal rules: fun and
 addictive for 500,000+ players, as much revenue as possible, keep free players hooked without heavily prioritizing them over paid
