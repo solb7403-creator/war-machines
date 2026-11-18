@@ -4823,8 +4823,9 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
   F7 two fresh reviewers: both PASS after re-review at `73434ac` (no blocker left; residuals in the open items).
 - DONE also: UX critic round 2 (the last allowed round) and its fixes; the full test list (section "Finish-session tests" below);
   build 20261118091400 stamped.
-- REMAINING: F8 release (`dev/bump.sh`, PR with the body from this checkpoint, CI green, merge, verify `/pvp/health`, the live
-  `version.json` = repo and GitHub Pages; ROADMAP rows; the release record below; a docs-only follow-up PR for the merge facts).
+- RELEASED Nov 18, 2026: PR #142, merge `4f8db83`, build 20261118100557 (section "Release record (Nov 18, 2026)" below; ROADMAP row
+  6B). Next on this track: row 6B-V (the visual half; the critic's LATER list in "UX critic round 2"), then 6C. Open items for the
+  owner: "Open items for the owner (finish session)" below.
 - Local: `pip install playwright==1.63.0` and `npm install --prefix worker` once, then `node worker/build-sim.mjs` and
   `node worker/build-web.mjs` (generated, not committed) before the Worker tests. Graphify did not connect in this container
   (proxy 403): code read directly.
@@ -4842,7 +4843,7 @@ Local runs: the full list from the finish brief, one command each, on `eceff5a`.
 - `python3 dev/tests/web-labstore.py`: PASS at 1366x768 and 1920x1080 (the website build)
 - Tests changed only where a decision in the brief changed their rule, each recorded in Checkpoint 41. New checks were added; nothing was skipped, deleted or loosened.
 
-### CI on the release PR (#142): two real failures my local list missed, both fixed
+### CI on the release PR (#142): four real failures my local list missed, all fixed
 - `conquest` job: `dev/tests/conquest-discovery.mjs` threw "tankPower is not defined". Its map harness copies a slice of
   app.js, and the 6B zone-bands fold in `map()` reads the pilot's POWER through `tankPower`, defined outside that slice. The
   harness now loads the production helper (no loadout there: it returns null). Then every `node` command named in the
@@ -4881,6 +4882,23 @@ Local runs: the full list from the finish brief, one command each, on `eceff5a`.
   output; 40 seed sets pass (seed set 10 reproduced the CI failure before the fix).
 - Recorded, not changed (older than this branch, on main since Session 5E-1): the town view's builder-job sync
   (`plotview.js`) also calls `connect()` and could drop a press made in that moment; it should use `refresh()` too.
+
+### Release record (Nov 18, 2026)
+- PR #142 merged 12:03 UTC as `4f8db83` (merge commit; head `f851f42`), all 11 checks green on the head: owner-rules, conquest,
+  transmission chromium + webkit, signup-browsers chromium / webkit / firefox, website, balance, asset-integrity, verify. Release
+  pre-approved in the owner's prompt; both independent reviews PASS before the merge.
+- The WebKit transmission job needed its one re-run: its "Install browser engine" step (`playwright install --with-deps webkit`)
+  took 36 s at 09:51 UTC but 24, 26 and 19 min on the runners after 10:19, so the job's 35-minute limit cut the tests off twice.
+  The re-run passed at 11:59, 56 s inside the limit. Not this PR's (the diff does not touch the step); the job limit was left at 35.
+- Worker: `Deploy Stars server (Cloudflare)` run 44300338843 SUCCESS (server tests incl. `pvp-agree`, `owner-rules`,
+  `research-economy`; the live-match smoke test in the Workers runtime; deploy; webhook): `/pvp/health` =
+  `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`. Its version check, 1 s after the deploy, still read the previous asset
+  (`20261117180140`; the repo's is `20261118100557`; the Worker serves `version.json` from the static assets packaged in that same
+  deploy). Re-checked by a dispatch of the same workflow on main: run 44303067381 SUCCESS (12:24 UTC), `/pvp/health` `{"ok":true,...}`, live `version.json` = `{"v":"20261118100557"}` = repo.
+- GitHub Pages: `pages build and deployment` run 44300336277 SUCCESS on `4f8db83`. This cloud container cannot reach github.io or
+  workers.dev (network policy, tried again), so the live values come from the deploy job's own checks.
+- No live players: no migration code. Revert plan if broken: revert `4f8db83` on main (both deploys follow main). Not needed.
+- This record and ROADMAP row 6B went to main in a second, docs-only PR from the same branch (restarted from main).
 
 ### Finish-session reviews (two fresh read-only reviewers on `ecc726e`, given the brief, the branch and this checkpoint only)
 - Reviewer 1 (PvP sync, fairness, security): every rule PASS (incl. the owner's Nov 16/17 goal rules) except 1 BLOCKER: under network
