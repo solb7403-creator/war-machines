@@ -4840,6 +4840,39 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
 - Local: `npm install --prefix worker` once, then `node worker/build-sim.mjs` and `node worker/build-web.mjs` (generated, not
   committed) before the Worker tests. Graphify did not connect in this container (proxy 403): code read directly.
 
+### Finish-session reviews (two fresh read-only reviewers on `ecc726e`, given the brief, the branch and this checkpoint only)
+- Reviewer 1 (PvP sync, fairness, security): every rule PASS (incl. the owner's Nov 16/17 goal rules) except 1 BLOCKER: under network
+  jitter the room refused some chained Overdrive / Hyperdrive dashes (the hold was one tick: 9 of 200 refused at 0-100 ms). Fixed:
+  `NET_DASH_Q` 0.12 s (the reviewer measured 0.10-0.15 s refusing none; 0.2 s would break Ram); `pvp-agree.mjs` now runs every mod
+  steady AND with 0-100 ms jitter (432 checks). Its 504 honest AI matches at max dash rate (Light, Traction, Overdrive, Hyperdrive,
+  Inferno, chassis swaps): 0 false rejections. Should-fix done: Traction's boost in the record check is a distance budget each spent
+  charge adds, inside its 2 s window (a window longer than the Light frame's refill kept the boost all match); a made-up 0-hull sample
+  no longer excuses the next step (a comeback needs a mode with respawns and 2.5 s down, one ambiguous reading forgiven): old hole,
+  already on main. `wtest/proof-mods.mjs` 15 checks (the new ones fail on the old code).
+- Reviewer 2 (gameplay, economy, UX): every rule PASS (power bands recomputed: 240 -> 259 -> 276; 5 owner-rules mutations each exit 1;
+  model within 1.3% of the planning check; pacing day 6 first mod, day 99 first set mod, day 343 all Legendary at 60 min) except 1
+  BLOCKER: the re-measured duels were never committed and §6.5 was garbled by the lead's regeneration. Fixed (`mod-power.json` from the
+  final run; §6.5 repaired). Should-fix done: "pack and pass parts arrive with the Lab store" (they give none today), the wiki's Science
+  Lab text, the Shop names the free path, a reset countdown on the hub ("NEXT IN 5H"), stale comments, the payer ceiling in §9.3.
+- Re-review: pending at the time of this note (both reviewers re-check the fixes).
+
+### Open items for the owner (finish session)
+1. PROPOSAL (reviewer 2): with cost 2 and one earned part a day the first mod lands on day 6 (was day 4, the Lab's first day); a
+   one-time 2-part grant at the first Science Lab build would close the gap (an economy change: the owner's call).
+2. PROPOSAL (reviewer 1): the premium Lunar Pass's research perks wait for the Lab store although the pass sells today; a revenue-first
+   reading could turn them on now (a payments/pass decision: the owner's).
+3. Lab store pacing (roadmap row 8 b): a payer can own everything about day 9 for about 4,924 Stars at the proposed prices; the lead's
+   recommendation under the goal rules is to keep the gates as built.
+4. Overdrive, the Drive set mod, still measures about like Stock for both pilot profiles (no profile chains dashes): a human's dash
+   value is unmeasured; a balance pass (or a stronger Drive capstone) belongs to a later session.
+5. Security (for 7.8): live snapshots send every pilot's mod state and own shield fields to every phone (a modified client sees enemy
+   cooldowns and charges; the dash cooldown field already did before this session): send them only to their pilot.
+6. Session 8 (payments): a purchase landing between research-start's account read and its outbox credit could leave a Legendary both
+   bought and researched (the refund path is correct, nobody gains); certify it atomically with the checkout.
+7. UX leftovers for 6B-V: the desktop Lab and Shop in two columns, the Shop's repeated "Not on sale yet", an 8 s POWER delta hold.
+8. Checkpoint 42's open items are unchanged (LIVE finishes animate in the store only, proposals, no physical phone, takedown pace,
+   the team-mode claim residual now on row 7.8, the two mildest map looks on 6B-V).
+
 ### Website keyboard focus (found by web-labstore.py in the finish session; a product bug older than the merge)
 Each Volume step fires `change` -> `store()` -> `uiDirty()`, and the next frame's `renderUI` re-fills the open Settings sheet
 (`ui.js fill`), which restored keyboard focus only to elements with `data-act`: the slider (`#vol-r`, an id only) was destroyed and

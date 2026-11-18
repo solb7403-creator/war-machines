@@ -115,7 +115,8 @@ export function checkProof(pf, c) {
   // of flagged samples is one burst and may spend every charge left, and only a dash backed by a charge opens Traction's window
   const dash1 = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15, dashN = Math.max(1, Math.min(3, c.dashN || 1)), dash = dash1 * dashN, msp = Math.max(1, Math.min(2, c.modSpd || 1));
   const dashCd = (L.DASH_CD || 4) * Math.max(0.3, Math.min(2, Number(c.dashCdM) || 1)), refill = PROOF.DT / dashCd * 1.15;
-  let tok = dashN, burst = 0, burstN = 0, badEdge = 0;
+  let tok = dashN, burst = 0, burstN = 0, badEdge = 0, trac = 0, down0 = 0, badBack = 0;   // trac: Traction's boost distance left (each spent charge adds the boost's 2 s); down0: the pilot's samples at 0 hull
+  const respawns = c.g === 'zone' || c.g === 'crystal' || c.g === 'bounty', tracN = Math.ceil(2 / PROOF.DT);   // modes with respawns (3 s at least: Bounty), FITS traction t 2 s
   const tracWin = Math.ceil((L.DASH_T + 2) / PROOF.DT) + 1;
   const vBase = L.STAT.speed * Math.max(0.5, Math.min(2, c.spdM || 1)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT, vMe = vBase + PROOF.QUANT;
   let lastDash = -1e9;
@@ -124,29 +125,40 @@ export function checkProof(pf, c) {
   for (let s = 1; s < k; s++) {
     const fl = FL(s), round = fl & 64;
     touches += b[P(s) + 5];
-    tok = round || (HP(s - 1, 0) === 0 && HP(s, 0) > 0) ? dashN : Math.min(dashN, tok + refill);   // a new round or a respawn: every charge back
+    // a comeback from 0 hull without a new-round mark is a respawn only in a mode that has them, after its time (reviewer 1: a made-up
+    // 0-hull sample excused the next step, a teleport). One ambiguous reading is forgiven (a hull under 0.5% rounds to 0)
+    const back = HP(s - 1, 0) === 0 && HP(s, 0) > 0 && !round;
+    if (back && (!respawns || down0 < 5)) badBack++;
+    down0 = HP(s, 0) === 0 && !round ? down0 + 1 : 0;
+    tok = round || back ? dashN : Math.min(dashN, tok + refill);   // a new round or a respawn: every charge back
     for (let i = 0; i < n; i++) {
       if (HP(s - 1, i) === 0 || round) continue;   // respawned, or a new round
       const d = Math.hypot(X(s, i) - X(s - 1, i), Y(s, i) - Y(s - 1, i));
       if (i === 0) {
         const edge = (fl & 2) && !(FL(s - 1) & 2);
-        if (edge) { if (tok >= 1 - 0.05) { tok = Math.max(0, tok - 1); burst = dash1; burstN = 1; lastDash = s; } else { burst = 0; burstN = dashN; badEdge++; } }   // a dash with no charge back yet: no allowance, no Traction window
+        const pace = variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT : vBase;
+        if (edge) { if (tok >= 1 - 0.05) { tok = Math.max(0, tok - 1); burst = dash1; burstN = 1; lastDash = s; trac += (msp - 1) * pace * tracN; } else { burst = 0; burstN = dashN; badEdge++; } }   // a dash with no charge back yet: no allowance, no Traction boost
         else if (!(fl & 2) && !(FL(s - 1) & 2)) { burst = 0; burstN = 0; }
-        const boost = msp > 1 && s - lastDash <= tracWin ? msp : 1;
-        const speedLimit = (variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT : vBase) * boost + PROOF.QUANT;
+        // Traction Servo (reviewer 1): its boost is a distance budget each spent charge adds (the boost's 2 s at most), not a time
+        // window: a window longer than the dash refill let a phone keep the boost all match
+        if (s - lastDash > tracWin) trac = 0;   // the boost runs out with its 2 s (and one sample of slack), whatever is left of the budget
+        const tb = msp > 1 ? Math.min(trac, (msp - 1) * pace) : 0;
+        const speedLimit = pace + tb + PROOF.QUANT;
         const base = speedLimit + shoveAt(s, i);   // 5E-2e's shove at a train or tornado strike
         let lim0 = base;
         if ((fl & 2) || (FL(s - 1) & 2)) {   // in a burst: the excess over the pace is paid from the burst, which may draw the charges left
           let ex = Math.max(0, d - base);
-          while (ex > burst && burstN < dashN && tok >= 1 - 0.05) { tok = Math.max(0, tok - 1); burst += dash1; burstN++; lastDash = s; }
+          while (ex > burst && burstN < dashN && tok >= 1 - 0.05) { tok = Math.max(0, tok - 1); burst += dash1; burstN++; lastDash = s; trac += (msp - 1) * pace * tracN; }
           const use = Math.min(ex, burst); burst -= use; lim0 = base + use;
         }
+        if (tb > 0) trac = Math.max(0, trac - Math.min(tb, Math.max(0, d - (pace + PROOF.QUANT + shoveAt(s, i)))));   // the boost used this step
         if (d > lim0) badMe++;
         if (d > 0.4 && !(fl & 2)) { moving++; if (Math.hypot(IX(s), IY(s)) < 0.05 && !(fl & 1)) noIn++; }
       } else { stepsOther++; if (d > vAny + dash + shoveAt(s, i)) badOther++; }
     }
   }
   if (badMe > PROOF.MOVE_BAD) return fail("move");
+  if (badBack > 1) return fail("respawn");
   if (badOther > Math.max(3, stepsOther * PROOF.OTHER_BAD)) return fail("others");
   // new-round marks: they clear the per-round super count below, so they are held to the rules for EVERY ticket (review finding:
   // tickets without bound equipment skipped this, and a made-up mark before every third press reset the count). Only a best

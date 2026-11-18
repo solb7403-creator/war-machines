@@ -58,5 +58,14 @@ const burst = () => [{ d: walk + dashLen * 0.9, dash: true }, ...Array.from({ le
   t(!moved(record(every(3, 12)), {}), 'a dash every 2 s for 24 s fails (the cooldown gives one back every 4 s)');
   // 8. a shorter cooldown (Light frame: dash cooldown -40%) is the server loadout's own: a dash every 2.5 s passes with it, fails without
   t(moved(record(every(4, 10)), { dashCdM: 0.6 }) && !moved(record(every(4, 10)), {}), 'a dash every 2.5 s passes with the Light frame\'s 2.4 s cooldown (from the server loadout) and fails with the stock 4 s'); }
+// ---- reviewer 1 (finish session): Traction's boost is a budget each charge adds; a made-up 0-hull sample excuses nothing ----
+{ const every = (gap, n, d) => [{ d: walk }].concat(...Array.from({ length: n }, () => [{ d: walk + dashLen * 0.9, dash: true }, ...Array.from({ length: gap }, () => ({ d }))]));
+  const f16 = cap * 1.6, all = [{ d: walk }].concat(...Array.from({ length: 10 }, () => [{ d: f16 + dashLen * 0.9, dash: true }, ...Array.from({ length: 4 }, () => ({ d: f16 }))]));
+  t(!moved(record(all), { modSpd: 1.6, dashCdM: 0.6 }), 'Light frame + Traction: a dash flag every 5 samples does not buy the full 1.6x boost on every sample (reviewer 1\'s case; each charge pays 2 s of boost: 4 samples, never 5)');
+  t(moved(record(every(7, 6, walk).concat(...Array.from({ length: 3 }, () => [{ d: walk + dashLen * 0.9, dash: true }, { d: fast }, { d: fast }, { d: fast }, { d: fast }, { d: walk }, { d: walk }, { d: walk }]))), { modSpd: 1.6 }), 'honest Traction bursts (4 boosted samples after each dash every 4 s) still pass'); }
+{ const recHp = (moves, downAt) => { const pf = record(moves), raw = atob(pf.s), b = Uint8Array.from(raw, c => c.charCodeAt(0)); for (const s of downAt) b[s * sz + 2] = 0; pf.s = btoa(String.fromCharCode(...b)); return pf; };
+  const tele = Array.from({ length: 16 }, (_, i) => ({ d: i % 2 ? 8 : walk })), downs = [1, 3, 5, 7, 9, 11, 13, 15];
+  t(checkProof(recHp(tele, downs), { ...base, g: 'arena' }).why === 'respawn' && checkProof(recHp(tele, downs), { ...base, g: 'bounty' }).why !== undefined && !checkProof(recHp(tele, downs), { ...base, g: 'bounty' }).ok, 'a made-up 0-hull sample before each 8-unit jump fails (arena: no respawns; bounty: too short to be one)');
+  t(checkProof(recHp(Array.from({ length: 16 }, () => ({ d: walk })), [4, 5, 6, 7, 8, 9]), { ...base, g: 'bounty' }).why !== 'respawn', 'an honest 3 s respawn in bounty passes'); }
 console.log((bad ? 'FAIL' : 'PASS') + ' wtest proof-mods: ' + ok + ' passed, ' + bad + ' failed');
 process.exit(bad ? 1 : 0);
