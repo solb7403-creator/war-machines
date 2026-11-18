@@ -4821,12 +4821,26 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
   `dev/tests/wtest/research-economy.mjs` (36); final duels in `docs/conquest/session6b/mod-power.json` and RESOURCE_ECONOMY §6.5,
   §7.5, §9.3; F6 browser journeys (`conquest-session6b.py` PASS at all five sizes, `web-labstore.py` PASS), UX critic round 1 fixed;
   F7 two fresh reviewers: both PASS after re-review at `73434ac` (no blocker left; residuals in the open items).
-- REMAINING (in order): UX critic round 2 (the last allowed round) on the post-fix captures and its BROKEN fixes; the full test
-  list once more; F8 release (`dev/bump.sh`, PR with the body from this checkpoint, CI green, merge, verify `/pvp/health`, the live
+- DONE also: UX critic round 2 (the last allowed round) and its fixes; the full test list (section "Finish-session tests" below);
+  build 20261118091400 stamped.
+- REMAINING: F8 release (`dev/bump.sh`, PR with the body from this checkpoint, CI green, merge, verify `/pvp/health`, the live
   `version.json` = repo and GitHub Pages; ROADMAP rows; the release record below; a docs-only follow-up PR for the merge facts).
 - Local: `pip install playwright==1.63.0` and `npm install --prefix worker` once, then `node worker/build-sim.mjs` and
   `node worker/build-web.mjs` (generated, not committed) before the Worker tests. Graphify did not connect in this container
   (proxy 403): code read directly.
+
+### Finish-session tests (local)
+Local runs: the full list from the finish brief, one command each, on `eceff5a`. The UI tests were run again after the UX critic round 2 fixes (`dd939f1`).
+- `node dev/tests/owner-rules.mjs`: PASS, 36 checks. Each pinned rule was mutation-proven to fail.
+- PASS: `conquest-research` 82, `mod-behaviors` 56, `lab-ui`, `garage-rules`, `lab-store-ui` 20, `wtest/lab-store` 38, `conquest-power-chip` 22, `conquest-loot`, `conquest-copy`, `audio` 40.
+- PASS: `combat-balance` 2,594, `gear-combat` (5,120 paired duels, 137,340 parity cases).
+- PASS, wtest suites: `pvp` 133, `test` 204, `lab`, `chassis` 105, `proof-mods` 15, `conquest`, `conquest-research` 19, `hull-plating` 24, `web-auth`, `conquest-airdrop` 20, `farm` 55, `research-economy` 36 (new).
+- PASS: `pvp-agree` 432 (new; the real RoomCore against the phone build, every mod, steady and with 0-100 ms jitter).
+- PASS, the 5E-2e list: `arcade-weather` 10,228, `fair-arcade` 11,665 (tolerances unchanged), `arena-maps`, `super-timing` 335, `hf-collection`, `defender-isolation` 864.
+- `python3 dev/tests/weather-browser.py`: PASS, 43 checks. This container's Chromium is at `/opt/pw-browsers/chromium`, so it ran with `CHROMIUM_PATH` set; the test reads that variable. No test change.
+- `python3 dev/tests/conquest-session6b.py`: PASS at 390x700, 390x844, 320x568 (touch) and 1366x768, 1920x1080 (real keyboard and mouse), no page errors. The new Escape check fails on the old code: at 1366x768, "Escape did not close the Lab after RESEARCH".
+- `python3 dev/tests/web-labstore.py`: PASS at 1366x768 and 1920x1080 (the website build)
+- Tests changed only where a decision in the brief changed their rule, each recorded in Checkpoint 41. New checks were added; nothing was skipped, deleted or loosened.
 
 ### Finish-session reviews (two fresh read-only reviewers on `ecc726e`, given the brief, the branch and this checkpoint only)
 - Reviewer 1 (PvP sync, fairness, security): every rule PASS (incl. the owner's Nov 16/17 goal rules) except 1 BLOCKER: under network
