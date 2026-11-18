@@ -1521,7 +1521,7 @@ const FITS={
    d:'Legendary Rail: every 5th shot is a STARFALL SLUG: more damage, twice as fast, straight through shields and through two tanks.'}}
 };
 const FIT_ORDER=['hull','mobility','mount'];
-// a research option (earned in the Science Lab) or a Legendary set mod (bought); the free options and Stock are neither
+// a research option (earned in the Science Lab) or a Legendary set mod (researched at Science Lab III, or bought in the Lab store); the free options and Stock are neither
 const isRmod=(slot,id)=>!!(FITS[slot]&&Object.prototype.hasOwnProperty.call(FITS[slot],id)&&FITS[slot][id].rs);
 const rmodOf=id=>{for(const k of FIT_ORDER)if(isRmod(k,id))return {slot:k,id,F:FITS[k][id]};return null;};
 // looks: the free options' visuals only (research mods borrow one of them: no new models this session)
@@ -1562,7 +1562,7 @@ function rmodPe(b,x){const U=MOD_USE,ex=Math.exp,p=t=>ex(-t/U.L);x=x||{};
   case 'traction':{const F=FITS[x.slot]&&FITS[x.slot][x.id];return {s:U.dashMin/60*x.t*x.spd/(1+((F&&F.dashCd)||0))};}
   case 'ram':return {d:U.ramMin/60*x.dmg,h:U.ramMin/60*x.jam};
   case 'momentum':return {h:1/(1-U.fast*x.cut*(1-U.blast))-1};
-  case 'overdrive':{const F=FITS[x.slot]&&FITS[x.slot][x.id],r=1/(1+((F&&F.dashCd)||0)),q=U.chain,k=(1-Math.pow(q,x.charges-1))/(1-q)*r+(r-1);return {h:U.blast*U.catch*U.dash*k,s:U.dashMin/60*.2*k};}   // k: the extra charges (each used U.chain as often as the one before: measured, a third is rarely chained), worth more the faster they come back, plus the faster cooldown itself (Hyperdrive)
+  case 'overdrive':{const F=FITS[x.slot]&&FITS[x.slot][x.id],r=1/(1+((F&&F.dashCd)||0)),q=U.chain,k=(1-Math.pow(q,x.charges-1))/(1-q)*r+(r-1);return {h:U.blast*U.catch*U.dash*k,s:U.dashMin/60*.2*k};}   // k: the extra charges (each used U.chain as often as the one before: measured, a third is rarely chained), worth more the faster they come back, plus any faster cooldown itself (no mod has one now: Hyperdrive's edge is its top speed, counted through spd)
   case 'capacitor':{const base=SHIELD_T_S/(SHIELD_CD_S+SHIELD_T_S),cd=SHIELD_CD_S/(1+U.still*(x.rate-1)),up=SHIELD_T_S/(cd+SHIELD_T_S);return {h:(1-U.shCut*base)/(1-U.shCut*up)-1};}
   case 'reflector':return {d:U.shUp*U.shCut*x.share};
   case 'reflex':return {h:1/(1-U.blast*U.catch*U.shCut*.6)-1};

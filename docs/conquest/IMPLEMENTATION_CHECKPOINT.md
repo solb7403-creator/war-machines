@@ -4813,32 +4813,20 @@ they differ): bring the branch up to main, the reviewer fixes, the research econ
 for the Legendary set mods, owner rules, tests, two reviews, release (pre-approved).
 
 ### Session 6B finish: resume here (next session reads this first)
-- Branch `claude/tank-lab-logic-half-13cv6c` (the finish session's own branch). Slice F1 DONE: `92f9a3c` merged onto main `4dd82bf`
-  (merge, not rebase: one conflict pass). Conflicts kept both sides: `css/app.css` (hazard finishes + Lab styles), `index.html` /
-  `web/boot.js` (weather.js + lab.js, rating.js, labstore.js), `js/rules.js` ECO_KEYS (`hz` + `rm lsm bpt rsx`), `js/game.js`
-  (respawn and match-start state: both sets; `takeHit` 6B signature with the 5E-2e kinds), `worker/src/eco.js` (proof call: both
-  sets of options), `worker/src/proof.js` (both allowances: the 5E-2e shove at a train / tornado strike and 6B's Traction boost +
-  Overdrive dash charges, in one speed limit), this file (Checkpoints 41 and 42 both kept, in number order).
-- Slice F1 also: the mod-vs-hazard rulings (table "Mods and hazards" below), `dev/tests/arcade-weather.mjs` sections 3c and 7c,
-  roadmap row 6B-V and the 7.8 line (commit `14ca0dd`).
-- Slice F2 DONE (the reviewer fixes, "NEXT" 1-6; table "Reviewer fixes" below), except the re-measured duels: `dev/tools/mod-power.mjs
-  --write` runs in a worktree at the F2 commit (about an hour), then RESOURCE_ECONOMY §6.5 and `docs/conquest/session6b/mod-power.json`.
-  New test `dev/tests/pvp-agree.mjs` (216 checks, every mod, CI: equipment-balance + deploy-worker).
-- Slices F3-F5 DONE (code + tests, commit after `ba17e11`; sections "Research economy", "Legendary set mods: the free research path",
-  "Owner rules and the model" below): costs 2/4/5/9, one earned part a day with the fragment swap, hub counter, LOOT screen + wiki,
-  the Legendary research path with one ownership, owner-rules pins (36 checks, mutation-proven), `researchModel` with the daily
-  limit, Legendary jobs and pass parts every season, new `dev/tests/wtest/research-economy.mjs` (36, CI). Hyperdrive's real step is
-  now +10% top speed (measured). Pending in this slice: the final `mod-power.mjs --write` and RESOURCE_ECONOMY §6.5 / §7.5 / §9.3.
-- F6 IN PROGRESS: `conquest-session6b.py` adapted (RESEARCH opens the Lab over the hub with no 3D world, then ENTER CONQUEST for the
-  reveal / FIT / Refuge refit; new checks: the daily counter, no world loaded, the Legendary node's two ways, the Lab's last CLOSE
-  above the hub's tab bar). It found a real bug (the Lab over the hub ran under the tab bar: fixed in css/conquest.css, `.cq-lab-hub`).
-  PASS at 390x700. RESUME HERE: run `python3 dev/tests/conquest-session6b.py 390x844 320x568 1366x768 1920x1080` (needs
-  `pip install playwright==1.63.0`; ~3 min a size), then `web-labstore.py`, `weather-browser.py`; RESOURCE_ECONOMY §6.5 (the table
-  from `node dev/tools/economy-model.mjs`, the measured paragraph from `docs/conquest/session6b/mod-power.json`: Overdrive and
-  Momentum now within one standard error of their ratings, Hyperdrive 55.6% vs Overdrive); the full test list (whole-session
-  requirements in the owner's prompt); <= 2 UX critic rounds; F7 two reviewers; F8 release. §7.5 / §9.3 are done.
-- Local: `npm install --prefix worker` once, then `node worker/build-sim.mjs` and `node worker/build-web.mjs` (generated, not
-  committed) before the Worker tests. Graphify did not connect in this container (proxy 403): code read directly.
+- Branch `claude/tank-lab-logic-half-13cv6c` (the finish session's own branch), merged with main `4dd82bf` in slice F1 (merge, not
+  rebase; conflicts kept both sides: css/app.css, index.html / web/boot.js, rules.js ECO_KEYS, game.js respawn + match start and
+  `takeHit`, eco.js proof options, proof.js both allowances, this file).
+- DONE: F1 merge + mod-vs-hazard rulings; F2 reviewer fixes 1-6 (new `dev/tests/pvp-agree.mjs`, 432 checks with jitter); F3
+  research economy; F4 the Legendary free research path; F5 owner rules (36 checks) + `researchModel` + new
+  `dev/tests/wtest/research-economy.mjs` (36); final duels in `docs/conquest/session6b/mod-power.json` and RESOURCE_ECONOMY §6.5,
+  §7.5, §9.3; F6 browser journeys (`conquest-session6b.py` PASS at all five sizes, `web-labstore.py` PASS), UX critic round 1 fixed;
+  F7 two fresh reviewers: both PASS after re-review at `73434ac` (no blocker left; residuals in the open items).
+- REMAINING (in order): UX critic round 2 (the last allowed round) on the post-fix captures and its BROKEN fixes; the full test
+  list once more; F8 release (`dev/bump.sh`, PR with the body from this checkpoint, CI green, merge, verify `/pvp/health`, the live
+  `version.json` = repo and GitHub Pages; ROADMAP rows; the release record below; a docs-only follow-up PR for the merge facts).
+- Local: `pip install playwright==1.63.0` and `npm install --prefix worker` once, then `node worker/build-sim.mjs` and
+  `node worker/build-web.mjs` (generated, not committed) before the Worker tests. Graphify did not connect in this container
+  (proxy 403): code read directly.
 
 ### Finish-session reviews (two fresh read-only reviewers on `ecc726e`, given the brief, the branch and this checkpoint only)
 - Reviewer 1 (PvP sync, fairness, security): every rule PASS (incl. the owner's Nov 16/17 goal rules) except 1 BLOCKER: under network
@@ -4854,7 +4842,13 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
   BLOCKER: the re-measured duels were never committed and §6.5 was garbled by the lead's regeneration. Fixed (`mod-power.json` from the
   final run; §6.5 repaired). Should-fix done: "pack and pass parts arrive with the Lab store" (they give none today), the wiki's Science
   Lab text, the Shop names the free path, a reset countdown on the hub ("NEXT IN 5H"), stale comments, the payer ceiling in §9.3.
-- Re-review: pending at the time of this note (both reviewers re-check the fixes).
+- Re-review at `73434ac` (both reviewers, read-only, reran their own harnesses): every blocker and should-fix PASS, no new blocker.
+  Reviewer 1: 0 of 200 chained dashes refused at 0-60 and 0-100 ms jitter (9 of 200 before the fix; the new jitter cases fail on
+  the old code); its forged Traction records now fail `move` (the most a forger now gets past the check is about +13% speed with
+  Light + Traction, +8% with Traction alone, inside the check's existing 12% slack); forged respawn teleports fail `respawn` in arena
+  and bounty; 504 honest max-rate dash matches and 30 respawn-mode matches: 0 false rejections. Reviewer 2: all 11 tests in its
+  scope pass; the duel file is the final run (Hyperdrive 55.0% vs Overdrive's 49.6-50.8%); §6.5 renders and matches; the S1-S9 fixes
+  hold; two stale comments left (rules.js: Legendaries "(bought)", Hyperdrive's "faster cooldown"): fixed after the re-review.
 
 ### Open items for the owner (finish session)
 1. PROPOSAL (reviewer 2): with cost 2 and one earned part a day the first mod lands on day 6 (was day 4, the Lab's first day); a
@@ -4870,7 +4864,14 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
 6. Session 8 (payments): a purchase landing between research-start's account read and its outbox credit could leave a Legendary both
    bought and researched (the refund path is correct, nobody gains); certify it atomically with the checkout.
 7. UX leftovers for 6B-V: the desktop Lab and Shop in two columns, the Shop's repeated "Not on sale yet", an 8 s POWER delta hold.
-8. Checkpoint 42's open items are unchanged (LIVE finishes animate in the store only, proposals, no physical phone, takedown pace,
+8. Security residuals (reviewer 1 re-review; for row 7.8, not blockers): (a) in Bounty, Moon Zone and Crystal a made-up 2.5 s down
+   still lets a modified phone's record come back anywhere on the map, not at its spawn seat (a 14-unit jump every 3 s passes);
+   the game always respawns a tank at its seat (`respawnTick`: `u.x=u.sx`), but the record's first sample is 0.5 s in and a
+   comeback sample up to 0.5 s after, so a safe distance check (driving plus up to three dash charges, about 15 units on a 20 x 32
+   map) would let most of the jump through: the fix is a seat the server knows (the map's spawn layout), not a guess from the
+   record; (b) in modes without respawns the one forgiven reading still allows one teleport a match; (c) under extreme jitter a
+   chained dash is still sometimes refused (2 of 200 at 0-150 ms, 10 of 200 at 0-200 ms; none at 0-100 ms).
+9. Checkpoint 42's open items are unchanged (LIVE finishes animate in the store only, proposals, no physical phone, takedown pace,
    the team-mode claim residual now on row 7.8, the two mildest map looks on 6B-V).
 
 ### Website keyboard focus (found by web-labstore.py in the finish session; a product bug older than the merge)
