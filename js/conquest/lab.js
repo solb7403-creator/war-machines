@@ -57,7 +57,8 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
    if(n.st==='done')el('b','cq-lab-tag','✓ RESEARCHED · in your garage',row);
    else if(n.st==='bought')el('b','cq-lab-tag','★ OWNED · bought in the Lab store · in your garage',row);
    else if(n.st==='running'){const tg=el('b','cq-lab-tag','RESEARCHING · '+(L.ruined?'paused':fmtT(n.left)+' left'),row);if(!L.ruined)live.push({t:tg,pre:'RESEARCHING · ',end:now+n.left});}
-   else if(n.st==='locked')el('small','cq-lab-lock','🔒 '+String(n.why).replace(/^conquest: /,''),row);
+   else if(n.st==='locked'){if(F.leg){const b=button('RESEARCH · '+RTREE.leg.n+' '+CQ_PARTS[T.part].n.toUpperCase()+'S · '+fmtT(RTREE.leg.ms),()=>{},'cq-lab-go');b.disabled=true;row.append(b);}   // a Legendary always shows both ways in (owner, Nov 17)
+    el('small','cq-lab-lock','🔒 '+String(n.why).replace(/^conquest: /,''),row);}
    else{const q=n.q,b=button((n.st==='ready'?'RESEARCH':n.st==='busy'?'SLOTS BUSY':'NEED '+q.n)+' · '+q.n+' '+CQ_PARTS[q.part].n.toUpperCase()+(q.n>1?'S':'')+' · '+fmtT(q.ms),async()=>{b.disabled=true;const ok=await ctx.act(id);if(!ok)b.disabled=false;},'cq-lab-go');
     b.disabled=n.st!=='ready';row.append(b);if(n.st==='short')el('small','cq-lab-lock','You have '+n.have+'. Parts drop from heavy Parasites, raid commanders and Meteor Strikes.',row);}
    if(F.leg&&ctx.store&&n.st!=='done'&&n.st!=='bought'&&n.st!=='running')ctx.store(row,'rsleg',{id});}}

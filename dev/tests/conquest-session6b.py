@@ -10,7 +10,7 @@
 #   6. Settings: the volume slider (drag on a phone, arrow keys on a computer) and Sound off mutes the bed and disables the slider,
 #   7. the Shop's Science Lab section: every entry priced (Stars in Telegram) and disabled ("Not on sale yet").
 # Captures: docs/conquest/session6b/<step>-<w>x<h>.png and journey.json. Run: python3 dev/tests/conquest-session6b.py [WxH ...]
-import asyncio,json,pathlib,sys,re
+import asyncio,re,json,pathlib,sys
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest/session6b';OUT.mkdir(parents=True,exist_ok=True)
@@ -55,18 +55,20 @@ async def steps(browser,base,ready,w,h,R):
  await page.mouse.click(5,h-5) if not phone else await page.touchscreen.tap(5,h-5)
  # ---- 1. the hub ----
  await press(page.locator('[data-act="conquest"]:visible').first);await page.wait_for_selector('.cq-hub-research',timeout=30000);await page.wait_for_timeout(800)
- R['hub']=await page.evaluate('({chip:document.querySelector(".cq-hub .cq-rating, .cq-rating")?.textContent||null,research:document.querySelector(".cq-hub-research")?.textContent||null,disabled:!!document.querySelector(".cq-hub-research")?.disabled})')
+ try:await page.wait_for_selector('.cq-hub-part-day',timeout=20000)   # the live status (Session 6B finish: today's earned research part)
+ except Exception:pass
+ R['hub']=await page.evaluate('({chip:document.querySelector(".cq-hub .cq-rating, .cq-rating")?.textContent||null,research:document.querySelector(".cq-hub-research")?.textContent||null,disabled:!!document.querySelector(".cq-hub-research")?.disabled,partDay:document.querySelector(".cq-hub-part-day")?.textContent||null})')
  await shot('hub')
- # ---- 2. RESEARCH -> the Science Lab screen ----
+ # ---- 2. RESEARCH -> the Science Lab screen, over the hub: no 3D engine, no world (Session 6B finish, review low item) ----
  await press(page.locator('.cq-hub-research').first)
- await page.wait_for_function('Conquest.view?.authority?.connected',timeout=120000)
- for _ in range(6):
-  sk=page.locator('.cq-radio button')
-  if await sk.count():
-   await press(sk.first);await page.wait_for_timeout(300)
-  if await page.locator('.cq-lab').count():break
-  await page.wait_for_timeout(700)
- await page.wait_for_selector('.cq-lab',timeout=30000);await page.wait_for_timeout(500)
+ await page.wait_for_selector('.cq-lab-hub.cq-lab',timeout=30000);await page.wait_for_timeout(500)
+ R['labOverHub']=await page.evaluate('({hub:!!document.querySelector(".cq-hub"),world:!!document.querySelector(".cq-viewport"),view:!!(typeof Conquest!=="undefined"&&Conquest.view)})')
+ # every screen fits or scrolls (owner rule): the Lab's last CLOSE is reachable above the hub's tab bar
+ await page.evaluate('(()=>{const d=document.querySelector(".cq-lab-hub");d.scrollTop=d.scrollHeight;})()');await page.wait_for_timeout(300)
+ R['labEnd']=await page.evaluate('(()=>{const d=document.querySelector(".cq-lab-hub"),b=[...d.querySelectorAll("button")].filter(x=>x.textContent==="CLOSE").pop(),nav=document.querySelector(".cq-pagenav"),r=b.getBoundingClientRect(),top=nav&&getComputedStyle(nav).display!=="none"?nav.getBoundingClientRect().top:innerHeight,hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {bottom:Math.round(r.bottom),limit:Math.round(top),onTop:hit===b||b.contains(hit)};})()')
+ await shot('lab-end')
+ await page.evaluate('(()=>{const d=document.querySelector(".cq-lab-hub");d.scrollTop=0;})()')
+ R['legNode']=await page.evaluate('(()=>{const n=[...document.querySelectorAll(".cq-lab-legnode")].find(x=>x.querySelector("h3")?.textContent.includes("SUNFIRE"));return n?{two:n.querySelector(".cq-lab-two")?.textContent||null,research:n.querySelector(".cq-lab-go")?.textContent||null,lock:n.querySelector(".cq-lab-lock")?.textContent||null,buy:n.querySelector(".cq-lab-buy")?.textContent||null,off:n.querySelector(".cq-lab-off")?.textContent||null}:null;})()')
  R['lab']=await page.evaluate('(()=>{const d=document.querySelector(".cq-lab");return {title:d.querySelector("h2")?.textContent,tracks:d.querySelectorAll(".cq-lab-track").length,nodes:d.querySelectorAll(".cq-lab-node").length,ready:[...d.querySelectorAll(".cq-lab-go:not([disabled])")].map(b=>b.textContent),parts:[...d.querySelectorAll(".cq-lab-part")].map(p=>p.textContent),scroll:[d.scrollHeight,d.clientHeight],wide:d.scrollWidth>d.clientWidth+1};})()')
  await shot('lab')
  # ---- 3. Thermal I end to end ----
@@ -81,6 +83,15 @@ async def steps(browser,base,ready,w,h,R):
  else:await page.keyboard.press('Escape')
  await page.wait_for_timeout(300)
  if await page.locator('.cq-lab').count():await press(close.last)   # Escape closes dialogs where the game supports it; the button always does
+ # into the world (ENTER CONQUEST): the reveal card, the refit at the Refuge and the HUD chip are the world's
+ await press(page.locator('.cq-hub-deploy').first)
+ await page.wait_for_function('Conquest.view?.authority?.connected',timeout=120000)
+ for _ in range(6):
+  sk=page.locator('.cq-radio button')
+  if await sk.count():
+   await press(sk.first);await page.wait_for_timeout(300)
+  else:break
+  await page.wait_for_timeout(500)
  fin=await page.request.post(base+'/fixture-research-finish',data={});R['finishedJobs']=(await fin.json()).get('jobs')
  await page.evaluate('Conquest.view.authority.connect()')   # the next sync (a real client would get it within seconds): read-only for the UI
  await page.wait_for_selector('.cq-lab-reveal',timeout=60000);await page.wait_for_timeout(500)
@@ -162,6 +173,11 @@ async def main():
   if 'crash' in r:bad.append(r['size']+' crashed: '+r['crash'][:200]);continue
   t=r['size']
   if not (r['hub']['chip'] and 'POWER' in r['hub']['chip'] and r['hub']['research'] and not r['hub']['disabled']):bad.append(t+' hub')
+  if not (r['hub'].get('partDay') and re.match(r'RESEARCH PART [01]/1 TODAY',r['hub']['partDay'])):bad.append(t+' hub daily research part '+json.dumps(r['hub'].get('partDay')))
+  if not (r['labOverHub']['hub'] and not r['labOverHub']['world'] and not r['labOverHub']['view']):bad.append(t+' RESEARCH opened the 3D world '+json.dumps(r['labOverHub']))
+  if not (r['labEnd']['bottom']<=r['labEnd']['limit'] and r['labEnd']['onTop']):bad.append(t+' the Lab over the hub cannot be scrolled to its last CLOSE above the tab bar '+json.dumps(r['labEnd']))
+  L=r.get('legNode') or {}
+  if not (L.get('two') and 'Two ways' in L['two'] and L.get('research') and 'RESEARCH · 30' in L['research'] and L.get('buy') and 'LEGENDARY' in L['buy'] and L.get('off') and 'Not on sale yet' in L['off']):bad.append(t+' Legendary node (research + buy) '+json.dumps(L))
   if not (r['lab']['tracks']>=5 and not r['lab']['wide'] and any('VENT' in x or '1 THERMAL' in x for x in r['lab']['ready']+['']) or r['lab']['ready']):bad.append(t+' lab')
   if not (r['running']['job'] and 'VENT BARREL' in r['running']['job'] and r['running']['finishDisabled']):bad.append(t+' running job / finish row')
   if not (r['reveal']['name']=='VENT BARREL' and 'FIT ON MY TANK' in r['reveal']['buttons']):bad.append(t+' reveal')

@@ -452,3 +452,6 @@
 .cq-supply .cq-supply-power{margin:0 0 8px}
 .cq-supply .cq-plating button{font-size:12px;line-height:1.35}
 
+/* Session 6B finish: the Science Lab over the hub (RESEARCH opens it without the 3D world) ends above the hub's tab bar, so its
+   last CLOSE is always reachable (owner rule: every screen fits or scrolls; dev/tests/conquest-session6b.py checks it) */
+.cq.cq-with-nav .cq-dialog.cq-lab-hub,.cq.cq-with-nav .cq-dialog.cq-lab-hub-reveal{bottom:calc(66px + env(safe-area-inset-bottom,0px));max-height:calc(100% - 66px - env(safe-area-inset-bottom,0px))}

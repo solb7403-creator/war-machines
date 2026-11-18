@@ -4829,7 +4829,14 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
   the Legendary research path with one ownership, owner-rules pins (36 checks, mutation-proven), `researchModel` with the daily
   limit, Legendary jobs and pass parts every season, new `dev/tests/wtest/research-economy.mjs` (36, CI). Hyperdrive's real step is
   now +10% top speed (measured). Pending in this slice: the final `mod-power.mjs --write` and RESOURCE_ECONOMY §6.5 / §7.5 / §9.3.
-- Next: F6 browser (`conquest-session6b.py` 5 sizes, `web-labstore.py`, `weather-browser.py`) + UX critic, F7 reviews, F8 release.
+- F6 IN PROGRESS: `conquest-session6b.py` adapted (RESEARCH opens the Lab over the hub with no 3D world, then ENTER CONQUEST for the
+  reveal / FIT / Refuge refit; new checks: the daily counter, no world loaded, the Legendary node's two ways, the Lab's last CLOSE
+  above the hub's tab bar). It found a real bug (the Lab over the hub ran under the tab bar: fixed in css/conquest.css, `.cq-lab-hub`).
+  PASS at 390x700. RESUME HERE: run `python3 dev/tests/conquest-session6b.py 390x844 320x568 1366x768 1920x1080` (needs
+  `pip install playwright==1.63.0`; ~3 min a size), then `web-labstore.py`, `weather-browser.py`; RESOURCE_ECONOMY §6.5 (the table
+  from `node dev/tools/economy-model.mjs`, the measured paragraph from `docs/conquest/session6b/mod-power.json`: Overdrive and
+  Momentum now within one standard error of their ratings, Hyperdrive 55.6% vs Overdrive); the full test list (whole-session
+  requirements in the owner's prompt); <= 2 UX critic rounds; F7 two reviewers; F8 release. §7.5 / §9.3 are done.
 - Local: `npm install --prefix worker` once, then `node worker/build-sim.mjs` and `node worker/build-web.mjs` (generated, not
   committed) before the Worker tests. Graphify did not connect in this container (proxy 403): code read directly.
 
@@ -4882,6 +4889,70 @@ Tests changed because a decision changed their rule: `wtest/pvp.mjs` and `mod-be
 the refill timer: append-only, PVP_V unchanged); `wtest/proof-mods.mjs` case 4 (four double dashes 1.5 s apart were let through: now
 the cheat case; honest double dashes are 8.5 s apart); `wtest/lab-store.mjs` section 5 (grants with the store closed are refused; the
 grant behavior is checked on an open-store copy of the rules).
+
+### Research economy (slice F3; owner decisions of the Nov 17 planning)
+
+- `RTREE.cost` 2 / 4 / 5 / 9 (20 a track, 80 in all; was 1/2/2/5). The stale RTREE comment ("10 a track, 40 in all ... owner target
+  6-10") is gone, and so is the matching RESOURCE_ECONOMY text: that target was never the owner's.
+- One EARNED research part a day per account (`CQ_PART_DAY` 1, the UTC day on the Worker's clock). Counted in `conquest-loot.js bind`,
+  when the part reaches the inventory (decision: not at the roll, so a part left on the ground never uses up the day; a part the 50
+  cap turns away does not count either). After it, a found part becomes 1 blueprint fragment of its source's pool
+  (`CQ_PART_SWAP`: elite uncommon, raid commander rare, Meteor Strike rare; the roll tags its source, `loot.src`, after the pity
+  roll so a pity part past the limit is a fragment too; the pity counter itself is unchanged). Cosmetic only, never points.
+  Packs and the Lunar Pass add to the account's bonus parts (eco `S.bpt`), which have no daily count at all.
+- Players are told: the hub's base card shows "RESEARCH PART 0/1 TODAY" (amber once taken; phone and desktop are the same element,
+  `cq-hub-part-day`), the LOOT screen shows the same line plus the rule (`ConquestLoot.limitText()`, built from the rules), the
+  pickup line says "TODAY'S RESEARCH PART ALREADY FOUND: AS A FRAGMENT", and wiki.html's Loot section carries the identical
+  sentence (`conquest-loot.mjs` compares the wiki and the LOOT screen with the rules).
+- Kept as built: parts + time only; Worker clock 20 min / 2 h / 8 h; 1 slot + 1 at Lab III (+1 with the pass); lab max 3 from CC3;
+  the part packs exactly as built (one of each a UTC week: +1 / +3 / +8); prices stay proposals; checkout off.
+
+### Legendary set mods: the free research path (slice F4)
+
+- `RTREE.leg` {n 30, ms 8 h}: `rsQuote` now quotes a Legendary (Science Lab III, its track's set mod researched, never one bought:
+  `rsQuote(rs,id,lv,premium,bought)`), the Worker's research record holds the 20 ids (`RS_IDS`), the pass's 25% and instant
+  finish apply like any job. The account load and `creditConquest` no longer strip Legendary ids from the researched list.
+- One ownership, two ways in: `rmodOwned` = researched (S.rm) or bought (S.lsm); `ecoOwned(rsleg)` refuses bought, researched or
+  being researched (new eco `S.rsj`, written from the Conquest outbox the moment a Legendary job starts: `e.rsj`, credited in the same
+  request; cleared when the finished job arrives as `e.rm`); research refuses a bought one (the account's `lsm`, read fresh in
+  `researchCtx`); `ecoRefund` removes only `S.lsm`. Buying keeps its gate: only after the track's earned set mod; Science Lab III
+  alone never opens it. Price stays the 599 Stars / 9.6 TON proposal, not on sale until Session 8.
+- The Lab node shows both ways: RESEARCH · 30 <PARTS> · 8h (disabled with its reason while locked) and BUY · LEGENDARY (disabled,
+  "Not on sale yet", "and only after <set mod>"); "Two ways to own it" in plain words; the garage lock line and the Shop say the same.
+  Decision: the buy way shows even before the set mod (the owner asked for both ways on the node); `lab-store-ui.mjs` changed with it.
+- Power (both owner bands hold after the retune): legend kit best free 240 -> best research 259 (+7.92%, band 7-9) -> best
+  Legendary 276 (+6.56%, band 6-8); `owner-rules.mjs` pins both.
+- Hyperdrive (review gameplay 7, "a real step"): the third charge and a faster refill measured byte-identical to Overdrive (no pilot
+  profile ever needs a second dash inside the cooldown: 0.32 dashes a duel for the human profile, 1.1 for bots), so its step is
+  now +10% top speed, always on, with the -1% hull trade-off: measured 55.6% vs Overdrive (human profile, 240 duels, ±6.3) and
+  53.8% (bots). Text: "THREE DASH CHARGES and 10% more top speed".
+
+### Owner rules and the model (slice F5)
+
+- `docs/owner-rules.json` (this prompt is owner-decided): removed `research.treeWeeks60min` [6,10]; added `research.cost`,
+  `earnedPartsPerDay` {n 1, exempt packs, pass}, `legendaryResearch` {30 parts, 8 h, Lab III, after the set mod}, `legendaryBuy`
+  {after the set mod, not opened by Lab III}, `partPacks` {one of each a week, +1/+3/+8}, `gearGainBestLegendaryVsBestResearch`
+  {0.07, ±0.01, legend kit}. Everything else unchanged. `owner-rules.mjs`: 36 checks; the old tree-weeks check replaced (its
+  header says why); the daily limit is checked on the Worker's own pickup path. Mutation-proven (each exits 1): cost [2,4,5,8],
+  `CQ_PART_DAY` 2, Legendary 25 parts, a stronger Hyperdrive (the Legendary build +10.4% over research).
+- The PR is exempt from the `owner-rules-change` label (the file does not exist on main yet: creation); if the check asks anyway,
+  the label goes on the PR (this prompt is the owner's decision).
+- `researchModel`: the daily limit, the Legendary jobs (20 ids, 1,200-day horizon) and pass parts every season (tier = day of the
+  30-day season). Run (201 seeds, medians): tree 30 min 240 d (34.3 wk), 60 min 149 d (21.3), 120 min 107 d (15.3), 60 min + pass
+  90 d (12.9); all four Legendary 30 min 550 d, 60 min 343, 120 min 253. The owner's planning check: 237 / 149 / 108 / 91 and
+  545 / 347 / 251: within 2% (no discrepancy to explain). "Earned parts a day" was divided by the tree's day in the old report (it
+  showed an impossible 2.11 at 120 min): now parts per simulated day (0.42 / 0.66 / 0.90). Weeks are report numbers only.
+- New Worker test `dev/tests/wtest/research-economy.mjs` (36 checks, real HTTP routes; CI: conquest-check + deploy-worker): costs,
+  the daily limit through the real pickup (fragment by source, 23:59:59 vs 00:00 UTC), bonus parts never limited, every Legendary
+  gate (Lab III, the set mod, being researched, bought, refund only the bought, never double, including an open-store copy).
+
+### Comparable games (the owner's planning research, Nov 17; recorded, not repeated)
+- Clash Royale: a free player needs 12-18 months to max one 8-card deck; every card is reachable free; spending buys speed, not
+  exclusive power; level-capped modes remove the gap; +10% stats a card level.
+- Clash of Clans (fan estimates): TH16 takes 2-4 years free, the lab alone 11-12 months.
+- War Robots (one player's report): about 3 months of upgrades per item.
+- Mistplay's Mobile Gaming Loyalty Report: pay-to-win mechanics are among the leading causes of churn.
+- World of Tanks moved gold-only items to credits to remove direct pay-for-power. Hence the free Legendary path.
 
 ### Earlier slices (Nov 16-17, done; the original resume point)
 - DONE slice 1 (research engine + mods, Worker): `js/rules.js` FITS research options (16 earned + 4 Legendary), RS tree, rsQuote /
