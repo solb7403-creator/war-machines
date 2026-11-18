@@ -160,7 +160,7 @@ function loadSave(obj){
   const cached=save||{},E=window.LUNAR_WEB.snapshot?.E;
   // Browser storage supplies preferences and already-signed pending results only, never equipment or balances.
   save=E?JSON.parse(JSON.stringify(E)):null;
-  if(save){for(const k of ['gfx','sound','haptics','gtype','mode','map','welcomed','gSeen','gHint','coreFor'])if(cached[k]!==undefined)save[k]=cached[k];
+  if(save){for(const k of ['gfx','sound','vol','haptics','gtype','mode','map','welcomed','gSeen','gHint','coreFor'])if(cached[k]!==undefined)save[k]=cached[k];
    save.mq=Array.isArray(cached.mq)?cached.mq.slice(-20):[];save.migOk=1;}
  }
  if(!save||typeof save.pts!=='number')save={pts:0,q:{},chassis:'vanguard',weapon:'pulse',   // each chassis's build and cores: ecoNorm (upc, glc, gsc)
@@ -308,7 +308,7 @@ function baseStore(mn){
 function fabPlate(slot,tier){
  return when(ecoRun('plate',{k:slot,t:tier},S=>ecoPlate(S,slot,tier)),r=>{
   if(ecoErr(r))return false;
-  fx('buy');showToast(PLATE.slots[slot]+' '+MINERALS[MN_ORDER[tier-1]].s+' plate fabricated'+(r.set>=tier?': full set':''));return true;
+  fx('plate');showToast(PLATE.slots[slot]+' '+MINERALS[MN_ORDER[tier-1]].s+' plate fabricated'+(r.set>=tier?': full set':''));return true;   // the plate-mounted clamp (Session 6B)
  });
 }
 function buyUp(k,c){
@@ -399,6 +399,7 @@ function claimPass(track,i){
  i=+i;
  const c=coresFor();return when(ecoRun('pass',{t:track,i,c},(S,X)=>ecoClaimPass(S,track,i,X,c)||{err:'no'}),r=>{
   if(!r||r.err)return null;
+  if(r.parts)setTimeout(()=>showToast('+'+Object.values(r.parts).reduce((a,v)=>a+v,0)+' research parts for your Science Lab'),1200);   // Session 6B premium tiers
   if(r.pts!==undefined){fx('claim');return {pts:r.pts};}
   if(r.paint){save.paint=r.paint;store();fx('buy');return {reveal:{tk:'paint',rar:2,color:PAINTS[r.paint].trim,paint:r.paint,title:PAINTS[r.paint].n+' paint',sub:'Equipped. Change it in the Garage.'}};}
   afterGain(r.box);store();return {reveal:revealOf(r.box)};

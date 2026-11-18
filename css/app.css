@@ -948,3 +948,28 @@ button.q{display:flex;width:100%;text-align:left}
 @keyframes pfxSpin{to{transform:rotate(360deg)}}
 @keyframes pfxScan{0%,100%{top:22%}50%{top:78%}}
 @media (prefers-reduced-motion:reduce){.pfx,.pfx i{animation:none!important}.pfx-arcs i{opacity:.7}.pfx-rail i{left:33%}.pfx-scan i{top:50%}.pfx-steam i,.pfx-embers i{opacity:.8}}
+/* Session 6B: Science Lab research options in the garage Mods section (track colour edge, lock line, Legendary gold) */
+.gopt.grs{border-left:3px solid var(--tc,var(--edge))}
+.gopt.gleg{border-left-color:#ffcf4a;background:linear-gradient(90deg,rgba(255,207,74,.08),var(--rock2) 40%)}
+.gopt.glock{opacity:.72}
+.gopt .grs-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;font:700 10px var(--disp);letter-spacing:.06em;color:var(--tc,#fff);border:1px solid var(--tc,#fff);vertical-align:2px}
+.gopt.gleg .grs-tag{color:#ffcf4a;border-color:#ffcf4a}
+/* Session 6B: the Settings volume slider beside the Sound toggle */
+.q.vol .volr{flex:none;width:46%;max-width:220px;height:32px;margin:0;accent-color:var(--ok);touch-action:pan-y;cursor:pointer}
+.q.vol.off{opacity:.55}.q.vol .volr:disabled{cursor:default}
+/* Session 6B: the Science Lab store entries in the Shop (checkout off: disabled buttons with their proposed prices) */
+.labshop{padding:12px}.labshop .mut{margin:0 0 8px}
+.labshop-item{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;padding:8px 0;border-top:1px solid var(--edge2)}
+.labshop-item .grow{min-width:0;flex:1 1 150px}.labshop-item b{display:block}.labshop-item span{color:var(--dust);font-size:12px}
+.labshop-item.leg b{color:var(--gold)}.labshop-item button[disabled]{opacity:.75;cursor:default}
+.labshop-off{flex-basis:100%;text-align:right;font-size:11px;color:var(--dust)}.labshop-note{margin:10px 0 0;font-size:12px;color:var(--dust)}
+/* critic round 1: a 28 px volume knob (touch), dimmer disabled store buttons, the store note first */
+.q.vol .volr{-webkit-appearance:none;appearance:none;background:transparent}
+.q.vol .volr::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--rock4)}
+.q.vol .volr::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin-top:-11px;border-radius:50%;background:var(--ok);border:2px solid #0b1a12}
+.q.vol .volr::-moz-range-track{height:6px;border-radius:3px;background:var(--rock4)}
+.q.vol .volr::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--ok);border:2px solid #0b1a12}
+.q.vol .volr:disabled::-webkit-slider-thumb{background:var(--dust)}
+.labshop-item button[disabled]{opacity:.5}
+.labshop .labshop-note{margin:0 0 8px;color:var(--gold)}
+

@@ -146,7 +146,7 @@ const pvX=x=>pvp.flip?W-x:x,pvY=y=>pvp.flip?H-y:y,pvA=a=>pvp.flip?a+Math.PI:a;
 const pvSwap=a=>pvp.team===1&&!isSolo(matchG)?[a[1],a[0]]:a;
 function pvpUnit(r,old){
  const u=old||{buffs:[],sp:0,sup:null,flash:0,elev:0,trail:[],cd:0,lk:null};
- Object.assign(u,{id:r.id,team:pvT(r.team),fits:r.fits,dashCdM:r.dashCdM||1,shieldCdM:r.shieldCdM||1,name:r.name,cls:r.cls,wtype:r.wtype,wtier:r.wtier,gems:r.gems||[],gemM:r.gemM||{},dscale:r.dscale,aura:r.aura,paint:r.paint,skin:r.skin,vl:r.vl|0,mhp:r.mhp,spdM:r.spdM||1,ai:!!r.ai,gh:r.gh?1:0,hum:!r.ai,ctl:'far',dmgM:1,critB:0,fillM:1});
+ Object.assign(u,{id:r.id,team:pvT(r.team),fits:r.fits,dashCdM:r.dashCdM||1,shieldCdM:r.shieldCdM||1,name:r.name,cls:r.cls,wtype:r.wtype,wtier:r.wtier,gems:r.gems||[],gemM:r.gemM||{},dscale:r.dscale,aura:r.aura,paint:r.paint,skin:r.skin,vl:r.vl|0,mhp:r.mhp,spdM:r.spdM||1,ai:!!r.ai,gh:r.gh?1:0,hum:!r.ai,ctl:'far',dmgM:1,critB:0,fillM:1,rm:r.rm||undefined});   // rm: research mods (Session 6B)
  if(!old){u.x=pvX(r.x);u.y=pvY(r.y);u.ang=pvA(r.ang||0);u.hd=u.ang;u.hp=r.mhp;u.ox=u.x;u.oy=u.y;}
  return u;
 }
@@ -236,6 +236,7 @@ function pvpApply(rt){
   u.buffs=cur[13]?cur[13].map(([ki,tk])=>({k:BUFF_KEYS[ki],taken:tk})):[];
   u.sup=cur[14]?{t:cur[14][0],ang:pvA(cur[14][1]),w:u.wtype,el:cur[14][2],bar:{z0:cur[14][3],jc:cur[14][4]},oc:cur[14][5]?cur[14][5]-1:undefined,k:SUP_KEYS[cur[14][6]]||supKey(u.wtype,u.wtier)}:null;
   u.supN=cur[17]|0;   // supers used this round (the server's count; it refuses the next one at SUP_ROUND_CAP)
+  if(u.rm){const v=cur[18];u.mfv=v?{st:v[0],ovc:v[1]&1,cool:v[1]&2?1:0,inf:v[1]&4?1:0,mom:v[1]&8?1:0,tr:v[1]&16?1:0,osh:v[3]|0,cap:v[1]&64?1:0,n:v[2]|0,dq:v[4],lost:v[5]|0}:null;}   // research mods: the server's state for the HUD chips
   if(u===me&&cur[16])me.nbar={z0:cur[16][0],jc:cur[16][1]};   // my next timing bar, drawn by the server before I press
  });
  timeLeft=B?lerp(s.tl,B.s.tl,k):s.tl;elapsed=B?lerp(s.el,B.s.el,k):s.el;

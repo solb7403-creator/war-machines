@@ -50,15 +50,16 @@ assert.ok(H.stats().geometry.active>=9);assert.equal(H.dispose(),false,'never di
 for(const cls of classes){const a=H.chassisKit(cls,-1,P,'#45aaff',[],false,'high'),b=H.chassisKit(cls,0,P,'#45aaff',[],false,'high');assert.strictEqual(a,b,'legacy stock normalized');}
 assert.throws(()=>H.chassisKit('forged',0,P,'#45aaff',[],false,'high'));
 // Representative owned appearance data remains untouched; fitting kits use canonical context.
-runInContext('globalThis.A={PAINTS,FITS,GORDER,STOCK_L,tankOf};',ctx);
+runInContext('globalThis.A={PAINTS,FITS,GORDER,STOCK_L,tankOf,isLook};',ctx);
 const untouched=JSON.stringify(ctx.A.STOCK_L),stats=JSON.stringify(ctx.A.tankOf(ctx.A.STOCK_L,1));let appearances=0,fittings=0;
 for(const paint of Object.values(ctx.A.PAINTS))for(const cls of classes)for(const team of ['#45aaff','#ff5577']){
  const r=H.chassisKit(cls,2,paint,team,ctx.A.GORDER.slice(0,3),false,'low');assert.equal(r.k.hf,true);for(const g of Object.values(H.bake(r.k)))assert.ok(g.attributes.color.array.every(Number.isFinite));appearances++;
 }
-for(const cls of classes)for(let ct=0;ct<3;ct++)for(const hull of Object.keys(ctx.A.FITS.hull))for(const mobility of Object.keys(ctx.A.FITS.mobility))for(const mount of Object.keys(ctx.A.FITS.mount)){
+const looks=k=>Object.keys(ctx.A.FITS[k]).filter(id=>ctx.A.isLook(k,id));   // the visual options only: Session 6B research mods borrow these looks (no new models), so they add no fitting kits
+for(const cls of classes)for(let ct=0;ct<3;ct++)for(const hull of looks('hull'))for(const mobility of looks('mobility'))for(const mount of looks('mount')){
  for(const part of ['body','mount'])for(const g of Object.values(M.bake(M.fittingKit({hull,mobility,mount},'#45aaff',part,{cls,ct,arch:'siege',wt:2,lunar:true}).k)))if(g)assert.ok(g.attributes.position.array.every(Number.isFinite));fittings++;
 }
-assert.equal(JSON.stringify(ctx.A.STOCK_L),untouched);assert.equal(JSON.stringify(ctx.A.tankOf(ctx.A.STOCK_L,1)),stats);assert.equal(appearances,144);   // 24 paints (12 + the six hazard finishes and their six LIVE versions, Session 5E-2e) x 2 teams x 3assert.equal(fittings,243);
+assert.equal(JSON.stringify(ctx.A.STOCK_L),untouched);assert.equal(JSON.stringify(ctx.A.tankOf(ctx.A.STOCK_L,1)),stats);assert.equal(appearances,144);assert.equal(fittings,243);   // 24 paints (12 + the six hazard finishes and their six LIVE versions, Session 5E-2e) x 2 teams x 3; the fittings check had been swallowed by this comment (found by owner-rules' lint, Session 6B)
 
 if(process.env.LUNAR_HF_RESULTS)writeFileSync(process.env.LUNAR_HF_RESULTS,JSON.stringify({standardPairingsPerQuality:81,legendaryPairingsPerQuality:99,models:results,appearances,fittings,cache:H.stats()},null,2));
 console.log('PASS 9+9 HIGH/LOW, nine adaptive skins, one Moonbeam, 81+99 pairings per quality, exact sockets/tips, 144 paint/team/core and 243 fittings, UV/normals/tangents, distinct geometry, LOW budgets, leases, legacy stock');

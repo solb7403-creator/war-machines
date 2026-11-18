@@ -240,13 +240,13 @@ function renderPlay(){
 let gBay=null,gCmp=null,gMore=false,gShowroom=null,gStageEl=null,gStaticKey='',gShare=null;
 const gOpen=new Set(['loadout']);
 const G_SECS=[['loadout','Loadout','Your weapon and chassis'],['cores','Cores','Three sockets, one core type each'],['up','Upgrades','Each chassis its own build'],['plate','Hull Plating','Armor from minerals, in every mode'],
- ['fit','Mods','Free trade-offs within a budget'],['style','Style','Looks only, except Lunar Skin']];
+ ['fit','Mods','Trade-offs and Science Lab mods within a budget'],['style','Style','Looks only, except Lunar Skin']];
 const G_LOCK={up:GARAGE_UP_AT,fit:GARAGE_FIT_AT};
 const G_HINT={loadout:'Your weapon decides how you fight; your chassis sets health and speed. Tap one to compare before you swap.',
  cores:'Tap a socket, then a core, to see what it changes before you fit it. Core levels belong to the chassis.',
  up:'Each chassis has its own build: '+BUILD_MAX+' levels, spread them how you like. Every bay with that chassis uses it; the chips switch chassis.',
  plate:'Plates add max hull HP on both bays and in every mode. Minerals come from Conquest deposits, Meteor Strikes and Arcade/PvP results.',
- fit:'Mods are free. Each one trades one stat for another and adds one effect that changes how you fight; mix them within the weight and power budget.',
+ fit:'The free mods trade one stat for another. Science Lab mods (researched in your Conquest town) each add one strong behavior with a cost. One mod per slot, within the weight and power budget; they work in every mode.',
  style:'Paint and looks never change stats. Lunar Skin is the one exception.'};
 const G_STATS=[['tough','Toughness',''],['fire','Firepower',''],['speed','Speed',''],['power','Power','']];
 const G_MORE=[['armor','Armor','%'],['crit','Crit chance','%'],['charge','Super charge','%'],['repair','Repair','% a second'],['super','Super damage',''],['edge','Edge-hit damage','%']];
@@ -353,6 +353,7 @@ const MOD_WORD={hp:'health',spd:'speed',dps:'damage per second',supTaken:'damage
 // effects where a smaller number is the upside (shown first with the other upsides)
 const MOD_LOWGOOD=new Set(['supTaken','dashCd','shieldCd']);
 function modText(F){   // a mod's full trade-off in plain words, straight from its FITS entry (new fields show up on their own)
+ if(F&&F.rs)return F.d+' Trade-off: '+FIT_FIELDS.filter(k=>F[k]).map(k=>(F[k]>0?'+':'−')+(Math.abs(F[k])*100).toFixed(0)+'% '+MOD_WORD[k]).join(', ')+'.';   // a research mod (Session 6B): its one behavior, then its cost
  const out=[];
  for(const [k,v] of Object.entries(F)){if(MOD_SKIP.has(k))continue;
   if(typeof v==='number'&&v)out.push([MOD_LOWGOOD.has(k)?-v:v,(v>0?'+':'−')+(Math.abs(v)<1?+(Math.abs(v)*100).toFixed(1)+'%':gNum(Math.abs(v)))+' '+(MOD_WORD[k]||k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ').toLowerCase())]);
@@ -426,15 +427,17 @@ const G_BODY={
   return '<div class="gbuds" aria-label="Mod budget">'+bud('Weight','weight')+bud('Power','power')+'</div>'+FIT_ORDER.map(slot=>'<h4 class="gsub">'+FIT_SLOT_N[slot]+'</h4><div class="gopts">'+Object.entries(FITS[slot]).map(([vid,F])=>{
    const on=cur[slot]===vid,tf=fittingStats({...cur,[slot]:vid}),sel=gCmp==='fit|'+slot+'|'+vid,base=FITS[slot][cur[slot]];
    const need=[['weight','weight'],['power','power']].filter(([k])=>tf[k]>FIT_BUDGET[k]).map(([k,n])=>'needs '+F[k]+' '+n+', '+(FIT_BUDGET[k]-(f[k]-base[k]))+' free');
+   const own=rmodOwned(save,slot,vid),T=F.rs&&RTREE.tracks[F.rs];   // Session 6B: research mods once researched, Legendary set mods once bought (the server record)
+   const lock=own?'':F.leg?'Legendary set mod · in the Lab store (checkout off)':'Research it in the Science Lab (Conquest town): '+T.n+(F.set?' set mod · Science Lab III':' · Science Lab '+['','I','II','III'][T.lab]);
    const cost=F.weight||F.power?'Weight '+F.weight+' · Power '+F.power:'Free: no weight or power';
-   return '<button class="gopt'+(on?' on':'')+(sel?' picked':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="fit|'+slot+'|'+vid+'"'+(need.length?' disabled':'')+' aria-pressed="'+on+'"><b>'+esc(F.n)+(on?' <span class="eq">Fitted</span>':'')+'</b><span>'+esc(modText(F))+'</span><small>'+cost+(need.length?'. Doesn’t fit: '+need.join(' and '):'')+'</small></button>'+
+   return '<button class="gopt'+(on?' on':'')+(sel?' picked':'')+(F.rs?' grs':'')+(F.leg?' gleg':'')+(lock?' glock':'')+'"'+(T?' style="--tc:'+T.c+'"':'')+' data-act="'+(on?'gnop':'gcmp')+'" data-arg="fit|'+slot+'|'+vid+'"'+(need.length||lock?' disabled':'')+' aria-pressed="'+on+'"><b>'+(F.leg?'★ ':F.set?'◆ ':'')+esc(F.n)+(on?' <span class="eq">Fitted</span>':'')+(F.rs?' <span class="grs-tag">'+esc(F.leg?'LEGENDARY':F.set?T.n.toUpperCase()+' SET':T.n.toUpperCase())+'</span>':'')+'</b><span>'+esc(modText(F))+'</span><small>'+(lock?esc(lock):cost+(need.length?'. Doesn’t fit: '+need.join(' and '):''))+'</small></button>'+
     (sel?gCmpCard(L,gL(gFitCand(spec,slot,vid)),'gfit',slot+'|'+vid,'Fit '+F.n,'','fit'+slot):'');}).join('')+'</div>').join('')+'<p class="gnote">Speed means driving speed. Dash and supers stay the same.</p>';
  },
  style:(spec)=>{
   const own=save.skin==='lunar',looks=spec.looks||{};
   return '<p class="gshared">Looks only: paint and looks never change stats</p><h4 class="gsub">Paint</h4><div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id]&&(id!=='founder'||FOUNDER_OPEN||(save.paints&&save.paints.founder))).map(id=>gPaintCard(id,spec.paint)).join('')+'</div>'+
    '<h4 class="gsub">Lunar Skin</h4><div class="gskin"><div class="grow"><b>Lunar Skin <span class="rar leg">Legendary</span></b><p class="mut">'+(own?'On for both bays, always. The one look that changes stats:':'Not owned yet. The one look that changes stats:')+'</p>'+gEdgeLine('skin',spec)+'</div>'+(own?'':'<button class="btn sm btn-quiet" data-act="premium" data-arg="skin">Buy · '+fmtNum(PSTARS.skin)+' ⭐</button>')+'</div>'+
-   FIT_ORDER.map(slot=>{const v=looks[slot]||'auto';return '<h4 class="gsub">'+LOOK_N[slot]+'</h4><div class="gchips">'+[['auto','Follow mod']].concat(Object.entries(FITS[slot]).map(([k,F])=>[k,F.n])).map(([k,n])=>'<button class="gchip'+(v===k?' on':'')+'" data-act="glook" data-arg="'+slot+'|'+k+'" aria-pressed="'+(v===k)+'">'+esc(n)+'</button>').join('')+'</div>';}).join('');
+   FIT_ORDER.map(slot=>{const v=looks[slot]||'auto';return '<h4 class="gsub">'+LOOK_N[slot]+'</h4><div class="gchips">'+[['auto','Follow mod']].concat(Object.entries(FITS[slot]).filter(([k])=>isLook(slot,k)).map(([k,F])=>[k,F.n])).map(([k,n])=>'<button class="gchip'+(v===k?' on':'')+'" data-act="glook" data-arg="'+slot+'|'+k+'" aria-pressed="'+(v===k)+'">'+esc(n)+'</button>').join('')+'</div>';}).join('');
  }};
 function gPaintCard(id,cur){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=cur===id;
@@ -716,8 +719,9 @@ function renderShop(){
    '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches for your '+esc(CH[shopCh()].n)+'</li></ul>'+
    '<button class="btn btn-gold block" data-act="founder">'+priceLabel(FOUNDER.ton,FOUNDER.stars)+'</button><p class="fnote">One per pilot. Gear and looks only: it adds no points and doesn’t buy $LUNAR.</p></div>':'')+
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache for your '+esc(CH[shopCh()].n)+'</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
-  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
+  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap. '+(LAB_STORE_OPEN?'Science Lab: ':'Coming with the Science Lab store: ')+'+1 research slot, research 25% faster and research parts on tiers '+Object.keys(PASS_PREM_PARTS).join(', ')+'.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
+  labShopSec()+
   vaultCard()+
   sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+gearPickHead('weapon',false)+gearPickGrid('weapon',false)+
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+gearPickHead('chassis',false)+gearPickGrid('chassis',false)+
@@ -731,6 +735,19 @@ function renderShop(){
   (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
 }
 
+// Session 6B: the Science Lab entries with CHECKOUT OFF in every currency (the Worker refuses them): research part packs, the four
+// Legendary set mods and instant finish, with their proposed prices (labPriceLabel: Stars in Telegram, TON + SOL on the website)
+function labShopSec(){
+ const off='<span class="labshop-off">Not on sale yet</span>',btn=p=>'<button class="btn sm btn-quiet" disabled aria-disabled="true">'+labPriceLabel(p)+'</button>';
+ const packs=RS_PACK_ORDER.map(k=>{const P=RS_PACKS[k];return '<div class="labshop-item"><div class="grow"><b>'+esc(P.n)+'</b><span>+'+P.each+' of every research part</span></div>'+btn(P)+off+'</div>';}).join('');
+ const legs=RTREE.order.map(t=>{const id=RTREE.legendary[t],F=rmodOf(id).F,set=rsLegSet(id),own=!!(save.lsm&&save.lsm[id]),done=!!(save.rm&&save.rm[set]);
+  return '<div class="labshop-item leg"><div class="grow"><b>★ '+esc(F.n)+'</b><span>'+esc(RTREE.tracks[t].n)+' · '+(own?'Owned':done?'A step stronger than '+esc(rmodOf(set).F.n):'Needs '+esc(rmodOf(set).F.n)+' first')+'</span></div>'+(own?'':btn(RS_LEG_PRICE)+off)+'</div>';}).join('');
+ const f=[20*60e3,2*3600e3,8*3600e3].map(ms=>labPriceLabel(rsFinPrice(ms)));
+ return sec('Science Lab','Research parts · Legendary mods')+'<div class="labshop panel"><p class="labshop-note">Not on sale yet: nothing in this section can be bought.</p><p class="mut">For the Science Lab in Conquest. Research is free with the parts you find; these only speed it up. Purchases never give points.</p>'+
+  '<h4 class="ptsh">Research part packs · one of each a week</h4>'+packs+
+  '<h4 class="ptsh">Legendary set mods · a step stronger than the earned set mod</h4>'+legs+
+  '<h4 class="ptsh">Instant finish · priced by the time left</h4><p class="mut">20 min '+f[0]+' · 2 h '+f[1]+' · 8 h '+f[2]+'. Shown on a running job in the Science Lab.</p></div>';
+}
 function paintCard(id){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=save.paint===id;
  const how=on?'Equipped':own?'Owned':paintLock(P)||(P.pass==='free'?'Pass tier 30':P.pass==='prem'?'Pass premium':priceLabel(P.ton,P.stars));
@@ -748,8 +765,8 @@ function passCard(){
 function openPass(){
  const ov=sheet('pass',()=>{
   const P=passState(),t=passTier(),xpIn=P.xp-t*PASS_XP;
-  const cell=(r,track,i,claimed,locked)=>{const got=i<=t;
-   return '<div class="pcell'+(claimed?' got':'')+(locked?' lock':'')+'"><span>'+esc(rewardLabel(r))+'</span>'+
+  const cell=(r,track,i,claimed,locked)=>{const got=i<=t,rp=track==='p'&&passPartsAt(i)?' + '+passPartsAt(i)*CQ_PART_ORDER.length+' research parts':'';
+   return '<div class="pcell'+(claimed?' got':'')+(locked?' lock':'')+'"><span>'+esc(rewardLabel(r)+rp)+'</span>'+
     (claimed?'<b class="ok">✓</b>':got&&!locked?'<button class="btn sm btn-gold" data-act="claimpass" data-arg="'+track+':'+i+'">Claim</button>':'')+'</div>';};
   let rows='';for(let i=1;i<=seasonTiers();i++)rows+=(i===PASS_TIERS+1?'<div class="pbonus">Early pilot bonus · launch season only</div>':'')+'<div class="ptier'+(i<=t?' on':'')+(i===t+1?' next':'')+'"><div class="pn num">'+i+'</div>'+cell(PASS_FREE[i],'f',i,P.cf.includes(i),false)+cell(PASS_PREM[i],'p',i,P.cp.includes(i),!P.prem)+'</div>';
   return '<h3>Lunar Pass</h3><p class="mut">Season '+seasonNo()+': '+(seasonFrozen()?'30 days, the clock starts Nov 1':'ends in '+daysLeft()+(daysLeft()===1?' day':' days'))+'. '+bonusTxt()+' XP per match: win +'+PASS_XP_WIN+', draw +'+PASS_XP_DRAW+', loss +'+PASS_XP_LOSS+', featured mode +'+PASS_XP_FEAT+'. Each daily quest +'+PASS_XP_QUEST+', all '+DQ_SLOTS.length+' +'+PASS_XP_ALL+', each weekly quest +'+PASS_XP_WQ+'.</p>'+
@@ -1097,6 +1114,7 @@ function openSettings(){
  sheet('settings',()=>'<h3>Settings</h3>'+
   '<div class="list" style="margin-top:8px">'+
   '<div class="q"><div class="grow"><div class="t">Sound</div><div class="p">Follows your phone’s silent switch</div></div><button class="toggle'+(save.sound!==false?' on':'')+'" data-act="sound" aria-pressed="'+(save.sound!==false)+'"><i></i></button></div>'+
+  '<div class="q vol'+(save.sound===false?' off':'')+'"><div class="grow"><div class="t">Volume</div><div class="p" id="vol-p">'+volLabel()+'</div></div><input type="range" class="volr" id="vol-r" min="0" max="100" step="5" value="'+Math.round(volLevel()*100)+'" aria-label="Volume"'+(save.sound===false?' disabled':'')+'></div>'+
   '<div class="q"><div class="grow"><div class="t">Vibration</div><div class="p">Buzz on hits, kills and rewards</div></div><button class="toggle'+(save.haptics?' on':'')+'" data-act="haptics" aria-pressed="'+(save.haptics?'true':'false')+'"><i></i></button></div>'+
   '<div class="q gfx"><div class="grow"><div class="t">Graphics</div><div class="p">'+gfxNote()+'</div></div></div>'+
   '<div class="seg c4" style="margin:-4px 0 6px">'+[['auto','Auto'],['high','High'],['low','Low'],['2d','2D']].map(([k,l])=>'<button class="'+(gfxMode()===k?'on':'')+'" data-act="gfx" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
@@ -1577,7 +1595,8 @@ const ACT={
  wiki:()=>openLink(WIKI_URL),
  lpwallet:()=>openLink('https://solscan.io/account/'+LP_WALLET),
  haptics:()=>{save.haptics=!save.haptics;store();if(save.haptics)fx('tap');},
- sound:()=>{save.sound=save.sound===false;store();if(save.sound){audioResume();setTimeout(()=>fx('tap'),60);}else{sndLabClear();LW.stopAll();}const ov=findOv('sndlab');if(ov&&ov.re)ov.re();},
+ sound:()=>{save.sound=save.sound===false;store();if(save.sound){audioResume();setTimeout(()=>fx('tap'),60);}else{sndLabClear();LW.stopAll();}const ov=findOv('sndlab');if(ov&&ov.re)ov.re();
+  /* Session 6B: the toggle and the Volume row follow at once, wherever Settings is drawn (the website's panel does not redraw on uiDirty) */const on=save.sound!==false;document.querySelectorAll('.toggle[data-act="sound"]').forEach(b=>{b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});const vr=document.getElementById('vol-r'),vp=document.getElementById('vol-p');if(vr){vr.disabled=!on;vr.closest('.q')?.classList.toggle('off',!on);}if(vp)vp.textContent=volLabel();},
  remind:()=>setReminders(!save.remind),
  remindyes:()=>{const ov=findOv('remind');if(ov)closeOverlay(ov);setReminders(true);},
  remindno:()=>{save.remindAsked=true;store();const ov=findOv('remind');if(ov)closeOverlay(ov);},
@@ -1809,6 +1828,10 @@ ACT.gcore=a=>{const id=gBayId(),[i,k0]=a.split(':'),k=k0==='-'?null:k0;
 ACT.gfit=a=>{const id=gBayId(),[slot,v]=a.split('|');baySave(id,p=>{p.mods={...fittingSelection(p.mods),[slot]:v};},FITS[slot][v].n+' fitted on Bay '+gLetter(id));};
 ACT.glook=a=>{const id=gBayId(),[slot,v]=a.split('|');baySave(id,p=>{p.looks={...(p.looks||{}),[slot]:v};});};
 document.addEventListener('change',e=>{if(e.target.id==='g-name')gRename(e.target.value);});
+// Session 6B: the volume slider (Settings, beside Sound): live while dragging, saved when released, with one tap so you hear the level
+const volLabel=()=>save.sound===false?'Sound is off':Math.round(volLevel()*100)+'%'+(volLevel()===0?' · silent':'');
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='vol-r'){setVolume(e.target.value/100);const p=document.getElementById('vol-p');if(p)p.textContent=volLabel();}});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='vol-r'){setVolume(e.target.value/100);store();fx('tap');}});
 document.addEventListener('keydown',e=>{if(e.target.id==='g-name'&&e.key==='Enter'){e.preventDefault();e.target.blur();}});
 ACT.gshare=()=>{
  const M=gM();if(!M)return;const L={...gL(),vl:vaultLevel(save.vg)},v=machineView(L),tag=buildTag(L),brk=myLeague(v.power),cv=gCardCanvas(M,L,v,tag,brk),url=cv.toDataURL('image/png'),link=refLink();

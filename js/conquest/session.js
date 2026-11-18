@@ -21,7 +21,7 @@ class Session{
  if(v.selectedId&&!B.enemies.some(e=>e.id===v.selectedId&&e.hp>0))v.selectedId=null;
  // Retain inputs created while the request was in flight, then replay prediction only. Commands are already normalized
  // fixed steps, so this replay is the same computation the Worker performs next.
- for(const i of this.queue)v.p=K.advance(B,v.p,K.validated(i),STEP_MS/1000,!s.mission);
+ for(const i of this.queue)v.p=K.advance(B,v.p,K.validated(i),STEP_MS/1000,!s.mission);if(B.mf)B.mf.q=[];   // research-mod cues of replayed steps already played
  const correction={x:oldPosition.x-v.p.x,z:oldPosition.z-v.p.z},size=Math.hypot(correction.x,correction.z);this.corrections.push(size);if(this.corrections.length>64)this.corrections.shift();
  if(oldPhase===this.phase&&size<12){v.renderCorrection={x:(v.renderCorrection?.x||0)+correction.x,z:(v.renderCorrection?.z||0)+correction.z};v.correctionAdded={x:(v.correctionAdded?.x||0)+correction.x,z:(v.correctionAdded?.z||0)+correction.z};}else v.renderCorrection={x:0,z:0};
  if(s.completed?.['oxygen-line'])v.progress?.complete('oxygen-line');v.syncLoadout();v.flushHealth();

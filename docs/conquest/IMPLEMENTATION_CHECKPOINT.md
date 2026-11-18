@@ -4803,6 +4803,272 @@ spent (behavior held constant across the change) before the +-10% check.
   non-persisted queue fired after the CAS write; client `/api/conquest/an` for transmission_read/skip and quit_point/session_minutes;
   admin sheet tab; `dev/tests/conquest-analytics.mjs`.
 
+## Checkpoint 41 — Session 6B: Tank Lab, logic half (branch `claude/tank-lab-logic-half-nm0485` from main `4659c04`, continued on `claude/tank-lab-logic-half-13cv6c` from main `4dd82bf`)
+
+Brief: the owner's Session 6B prompt of Nov 16, 2026 (it wins over `docs/conquest/audit/SESSION_06B_TANK_LAB_PROMPT.md`): Science Lab
+research + 16 mods, POWER chip, zone bands, Refuge Supply order, audio, revenue hooks with checkout off, owner-rules CI check, the
+wall-storage fix. Release PRE-APPROVED. No live players: no migration code. Weather, plate visuals and mod 3D/particle effects go to
+roadmap row 6B-V. **Finished by the owner's "SESSION 6B FINISH" prompt of Nov 17-18, 2026** (it wins over the older notes below where
+they differ): bring the branch up to main, the reviewer fixes, the research economy (costs, a daily limit), a free research path
+for the Legendary set mods, owner rules, tests, two reviews, release (pre-approved).
+
+### Session 6B finish: resume here (next session reads this first)
+- Branch `claude/tank-lab-logic-half-13cv6c` (the finish session's own branch). Slice F1 DONE: `92f9a3c` merged onto main `4dd82bf`
+  (merge, not rebase: one conflict pass). Conflicts kept both sides: `css/app.css` (hazard finishes + Lab styles), `index.html` /
+  `web/boot.js` (weather.js + lab.js, rating.js, labstore.js), `js/rules.js` ECO_KEYS (`hz` + `rm lsm bpt rsx`), `js/game.js`
+  (respawn and match-start state: both sets; `takeHit` 6B signature with the 5E-2e kinds), `worker/src/eco.js` (proof call: both
+  sets of options), `worker/src/proof.js` (both allowances: the 5E-2e shove at a train / tornado strike and 6B's Traction boost +
+  Overdrive dash charges, in one speed limit), this file (Checkpoints 41 and 42 both kept, in number order).
+- Slice F1 also: the mod-vs-hazard rulings (table "Mods and hazards" below), `dev/tests/arcade-weather.mjs` sections 3c and 7c,
+  roadmap row 6B-V and the 7.8 line. Next: slice F2 = Checkpoint 41 "NEXT" 1-6 (the reviewer fixes), then F3 research economy,
+  F4 Legendary research path, F5 owner rules + model + Worker tests, F6 browser + critic, F7 reviews, F8 release.
+- Local: `npm install --prefix worker` once, then `node worker/build-sim.mjs` and `node worker/build-web.mjs` (generated, not
+  committed) before the Worker tests. Graphify did not connect in this container (proxy 403): code read directly.
+
+### Mods and hazards (Session 6B finish ruling; 5E-2e hazards meet the mods for the first time in this merge)
+World damage = the Arcade storm ring (takeHit kind 2) and the six map hazards (kind 3). The shared mod engine sees both as kind 3
+(`game.js takeHit` passes `kind>=2?3:kind` to `mfTaken`); Conquest's enemy marked strikes stay kind 2 (a shield and the overshield
+do stop those: they are enemy attacks). Every rule below is checked on all six maps by `arcade-weather.mjs` 7c.
+
+| Mod(s) | Against a hazard hit | Why |
+|---|---|---|
+| Armor (chassis, cores) and Hull Plating | cut it (area / energy, as 5E-2e built) | the released 5E-2e rule: gear keeps its worth against hazards |
+| Momentum Plating | does NOT soften it | its own words: "shots hit you 20% softer" (it never cut supers either); a movement trick, not armor |
+| Plasma shield (any mod: Penetrator, Capacitor, Reflector), Reflex's auto-raised shield | does NOT stop it | 5E-2e rule 5: no shield stops world damage |
+| Aegis Matrix / Aegis Prime overshield | does NOT take it (the overshield is still whole after it) | shield-type; texts now say "the next enemy hits" |
+| Reflector Field | reflects nothing | nothing reflects a hazard (and a shield blocks none of it to reflect) |
+| Reflex Skirts | never raises the shield for a hazard | a shield cannot stop one, so raising it would only waste it; text now "a marked enemy strike" |
+| Heat Sink Plating | the hull a hazard takes counts toward the next heat ring | its words: "every time you lose a fifth of your hull"; never worth farming (a ring is 0.45 s of your damage for 20% of your hull) |
+| Ram, Momentum, Overdrive, Hyperdrive (hull -3 / -4%) | the 34% cap follows the smaller hull | the cap is a share of the tank's own full hull: it holds after every mod |
+| Vent, Overclock, Inferno, Sunfire, Pierce, Marksman, Rail, Starfall, Predictor, Traction, Capacitor | no effect on a hazard hit | offensive or shield timing only |
+| Inferno / Sunfire burn tick | IS its source's hit: keeps the 5 s hazard credit (kill to the last attacker, takedown to every enemy inside 5 s) | a burn is the pilot's own damage (st.dmg, the record's damage) and already went through `takeHit` as a hit |
+| The megatank | never a hazard target, mods or not | 5E-2e rule 6 |
+
+Server agreement for the burn tick: the AI-match record already carries burn damage as the pilot's damage; a burning tank can drive
+out of reach by its last tick, so `worker/src/proof.js` now takes `burnT` (from the server's loadout, `eco.js`) and counts "in reach"
+over the burn's window (the hit that set it was in reach), for both the damage-reach check and the hazard takedown check. Without a
+burn mod nothing changes. `arcade-weather.mjs` 7c builds that record: with Inferno the takedown counts, without it it does not.
+Also checked with every mod on (`arcade-weather.mjs` 3c): 24 seeded live rooms with all 20 mods across eight kits, Worker bundle ==
+phone build event for event (hazard hits, burns, rings, reflections, rams). Test changes from this merge (a decision changed their
+rule, nothing loosened): `hf-collection.mjs` walks the fitting looks only (`isLook`; research mods borrow the free looks) and its
+`fittings 243` check is live again (it had been swallowed by a 5E-2e comment; found by the 6B owner-rules lint).
+
+### Earlier slices (Nov 16-17, done; the original resume point)
+- DONE slice 1 (research engine + mods, Worker): `js/rules.js` FITS research options (16 earned + 4 Legendary), RS tree, rsQuote /
+  rsSlots, ownership (S.rm researched, S.lsm Legendary, S.bpt bonus parts, S.rsx finish credits; ecoLoadout/labValidate/PvP read
+  them from the server record), rmodPe valuation in powerZ; `worker/src/conquest-research.js` (jobs, parts, Worker clock, pause,
+  Lab III/pass slots, finish credits), outbox `e.rm` -> eco `S.rm` (creditConquest). Tests: `dev/tests/conquest-research.mjs` (82),
+  `dev/tests/wtest/conquest-research.mjs` (18) PASS; garage-rules, lab-ui, combat-balance, gear-combat, fair-arcade, wtest lab /
+  chassis / hull-plating / web-auth / conquest / conquest-airdrop PASS.
+- DONE slice 2 (behaviors in both engines): one shared engine in `js/rules.js` (`mfNew/mfStep/mfShot/mfRate/mfHit/mfMiss/mfTaken/
+  mfShieldEnd/mfShieldRate/mfSpeed/mfDash*/mfBurn/mfHud`, `MOD_CUE`), applied in `js/game.js` (turret lead, shot modifiers, rail
+  pass-through, vent splash, burns, heat rings and reflections queued after the hit (no chains), pierce, momentum, overshield, dash
+  charges, ram, capacitor, aegis, reflex vs marked blasts) and in Conquest (`combat.js` hit/moveShots/step + `modTick`, `controls.js`
+  abilityStep/advance/aim/carry); live rooms: roster `rm`, snapshot field 19 (PVP_V unchanged: append-only), `js/pvp.js` decode;
+  cues: Arcade `ev('m',id,cue)` -> `match.js` pop + `fx('mod')`, Conquest `B.mf.q` -> `app.js modHud` pop + chips; HUD chips
+  (`render.js modChips`, `.cq-mods`); 19 synthesized cue sounds + UI/reward/stinger sounds in `js/fx.js`. Proof-of-play allows
+  Traction's speed and Overdrive's dash charges (`worker/src/proof.js`). Tests: `dev/tests/mod-behaviors.mjs` (51) PASS; fair-arcade,
+  combat-balance, gear-combat, wtest pvp (snapshot layout assertion updated to 19 fields), lab-battle, conquest raids/first-hour/
+  living-world/session/recall PASS. Measurements: `dev/tools/mod-power.mjs` (bot and human-profile duels, 240 a mod a kit).
+- DONE slice 3 (Science Lab screen + garage): `js/conquest/lab.js` (ConquestLab: screen / reveal / line / nodeOf), loaded by
+  index.html + web/boot.js; the screen in the town sheet (HOME tab fold `lab` + OPEN RESEARCH on the lab's card,
+  `plotview.js labFold`), as its own dialog (MORE -> SCIENCE LAB · RESEARCH, hub RESEARCH button -> `o.enter('research')`), the
+  reveal card once per mod (`research-seen`, FIT ON MY TANK through the garage's own `baySave`); hub YOUR BASE card research line;
+  lab card description updated (`plot.js`); garage Mods section lists research options with track tags, lock lines (unresearched
+  -> where to research; Legendary -> Lab store, checkout off), looks only from free options (`isLook`). Renamed the tree constant
+  RS -> RTREE (render3d.js owns a global `RS`). Tests: lab-ui (+ research text/lock/looks), garage-rules (+ section 7), conquest-copy
+  scans lab.js; conquest-server.mjs fixture `research:{cc,lv,parts,done,seen,pass,lsm}`. Browser smoke 390x844: reveal card + lab
+  screen render, no page errors, the lab dialog scrolls.
+- DONE slice 4 (POWER chip, zone bands, Refuge Supply): `js/conquest/rating.js` (ConquestRating.chip/update: a generic rating chip,
+  label + number, a 4 s "92 → 94" delta, the last value per key kept on the device so a mod fitted in the garage shows its delta on
+  the next Conquest screen; FORCE and DEFENSE reuse it with their own keys) on the Conquest HUD (under the hull bar, updated each
+  frame from `powerOf(state.loadout)`: plating + research mods included) and the hub hero; Refuge Supply now opens on the POWER chip,
+  BANK SALVAGE, REPAIR HULL and the plating cards, then one ENGINEERING line with the real tuned values (`engineeringValues` against
+  an untuned tank: "+18% heat capacity, +9% range"), then War Orders, then the CP / mineral ledger; zone bands in `combat.js`
+  (`DANGER_BAND` STANDARD 55–100, HARD 75–135, VETERAN 140–220; a zone = its ring's authored tier from CONQUEST_BLUEPRINT §5:
+  Heartland/Rear STANDARD, Frontier HARD, Warfront + Inner Ring VETERAN; a briefing = its operation's own danger tier), shown on every
+  briefing ("ZONE 55–100 POWER · YOUR POWER 59 · a guide only") and in the region map's ZONE BANDS fold (rows above your POWER are
+  marked). Informational only: nothing in combat, spawns or rewards reads a band or `powerOf`. Why 55: a brand-new account is
+  power 59 (no cores owned yet; STOCK_L with its three cores is 68), so the Heartland must read as in band. Test:
+  `dev/tests/conquest-power-chip.mjs` (18) PASS; conquest-copy / flagship-ui / sheet / authority / session / first-hour / raids /
+  living-world / recall, mod-behaviors, conquest-research, lab-ui, garage-rules, fair-arcade PASS. Browser 390x844: hub chip, HUD
+  chip, Supply order, map bands and a briefing band render with no page errors.
+- DONE slice 5 (audio, code-made only, `js/fx.js`): zone beds `cq-barren` (near-silence: a low rumble, the suit's hum and air
+  recycler, a far impact every 9–17 s), `cq-terra` (wind in the grass with gusts, high air, running water with bubbles, a far
+  machinery hum, settler life: a whistle or a knock every 4.5–10 s), `cq-core` (machinery, voices and traffic, metal work every
+  2–5 s, loader servos, settler life); `ConquestWorld.soundZone(x,z,base)` picks the bed (the Refuge colony circle and a built
+  Command Base = core, grass/lush = terraformed, else barren), `Conquest.ambience()` holds a new zone 2.5 s before the crossfade,
+  `main.js` plays it while Conquest is open (Arcade map beds unchanged). Reward sounds wired: bank (Supply button + Worker
+  `banked` notice share one 4 s cue), build complete (`plot-built` notice), research complete (reveal card), plate mounted
+  (`fabPlate`, garage and Supply), War Order claimed; stingers: raid launch, invasion (sector/base defense start + incursion
+  alert; the ambush keeps its warning), the Meteor Strike warning (replaces the impact sound there), every operation secured
+  (replaces the Arcade win sound in Conquest). Settings: a Volume slider right after the Sound toggle (`save.vol`, default 1 =
+  the shipped mix, master = 0.5 x vol², 0 silent; live while dragging, saved on release; kept by the website's preference list;
+  disabled and "Sound is off" when muted). One AudioContext (made on the first input), suspended on `visibilitychange` and
+  `pagehide`. No storm or rain sounds. Test: `dev/tests/audio.cjs` (40, Chromium offline renders: barren −54.6 / terraformed
+  −51.3 / core −44.9 dBFS; on a phone −68.3 / −59.4 / −57.7 dB, all under the shipped Arcade beds and 16 dB under a Pulse
+  Cannon shot) PASS, in `website-check.yml` beside weapon-sounds; weapon-sounds (479) PASS. Browser 390x844: the slider (40% ->
+  saved, muted -> disabled), the bed at a green point, a barren point and the spawn, Sound off/on stops and restores it.
+- DONE slice 6 (revenue hooks, CHECKOUT OFF in every currency): `js/rules.js` `LAB_STORE_OPEN=false`, `rsFinPrice` (instant
+  finish by time left: $0.22 x hours^0.85, 5-minute steps, $0.10 minimum; concave like Clash of Clans' 1 h ~20 gems / 1 day ~260),
+  `RS_PACKS` (Field kit +1 of each part 99⭐/1.6 TON, Lab crate +3 each 249⭐/4 TON, Research cache +8 each 599⭐/9.6 TON; one of each
+  a UTC week), `RS_LEG_PRICE` (each Legendary set mod 599⭐/9.6 TON, on sale only after its track's earned set mod is researched),
+  `PASS_PREM_PARTS` (premium tiers 10/20/30 add 1 of each research part on top of the tier's reward, from the day the Lab store opens; never points), ecoPrice /
+  ecoOwned / ecoGrant / ecoRefund for `rspack` / `rsleg` / `rsfin` (grants run only from a verified payment, give no points).
+  `worker/src/index.js` descOf refuses every Lab kind, so no Stars invoice, no Telegram-confirmed payment, no TON or SOL log grants
+  one. Phone: `js/conquest/labstore.js` (FINISH NOW on a running job, LEGENDARY on its track, the LAB STORE fold with the packs: all
+  disabled, "Not on sale yet"), the Shop's Science Lab section (`ui.js labShopSec`, after the Lunar Pass card), `labPriceLabel`
+  (`net.js`: Stars in Telegram; TON + SOL at the live rate on the website), the pass card and pass sheet name the research perks,
+  a claimed premium tier toasts its research parts. Stars:TON stays at the shop's 61.5–62.5. Tests: `dev/tests/wtest/lab-store.mjs`
+  (29) and `dev/tests/lab-store-ui.mjs` (20) PASS; conquest-copy scans labstore.js; conquest-research, lab-ui, garage-rules,
+  fair-arcade, mod-behaviors, wtest lab / chassis (105) / web-auth / conquest / conquest-research / conquest-airdrop / pvp (133) /
+  test (204) / farm / hull-plating PASS.
+- DONE slice 7 (owner rules, wall fix, research weeks): `docs/owner-rules.json` (only an owner-decided prompt may change it; AGENTS.md
+  gate 6) + `dev/tests/owner-rules.mjs` (25 checks, 6 s; its own workflow `owner-rules.yml` on every pull request and push to main,
+  also in conquest-check and before every Worker deploy): DAILY_CAP 50,000, CQ_PTS, DQ_PTS 3,500, DQ_ALL_BONUS 1,000, WQ_Q_PTS
+  12,500, WQ_PTS 5,000, LG_MULT, the Sortie chain (per 0, item .10); research = parts + time only, Worker clock 20 min / 2 h / 8 h,
+  1 slot + 1 at Lab III, lab max 3 from CC3; chassis kit model first kit day 83 inside 77–97; the earned tree median 7.9 weeks
+  inside 6–10; best research build +8.33% over best free (legend kit 240 -> 260; owner about +8%, ±1 point); guard limits never
+  looser (ladder-check ±10% and CC10 >= day 7, base-progression CC10 floor 21 and CC5 >= 4); 15 CP lines in 6 files pinned (a new
+  CP source or sink fails); a lint for code hidden after a `//` comment (proved on the four known cases; 0 in 267 files); the
+  premium pass track, Lab purchases and research jobs never award points. Mutation-tested: DAILY_CAP 60,000 and a ±15% ladder band
+  both fail it (exit 1). Wall-storage fix: `worker/src/conquest-plot.js` plot-wall now spends stored cells (the loop sat after a
+  comment); `conquest-town.mjs` +3 checks that always run (the old one sat behind `if(st0)` with nothing stored), failing on the
+  old code (4 -> 4) and passing now. The lint also revived three dead test checks: `conquest-economy.mjs:13` (western patrols
+  refresh), `conquest-garrisons.mjs:8` (no guard inside a solid, finite HP), `conquest-copy.mjs:19` (the base screen copy loop
+  had been running its PASS log as its body); all pass. Research part counts tuned by `dev/tools/economy-model.mjs researchModel`
+  (real drop tables, Lab I/II day 4, Lab III day 7, both slots, 201 seeds): RTREE.cost [2,3,4,7] (64 parts) gave a median 11.9
+  weeks, so -> [1,2,2,5] (40 parts): free 60 min/day median 7.9 weeks (6.6–9.6), 30 min/day 15.3; premium pass parts moved to tiers
+  10/20/30 (12 a season): 5.9 weeks, about 25% faster (five tiers halved the tree: too far ahead of free pilots). New tests wired:
+  conquest-check (research, mod behaviors, POWER chip, Lab store UI + Worker, owner rules), deploy-worker (wtest research + Lab
+  store, owner rules), website-check (audio). Inventory heading now "RESEARCH PARTS · FOR THE SCIENCE LAB".
+  Note: `docs/conquest/session5/base-progression-model.json` is already stale on main (CC3 playMin 115.5 vs 117 when re-run at
+  4659c04); left as committed, the test passes either way.
+- DONE slice 8a (reports + browser): `docs/economy/economy-model.json` (+ `research`, `researchPower`; no existing key changed),
+  `docs/economy/chassis-kit-model.json` (unchanged: first kit day 83), RESOURCE_ECONOMY §6.5 (research power table, best builds,
+  measured duels), §7.5 (tree weeks), §9.3 (Lab store prices); `docs/conquest/session6b/mod-power.json` (bot + human-profile duels,
+  240 a mod a kit). Browser: `dev/tests/conquest-session6b.py` PASS at 390x700, 390x844, 320x568 (touch) and 1366x768, 1920x1080
+  (mouse + keyboard): hub POWER chip + live RESEARCH button; RESEARCH -> the Lab screen; Thermal I end to end (Vent Barrel, 1 part,
+  20 min; running job with FINISH NOW · 8 ⭐ disabled; job ends; reveal card; FIT ON MY TANK; "POWER 59 · → 60 at the Refuge";
+  fast travel to REFUGE SUPPLY; the terminal refit; "POWER 59 → 60"); Refuge Supply order; the colony-core bed playing; the volume
+  slider (touch / arrow keys) saved; Sound off mutes the bed and disables the slider; the Shop's Science Lab entries in Stars, all
+  disabled. `dev/tests/web-labstore.py` PASS on the real website build at 1366x768 and 1920x1080: TON + SOL at the live rate, all
+  disabled; volume by keyboard; mute by Shift+Tab + Space. Captures + `journey.json` + `web-labstore.json` in
+  `docs/conquest/session6b/`. Fixes found by these runs: the HUD chip now separates the tank in the field (key `power-field`) from the
+  garage (hub `power`), shows the pending line and asks for the terminal refit sync; the Lab opens from the hub without waiting for
+  terrain; `/api/rates` (Worker, cached 5 min) feeds the website's SOL label (its security policy blocks third-party price calls);
+  the Sound toggle updates the Volume row in place (the website's panel does not redraw); the research fixture resets the account's
+  Conquest credit watermark with the record (test placement only).
+- DONE critic rounds 1 and 2 (UX critic subagent, then the lead on the re-captures): Lab CLOSE at the top, fitted and centred
+  reveal card with FIT as the main button, amber pending POWER line, ticker pill, key hint hidden under dialogs, Supply chip on its
+  own line, 44 px Lab buttons, 28 px volume knob, "Not on sale yet" first in the Shop, "Needs <set mod> first", plainer copy.
+- DONE reviews (two independent read-only subagents, Nov 17) -> BOTH FAILED the first head (82eb4a2). Fixed since:
+  - security F1: the pass's research perks would be sold through the live pass checkout -> gated on `LAB_STORE_OPEN`
+    (`passResearch`, `passPartsAt`; `conquest.js researchCtx`, `ecoClaimPass`); texts say "Coming with the Lab store".
+  - security F2: owner-rules loosening -> limits must be plain literals, owner-rules RUNS the ladder and base-progression tests and
+    judges their outputs itself (and restores their files), wider CP patterns (+ debit calls pinned), `owner-rules-change` label
+    gate in `owner-rules.yml` (creation exempt). 30 checks.
+  - security F3 + gameplay 4 (part): Traction's proof allowance only within the window after a dash flag (`proof.js`);
+    `dev/tests/wtest/proof-mods.mjs` (5) fails on the old code.
+  - security F4: `/api/rates` failure cache (60 s), one shared lookup, `netLimited`, `no-store` on zeros.
+  - gameplay 1 (BLOCKER): mod cues used event `m` (the meteor / megatank impact) -> now `Q` (`game.js modCues`, `match.js`);
+    mod-behaviors guards it (52).
+  - gameplay 5: Conquest cues replayed after a server reply -> `session.js` clears `B.mf.q` after the replay.
+  - gameplay 6: the rating chip wrote localStorage every frame -> only on a change; aria-label only on a change.
+- NEXT (release is BLOCKED until these are fixed, both reviewers re-run and pass, then CI green):
+  1. Gameplay 2 (BLOCKER, live PvP phone/server agreement): (a) Momentum must read the smoothed velocity (`avx/avy`) for live
+     units (server ticks 30 Hz, claims every 100 ms); (b)+(c) put the pilot's own shield time and cooldown in the snapshot and
+     apply them to the pilot in `pvpApply` (Capacitor's fast recharge, Reflex's auto-raise); (d) `dashEnd` must not apply Ram on
+     the phone in a live match (phantom damage/kills); (e) the server must accept Overdrive's second dash within one tick of the
+     first ending (7-tick dash vs the phone's 217 ms); (f) team-0 pilots hear cues twice (local prediction + server): keep one
+     source in live rooms. Add a PvP phone/server agreement test (the reviewer's probes: scratchpad/probes/).
+  2. Gameplay 3: `mfBurn` drops a replaced burn's built-up damage (Inferno loses 15-49%): carry it into the new burn; in Conquest
+     keep burns while `b.t>0||b.a>0`.
+  3. Gameplay 4 (rest): the phone-written dash flag can be faked on every sample: limit dash-flag rising edges to the charges a
+     dash cooldown allows; the charge multiplier only within one burst.
+  4. Gameplay 7 (balance): measured duels contradict `rmodPe` for Overdrive / Momentum and Hyperdrive measures like Overdrive:
+     retune `rmodPe` toward the measured values and give Hyperdrive a real step; then re-check owner-rules (+8% band), the reports
+     (RESOURCE_ECONOMY §6.5) and `mod-power --write`.
+  5. Gameplay 8/9 (low): vent splash counter bonus applied twice; reflect armor Arcade vs Conquest; burns vs barrier; Lab timers
+     static while open; hub RESEARCH still loads the 3D world first.
+  6. Security F5 (latent, before checkout opens): enforce the Lab sale rules inside `ecoGrant`, call `ecoOwned` in the grant paths.
+     F6 (owner judgement): Legendary step is +6.9% over the best research build (55.2% live): owner to confirm or shrink.
+     Pre-existing (owner decision, G9): `solValueOk` fails open when CoinGecko is down (a tiny SOL payment could pass): make it
+     fail closed ("pending").
+  7. Then: re-run `conquest-session6b.py` (5 sizes) + `web-labstore.py`, both reviewers again (fresh, read-only), `dev/bump.sh`,
+     PR (body draft in the scratchpad was lost with the container: rewrite from this checkpoint), CI green, merge, deploy, verify
+     `/pvp/health` and `version.json` from the deploy jobs, ROADMAP (6B RELEASED logic half, row 6B-V, 6C note, fix-queue items
+     done), release record here.
+- Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.
+
+### Research: comparable games (recorded before design; sources searched this session)
+- **War Robots modules** (warrobots.com posts 281-283, 388; the 2024 passive-module rework): passive modules are perks that fire in
+  a situation, active ones have cooldowns; the rework folded them into specializations. Lesson: a mod is a TRIGGER the player can
+  feel, not a stat stick; keep one trigger per mod.
+- **Destiny 2 armor mods** (Charged with Light, Elemental Wells; retired for complexity in Lightfall): trigger chains between mods
+  became unreadable. Lesson: no mod feeds another mod's trigger; every trigger has its own HUD chip and sound.
+- **MechWarrior Online heat** (ghost heat penalizes alpha strikes): heat is a resource the player manages. Lesson used: the Thermal
+  track turns sustained fire into a reward (Vent, Overclock, Inferno) with a cool-down or a slower phase as the price.
+- **Clash of Clans Laboratory** (one research at a time, no cancel, finish early with gems or a book; time-to-gem skips about 20 gems
+  for 1 h and 260 for 1 day, cheaper per hour the longer the skip; the Gold Pass research boost is about 20%). Lessons used: one job
+  a slot, parts + time gates, a concave instant-finish price, a pass perk near +20-25% speed.
+- **Telegram Stars**: about $0.02 a Star at retail (App Store, Mar 2026: 100 Stars $1.99). The shop's own rates (77 Stars and 1.25
+  TON a dollar) are kept for every proposal.
+
+### Decisions and why (the owner's prompt left these to the lead)
+- **Track -> slot mapping:** each track has a home slot where its identity lives (Thermal and Ballistics: the mount, the weapon;
+  Drive: mobility; Field: the hull) plus one mod in another slot (Heat Sink and Momentum on the hull, Predictor and Reflex on
+  mobility), so a single track never fills a tank and builds mix tracks. The two weapon capstones (Inferno, Rail) compete for the
+  mount; the best research build mixes three tracks (Aegis hull / Overdrive mobility / Inferno mount).
+- **Numbers:** best research build on the legend kit 240 -> 260 (+8.33%, owner "about +8%"); each set mod is the strongest option in
+  its slot; each Legendary a step above it (best Legendary build 278, +6.9% over research; live win 55.2% vs research, 61.2% vs no
+  research). Mods are valued in `powerZ` from their numbers (`rmodPe`), so gear rating, league and matchmaking see them.
+- **Tree pace:** part counts 1/2/2/5 a track (40 parts) after the model showed the first draft 2/3/4/7 (64) at a median 11.9 weeks;
+  now a free 60-min/day pilot finishes in a median 7.9 weeks (6.6-9.6), inside the owner's 6-10. The first mod costs one part so
+  the first reveal comes in the first session with a Lab.
+- **Lunar Pass perks:** +1 research slot, jobs 25% faster (RTREE.slots.pass / passTime) and 1 of each part on premium tiers 10/20/30.
+  Five tiers (20 parts a season) made premium pilots finish in 4.4 weeks, half the free time: too far ahead. Three tiers: 5.9 weeks
+  (25% faster), close to the genre's pass research boosts. The premium track still pays no points; season dates untouched.
+- **Store (checkout off):** instant finish $0.22 x hours^0.85 (20 min 8 Stars, 2 h 31, 8 h 100); part packs 99 / 249 / 599 Stars
+  (1.6 / 4 / 9.6 TON) for +1 / +3 / +8 of every part, ONE OF EACH A WEEK (a payer can speed up, not skip; a free pilot is never more
+  than a few weeks behind); each Legendary 599 Stars / 9.6 TON and ON SALE ONLY AFTER its track's earned set mod (a step up, never a
+  skip of the tree). Telegram shows Stars, the website TON + SOL at the live rate. Revenue logic: the pass gains a concrete research
+  reason to buy; packs are an impulse buy at the 99-Star entry point; Legendaries are the end-game spend for invested pilots.
+- **Zone bands:** a zone = its ring's authored tier (CONQUEST_BLUEPRINT §5), a briefing = its operation's tier; STANDARD 55-100 (a
+  brand-new account is POWER 59), HARD 75-135, VETERAN 140-220 (from the scripted kits that clear each tier). Informational only.
+- **POWER in Conquest:** the HUD chip shows the tank in the field; a mod fitted away from the Refuge shows "→ 60 at the Refuge" and
+  the terminal refit (an existing rule: refits happen at the terminal or the spawn) applies it, the chip then reads "59 → 60". The
+  client asks for that refit sync at the terminal (three tries per change). The Lab opens from the hub without waiting for the
+  terrain to stream (a 2D screen).
+- **Audio:** the three beds use the existing code-made ambience engine; the core's activity is the loudest, barren is near-silence
+  on a phone (-68 dB) and every bed stays under the shipped Arcade beds; the volume is squared (50% = a quarter of the power) with
+  the default at the shipped mix.
+- **Owner rules:** one checked-in file (`docs/owner-rules.json`) holds every owner number and guard limit; the check also pins the
+  CP-changing lines (a tripwire for new CP sources or sinks) and lints for code swallowed by a `//` comment (the class of bug behind
+  the wall-storage report, which had also silently disabled three test checks).
+
+### The 16 mods (plain words; trade-off = the stat it costs)
+| Track | Mod | Slot | What it does | Trade-off |
+|---|---|---|---|---|
+| Thermal | Vent Barrel | mount | 3 s of fire -> a VENT ROUND: +0.5 s of damage and a burst on enemies beside the target | -7% DPS |
+| Thermal | Overclock Breech | mount | 3.5 s of fire -> 30% faster fire until you let go, then 1.5 s slower | -5% DPS |
+| Thermal | Heat Sink Plating | hull | every fifth of hull lost -> a HEAT RING hits every enemy in range and sight | -7% speed |
+| Thermal | ◆ Inferno Core | mount | 2.5 s of fire -> INFERNO 3 s: hits set targets BURNING (two burns at once) | -4% DPS |
+| Ballistics | Penetrator Coil | mount | a raised shield stops only a fifth as much of your damage | -2% DPS |
+| Ballistics | Marksman Coil | mount | three direct hits in a row on one target: the third is a sure CRITICAL | -5% DPS |
+| Ballistics | Predictor Gyro | mobility | the turret leads moving targets | -5% speed |
+| Ballistics | ◆ Rail Driver | mount | every 6th shot a RAIL SLUG: x1.5 damage, twice as fast, through shields and the first tank | -4% DPS |
+| Drive | Traction Servo | mobility | every dash ends in +60% speed for 2 s | +15% dash recharge |
+| Drive | Ram Servo | mobility | dash into an enemy: 1.5 s of your damage and its cannon jams 1.5 s | -3% hull |
+| Drive | Momentum Plating | hull | after 1 s flat out, hits land 20% softer while you keep moving fast | -4% hull |
+| Drive | ◆ Overdrive | mobility | two dash charges | -3% hull |
+| Field | Capacitor Bank | hull | standing still, the shield recharges five times as fast | -4% speed |
+| Field | Reflector Field | hull | damage your raised shield blocks flies back at the shooter | -3% speed |
+| Field | Reflex Skirts | mobility | the shield raises itself when a super or marked strike is about to hit | -2% DPS |
+| Field | ◆ Aegis Matrix | hull | a shield's end leaves an OVERSHIELD of 11% hull for 6 s | -4% speed |
+Legendary set mods (bought, checkout off): ★ Sunfire Core (Inferno: 2 s to ignite, 3.5 s, three burns), ★ Starfall Driver (every 5th
+shot, x1.6, through two tanks), ★ Hyperdrive (three dash charges), ★ Aegis Prime (overshield 15% for 8 s).
+
 ## Checkpoint 42 — Session 5E-2e: Arcade weather + map hazards (branch `claude/arcade-weather-map-hazards-ysbkxs`, from main `4659c04`) — RELEASED Nov 17 (PR #140, merge `bdde102`, build `20261117180140`)
 
 Brief: the owner's Session 5E-2e prompt (Nov 17, 2026): each Arcade map gets exactly one damaging hazard and one vision effect,
@@ -5171,3 +5437,4 @@ Graphify did not connect in this container (proxy 403), so the code was read dir
 5. **Team modes:** a modified phone that claims every tank at every strike can gain about 0.4 takedowns a match (0 in 1v1),
    each a real hazard hit next to its own fight. Reviewer A judged it acceptable; PvP has no such gap (the server runs it).
 6. **Crater Field and Canyon** are the two mildest looks (6.5 and 7 of 10). Both "ship"; first candidates for a later polish.
+

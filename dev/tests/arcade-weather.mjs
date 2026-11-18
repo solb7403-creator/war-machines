@@ -214,7 +214,7 @@ const STOCK_L = SR.STOCK_L;
 function room(make, cfg) {   // one live room's match, both pilots flown by the sim (the AI takes a dropped pilot's tank)
   const log = []; let done = null, rounds = 0, tick = 0;
   const sim = make({ seed: cfg.seed, ev: a => { if ('hkDew'.includes(a[0])) log.push([tick].concat(a.map(v => typeof v === 'number' ? Math.round(v * 1000) / 1000 : v))); }, end: f => { done = f || {}; }, round: () => { rounds++; }, death() {} });
-  sim.setup({ map: cfg.map, g: cfg.g, m: cfg.m, series: !!cfg.series, seats: Array.from({ length: cfg.seats }, (_, i) => ({ pid: 'p' + i, name: 'P' + i, L: STOCK_L })), ghosts: [], lg: 2, wx: cfg.wx, wxc: !!cfg.wxc });
+  sim.setup({ map: cfg.map, g: cfg.g, m: cfg.m, series: !!cfg.series, seats: Array.from({ length: cfg.seats }, (_, i) => ({ pid: 'p' + i, name: 'P' + i, L: cfg.kits ? cfg.kits[(cfg.k0 + i) % cfg.kits.length] : STOCK_L })), ghosts: [], lg: 2, wx: cfg.wx, wxc: !!cfg.wxc });
   for (const u of sim.units) sim.setCtl(u, 'bot');
   sim.start();
   for (; tick < 30 * 400 && !done; tick++) { if (sim.state === 'round') { sim.startRound(); for (const u of sim.units) sim.setCtl(u, 'bot'); } sim.step(1 / 30); }
@@ -245,6 +245,21 @@ function room(make, cfg) {   // one live room's match, both pilots flown by the 
   ok(drops > 0 && drops < team, 'the supply drop still happens in some team matches, not all (' + drops + ' of ' + team + ')');
   console.log('PASS PvP sync: ' + n + ' seeded live-room matches, Worker bundle == phone build event for event (' + hits + ' hazard hits, ' + kills + ' hazard kills, ' + tds + ' takedowns); hits per map ' + J(perMap));
 }
+// ---- 3c. the same with research mods on every seat (Session 6B): all 20 mods across eight kits, hazard seeds, both builds ----
+{ const H = ['heatsink', 'momentum', 'capacitor', 'reflector', 'aegis', 'aegisp'], Mo = ['predictor', 'traction', 'ram', 'reflex', 'overdrive', 'hyperdrive'], Mt = ['vent', 'overclock', 'inferno', 'sunfire', 'pierce', 'marksman', 'rail', 'starfall'];
+  const kits = Mt.map((mt, i) => ({ ...JSON.parse(J(STOCK_L)), mods: { hull: H[i % 6], mobility: Mo[(i + 2) % 6], mount: mt } }));
+  const all = new Set(kits.flatMap(k => Object.values(k.mods)));
+  ok(all.size === 20, 'the eight kits carry all 20 mods (' + all.size + ')');
+  let n = 0, hits = 0, modH = 0;
+  for (const map of MAPS6) for (const [g, m, seats] of [['zone', '2v2', 4], ['bounty', '1v1', 2]]) for (const [i, wxs] of seedsOf(3, 2).entries()) {
+    const cfg = { seed: 1700 + i * 31 + n, map, g, m, seats, series: false, wx: wxs, kits, k0: n * 3 };
+    const A = room(createSim, cfg), B = room(phoneApi, cfg); n++;
+    ok(J(A) === J(B), map + ' ' + g + ' ' + m + ' wx ' + wxs + ' with mods: the Worker bundle and the phone build agree event for event (' + A.log.length + ' / ' + B.log.length + ')');
+    ok(A.done, map + ' ' + g + ' with mods: the seeded room match ends');
+    hits += A.log.filter(e => e[1] === 'h' && e[4] === 3).length; modH += A.log.filter(e => e[1] === 'h' && e[4] === 0 && e[6] === 0 && e[7] === 0).length;
+  }
+  ok(n === 24 && hits > 20, 'hazards land on modded tanks in the seeded rooms (' + hits + ' hits in ' + n + ' matches)');
+  console.log('PASS PvP sync with research mods: ' + n + ' seeded rooms, all 20 mods, Worker bundle == phone build (' + hits + ' hazard hits, ' + modH + ' mod hits: burns, rings, reflections, rams)'); }
 // the flare: supers charge twice as fast only while it is on; sight is cut for everyone the same
 { const s1 = seedOf(1), r = W.eval(`(()=>{__seed(3);setMap('longshot');matchG='bounty';battleLoadout=${J(GEAR.stock)};battlePower=powerOf(battleLoadout);battleLg=0;MM={n:1,series:false,mp:50,cp:false,wx:${s1},wxc:false};populatePreparedMatch();startMatch();
   const w=wx.P.win[0],me=units[0],foe=units[1];const out={};elapsed=w.t0-1;out.before=flareMult();elapsed=w.t0+1;out.during=flareMult();elapsed=w.t1+0.1;out.after=flareMult();
@@ -274,6 +289,75 @@ function room(make, cfg) {   // one live room's match, both pilots flown by the 
   const foe=units[1],z=wx.P.hz[0],tau=z.t+0.5,p=wxPos(z,tau);foe.hzT=0;foe.sx=p[0];foe.sy=p[1];foe.x=p[0]+1;foe.y=p[1];const h0=foe.hp;elapsed=tau;simT=tau;weatherTick(0.05);const home=foe.hp===h0;
   foe.sx=p[0]+9;const z2=wx.P.hz[0];foe.x=p[0];foe.y=p[1];weatherTick(0.05);return [home,foe.hp<h0,WX_HOME];})()`);
   ok(h[0] === true && h[1] === true && h[2] >= 2, 'a tank within ' + h[2] + ' of its own spawn seat is not touched by a hazard that crosses the seat; off the seat it is'); }
+// ---- 7c. research mods meet map hazards (Session 6B ruling, Checkpoint 41 "Mods and hazards"). Every one of the 16 + 4 mods
+// on the tank a hazard hits: armor and plates cut the hit, no research mod does (Momentum is shots only); no shield stops it
+// (the plasma shield, Aegis' overshield, a Reflex-raised shield); nothing reflects it; it still counts as hull lost for Heat
+// Sink; Reflex never raises the shield for one; the 34% cap holds after every mod. A burn tick is its source's hit: it
+// keeps the 5 s hazard credit alive in the sim, and the server's record check (worker/src/proof.js) agrees ----
+const MODS20 = W.eval(`FIT_ORDER.flatMap(k=>Object.keys(FITS[k]).filter(id=>isRmod(k,id)).map(id=>[k,id]))`);
+ok(MODS20.length === 20 && MODS20.filter(m => W.eval(`!!FITS.${m[0]}.${m[1]}.leg`)).length === 4, 'the hazard rulings cover all 20 mods (16 researched + 4 Legendary)');
+for (const map of MAPS6) {
+  const r = scene(map, 'bounty', `const out=[],hz=wx.P.haz;
+   const kit=(slot,id)=>{const L=JSON.parse(JSON.stringify(battleLoadout));if(slot)L.mods={[slot]:id};return L;};
+   const reset=(slot,id)=>{delete foe.rm;Object.assign(foe,tankOf(kit(slot,id),hpScale()));foe.hp=foe.mhp;foe.mf=null;foe.burns=null;foe.shieldT=0;foe.shieldCd=0;foe.lh=null;foe.lhs=null;foe.hzC=null;foe.hzH=null;foe.dash=null;place(foe);z.done=0;modQ.length=0;me.hp=me.mhp;me.hzT=99;};   // me: out of every strike
+   const want=()=>Math.min(WX_HZ[hz].dmg*hpScale(),WX_CAP*foe.mhp)*(1-armor(foe))*plateCut(foe,null,hz,3);
+   const hit=()=>{const h0=foe.hp;strike();return {lost:h0-foe.hp,refl:modQ.some(q=>q.k==='refl')};};   // a reflection is queued by takeHit (mfTaken refl > 0) and lands in modFlush: none may be queued
+   reset(null);const base=hit(),E0=want();
+   for(const [slot,id] of ${J(MODS20)}){const o={id,leg:!!FITS[slot][id].leg};
+    reset(slot,id);const E=want(),a=hit();o.plain=Math.abs(a.lost-E)<1e-6;o.cap=a.lost<=WX_CAP*foe.mhp+1e-9;o.refl=a.refl;
+    reset(slot,id);foe.shieldT=3;const b=hit();o.shield=Math.abs(b.lost-E)<1e-6;o.refl=o.refl||b.refl;
+    if(foe.rm&&foe.rm.momentum){reset(slot,id);const mf=modS(foe);mf.mom=1;mf.fast=5;o.mom=Math.abs(hit().lost-E)<1e-6;}
+    if(foe.rm&&foe.rm.aegis){reset(slot,id);const mf=modS(foe);mfShieldEnd(foe,mf,foe.mhp);const osh=mf.osh;const c=hit();o.osh=osh>0&&Math.abs(mf.osh-osh)<1e-9&&Math.abs(c.lost-E)<1e-6;}
+    if(foe.rm&&foe.rm.heatsink){reset(slot,id);const mf=modS(foe),need=foe.rm.heatsink.every*foe.mhp;const c=hit();o.heat=Math.abs(mf.lost-(c.lost%need))<1e-6;}
+    if(foe.rm&&foe.rm.reflex){reset(slot,id);const tw=z.t-0.25;elapsed=tw;simT=tw;for(const u of units)u.sup=null;warns.length=0;modTick(1/30);o.reflex=!(foe.shieldT>0)&&foe.shieldCd===0;}
+    out.push(o);}
+   return {base,E0,out,cap:WX_CAP};`);
+  ok(Math.abs(r.base.lost - r.E0) < 1e-6 && r.base.lost > 0, map + ': the stock tank takes the hazard hit cut only by armor and plates (' + r.base.lost.toFixed(1) + ')');
+  for (const o of r.out) {
+    ok(o.plain && o.cap, map + ' ' + o.id + ': the hazard hit is the same as on a stock tank (armor and plates only) and never above the ' + r.cap * 100 + '% cap');
+    ok(o.shield, map + ' ' + o.id + ': a raised shield does not stop the hazard');
+    ok(!o.refl, map + ' ' + o.id + ': nothing reflects a hazard hit (no damage back at anyone)');
+    if (o.mom !== undefined) ok(o.mom, map + ' ' + o.id + ': Momentum (shots only) does not soften a hazard hit');
+    if (o.osh !== undefined) ok(o.osh, map + ' ' + o.id + ': the overshield does not take a hazard hit (it is still whole after it)');
+    if (o.heat !== undefined) ok(o.heat, map + ' ' + o.id + ': a hazard hit still counts as hull lost toward the next heat ring');
+    if (o.reflex !== undefined) ok(o.reflex, map + ' ' + o.id + ': Reflex Skirts never raise the shield for a hazard (a shield cannot stop one)');
+  }
+}
+// a burn tick is its source's hit: your last shot 6 s before the strike, your burn still ticking 4-5.5 s before it: your kill and
+// your takedown (without the burn: nobody's)
+for (const map of MAPS6) for (const id of ['inferno', 'sunfire']) {
+  const r = scene(map, 'bounty', `place(foe);const I=FITS.mount.${id}.x;
+   const run=burn=>{foe.hp=foe.mhp;foe.lh=null;foe.lhs=null;foe.hzC=null;foe.hzH=null;foe.burns=null;z.done=0;me.st.td=0;me.st.kills=0;me.st.tdv=[];__events=[];
+    simT=tau-6;takeHit(foe,10,me,null,0);if(burn)foe.burns=mfBurn(foe.burns,me.id,I,modDps(me));
+    for(let i=0;i<4;i++){simT+=0.5;modTick(0.5);}
+    const ticks=__events.filter(e=>e[0]==='h'&&e[1]===foe.id&&e[6]===me.id).length;foe.hp=20;strike();const k=__events.filter(e=>e[0]==='k')[0];
+    return {ticks,dead:foe.hp<=0,src:k?k[2]:null,td:me.st.td,kills:me.st.kills};};
+   return {burn:run(true),none:run(false)};`);
+  ok(r.burn.ticks >= 4 && r.burn.dead && r.burn.src === 0 && r.burn.td === 1 && r.burn.kills === 1, map + ' ' + id + ': a burn tick inside 5 s keeps your hazard credit: your kill and your takedown ' + J(r.burn));
+  ok(r.none.dead && r.none.src === -1 && r.none.td === 0, map + ': the same strike without the burn (last hit 6 s ago) is nobody\'s ' + J(r.none));
+}
+// ... and the server's record check agrees: a record whose only damage of yours in the 5 s window is burn ticks on a tank that
+// had driven out of your reach counts the takedown for a pilot with a burn mod, and not for one without
+{ const map = 'classic', ws = seedOf(2), Pz = SR.wxPlan(ws, map, 0, SR.GTYPES.bounty.t), z = Pz.hz.find(q => !q.soft && q.k === 'c' && q.t > 12);
+  const M = W.eval('MAPS.' + map), free = (x, y) => x > 1 && x < 19 && y > 1 && y < 31 && !(M.walls || []).some(w => x > w[0] - 0.8 && x < w[0] + w[2] + 0.8 && y > w[1] - 0.8 && y < w[1] + w[3] + 0.8) && !(M.rocks || []).some(q => Math.hypot(x - q[0], y - q[1]) < q[2] + 0.8);
+  let dir = null; for (let a = 0; a < 64 && !dir; a++) { const c = Math.cos(a / 64 * 6.283), sn = Math.sin(a / 64 * 6.283); let okp = true; for (let d = 5; d <= 13; d += 0.5) if (!free(z.x + c * d, z.y + sn * d)) okp = false; if (okp) dir = [c, sn]; }
+  ok(!!z && !!dir, 'a meteor strike with open ground beside it for the record test');
+  const sZ = Math.ceil(z.t / 0.5) - 1, sA = sZ - 12, k = sZ + 6, mhp = 1750, n = 2, sz = n * 3 + 6, buf = new Uint8Array(k * sz);
+  const meAt = s => { const d = s <= sA ? 6 : Math.min(13, 6 + (s - sA) * 2.2); return [z.x + dir[0] * d, z.y + dir[1] * d]; };   // out of reach (range + 3.5) from sA + 2 on: every sample of the 5 s window
+  let hp = 100, dmgTot = 0;
+  for (let s = 0; s < k; s++) { let dm = 0;
+    if (s === sA) { dm = 70; hp -= 4; } else if (s > sA && s <= sA + 4) { dm = 26; hp -= 1.5; } else if (s === sZ) hp -= 18;
+    dmgTot += dm; const o = s * sz, p = meAt(s), cl = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(v)));
+    buf[o] = cl(p[0] * 10, 0, 255); buf[o + 1] = cl(p[1] * 7.5, 0, 255); buf[o + 2] = 100;
+    buf[o + 3] = cl(z.x * 10, 0, 255); buf[o + 4] = cl(z.y * 7.5, 0, 255); buf[o + 5] = cl(hp, 0, 100);
+    const q = o + n * 3; buf[q] = 100; buf[q + 1] = 100; buf[q + 2] = 1; buf[q + 3] = dm >> 8; buf[q + 4] = dm & 255; buf[q + 5] = 1; }
+  let str = ''; for (const b of buf) str += String.fromCharCode(b);
+  const pf = { v: 1, n, dt: 0.5, cs: [], h: [[0, 0, mhp, 4], [1, 0, mhp, 0]], s: btoa(str), f: {}, hz: [[sZ, 1]] };
+  const c = { g: 'bounty', m: '1v1', map, secs: k * 0.5 + 4, won: false, drawn: false, place: 0, series: false, min: 5, spdM: 1, hs: 1, wx: { seed: ws, clear: false }, st: { dmg: dmgTot, kills: 0, sup: 0, box: 0, low: 1, td: 1 } };
+  const withBurn = checkProof(pf, { ...c, burnT: W.eval('FITS.mount.inferno.x.burnT') }), without = checkProof(pf, c);
+  ok(withBurn.ok && withBurn.fix.td === 1, 'the server counts a takedown kept alive by burn ticks for a pilot with Inferno (' + J(withBurn.fix) + (withBurn.ok ? '' : ' ' + withBurn.why) + ')');
+  ok(without.ok && without.fix.td === 0, 'the same record from a pilot without a burn mod counts none (' + J(without.fix) + ')'); }
+console.log('PASS research mods and hazards: 20 mods x 6 maps (armor and plates only, no shield, no reflection, Heat Sink counts it, no Reflex, cap held), burn ticks keep the 5 s credit in the sim and on the server');
 // ---- 9a2. forged takedown claims: an honest fight whose phone claims a takedown for EVERY tank in EVERY sample gains (almost) nothing ----
 { let honest = 0, kept = 0, extra = 0, extra1 = 0, n = 0; const rows = [];
   for (const map of MAPS6) for (const [g, m, hs] of [['bounty', '1v1', SR.BTY_HP], ['zone', '2v2', 2], ['arena', '3v3', 3]]) { let h = 0, kp = 0, ex = 0;

@@ -205,7 +205,7 @@ function respawnTick(dt){
    continue;
   }
   u.dead=(u.dead||0)+dt;
-  if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.tkn=0;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.shieldT=0;u.shieldCd=0;u.flash=0;u.trail=[];u.calm=0;
+  if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.tkn=0;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.shieldT=0;u.shieldCd=0;u.flash=0;u.trail=[];u.calm=0;u.mf=null;u.burns=null;   // research mod state starts fresh each life
    u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.hzT=WX_SPAWN_SAFE;u.lh=null;u.lhs=null;   // teleported: live players snap to the spawn. hzT: no map hazard touches a tank that has just come back
    if(u.brain){u.brain.mode='press';u.brain.t=1;u.brain.spot=null;}
    ev('r',u.id);}
@@ -295,7 +295,7 @@ function simStart(){
  evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+random()*14;evtKind=random()<EVT_DROP?'drop':null;
  gscore=[0,0];gzones=null;cry=null;storm=null;boss=units.find(u=>u.boss)||null;if(boss)evtAt=0;   // Survival: no random events, the megatank is the event
  supF=supFillOf(matchG,MM.n);
- units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
+ units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.mf=null;u.burns=null;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
   u.st=u.hum||u.pid||u.gh?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1,td:0,tdv:[]}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+random()*6,next:null,moves:0}];}
  if(matchG==='crystal')cry={mine:{x:10,y:16},loose:[],t:2,cd:null,cnt:[0,0]};
@@ -388,20 +388,26 @@ function turret(a,dt){
  const f=a.focus;if(f&&f!==b&&f.hp>0&&f.team!==a.team&&dist2(a,f)<=STAT.range&&los(a,f))b=f;   // bots lock onto their objective target once it's in reach
  const seen=los(a,b)&&wxSees(a,b);   // dust, glare, haze: nobody locks on or fires further than they can see (rules.js wxSight)
  if(seen)a.lk={x:b.x,y:b.y};            // remember where the enemy was last seen
- const aim=a.hum?b:a.lk;   // a human always sees the enemy; the bot only knows where it last saw you
+ let aim=a.hum?b:a.lk;   // a human always sees the enemy; the bot only knows where it last saw you
+ // Predictor Gyro (Session 6B research mod): aim where the target will be when the shot arrives (its motion, never a guess)
+ if(aim&&seen&&a.rm&&a.rm.predictor){const tof=Math.hypot(b.x-a.x,b.y-a.y)/Math.max(1,a.wpspd)*a.rm.predictor.lead;aim={x:b.x+(b.avx||0)*tof,y:b.y+(b.avy||0)*tof};}
  if(aim){
   const want=Math.atan2(aim.y-a.y,aim.x-a.x);
   let d=want-a.ang;d=Math.atan2(Math.sin(d),Math.cos(d));
   const st=STAT.turn*(a.turnM||1)*dt;a.ang+=Math.max(-st,Math.min(st,d));
  }
  a.cd-=dt;
- let r=Math.atan2(b.y-a.y,b.x-a.x)-a.ang;r=Math.atan2(Math.sin(r),Math.cos(r));
+ const lead=a.rm&&a.rm.predictor&&seen&&aim?aim:b;   // a leading turret fires when it is on its lead point
+ let r=Math.atan2(lead.y-a.y,lead.x-a.x)-a.ang;r=Math.atan2(Math.sin(r),Math.cos(r));
  const dist=Math.hypot(b.x-a.x,b.y-a.y);
  if(a.cd<=0&&seen&&Math.abs(r)<0.14&&dist<=STAT.range){
-  a.cd=a.wshot/rofMult(a);if(typeof fx==='function')fx('shot',a);   // every tank's own weapon sound: yours at full level, the others by distance (fx.js LW)
-  const q={id:++bid,x:a.x,y:a.y,hi:(a.elev||0)===1||(b.elev||0)===1,vx:Math.cos(a.ang)*a.wpspd,vy:Math.sin(a.ang)*a.wpspd,o:a,dps:a.wdps,shot:a.wshot,dm:dmgMult(a)*projectileImpactMult(a),eg:a.wedge||GRAZE,life:(STAT.range+1)/a.wpspd};
+  const mf=modS(a);a.cd=a.wshot/(rofMult(a)*mfRate(a,mf));if(typeof fx==='function')fx('shot',a);   // every tank's own weapon sound: yours at full level, the others by distance (fx.js LW)
+  const mo=mf?mfShot(a,mf,a.cd):null,rail=mo&&mo.rail,spd=a.wpspd*(rail?rail.spd:1);   // research mods: a vent round, a rail slug, an Inferno burn
+  const q={id:++bid,x:a.x,y:a.y,hi:(a.elev||0)===1||(b.elev||0)===1,vx:Math.cos(a.ang)*spd,vy:Math.sin(a.ang)*spd,o:a,dps:a.wdps,shot:a.wshot,dm:dmgMult(a)*projectileImpactMult(a)*(rail?rail.mult:1),eg:a.wedge||GRAZE,life:(STAT.range+1)/spd};
+  if(mo){if(mo.vent){q.mv=mo.vent*modDps(a);q.ms=mo.splash;}if(rail){q.rail=rail.through;q.hit=[];}if(mo.burn)q.burn=mo.burn;}
   bullets.push(q);
   if(SRV)SRV.ev(['b',q.id,a.id,q.x,q.y,q.vx,q.vy,q.hi?1:0,q.dm,q.life]);   // live players draw the shot themselves
+  modCues(a);
  }
 }
 function moveBullets(dt){
@@ -413,14 +419,19 @@ function moveBullets(dt){
    if(q.life>0&&inRock(q.x,q.y))q.life=0;
    if(q.x<0||q.x>W||q.y<0||q.y>H)q.life=0;
    let t=null,bd=1e9;
-   for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;if(q.hi?underDeck(v):(v.elev||0)!==0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<hitR(v)+0.12&&d<bd){bd=d;t=v;}}
+   for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;if(q.hit&&q.hit.includes(v.id))continue;if(q.hi?underDeck(v):(v.elev||0)!==0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<hitR(v)+0.12&&d<bd){bd=d;t=v;}}
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
-   const owner=q.o,isCrit=direct&&random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
-   const aT=armor(t),gross=q.dps*q.shot*q.dm*(direct?(isCrit?CRIT_MULT:1):q.eg||GRAZE)*cmult(owner,t),dmg=gross*(1-aT);
+   const owner=q.o,omf=owner.rm?modS(owner):null,sure=omf?mfHit(owner,omf,t.id,direct):false;   // Marksman Coil: every 3rd direct hit in a row is a sure critical
+   const isCrit=direct&&(sure||random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0));
+   const edge=direct?(isCrit?CRIT_MULT:1):q.eg||GRAZE,aT=armor(t),gross=(q.dps*q.shot*q.dm*edge+(q.mv||0)*(direct?1:q.eg||GRAZE))*cmult(owner,t),dmg=gross*(1-aT);   // q.mv: a vent round's extra seconds of damage
    if(t.st)t.st.arm+=gross*aT;
-   takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
+   q.landed=1;takeHit(t,dmg,owner,null,0,isCrit,direct,q.id,q.rail?1:0);if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}
+   if(q.burn&&t.hp>0)t.burns=mfBurn(t.burns,owner.id,q.burn,modDps(owner));   // Inferno Core: the hit sets its target burning
+   if(q.mv){ev('B',q.x,q.y,1.2,0.4,'#ff8a3d');for(const v of units)if(v!==t&&v.team!==owner.team&&v.hp>0&&Math.hypot(v.x-q.x,v.y-q.y)<hitR(v)+2*R)modHurt(owner,v,gross*q.ms,'vent');}   // the vent round bursts on the enemies beside its target
+   if(q.rail){q.hit.push(t.id);ev('B',q.x,q.y,0.5,0.25,'#e8f4ff');if(q.hit.length>=q.rail)q.life=0;}else q.life=0;}   // a rail slug passes through the first tank into the next
   }
   q.life-=dt;
+  if(q.life<=0&&!q.landed&&q.o.rm&&q.o.rm.marksman)mfMiss(q.o,modS(q.o));   // a shot that hit nothing restarts Marksman Coil's count
  }
  bullets=bullets.filter(q=>q.life>0);
 }
@@ -428,7 +439,7 @@ function moveBullets(dt){
 // ---- buffs & mystery box ----
 const bsum=(r,k)=>r.buffs.reduce((a,b)=>a+(b.k===k?BUFF[k].amt:0),0);
 const gsum=(r,k)=>r.gems.reduce((a,g)=>a+(g===k?GEM[k].amt*((r.gemM&&r.gemM[k])||1):0),0);
-const dmgMult=r=>(1+bsum(r,'dmg'))*(1+gsum(r,'dmg'))*(r.dmgM||1),rofMult=r=>(1+bsum(r,'rof'))*(1+gsum(r,'rof')),spdMult=r=>(1+bsum(r,'spd'))*(1+gsum(r,'spd'))*(r.spdM||1),armor=r=>Math.min(0.7,bsum(r,'arm')+gsum(r,'arm'));
+const dmgMult=r=>(1+bsum(r,'dmg'))*(1+gsum(r,'dmg'))*(r.dmgM||1),rofMult=r=>(1+bsum(r,'rof'))*(1+gsum(r,'rof')),spdMult=r=>(1+bsum(r,'spd'))*(1+gsum(r,'spd'))*(r.spdM||1)*(r.mf?mfSpeed(r,r.mf):1),armor=r=>Math.min(0.7,bsum(r,'arm')+gsum(r,'arm'));
 // Hull Plating set traits (rules.js plateStats; RESOURCE_ECONOMY.md §6.1): energy = Pulse Cannon shots, Pierce Lance and
 // Static Nova; area = Static Nova, Siege Blast, meteors and the megatank's stomps and shells. Moonbeam and Moonfall are exempt
 const plateCut=(r,src,why,kind)=>{if(!r.enR&&!r.arR)return 1;const w=src&&src.wtype;let e=false,a=false;
@@ -436,10 +447,12 @@ const plateCut=(r,src,why,kind)=>{if(!r.enR&&!r.arR)return 1;const w=src&&src.wt
  else if(why==='stomp'||why==='shell')a=true;else if(kind===0)e=w==='pulse';else if(kind===1){e=w==='pulse'||w==='twin';a=w==='twin'||w==='siege';}
  return (e?1-(r.enR||0):1)*(a?1-(r.arR||0):1);};
 // every hit goes through here. kind: 0 shot, 1 super, 2 storm, 3 the map's hazard (sets the floating number); bid: the shot that hit
-function takeHit(r,amt,src,why,kind,crit,direct,bid){
- const wasAlive=r.hp>0;
- if(r.shieldT>0&&(kind||0)<2){if(r.st)r.st.shd+=amt*(1-SHIELD_MULT);amt*=SHIELD_MULT;}   // shielded: combat damage cut before it lands
+function takeHit(r,amt,src,why,kind,crit,direct,bid,ign){
+ const wasAlive=r.hp>0;let blocked=0;
+ // shielded: combat damage cut before it lands (world damage, kind 2 and 3, passes every shield). Research mods (Session 6B): Penetrator Coil's shots and rail slugs (ign) get through part or all of it
+ if(r.shieldT>0&&(kind||0)<2){const keep=(kind||0)===0?Math.max(ign?1:0,mfPierce(src)):0,m=SHIELD_MULT+keep*(1-SHIELD_MULT);blocked=amt*(1-m);if(r.st)r.st.shd+=blocked;amt*=m;if(!ign&&keep>0&&src&&src.mf)mfCue(src.mf,'pierce');}
  amt*=plateCut(r,src,why,kind||0);
+ if(r.rm){const T=mfTaken(r,modS(r),amt,(kind||0)>=2?3:(kind||0),blocked,r.mhp);amt=T.amt;if(T.ring)modQ.push({k:'ring',u:r,n:T.ring});if(T.refl>0&&src&&src!==r&&src.team!==r.team&&why!=='reflect')modQ.push({k:'refl',u:r,e:src,d:T.refl});}   // Momentum, the overshield; heat rings and reflections land after this hit
  const h0=Math.max(0,r.hp);
  r.hp-=amt;r.flash=0.08;r.calm=0;
  supCharge(r,src,h0-Math.max(0,r.hp),kind||0);
@@ -559,19 +572,25 @@ function aimVel(r,dx,dy,dt){   // smoothed velocity for leading supers (heading(
 // ---- dash: a quick burst in the direction you're steering (4s cooldown) ----
 const DASH_CD=4,DASH_T=0.2,DASH_SPD=3.4;
 function useDash(u,dx,dy){
- if(state!=='play'||u.hp<=0||(u.dashCd||0)>0||u.dash)return false;
+ const mf=u.rm?modS(u):null,cd=DASH_CD*(u.dashCdM||1);
+ if(state!=='play'||u.hp<=0||u.dash||!(mf?mfDashReady(u,mf,u.dashCd||0):!((u.dashCd||0)>0)))return false;   // Overdrive (Session 6B): a dash charge left
  let m=Math.hypot(dx||0,dy||0);
  if(m<0.2){const a=u.hd===undefined?u.ang:u.hd;dx=Math.cos(a);dy=Math.sin(a);m=1;}
- u.dash={t:DASH_T,dx:dx/m,dy:dy/m};u.dashCd=DASH_CD*(u.dashCdM||1);   // Light frame: shorter cooldown
+ u.dash={t:DASH_T,dx:dx/m,dy:dy/m};u.dashCd=cd;   // Light frame: shorter cooldown
+ if(mf){mfDash(u,mf,cd);if(u.rm.overdrive)u.dashCd=mf.dq>0?0:mf.dr;modCues(u);}   // Traction boost; a second (third) charge left
  if(u===me&&typeof fx==='function')fx('dash');
  return true;
 }
+// a dash cooldown step (Overdrive: its charges refill one at a time); a dash that ended next to an enemy rams it (Ram Servo)
+function dashCdStep(u,dt){if(u.rm&&u.rm.overdrive){u.dashCd=mfDashTick(u,modS(u),dt,DASH_CD*(u.dashCdM||1));return;}if(u.dashCd>0)u.dashCd=Math.max(0,u.dashCd-dt);}
+function dashEnd(u){const ram=mfRam(u);if(!ram||u.hp<=0)return;let e=null,bd=1e9;for(const v of units){if(v.team===u.team||v.hp<=0||!lvOK(u,v))continue;const d=Math.hypot(v.x-u.x,v.y-u.y);if(d<hitR(u)+hitR(v)+0.5&&d<bd){bd=d;e=v;}}
+ if(!e)return;modHurt(u,e,ram.dmg*modDps(u),'ram');e.cd=Math.max(e.cd||0,0)+ram.jam;mfCue(modS(u),'ram');ev('B',e.x,e.y,1.1,0.35,'#7be07b');modCues(u);}
 function dashStep(u,dt){   // returns true while dashing
  shieldStep(u,dt);
- if(u.dashCd>0)u.dashCd=Math.max(0,u.dashCd-dt);
+ dashCdStep(u,dt);
  if(!u.dash)return false;
  const k=STAT.speed*DASH_SPD*slowAt(u)*dt;u.x+=u.dash.dx*k;u.y+=u.dash.dy*k;push(u);
- u.dash.t-=dt;if(u.dash.t<=0)u.dash=null;
+ u.dash.t-=dt;if(u.dash.t<=0){u.dash=null;dashEnd(u);}
  return true;
 }
 // ---- plasma shield: 3s of heavy damage reduction (25s cooldown). Same numbers for every pilot, bots included ----
@@ -583,8 +602,8 @@ function useShield(u){
  return true;
 }
 function shieldStep(u,dt){
- if(u.shieldCd>0)u.shieldCd=Math.max(0,u.shieldCd-dt);
- if(u.shieldT>0){u.shieldT-=dt;if(u.shieldT<=0)u.shieldT=0;}
+ if(u.shieldCd>0)u.shieldCd=Math.max(0,u.shieldCd-dt*(u.mf?mfShieldRate(u,u.mf):1));   // Capacitor Bank: standing still recharges it faster
+ if(u.shieldT>0){u.shieldT-=dt;if(u.shieldT<=0){u.shieldT=0;if(u.rm&&u.rm.aegis){mfShieldEnd(u,modS(u),u.mhp);modCues(u);}}}   // Aegis Matrix: the overshield
 }
 // bots dash out of a super they see coming (about half the time; by league for AI pilots, LG_AI_DODGE)
 function botDodge(u){
@@ -1075,10 +1094,9 @@ const royaleOver=()=>units.filter(u=>u.hp>0).length<=1||timeLeft<=0||(SRV?!units
 const NET_TOL=1.02,NET_BANK=0.6,NET_SNAP=6;   // speed slack (rounding), seconds of movement that can bank up, a claim this far off is not a real move: resync
 function netClaim(u,x,y,k){if(u.ctl!=='net'||k!==(u.tp||0))return;u.claim={x:Math.max(R,Math.min(W-R,+x||0)),y:Math.max(R,Math.min(H-R,+y||0))};}
 function netMove(u,dt){
- if(u.dash){u.dash.t-=dt;if(u.dash.t<=0)u.dash=null;}
- if(u.dashCd>0)u.dashCd=Math.max(0,u.dashCd-dt);
- if(u.shieldCd>0)u.shieldCd=Math.max(0,u.shieldCd-dt);
- if(u.shieldT>0){u.shieldT-=dt;if(u.shieldT<=0)u.shieldT=0;}
+ if(u.dash){u.dash.t-=dt;if(u.dash.t<=0){u.dash=null;dashEnd(u);}}
+ dashCdStep(u,dt);
+ shieldStep(u,dt);
  if(u.mbxT>0){u.mbxT-=dt;if(u.mbxT<=0)u.mbx=0;}
  const v=STAT.speed*spdMult(u)*(u.sup?0.6:1)*slowAt(u)*NET_TOL*(u.dash?DASH_SPD:1);
  u.mb=Math.min((u.mb||0)+v*dt,v*NET_BANK+(u.mbx||0));
@@ -1100,6 +1118,39 @@ function netDash(u,dx,dy){   // a live player dashed: same cooldown as everyone;
  return true;
 }
 
+// ---- Science Lab research mods (Session 6B): the behaviors are rules.js mf* (one engine with Conquest); this applies them here ----
+const modS=u=>u&&u.rm?(u.mf||(u.mf=mfNew(u))):null;
+const modDps=u=>Math.max(1,(u.wdps||STAT.dps)*dmgMult(u)*rofMult(u)*projectileImpactMult(u));   // the tank's own clean damage per second
+let modQ=[];   // heat rings and reflections owed: they land after the hit that caused them (never inside it: no chains)
+function modHurt(src,e,amt,why){if(!(amt>0)||!e||e.hp<=0)return 0;const g=amt*cmult(src,e),aE=armor(e),d=g*(1-aE);if(e.st)e.st.arm+=g*aE;takeHit(e,d,src,why,0,false,true,0);if(src&&src.st){src.st.dmg+=d;if(d>src.st.best)src.st.best=d;}return d;}
+function modCues(u){const q=u&&u.mf&&u.mf.q;if(!q||!q.length)return;for(const k of q)ev('Q',u.id,k);q.length=0;}   // 'Q': its own event code ('m' is the meteor / megatank impact, and live rooms flip 'm' positions)
+// Reflex Skirts: a marked blast about to land on u (an enemy super in its last moments, a megatank stomp or shell). Never a map
+// hazard: hazards pass every shield (Session 6B ruling), so raising it for one would only waste it
+function modDanger(u,lead){
+ for(const v of units){if(v.team===u.team||v.hp<=0||!v.sup||!(v.sup.t<=lead))continue;const S=SUP[v.sup.w];if(!S)continue;
+  if(S.kind==='nova'){if(Math.hypot(u.x-v.x,u.y-v.y)<S.r+bodyR(u))return true;continue;}
+  const ca=Math.cos(v.sup.ang),sa=Math.sin(v.sup.ang),ex=u.x-v.x,ey=u.y-v.y,along=ex*ca+ey*sa,side=-ex*sa+ey*ca,wd=S.kind==='beam'?S.w:S.r*0.6,ln=S.kind==='beam'?S.len:S.range;
+  if(along>0&&along<ln&&Math.abs(side)<wd+bodyR(u))return true;}
+ for(const w of (typeof warns!=='undefined'&&warns)||[])if(w&&w.t<=lead&&Math.hypot(u.x-w.x,u.y-w.y)<(w.r||1.6)+bodyR(u))return true;
+ return false;}
+function modTick(dt){
+ for(const u of units){
+  if(u.burns&&u.burns.length){   // Inferno Core burns: dealt every half second by their source
+   u.bT=(u.bT||0)+dt;for(const b of u.burns){const h=Math.min(dt,b.t);b.a=(b.a||0)+b.d*h;b.t-=h;}
+   if(u.bT>=0.5||u.burns.every(b=>b.t<=0)){u.bT=0;for(const b of u.burns)if(b.a>0){const src=units[b.s];if(src&&u.hp>0){const d=b.a*cmult(src,u)*(1-armor(u));takeHit(u,d,src,'burn',0,false,true,0);if(src.st)src.st.dmg+=d;}b.a=0;}}
+   u.burns=u.burns.filter(b=>b.t>0||b.a>0);}
+  if(!u.rm||u.hp<=0)continue;const mf=modS(u),top=STAT.speed*spdMult(u)*(u.sup?0.6:1);
+  mfStep(u,mf,dt,{spd:u.dash?1:Math.hypot(u.vx||0,u.vy||0)/Math.max(0.1,top)});
+  if(u.rm.reflex&&(u.shieldCd||0)<=0&&(u.shieldT||0)<=0&&state==='play'&&modDanger(u,u.rm.reflex.lead)){if(useShield(u))mfCue(mf,'reflex');}
+  modCues(u);}}
+function modFlush(){
+ for(let i=0;i<modQ.length&&i<64;i++){const m=modQ[i],u=m.u;
+  if(m.k==='ring'&&u.hp>0){const H=u.rm.heatsink,dmg=m.n*H.dmg*modDps(u);ev('B',u.x,u.y,2.2,0.5,'#ff8a3d');
+   for(const v of units)if(v.team!==u.team&&v.hp>0&&Math.hypot(v.x-u.x,v.y-u.y)<=STAT.range&&los(u,v)){modHurt(u,v,dmg,'heat');ev('B',v.x,v.y,0.9,0.35,'#ff8a3d');}}
+  else if(m.k==='refl'&&m.e.hp>0){const d=m.d*(1-armor(m.e));takeHit(m.e,d,u,'reflect',0,false,true,0);if(u.st)u.st.dmg+=d;ev('B',m.e.x,m.e.y,0.8,0.3,'#5aa9ff');}
+  modCues(u);}
+ modQ.length=0;}
+
 // ---- update ----
 function update(dt){
  if(state!=='play')return;
@@ -1110,9 +1161,9 @@ function update(dt){
  for(const u of units)if(u.ctl==='net'&&u.hp>0)netMove(u,dt);
  planBudget=2;   // at most two bots re-plan their route per frame
  for(const u of units)if(!u.hum&&u.hp>0){if(u.boss)bossAI(dt,u);else botAI(dt,u);}
- boxTick(dt);heading(dt);superTick(dt);
+ boxTick(dt);heading(dt);superTick(dt);modTick(dt);
  for(const u of units)turret(u,dt);
- moveBullets(dt);
+ moveBullets(dt);modFlush();
  for(const u of units)u.flash=Math.max(0,u.flash-dt);
  for(const c of crates)c.flash=Math.max(0,(c.flash||0)-dt);
  timeLeft-=dt;elapsed+=dt;simT+=dt;eventTick(dt);weatherTick(dt);
@@ -1280,7 +1331,7 @@ function simRound(){
  setMap(curMap);   // fresh crates
  bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];feed=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;
  for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
-  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;
+  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.mf=null;u.burns=null;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;
   if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
  state='play';wxStart();
 }

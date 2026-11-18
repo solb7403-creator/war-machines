@@ -41,7 +41,8 @@ function decode(pf) {
 }
 const unitsFor = (L, g, m) => (g === "royale" ? 6 : g === "boss" ? (L.MODES[m] || L.MODES["1v1"]).n + 1 : 2 * (L.MODES[m] || L.MODES["1v1"]).n);
 // c: {g, m, map, secs (ticket to result, wall clock), won, drawn, place, series, min (fastest believable win, s),
-//     spdM (your chassis and engine), st: {dmg, kills, sup, box, low} as reported}
+//     spdM (your chassis and engine), st: {dmg, kills, sup, box, low} as reported; research mods (Session 6B, from the server's
+//     loadout): modSpd Traction's speed boost, dashN Overdrive's dash charges, burnT how long an Inferno burn keeps dealing damage}
 // how long the recorded fight lasted (match seconds) and whether fast forward ran (x3 while you're down), or null for no
 // usable record. The server uses it to place a result in time when the ticket came late or never arrived (eco.matchEnd)
 export function proofSpan(pf) {
@@ -107,8 +108,12 @@ export function checkProof(pf, c) {
       for (let tau = t1 - 1; tau <= t1 + 0.76; tau += 0.25) if (RULES.wxIn(z, Math.max(z.t, Math.min(end, tau)), x0, y0, 1.5)) return (Pl.haz === "train" ? H.shove : H.push) * 1.15; }   // only for a tank that was at the strike
     return 0; };
   // movement: no tank goes faster than the game allows (a dash, a respawn or a new round excused)
-  const dash = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15;
-  const vMe = L.STAT.speed * Math.max(0.5, Math.min(2, c.spdM || 1)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT;
+  // research mods (Session 6B): Overdrive's dash charges back to back (c.dashN), and Traction Servo's boost (c.modSpd), allowed only
+  // in the samples right after a dash: the dash itself plus the boost's 2 s (FITS.mobility.traction.x.t) and one sample of slack
+  const dash = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15 * Math.max(1, Math.min(3, c.dashN || 1)), msp = Math.max(1, Math.min(2, c.modSpd || 1));
+  const tracWin = Math.ceil((L.DASH_T + 2) / PROOF.DT) + 1;
+  const vBase = L.STAT.speed * Math.max(0.5, Math.min(2, c.spdM || 1)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT, vMe = vBase + PROOF.QUANT;
+  let lastDash = -1e9;
   const vAny = L.STAT.speed * 1.25 * 1.24 * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT;
   let badMe = 0, badOther = 0, stepsOther = 0, moving = 0, noIn = 0, touches = 0;
   for (let s = 1; s < k; s++) {
@@ -118,8 +123,10 @@ export function checkProof(pf, c) {
       if (HP(s - 1, i) === 0 || round) continue;   // respawned, or a new round
       const d = Math.hypot(X(s, i) - X(s - 1, i), Y(s, i) - Y(s - 1, i));
       if (i === 0) {
-        const speedLimit = variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT : vMe;
-        const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0) + shoveAt(s, i);
+        if (fl & 2) lastDash = s;
+        const boost = msp > 1 && s - lastDash <= tracWin ? msp : 1;
+        const speedLimit = (variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT : vBase) * boost + PROOF.QUANT;
+        const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0) + shoveAt(s, i);   // both allowances: 6B's dash charges and Traction boost, 5E-2e's shove at a train or tornado strike
         if (d > lim0) badMe++;
         if (d > 0.4 && !(fl & 2)) { moving++; if (Math.hypot(IX(s), IY(s)) < 0.05 && !(fl & 1)) noIn++; }
       } else { stepsOther++; if (d > vAny + dash + shoveAt(s, i)) badOther++; }
@@ -148,6 +155,12 @@ export function checkProof(pf, c) {
   if (inWall > PROOF.WALL_BAD) return fail("walls");
   // damage: what you report matches the record, it was dealt with an enemy in reach, and the enemies lost that health
   const enemy = h.map((u, i) => i > 0 && (c.g === "royale" ? true : u[0] !== h[0][0]));
+  // Inferno Core / Sunfire Core (Session 6B): a burn keeps dealing your damage for c.burnT seconds after the hit that set it, so a
+  // burning tank may have driven out of reach by its last tick. With a burn mod, "in reach" means in reach in any sample of
+  // that window (the hit that set the burn was). The sim counts a burn tick as its source's hit (game.js modTick -> takeHit
+  // kind 0: st.dmg, the 5 s hazard credit), and so does this check (ruling: Checkpoint 41 "Mods and hazards")
+  const burnW = Math.ceil(Math.max(0, Math.min(3, Number(c.burnT) || 0)) / PROOF.DT);
+  const distTo = (s, i) => { let d = 1e9; for (let j = Math.max(0, s - burnW); j <= s; j++) d = Math.min(d, Math.hypot(X(j, i) - X(j, 0), Y(j, i) - Y(j, 0))); return d; };
   let total = 0, bad = 0, lost = 0, kills = 0, sups = 0, boxes = 0, low = 1, roundSups = 0, mostSups = 0, roundsSeen = 1;
   for (let s = 0; s < k; s++) {
     const d = DM(s), fl = FL(s);
@@ -159,7 +172,7 @@ export function checkProof(pf, c) {
     if (d > 0) {
       total += d;
       let dmin = 1e9;
-      for (let i = 1; i < n; i++) if (enemy[i] && (HP(s, i) > 0 || (s > 0 && HP(s - 1, i) > 0))) dmin = Math.min(dmin, Math.hypot(X(s, i) - X(s, 0), Y(s, i) - Y(s, 0)));
+      for (let i = 1; i < n; i++) if (enemy[i] && (HP(s, i) > 0 || (s > 0 && HP(s - 1, i) > 0))) dmin = Math.min(dmin, distTo(s, i));
       let sup = false;   // a super counts for 3 s after the press: the timing bar (up to 1.2 s, Session 5E-2b) plus a Siege shell's flight (up to 1.2 s)
       for (let j = Math.max(0, s - 6); j <= s; j++) if (FL(j) & 8) sup = true;
       if (dmin > (sup ? PROOF.SUPER_REACH : L.STAT.range + PROOF.REACH)) bad += d;
@@ -192,7 +205,7 @@ export function checkProof(pf, c) {
       if (!(drop > 0)) continue;
       if (HP(s, i) > 0 ? notMine < hitD * 0.5 : HP(s - 1, i) * unit - DM(s) < unit) continue;
       let mineHit = false;
-      for (let j = Math.max(1, s - PROOF.HZ_MINE); j <= s && !mineHit; j++) if (DM(j) > 0 && HP(j - 1, i) > HP(j, i) && Math.hypot(X(j, i) - X(j, 0), Y(j, i) - Y(j, 0)) <= reach(j)) mineHit = true;
+      for (let j = Math.max(1, s - PROOF.HZ_MINE); j <= s && !mineHit; j++) if (DM(j) > 0 && HP(j - 1, i) > HP(j, i) && distTo(j, i) <= reach(j)) mineHit = true;   // a burn tick of yours counts (distTo)
       if (!mineHit) continue;
       const t1 = (s - r.r0) * PROOF.DT, late = r.r0 < 0 ? 0.26 : 0.76; let hit = null;   // the round's clock at this sample (a later round's first sample can be half a second in)
       for (const z of Pl.hz) {

@@ -12,6 +12,7 @@ import {track,played as anPlayed,secondsBucket,carryingOf} from './conquest-anal
 // Session 6 analytics: one end event per operation attempt (victory, defeat or retreat), raids with a seconds bucket.
 function opEnd(s,B,outcome){if(!s.mission||s.anEnd===s.attempt)return;s.anEnd=s.attempt;const raid=!!C.operations[s.mission]?.raid;track(s,raid?'raid_end':'mission_end',s.mission,outcome,raid?secondsBucket(B.time):undefined);}
 import {PLOT_ACTIONS,REMOTE_PLOT_ACTIONS,plotAction} from './conquest-plot.js';
+import {research,researchAction,RESEARCH_ACTIONS} from './conquest-research.js';
 const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=40,MAX_CREDIT_MS=4000;
 // Credit is real elapsed wall time, so simulated time can never exceed it. A 4s reserve lets a phone that stalled on a slow link
 // catch up instead of discarding earned time and diverging; 40 steps per request drains that backlog at the normal 1 Hz cadence.
@@ -54,7 +55,7 @@ function migrateRegion(s,now){
  if(s.death?.position&&embedded(s.death.position))s.death.position=repair(s.death.position);
  s.regionRevision=2;if(changed)s.notice={kind:'world-migration',at:now};
 }
-export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now);inventory(s);orders(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
+export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now);inventory(s);research(s);orders(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
  if(s.mission)return;const day=Math.floor(now/POLICY.day),fresh=new C.Encounter(s.loadout,s.position);
  for(const e of fresh.enemies)if(!s.battle.enemies.some(old=>old.key===e.key))s.battle.enemies.push(copy(e));
  // A patrol whose authored route moved is re-homed only while it is calm and far outside the player's view.
@@ -69,7 +70,7 @@ export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now
  living(s,now);   // Session 6: hunter packs by held sectors and hour; old incursion / ambush units leave
 }
 function footing(s,p){if(p.surface==='ground'&&W.solidAt(p.x,p.z))return false;const f=W.speedFactor(p);return [[2,0],[-2,0],[0,2],[0,-2]].every(([x,z])=>{const q=W.advance(p,x,z);return Math.hypot(q.x-p.x-x*f,q.z-p.z-z*f)<.1;});}
-export function refitState(s,L){if(s.mission||JSON.stringify(s.loadout)===JSON.stringify(L))return;const safe=atTerminal(s)||Math.hypot(s.position.x-W.spawn.x,s.position.z-W.spawn.z)<20;if(!safe)return;const B=hydrate(s),fresh=new C.Encounter(L,s.position);s.hp=Math.min(s.hp,fresh.playerMax);B.playerStats=fresh.playerStats;B.playerMax=fresh.playerMax;B.combatSpeed=fresh.combatSpeed;B.snapshot=fresh.snapshot;B.playerHp=s.hp;s.loadout=copy(L);s.battle=copy(B);}
+export function refitState(s,L){if(s.mission||JSON.stringify(s.loadout)===JSON.stringify(L))return;const safe=atTerminal(s)||Math.hypot(s.position.x-W.spawn.x,s.position.z-W.spawn.z)<20;if(!safe)return;const B=hydrate(s),fresh=new C.Encounter(L,s.position);s.hp=Math.min(s.hp,fresh.playerMax);B.playerStats=fresh.playerStats;B.playerMax=fresh.playerMax;B.combatSpeed=fresh.combatSpeed;B.snapshot=fresh.snapshot;B.playerHp=s.hp;delete B.mf;s.loadout=copy(L);s.battle=copy(B);}   // new mods: their state starts fresh
 function time(previous,seq,now){if(previous?.v!==1||!Number.isSafeInteger(seq)||seq!==previous.seq+1)fail('stale sequence');if(!Number.isSafeInteger(now)||now<previous.lastWall)fail('invalid server clock');}
 export function applyCommands(previous,request,now){
  if(!record(request)||Object.keys(request).some(k=>!['seq','commands'].includes(k)))fail('invalid request');const commands=validateCommands(request.commands);time(previous,request.seq,now);
@@ -88,7 +89,7 @@ export function applyCommands(previous,request,now){
  if(s.mission&&B.state==='defeat')opEnd(s,B,'defeat');
  if(s.mission==='base-defense'&&B.state==='defeat')defenseOutcome(s,'defeat',now);else if(s.mission&&C.operations[s.mission].defense&&B.state==='defeat')sectorDefenseOutcome(s,'defeat',now);else if(s.mission&&B.state==='defeat'){restoreContest(s);settleOpKills(s,now);}
  cosmetics(s,now);
- s.seq=request.seq;s.lastWall=now;s.creditMs=credit-cost;s.battle=copy(B);return s;
+ s.seq=request.seq;s.lastWall=now;s.creditMs=credit-cost;s.battle=copy(B);if(s.battle.mf)s.battle.mf.q=[];return s;   // research mod cues are the phone's (it plays its own prediction's)
 }
 // Gathering (RESOURCE_ECONOMY.md §5.3; Phase 2 bio-flora + Phase 3 minerals): hold GATHER while stationary within reach of a
 // ready bio-flora node or a ready deposit this pilot has discovered. Simulated time only; damage, movement or release resets
@@ -144,7 +145,7 @@ function completeRecall(s,B,now){const node=C.travelNodes(s.territory,s.base?.ti
 function arrive(s,B,p,notice){s.position={x:p.x,z:p.z,y:p.y,surface:p.surface||'ground'};s.safe=[{...s.position}];s.stuckMs=0;delete s.recall;B.projectiles=[];B.superShells=[];B.superAttack=null;B.dashState=null;B.lockId=null;s.notice=notice;}
 function mergeResidents(from,to){for(const e of from.enemies.filter(e=>e.resident)){const old=to.enemies.find(x=>x.key===e.key);if(old){const id=old.id;Object.assign(old,copy(e),{id,resident:false});if(old.hp<=0){to.cleared=to.cleared||{};to.cleared[old.key]=true;}}}}
 export function applyAction(previous,request,now,ctx={}){
- if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
+ if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
  if(request.action==='start-mission'||request.action==='start-defense'||request.action==='start-sector-defense'){
  const defense=request.action==='start-defense',sectorDefense=request.action==='start-sector-defense';if(defense){const d=s.base.defense;if(!s.base.tier||s.mission||!d.alertAt||d.active||now<d.nextAt)fail('defense unavailable');}
  const op=C.operations[defense?'base-defense':request.mission||'oxygen-line'];if(!own(C.operations,defense?'base-defense':request.mission||'oxygen-line')||!op||Object.keys(request).some(k=>!['seq','action',...(defense?[]:['mission'])].includes(k)))fail('invalid mission');
@@ -188,6 +189,7 @@ export function applyAction(previous,request,now,ctx={}){
  // Capacity changes preserve the absolute heat debt and latch. Never refill HP or abilities.
  B.engineering=copy(s.engineering);const capacity=C.engineeringValues(B.playerStats,B.engineering).capacity,total=(B.heat||0)+(B.heatOverflow||0);C.setHeat(B,total,capacity);if(total>=capacity)B.overheated=true;
  s.notice={kind:'engineering-saved'};
+ }else if(RESEARCH_ACTIONS.includes(request.action)){if(Object.keys(request).some(k=>!['seq','action','mod'].includes(k)))fail('invalid research fields');researchAction(s,request,now,ctx);   // Session 6B: from anywhere (the lab is commanded by radio), never a combat change
  }else if(request.action==='use-item'){useItem(s,B,request,now);
  }else if(ORDER_ACTIONS.includes(request.action)){claimOrder(s,request,now);
  }else if(request.action==='bank'){bank(s,now);
@@ -200,5 +202,5 @@ export function applyAction(previous,request,now,ctx={}){
  if(!p)for(const r of [8,12,20,32]){for(let i=0;i<16;i++){const q=W.advance(s.position,Math.cos(i*Math.PI/8)*r,Math.sin(i*Math.PI/8)*r);if(Math.hypot(q.x-s.position.x,q.z-s.position.z)>=6&&footing(s,q)){p=q;break;}}if(p)break;}
  if(!p)fail('no reachable safe position');s.position={...p};s.recoveryAt=now+30000;s.stuckMs=0;
  }
- B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;B.id=Math.max(Number(B.id)||0,...B.enemies.map(e=>e.id));s.battle=copy(B);s.seq=request.seq;s.creditMs=Math.min(MAX_CREDIT_MS,s.creditMs+now-s.lastWall);s.lastWall=now;return s;
+ B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;B.id=Math.max(Number(B.id)||0,...B.enemies.map(e=>e.id));s.battle=copy(B);if(s.battle.mf)s.battle.mf.q=[];s.seq=request.seq;s.creditMs=Math.min(MAX_CREDIT_MS,s.creditMs+now-s.lastWall);s.lastWall=now;return s;
 }

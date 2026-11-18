@@ -100,4 +100,13 @@ const spec={w:{a:'moon',t:2,s:false},c:{c:'vanguard',t:0,s:false},cores:['dmg','
 const moon=R.legendaryEdge(E,spec,'moon');assert.ok(R.WORDER.includes(moon.vs));assert.ok(moon.d.fire>0,'Moonbeam out-fires the best Epic: '+JSON.stringify(moon));
 const skin=R.legendaryEdge(E,spec,'skin');assert.ok(skin.d.tough>0&&skin.d.fire>0&&skin.d.speed===0,'Lunar Skin: more health and damage');
 
+// 7. Session 6B research options: in each slot, never legal without ownership (ecoLoadout reads the server record), legal once
+// researched or bought; a set mod in each slot it sits in is the strongest research option there; free options unchanged
+{const R2=new Function(readFileSync('js/rules.js','utf8')+'\nreturn {FITS,RTREE,RTREE_ALL,ecoNorm,labEnsure,ecoLoadout,labLoadout,rmodOf};')();
+ const want={hull:{plates:{hp:.05,spd:-.16,shieldCd:-.40,weight:2,power:0},light:{hp:-.05,spd:.15,dashCd:-.40,weight:0,power:1}},mobility:{sprint:{spd:.11,dps:-.09,turn:.30,weight:0,power:2},stable:{spd:-.15,dps:.07,shotSpd:.10,weight:1,power:1}},mount:{hardened:{hp:.06,dps:-.14,hitCharge:.20,weight:2,power:0},firing:{hp:-.08,dps:.12,charge:.08,weight:1,power:2}}};
+ for(const [slot,o] of Object.entries(want))for(const [id,f] of Object.entries(o)){const F=R2.FITS[slot][id];for(const [k,v] of Object.entries(f))assert.equal(F[k],v,'free option '+id+'.'+k+' unchanged');assert.ok(!F.rs,id+' stays free');}
+ for(const slot of R.FIT_ORDER)assert.ok(Object.values(R2.FITS[slot]).filter(F=>F.rs&&!F.leg).length>=5,'five or more research options in the '+slot+' slot');
+ const S0=R2.ecoNorm({});R2.labEnsure(S0);const M0=S0.lab.machines[S0.lab.active];M0.spec.mods={hull:'aegis',mobility:'overdrive',mount:'rail'};assert.deepEqual(R2.labLoadout(S0).mods,{hull:'stock',mobility:'stock',mount:'stock'},'unresearched: Stock in every slot');
+ const S1=R2.ecoNorm({rm:{aegis:1,overdrive:1,rail:1}});R2.labEnsure(S1);S1.lab.machines[S1.lab.active].spec.mods={hull:'aegis',mobility:'overdrive',mount:'rail'};assert.deepEqual(R2.labLoadout(S1).mods,{hull:'aegis',mobility:'overdrive',mount:'rail'},'researched: they fit');
+ assert.equal(R2.RTREE_ALL.length,16,'16 research unlocks');}
 console.log('PASS garage rules:',JSON.stringify({tags:tags.length,reach:seen,flipRate:+flipRate.toFixed(3),upgradePath:{avg:+(sumPath/2000).toFixed(2),max:maxPath},moonEdge:moon,skinEdge:skin.d}));

@@ -42,7 +42,7 @@ function screen(d,s,{el,button,use,pick,picked}){
  for(const k of CQ_ITEM_ORDER){const I=CQ_ITEMS[k],n=v.it?.[k]|0,cd=cooldown(s,k),row=el('div','cq-loot-row',null,c);el('b','',I.n.toUpperCase()+' ×'+n,row);el('small','',I.d+(cd?' · RECHARGING '+cd+'s':''),row);
   if(use){const u=button('USE',()=>use(k),'cq-loot-use');u.disabled=!n||cd>0;row.append(u);}if(pick){const p=button(picked===k?'IN SLOT':'SET SLOT',()=>pick(k),'cq-loot-pick');p.disabled=!n||picked===k;row.append(p);}}
  el('small','cq-loot-note','Use them in the field or in an operation (never inside your town, Arcade or PvP). SHIELD long-press or Q opens / uses the slot; keys 1-4 use each one.',c);
- const p=sec('RESEARCH PARTS · THE SCIENCE LAB USES THESE SOON');el('p','',CQ_PART_ORDER.map(k=>CQ_PARTS[k].n+' '+(v.pt?.[k]|0)+'/'+CQ_PART_MAX).join(' · '),p);
+ const p=sec('RESEARCH PARTS · FOR THE SCIENCE LAB');el('p','',CQ_PART_ORDER.map(k=>CQ_PARTS[k].n+' '+(v.pt?.[k]|0)+'/'+CQ_PART_MAX).join(' · '),p);
  const f=sec('BLUEPRINT FRAGMENTS · '+CQ_FRAG.need+' OF A POOL = ONE NEW COSMETIC');const C=root.ConquestCatalog;
  for(const k of CQ_FRAG.order){const pool=C?.pools?.[k]||[],own=pool.filter(id=>s?.cosmetics?.owned?.[id]).length,row=el('div','cq-loot-row',null,f);const b=el('b','',CQ_FRAG.pools[k].n+' '+(v.fr?.[k]|0)+'/'+CQ_FRAG.need,row);b.style.color=COLORS[CQ_FRAG.pools[k].r];el('small','',own+'/'+pool.length+' '+({armor:'plate finishes',commander:'banner standards',trail:'muzzle trails',base:'town ornaments'}[CQ_FRAG.pools[k].slot]||'pieces')+(own===pool.length&&pool.length?' · POOL COMPLETE':''),row);}
  const t=sec('TROPHY HALL · +'+CQ_TROPHY_SCORE+' TOWN SCORE PER TROPHY TYPE');let held=0;

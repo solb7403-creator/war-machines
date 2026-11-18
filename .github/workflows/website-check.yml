@@ -1,7 +1,7 @@
 name: Website layout and login contracts
 on:
   pull_request:
-    paths: ['web/**', 'js/models3d.js', 'js/equipment3d.js', 'js/environment3d.js', 'js/graphics.js', 'dev/tests/graphics*', 'css/environment.css', 'dev/tests/environment*', 'js/assets/**', 'js/vendor/**', 'dev/assets/**', 'dev/tests/hf-*', 'js/render3d.js', 'js/mapenv.js', 'js/arena3d.js', 'js/arenaprops.js', 'js/arenacam.js', 'js/render.js', 'dev/tests/arena-maps.mjs', 'dev/tests/arena-cam.mjs', 'dev/tests/standard-equipment*', 'dev/tests/legendary*', 'dev/tests/defender-isolation.mjs', 'dev/tests/fixtures/**', 'dev/tests/defender-visual.mjs', 'worker/src/**', 'privacy.html', 'terms.html', 'js/ui.js', 'js/net.js', 'js/core.js', 'dev/tests/signup-browser.cjs', 'dev/tests/webserver.mjs', 'dev/tests/wtest/accounts.mjs', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', 'js/fx.js', 'dev/tests/weapon-sounds.cjs', '.github/workflows/website-check.yml']
+    paths: ['web/**', 'js/models3d.js', 'js/equipment3d.js', 'js/environment3d.js', 'js/graphics.js', 'dev/tests/graphics*', 'css/environment.css', 'dev/tests/environment*', 'js/assets/**', 'js/vendor/**', 'dev/assets/**', 'dev/tests/hf-*', 'js/render3d.js', 'js/mapenv.js', 'js/arena3d.js', 'js/arenaprops.js', 'js/arenacam.js', 'js/render.js', 'dev/tests/arena-maps.mjs', 'dev/tests/arena-cam.mjs', 'dev/tests/standard-equipment*', 'dev/tests/legendary*', 'dev/tests/defender-isolation.mjs', 'dev/tests/fixtures/**', 'dev/tests/defender-visual.mjs', 'worker/src/**', 'privacy.html', 'terms.html', 'js/ui.js', 'js/net.js', 'js/core.js', 'dev/tests/signup-browser.cjs', 'dev/tests/webserver.mjs', 'dev/tests/wtest/accounts.mjs', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', 'js/fx.js', 'dev/tests/weapon-sounds.cjs', 'dev/tests/audio.cjs', 'js/main.js', 'js/conquest/app.js', 'js/conquest/world.js', '.github/workflows/website-check.yml']
 permissions:
   contents: read
 jobs:
@@ -90,6 +90,11 @@ jobs:
       - name: Weapon sounds (offline renders)
         if: matrix.engine == 'chromium'
         run: node dev/tests/weapon-sounds.cjs
+      # Session 6B audio: one AudioContext (made on the first input), a hidden page is silent, the Settings volume, the Conquest zone
+      # beds (barren / terraformed / colony core) measured offline, the reward sounds and stingers wired, no storm or rain sounds
+      - name: Audio (context, volume, zone beds, stingers)
+        if: matrix.engine == 'chromium'
+        run: node dev/tests/audio.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

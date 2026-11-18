@@ -1157,6 +1157,9 @@ function drawHUD(){
   g.fillStyle=on?'rgba(64,224,208,.95)':ready?'rgba(26,94,104,.9)':'rgba(24,38,52,.9)';g.beginPath();g.arc(H.x,H.y,H.r,0,7);g.fill();
   if(!ready){g.strokeStyle='#40e0d0';g.lineWidth=4;g.beginPath();g.arc(H.x,H.y,H.r-3,-Math.PI/2,-Math.PI*2*(1-cd)-Math.PI/2);g.stroke();}
   g.fillStyle=ready||on?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(H.r*0.34));g.fillText('SHIELD',H.x,H.y+1-(CH&&KEYHINT?H.r*0.14:0));if(CH&&KEYHINT){g.font=font(Math.round(H.r*0.28));g.globalAlpha=0.7;g.fillText('E',H.x,H.y+H.r*0.4);g.globalAlpha=1;}}
+ // research mods (Session 6B): one chip per fitted mod over the DASH button, its live state from the shared engine (rules.js mfHud);
+ // in a live match the server's state (pvp.js me.mfv) with this phone's own dash charges and Traction
+ if(state==='play'&&me.hp>0&&me.rm)modChips(g);
  // SUPER button with a charge ring
  if(state==='play'&&me.hp>0){const B=btn(),used=supUsed(),out=used>=SUP_ROUND_CAP&&!me.sup,f=out?0:me.sp/SUPER_MAX,rdy=f>=1&&!me.sup&&me.hp>0;
   g.fillStyle=rdy?'#e0242f':out?'#22262c':'#3a1a1d';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();
@@ -1182,3 +1185,14 @@ function drawMachinePreview(ctx,w,h,L){
  if(typeof machineArt3D==='function'&&machineArt3D(ctx,w,h,L))return;
  drawTankPx(ctx,w/2,h*.55,Math.min(w/6,h/3.7),-.6,-.8,TC[0],L.cores,L.w.a,null,3,PAINTS[L.paint],fittingVisuals(L),L.skin,L.ap);
 }
+
+// Session 6B: the research-mod chips (shared rules: mfHud). Compact so 320 px phones keep the field clear
+function modChips(g){
+ const v=me.mfv,m=me.mf||{},mf=v?{st:v.st,ovc:v.ovc,cool:v.cool,inf:v.inf?1:0,sc:v.n,hc:v.n,lost:v.lost,mom:v.mom,fast:0,still:v.cap?99:0,tr:m.tr||0,dq:m.dq!==undefined?m.dq:v.dq,osh:v.osh}:m;
+ const chips=mfHud(me,mf);if(!chips.length)return;const D=dashBtn(),w=Math.max(70,Math.min(96,D.r*2.1)),h=Math.max(15,Math.min(19,D.r*0.4)),x=D.x-w/2;let y=D.y-D.r-10-h;
+ g.save();g.textAlign='center';g.font='700 '+Math.round(h*0.58)+'px '+FONT_FAMILY;
+ for(const c of chips){const col=c.leg?'#ffcf4a':(RTREE.tracks[c.tr]||{}).c||'#9fb0c2';   // a Legendary set mod's chip is gold
+  g.globalAlpha=0.92;g.fillStyle=c.on>0?'rgba(18,26,40,.95)':'rgba(10,14,23,.78)';rr(g,x,y,w,h,h/2);g.fill();g.strokeStyle=col;g.lineWidth=c.on>0?2:1;g.stroke();
+  const f=c.b==='overdrive'?0:Math.max(0,Math.min(1,c.on>0&&c.b!=='overclock'?1:c.v||0));if(f>0){g.globalAlpha=c.on>0?0.55:0.35;g.fillStyle=col;rr(g,x+2,y+2,(w-4)*f,h-4,(h-4)/2);g.fill();}
+  g.globalAlpha=1;g.fillStyle=c.on<0?'#9fb0c2':'#fff';const word=c.b==='overdrive'?'DASH '+'●'.repeat(Math.max(0,c.v|0))+'○'.repeat(Math.max(0,(c.n||0)-(c.v|0))):c.w;g.fillText(word,D.x,y+h*0.7);y-=h+4;}
+ g.restore();}
