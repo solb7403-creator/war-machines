@@ -72,13 +72,14 @@ const kit = mods => ({ ...L0(), mods });
 const MODS = Object.entries(R.FITS).flatMap(([slot, o]) => Object.keys(o).filter(id => R.isRmod(slot, id)).map(id => ({ slot, id })));
 
 // one live match: pilot A on the phone (this harness), pilot B a live seat that stands still at its spawn and fires
-function runMatch(L, label) {
+function runMatch(L, label, jitter = 0) {
   const g = rig({ MAP: 'classic' }), room = g.room;
   const phone = makePhone(() => g.now - 1.8e12 + 5000);
   const toPhone = [], toRoom = [];
-  const sockA = { send: x => toPhone.push({ at: g.now + LAT, m: JSON.parse(x) }), close() {} }, sockB = { send() {}, close() {} };
+  let rs = 7, lastP = 0, lastR = 0; const jit = () => { rs = (rs * 1103515245 + 12345) & 0x7fffffff; return jitter * rs / 0x7fffffff; };   // seeded network jitter; a socket never reorders (TCP)
+  const sockA = { send: x => toPhone.push({ at: (lastP = Math.max(lastP, g.now + LAT + jit())), m: JSON.parse(x) }), close() {} }, sockB = { send() {}, close() {} };
   for (const [pid, LL] of [['a', L], ['b', L0()]]) room.seatPlayer({ pid, name: pid.toUpperCase(), q: { g: 'bounty', m: '1v1' }, L: LL, power: R.powerOf(LL), league: 2, mp: 0 });   // mp 0: a clear-weather room (hazards: arcade-weather.mjs 3c)
-  const phoneSock = { readyState: 1, send: x => toRoom.push({ at: g.now + LAT, raw: x }), close() {} };
+  const phoneSock = { readyState: 1, send: x => toRoom.push({ at: (lastR = Math.max(lastR, g.now + LAT + jit())), raw: x }), close() {} };
   phone.pvp = { phase: 'find', live: false, q: { g: 'bounty', m: '1v1' }, quick: false, t0: 0, n: 1, cap: 2, left: 30000, snaps: [], evq: [], off: null, jit: 0, delay: 110, tp: 0, sent: null, lastSnapAt: 0, retry: 0, id: 1, room: 'r', tok: 't', sock: phoneSock };
   vm.runInContext('pvp=globalThis.pvp;', phone);
   room.connect('a', sockA); room.connect('b', sockB);
@@ -147,10 +148,10 @@ function runMatch(L, label) {
 
 const rows = [];
 const ONLY = (process.env.PVP_AGREE_ONLY || '').split(',').filter(Boolean);   // debugging: PVP_AGREE_ONLY=momentum,overdrive
-for (const m of [{ slot: null, id: 'stock' }].concat(MODS).filter(m => !ONLY.length || ONLY.includes(m.id))) {
+for (const jitter of [0, 100]) for (const m of [{ slot: null, id: 'stock' }].concat(MODS).filter(m => !ONLY.length || ONLY.includes(m.id))) {
   const L = m.slot ? kit({ [m.slot]: m.id }) : L0();
-  const r = runMatch(L, m.id);
-  const tag = m.id + ': ';
+  const r = runMatch(L, m.id, jitter);
+  const tag = m.id + (jitter ? ' (0-' + jitter + ' ms jitter)' : '') + ': ';   // reviewer 1: also under network jitter
   ok(r.srv.dashRefused === 0 && r.srv.shieldRefused === 0 && r.srv.dash === r.phoneDash && r.srv.shield === r.phoneShield, tag + 'every dash and shield the phone made is one the room took (phone ' + r.phoneDash + ' dashes / ' + r.phoneShield + ' shields, room ' + J(r.srv) + ')');
   ok(r.shieldGap <= 350, tag + 'your shield is up or down on the phone as on the room (longest disagreement ' + Math.round(r.shieldGap) + ' ms)');
   ok(r.readyGap <= 350, tag + 'your shield is ready on the phone when it is ready on the room (longest disagreement ' + Math.round(r.readyGap) + ' ms)');
@@ -171,4 +172,4 @@ for (const m of [{ slot: null, id: 'stock' }].concat(MODS).filter(m => !ONLY.len
 }
 console.log(rows.join('\n'));
 if (fails.length) { console.log('FAIL pvp-agree: ' + fails.length + ' of ' + checks + ' checks'); process.exit(1); }
-console.log('PASS pvp-agree: ' + checks + ' checks, ' + (MODS.length + 1) + ' live matches (stock + every research and Legendary mod), phone == room');
+console.log('PASS pvp-agree: ' + checks + ' checks, ' + 2 * (MODS.length + 1) + ' live matches (stock + every research and Legendary mod, steady and with 0-100 ms jitter), phone == room');

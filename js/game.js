@@ -1122,7 +1122,7 @@ function netResync(u){u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.stuck=0;u.dq2=null;
 function netShield(u){return useShield(u);}   // a live player raised their shield: same cooldown as everyone
 // Overdrive (Session 6B review): the phone's dash lasts 0.2 s of its own frames, the room's 7 ticks (0.233 s), so a second charge
 // pressed the moment the first ends on the phone can reach the room one tick before its dash is over: it is held and starts then
-const NET_DASH_Q=1/30+1e-6;
+const NET_DASH_Q=0.12;   // reviewer 1 (jitter): one tick refused 9 of 200 chained presses at 0-100 ms of network jitter; 0.10-0.15 s refused none (0.2 s would take a press meant for after the dash)
 function netDash(u,dx,dy){   // a live player dashed: same cooldown as everyone; their claims may run ahead for the burst
  if(u.dash&&u.dash.t<=NET_DASH_Q){if(!u.dq2)u.dq2={dx:+dx||0,dy:+dy||0};return true;}
  if(!useDash(u,dx,dy))return false;
