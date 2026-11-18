@@ -1463,7 +1463,7 @@ const FIT_FIELDS=['hp','spd','dps','supTaken','dashCd','turn','shotSpd','shieldC
 // on the mount), Drive is movement (two mobility mods and its set mod on mobility), Field is the shield (two hull mods and its set
 // mod on the hull); each track's third mod sits in another slot, so every slot holds five or six research choices.
 // Fields as above, plus: rs track, lab the Science Lab level that opens it (I Thermal/Ballistics, II Drive/Field, III the set
-// mods), set/leg (set mod, Legendary set mod: bought, never researched), b behavior (RMOD_B, one per mod; every trigger is
+// mods), set/leg (set mod, Legendary set mod: researched (30 parts, Science Lab III, after its set mod) or bought, one ownership), b behavior (RMOD_B, one per mod; every trigger is
 // deterministic: no mod is a chance to deal damage), x its numbers, cue the HUD word, look the existing visual it borrows (no new
 // models), role, d what it does in plain words. Behaviors run identically in the Arcade/PvP sim (js/game.js) and in Conquest
 // (js/conquest/combat.js + controls.js), on the phone and on the Worker; a mod's damage is counted in seconds of the tank's own
@@ -1629,7 +1629,7 @@ const RS_LEG_PRICE=Object.freeze({stars:599,ton:9.6});
 const rsLegSet=id=>{const r=rmodOf(id);return r&&r.F.leg?RTREE.mods[r.F.rs][3]:null;};
 // Lunar Pass premium (season perks while premium is active: +1 research slot, jobs 25% faster: RTREE.slots.pass / passTime) and
 // research parts on these premium tiers: tier -> that many of each part, on top of the tier's own reward. Never points. Tiers
-// 10/20/30 (12 parts a season) make the tree about 25% faster than free (economy model: 5.9 vs 7.9 weeks), near the genre's
+// 10/20/30 (12 parts a season) make the tree about 40% faster than free with the daily limit (economy model: 90 vs 149 days), above the genre's
 // pass research boosts (Clash of Clans' Gold Pass: about 20%); five tiers (20 parts) halved it, too far ahead of free pilots.
 const PASS_PREM_PARTS=Object.freeze({10:1,20:1,30:1});
 // The pass's research perks are part of the Lab store's revenue hooks, so they start only when the owner opens that checkout

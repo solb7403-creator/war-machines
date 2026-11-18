@@ -25,7 +25,7 @@ const DAY=()=>typeof CQ_PART_DAY!=='undefined'?CQ_PART_DAY:1;
 function partDay(s,now=Date.now()){const pd=s?.inv?.pd,d=Math.floor(now/864e5);return {n:pd&&(pd.d|0)===d?Math.min(DAY(),pd.n|0):0,of:DAY()};}
 // the rule in plain words, built from the rules (the LOOT screen and the wiki say exactly this: dev/tests/conquest-loot.mjs)
 function limitText(){const S=typeof CQ_PART_SWAP!=='undefined'?CQ_PART_SWAP:{},F=G.FRAG.pools,n=k=>String(F[S[k]]?.n||'').toLowerCase(),d=DAY();
- return (d===1?'One research part':d+' research parts')+' found by play a day per account (the UTC day). After it, each research part you find becomes 1 blueprint fragment of its source\'s pool: '+n('elite')+' from sentinels and fire coordinators (their pity part too), '+n('commander')+' from raid commanders, '+n('strike')+' from Meteor Strikes. Fragments are cosmetic only and never pay points. Parts from Lab store packs and the Lunar Pass are not limited.';}
+ return (d===1?'One research part':d+' research parts')+' found by play a day per account (the UTC day). After it, each research part you find becomes 1 blueprint fragment of its source\'s pool: '+n('elite')+' from sentinels and fire coordinators (their pity part too), '+n('commander')+' from raid commanders, '+n('strike')+' from Meteor Strikes. Fragments are cosmetic only and never pay points. Parts from Lab store packs and the Lunar Pass are not limited (both arrive with the Lab store).';}
 const text=loot=>lines(loot).map(l=>l.t).join(' · ');
 // Which consumable the HUD slot holds: the pilot's pick while any is left, else the first owned (CQ_ITEM_ORDER).
 function slotItem(s,pick){const it=s?.inv?.it||{},order=G.ORDER;if(pick&&(it[pick]|0)>0)return pick;return order.find(k=>(it[k]|0)>0)||null;}
