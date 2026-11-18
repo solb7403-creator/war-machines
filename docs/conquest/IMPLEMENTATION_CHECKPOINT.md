@@ -4872,6 +4872,13 @@ Local runs: the full list from the finish brief, one command each, on `eceff5a`.
   tank always comes from their own garage, so the test server (`dev/tests/conquest-server.mjs` /fixture) now gives the account
   that gear and puts it in its garage. Checked against the real Worker session at the Refuge: before the fix titan t2 / moon ->
   vanguard t0 / pulse t0 (2958 -> 1700 hull); after it the tank is unchanged.
+- `balance` then failed 1 of `pvp-agree.mjs`'s 432 checks ("ram (0-100 ms jitter): the room rammed the enemy"). Not a sync
+  disagreement: the room's sim drew from an unseeded `Math.random`, and in about 1 run in 10 the turret crits killed the enemy
+  on the way in, so the scripted dash met a dead tank (hull -18) and could not ram. Fix (test only): every match is seeded (the
+  room's sim through its host's seed, the phone through its own `Math.random`, a seed from each case's label, so a
+  `PVP_AGREE_ONLY` run reproduces the full run and `PVP_AGREE_SEED` shifts all of them), and the dash waits for a live enemy at
+  full hull (a scenario placement like the script's forced enemy super) with the scripted down after it. Two runs give identical
+  output; 40 seed sets pass (seed set 10 reproduced the CI failure before the fix).
 - Recorded, not changed (older than this branch, on main since Session 5E-1): the town view's builder-job sync
   (`plotview.js`) also calls `connect()` and could drop a press made in that moment; it should use `refresh()` too.
 

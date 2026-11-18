@@ -42,8 +42,14 @@ var save={mp:10},SRV_ECO=false,ACCOUNT_OK=true,vsTimer=null,keys={},joy={on:fals
 var inputVec=()=>__in,__log=[],__srv=0;
 function onSimEv(a){__log.push([__srv,a]);}
 `;
-function makePhone(clock) {
+// every match is seeded (CI: the room's sim drew from an unseeded Math.random, so 1 run in 10 the Ram case under jitter never
+// rammed): the room's sim through its host's seed (game.js random = rng32(SRV.seed)), the phone through its own Math.random. Each
+// case's seed comes from its label, so a PVP_AGREE_ONLY run reproduces the full run; PVP_AGREE_SEED shifts them all
+const SEED0 = +(process.env.PVP_AGREE_SEED || 0) | 0;
+const seedOf = (label) => { let h = 2166136261 ^ SEED0; for (const ch of label) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return ((h >>> 0) % 2147483646) + 1; };
+function makePhone(clock, seed = 1) {
   const ctx = vm.createContext({ console, __clock: clock, setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {}, btoa, atob });
+  vm.runInContext('Math.random=(()=>{let s=' + seed + ';return()=>{s=s*48271%2147483647;return (s-1)/2147483646;};})();', ctx);
   vm.runInContext(STUBS, ctx);
   vm.runInContext(src('js/rules.js') + '\n' + src('js/game.js').replace(/^'use strict';/, '') + '\n' + src('js/pvp.js').replace(/^'use strict';/, '') +
     '\n;(function(){const pe=pvpEv;pvpEv=function(e){__srv=1;try{pe(e);}finally{__srv=0;}};})();', ctx);
@@ -73,8 +79,9 @@ const MODS = Object.entries(R.FITS).flatMap(([slot, o]) => Object.keys(o).filter
 
 // one live match: pilot A on the phone (this harness), pilot B a live seat that stands still at its spawn and fires
 function runMatch(L, label, jitter = 0) {
-  const g = rig({ MAP: 'classic' }), room = g.room;
-  const phone = makePhone(() => g.now - 1.8e12 + 5000);
+  const g = rig({ MAP: 'classic' }), room = g.room, seed = seedOf(label + '/' + jitter);
+  { const h0 = room.host.bind(room); room.host = () => ({ ...h0(), seed }); }   // the room's sim draws from this seed
+  const phone = makePhone(() => g.now - 1.8e12 + 5000, seed);
   const toPhone = [], toRoom = [];
   let rs = 7, lastP = 0, lastR = 0; const jit = () => { rs = (rs * 1103515245 + 12345) & 0x7fffffff; return jitter * rs / 0x7fffffff; };   // seeded network jitter; a socket never reorders (TCP)
   const sockA = { send: x => toPhone.push({ at: (lastP = Math.max(lastP, g.now + LAT + jit())), m: JSON.parse(x) }), close() {} }, sockB = { send() {}, close() {} };
@@ -108,7 +115,7 @@ function runMatch(L, label, jitter = 0) {
   let phoneDash = 0, phoneShield = 0, momRoom = 0, momPhone = 0, reflexRoom = 0, trAfter = null, dashAt = [], ramHit = 0;
   const go = (x, y) => { const me = P('[me.x,me.y]'), dx = x - me[0], dy = y - me[1], d = Math.hypot(dx, dy); P('__in=' + J(d < 0.15 ? [0, 0] : [dx / d, dy / d])); return d; };
   const press = (k, a) => { const r = k === 'd' ? P('pvpDash(' + a[0] + ',' + a[1] + ')') : P('pvpShield()'); if (r) { if (k === 'd') { phoneDash++; dashAt.push(t); } else phoneShield++; } return r; };
-  let stage = 0, superDone = false, burstN = 0;
+  let stage = 0, superDone = false, burstN = 0, dashT = -9;
   const charges = L.mods && L.mods.mobility === 'hyperdrive' ? 3 : L.mods && L.mods.mobility === 'overdrive' ? 2 : 1, hasOD = charges > 1;
   let killed = false;
   for (let f = 0; f < 60 * 32; f++) {
@@ -122,11 +129,11 @@ function runMatch(L, label, jitter = 0) {
     if (stage === 2 && t >= 12.5) { press('h'); stage = 3; }   // your shield (with Reflex it was raised for the super: the phone knows, and refuses)
     if (stage === 3 && t >= 18) { press('h'); stage = 4; }     // standing still since about 10 s: only Capacitor Bank has it ready again this soon
     if (stage === 4 && t >= 18.3) { if (go(12.5, 4.3) < 0.3) { stage = 5; P('__in=[0,0]'); } }
-    if (stage === 5) { const B = P('[units[1].x,units[1].y,me.x,me.y]'), dx = B[0] - B[2], dy = B[1] - B[3], d = Math.hypot(dx, dy); press('d', [dx / d, dy / d]); stage = 6; burstN = 1; }   // dash into it (Ram Servo)
+    if (stage === 5 && ub().hp > 0) { ub().hp = ub().mhp; dashT = t; const B = P('[units[1].x,units[1].y,me.x,me.y]'), dx = B[0] - B[2], dy = B[1] - B[3], d = Math.hypot(dx, dy); press('d', [dx / d, dy / d]); stage = 6; burstN = 1; }   // dash into it (Ram Servo): a live enemy at full hull (seeded turret crits could kill it on the way in, and a dead tank cannot be rammed)
     else if (stage === 6 && burstN < charges && !P('me.dash')) { if (press('d', [0.3, 1])) burstN++; else stage = 7; }   // the next charge the moment this dash ends on the phone (Overdrive / Hyperdrive)
     else if (stage === 6 && burstN >= charges) stage = 7;
     if (stage === 7) P('__in=[0,0]');
-    if (stage === 7 && !killed && t >= 22.5) { killed = true; const A = ua(); sim().hit(A, A.hp + 1, ub(), null, 0); }   // you go down while your charges refill: the room's respawn brings them back full, and the phone must follow
+    if (stage === 7 && !killed && t >= Math.max(22.5, dashT + 1.5)) { killed = true; const A = ua(); sim().hit(A, A.hp + 1, ub(), null, 0); }   // you go down while your charges refill: the room's respawn brings them back full, and the phone must follow
     step();
     const A = ua(), me = P('({st:me.shieldT||0,cd:me.shieldCd||0,dq:me.mf&&me.mf.dq!==undefined?me.mf.dq:-1,mom:me.mfv&&me.mfv.mom?1:0,tr:me.mf?me.mf.tr||0:0})');
     rec.push([t, (A.shieldT || 0) > 0 ? 1 : 0, me.st > 0 ? 1 : 0, A.shieldCd || 0, me.cd, A.mf && A.mf.dq !== undefined ? A.mf.dq : -1, me.dq]);
