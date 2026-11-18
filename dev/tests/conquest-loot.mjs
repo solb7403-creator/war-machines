@@ -67,7 +67,23 @@ s=fresh();const drop=(loot,x=1160,z=1100)=>{const f=L.face(loot);s.drops.push({i
 drop({mn:{il:1},it:{repair:2},pt:{coil:1},fr:{u:1},tr:{ambush:1}});
 assert.equal(s.inv.it.repair,2);assert.equal(s.inv.pt.coil,1);assert.equal(s.inv.fr.u,1);assert.equal(s.inv.tr.ambush,1);assert.equal(s.ledger.mn.il,1,'minerals ride the cargo');assert.equal(s.notice.loot.it.repair,2);assert(s.inv.log.length===1);
 s.ledger.mn.il=3;s.hp=0;death(s,now);assert.equal(s.ledger.mn.il,2,'carried minerals: half lost on death');assert.equal(s.inv.it.repair,2,'consumables are never lost on death');assert.equal(s.inv.tr.ambush,1,'trophies are never lost');
-s=fresh();for(let i=0;i<15;i++)drop({it:{decoy:1},pt:{servo:4}});assert.equal(s.inv.it.decoy,10,'consumables cap at 10');assert.equal(s.inv.pt.servo,50,'parts cap at 50');assert(s.notice.loot.full?.includes('decoy'));
+// parts: one EARNED part a day (owner, Nov 17), so the 50 cap is reached over days; the cap test sits at 49 (Session 6B finish: this
+// line used to drop 60 parts at one moment, which the daily limit now turns into fragments)
+const dropAt=(loot,t)=>{const x=1160,z=1100,f=L.face(loot);s.drops.push({id:'t:'+Math.random(),x,z,y:W.groundAt(x,z),amount:{cp:7,alloy:2,biomass:1,helium:0},expires:t+P.dropLife,loot,r:f.r,label:f.label});s.position=point(x,z);pickups(s,t);};
+s=fresh();for(let i=0;i<15;i++)drop({it:{decoy:1}});assert.equal(s.inv.it.decoy,10,'consumables cap at 10');assert(s.notice.loot.full?.includes('decoy'));
+s.inv.pt.servo=49;dropAt({pt:{servo:1}},now);assert.equal(s.inv.pt.servo,50);dropAt({pt:{servo:1}},now+864e5);assert.equal(s.inv.pt.servo,50,'parts cap at 50');assert(s.notice.loot.full?.includes('servo')&&s.inv.pd.n===0,'a part the cap turns away does not use up the day');
+// ---- 6b. one earned research part a day per account; after it a found part is 1 fragment of its source's own pool (pity part too) ----
+{s=fresh();const d0=Math.floor(now/864e5)*864e5,t0=d0+3600e3,fr=()=>({...s.inv.fr});
+ dropAt({pt:{coil:1},src:'elite'},t0);assert(s.inv.pt.coil===1&&s.inv.pd.n===1&&s.inv.pd.d===d0/864e5,'the first part of the UTC day is taken');
+ let f0=fr();dropAt({pt:{coil:1},src:'elite'},t0+60e3);assert(s.inv.pt.coil===1&&s.inv.fr.u===f0.u+1&&s.notice.loot.swap?.coil===1,'a second elite part the same day: 1 uncommon fragment instead');
+ f0=fr();dropAt({pt:{thermal:1},src:'commander'},t0+120e3);assert(s.inv.pt.thermal===0&&s.inv.fr.r===f0.r+1,'a raid commander part past the limit: 1 rare fragment');
+ f0=fr();dropAt({pt:{cap:1},src:'strike'},t0+180e3);assert(s.inv.pt.cap===0&&s.inv.fr.r===f0.r+1,'a Meteor Strike part past the limit: 1 rare fragment');
+ s.inv.pity.e=19;let po=null;for(let i=0;i<400&&!po;i++){const o=L.roll(s,'elite','pity:'+i);if(o.pity==='part')po=o;else s.inv.pity.e=19;}
+ f0=fr();assert(po&&po.src==='elite','the pity part still comes (20 elites) and knows its source');dropAt(po,t0+240e3);assert(s.inv.fr.u>=f0.u+1&&Object.values(s.inv.pt).reduce((a,b)=>a+b,0)===1,'a pity part past the limit is a fragment too');
+ f0=fr();dropAt({pt:{servo:1},src:'elite'},d0+864e5-1);assert(s.inv.pt.servo===0&&s.inv.fr.u===f0.u+1,'23:59:59.999 UTC: still the same day');
+ dropAt({pt:{servo:1},src:'elite'},d0+864e5);assert(s.inv.pt.servo===1&&s.inv.pd.n===1&&s.inv.pd.d===d0/864e5+1,'00:00 UTC: the count starts again');
+ assert(!JSON.stringify(s.inv.log).match(/pts|points|"cp"/),'a swapped part pays no points');}
+console.log('PASS one earned research part a day (UTC), the fragment swap by source (elite uncommon, commander and strike rare), pity kept, the cap');
 s=fresh();const got=[];for(let i=0;i<5;i++){drop({fr:{c:10}});got.push(...(s.notice.loot.pieces||[]));}
 assert.equal(new Set(got).size,5,'five pieces, no repeats');assert.deepEqual([...got].sort(),[...CAT.pools.c].sort(),'the common pool, complete');assert(got.every(id=>s.cosmetics.owned[id]?.source==='fragments'));
 drop({fr:{c:25}});assert.equal(s.inv.fr.c,10,'a complete pool keeps its fragments at 10/10');assert(!s.notice.loot.pieces);
@@ -119,5 +135,9 @@ console.log('PASS trophies: +15 Town Score per type held, the Hive banner emblem
  // the in-game table reads the same rules
  const ctx=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('../../js/rules.js',import.meta.url),'utf8'),ctx);vm.runInContext(fs.readFileSync(new URL('../../js/conquest/loot.js',import.meta.url),'utf8'),ctx);
  const rows=vm.runInContext('ConquestLoot.table()',ctx);assert(rows.length>=7&&rows.some(r=>r.t.includes('0.5% 1 common fragment'))&&rows.some(r=>r.t.includes('8% 1 Tranquillityite (VETERAN)')),JSON.stringify(rows));
+ // Session 6B finish (owner, Nov 17): one earned research part a day, the fragment swap: the LOOT screen and the wiki say the same words, built from the rules
+ const lim=vm.runInContext('ConquestLoot.limitText()',ctx);assert(R.CQ_PART_DAY===1&&JSON.stringify(R.CQ_PART_SWAP)===JSON.stringify({elite:'u',commander:'r',strike:'r'}),'one part a day; elite -> uncommon, commander and strike -> rare');
+ assert(lim.startsWith('One research part found by play a day per account')&&lim.includes('uncommon from sentinels')&&lim.includes('rare from raid commanders')&&lim.includes('rare from Meteor Strikes')&&lim.includes('never pay points')&&lim.includes('Lunar Pass are not limited'),lim);
+ assert(rows.some(r=>r.label==='Research parts'&&r.t===lim),'the LOOT screen publishes the daily limit');assert(sec.includes(lim),'the wiki Loot section publishes the same daily limit: '+lim);
  assert.equal(vm.runInContext("JSON.stringify(ConquestLoot.lines({mn:{fe:1},it:{repair:2},tr:{ambush:1}}).map(l=>l.t))",ctx),JSON.stringify(['TROPHY · AMBUSH COMMANDER','REPAIR KIT ×2','+1 FERRITE (CARRIED)']),'rarest first');}
 console.log('PASS the wiki Loot section and the in-game LOOT screen publish the same rates and pity counters as js/rules.js');

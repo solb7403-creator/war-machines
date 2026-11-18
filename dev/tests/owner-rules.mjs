@@ -3,8 +3,13 @@
 //  1. the points constants: DAILY_CAP, CQ_PTS, DQ_PTS, DQ_ALL_BONUS, WQ_Q_PTS, WQ_PTS, LG_MULT and the Sortie chain (per, item),
 //  2. the research rules: parts and time only (no CP or materials), the Worker clock, the slots, the lab's level cap and CC,
 //  3. the chassis kit model: the reference pilot's first kit inside its window (dev/tools/chassis-kit-model.mjs),
-//  4. the Science Lab tree: a regular 60-min/day pilot's median inside its weeks (dev/tools/economy-model.mjs researchModel), and
-//     the best research build's gear-rating gain over the best build without research on the legend kit (about +8%),
+//  4. the Science Lab tree (owner, Nov 17): the costs 2/4/5/9, one EARNED research part a day per account (the Worker's pickup;
+//     packs and the Lunar Pass exempt), each Legendary set mod's free research path (30 parts, 8 h, Science Lab III, after its
+//     track's set mod) and its buy gate (after that set mod; Science Lab III alone never opens it), one of each part pack a UTC
+//     week (+1 / +3 / +8), the best research build's gear-rating gain over the best build without research (about +8%) and the
+//     best Legendary build's over the best research build (about +7%), both on the legend kit. (The old check, a median tree
+//     time inside 6-10 weeks, was a Claude-invented target, never the owner's: removed in the Session 6B finish; the model's
+//     days are report numbers only, RESOURCE_ECONOMY §7.5),
 //  5. the guard tests: each named limit is still there and never looser than the file's,
 //  6. no CP source or sink is added (every line that changes a pilot's CP, counted per file),
 //  7. no code is swallowed by a // comment anywhere in the game, the Worker, the tests or the tools,
@@ -13,7 +18,7 @@
 import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import os from 'node:os';import {execFileSync} from 'node:child_process';
 import {buildSim} from '../../worker/build-sim.mjs';import {GEAR} from './combat-sim.mjs';buildSim();
 const {RULES:R,CONQUEST}=await import('../../worker/src/sim.gen.js');const {Combat:C,Plot:P}=CONQUEST;
-const {MODEL}=await import('../tools/economy-model.mjs');
+// (the economy model's research days are report numbers only, never pinned: RESOURCE_ECONOMY §7.5)
 const O=JSON.parse(fs.readFileSync('docs/owner-rules.json','utf8'));
 let passed=0;const fails=[];const ok=(c,m)=>{if(c){passed++;console.log('PASS '+m);}else{fails.push(m);console.log('FAIL '+m);}};
 const J=JSON.stringify;
@@ -34,11 +39,28 @@ ok(C.LIVING.chain.per===K.SORTIE_CHAIN.per&&C.LIVING.chain.item===K.SORTIE_CHAIN
  const kit=JSON.parse(fs.readFileSync(out,'utf8')).reference,[lo,hi]=O.chassisKitFirstKitDays;fs.rmSync(out,{force:true});
  ok(kit.firstKitDays>=lo&&kit.firstKitDays<=hi,'chassis kit model: the reference pilot\'s first kit on day '+kit.firstKitDays+' (window '+lo+'-'+hi+')');}
 // ---- 4. the Science Lab tree and its gear gain ----
-{const r=MODEL.researchModel({minutes:60}),[lo,hi]=O.research.treeWeeks60min;
- ok(r.weeks.median>=lo&&r.weeks.median<=hi,'the earned tree: a regular 60-min/day pilot finishes in a median '+r.weeks.median+' weeks (10th-90th '+r.weeks.p10+'-'+r.weeks.p90+'; owner '+lo+'-'+hi+')');
+{const Rs=O.research;
+ ok(J(R.RTREE.cost)===J(Rs.cost),'research costs '+R.RTREE.cost.join(' / ')+' parts a track ('+R.RTREE.cost.reduce((a,b)=>a+b,0)*4+' in all; owner: '+Rs.cost.join(' / ')+')');
+ // one earned part a day, on the Worker's own pickup path (worker/src/conquest-loot.js bind): the second the same UTC day is a fragment
+ const {bind}=await import('../../worker/src/conquest-loot.js'),t0=Date.UTC(2026,10,18,9),st={};
+ bind(st,{pt:{thermal:1},src:'elite'},t0);bind(st,{pt:{thermal:1},src:'elite'},t0+6e4);const day1=st.inv.pt.thermal;bind(st,{pt:{coil:1},src:'commander'},t0+864e5);
+ ok(R.CQ_PART_DAY===Rs.earnedPartsPerDay.n&&day1===1&&st.inv.pt.coil===1&&J(Rs.earnedPartsPerDay.exempt)===J(['packs','pass']),'one earned research part a day per account (a second the same UTC day became a fragment; the next day counts again); packs and the Lunar Pass exempt');
+ {const S0=R.ecoNorm({});R.ecoAddParts(S0,3);R.ecoAddParts(S0,3);ok(R.CQ_PART_ORDER.every(k=>S0.bpt[k]===6),'pack and pass parts (the account\'s bonus parts) carry no daily count');}
+ // the Legendary set mods' free research path and its two gates
+ const L=Rs.legendaryResearch,legOk=R.RTREE_LEG.every(id=>{const t=R.rmodOf(id).F.rs,set=R.RTREE.mods[t][3],mods=R.RTREE.mods[t];
+   const low=R.rsQuote({done:Object.fromEntries(mods.map(m=>[m,1])),jobs:[]},id,L.labLevel-1,false),noSet=R.rsQuote({done:Object.fromEntries(mods.filter(m=>m!==set).map(m=>[m,1])),jobs:[]},id,L.labLevel,false),q=R.rsQuote({done:Object.fromEntries(mods.map(m=>[m,1])),jobs:[]},id,L.labLevel,false);
+   return !!low.err&&!!noSet.err&&!q.err&&q.n===L.parts&&q.ms===L.ms&&q.part===R.RTREE.tracks[t].part;});
+ ok(legOk&&R.RTREE.leg.n===L.parts&&R.RTREE.leg.ms===L.ms&&L.afterTrackSetMod===true,'each Legendary set mod: researched for '+L.parts+' of its track\'s part in '+L.ms/36e5+' h, only at Science Lab III and only after its track\'s set mod');
+ const B=Rs.legendaryBuy,buyOk=R.RTREE_LEG.every(id=>{const t=R.rmodOf(id).F.rs,set=R.RTREE.mods[t][3],mods=R.RTREE.mods[t];const before=R.ecoNorm({rm:Object.fromEntries(mods.filter(m=>m!==set).map(m=>[m,1]))}),after=R.ecoNorm({rm:Object.fromEntries(mods.map(m=>[m,1]))});
+   return R.ecoOwned(before,{kind:'rsleg',tk:id},{week:1})&&!R.ecoOwned(after,{kind:'rsleg',tk:id},{week:1});});
+ ok(buyOk&&B.afterTrackSetMod===true&&B.opensAtLabIII===false,'a Legendary set mod is for sale only after its track\'s set mod is researched (Science Lab III alone never opens it)');
+ const PK=Rs.partPacks,S1=R.ecoNorm({});S1.buys={[R.rsPackKey('crate',{week:5})]:1};
+ ok(R.RS_PACK_ORDER.every(k=>R.RS_PACKS[k].each===PK.each[k])&&R.ecoOwned(S1,{kind:'rspack',tk:'crate'},{week:5})&&!R.ecoOwned(S1,{kind:'rspack',tk:'crate'},{week:6})&&PK.perWeekEach===1,'part packs: '+R.RS_PACK_ORDER.map(k=>R.RS_PACKS[k].n+' +'+R.RS_PACKS[k].each).join(', ')+', one of each a UTC week');
  const best=(L,allow)=>{let top=0;const opts=s=>Object.keys(R.FITS[s]).filter(id=>allow(R.FITS[s][id]));for(const h of opts('hull'))for(const m of opts('mobility'))for(const t of opts('mount')){const mods={hull:h,mobility:m,mount:t},f=R.fittingStats(mods);if(f.weight>R.FIT_BUDGET.weight||f.power>R.FIT_BUDGET.power)continue;top=Math.max(top,R.powerOf({...L,mods}));}return top;};
- const L=structuredClone(GEAR[O.research.gearGainBestResearchVsBestFree.kit]),free=best(L,F=>!F.rs),rs=best(L,F=>!F.leg),g=rs/free-1,G=O.research.gearGainBestResearchVsBestFree;
- ok(Math.abs(g-G.target)<=G.tolerance,'best research build vs best without research on the '+G.kit+' kit: '+free+' -> '+rs+' (+'+(g*100).toFixed(2)+'%; owner about +'+G.target*100+'%)');}
+ const G=Rs.gearGainBestResearchVsBestFree,Lk=structuredClone(GEAR[G.kit]),free=best(Lk,F=>!F.rs),rs=best(Lk,F=>!F.leg),g=rs/free-1;
+ ok(Math.abs(g-G.target)<=G.tolerance,'best research build vs best without research on the '+G.kit+' kit: '+free+' -> '+rs+' (+'+(g*100).toFixed(2)+'%; owner about +'+G.target*100+'%)');
+ const G2=Rs.gearGainBestLegendaryVsBestResearch,L2=structuredClone(GEAR[G2.kit]),rs2=best(L2,F=>!F.leg),lg=best(L2,()=>true),g2=lg/rs2-1;
+ ok(Math.abs(g2-G2.target)<=G2.tolerance,'best Legendary build vs best research build on the '+G2.kit+' kit: '+rs2+' -> '+lg+' (+'+(g2*100).toFixed(2)+'%; owner about +'+Math.round(G2.target*100)+'%)');}
 // ---- 5. the guard tests are never loosened ----
 for(const g of O.guards){const src=fs.existsSync(g.file)?fs.readFileSync(g.file,'utf8'):'',re=new RegExp(g.pattern,'g'),vals=[...src.matchAll(re)].map(m=>Number(m[1]));
  ok(vals.length>0&&vals.every(v=>g.max!==undefined?v<=g.max:v>=g.min),g.file.split('/').pop()+': '+g.what+' ('+(vals.length?vals.join(', '):'MISSING')+(g.max!==undefined?' <= '+g.max:' >= '+g.min)+')');}

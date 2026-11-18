@@ -596,6 +596,11 @@ const CQ_ITEM_ORDER=['repair','shield','scanner','decoy'],CQ_ITEM_MAX=10;
 // Research parts: the Science Lab's inputs (Session 6B). They drop and are stored now; 50 of each at most.
 const CQ_PARTS={thermal:{n:'Thermal Core',w1:'THERMAL'},coil:{n:'Ballistic Coil',w1:'COIL'},servo:{n:'Drive Servo',w1:'SERVO'},cap:{n:'Field Capacitor',w1:'CAPACITOR'}};
 const CQ_PART_ORDER=['thermal','coil','servo','cap'],CQ_PART_MAX=50,CQ_PART_R=2;
+// One EARNED research part a day per account (owner, Nov 17: the UTC day on the Worker's clock, counted when the part reaches your
+// inventory). A part found by play after it becomes 1 blueprint fragment of its source's own pool (elites incl. their pity part:
+// uncommon; raid commanders, Meteor Strikes: rare): cosmetic only, never points. Parts from Lab store packs and the Lunar Pass
+// (the account's bonus parts, eco S.bpt) are not earned: never limited
+const CQ_PART_DAY=1,CQ_PART_SWAP=Object.freeze({elite:'u',commander:'r',strike:'r'});
 // Blueprint fragments: 10 of a pool = one cosmetic of that pool (ConquestCatalog), server-picked without repeats. Earn-only
 // pools, disjoint from every store: common = plate finishes, uncommon = banner standards, rare = muzzle trails, epic = town
 // ornaments (the Titan's epic rows arrive in 7B).
@@ -855,7 +860,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','upc','glc','gsc','wOwn','cOwn','roll','salv',
  'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw','bmn','hz',   // hz: hazard takedowns per Arcade map (5E-2e)
- 'rm','lsm','bpt','rsx'];   // Session 6B: researched mods, Legendary set mods owned, bonus research parts (pass tiers, packs; monotonic), instant-finish credits
+ 'rm','lsm','bpt','rsx','rsj'];   // Session 6B: researched mods (Legendary set mods too, once researched), Legendary set mods bought, bonus research parts (pass tiers, packs; monotonic), instant-finish credits, Legendary set mods being researched
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S,opt){
@@ -894,7 +899,9 @@ function ecoNorm(S,opt){
  if(S.pass&&typeof S.pass==='object'){S.pass.cf=listOf(S.pass.cf);S.pass.cp=listOf(S.pass.cp);S.pass.xp=Number(S.pass.xp)||0;S.pass.prem=!!S.pass.prem;}
  // Session 6B research: the mods the Science Lab finished (credited from the Conquest record's outbox), Legendary set mods
  // bought, bonus parts (Lunar Pass premium tiers and part packs: a running total that only grows) and instant-finish credits
- {const rm=obj('rm'),ls=obj('lsm'),bp=obj('bpt'),rx=obj('rsx');for(const k in rm)if(!rmodOf(k)||rmodOf(k).F.leg||!rm[k])delete rm[k];else rm[k]=1;
+ // rm holds Legendary set mods too once researched (the free path, Session 6B finish); rsj: Legendary set mods being researched (bought ones are lsm)
+ {const rm=obj('rm'),ls=obj('lsm'),bp=obj('bpt'),rx=obj('rsx'),rj=obj('rsj');for(const k in rm)if(!rmodOf(k)||!rm[k])delete rm[k];else rm[k]=1;
+  for(const k in rj)if(!rmodOf(k)||!rmodOf(k).F.leg||!rj[k]||rm[k])delete rj[k];else rj[k]=1;
   for(const k in ls)if(!rmodOf(k)||!rmodOf(k).F.leg||!ls[k])delete ls[k];else ls[k]=1;
   for(const k in bp)if(!CQ_PARTS[k])delete bp[k];for(const k of CQ_PART_ORDER)bp[k]=Math.max(0,Math.min(1e5,Math.floor(Number(bp[k])||0)));
   for(const k of Object.keys(rx))if(!/^j\d{1,6}$/.test(k)||!(Number(rx[k])>0))delete rx[k];}
@@ -986,7 +993,7 @@ function ecoOwned(S,d,X){
  if(d.kind==='starter')return S.starter;if(d.kind==='founder')return S.founder||!FOUNDER_OPEN;if(d.kind==='moonbeam')return S.moonbeam;
  if(d.kind==='skin')return S.skin==='lunar';if(d.kind==='paint')return !!(S.paints&&S.paints[d.id]);if(d.kind==='pass')return ecoPassState(S,X).prem;
  if(d.kind==='respec')return !!S.rsCr;   // a paid reset is already waiting
- if(d.kind==='rsleg'){const set=rsLegSet(d.tk);return !set||!!(S.lsm&&S.lsm[d.tk])||!(S.rm&&S.rm[set]);}   // owned, or its track's set mod not researched yet: nothing to sell
+ if(d.kind==='rsleg'){const set=rsLegSet(d.tk);return !set||!!(S.lsm&&S.lsm[d.tk])||!!(S.rm&&S.rm[d.tk])||!!(S.rsj&&S.rsj[d.tk])||!(S.rm&&S.rm[set]);}   // bought, researched or being researched (one ownership), or its track's set mod not researched yet: nothing to sell
  if(d.kind==='rspack')return !RS_PACKS[d.tk]||((S.buys&&S.buys[rsPackKey(d.tk,X)])|0)>=1;   // this week's one is bought
  if(d.kind==='rsfin')return !/^j\d{1,6}$/.test(String(d.job||''))||!!(S.rsx&&S.rsx[d.job]);   // that job is already paid for
  if(d.kind==='core')return !isGem(d.tk)||!ownsCh(S,d.c)||(chGl(S,d.c)[d.tk]|0)>=5;
@@ -1491,8 +1498,8 @@ const FITS={
    d:'Your shield raises itself (when it is ready) the instant an enemy super or a marked enemy strike is about to hit you.'},
   overdrive:{n:'Overdrive',rs:'servo',lab:3,set:true,b:'overdrive',role:'Phantom',cue:'DASH',look:'sprint',hp:-.01,weight:1,power:1,x:{charges:2},
    d:'TWO DASH CHARGES: dash twice in a row; each charge refills on its own.'},
-  hyperdrive:{n:'Hyperdrive',rs:'servo',lab:3,set:true,leg:true,b:'overdrive',role:'Phantom',cue:'DASH',look:'sprint',hp:-.01,dashCd:-.20,weight:1,power:1,x:{charges:3},
-   d:'Legendary Overdrive: THREE DASH CHARGES that come back 20% faster: dash three times in a row; each charge refills on its own.'}},
+  hyperdrive:{n:'Hyperdrive',rs:'servo',lab:3,set:true,leg:true,b:'overdrive',role:'Phantom',cue:'DASH',look:'sprint',hp:-.01,spd:.10,weight:1,power:1,x:{charges:3},
+   d:'Legendary Overdrive: THREE DASH CHARGES and 10% more top speed: dash three times in a row; each charge refills on its own.'}},
  mount:{stock:{n:'Stock',weight:0,power:0},
   hardened:{n:'Hardened mount',hp:.06,dps:-.14,hitCharge:.20,weight:2,power:0},
   firing:{n:'Firing mount',hp:-.08,dps:.12,charge:.08,weight:1,power:2},
@@ -1527,7 +1534,8 @@ function fittingSelection(v){return Object.fromEntries(FIT_ORDER.map(k=>[k,v&&Ob
 function fittingStats(v){const m=fittingSelection(v),f={weight:0,power:0};for(const s of FIT_FIELDS)f[s]=0;for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s]||0;for(const s of FIT_FIELDS)f[s]=Math.round(f[s]*1000)/1000;return f;}
 // who may fit an option: the free ones always; a research mod once the server record holds it (S.rm, credited by the Worker when
 // the Science Lab finishes it); a Legendary set mod once bought (S.lsm). Never the client's word (ecoLoadout, labValidate, PvP).
-const rmodOwned=(S,slot,id)=>!isRmod(slot,id)||(FITS[slot][id].leg?!!(S&&S.lsm&&S.lsm[id]):!!(S&&S.rm&&S.rm[id]));
+// A Legendary set mod: bought (S.lsm) OR researched (S.rm, the free path): one ownership, two ways in (Session 6B finish, owner Nov 17)
+const rmodOwned=(S,slot,id)=>!isRmod(slot,id)||!!(S&&S.rm&&S.rm[id])||(FITS[slot][id].leg&&!!(S&&S.lsm&&S.lsm[id]));
 function fittingOwned(S,v){const m=fittingSelection(v);for(const k of FIT_ORDER)if(!rmodOwned(S,k,m[k]))m[k]='stock';return m;}
 // the behaviors a fitted set carries: {behavior: params}, read by game.js and the Conquest engine through tankOf (T.rm)
 function fittingBehaviors(v){const m=fittingSelection(v),o={};for(const k of FIT_ORDER){const F=FITS[k][m[k]];if(F&&F.b)o[F.b]={...F.x,id:m[k],slot:k};}return o;}
@@ -1538,7 +1546,8 @@ function fittingVisuals(L){const m=fittingSelection(L.mods),look=(k,id)=>isRmod(
 // fights show), then checked against measured duels on the real sim (dev/tools/mod-power.mjs, Checkpoint 41). powerZ adds them.
 // Retuned toward the measured duels in the Session 6B finish (review, gameplay 7): fast .5 -> .3 (pilots are flat out about a
 // third of a fight, not half: Momentum measured under its rating), dash .7 -> .45 (Overdrive measured under its rating) and chain
-// .25 (a third dash charge is chained a quarter as often as the second: Hyperdrive measured exactly like Overdrive)
+// .25 (a third dash charge is chained a quarter as often as the second: Hyperdrive measured exactly like Overdrive, byte for byte,
+// because no pilot profile needs a second dash inside the cooldown; its real step is now 10% more top speed, measured: see Checkpoint 41)
 const MOD_USE={L:4,fight:22,lost:.6,multi:.25,eShield:.12,direct:.62,miss:.14,dashMin:6,ramMin:1.5,still:.2,fast:.3,shUp:.11,shCut:.65,blast:.3,catch:.45,shield:1,dash:.45,chain:.25};
 function rmodPe(b,x){const U=MOD_USE,ex=Math.exp,p=t=>ex(-t/U.L);x=x||{};
  switch(b){
@@ -1565,9 +1574,11 @@ function fittingPe(v){const o={h:0,d:0,s:0};for(const [b,x] of Object.entries(fi
 // ---- the Science Lab research tree (Session 6B owner decision 1): research parts + time only, never CP, alloy, biomass or
 // helium. A job runs on the Worker clock (I 20 min for the Lab I tracks, II 2 h for the Lab II tracks, III 8 h for a set mod),
 // one at a time and a second slot at Science Lab III; a ruined Science Lab pauses research. Parts: the n-th mod a pilot researches
-// in a track costs RTREE.cost[n] of that track's part, the set mod (needs the track's other three) RTREE.cost[3]; tuned in
-// dev/tools/economy-model.mjs so the whole tree takes 6-10 weeks for a regular 60-minute pilot using both slots. The fifth track
-// slot (Role Cores) is shown locked: Session 6C adds Science Lab level IV with it.
+// in a track costs RTREE.cost[n] of that track's part, the set mod (needs the track's other three) RTREE.cost[3] (owner, Nov 17:
+// 2 / 4 / 5 / 9, 20 a track, 80 in all), and one research part found by play a day per account (CQ_PART_DAY). A track's Legendary
+// set mod can also be researched (RTREE.leg: its own job) once Science Lab III stands and the track's set mod is researched; or
+// bought (the Lab store, checkout off), never both. The fifth track slot (Role Cores) is shown locked: Session 6C adds Science Lab
+// level IV with it.
 const RTREE={tracks:{thermal:{n:'Thermal',part:'thermal',lab:1,c:'#ff8a3d',d:'Keep firing: heat becomes damage.'},
   coil:{n:'Ballistics',part:'coil',lab:1,c:'#e8f4ff',d:'Precision: every hit counts.'},
   servo:{n:'Drive',part:'servo',lab:2,c:'#7be07b',d:'Movement is your weapon and your armor.'},
@@ -1575,14 +1586,19 @@ const RTREE={tracks:{thermal:{n:'Thermal',part:'thermal',lab:1,c:'#ff8a3d',d:'Ke
  order:['thermal','coil','servo','cap'],locked:{id:'role',n:'Role Cores',lab:4,d:'Coming with Science Lab level IV (battalions).'},
  mods:{thermal:['vent','overclock','heatsink','inferno'],coil:['pierce','marksman','predictor','rail'],servo:['traction','ram','momentum','overdrive'],cap:['capacitor','reflector','reflex','aegis']},
  legendary:{thermal:'sunfire',coil:'starfall',servo:'hyperdrive',cap:'aegisp'},
- cost:[1,2,2,5],timeMs:[0,1200000,7200000,28800000],passTime:0.75,slots:{base:1,lab3:1,pass:1},labMax:3};   // cost: parts for a track's 1st/2nd/3rd mod and its set mod (10 a track, 40 in all), tuned by dev/tools/economy-model.mjs researchModel: a regular 60-min/day pilot finishes the earned tree in a median 7.9 weeks (6.6-9.6), owner target 6-10
-const RTREE_ALL=RTREE.order.flatMap(t=>RTREE.mods[t]);
+ cost:[2,4,5,9],timeMs:[0,1200000,7200000,28800000],passTime:0.75,slots:{base:1,lab3:1,pass:1},labMax:3,
+ leg:{n:30,ms:28800000}};   // leg: a Legendary set mod's own research job (owner, Nov 17: 30 of its track's part, 8 h; Science Lab III and the track's set mod first)   // cost: parts for a track's 1st/2nd/3rd mod and its set mod (owner, Nov 17)
+const RTREE_ALL=RTREE.order.flatMap(t=>RTREE.mods[t]);   // the 16 earned mods
+const RTREE_LEG=RTREE.order.map(t=>RTREE.legendary[t]),RS_IDS=RTREE_ALL.concat(RTREE_LEG);   // the 4 Legendary set mods (researched or bought); every id a research job can hold
 const rsTierOf=id=>{const r=rmodOf(id);return r?(r.F.set?3:RTREE.tracks[r.F.rs].lab):0;};
 // the job a mod needs right now for this record (rs: the Conquest record's s.rs; labLv: the Science Lab's level; premium: the
 // current-season premium Lunar Pass on the account). Returns {err} or {part, n, ms, tier}
-function rsQuote(rs,id,labLv,premium){
- const r=rmodOf(id);if(!r||r.F.leg)return {err:'not a research mod'};const F=r.F,T=RTREE.tracks[F.rs],done=rs&&rs.done||{},jobs=(rs&&rs.jobs)||[];
+// bought: the account's bought Legendary set mods (eco S.lsm): a bought one is never researched (one ownership, two ways in)
+function rsQuote(rs,id,labLv,premium,bought){
+ const r=rmodOf(id);if(!r)return {err:'not a research mod'};const F=r.F,T=RTREE.tracks[F.rs],done=rs&&rs.done||{},jobs=(rs&&rs.jobs)||[];
  if(done[id])return {err:'already researched'};if(jobs.some(j=>j&&j.mod===id))return {err:'already researching'};
+ if(F.leg){const set=RTREE.mods[F.rs][3];if(bought&&bought[id])return {err:'already yours: bought in the Lab store'};if((labLv|0)<3)return {err:'needs Science Lab III'};
+  if(!done[set])return {err:'research '+FITS[r.slot][set].n+' first'};return {part:T.part,n:RTREE.leg.n,ms:Math.round(RTREE.leg.ms*(premium?RTREE.passTime:1)),tier:3,leg:true};}
  const need=F.set?3:T.lab;if((labLv|0)<need)return {err:'needs Science Lab '+['','I','II','III'][need]};
  const own=RTREE.mods[F.rs].filter(m=>m!==id&&!FITS[rmodOf(m).slot][m].set),k=own.filter(m=>done[m]||jobs.some(j=>j&&j.mod===m)).length;
  if(F.set&&!own.every(m=>done[m]))return {err:'research the other three '+T.n+' mods first'};

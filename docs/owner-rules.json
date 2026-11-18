@@ -42,7 +42,7 @@
   }
  },
  "research": {
-  "about": "Owner decision 1 (Session 6B): research costs research parts and time only (no CP, alloy, biomass or helium); Worker clock I 20 min / II 2 h / III 8 h; one job at a time, a second slot at Science Lab III; the lab stays max level 3, built from CC3.",
+  "about": "Owner decision 1 (Session 6B): research costs research parts and time only (no CP, alloy, biomass or helium); Worker clock I 20 min / II 2 h / III 8 h; one job at a time, a second slot at Science Lab III; the lab stays max level 3, built from CC3. Session 6B finish (owner, Nov 17, 2026): costs 2/4/5/9 a track (80 parts in all); one EARNED research part a day per account (Lab store packs and the Lunar Pass are not limited); each Legendary set mod also has a free research path (30 of its track's part, 8 h) once Science Lab III stands and its track's set mod is researched; it is bought only after that set mod (Science Lab III alone never opens it); one of each part pack a UTC week. The Claude-invented tree target of 6-10 weeks was removed (it was never the owner's).",
   "timeMs": [
    0,
    1200000,
@@ -55,12 +55,44 @@
   },
   "labMax": 3,
   "labCC": 3,
-  "treeWeeks60min": [
-   6,
-   10
+  "cost": [
+   2,
+   4,
+   5,
+   9
   ],
+  "earnedPartsPerDay": {
+   "n": 1,
+   "exempt": [
+    "packs",
+    "pass"
+   ]
+  },
+  "legendaryResearch": {
+   "parts": 30,
+   "ms": 28800000,
+   "labLevel": 3,
+   "afterTrackSetMod": true
+  },
+  "legendaryBuy": {
+   "afterTrackSetMod": true,
+   "opensAtLabIII": false
+  },
+  "partPacks": {
+   "perWeekEach": 1,
+   "each": {
+    "kit": 1,
+    "crate": 3,
+    "cache": 8
+   }
+  },
   "gearGainBestResearchVsBestFree": {
    "target": 0.08,
+   "tolerance": 0.01,
+   "kit": "legend"
+  },
+  "gearGainBestLegendaryVsBestResearch": {
+   "target": 0.07,
    "tolerance": 0.01,
    "kit": "legend"
   }

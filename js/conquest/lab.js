@@ -20,14 +20,17 @@ const rsOf=s=>s?.rs||{jobs:[],done:{},bs:{},seen:{},acct:{bpt:{},prem:0}};
 // parts: earned (the Conquest record, capped at 50) + bonus (Lunar Pass premium tiers and part packs on the account)
 function partsOf(s){const r=rsOf(s),pt=s?.inv?.pt||{},bp=r.acct?.bpt||{},bs=r.bs||{},o={};for(const k of CQ_PART_ORDER){const b=Math.max(0,(bp[k]|0)-(bs[k]|0));o[k]={earned:pt[k]|0,bonus:b,total:(pt[k]|0)+b};}return o;}
 function jobLeft(j,L,now){const run=L.any&&!L.ruined;return Math.max(0,(Number(j.left)||0)-(run?Math.max(0,now-(j.at||now)):0));}
-// a mod's state for this pilot: done | running | ready | short (parts) | locked (lab or order) | busy (slots)
+// a mod's state for this pilot: done | running | ready | short (parts) | locked (lab or order) | busy (slots) | bought (a Legendary set
+// mod bought in the Lab store: one ownership, so it is never researched)
+const boughtOf=r=>Object.fromEntries((r.acct?.lsm||[]).map(id=>[id,1]));
 function nodeOf(s,id,now=Date.now()){const r=rsOf(s),L=labOf(s),prem=!!r.acct?.prem,F=rmodOf(id).F;
  if(r.done?.[id])return {st:'done'};const j=(r.jobs||[]).find(x=>x.mod===id);if(j)return {st:'running',left:jobLeft(j,L,now),ms:j.ms,j};
- const q=rsQuote(r,id,L.any?L.lv:0,prem);if(q.err)return {st:'locked',why:q.err};
+ const bought=boughtOf(r);if(F.leg&&bought[id])return {st:'bought'};
+ const q=rsQuote(r,id,L.any?L.lv:0,prem,bought);if(q.err)return {st:'locked',why:q.err};
  const have=partsOf(s)[q.part].total;if(have<q.n)return {st:'short',q,have};
  if(L.ruined)return {st:'locked',why:'the Science Lab is ruined: repair it'};if((r.jobs||[]).length>=rsSlots(L.lv,prem))return {st:'busy',q};return {st:'ready',q};}
 // the first finished mod whose reveal card has not been shown
-const toReveal=s=>{const r=rsOf(s);return RTREE_ALL.find(id=>r.done?.[id]&&!r.seen?.[id])||null;};
+const toReveal=s=>{const r=rsOf(s);return RS_IDS.find(id=>r.done?.[id]&&!r.seen?.[id])||null;};   // the Legendary set mods too, once researched
 function partChip(el,parent,k,P){const c=el('span','cq-lab-part',null,parent);c.style.setProperty('--tc',RTREE.tracks[Object.keys(RTREE.tracks).find(t=>RTREE.tracks[t].part===k)].c);el('b','',P.total+'',c);el('small','',CQ_PARTS[k].n.toUpperCase()+(P.total===1?'':'S')+(P.bonus?' · '+P.bonus+' BONUS':''),c);return c;}
 // the whole screen (d: a container; ctx: {el, button, act(mod) -> Promise<boolean>, close, store(row, kind, info)})
 function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(s),prem=!!r.acct?.prem,slots=rsSlots(L.lv,prem),parts=partsOf(s),live=[];
@@ -47,15 +50,17 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
  for(const t of RTREE.order){const T=RTREE.tracks[t],open=L.lv>=T.lab,f=el('details','cq-map-fold cq-lab-track',null,d),sm=el('summary','',T.n.toUpperCase()+' · '+(open?T.d:'opens at Science Lab '+ROMAN[T.lab]),f);sm.dataset.k='lab-'+t;f.style.setProperty('--tc',T.c);
   if(open&&RTREE.mods[t].some(id=>{const n=nodeOf(s,id,now).st;return n==='ready'||n==='running';}))f.open=true;
   el('small','cq-lab-uses','Uses '+CQ_PARTS[T.part].n+'s: '+RTREE.cost.slice(0,3).join(', then ')+' for its mods in the order you research them, '+RTREE.cost[3]+' for the set mod · Science Lab '+ROMAN[T.lab]+' for its mods, III for its set mod',f);
-  for(const id of [...RTREE.mods[t],RTREE.legendary[t]]){const R0=rmodOf(id),F=R0.F,n=F.leg?{st:'legendary'}:nodeOf(s,id,now),row=el('article','cq-lab-node cq-lab-'+n.st,null,f);
+  for(const id of [...RTREE.mods[t],RTREE.legendary[t]]){const R0=rmodOf(id),F=R0.F,n=nodeOf(s,id,now),row=el('article','cq-lab-node cq-lab-'+n.st+(F.leg?' cq-lab-legnode':''),null,f);
    el('h3','',(F.leg?'★ ':F.set?'◆ ':'')+F.n.toUpperCase(),row);el('small','cq-lab-meta',SLOT_N[R0.slot]+' MOD · '+F.role.toUpperCase()+(F.set?' · SET MOD':'')+(F.leg?' · LEGENDARY':''),row);
    el('p','cq-lab-what',F.d,row);el('small','cq-lab-cost','Trade-off: '+tradeOff(F),row);
+   if(F.leg)el('small','cq-lab-two','A step stronger than '+rmodOf(RTREE.mods[t][3]).F.n+'. Two ways to own it: research it here ('+RTREE.leg.n+' '+CQ_PARTS[T.part].n+'s, '+fmtT(RTREE.leg.ms)+', Science Lab III, after '+rmodOf(RTREE.mods[t][3]).F.n+'), or buy it in the Lab store.',row);
    if(n.st==='done')el('b','cq-lab-tag','✓ RESEARCHED · in your garage',row);
+   else if(n.st==='bought')el('b','cq-lab-tag','★ OWNED · bought in the Lab store · in your garage',row);
    else if(n.st==='running'){const tg=el('b','cq-lab-tag','RESEARCHING · '+(L.ruined?'paused':fmtT(n.left)+' left'),row);if(!L.ruined)live.push({t:tg,pre:'RESEARCHING · ',end:now+n.left});}
    else if(n.st==='locked')el('small','cq-lab-lock','🔒 '+String(n.why).replace(/^conquest: /,''),row);
-   else if(n.st==='legendary'){el('small','cq-lab-lock','A step stronger than '+rmodOf(RTREE.mods[t][3]).F.n+'. Bought, never researched.',row);if(ctx.store)ctx.store(row,'rsleg',{id});}
    else{const q=n.q,b=button((n.st==='ready'?'RESEARCH':n.st==='busy'?'SLOTS BUSY':'NEED '+q.n)+' · '+q.n+' '+CQ_PARTS[q.part].n.toUpperCase()+(q.n>1?'S':'')+' · '+fmtT(q.ms),async()=>{b.disabled=true;const ok=await ctx.act(id);if(!ok)b.disabled=false;},'cq-lab-go');
-    b.disabled=n.st!=='ready';row.append(b);if(n.st==='short')el('small','cq-lab-lock','You have '+n.have+'. Parts drop from heavy Parasites, raid commanders and Meteor Strikes.',row);}}}
+    b.disabled=n.st!=='ready';row.append(b);if(n.st==='short')el('small','cq-lab-lock','You have '+n.have+'. Parts drop from heavy Parasites, raid commanders and Meteor Strikes.',row);}
+   if(F.leg&&ctx.store&&n.st!=='done'&&n.st!=='bought'&&n.st!=='running')ctx.store(row,'rsleg',{id});}}
  {const Lk=RTREE.locked,f=el('details','cq-map-fold cq-lab-track cq-lab-locked',null,d),sm=el('summary','','🔒 '+Lk.n.toUpperCase()+' · '+Lk.d,f);sm.dataset.k='lab-role';el('small','',Lk.n+' open with Science Lab level '+ROMAN[Lk.lab]+'.',f);}
  if(ctx.store)ctx.store(d,'rspack',{});
  tickTimers(d,live,ctx.done);
@@ -69,7 +74,7 @@ function tickTimers(d,live,done){if(!live.length||typeof setInterval!=='function
 // a compact line for the hub and the HOME tab: what is running, what can start
 function line(s,now=Date.now()){const r=rsOf(s),L=labOf(s);if(!L.any)return null;const j=(r.jobs||[])[0];
  if(j){const F=rmodOf(j.mod).F;return 'RESEARCH · '+F.n.toUpperCase()+' · '+(L.ruined?'PAUSED (lab ruined)':fmtT(jobLeft(j,L,now))+' left')+((r.jobs||[]).length>1?' · +'+((r.jobs||[]).length-1):'');}
- const ready=RTREE_ALL.filter(id=>nodeOf(s,id,now).st==='ready').length;return ready?'RESEARCH · '+ready+' mod'+(ready>1?'s':'')+' ready to research':'RESEARCH · '+Object.keys(r.done||{}).length+' of '+RTREE_ALL.length+' researched';}
+ const ready=RS_IDS.filter(id=>nodeOf(s,id,now).st==='ready').length;return ready?'RESEARCH · '+ready+' mod'+(ready>1?'s':'')+' ready to research':'RESEARCH · '+Object.keys(r.done||{}).length+' of '+RTREE_ALL.length+' researched';}
 // the reveal card for a finished mod: what it does in plain words, the trade-off, the power change if fitted; FIT asks the
 // garage's own save (server-checked) on the active bay
 function reveal(d,id,ctx){const {el,button}=ctx,R0=rmodOf(id),F=R0.F,T=RTREE.tracks[F.rs];d.classList.add('cq-lab-reveal');d.style.setProperty('--tc',T.c);

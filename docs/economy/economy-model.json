@@ -928,9 +928,9 @@
     },
     "legend": {
      "p0": 235,
-     "p1": 239,
-     "gain": 0.017,
-     "liveWin": 0.513
+     "p1": 238,
+     "gain": 0.013,
+     "liveWin": 0.51
     }
    },
    {
@@ -1108,9 +1108,9 @@
     },
     "legend": {
      "p0": 235,
-     "p1": 244,
-     "gain": 0.038,
-     "liveWin": 0.529
+     "p1": 242,
+     "gain": 0.03,
+     "liveWin": 0.523
     }
    },
    {
@@ -1128,9 +1128,9 @@
     },
     "legend": {
      "p0": 235,
-     "p1": 250,
-     "gain": 0.064,
-     "liveWin": 0.548
+     "p1": 248,
+     "gain": 0.055,
+     "liveWin": 0.542
     }
    },
    {
@@ -1305,9 +1305,9 @@
      }
     },
     "research": {
-     "p": 75,
+     "p": 74,
      "mods": {
-      "hull": "aegis",
+      "hull": "capacitor",
       "mobility": "overdrive",
       "mount": "inferno"
      }
@@ -1320,10 +1320,10 @@
       "mount": "sunfire"
      }
     },
-    "researchGain": 0.071,
-    "legendaryGain": 0.067,
-    "researchLiveWin": 0.553,
-    "legendaryLiveWin": 0.55,
+    "researchGain": 0.057,
+    "legendaryGain": 0.081,
+    "researchLiveWin": 0.543,
+    "legendaryLiveWin": 0.56,
     "legendaryVsFreeLiveWin": 0.602
    },
    "legend": {
@@ -1336,7 +1336,7 @@
      }
     },
     "research": {
-     "p": 260,
+     "p": 259,
      "mods": {
       "hull": "aegis",
       "mobility": "overdrive",
@@ -1344,18 +1344,18 @@
      }
     },
     "legendary": {
-     "p": 278,
+     "p": 276,
      "mods": {
       "hull": "aegisp",
       "mobility": "hyperdrive",
       "mount": "sunfire"
      }
     },
-    "researchGain": 0.083,
-    "legendaryGain": 0.069,
-    "researchLiveWin": 0.562,
-    "legendaryLiveWin": 0.552,
-    "legendaryVsFreeLiveWin": 0.612
+    "researchGain": 0.079,
+    "legendaryGain": 0.066,
+    "researchLiveWin": 0.559,
+    "legendaryLiveWin": 0.549,
+    "legendaryVsFreeLiveWin": 0.607
    }
   }
  },
@@ -1792,85 +1792,168 @@
  ],
  "firstBaseMinute": 59,
  "research": {
-  "free": {
-   "minutes": 60,
+  "light": {
+   "minutes": 30,
    "premium": false,
    "seeds": 201,
+   "partDay": 1,
    "labDays": {
     "I": 4,
     "III": 7
    },
-   "treeParts": 40,
+   "treeParts": 80,
+   "legParts": 120,
    "cost": [
-    1,
     2,
-    2,
-    5
+    4,
+    5,
+    9
    ],
-   "partsPerDay": 0.95,
+   "partsPerDay": 0.42,
    "days": {
-    "median": 55.1,
-    "p10": 46.1,
-    "p90": 67.1
+    "median": 240.1,
+    "p10": 210.1,
+    "p90": 280.1
    },
    "weeks": {
-    "median": 7.9,
-    "p10": 6.6,
-    "p90": 9.6
+    "median": 34.3,
+    "p10": 30,
+    "p90": 40
+   },
+   "legendary": {
+    "days": {
+     "median": 550.1,
+     "p10": 508.1,
+     "p90": 627.1
+    },
+    "weeks": {
+     "median": 78.6,
+     "p10": 72.6,
+     "p90": 89.6
+    }
+   }
+  },
+  "free": {
+   "minutes": 60,
+   "premium": false,
+   "seeds": 201,
+   "partDay": 1,
+   "labDays": {
+    "I": 4,
+    "III": 7
+   },
+   "treeParts": 80,
+   "legParts": 120,
+   "cost": [
+    2,
+    4,
+    5,
+    9
+   ],
+   "partsPerDay": 0.66,
+   "days": {
+    "median": 149.1,
+    "p10": 131.1,
+    "p90": 171.1
+   },
+   "weeks": {
+    "median": 21.3,
+    "p10": 18.7,
+    "p90": 24.4
+   },
+   "legendary": {
+    "days": {
+     "median": 343.1,
+     "p10": 321.1,
+     "p90": 377.1
+    },
+    "weeks": {
+     "median": 49,
+     "p10": 45.9,
+     "p90": 53.9
+    }
+   }
+  },
+  "heavy": {
+   "minutes": 120,
+   "premium": false,
+   "seeds": 201,
+   "partDay": 1,
+   "labDays": {
+    "I": 4,
+    "III": 7
+   },
+   "treeParts": 80,
+   "legParts": 120,
+   "cost": [
+    2,
+    4,
+    5,
+    9
+   ],
+   "partsPerDay": 0.9,
+   "days": {
+    "median": 107.1,
+    "p10": 97.1,
+    "p90": 126.1
+   },
+   "weeks": {
+    "median": 15.3,
+    "p10": 13.9,
+    "p90": 18
+   },
+   "legendary": {
+    "days": {
+     "median": 253.1,
+     "p10": 235.1,
+     "p90": 278.1
+    },
+    "weeks": {
+     "median": 36.2,
+     "p10": 33.6,
+     "p90": 39.7
+    }
    }
   },
   "pass": {
    "minutes": 60,
    "premium": true,
    "seeds": 201,
+   "partDay": 1,
    "labDays": {
     "I": 4,
     "III": 7
    },
-   "treeParts": 40,
+   "treeParts": 80,
+   "legParts": 120,
    "cost": [
-    1,
     2,
-    2,
-    5
+    4,
+    5,
+    9
    ],
-   "partsPerDay": 0.95,
+   "partsPerDay": 0.66,
    "days": {
-    "median": 41,
-    "p10": 34,
-    "p90": 53
+    "median": 90,
+    "p10": 80,
+    "p90": 100
    },
    "weeks": {
-    "median": 5.9,
-    "p10": 4.9,
-    "p90": 7.6
-   }
-  },
-  "light": {
-   "minutes": 30,
-   "premium": false,
-   "seeds": 201,
-   "labDays": {
-    "I": 4,
-    "III": 7
+    "median": 12.9,
+    "p10": 11.4,
+    "p90": 14.3
    },
-   "treeParts": 40,
-   "cost": [
-    1,
-    2,
-    2,
-    5
-   ],
-   "partsPerDay": 0.49,
-   "days": {
-    "median": 107.1,
-    "p10": 88.1,
-    "p90": 132.1
-   },
-   "weeks": {
-    "median": 15.3,
-    "p10": 12.6,
-    "p90": 18.9
+   "legendary": {
+    "days": {
+     "median": 210,
+     "p10": 200,
+     "p90": 230
+    },
+    "weeks": {
+     "median": 30,
+     "p10": 28.6,
+     "p90": 32.9
+    }
    }
   }
  }

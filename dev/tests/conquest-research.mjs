@@ -33,7 +33,7 @@ const money=s=>JSON.stringify({cp:s.ledger.cp,b:s.ledger.banked,mn:s.plot?.mnSpe
  ok(P.BUILDINGS.lab.max===3&&P.BUILDINGS.lab.cc===3,'the Science Lab stays max level 3, built from CC3');
  ok(R.RTREE.timeMs[1]===20*MIN&&R.RTREE.timeMs[2]===2*HOUR&&R.RTREE.timeMs[3]===8*HOUR,'job times I 20 min, II 2 h, III 8 h');
  ok(R.rsSlots(1,false)===1&&R.rsSlots(2,false)===1&&R.rsSlots(3,false)===2&&R.rsSlots(1,true)===2&&R.rsSlots(3,true)===3&&R.rsSlots(0,true)===0,'slots: one, a second at Science Lab III, +1 with the premium pass (none without a lab)');
- for(const t of R.RTREE.order){const L=R.RTREE.legendary[t],F=R.rmodOf(L).F;ok(F.leg&&F.set&&F.rs===t&&R.rmodOf(R.RTREE.mods[t][3]).slot===R.rmodOf(L).slot,'Legendary set mod for '+R.RTREE.tracks[t].n+': '+F.n+' (same slot as the earned set mod, bought, never researched)');}
+ for(const t of R.RTREE.order){const L=R.RTREE.legendary[t],F=R.rmodOf(L).F;ok(F.leg&&F.set&&F.rs===t&&R.rmodOf(R.RTREE.mods[t][3]).slot===R.rmodOf(L).slot,'Legendary set mod for '+R.RTREE.tracks[t].n+': '+F.n+' (same slot as the earned set mod; researched in the Science Lab or bought, one ownership)');}
  for(const id of R.RTREE_ALL.concat(Object.values(R.RTREE.legendary))){const F=R.rmodOf(id).F;const low=new Set(['dashCd','shieldCd','supTaken']);ok(typeof F.d==='string'&&F.d.length>30&&F.role&&F.cue&&F.b&&R.FIT_FIELDS.some(k=>low.has(k)?(F[k]||0)>0:(F[k]||0)<0),F.n+': a name, a role, one behavior in plain words ('+F.b+') and a felt trade-off');}
  ok(new Set(R.RTREE_ALL.map(id=>R.rmodOf(id).F.b)).size===16,'every earned mod has its own behavior (no two the same)');}
 
@@ -88,7 +88,9 @@ const money=s=>JSON.stringify({cp:s.ledger.cp,b:s.ledger.banked,mn:s.plot?.mnSpe
 // ---- 7. the account: ownership comes from the server record only ----
 {const S=R.ecoNorm({});R.labEnsure(S);const L=R.ecoLoadout(S,{mods:{mount:'vent',hull:'aegis',mobility:'hyperdrive'}});
  ok(L.mods.mount==='stock'&&L.mods.hull==='stock'&&L.mods.mobility==='stock','ecoLoadout: research mods not researched and Legendary set mods not bought fall back to Stock');
- const S2=R.ecoNorm({rm:{vent:1,aegis:1,sunfire:1},lsm:{hyperdrive:1,vent:1}});ok(S2.rm.vent&&S2.rm.aegis&&!S2.rm.sunfire&&S2.lsm.hyperdrive&&!S2.lsm.vent,'the record keeps researched mods and bought Legendary ones apart (a Legendary is never "researched", a research mod never "bought")');
+ // Session 6B finish (owner, Nov 17): a Legendary set mod also has a free research path, so the researched list keeps a researched one;
+ // the bought list keeps only Legendary ones (a research mod is never "bought"). This check used to require that a Legendary is never researched
+ const S2=R.ecoNorm({rm:{vent:1,aegis:1,sunfire:1},lsm:{hyperdrive:1,vent:1},rsj:{starfall:1,vent:1,sunfire:1}});ok(S2.rm.vent&&S2.rm.aegis&&S2.rm.sunfire&&S2.lsm.hyperdrive&&!S2.lsm.vent&&S2.rsj.starfall&&!S2.rsj.vent&&!S2.rsj.sunfire,'the record keeps a researched Legendary in rm, bought ones in lsm, ones being researched in rsj (never a research mod; never one already researched)');
  R.labEnsure(S2);const L2=R.ecoLoadout(S2,{mods:{mount:'vent',hull:'aegis',mobility:'hyperdrive'}});ok(L2.mods.mount==='vent'&&L2.mods.hull==='aegis'&&L2.mods.mobility==='hyperdrive','owned research and Legendary mods fit');
  const M=S2.lab.machines[S2.lab.active];ok(R.labValidate(S2,{...R.labSpec(R.ecoLoadout(S2,M.spec)),mods:{mount:'overclock'}})==='owned','the garage save refuses a mod not researched');
  const P0=await checkLoadout({},R,{mods:{mount:'rail',hull:'aegisp',mobility:'overdrive'}},R.ecoNorm({lab:undefined}));ok(P0.mods.mount==='stock'&&P0.mods.hull==='stock'&&P0.mods.mobility==='stock','PvP checkLoadout: a client claiming unowned mods fights with Stock');

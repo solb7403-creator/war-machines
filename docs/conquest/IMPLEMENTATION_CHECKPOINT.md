@@ -4824,8 +4824,12 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
 - Slice F2 DONE (the reviewer fixes, "NEXT" 1-6; table "Reviewer fixes" below), except the re-measured duels: `dev/tools/mod-power.mjs
   --write` runs in a worktree at the F2 commit (about an hour), then RESOURCE_ECONOMY §6.5 and `docs/conquest/session6b/mod-power.json`.
   New test `dev/tests/pvp-agree.mjs` (216 checks, every mod, CI: equipment-balance + deploy-worker).
-- Next: F3 research economy, F4 Legendary research path, F5 owner rules + model + Worker tests, F6 browser + critic, F7 reviews,
-  F8 release.
+- Slices F3-F5 DONE (code + tests, commit after `ba17e11`; sections "Research economy", "Legendary set mods: the free research path",
+  "Owner rules and the model" below): costs 2/4/5/9, one earned part a day with the fragment swap, hub counter, LOOT screen + wiki,
+  the Legendary research path with one ownership, owner-rules pins (36 checks, mutation-proven), `researchModel` with the daily
+  limit, Legendary jobs and pass parts every season, new `dev/tests/wtest/research-economy.mjs` (36, CI). Hyperdrive's real step is
+  now +10% top speed (measured). Pending in this slice: the final `mod-power.mjs --write` and RESOURCE_ECONOMY §6.5 / §7.5 / §9.3.
+- Next: F6 browser (`conquest-session6b.py` 5 sizes, `web-labstore.py`, `weather-browser.py`) + UX critic, F7 reviews, F8 release.
 - Local: `npm install --prefix worker` once, then `node worker/build-sim.mjs` and `node worker/build-web.mjs` (generated, not
   committed) before the Worker tests. Graphify did not connect in this container (proxy 403): code read directly.
 

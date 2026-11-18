@@ -541,15 +541,17 @@ export async function creditConquest(env, pid, out, now = Date.now()) {
     const fresh = (Array.isArray(out) ? out : []).filter((e) => e && Number.isSafeInteger(e.id) && e.id > w && e.id <= 1e12).sort((a, b) => a.id - b.id);
     const L = R.leagueInfo(S.lgi | 0), view = () => ({ cqw: Number.isSafeInteger(S.cqw) ? S.cqw : 0, day: X.day, dailyPts: S.dailyPts || 0, cqToday: S.cqd && S.cqd.d === X.day ? S.cqd.b : 0, lgi: S.lgi | 0, pay: L.pay, mn: R.mnOf(S.mn), ap: R.apOf(S.ap), pts: Math.max(0, Math.round(Number(S.pts) || 0)), rm: Object.keys(S.rm || {}).filter((k) => S.rm[k]) });
     if (!fresh.length) return { abort: true, ...view(), base: 0, awarded: 0, capped: false };
-    let base = 0, spend = 0, ms = 0, op = false;const mn = {}, rm = [];
+    let base = 0, spend = 0, ms = 0, op = false;const mn = {}, rm = [], rsj = [];
     for (const e of fresh) {
       if (e.mn) { const m = R.mnOf(e.mn); for (const k of R.MN_ORDER) if (m[k] > 0 && m[k] <= 10000) mn[k] = (mn[k] || 0) + m[k]; }   // banked Conquest minerals (RESOURCE_ECONOMY.md §5.3): to the wallet, once, by entry id
-      for (const id of R.listOf(e.rm)) { const x = R.rmodOf(String(id)); if (x && !x.F.leg) rm.push(x.id); }   // Session 6B: a mod the Science Lab finished (never a Legendary set mod: those are only bought)
+      for (const id of R.listOf(e.rm)) { const x = R.rmodOf(String(id)); if (x) rm.push(x.id); }   // Session 6B: a mod the Science Lab finished (a Legendary set mod too: its free research path, Session 6B finish)
+      for (const id of R.listOf(e.rsj)) { const x = R.rmodOf(String(id)); if (x && x.F.leg) rsj.push(x.id); }   // a Legendary set mod's research job started: it cannot be bought from now on
       const b = Math.max(0, Math.round(Math.min(1e6, Number(e.raw) || 0) * L.pay));
       base += b; spend += Math.round(b * L.mult); ms += Math.max(0, Math.min(36e5, Number(e.ms) || 0)); op = op || !!e.op;
     }
     const aw = R.ecoPlayAward(S, base, spend, X), got = R.ecoMinerals(S, mn);
-    if (rm.length) { S.rm = S.rm && typeof S.rm === "object" && !Array.isArray(S.rm) ? S.rm : {}; for (const id of rm) S.rm[id] = 1; }
+    if (rsj.length) { S.rsj = S.rsj && typeof S.rsj === "object" && !Array.isArray(S.rsj) ? S.rsj : {}; for (const id of rsj) S.rsj[id] = 1; }
+    if (rm.length) { S.rm = S.rm && typeof S.rm === "object" && !Array.isArray(S.rm) ? S.rm : {}; for (const id of rm) { S.rm[id] = 1; if (S.rsj) delete S.rsj[id]; } }   // researched: no longer "being researched"
     if (op) R.ecoPlayDay(S, X);
     S.cqw = fresh[fresh.length - 1].id;
     S.cqd = S.cqd && S.cqd.d === X.day ? S.cqd : { d: X.day, b: 0, ms: 0, n: 0 };

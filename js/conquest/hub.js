@@ -27,6 +27,8 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
  // after first paint: live status, then the 3D hero
  const later=root.requestIdleCallback?f=>root.requestIdleCallback(f,{timeout:400}):f=>setTimeout(f,60),me=H;
  later(()=>{if(H!==me||me.disposed)return;live(me);hero3d(me);});}
+// today's earned research part (owner, Nov 17: one a day per account; after it a found part becomes a fragment), on both base cards
+function partDay(card,s,now){const L=root.ConquestLoot;if(!L||!s?.inv)return;const D=L.partDay(s,now),t=H.o.el('small','cq-hub-part-day'+(D.n>=D.of?' cq-hub-part-done':''),'RESEARCH PART '+D.n+'/'+D.of+' TODAY',card);t.title=L.limitText();}
 function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildren();const now=Date.now(),C=root.ConquestCombat;
  const card=(title,cls)=>{const c=el('section','cq-hub-card '+(cls||''),null,col);el('h3','',title,c);return c;};
  // warfront
@@ -40,8 +42,9 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
   {const st=p.st||{},got=[['alloy','ALLOY'],['biomass','BIOMASS'],['helium','HELIUM-3']].filter(([k])=>Math.floor(st[k]||0)>0).map(([k,l])=>'+'+Math.floor(st[k])+' '+l);if(got.length)el('p','cq-hub-left','WAITING AT YOUR TOWN · '+got.join(' · ')+' since you left',b);}   // Session 6 (Decision 10a): production x3, Storage x2
   if(typeof cqYieldUnlock==='function'){const Y=cqYieldUnlock(s.airdrop?.yd,Math.floor(now/86400000));el('small','','YIELD POINTS '+Math.round(Y.u*100)+'%'+(Y.toGo?' · '+Y.toGo+' operation'+(Y.toGo>1?'s':'')+' to go today':' · all unlocked today'),b);}
   {const ln=root.ConquestLab?.line(s,now);if(ln)el('small','cq-hub-research-line',ln,b);}   // Session 6B: what the Science Lab is doing
+  partDay(b,s,now);
   const j=p.job;el('small','',j?'BUILDER · '+(j.t==='cc'?'CC'+(j.l||''):(root.ConquestPlot?.BUILDINGS[j.t]?.n||j.t).toUpperCase()+' '+(j.l||''))+' · '+(j.ready>now?t2(j.ready-now):'READY'):'BUILDER FREE · open MY BASE to build',b);}
- else{el('p','cq-hub-big','NO BASE YET',b);const D=C?.baseDefinition,L=s?.ledger;el('small','',D&&L?'Claim your town: '+fmt(Math.min(L.cp,D.recipe.cp))+' / '+fmt(D.recipe.cp)+' CP. Seven sites, from crater rim to ash field; it grows with your Command Center.':'Win operations, bank salvage, then claim your own town.',b);el('small','cq-hub-where','⌂ Your base gate is next to the Refuge, about 90 m west. Tap MY BASE: the gold arrow takes you there.',b);}
+ else{el('p','cq-hub-big','NO BASE YET',b);partDay(b,s,now);const D=C?.baseDefinition,L=s?.ledger;el('small','',D&&L?'Claim your town: '+fmt(Math.min(L.cp,D.recipe.cp))+' / '+fmt(D.recipe.cp)+' CP. Seven sites, from crater rim to ash field; it grows with your Command Center.':'Win operations, bank salvage, then claim your own town.',b);el('small','cq-hub-where','⌂ Your base gate is next to the Refuge, about 90 m west. Tap MY BASE: the gold arrow takes you there.',b);}
  // War Orders (Session 6, spec §6.1): today's three and this week's one
  if(root.ConquestOrders){const o=card('WAR ORDERS','cq-hub-orders');root.ConquestOrders.card(o,s,{el});}
  // events
@@ -52,7 +55,7 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
  if(!alerts.length)el('small','','No invasions right now.',e);
  if(stale&&s)el('small','cq-hub-stale','Last known status · updating…',col);if(!s)el('small','cq-hub-stale',typeof ACCOUNT_OK!=='undefined'&&ACCOUNT_OK?'Connecting to Conquest Command…':'Sign in to keep your Conquest progress.',col);}
 async function live(me){if(!H||H!==me||typeof apiFetch!=='function'||typeof ACCOUNT_OK==='undefined'||!ACCOUNT_OK)return;try{const r=await apiFetch('/api/conquest/session',{}),j=await r.json();if(!H||H!==me||H.disposed||!r.ok||!j.state)return;H.state=j.state;
-  const keep={territory:j.state.territory,warfront:j.state.warfront?{stage:j.state.warfront.stage,name:j.state.warfront.name}:null,base:j.state.base,plot:j.state.plot?{cc:j.state.plot.cc,site:j.state.plot.site,power:j.state.plot.power,def:j.state.plot.def|0,nm:j.state.plot.nm||'',job:j.state.plot.job,banner:j.state.plot.banner,w:{},b:{},log:(j.state.plot.log||[]).slice(0,1),wn:Object.keys(j.state.plot.w||{}).length,tn:root.ConquestPlot?.turretCount(j.state.plot)||0}:null,reputation:j.state.reputation,ledger:{cp:j.state.ledger?.cp||0},wo:j.state.wo||null,airdrop:{yd:j.state.airdrop?.yd||null},rs:j.state.rs||null,inv:{pt:j.state.inv?.pt||{}}};if(keep.plot)keep.plot.st=j.state.plot.st||null;
+  const keep={territory:j.state.territory,warfront:j.state.warfront?{stage:j.state.warfront.stage,name:j.state.warfront.name}:null,base:j.state.base,plot:j.state.plot?{cc:j.state.plot.cc,site:j.state.plot.site,power:j.state.plot.power,def:j.state.plot.def|0,nm:j.state.plot.nm||'',job:j.state.plot.job,banner:j.state.plot.banner,w:{},b:{},log:(j.state.plot.log||[]).slice(0,1),wn:Object.keys(j.state.plot.w||{}).length,tn:root.ConquestPlot?.turretCount(j.state.plot)||0}:null,reputation:j.state.reputation,ledger:{cp:j.state.ledger?.cp||0},wo:j.state.wo||null,airdrop:{yd:j.state.airdrop?.yd||null},rs:j.state.rs||null,inv:{pt:j.state.inv?.pt||{},pd:j.state.inv?.pd||null}};if(keep.plot)keep.plot.st=j.state.plot.st||null;
   try{localStorage.setItem(CACHE,JSON.stringify(keep));}catch(e){}status(j.state,false);H.tick=setInterval(()=>{if(H&&!H.disposed)status(H.state,false);},1000);H.rebuild?.(j.state);}catch(e){}}
 
 // ------------------------------------------------------------------------- cinematic hero ---------------------------

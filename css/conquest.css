@@ -358,6 +358,7 @@
 .cq-loot-row .cq-loot-use{grid-column:2}.cq-loot-row .cq-loot-pick{grid-column:3}
 .cq-loot-missing b{color:#6f8794}
 .cq-loot-note{display:block;margin-top:6px;font-size:11px;color:#8fb3c4}
+.cq-loot-day{display:block;margin-top:6px;color:#b8f3ff;letter-spacing:.04em}
 .cq-aar-drops{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin:8px 0 2px;font:700 12px/1.3 'Chakra Petch',sans-serif;letter-spacing:.04em}
 .cq-aar-drops b{color:#e8f4ff;margin-right:2px}
 .cq-drop-tag{position:absolute;transform:translate(-50%,-100%);font:800 10px/1 'Chakra Petch',sans-serif;font-style:normal;letter-spacing:.08em;padding:2px 5px;border:1px solid currentColor;border-radius:3px;background:#040b12c8;text-shadow:0 0 5px currentColor;white-space:nowrap}
@@ -419,6 +420,9 @@
 .cq .cq-lab-reveal{border-top:4px solid var(--tc,#7fe8ff)}.cq .cq-lab-reveal h2{color:var(--tc,#fff)}
 .cq .cq-lab-reveal .cq-lab-what{font-size:14px;line-height:1.4}.cq .cq-lab-reveal .cq-lab-cost{color:#ff9d8a;font-size:12px}.cq .cq-lab-reveal .cq-lab-power{font:800 14px 'Chakra Petch',sans-serif;color:#7cf0a8}
 .cq .cq-hub-research-line{display:block;color:#b8f3ff}
+/* Session 6B finish: today's earned research part (one a day per account) on the hub's base card; amber once taken */
+.cq .cq-hub-part-day{display:inline-block;margin:4px 0 2px;padding:2px 8px;border-radius:999px;border:1px solid rgba(184,243,255,.5);color:#b8f3ff;font-weight:700;letter-spacing:.04em}
+.cq .cq-hub-part-day.cq-hub-part-done{border-color:rgba(255,201,74,.6);color:#ffc94a}
 /* Session 6B: the generic rating chip (POWER now; FORCE and DEFENSE reuse it), Refuge Supply's first row, zone bands */
 .cq .cq-rating{display:inline-flex;align-items:baseline;gap:6px;padding:2px 8px;border:1px solid #5d7b93;border-radius:10px;background:#0a1420d9;font:800 11px/16px 'Chakra Petch',sans-serif;letter-spacing:.06em;color:#cfe8ff;white-space:nowrap;max-width:100%}
 .cq .cq-rating b{color:#8fb4cc;font-weight:800}.cq .cq-rating .cq-rating-v{color:#fff}

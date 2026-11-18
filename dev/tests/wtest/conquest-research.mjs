@@ -55,6 +55,6 @@ r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',m
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'marksman'});ok(r.status===200&&r.state.rs.jobs.find(j=>j.mod==='marksman').ms===20*MIN,JSON.stringify(r.error||'without the pass: the full 20 minutes'));
 // the field must be a research mod id
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'__proto__'});ok(r.status===409,'unknown mod ids are refused ('+r.error+')');
-r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'sunfire'});ok(r.status===409,'a Legendary set mod cannot be researched ('+r.error+')');
+r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'sunfire'});ok(r.status===409&&/Science Lab III/.test(r.error),'a Legendary set mod cannot be researched below Science Lab III ('+r.error+'; its free path: wtest/research-economy.mjs)');
 
 console.log('PASS wtest/conquest-research ('+passed+' checks)');

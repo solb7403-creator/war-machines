@@ -10,12 +10,12 @@
 // account read can refuse a job but never overspend (the same rule as the base stores' minerals).
 import {CONQUEST,RULES as R} from './sim.gen.js';
 import {inventory} from './conquest-loot.js';
-import {researchUnlock} from './conquest-airdrop.js';
+import {researchUnlock,researchLegStart} from './conquest-airdrop.js';
 export const RESEARCH_ACTIONS=['research-start','research-seen'];
 const fail=m=>{throw Error('conquest: '+m);};
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v),int=v=>Math.max(0,Math.floor(Number(v)||0));
 const list=v=>Array.isArray(v)?v.filter(record):record(v)?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]).filter(record):[];
-const isMod=id=>typeof id==='string'&&R.RTREE_ALL.includes(id);
+const isMod=id=>typeof id==='string'&&R.RS_IDS.includes(id);   // the 16 earned mods and the 4 Legendary set mods (their free research path, Session 6B finish)
 // The pilot's research record (additive; Firebase drops empty lists and maps, so every field is rebuilt on each load).
 // jobs: [{id, mod, part, paid:{e,b}, ms (whole job), left (ms still to run), at (last tick, server clock), st (start), pass}]
 // done: {mod: finished at} · bs: bonus parts spent per part · fx: instant-finish credits used (job ids) · seen: reveal cards shown
@@ -27,7 +27,7 @@ export function research(s){
  const bs={};for(const k of R.CQ_PART_ORDER)bs[k]=int(record(r.bs)?r.bs[k]:0);r.bs=bs;
  const fx={};for(const k of Object.keys(record(r.fx)?r.fx:{}))if(/^j\d{1,6}$/.test(k))fx[k]=1;r.fx=fx;
  const seen={};for(const k of Object.keys(record(r.seen)?r.seen:{}))if(isMod(k))seen[k]=1;r.seen=seen;
- const a=record(r.acct)?r.acct:{};r.acct={bpt:R.CQ_PART_ORDER.reduce((o,k)=>(o[k]=int(a.bpt?.[k]),o),{}),prem:a.prem?1:0,at:int(a.at)};
+ const a=record(r.acct)?r.acct:{};r.acct={bpt:R.CQ_PART_ORDER.reduce((o,k)=>(o[k]=int(a.bpt?.[k]),o),{}),prem:a.prem?1:0,at:int(a.at),lsm:(Array.isArray(a.lsm)?a.lsm:record(a.lsm)?Object.values(a.lsm):[]).filter(id=>R.RTREE_LEG.includes(id))};
  return r;}
 // The Science Lab: its level (the highest lab building's) and whether it stands (a ruined lab pauses research).
 export function lab(s){const p=s.plot;let lv=0,ruined=false,any=false;if(!p?.b)return {lv,ruined,any};const PL=CONQUEST.Plot;
@@ -43,18 +43,19 @@ export function tick(s,upTo){const r=research(s);if(!r.jobs.length)return;const 
 // The account side of research at a session open or a research action: bonus parts and the premium pass for the lab screen, and
 // instant-finish credits (eco S.rsx, written only by a verified purchase: Session 8 certifies payments; checkout is off).
 export function account(s,acct,now){const r=research(s);if(!record(acct))return r;
- r.acct={bpt:R.CQ_PART_ORDER.reduce((o,k)=>(o[k]=int(acct.bpt?.[k]),o),{}),prem:acct.prem?1:0,at:now};
+ r.acct={bpt:R.CQ_PART_ORDER.reduce((o,k)=>(o[k]=int(acct.bpt?.[k]),o),{}),prem:acct.prem?1:0,at:now,lsm:R.RTREE_LEG.filter(id=>record(acct.lsm)&&acct.lsm[id])};   // lsm: the Legendary set mods bought (the lab screen shows them owned; research refuses them)
  const rsx=record(acct.rsx)?acct.rsx:{};for(const j of [...r.jobs])if(rsx[j.id]&&!r.fx[j.id]){r.fx[j.id]=1;finish(s,j,now);}
  return r;}
 export function researchAction(s,req,now,ctx={}){
- const r=research(s);if(r.acct&&ctx&&(ctx.bpt||ctx.premium!==undefined))account(s,{bpt:ctx.bpt||r.acct.bpt,prem:!!ctx.premium,rsx:ctx.rsx},now);
+ const r=research(s);if(r.acct&&ctx&&(ctx.bpt||ctx.premium!==undefined))account(s,{bpt:ctx.bpt||r.acct.bpt,prem:!!ctx.premium,rsx:ctx.rsx,lsm:ctx.lsm},now);
  if(req.action==='research-seen'){if(!isMod(req.mod))fail('invalid mod');if(!r.done[req.mod])fail('not researched yet');r.seen[req.mod]=1;s.notice={kind:'research-seen',mod:req.mod};return;}
  if(req.action!=='research-start')fail('invalid research action');
  if(!s.plot)fail('claim your town first: the Science Lab is built in it');const L=lab(s);
  if(!L.any||L.lv<1)fail('build a Science Lab first (Command Center 3)');if(L.ruined)fail('the Science Lab is ruined: repair it to research');
- if(!isMod(req.mod))fail('invalid mod');const premium=!!ctx.premium,q=R.rsQuote(r,req.mod,L.lv,premium);if(q.err)fail(q.err);
+ if(!isMod(req.mod))fail('invalid mod');const premium=!!ctx.premium,q=R.rsQuote(r,req.mod,L.lv,premium,record(ctx.lsm)?ctx.lsm:{});if(q.err)fail(q.err);   // a Legendary set mod: Science Lab III, its track's set mod researched, never one already bought (the account's record, read fresh)
  const slots=R.rsSlots(L.lv,premium);if(r.jobs.length>=slots)fail('every research slot is busy ('+slots+')');
  const v=inventory(s),b=bonusLeft(s,ctx.bpt),have=v.pt[q.part]+b[q.part];if(have<q.n)fail('needs '+q.n+' '+R.CQ_PARTS[q.part].n+(q.n>1?'s':'')+' (you have '+have+')');
  const e=Math.min(v.pt[q.part],q.n),bb=q.n-e;v.pt[q.part]-=e;r.bs[q.part]+=bb;
  r.n++;const j={id:'j'+r.n,mod:req.mod,part:q.part,paid:{e,b:bb},ms:q.ms,left:q.ms,at:now,st:now,pass:premium?1:0};r.jobs.push(j);
+ if(q.leg)researchLegStart(s,req.mod);   // the account learns at once that this Legendary is being researched: from now on it cannot be bought (eco S.rsj)
  s.notice={kind:'research-started',mod:req.mod,ms:q.ms,part:q.part,n:q.n};}

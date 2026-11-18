@@ -12,8 +12,9 @@ function offer(el,button,parent,text,p,note){const b=button(text+' · '+label(p)
  el('small','cq-lab-off',OFF+(note?' · '+note:''),parent);return b;}
 function row(parent,kind,info,ctx){const {el,button,state}=ctx||{};if(!el||!button||!parent)return null;
  if(kind==='rsfin'){const left=Number(info?.left)||0,p=rsFinPrice(left);if(!p)return null;return offer(el,button,parent,'FINISH NOW',p,'priced by the time left');}
- if(kind==='rsleg'){const id=info?.id,set=rsLegSet(id);if(!set)return null;const done=!!(state?.rs?.done?.[set]||typeof save!=='undefined'&&save?.rm?.[set]);
-  if(ownedLsm(id)){el('b','cq-lab-tag','★ OWNED · in your garage',parent);return null;}
+ if(kind==='rsleg'){const id=info?.id,set=rsLegSet(id);if(!set)return null;const sv=typeof save!=='undefined'?save:null,done=!!(state?.rs?.done?.[set]||sv?.rm?.[set]);
+  if(ownedLsm(id)||state?.rs?.done?.[id]||sv?.rm?.[id]){el('b','cq-lab-tag','★ OWNED · in your garage',parent);return null;}
+  if((state?.rs?.jobs||[]).some(j=>j&&j.mod===id)||sv?.rsj?.[id]){el('small','cq-lab-lock','Being researched: it is yours when the job ends, so it is not for sale',parent);return null;}   // one ownership, two ways in
   if(!done){el('small','cq-lab-lock','Needs '+rmodOf(set).F.n+' first (its track\'s set mod) · '+label(RS_LEG_PRICE),parent);return null;}
   return offer(el,button,parent,'LEGENDARY',RS_LEG_PRICE,'yours for good, every mode');}
  if(kind==='rspack'){const f=el('details','cq-map-fold cq-lab-store',null,parent),sm=el('summary','','LAB STORE · RESEARCH PART PACKS',f);sm.dataset.k='lab-store';

@@ -13,12 +13,19 @@ function lines(loot){if(!loot)return [];const out=[],I=G.ITEMS,P=G.PARTS,F=G.FRA
  for(const [k,n] of Object.entries(loot.tr||{}))out.push({t:'TROPHY · '+String(T[k]?.n||k).toUpperCase()+x(n),r:T[k]?.r??3});
  for(const id of loot.pieces||[]){const C=root.ConquestCatalog?.byId?.[id];out.push({t:'NEW COSMETIC · '+String(C?.name||id).toUpperCase(),r:(F[C?.pool]?.r??2)+1>4?4:(F[C?.pool]?.r??2)+1});}
  for(const [k,n] of Object.entries(loot.pt||{}))out.push({t:'RARE · '+String(P[k]?.n||k).toUpperCase()+x(n),r:G.PART_R});
+ for(const [k,n] of Object.entries(loot.swap||{}))out.push({t:String(P[k]?.n||k).toUpperCase()+x(n)+' · TODAY\'S RESEARCH PART ALREADY FOUND: AS A FRAGMENT',r:1});   // the daily limit (rules.js CQ_PART_DAY); the fragment shows on its own line
  for(const [k,n] of Object.entries(loot.fr||{}))out.push({t:(F[k]?.n||k)+' FRAGMENT'+x(n),r:F[k]?.r??0});
  for(const [k,n] of Object.entries(loot.mn||{}))out.push({t:'+'+(n|0)+' '+String(M[k]?.s||k).toUpperCase()+' (CARRIED)',r:MR[k]|0});
  for(const [k,n] of Object.entries(loot.it||{}))out.push({t:String(I[k]?.n||k).toUpperCase()+x(n),r:I[k]?.r??1});
  for(const k of loot.full||[])out.push({t:String(I[k]?.n||P[k]?.n||k).toUpperCase()+' · FULL',r:0});
  return out.sort((a,b)=>b.r-a.r);}
 const best=loot=>lines(loot)[0]||null;
+// today's earned research parts (the Worker's count, rules.js CQ_PART_DAY: one a day per account, the UTC day)
+const DAY=()=>typeof CQ_PART_DAY!=='undefined'?CQ_PART_DAY:1;
+function partDay(s,now=Date.now()){const pd=s?.inv?.pd,d=Math.floor(now/864e5);return {n:pd&&(pd.d|0)===d?Math.min(DAY(),pd.n|0):0,of:DAY()};}
+// the rule in plain words, built from the rules (the LOOT screen and the wiki say exactly this: dev/tests/conquest-loot.mjs)
+function limitText(){const S=typeof CQ_PART_SWAP!=='undefined'?CQ_PART_SWAP:{},F=G.FRAG.pools,n=k=>String(F[S[k]]?.n||'').toLowerCase(),d=DAY();
+ return (d===1?'One research part':d+' research parts')+' found by play a day per account (the UTC day). After it, each research part you find becomes 1 blueprint fragment of its source\'s pool: '+n('elite')+' from sentinels and fire coordinators (their pity part too), '+n('commander')+' from raid commanders, '+n('strike')+' from Meteor Strikes. Fragments are cosmetic only and never pay points. Parts from Lab store packs and the Lunar Pass are not limited.';}
 const text=loot=>lines(loot).map(l=>l.t).join(' · ');
 // Which consumable the HUD slot holds: the pilot's pick while any is left, else the first owned (CQ_ITEM_ORDER).
 function slotItem(s,pick){const it=s?.inv?.it||{},order=G.ORDER;if(pick&&(it[pick]|0)>0)return pick;return order.find(k=>(it[k]|0)>0)||null;}
@@ -32,7 +39,7 @@ function pity(s){const p=s?.inv?.pity||{},L=G.LOOT||{};const e=L.elite?.pity?.pa
 function table(){const LT=G.LOOT;if(!LT)return [];const I=G.ITEMS,M=G.MN,F=G.FRAG.pools,name=r=>r.mn?'1 '+M[r.mn].s:r.item?(r.item>1?r.item+' consumables':'1 consumable'):r.part?'1 research part':r.frag?'1 '+F[r.frag].n.toLowerCase()+' fragment':r.trophy?"that commander's trophy":'';
  const row=(src,label)=>{const t=LT[src];if(!t)return null;const bits=[];if(t.always?.item)bits.push('always 1 consumable');for(const r of t.rows||[])bits.push(pct(r.p)+' '+name(r));for(const [ring,ex] of Object.entries(t.ring||{}))for(const r of ex)bits.push(pct(r.p)+' '+name(r)+' (VETERAN)');if(t.pity?.part)bits.push(t.pity.part+' elites without a part → a part');if(t.pity?.trophy)bits.push(t.pity.trophy+' commanders without a trophy → a trophy');return {label,t:bits.join(' · ')};};
  return [row('mob','Interceptors, saboteurs'),row('elite','Sentinels, fire coordinators'),row('commander','Raid commanders'),row('chest','Raid completion chest'),row('strike','Meteor Strike secured'),row('defense','Town or sector defense held'),
-  {label:'Consumable odds',t:G.ORDER.map(k=>I[k].n+' '+I[k].w+'%').join(' · ')}].filter(Boolean);}
+  {label:'Consumable odds',t:G.ORDER.map(k=>I[k].n+' '+I[k].w+'%').join(' · ')},{label:'Research parts',t:limitText()}].filter(Boolean);}
 // The LOOT screen: consumables, research parts, fragments, the Trophy Hall and the pity counters. el/button are app.js helpers.
 function screen(d,s,{el,button,use,pick,picked}){
  const v=s?.inv;el('p','cq-kicker','ACCOUNT-BOUND · NEVER LOST ON DEATH · NEVER SOLD',d);el('h2','','LOOT & TROPHY HALL',d);
@@ -43,6 +50,7 @@ function screen(d,s,{el,button,use,pick,picked}){
   if(use){const u=button('USE',()=>use(k),'cq-loot-use');u.disabled=!n||cd>0;row.append(u);}if(pick){const p=button(picked===k?'IN SLOT':'SET SLOT',()=>pick(k),'cq-loot-pick');p.disabled=!n||picked===k;row.append(p);}}
  el('small','cq-loot-note','Use them in the field or in an operation (never inside your town, Arcade or PvP). SHIELD long-press or Q opens / uses the slot; keys 1-4 use each one.',c);
  const p=sec('RESEARCH PARTS · FOR THE SCIENCE LAB');el('p','',CQ_PART_ORDER.map(k=>CQ_PARTS[k].n+' '+(v.pt?.[k]|0)+'/'+CQ_PART_MAX).join(' · '),p);
+ {const D=partDay(s);el('b','cq-loot-day','RESEARCH PART '+D.n+'/'+D.of+' TODAY',p);el('small','cq-loot-note',limitText(),p);}
  const f=sec('BLUEPRINT FRAGMENTS · '+CQ_FRAG.need+' OF A POOL = ONE NEW COSMETIC');const C=root.ConquestCatalog;
  for(const k of CQ_FRAG.order){const pool=C?.pools?.[k]||[],own=pool.filter(id=>s?.cosmetics?.owned?.[id]).length,row=el('div','cq-loot-row',null,f);const b=el('b','',CQ_FRAG.pools[k].n+' '+(v.fr?.[k]|0)+'/'+CQ_FRAG.need,row);b.style.color=COLORS[CQ_FRAG.pools[k].r];el('small','',own+'/'+pool.length+' '+({armor:'plate finishes',commander:'banner standards',trail:'muzzle trails',base:'town ornaments'}[CQ_FRAG.pools[k].slot]||'pieces')+(own===pool.length&&pool.length?' · POOL COMPLETE':''),row);}
  const t=sec('TROPHY HALL · +'+CQ_TROPHY_SCORE+' TOWN SCORE PER TROPHY TYPE');let held=0;
@@ -52,5 +60,5 @@ function screen(d,s,{el,button,use,pick,picked}){
  const o=sec('PUBLISHED ODDS');for(const r of table())el('p','',r.label.toUpperCase()+' · '+r.t,o);
  if(v.log?.length){const g=sec('RECENT FINDS');for(const e of v.log.slice().reverse().slice(0,6))el('p','',text(e)||'—',g);}
 }
-root.ConquestLoot=Object.freeze({COLORS,lines,best,text,slotItem,owns,cooldown,pity,table,screen});
+root.ConquestLoot=Object.freeze({COLORS,lines,best,text,slotItem,owns,cooldown,pity,table,screen,partDay,limitText});
 })(globalThis);

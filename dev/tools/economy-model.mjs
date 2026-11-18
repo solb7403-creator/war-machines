@@ -15,7 +15,7 @@ const read = f => fs.readFileSync(path.join(repo, f), 'utf8');
 const R = new Function(read('js/rules.js') + `;
  const __tankOf = tankOf;
  tankOf = function (L, n) { const T = __tankOf(L, n); if (L.__hp) T.mhp = Math.round(T.mhp * L.__hp); return T; };
- return { RTREE, RTREE_ALL, rsQuote, rsSlots, rmodOf, LOOT, CQ_PART_ORDER, PASS_PREM_PARTS, RS_PACKS, RS_LEG_PRICE, rsFinPrice, FITS, FIT_BUDGET, fittingStats, LEAGUE, LG_BASE_PAY, LG_MULT, DAILY_CAP, MODES, teamX, isSolo, ROYALE_PTS, streakPts, powerOf, powerWin, STOCK_L, POWER_K_LIVE };`)();
+ return { RTREE, RTREE_ALL, RTREE_LEG, RS_IDS, CQ_PART_DAY, PASS_LEN, rsQuote, rsSlots, rmodOf, LOOT, CQ_PART_ORDER, PASS_PREM_PARTS, RS_PACKS, RS_LEG_PRICE, rsFinPrice, FITS, FIT_BUDGET, fittingStats, LEAGUE, LG_BASE_PAY, LG_MULT, DAILY_CAP, MODES, teamX, isSolo, ROYALE_PTS, streakPts, powerOf, powerWin, STOCK_L, POWER_K_LIVE };`)();
 
 // ===================================================================================================================
 // PROPOSAL (owner decisions applied; everything else is the lead's proposal)
@@ -282,16 +282,18 @@ const firstBaseMinute = Math.round(hour.at(-1).minute + Math.max(0, 2550 - hour.
 // ===================================================================================================================
 const r0 = x => Math.round(x), pct = x => (x * 100).toFixed(1) + '%', daysTxt = d => d === undefined ? '2.5+ yr' : d < 14 ? d + ' d' : d < 60 ? (d / 7).toFixed(1) + ' wk' : (d / 30.4).toFixed(1) + ' mo';
 // ===================================================================================================================
-// Session 6B: research parts and the Science Lab tree (owner decision 1: the whole earned tree in 6-10 weeks for a regular
-// 60-min/day pilot using both slots; only the part counts, RTREE.cost, are tuned). Part income from the real drop tables:
-// LOOT.elite 3% a heavy Parasite with hard pity 20, LOOT.commander 12% a raid won (every raid fields its commander), LOOT.strike
-// 15% a secured Meteor Strike; each drop is one random part of the four (worker/src/conquest-loot.js). Heavy kills, raids won and
-// strikes come from the same assumptions as dayIncome (P.loot.killsPerMin.heavy, the operation mix and win rates, P.strike).
-// The Lab follows the regular ladder (docs/conquest/audit/model/audit-economy.json: CC3 day 2.8, CC5 day 6): Lab I and II the
-// day after CC3 (both open at CC3), Lab III the day after CC5. One session a day of M minutes: the day's parts arrive at its start,
-// a free slot starts the cheapest job the pilot can pay for, jobs that end inside the session free their slot for another.
-// Premium (Lunar Pass): +1 slot, jobs x0.75, and PASS_PREM_PARTS on tiers 10/20/30 (one tier a day: an assumption; they start when the Lab store opens). Monte
-// Carlo over fixed seeds: median and 10th / 90th percentile weeks to the 16th mod.
+// Session 6B: research parts and the Science Lab tree (owner, Nov 17: RTREE.cost 2 / 4 / 5 / 9, one EARNED part a day per account,
+// each Legendary set mod also researchable: 30 parts, 8 h, Science Lab III, after its track's set mod). Part income from the real
+// drop tables: LOOT.elite 3% a heavy Parasite with hard pity 20, LOOT.commander 12% a raid won (every raid fields its commander),
+// LOOT.strike 15% a secured Meteor Strike; each drop is one random part of the four (worker/src/conquest-loot.js); only the first
+// CQ_PART_DAY drops of a day are parts (the rest become fragments: no research value). Heavy kills, raids won and strikes come from
+// the same assumptions as dayIncome (P.loot.killsPerMin.heavy, the operation mix and win rates, P.strike). The Lab follows the
+// regular ladder (docs/conquest/audit/model/audit-economy.json: CC3 day 2.8, CC5 day 6): Lab I and II the day after CC3 (both open
+// at CC3), Lab III the day after CC5. One session a day of M minutes: the day's parts arrive at its start, a free slot starts the
+// cheapest job the pilot can pay for (the 16 earned mods and, once open, the 4 Legendary set mods), jobs that end inside the
+// session free their slot for another. Premium (Lunar Pass, every season): +1 slot, jobs x0.75, and PASS_PREM_PARTS on tiers
+// 10/20/30 of each 30-day season (one tier a day: an assumption; the perks start when the Lab store opens: a model of that day).
+// Monte Carlo over fixed seeds: median and 10th / 90th percentile days to the 16th earned mod and to the 4th Legendary.
 // ===================================================================================================================
 const AUDIT_LADDER = JSON.parse(read('docs/conquest/audit/model/audit-economy.json')).profiles.regular.base.hit;
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -302,43 +304,47 @@ function opsOfDay(m, d) {   // raids won and strikes secured a day (dayIncome's 
   const strikes = Math.min(1440 / P.strike.everyMin, (m + P.strike.windowMin) / P.strike.everyMin) * (d < 7 ? 0.6 : d < 21 ? 0.85 : 0.95);
   return { heavy: P.loot.killsPerMin.heavy * m, raids, strikes };
 }
-export function researchModel({ minutes = 60, premium = false, seeds = 201, days = 220, cost, passParts = R.PASS_PREM_PARTS } = {}) {
+export function researchModel({ minutes = 60, premium = false, seeds = 201, days = 1200, cost, passParts = R.PASS_PREM_PARTS, partDay = R.CQ_PART_DAY, legendary = true } = {}) {
   const T = R.RTREE, cost0 = T.cost.slice(); if (cost) T.cost.splice(0, 4, ...cost);
   try {
-    const labI = Math.ceil(AUDIT_LADDER.CC3.day) + 1, labIII = Math.ceil(AUDIT_LADDER.CC5.day) + 1, L = R.LOOT, ids = R.RTREE_ALL, out = [], perDay = [];
+    const labI = Math.ceil(AUDIT_LADDER.CC3.day) + 1, labIII = Math.ceil(AUDIT_LADDER.CC5.day) + 1, L = R.LOOT, earned = R.RTREE_ALL, legs = R.RTREE_LEG, ids = legendary ? R.RS_IDS : earned, outT = [], outL = [], perDay = [];
     for (let seed = 1; seed <= seeds; seed++) {
       const rnd = mulberry(seed * 7919), pt = Object.fromEntries(R.CQ_PART_ORDER.map(k => [k, 0])), rs = { done: {}, jobs: [] };
-      let pity = 0, got = 0, finished = null; const carry = { heavy: 0, raids: 0, strikes: 0 };
-      const drop = () => { pt[R.CQ_PART_ORDER[Math.floor(rnd() * 4)]]++; got++; };
-      for (let d = 0; d < days && finished === null; d++) {
-        const o = opsOfDay(minutes, d);   // fractional counts carry over day to day, so the income matches the averages
+      let pity = 0, got = 0, dayGot = 0, tree = null, leg = null, simDays = 0; const carry = { heavy: 0, raids: 0, strikes: 0 };
+      const drop = () => { if (dayGot >= partDay) return; dayGot++; pt[R.CQ_PART_ORDER[Math.floor(rnd() * 4)]]++; got++; };   // past the day's part: a fragment (no research value)
+      const doneAll = (list, t) => list.every(id => rs.done[id]) ? t : null;
+      for (let d = 0; d < days && (tree === null || (legendary && leg === null)); d++) {
+        const o = opsOfDay(minutes, d); dayGot = 0; simDays = d + 1;   // fractional counts carry over day to day, so the income matches the averages
         for (const k of ['heavy', 'raids', 'strikes']) carry[k] += o[k];
         while (carry.heavy >= 1) { carry.heavy--; if (rnd() < L.elite.rows.find(r => r.part).p) { drop(); pity = 0; } else if (++pity >= L.elite.pity.part) { drop(); pity = 0; } }
         while (carry.raids >= 1) { carry.raids--; if (rnd() < L.commander.rows.find(r => r.part).p) drop(); }
         while (carry.strikes >= 1) { carry.strikes--; if (rnd() < L.strike.rows.find(r => r.part).p) drop(); }
-        if (premium && passParts[d]) for (const k of R.CQ_PART_ORDER) pt[k] += passParts[d];
+        const tier = d % R.PASS_LEN + 1; if (premium && passParts[tier]) for (const k of R.CQ_PART_ORDER) pt[k] += passParts[tier];   // bonus parts: never limited
         const lv = d >= labIII ? 3 : d >= labI ? 2 : 0; if (!lv) continue;
         // the session: 18:00 to 18:00 + minutes; jobs run on the Worker clock, a slot frees when its job ends
         const t0 = d * 24 + 18, t1 = t0 + minutes / 60;
-        for (const j of rs.jobs) if (j.end <= t0) rs.done[j.mod] = 1; rs.jobs = rs.jobs.filter(j => j.end > t0);
-        let t = t0;
+        const settle = t => { for (const j of rs.jobs) if (j.end <= t) rs.done[j.mod] = j.end; rs.jobs = rs.jobs.filter(j => j.end > t); };
+        settle(t0); let t = t0;
         for (;;) {
           while (rs.jobs.length < R.rsSlots(lv, premium)) {
-            const q = ids.map(id => ({ id, q: R.rsQuote(rs, id, lv, premium) })).filter(x => !x.q.err && pt[x.q.part] >= x.q.n).sort((a, b) => a.q.n - b.q.n || a.q.ms - b.q.ms)[0];
+            const q = ids.filter(id => !rs.done[id] && !rs.jobs.some(j => j.mod === id)).map(id => ({ id, q: R.rsQuote(rs, id, lv, premium, {}) })).filter(x => !x.q.err && pt[x.q.part] >= x.q.n).sort((a, b) => a.q.n - b.q.n || a.q.ms - b.q.ms)[0];
             if (!q) break; pt[q.q.part] -= q.q.n; rs.jobs.push({ mod: q.id, end: t + q.q.ms / 3600000 });
           }
           const next = rs.jobs.map(j => j.end).filter(e => e <= t1).sort((a, b) => a - b)[0];
-          if (next === undefined) break; t = next; for (const j of rs.jobs) if (j.end <= t) rs.done[j.mod] = 1; rs.jobs = rs.jobs.filter(j => j.end > t);
+          if (next === undefined) break; t = next; settle(t);
         }
-        if (Object.keys(rs.done).length + rs.jobs.length === ids.length && !rs.jobs.length) finished = t / 24;
-        else if (Object.keys(rs.done).length + rs.jobs.length === ids.length) finished = Math.max(...rs.jobs.map(j => j.end)) / 24;   // the last job ends on its own
+        // a job that runs past the session ends on its own: count the finish when its time comes
+        const fin = list => { const all = list.every(id => rs.done[id] || rs.jobs.some(j => j.mod === id)); return all ? Math.max(...list.map(id => rs.done[id] || rs.jobs.find(j => j.mod === id).end)) / 24 : null; };
+        if (tree === null) tree = fin(earned);
+        if (legendary && leg === null) leg = fin(legs);
       }
-      out.push(finished === null ? days : finished); perDay.push(got / Math.max(1, (finished || days)));
+      outT.push(tree === null ? days : tree); outL.push(leg === null ? days : leg); perDay.push(got / Math.max(1, simDays));   // earned parts a simulated day (the daily limit caps it at CQ_PART_DAY)
     }
-    const s = out.slice().sort((a, b) => a - b), q = f => s[Math.min(s.length - 1, Math.floor(f * s.length))], wk = v => Math.round(v / 7 * 10) / 10;
-    return { minutes, premium, seeds, labDays: { I: labI, III: labIII }, treeParts: ids.length && R.CQ_PART_ORDER.length * T.cost.reduce((a, b) => a + b, 0), cost: T.cost.slice(),
-      partsPerDay: Math.round(perDay.reduce((a, b) => a + b, 0) / perDay.length * 100) / 100, days: { median: Math.round(q(0.5) * 10) / 10, p10: Math.round(q(0.1) * 10) / 10, p90: Math.round(q(0.9) * 10) / 10 },
-      weeks: { median: wk(q(0.5)), p10: wk(q(0.1)), p90: wk(q(0.9)) } };
+    const stat = out => { const s = out.slice().sort((a, b) => a - b), q = f => s[Math.min(s.length - 1, Math.floor(f * s.length))], wk = v => Math.round(v / 7 * 10) / 10;
+      return { days: { median: Math.round(q(0.5) * 10) / 10, p10: Math.round(q(0.1) * 10) / 10, p90: Math.round(q(0.9) * 10) / 10 }, weeks: { median: wk(q(0.5)), p10: wk(q(0.1)), p90: wk(q(0.9)) } }; };
+    const tr = stat(outT);
+    return { minutes, premium, seeds, partDay, labDays: { I: labI, III: labIII }, treeParts: R.CQ_PART_ORDER.length * T.cost.reduce((a, b) => a + b, 0), legParts: legs.length * T.leg.n, cost: T.cost.slice(),
+      partsPerDay: Math.round(perDay.reduce((a, b) => a + b, 0) / perDay.length * 100) / 100, days: tr.days, weeks: tr.weeks, ...(legendary ? { legendary: stat(outL) } : {}) };
   } finally { T.cost.splice(0, 4, ...cost0); }
 }
 export const MODEL = { P, PROFILES, timelines, dailyIncome, firstHour: hour, firstBaseMinute, researchModel };
@@ -371,10 +377,11 @@ out.push('\n## First hour (new pilot, stock kit, Rookie)\n');
 out.push('| Minute | What happens | Points | CP | Ferrite | Ilmenite | Armalcolite | Plates |'); out.push('|---:|---|---:|---:|---:|---:|---:|---:|');
 for (const h of hour) out.push(`| ${h.minute} | ${h.what} | ${h.pts} | ${h.cp} | ${h.fe} | ${h.il} | ${h.ar} | ${h.plates} |`);
 out.push(`\nCommand Base I (2,550 CP binds): about minute ${firstBaseMinute} at the last segment's CP rate (modeled).`);
-const research = { free: researchModel({ minutes: 60 }), pass: researchModel({ minutes: 60, premium: true }), light: researchModel({ minutes: 30 }) };
-out.push('\n## Science Lab: weeks to the whole earned tree (16 mods), regular pilot, both slots (Session 6B)\n');
-out.push('| Pilot | Parts a day | Tree parts | Lab I / III day | Weeks: median (10th-90th) |'); out.push('|---|---:|---:|---:|---|');
-for (const [k, r] of Object.entries(research)) out.push(`| ${k === 'free' ? '60 min/day, free' : k === 'pass' ? '60 min/day, Lunar Pass premium' : '30 min/day, free'} | ${r.partsPerDay} | ${r.treeParts} | ${r.labDays.I} / ${r.labDays.III} | ${r.weeks.median} (${r.weeks.p10}-${r.weeks.p90}) |`);
+const research = { light: researchModel({ minutes: 30 }), free: researchModel({ minutes: 60 }), heavy: researchModel({ minutes: 120 }), pass: researchModel({ minutes: 60, premium: true }) };
+const RLAB = { light: '30 min/day, free', free: '60 min/day, free', heavy: '120 min/day, free', pass: '60 min/day, Lunar Pass premium (every season)' };
+out.push('\n## Science Lab: days to the whole earned tree (16 mods) and to all four Legendary set mods (their free research path), regular pilot, both slots (Session 6B finish)\n');
+out.push('| Pilot | Earned parts a day | Tree parts | Lab I / III day | Earned tree: days, median (10th-90th) | weeks | All four Legendary: days, median (10th-90th) |'); out.push('|---|---:|---:|---:|---|---:|---|');
+for (const [k, r] of Object.entries(research)) out.push(`| ${RLAB[k]} | ${r.partsPerDay} | ${r.treeParts} | ${r.labDays.I} / ${r.labDays.III} | ${r.days.median} (${r.days.p10}-${r.days.p90}) | ${r.weeks.median} | ${r.legendary.days.median} (${r.legendary.days.p10}-${r.legendary.days.p90}) |`);
 if (isMain) console.log(out.join('\n'));
 
 if (isMain && process.argv.includes('--write')) {
