@@ -415,7 +415,7 @@
 .cq .cq-lab-node .cq-lab-tag{display:block;margin-top:4px;font:800 11px 'Chakra Petch',sans-serif;color:#7cf0a8}
 .cq .cq-lab-node.cq-lab-running .cq-lab-tag{color:#ffd36b}
 .cq .cq-lab-node .cq-lab-go{margin-top:6px;width:100%;min-height:40px}
-.cq .cq-lab-node.cq-lab-legendary{border-color:#7a6326;background:linear-gradient(90deg,#2a220c66,#0a141ed9 50%)}.cq .cq-lab-node.cq-lab-legendary h3{color:#ffcf4a}
+.cq .cq-lab-node.cq-lab-legnode{border-color:#7a6326;background:linear-gradient(90deg,#2a220c66,#0a141ed9 50%)}.cq .cq-lab-node.cq-lab-legnode h3{color:#ffcf4a}
 .cq .cq-lab-locked>summary{opacity:.75}
 .cq .cq-lab-reveal{border-top:4px solid var(--tc,#7fe8ff)}.cq .cq-lab-reveal h2{color:var(--tc,#fff)}
 .cq .cq-lab-reveal .cq-lab-what{font-size:14px;line-height:1.4}.cq .cq-lab-reveal .cq-lab-cost{color:#ff9d8a;font-size:12px}.cq .cq-lab-reveal .cq-lab-power{font:800 14px 'Chakra Petch',sans-serif;color:#7cf0a8}
@@ -444,7 +444,7 @@
    as a pill over whatever HUD line sits beneath it; the desktop key hint hides under an open dialog; Supply's chip on its own line */
 .cq-dialog.cq-lab-reveal{top:50%;bottom:auto;transform:translateY(-50%);max-height:calc(100% - 24px)}
 .cq .cq-lab-fit{background:#1d6b4f;border-color:#5fe3a1;color:#eafff3;font-weight:800}
-.cq-dialog .cq-lab-close-top{position:sticky;top:-8px;float:right;margin:-8px -8px 4px 8px;z-index:3}
+.cq-dialog .cq-lab-close-top{position:sticky;top:-8px;display:block;width:calc(100% + 16px);margin:-8px -8px 6px;z-index:3;background:#0b1523;border-bottom:1px solid #2a3a4a;border-radius:0}   /* UX critic round 1: a full-width opaque sticky row, never floating over the text */
 .cq .cq-lab-go,.cq .cq-lab-buy{min-height:44px}
 .cq .cq-rating .cq-rating-next{color:#ffcf6a;opacity:1}
 .cq-reward-ticker:not(:empty){width:fit-content;max-width:calc(100% - 24px);margin:0 auto;padding:3px 10px;border-radius:9px;background:#08121df0;box-shadow:0 0 0 1px #e0c27a55;z-index:6}
@@ -455,3 +455,15 @@
 /* Session 6B finish: the Science Lab over the hub (RESEARCH opens it without the 3D world) ends above the hub's tab bar, so its
    last CLOSE is always reachable (owner rule: every screen fits or scrolls; dev/tests/conquest-session6b.py checks it) */
 .cq.cq-with-nav .cq-dialog.cq-lab-hub,.cq.cq-with-nav .cq-dialog.cq-lab-hub-reveal{bottom:calc(66px + env(safe-area-inset-bottom,0px));max-height:calc(100% - 66px - env(safe-area-inset-bottom,0px))}
+/* Session 6B finish, UX critic round 1 (Clash-level bar): a disabled Lab or store button must never look live; a ready one glows in
+   its track colour; nothing under 12px in the Lab on a phone; HUD rating lines stay readable over bright ground; the hub's RESEARCH
+   button carries today's earned research part (always on screen, phone and desktop) */
+.cq .cq-lab-go:disabled,.cq .cq-lab-buy:disabled{opacity:.5;border-style:dashed;cursor:default}
+.cq .cq-lab-node.cq-lab-ready .cq-lab-go:not(:disabled){background:color-mix(in srgb,var(--tc,#5aa9ff) 30%,#0f1d2b);border-color:var(--tc,#5aa9ff)}
+.cq .cq-lab-part small,.cq .cq-lab-node .cq-lab-meta,.cq .cq-lab-uses,.cq .cq-lab-node .cq-lab-lock,.cq-lab-off{font-size:12px}
+.cq .cq-lab-node .cq-lab-cost{font-size:13px}
+.cq .cq-hub-part-day{font-size:13px}
+.cq .cq-hub-research small{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;opacity:.9;margin-top:2px}
+.cq .cq-hub-research.cq-part-done small{color:#ffc94a}
+.cq .cq-rating .cq-rating-next{background:rgba(5,9,15,.6);border-radius:6px;padding:1px 5px;font-size:11px}
+.cq-dialog.cq-lab-hub{background:#0b1523}

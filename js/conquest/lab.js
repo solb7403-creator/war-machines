@@ -59,8 +59,8 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
    else if(n.st==='running'){const tg=el('b','cq-lab-tag','RESEARCHING · '+(L.ruined?'paused':fmtT(n.left)+' left'),row);if(!L.ruined)live.push({t:tg,pre:'RESEARCHING · ',end:now+n.left});}
    else if(n.st==='locked'){if(F.leg){const b=button('RESEARCH · '+RTREE.leg.n+' '+CQ_PARTS[T.part].n.toUpperCase()+'S · '+fmtT(RTREE.leg.ms),()=>{},'cq-lab-go');b.disabled=true;row.append(b);}   // a Legendary always shows both ways in (owner, Nov 17)
     el('small','cq-lab-lock','🔒 '+String(n.why).replace(/^conquest: /,''),row);}
-   else{const q=n.q,b=button((n.st==='ready'?'RESEARCH':n.st==='busy'?'SLOTS BUSY':'NEED '+q.n)+' · '+q.n+' '+CQ_PARTS[q.part].n.toUpperCase()+(q.n>1?'S':'')+' · '+fmtT(q.ms),async()=>{b.disabled=true;const ok=await ctx.act(id);if(!ok)b.disabled=false;},'cq-lab-go');
-    b.disabled=n.st!=='ready';row.append(b);if(n.st==='short')el('small','cq-lab-lock','You have '+n.have+'. Parts drop from heavy Parasites, raid commanders and Meteor Strikes.',row);}
+   else{const q=n.q,pn=CQ_PARTS[q.part].n.toUpperCase(),b=button(n.st==='short'?'NEED '+(q.n-n.have)+' MORE '+pn+(q.n-n.have>1?'S':'')+' ('+n.have+'/'+q.n+')':(n.st==='ready'?'RESEARCH':'SLOTS BUSY')+' · '+q.n+' '+pn+(q.n>1?'S':'')+' · '+fmtT(q.ms),async()=>{b.disabled=true;const ok=await ctx.act(id);if(!ok)b.disabled=false;},'cq-lab-go');
+    b.disabled=n.st!=='ready';row.append(b);if(n.st==='short')el('small','cq-lab-lock','Parts drop from heavy Parasites, raid commanders and Meteor Strikes (one a day counts).',row);}
    if(F.leg&&ctx.store&&n.st!=='done'&&n.st!=='bought'&&n.st!=='running')ctx.store(row,'rsleg',{id});}}
  {const Lk=RTREE.locked,f=el('details','cq-map-fold cq-lab-track cq-lab-locked',null,d),sm=el('summary','','🔒 '+Lk.n.toUpperCase()+' · '+Lk.d,f);sm.dataset.k='lab-role';el('small','',Lk.n+' open with Science Lab level '+ROMAN[Lk.lab]+'.',f);}
  if(ctx.store)ctx.store(d,'rspack',{});
@@ -82,7 +82,7 @@ function reveal(d,id,ctx){const {el,button}=ctx,R0=rmodOf(id),F=R0.F,T=RTREE.tra
  el('p','cq-kicker','RESEARCH COMPLETE · '+T.n.toUpperCase(),d);el('h2','',F.n.toUpperCase(),d);el('small','cq-lab-meta',SLOT_N[R0.slot]+' MOD · '+F.role.toUpperCase()+(F.set?' · SET MOD':''),d);
  el('p','cq-lab-what',F.d,d);el('p','cq-lab-cost','Trade-off: '+tradeOff(F),d);
  const L=typeof myLoadout==='function'?myLoadout():null;if(L&&typeof powerOf==='function'){const mods={...fittingSelection(L.mods),[R0.slot]:id},f=fittingStats(mods),p0=powerOf(L),p1=powerOf({...L,mods});
-  el('p','cq-lab-power',f.weight>FIT_BUDGET.weight||f.power>FIT_BUDGET.power?'Does not fit with your current mods (weight or power budget): swap one in the garage.':'POWER '+p0+' → '+p1+' if you fit it now',d);ctx.fitOk=!(f.weight>FIT_BUDGET.weight||f.power>FIT_BUDGET.power);}
+  el('p','cq-lab-power',f.weight>FIT_BUDGET.weight||f.power>FIT_BUDGET.power?'Does not fit with your current mods (weight or power budget): swap one in the garage.':'POWER '+p0+' → '+p1+' when you fit it (in the field: at the Refuge)',d);ctx.fitOk=!(f.weight>FIT_BUDGET.weight||f.power>FIT_BUDGET.power);}
  return d;}
 root.ConquestLab=Object.freeze({screen,reveal,line,nodeOf,partsOf,labOf,toReveal,tradeOff,fmtT});
 })(globalThis);

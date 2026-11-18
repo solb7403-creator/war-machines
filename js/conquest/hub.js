@@ -28,7 +28,9 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
  const later=root.requestIdleCallback?f=>root.requestIdleCallback(f,{timeout:400}):f=>setTimeout(f,60),me=H;
  later(()=>{if(H!==me||me.disposed)return;live(me);hero3d(me);});}
 // today's earned research part (owner, Nov 17: one a day per account; after it a found part becomes a fragment), on both base cards
-function partDay(card,s,now){const L=root.ConquestLoot;if(!L||!s?.inv)return;const D=L.partDay(s,now),t=H.o.el('small','cq-hub-part-day'+(D.n>=D.of?' cq-hub-part-done':''),'RESEARCH PART '+D.n+'/'+D.of+' TODAY',card);t.title=L.limitText();}
+function partDay(card,s,now){const L=root.ConquestLoot;if(!L||!s?.inv)return;const D=L.partDay(s,now),txt='RESEARCH PART '+D.n+'/'+D.of+' TODAY',t=H.o.el('small','cq-hub-part-day'+(D.n>=D.of?' cq-hub-part-done':''),txt,card);t.title=L.limitText();
+ // UX critic round 1: the card can sit below the fold on a phone, so the always-visible RESEARCH button carries it too
+ const rb=H.panel?.querySelector('.cq-hub-research');if(rb){let sm=rb.querySelector('small');if(!sm){sm=document.createElement('small');rb.append(sm);}sm.textContent='PART '+D.n+'/'+D.of+' TODAY';rb.classList.toggle('cq-part-done',D.n>=D.of);rb.setAttribute('aria-label','Research. '+txt+'. '+L.limitText());}}
 function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildren();const now=Date.now(),C=root.ConquestCombat;
  const card=(title,cls)=>{const c=el('section','cq-hub-card '+(cls||''),null,col);el('h3','',title,c);return c;};
  // warfront

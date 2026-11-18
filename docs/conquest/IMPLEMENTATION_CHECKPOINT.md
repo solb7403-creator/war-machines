@@ -4840,6 +4840,17 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
 - Local: `npm install --prefix worker` once, then `node worker/build-sim.mjs` and `node worker/build-web.mjs` (generated, not
   committed) before the Worker tests. Graphify did not connect in this container (proxy 403): code read directly.
 
+### UX critic round 1 (finish session; one fresh critic, phone + desktop together, judged against Clash Royale, Clash of Clans' lab, War Robots, World of Tanks)
+Scores: hub phone 5 / desktop 5-7; Lab phone 5 / desktop 4; Lab end 5 / 6; running job 5.5 / 5; Legendary nodes 4; reveal 6.5 / 5;
+POWER chip 6.5 / 4; Shop Lab 7 / 5.5. Fixed (all the BROKEN ones plus the cheap high-value ones): disabled Lab and store buttons
+looked live (now dashed, 50%; a ready one glows in its track colour); the Legendary gold styling never applied (selector mismatch:
+`cq-lab-legnode`); the floating sticky CLOSE covered text (now a full-width opaque sticky row); "NEED 4 · 4 THERMAL CORES / You have 1"
+-> "NEED 3 MORE THERMAL CORES (1/4)"; the reveal's "if you fit it now" said nothing about the Refuge refit -> "when you fit it (in
+the field: at the Refuge)"; the HUD rating line vanished over bright ground (a dark plate); the hub's daily part pill sat below the
+fold on phones (the always-visible RESEARCH button now carries "PART 0/1 TODAY", amber once taken, with the rule in its label);
+a 12 px floor for the Lab's small text (13 px trade-offs); an opaque Lab panel over the hub. Left for a later visual pass (not
+broken, recorded for 6B-V): the desktop two-column Lab and Shop, the Shop's repeated "Not on sale yet", the 8 s POWER delta hold.
+
 ### Owner correction (Nov 18): every ruling re-checked against the goal rules
 The owner's correction (stored verbatim in `docs/conquest/audit/SESSION_06B_FINISH_PROMPT.md`) adds the goal rules: fun and
 addictive for 500,000+ players, as much revenue as possible, keep free players hooked without heavily prioritizing them over paid
