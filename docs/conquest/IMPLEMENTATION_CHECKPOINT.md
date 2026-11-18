@@ -4894,7 +4894,7 @@ Local runs: the full list from the finish brief, one command each, on `eceff5a`.
   `research-economy`; the live-match smoke test in the Workers runtime; deploy; webhook): `/pvp/health` =
   `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`. Its version check, 1 s after the deploy, still read the previous asset
   (`20261117180140`; the repo's is `20261118100557`; the Worker serves `version.json` from the static assets packaged in that same
-  deploy). Re-check: a dispatch of the same workflow on main (run 44303067381), result pending at the time of this line.
+  deploy). Re-checked by a dispatch of the same workflow on main: run 44303067381 SUCCESS (12:24 UTC), `/pvp/health` `{"ok":true,...}`, live `version.json` = `{"v":"20261118100557"}` = repo.
 - GitHub Pages: `pages build and deployment` run 44300336277 SUCCESS on `4f8db83`. This cloud container cannot reach github.io or
   workers.dev (network policy, tried again), so the live values come from the deploy job's own checks.
 - No live players: no migration code. Revert plan if broken: revert `4f8db83` on main (both deploys follow main). Not needed.
