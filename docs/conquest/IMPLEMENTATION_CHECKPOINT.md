@@ -4866,6 +4866,12 @@ Local runs: the full list from the finish brief, one command each, on `eceff5a`.
   holds `actionBusy`, and an action tapped during it is sent after it; it fails on the first `refresh()` (`the sync never holds
   actionBusy`). `conquest-hub-browser.py` (same CI job) still expected "RESEARCH · COMING SOON (disabled)": 6B opened the Lab,
   so it now expects the live RESEARCH button with today's part. Build 20261118100557.
+- WebKit then passed 032 and 033 and failed \`conquest-flagship-browser.py\`: its raid pilot died with 1700 max hull. The fixture's
+  \`veteranLoadout\` (Moonbeam + tier-2 Titan, 2958 hull) was gear the test account did not own; before 6B nothing refitted it,
+  but 6B's Refuge refit correctly rebuilt the field tank from the account's own garage (a base Vanguard). A real pilot's field
+  tank always comes from their own garage, so the test server (\`dev/tests/conquest-server.mjs\` /fixture) now gives the account
+  that gear and puts it in its garage. Checked against the real Worker session at the Refuge: before the fix titan t2 / moon ->
+  vanguard t0 / pulse t0 (2958 -> 1700 hull); after it the tank is unchanged.
 - Recorded, not changed (older than this branch, on main since Session 5E-1): the town view's builder-job sync
   (`plotview.js`) also calls `connect()` and could drop a press made in that moment; it should use `refresh()` too.
 
