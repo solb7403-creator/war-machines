@@ -539,12 +539,10 @@ The armor ladder runs from a small first step to a long-term goal. At the top it
 
 ### 6.5 Research mods (Session 6B, Science Lab)
 
-Sixteen earned mods (three a track plus its set mod, four tracks) and four Legendary set mods add **new options** in the existing hull, mobility and mount slots, one per slot. Each has one behavior with a felt trade-off; full strength in every mode; part of the canonical loadout, so they count in gear rating, league and matchmaking like plating. Ownership is read only from the server record (`eco.rm` researched, `eco.lsm` Legendary); the existing options, chassis, weapons, plates and legendaries are unchanged. Gear rating (`powerOf`) values each behavior from its numbers (`rmodPe`), so the set mod is the strongest option in its slot and the Legendary a step above. Live win chance uses `POWER_K_LIVE`.
-
-| Mod | Slot | Track | Gear rating gain, stock kit | Gear rating gain, top kit | Live win vs the same tank without it |
+Sixteen earned mods (three a track plus its set mod, four tracks) and four Legendary set mods add **new options** in the existing hull, mobility and mount slots, one per slot. Each has one behavior with a felt trade-off; full strength in every mode; part of the canonical loadout, so they count in gear rating, league and matchmaking like plating. Ownership is read only from the server record (`eco.rm` researched, `eco.lsm` Legendary); the existing options, chassis, weapons, plates and legendaries are unchanged. Gear rating (`powerOf`) values each behavior from its numbers (`rmodPe`), so the set mod is the strongest option in its slot and the Legendary a step above. Ownership: a researched mod (`eco.rm`)| Mod | Slot | Track | Gear rating gain, stock kit | Gear rating gain, top kit | Live win vs the same tank without it |
 |---|---|---|---:|---:|---:|
 | Heat Sink Plating | hull | Thermal | +1.5% | +1.7% | 51.3% |
-| Momentum Plating | hull | Drive | +1.5% | +1.7% | 51.3% |
+| Momentum Plating | hull | Drive | +1.5% | +1.3% | 51.0% |
 | Capacitor Bank | hull | Field | +1.5% | +2.1% | 51.6% |
 | Reflector Field | hull | Field | +1.5% | +2.1% | 51.6% |
 | ◆ Aegis Matrix (set) | hull | Field | +2.9% | +3.4% | 52.6% |
@@ -553,8 +551,8 @@ Sixteen earned mods (three a track plus its set mod, four tracks) and four Legen
 | Traction Servo | mobility | Drive | +2.9% | +1.7% | 51.3% |
 | Ram Servo | mobility | Drive | +1.5% | +1.7% | 51.3% |
 | Reflex Skirts | mobility | Field | +1.5% | +2.6% | 52.0% |
-| ◆ Overdrive (set) | mobility | Drive | +2.9% | +3.8% | 52.9% |
-| ★ Hyperdrive (Legendary) | mobility | Drive | +5.9% | +6.4% | 54.8% |
+| ◆ Overdrive (set) | mobility | Drive | +2.9% | +3.0% | 52.3% |
+| ★ Hyperdrive (Legendary) | mobility | Drive | +5.9% | +5.5% | 54.2% |
 | Vent Barrel | mount | Thermal | +1.5% | +1.7% | 51.3% |
 | Overclock Breech | mount | Thermal | +1.5% | +1.7% | 51.3% |
 | ◆ Inferno Core (set) | mount | Thermal | +4.4% | +3.4% | 52.6% |
@@ -564,14 +562,15 @@ Sixteen earned mods (three a track plus its set mod, four tracks) and four Legen
 | ◆ Rail Driver (set) | mount | Ballistics | +2.9% | +3.0% | 52.3% |
 | ★ Starfall Driver (Legendary) | mount | Ballistics | +5.9% | +5.1% | 53.9% |
 
-**Best builds (the owner's +8% target, enforced by `dev/tests/owner-rules.mjs`):**
+**Best builds (the owner's bands, enforced by `dev/tests/owner-rules.mjs`: research about +8% over the best free build, the Legendary set mods about +7% over the best research build, both ±1 point, top kit):**
 
 | Kit | Best without research | Best with research | Best with the Legendary set mods |
 |---|---:|---:|---:|
-| Top (legend) kit | 240 (Plates / Stable / Stock) | **260 (+8.3%)**, live win 56.2% | 278 (+6.9% over research), live win 55.2% vs research, 61.2% vs no research |
-| Stock kit | 70 | 75 (+7.1%), live win 55.3% | 80 (+6.7% over research) |
+| Top (legend) kit | 240 (Plates / Stable / Stock) | **259 (+7.9%)**, live win 55.9% | **276 (+6.6% over research)**, live win 54.9% vs research, 60.7% vs no research |
+| Stock kit | 70 | 74 (+5.7%), live win 54.3% | 80 (+8.1% over research) |
 
-**Measured** (`dev/tools/mod-power.mjs`, the real server sim, 240 duels a mod a kit, both sides the same pilot; `docs/conquest/session6b/mod-power.json`): with the Session 2 human-pilot profile every mod lands within the ±6.3-point noise of its predicted win chance (for example Sunfire Core 57.9% measured vs 54.2% predicted on the top kit; Inferno Core 53.8% vs 52.5%). With scripted bots the movement and timing mods measure lower (Overdrive and Hyperdrive 41–42%, Ram 42.5%, Momentum 44%) because bots never chain dashes, ram or hold still; the rating keeps the analytic value a human pilot can reach.
+**Measured** (`dev/tools/mod-power.mjs`, the real server sim, 240 duels a mod a kit, both sides the same pilot; `docs/conquest/session6b/mod-power.json`, re-run after the retune): with the Session 2 human-pilot profile the movement mods now sit within one standard error of their rating (Overdrive 49.6% measured vs 52.4% predicted on the top kit, Momentum 48.3% vs 51.0%; before the retune both sat further off and bots were 4-6 standard errors off). Hyperdrive measured byte-identical to Overdrive while its step was charges and refill (no pilot profile ever needs a second dash inside the cooldown: 0.32 dashes a duel for the human profile, 1.1 for bots); with +10% top speed it measures 55.6% against Overdrive (human profile) and 53.8% (bots). Scripted bots still under-use dashes, rams and standing still, so those mods measure low with bots; the rating keeps the value a human pilot reaches.
+its predicted win chance (for example Sunfire Core 57.9% measured vs 54.2% predicted on the top kit; Inferno Core 53.8% vs 52.5%). With scripted bots the movement and timing mods measure lower (Overdrive and Hyperdrive 41–42%, Ram 42.5%, Momentum 44%) because bots never chain dashes, ram or hold still; the rating keeps the analytic value a human pilot can reach.
 
 ---
 
