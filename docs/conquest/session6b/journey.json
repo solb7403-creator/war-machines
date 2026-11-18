@@ -47,7 +47,7 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    4079,
+    4024,
     620
    ],
    "wide": false
@@ -69,7 +69,7 @@
   "reveal": {
    "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
    "name": "VENT BARREL",
-   "what": "Keep firing for 3 s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
    "cost": "Trade-off: \u22127% damage per second",
    "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
    "buttons": [
@@ -197,7 +197,7 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    4079,
+    4024,
     764
    ],
    "wide": false
@@ -219,7 +219,7 @@
   "reveal": {
    "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
    "name": "VENT BARREL",
-   "what": "Keep firing for 3 s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
    "cost": "Trade-off: \u22127% damage per second",
    "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
    "buttons": [
@@ -347,7 +347,7 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    4768,
+    4697,
     488
    ],
    "wide": false
@@ -369,7 +369,7 @@
   "reveal": {
    "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
    "name": "VENT BARREL",
-   "what": "Keep firing for 3 s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
    "cost": "Trade-off: \u22127% damage per second",
    "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
    "buttons": [
@@ -497,7 +497,7 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    3633,
+    3598,
     688
    ],
    "wide": false
@@ -515,11 +515,12 @@
    ]
   },
   "powerBefore": 59,
+  "escClosed": true,
   "finishedJobs": 1,
   "reveal": {
    "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
    "name": "VENT BARREL",
-   "what": "Keep firing for 3 s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
    "cost": "Trade-off: \u22127% damage per second",
    "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
    "buttons": [
@@ -647,7 +648,7 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    3633,
+    3598,
     1000
    ],
    "wide": false
@@ -665,11 +666,12 @@
    ]
   },
   "powerBefore": 59,
+  "escClosed": true,
   "finishedJobs": 1,
   "reveal": {
    "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
    "name": "VENT BARREL",
-   "what": "Keep firing for 3 s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
    "cost": "Trade-off: \u22127% damage per second",
    "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
    "buttons": [
