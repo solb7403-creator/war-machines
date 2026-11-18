@@ -71,3 +71,19 @@ NO LIVE PLAYERS YET: no migration, grandfathering, legacy fallback or "existing 
 == RELEASE (pre-approved) ==
 dev/bump.sh; PR (write the body from the checkpoint); CI green; merge; verify the Worker deploy (/pvp/health ok, live version.json = repo) and GitHub Pages from the deploy jobs; the ROADMAP rows above; release record in Checkpoint 41; a docs-only follow-up PR if needed.
 Final report: what changed; what is a labeled proposal; every open item; any mod held out of live PvP and why.
+
+---
+
+## OWNER CORRECTION (Nov 18, 2026), verbatim. It adds to the prompt; everything else stays exactly as written.
+
+1. THE GOAL. Add these owner rules to "OWNER'S GOAL". They govern the planning quotes there:
+- Owner rule, Nov 16: "Always optimize everything to be as fun and addictive as possible, to generate significant revenue with 500,000+ players. Act like you're trying to make a game that generates as much revenue as possible while also retaining and keeping all the free players addicted. Don't ignore free players, but do NOT heavily prioritize free players over paid players (life isn't fair)."
+- Owner rule, Nov 17: "The main goal is to generate revenue with a fun and addicting game. Never make it so a free or casual player can max things out quickly. Judge every pace, cap and target by whether it serves that goal. Don't ruin the game."
+- The planning quote "We make sure we retain free players to the absolute best of our ability, while still making things beneficial for paid players" continues "... however they need to be to reach our goal". The goal above governs it.
+- This opens no number the prompt fixes: prices, economy, airdrop points and payments stay exactly as written.
+- Re-check every ruling and design choice already made (including the mods-vs-hazards rulings) against these rules, and record the result in Checkpoint 41.
+- Both reviewers check these rules PASS/FAIL with evidence. The UX critic rounds judge against Clash Royale and the comparable games in section 6. The bar: exceptional, professional, stands out.
+
+2. CREATIVE DIRECTOR. Replace "you may change UI, pacing and design details when clearly better" with the owner's words: you may change visuals, motion, pacing, gameplay and design decisions when clearly better, recording each change with its reason and evidence in the checkpoint.
+
+3. ROADMAP row 8 (a): replace "(6B review; owner to confirm)" with "(6B review; planning pick under the owner's rule for unanswered questions: fail closed; the owner may override)".

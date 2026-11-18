@@ -4840,6 +4840,30 @@ for the Legendary set mods, owner rules, tests, two reviews, release (pre-approv
 - Local: `npm install --prefix worker` once, then `node worker/build-sim.mjs` and `node worker/build-web.mjs` (generated, not
   committed) before the Worker tests. Graphify did not connect in this container (proxy 403): code read directly.
 
+### Owner correction (Nov 18): every ruling re-checked against the goal rules
+The owner's correction (stored verbatim in `docs/conquest/audit/SESSION_06B_FINISH_PROMPT.md`) adds the goal rules: fun and
+addictive for 500,000+ players, as much revenue as possible, keep free players hooked without heavily prioritizing them over paid
+players, never let a free or casual player max things out quickly, judge every pace, cap and target by that, don't ruin the game.
+Creative director now covers visuals, motion, pacing, gameplay and design. No fixed number moves (prices, economy, points, payments).
+
+| Ruling / choice | Verdict under the goal rules | Why |
+|---|---|---|
+| Mods vs hazards (world damage passes every shield, armor/plates cut it, Heat Sink counts it, no reflection, Reflex never fires, burn tick = a hit) | keep | hazards stay a skill element nobody can buy out (5E-2e's own rule: shields never stop them), so they stay fun for free and paid alike; the burn credit rewards aggressive play |
+| Live PvP agreement fixes, one cue source, dash queue | keep | a desync or a refused press is exactly what makes a competitive game feel broken; required for retention |
+| Dash charges in the proof check, F5 (sale rules in the grant) | keep | cheating and broken payments ruin the game and the revenue |
+| Rating retune; lighter Momentum / Overdrive / Hyperdrive costs | keep | fair matchmaking keeps both sides playing; the capstone (9 parts) and the paid Legendary now deliver what they promise |
+| Hyperdrive's step: +10% top speed (measured 55.6% vs Overdrive) | keep (creative director, gameplay) | a Legendary someone pays 599 Stars for must be felt; its old step was invisible |
+| Costs 2/4/5/9, one earned part a day | keep | free 60 min/day: the tree in 149 days (5 months), all four Legendary in 343 (11 months); casual 30 min: 240 and 550 days: no free or casual player maxes out quickly |
+| The daily counter on the hub ("RESEARCH PART 0/1 TODAY") | keep | a daily-return hook (the genre's daily habit loop) that also tells the truth |
+| Extra parts become fragments | keep | a grinder's extra drops still feel like a reward (cosmetic only, earn-only, finite pools): retention without speeding power |
+| The free Legendary path | keep (owner-decided) | it takes 11 months free; paid players get the same power in days (packs + the buy gate): paid benefit kept, free players still have a long goal |
+| Hub RESEARCH opens the Lab without the 3D world | keep | fewer seconds between wanting and doing: more sessions |
+| Lab store pacing (a payer can own everything in about 8-9 days) | RECOMMENDATION CHANGED (proposal, owner decides before the store opens) | under the revenue rule the lead no longer recommends "one Legendary a week": it delays revenue and invites churn before purchase, while live rooms already seat by power (a fully bought tank meets its own band). Recommended: keep the gates as built |
+| Every mod in live PvP (none held out) | keep | the paid and earned mods work in the mode that sells them |
+
+Nothing built this session lets a free or casual player max out quickly; nothing removed a paid benefit. ROADMAP row 8 (a) will read
+"(6B review; planning pick under the owner's rule for unanswered questions: fail closed; the owner may override)".
+
 ### Mods and hazards (Session 6B finish ruling; 5E-2e hazards meet the mods for the first time in this merge)
 World damage = the Arcade storm ring (takeHit kind 2) and the six map hazards (kind 3). The shared mod engine sees both as kind 3
 (`game.js takeHit` passes `kind>=2?3:kind` to `mfTaken`); Conquest's enemy marked strikes stay kind 2 (a shield and the overshield
