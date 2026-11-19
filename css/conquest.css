@@ -478,3 +478,36 @@
 .cq .cq-lab-node.cq-lab-ready .cq-lab-go:not(:disabled){background:color-mix(in srgb,var(--tc,#5aa9ff) 50%,#0f1d2b);color:#fff;font-weight:800;box-shadow:0 0 12px color-mix(in srgb,var(--tc,#5aa9ff) 45%,transparent)}
 @media(min-width:700px){.cq-dialog.cq-lab-hub,.cq-dialog.cq-lab-hub-reveal{box-shadow:0 0 0 100vmax #04080ed9,0 16px 80px #000b}}
 .cq .cq-hub-actions .cq-hub-deploy{max-width:none}
+/* Session 6C Battalion: the HANGAR, the briefing strip, the hub card */
+.cq .cq-hangar .cq-bat-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 6px}
+.cq .cq-bat-stage{font:700 12px 'Chakra Petch',sans-serif;color:#cfe6f3;letter-spacing:.04em}
+.cq .cq-bat-next,.cq .cq-bat-lock{display:block;font-size:12px;color:#ffd78a;margin:4px 0}
+.cq .cq-bat-presets,.cq .cq-bat-forms,.cq .cq-bat-strip-presets{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.cq .cq-bat-presets button,.cq .cq-bat-forms button,.cq .cq-bat-strip-presets button{min-height:44px;flex:1 1 0;min-width:72px}
+.cq .cq-hangar button.cq-on,.cq .cq-bat-strip button.cq-on{border-color:#7fe3ff;background:#12384a;color:#fff;box-shadow:0 0 0 1px #7fe3ff inset}
+.cq .cq-bat-forms button:disabled{opacity:.5;border-style:dashed}
+.cq .cq-bat-tools,.cq .cq-bat-repair,.cq .cq-bat-recruit{display:flex;flex-direction:column;gap:6px;margin:10px 0;padding:8px;border:1px solid #2c4256;border-radius:8px;background:#0a141ed9}
+.cq .cq-bat-tools button,.cq .cq-bat-repair button,.cq .cq-bat-recruit button{min-height:44px;align-self:flex-start}
+.cq .cq-bat-role{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;background:var(--rc,#d9c27a);color:#07131c;font:800 13px 'Chakra Petch',sans-serif;flex:none;transform:rotate(45deg)}
+.cq .cq-bat-role{transform:none;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.cq .cq-bat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}
+.cq .cq-bat-card{border:1px solid #2c4256;border-left:3px solid var(--rc,#d9c27a);border-radius:8px;padding:8px;background:#0a141ef0;display:flex;flex-direction:column;gap:3px}
+.cq .cq-bat-card.cq-bat-hurt{border-color:#ff9d8a;border-left-color:#ff9d8a}
+.cq .cq-bat-card-top{display:flex;align-items:center;gap:6px}.cq .cq-bat-cs{font:800 15px 'Chakra Petch',sans-serif;color:#fff;flex:1}
+.cq .cq-bat-slot{font:800 11px 'Chakra Petch',sans-serif;color:#7fe3ff}.cq .cq-bat-card small{font-size:12px;color:#b7cad8;line-height:1.3}
+.cq .cq-bat-rank{display:flex;align-items:center;gap:6px}.cq .cq-bat-chev{color:#ffd36b;font-size:10px;letter-spacing:-1px}
+.cq .cq-bat-card progress{width:100%;height:5px}.cq .cq-bat-card button{min-height:40px;margin-top:2px}
+.cq .cq-bat-picker{display:grid;gap:6px;margin:8px 0;padding:8px;border:1px solid #7fe3ff;border-radius:8px;background:#071019}
+.cq .cq-bat-pick{display:grid;grid-template-columns:28px 1fr;gap:2px 8px;align-items:center;text-align:left;min-height:48px}
+.cq .cq-bat-pick small{grid-column:2;font-size:11px;color:#9fb6c9}
+.cq .cq-bat-livery{display:grid;grid-template-columns:32px 1fr;gap:2px 8px;align-items:center;margin:6px 0}.cq .cq-bat-livery small,.cq .cq-bat-livery button,.cq .cq-bat-livery .cq-lab-off{grid-column:2}
+.cq .cq-bat-swatch{width:28px;height:28px;border-radius:6px;grid-row:span 2;border:1px solid #2c4256}
+.cq .cq-bat-help-row{display:grid;grid-template-columns:28px 1fr;gap:2px 8px;margin:6px 0}.cq .cq-bat-help-row small{grid-column:2}
+.cq .cq-bat-strip{border:1px solid #2c4256;border-radius:8px;padding:8px;margin:8px 0;background:#0a141ed9;display:flex;flex-direction:column;gap:6px}
+.cq .cq-bat-enemies,.cq .cq-bat-force{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cq .cq-bat-strip-k{font:800 11px 'Chakra Petch',sans-serif;color:#9fb6c9;letter-spacing:.08em;min-width:64px}
+.cq .cq-bat-foe,.cq .cq-bat-mine{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:999px;border:1px solid #6b2a2a;background:#2a1010;font-size:11px}
+.cq .cq-bat-foe i{font-style:normal;color:#ff6b5e}.cq .cq-bat-foe.cq-heavy{border-color:#a04a2a}.cq .cq-bat-foe.cq-boss{border-color:#ffd36b}.cq .cq-bat-foe.cq-boss i{color:#ffd36b}
+.cq .cq-bat-mine{border-color:#2c5a6e;background:#0d2733}.cq .cq-bat-mine .cq-bat-role{width:18px;height:18px;font-size:10px}
+.cq .cq-bat-hint{font-size:12px;color:#ffd78a;line-height:1.35}
+.cq .cq-hub-chip-day{display:block;font:700 12px 'Chakra Petch',sans-serif;color:#7fe3ff}.cq .cq-hub-chip-day.cq-hub-part-done{color:#ffd36b}

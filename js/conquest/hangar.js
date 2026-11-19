@@ -47,7 +47,7 @@ function screen(d,s,ctx){const {el,button}=ctx,B=BT(),T=s?.bat||{p:[],ps:[{f:'we
   if(T.rj){const left=Math.max(0,T.rj.left-Math.max(0,now-(T.rj.at||now)));el('p','cq-bat-job','A RECRUIT ARRIVES IN '+t2(left),r);const pr=el('progress','',null,r);pr.max=T.rj.ms||28800000;pr.value=pr.max-left;pr.setAttribute('aria-label','Recruit on the way');
    if(root.ConquestLabStore?.row)root.ConquestLabStore.row(r,'rcfin',{left,job:T.rj.id},{el,button,state:s});}
   else if(T.p.length>=B.ROSTER_MAX)el('p','','ROSTER FULL · '+B.ROSTER_MAX+'/'+B.ROSTER_MAX,r);
-  else if(lv<1)el('small','','Build a Hangar in your town (CC2) to recruit (one at a time, 8 h, no CP).',r);
+  else if(lv<1)el('small','','Build a Hangar in your town (CC2) to recruit (one at a time, 8 h, no CP). ',r);
   else r.append(button('RECRUIT A PILOT · 8 H',()=>ctx.act('hangar-recruit',{}),'cq-bat-recruit-go'));
   el('small','','Also: your first win of BEACON EXTRACTION each UTC day brings one pilot. Pilots, ranks and Role Core levels are never sold.',r);}
  // liveries: looks only (your paint and banner on every ally, or a plain set); allies wear their stock paint by default

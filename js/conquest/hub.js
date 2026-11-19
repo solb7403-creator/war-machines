@@ -44,9 +44,12 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
   {const st=p.st||{},got=[['alloy','ALLOY'],['biomass','BIOMASS'],['helium','HELIUM-3']].filter(([k])=>Math.floor(st[k]||0)>0).map(([k,l])=>'+'+Math.floor(st[k])+' '+l);if(got.length)el('p','cq-hub-left','WAITING AT YOUR TOWN · '+got.join(' · ')+' since you left',b);}   // Session 6 (Decision 10a): production x3, Storage x2
   if(typeof cqYieldUnlock==='function'){const Y=cqYieldUnlock(s.airdrop?.yd,Math.floor(now/86400000));el('small','','YIELD POINTS '+Math.round(Y.u*100)+'%'+(Y.toGo?' · '+Y.toGo+' operation'+(Y.toGo>1?'s':'')+' to go today':' · all unlocked today'),b);}
   {const ln=root.ConquestLab?.line(s,now);if(ln)el('small','cq-hub-research-line',ln,b);}   // Session 6B: what the Science Lab is doing
+  {const cd=root.ConquestHangar?.chipDay(s,now);if(cd){const c=el('small','cq-hub-chip-day'+(cd.n?' cq-hub-part-done':''),cd.text,b);c.title=cd.rule;}}   // Session 6C: beside the research line
   partDay(b,s,now);
   const j=p.job;el('small','',j?'BUILDER · '+(j.t==='cc'?'CC'+(j.l||''):(root.ConquestPlot?.BUILDINGS[j.t]?.n||j.t).toUpperCase()+' '+(j.l||''))+' · '+(j.ready>now?t2(j.ready-now):'READY'):'BUILDER FREE · open MY BASE to build',b);}
  else{el('p','cq-hub-big','NO BASE YET',b);partDay(b,s,now);const D=C?.baseDefinition,L=s?.ledger;el('small','',D&&L?'Claim your town: '+fmt(Math.min(L.cp,D.recipe.cp))+' / '+fmt(D.recipe.cp)+' CP. Seven sites, from crater rim to ash field; it grows with your Command Center.':'Win operations, bank salvage, then claim your own town.',b);el('small','cq-hub-where','⌂ Your base gate is next to the Refuge, about 90 m west. Tap MY BASE: the gold arrow takes you there.',b);}
+ // Session 6C: your battalion (pilots, FORCE, the day's command chip, the RECRUIT job) and the HANGAR
+ if(root.ConquestHangar&&s){const bc=card('BATTALION','cq-hub-battalion');root.ConquestHangar.hubCard(bc,s,{el:H.o.el,button:H.o.button,now,open:H.o.hangar||null});}
  // War Orders (Session 6, spec §6.1): today's three and this week's one
  if(root.ConquestOrders){const o=card('WAR ORDERS','cq-hub-orders');root.ConquestOrders.card(o,s,{el});}
  // events

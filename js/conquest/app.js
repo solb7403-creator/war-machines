@@ -17,7 +17,7 @@ function closeWorld(){sessionEnd();root.ConquestPlotView?.close();transmissionCl
 function clear(){root.ConquestHub?.close();if(panel)panel.replaceChildren();}
 // Session 5: the Conquest Command hub page (js/conquest/hub.js). The four actions: deploy, fast travel, base, research (Session 6).
 let afterEnter=null;
-function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),research:labOnly,enter:mode=>{afterEnter=mode||null;enter();}});pageNav();return;}legacyHub();}
+function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),research:labOnly,hangar:hangarOnly,enter:mode=>{afterEnter=mode||null;enter();}});pageNav();return;}legacyHub();}
 // Conquest as its own page (owner, Nov 8): the hub carries the app's bottom bar with CONQUEST lit; any other tab leaves
 // Conquest straight to that page. The world itself (ENTER CONQUEST) stays full screen.
 function pageNav(){if(typeof tabBarHtml!=='function'||!panel)return;const nav=el('nav','tabbar cq-pagenav',null,panel);nav.setAttribute('aria-label','Main');nav.innerHTML=tabBarHtml('conquest');panel.classList.add('cq-with-nav');
@@ -443,6 +443,15 @@ async function labOnly(){const Lb=root.ConquestLab;if(!Lb||!panel||panel.querySe
   v.append(button('SCIENCE LAB',async()=>{await seen();v.remove();draw();}),button('LATER',async()=>{await seen();v.remove();d.remove();}));};
  if(!await load()){if(!d.isConnected)return;d.textContent='';el('p','cq-lab-why','The Science Lab needs a connection to the game server. Try again in a moment.',d);d.append(button('CLOSE',()=>d.remove()));return;}
  draw();}
+// Session 6C: the HANGAR over the hub (or the world), like the Science Lab: the session state alone, no 3D world. Every change is a
+// Worker action (worker/src/conquest-battalion.js); js/conquest/hangar.js draws it.
+async function hangarOnly(){const Hg=root.ConquestHangar;if(!Hg||!panel||panel.querySelector('.cq-dialog.cq-hangar'))return;
+ const d=dialog();d.classList.add('cq-lab-hub','cq-hangar');el('p','cq-load','Opening the Hangar…',d);let s=view?.authority?.state||null,busy=false;
+ const load=async()=>{try{s=(await cqCall('/api/conquest/session',{})).state;return !!s;}catch(e){return false;}};
+ const act=async(action,bat)=>{if(busy)return false;busy=true;try{const r=await cqCall('/api/conquest/action',{seq:s.seq+1,action,bat});s=r.state;if(view?.authority)view.authority.state=s;draw();return true;}catch(e){const m=d.querySelector('.cq-lab-msg');if(m)m.textContent=String(e.message||'UNAVAILABLE').replace(/^conquest: /,'').toUpperCase();return false;}finally{busy=false;}};
+ const draw=()=>{if(!d.isConnected)return;d.textContent='';d.classList.add('cq-hangar');d.append(button('CLOSE',()=>d.remove(),'cq-lab-close-top'));Hg.screen(d,s,{el,button,act,now:Date.now()});el('p','cq-lab-msg','',d).setAttribute('aria-live','polite');d.append(button('CLOSE',()=>d.remove()));if(!d.contains(document.activeElement))d.focus({preventScroll:true});};
+ if(!s&&!await load()){if(!d.isConnected)return;d.textContent='';el('p','cq-lab-why','The Hangar needs a connection to the game server. Try again in a moment.',d);d.append(button('CLOSE',()=>d.remove()));return;}
+ if(view?.authority&&!view.authority.state)await load();draw();}
 function labStore(row,kind,info){root.ConquestLabStore?.row(row,kind,info,{el,button,state:view?.authority?.state});}   // the store entries (checkout off)
 // a finished job's reveal card: once per mod (the Worker keeps 'seen'), never over a fight or another screen
 function revealStep(state){const Lb=root.ConquestLab;if(!Lb||!state||!view||view.battle||panel.querySelector('.cq-dialog,.cq-plot,.cq-map,.cq-radio'))return;const id=Lb.toReveal(state);if(!id||view.revealing===id)return;view.revealing=id;

@@ -5779,7 +5779,12 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   (dev/tests/conquest-replay-budget.mjs, `CQ_FRIENDS=N`; recorded in docs/conquest-living-war/replay-budget.json `battalion6c`):
   solo 12.7 ms CPU median a game-second (16 Parasites, unchanged), Platoon 4 allies 22.9 ms (p95 33.9), full Battalion 10
   friendly units + 20 Parasites 37.4 ms (p95 65.9); NEW BUDGET for the Battalion 60 ms median / 110 ms p95.
-- NEXT SESSION, in this order (all still open): (1) the phone UI: HUD COMMAND in the context slot + wheel + keys V / hold V / 1-4,
+- DONE slice 8 (Nov 19): js/conquest/hangar.js loaded (index.html, web/boot.js); the hub shows a BATTALION card (pilots, FORCE,
+  "COMMAND CHIP 0/1 TODAY · N HELD", the RECRUIT job, OPEN HANGAR) and the chip line beside the research line; OPEN HANGAR opens
+  the HANGAR over the hub (app.js hangarOnly, like labOnly: session state only, every change a Worker action); styles in
+  css/conquest.css (.cq-bat-*). Chromium smoke at 390x844 and 1280x800: renders, no page errors (captures
+  docs/conquest/session6c/hangar-*.png); conquest-hub-browser.py PASS.
+- NEXT SESSION, in this order (all still open): (1) the phone UI (the hub HANGAR is done): HUD COMMAND in the context slot + wheel + keys V / hold V / 1-4,
   allies drawn in 3D (Meshy kits, stock paint / livery / LDF livery, role badge, downed look, ally effects halved on LOW), the
   HANGAR (js/conquest/hangar.js is written: load it in index.html + web/boot.js, open it from the hub like labOnly and from
   MORE), the briefing strip + FORCE chip in app.js briefing(), the hub BATTALION card with "COMMAND CHIP 0/1 TODAY" beside the
