@@ -169,7 +169,7 @@ const tune=(B,f)=>f&&f.mil?(B&&B.operation&&B.operation.danger==='VETERAN'?MILIT
 // The six roles (blueprint §4 table; starting values for the simulations). Every number is the base at m = 1.
 const ROLES=Object.freeze({
  '':Object.freeze({n:'WINGMAN',keep:.72,range:1}),
- guardian:Object.freeze({n:'GUARDIAN',cls:['titan'],keep:.55,range:1,cover:.20,coverR:12,taunt:45,pull:20,hold:3}),   /* hold: a Guardian draws the fire of at most 3 Parasites at once (review 2: stacked taunts made four Guardians beat a balanced force) */
+ guardian:Object.freeze({n:'GUARDIAN',cls:['titan'],keep:.55,range:1,cover:.20,coverR:12,taunt:45,pull:20,hold:2}),   /* hold: a Guardian draws the fire of at most 2 Parasites at once (review 2: stacked taunts made four Guardians beat a balanced force) */
  breacher:Object.freeze({n:'BREACHER',cls:['vanguard'],keep:.45,range:1,structure:.40,frozen:.50,frozenR:15,charge:9,chargeT:.4,chargeMin:12,chargeMax:35}),
  lancer:Object.freeze({n:'LANCER',cls:['titan','vanguard'],keep:.85,range:1.4,close:.6,closeR:20,air:.50,burst:.30}),
  mender:Object.freeze({n:'MENDER',cls:['scout','vanguard'],keep:.8,range:1,heal:.012,healR:18,revive:.35,reviveR:30,reviveS:2.5,low:.35}),

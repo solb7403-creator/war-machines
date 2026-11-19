@@ -14,11 +14,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 RAVEN (Farid Nakamura) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 BLITZ (Amara Petrov) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "RAVEN",
+     "cs": "BLITZ",
      "role": "wingman",
      "mil": true
     }
@@ -32,8 +32,9 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WRAVEN"
-   ]
+    "WBLITZ"
+   ],
+   "tagInDom": true
   },
   "hubCard": {
    "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
@@ -42,6 +43,12 @@
   },
   "hangar": {
    "cards": 4,
+   "toggles": [
+    "IN FORCE #1 \u00b7 AUTO",
+    "IN FORCE #2 \u00b7 AUTO",
+    "IN FORCE #3 \u00b7 AUTO",
+    "IN FORCE #4 \u00b7 AUTO"
+   ],
    "arm": true,
    "presets": 3,
    "forms": [
@@ -61,10 +68,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GBLITZ",
-    "BBASTION",
-    "LBANSHEE",
-    "MCINDER"
+    "GEMBER",
+    "BBANSHEE",
+    "LTEMPEST",
+    "MRIPTIDE"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -119,33 +126,48 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 149.9,
-   "p95": 200,
-   "worst": 233.4,
-   "calls": 64,
-   "tris": 246870,
+   "median": 100,
+   "p95": 133.3,
+   "worst": 199.9,
+   "calls": 67,
+   "tris": 197849,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 2,
+   "hostiles": 6,
+   "dist": [
+    35,
+    14,
+    89,
+    58
+   ],
    "low": "low"
   },
   "fielded": 9,
   "perfBattalion": {
    "median": 16.7,
-   "p95": 16.8,
-   "worst": 16.8,
-   "calls": 64,
-   "tris": 246870,
+   "p95": 116.7,
+   "worst": 183.4,
+   "calls": 76,
+   "tris": 321645,
    "programs": 15,
    "friends": 9,
-   "views": 4,
-   "hostiles": 2,
+   "views": 9,
+   "hostiles": 5,
+   "dist": [
+    35,
+    22,
+    85,
+    48,
+    35,
+    38,
+    32,
+    25,
+    37
+   ],
    "low": "low"
   },
-  "verdict": [
-   "a full Battalion of 9 drawn on LOW within the 16-program budget: {\"median\": 16.7, \"p95\": 16.8, \"worst\": 16.8, \"calls\": 64, \"tris\": 246870, \"programs\": 15, \"friends\": 9, \"views\": 4, \"hostiles\": 2, \"low\": \"low\"}"
-  ]
+  "verdict": "PASS"
  },
  {
   "size": "390x700",
@@ -162,11 +184,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 BLITZ (Vik Grieve) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 DRIFT (Sela Achebe) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "BLITZ",
+     "cs": "DRIFT",
      "role": "wingman",
      "mil": true
     }
@@ -180,8 +202,9 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WBLITZ"
-   ]
+    "WDRIFT"
+   ],
+   "tagInDom": true
   },
   "hubCard": {
    "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
@@ -190,6 +213,12 @@
   },
   "hangar": {
    "cards": 4,
+   "toggles": [
+    "IN FORCE #1 \u00b7 AUTO",
+    "IN FORCE #2 \u00b7 AUTO",
+    "IN FORCE #3 \u00b7 AUTO",
+    "IN FORCE #4 \u00b7 AUTO"
+   ],
    "arm": true,
    "presets": 3,
    "forms": [
@@ -209,10 +238,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GLYNX",
-    "BWARDEN",
-    "LSHALE",
-    "MCINDER"
+    "GORBIT",
+    "BLANCE",
+    "LEMBER",
+    "MJACKAL"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -230,7 +259,7 @@
    ],
    "tags": 4,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 66,
+   "calls": 69,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -267,22 +296,48 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 166.6,
-   "p95": 250,
-   "worst": 399.9,
-   "calls": 69,
-   "tris": 253288,
+   "median": 133.3,
+   "p95": 183.3,
+   "worst": 200,
+   "calls": 66,
+   "tris": 253306,
    "programs": 15,
    "friends": 4,
    "views": 4,
    "hostiles": 2,
+   "dist": [
+    12,
+    24,
+    57,
+    30
+   ],
    "low": "low"
   },
   "fielded": 9,
-  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
-  "verdict": [
-   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
-  ]
+  "perfBattalion": {
+   "median": 16.7,
+   "p95": 16.7,
+   "worst": 16.8,
+   "calls": 83,
+   "tris": 377572,
+   "programs": 15,
+   "friends": 9,
+   "views": 9,
+   "hostiles": 2,
+   "dist": [
+    9,
+    28,
+    53,
+    25,
+    23,
+    21,
+    37,
+    37,
+    19
+   ],
+   "low": "low"
+  },
+  "verdict": "PASS"
  },
  {
   "size": "320x568",
@@ -299,11 +354,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 ONYX (Amara Yilmaz) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 LYNX (Hana Quade) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "ONYX",
+     "cs": "LYNX",
      "role": "wingman",
      "mil": true
     }
@@ -316,7 +371,8 @@
    },
    "next": "SIGNAL RECOVERY",
    "access": null,
-   "tags": []
+   "tags": [],
+   "tagInDom": true
   },
   "hubCard": {
    "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
@@ -325,6 +381,12 @@
   },
   "hangar": {
    "cards": 4,
+   "toggles": [
+    "IN FORCE #1 \u00b7 AUTO",
+    "IN FORCE #2 \u00b7 AUTO",
+    "IN FORCE #3 \u00b7 AUTO",
+    "IN FORCE #4 \u00b7 AUTO"
+   ],
    "arm": true,
    "presets": 3,
    "forms": [
@@ -344,10 +406,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GQUILL",
-    "BRELIC",
-    "LFROST",
-    "MLANCE"
+    "GBLITZ",
+    "BDAGGER",
+    "LRAVEN",
+    "MCOMET"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -365,7 +427,7 @@
    ],
    "tags": 3,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 70,
+   "calls": 69,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -402,43 +464,55 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 149.9,
-   "p95": 216.7,
-   "worst": 266.7,
-   "calls": 68,
-   "tris": 253254,
+   "median": 83.4,
+   "p95": 116.7,
+   "worst": 150.1,
+   "calls": 64,
+   "tris": 203797,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 2,
+   "hostiles": 5,
+   "dist": [
+    28,
+    13,
+    85,
+    57
+   ],
    "low": "low"
   },
   "fielded": 9,
   "perfBattalion": {
    "median": 16.7,
-   "p95": 16.7,
-   "worst": 16.8,
-   "calls": 68,
-   "tris": 253254,
+   "p95": 200,
+   "worst": 250,
+   "calls": 79,
+   "tris": 328193,
    "programs": 15,
    "friends": 9,
-   "views": 4,
-   "hostiles": 2,
+   "views": 9,
+   "hostiles": 3,
+   "dist": [
+    16,
+    16,
+    75,
+    49,
+    31,
+    43,
+    19,
+    24,
+    50
+   ],
    "low": "low"
   },
   "verdict": [
-   "the wingman in 3D with its insignia: {\"friends\": [{\"cs\": \"ONYX\", \"role\": \"wingman\", \"mil\": true}], \"views\": 1, \"state\": {\"w\": 1, \"done\": true, \"roster\": 1}, \"next\": \"SIGNAL RECOVERY\", \"access\": null, \"tags\": []}",
-   "allies in 3D {\"friends\": 4, \"views\": 4, \"meshes\": [3, 3, 3, 3], \"tags\": 3, \"command\": \"COMMAND \\u00b7 FOLLOWINGTAP REGROUP \\u00b7 HOLD ORDERS\", \"calls\": 70, \"programs\": 16, \"targets\": 9, \"slot\": [\"#cq-command-access\"], \"commandBox\": [16, 376, 219, 46]}",
-   "a full Battalion of 9 drawn on LOW within the 16-program budget: {\"median\": 16.7, \"p95\": 16.7, \"worst\": 16.8, \"calls\": 68, \"tris\": 253254, \"programs\": 15, \"friends\": 9, \"views\": 4, \"hostiles\": 2, \"low\": \"low\"}"
+   "allies in 3D {\"friends\": 4, \"views\": 4, \"meshes\": [3, 3, 3, 3], \"tags\": 3, \"command\": \"COMMAND \\u00b7 FOLLOWINGTAP REGROUP \\u00b7 HOLD ORDERS\", \"calls\": 69, \"programs\": 16, \"targets\": 9, \"slot\": [\"#cq-command-access\"], \"commandBox\": [16, 376, 219, 46]}"
   ]
  },
  {
   "size": "1366x768",
   "input": "mouse+keyboard",
-  "errors": [
-   "console:Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
-   "console:Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
-  ],
+  "errors": [],
   "hubFresh": "NO PILOTS YET",
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
@@ -450,11 +524,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 BLITZ (Esme Petrov) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 SHALE (Oren Teller) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "BLITZ",
+     "cs": "SHALE",
      "role": "wingman",
      "mil": true
     }
@@ -468,8 +542,9 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WBLITZ"
-   ]
+    "WSHALE"
+   ],
+   "tagInDom": true
   },
   "hubCard": {
    "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
@@ -478,6 +553,12 @@
   },
   "hangar": {
    "cards": 4,
+   "toggles": [
+    "IN FORCE #1 \u00b7 AUTO",
+    "IN FORCE #2 \u00b7 AUTO",
+    "IN FORCE #3 \u00b7 AUTO",
+    "IN FORCE #4 \u00b7 AUTO"
+   ],
    "arm": true,
    "presets": 3,
    "forms": [
@@ -497,10 +578,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GFROST",
-    "BGHOST",
-    "LDUSK",
-    "MDAGGER"
+    "GHAMMER",
+    "BZEPHYR",
+    "LFROST",
+    "MJACKAL"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -518,7 +599,7 @@
    ],
    "tags": 4,
    "command": "COMMAND \u00b7 FOLLOWINGV REGROUP \u00b7 HOLD V ORDERS",
-   "calls": 114,
+   "calls": 116,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -560,15 +641,21 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 216.7,
-   "p95": 266.6,
-   "worst": 366.6,
-   "calls": 154,
-   "tris": 423564,
+   "median": 216.6,
+   "p95": 333.4,
+   "worst": 383.3,
+   "calls": 155,
+   "tris": 423684,
    "programs": 15,
    "friends": 4,
    "views": 4,
    "hostiles": 2,
+   "dist": [
+    8,
+    26,
+    53,
+    21
+   ],
    "low": "low"
   },
   "fielded": 9,
@@ -592,11 +679,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 ZEPHYR (Mina Kowal) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 ONYX (Greta Reyes) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "ZEPHYR",
+     "cs": "ONYX",
      "role": "wingman",
      "mil": true
     }
@@ -610,8 +697,9 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WZEPHYR"
-   ]
+    "WONYX"
+   ],
+   "tagInDom": true
   },
   "hubCard": {
    "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
@@ -620,6 +708,12 @@
   },
   "hangar": {
    "cards": 4,
+   "toggles": [
+    "IN FORCE #1 \u00b7 AUTO",
+    "IN FORCE #2 \u00b7 AUTO",
+    "IN FORCE #3 \u00b7 AUTO",
+    "IN FORCE #4 \u00b7 AUTO"
+   ],
    "arm": true,
    "presets": 3,
    "forms": [
@@ -639,10 +733,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GBLITZ",
-    "BIRIS",
-    "LWARDEN",
-    "MCINDER"
+    "GRELIC",
+    "BFLINT",
+    "LBANSHEE",
+    "MCOMET"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -660,7 +754,7 @@
    ],
    "tags": 4,
    "command": "COMMAND \u00b7 FOLLOWINGV REGROUP \u00b7 HOLD V ORDERS",
-   "calls": 118,
+   "calls": 117,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -702,15 +796,21 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 283.3,
-   "p95": 366.6,
+   "median": 266.7,
+   "p95": 350,
    "worst": 400,
-   "calls": 153,
-   "tris": 422408,
+   "calls": 154,
+   "tris": 423408,
    "programs": 15,
    "friends": 4,
    "views": 4,
    "hostiles": 2,
+   "dist": [
+    17,
+    25,
+    55,
+    33
+   ],
    "low": "low"
   },
   "fielded": 9,
