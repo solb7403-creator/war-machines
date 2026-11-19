@@ -25,7 +25,7 @@ function inFight(v,B){if(!B||!(B.playerHp>0))return false;if(v.battle)return tru
  if(Date.now()-(v.lastHitAt||0)<4000)return true;for(const e of B.enemies||[])if(e.hp>0&&!e.dormant&&Math.hypot(e.x-p.x,e.z-p.z)<70)return true;return false;}
 // shown when your pilots are in the field, COMMAND orders are open (Hangar II) and you are in a fight
 function wanted(v){const B=v?.battle||v?.encounter;return !!B&&B.state==='active'&&!!B.squad?.orders&&mine(B).some(f=>!f.down&&f.hp>0)&&inFight(v,B);}
-function issue(k,how){if(!X)return false;const v=X.view();if(!v?.pendingAbilities)return false;v.pendingAbilities.order=k;X.last={k,at:Date.now(),how};
+function issue(k,how){if(!X)return false;const v=X.view();if(!v?.pendingAbilities)return false;if(X.last&&Date.now()-X.last.at<1000)return false;   /* the Worker counts one order a second (combat.js ORDER_GAP) */v.pendingAbilities.order=k;X.last={k,at:Date.now(),how};
  if(typeof fx==='function')fx('tap');try{root.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.(k===5?'light':'medium');}catch(_){}
  const B=v.battle||v.encounter,said=k===5?(lockAlive(B)?'ATTACK · LOCKED TARGET':'REGROUP'):SAID[k];X.flash='ORDER · '+said;X.flashUntil=Date.now()+1300;draw(v);return true;}
 // the wedge under a point, by angle from the wheel's centre (a forgiving thumb: a quarter turn each, a small dead zone in the middle)

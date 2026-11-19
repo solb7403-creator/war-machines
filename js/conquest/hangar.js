@@ -13,7 +13,7 @@ const t2=ms=>{const v=Math.max(0,Math.ceil(ms/1000));return v>=3600?Math.floor(v
 function hangarLv(s){let lv=0;for(const b of Object.values(s?.plot?.b||{}))if(b?.t==='hangar')lv=Math.max(lv,b.l|0);return lv;}
 const rolesOpen=s=>hangarLv(s)>=BT().ROLES_AT;
 const rcLv=(s,r)=>r&&rolesOpen(s)?Math.max(1,s?.rs?.rc?.[r]|0||1):1;
-function gearLine(kit){if(!kit||kit.mil)return 'MILITIA KIT · Common, no cores · a green crew: slow against VETERAN';const W=(typeof WNAMES==='object'&&WNAMES[kit.w.a]?.[kit.w.t])||(kit.w.a==='moon'?'Moonbeam':kit.w.a),C=(typeof CNAMES==='object'&&CNAMES[kit.c.c]?.[kit.c.t])||kit.c.c;return String(W).toUpperCase()+' · '+String(C).toUpperCase();}
+function gearLine(kit){if(!kit||kit.mil)return 'MILITIA KIT · Common, no cores · a green crew that freezes up against VETERAN';const W=(typeof WNAMES==='object'&&WNAMES[kit.w.a]?.[kit.w.t])||(kit.w.a==='moon'?'Moonbeam':kit.w.a),C=(typeof CNAMES==='object'&&CNAMES[kit.c.c]?.[kit.c.t])||kit.c.c;return String(W).toUpperCase()+' · '+String(C).toUpperCase();}
 function badge(el,parent,role){const b=el('span','cq-bat-role',ROLE_L[role||''],parent);b.style.setProperty('--rc',ROLE_C[role||'']);b.dataset.role=role||'wingman';b.setAttribute('aria-hidden','true');return b;}
 // "COMMAND CHIP 0/1 TODAY" (1/1 once taken), shown beside the research line on the hub (phone and computer)
 function chipDay(s,now=Date.now()){const d=Math.floor(now/864e5),n=s?.bat?.ch?.d===d?1:0,left=Math.ceil((864e5-now%864e5)/36e5);return {n,of:1,text:'COMMAND CHIP '+n+'/1 TODAY'+(n?' · NEXT IN '+left+'H':''),rule:'Your first win each UTC day with at least one of your pilots fielded gives 1 command chip (one a day). Command chips raise Role Cores at the Science Lab.'};}

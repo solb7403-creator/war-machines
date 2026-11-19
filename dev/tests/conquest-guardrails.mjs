@@ -4,8 +4,8 @@
 //     missions, the 25 raids, the Meteor Strikes, the territory defenses) and on the town defense at every base tier: no encounter
 //     where a better kit wins less often, and more wins in total at every step. Starter = the stock kit; Epic = Epic Pulse + Epic
 //     Vanguard (the same classes: only the rarity changes); Legendary = the Moonbeam + Epic Vanguard + the Lunar Skin.
-//  4. Composition matters: a balanced Battalion of nine beats a one-role Battalion of equal gear on most authored operations, for
-//     every one of the six roles (simulation: the 15 VETERAN raids as authored, everyone in equal Rare gear).
+//  4. Composition matters: a balanced force beats a one-role force of equal gear on most authored operations, for every one of
+//     the six roles (simulation: contested fights, the 15 VETERAN raids as authored, a stock pilot and four allies in equal Rare gear).
 // (Guardrail 1 lives in conquest-combat.mjs + conquest-power-chip.mjs, guardrail 3 in conquest-allies.mjs section 5.)
 // The pilot is the raids test's physical-input pilot (dev/tests/lib/raid-pilot.mjs) on the engine directly: no reducer per step,
 // which gives exactly the reducer's outcome (checked in conquest-allies.mjs section 10). Seeds: the battle's own crit seed and a
@@ -34,19 +34,18 @@ if(!only||only==='2'){
   ok(w.starter<=w.epic&&w.epic<=w.legendary,name+': win rates Starter '+w.starter+' <= Epic '+w.epic+' <= Legendary '+w.legendary+' of '+SEEDS);}
  ok(tot.starter<tot.epic&&tot.epic<tot.legendary,'better gear always helps: '+tot.starter+' < '+tot.epic+' < '+tot.legendary+' wins over '+list.length+' encounters x '+SEEDS+' seeds');
  out.gearOrder={seeds:SEEDS,encounters:list.length,totals:tot,rows};}
-// ---- 4. composition matters: the 15 VETERAN raids as authored, the pilot and all nine allies in equal Rare gear (contested fights
-// with no added enemies). A Battalion that wins and clears faster beats one that wins slower (the clear time is what a force's
-// make-up changes once both win; hull kept is not used: nine Menders heal everything, which is a tie-break, not a better force) ----
+// ---- 4. composition matters, in contested fights (reviewer 2): a stock pilot and four allies in equal Rare gear on the 15 VETERAN
+// raids as authored, two crit seeds each. A force of nine (or nine Rare tanks) wins every authored raid, so there the make-up only moves
+// the clear time; four allies make the fights real. The balanced force (Guardian, Lancer, Mender, Breacher) must win more fights than
+// each one-role force, and at least as many on most operations ----
 if(!only||only==='4'){
  const T=1,kitOf=r=>({w:{a:r==='lancer'?'siege':r==='breacher'?'twin':'pulse',t:T,q:1},c:{c:(C.ROLES[r]?.cls||['vanguard'])[0],t:T,q:1}});
- const rareL={...clone(R.STOCK_L),w:{a:'pulse',t:T,q:1,s:false},c:{c:'vanguard',t:T,q:1,s:false}};
- function battalion(id,roles){const o=C.operations[id],q=o.entry||[o.x+22,o.z+26],p={x:q[0],z:q[1],y:W.groundAt(q[0],q[1]),surface:'ground'},B=new C.Operation(clone(rareL),p,id);B.squad.orders=1;B.squad.f='wedge';
-  roles.forEach((r,i)=>{const sl=C.FORMS.wedge[i];B.friends.push(C.friendUnit({id:800000001+i,pid:'p'+i,role:r,kit:kitOf(r),x:p.x+sl[0]*.5,z:p.z+sl[1]*.5-4,m:1}));});return {B,p};}
- function score(id,roles){const {B,p}=battalion(id,roles),r=runB(B,p,{maxSteps:8400});return {win:r.outcome==='victory'?1:0,s:r.seconds,dmg:r.pilotDmg+r.allyDmg,v:r.outcome==='victory'?1e6-r.seconds:r.pilotDmg+r.allyDmg};}
- const OPS=C.raidIds.filter(id=>C.operations[id].danger==='VETERAN');
- const BAL=['guardian','guardian','lancer','lancer','mender','breacher','breacher','corroder','frostline'],res={balanced:{}};for(const id of OPS)res.balanced[id]=score(id,BAL);
- for(const r of C.ROLE_ORDER){res[r]={};let beat=0;for(const id of OPS){res[r][id]=score(id,Array(9).fill(r));if(res.balanced[id].v>res[r][id].v)beat++;}
-  console.log(r,JSON.stringify(res[r]));ok(beat>OPS.length/2,'composition matters: a balanced Battalion beats nine '+C.ROLES[r].n+'s of equal Rare gear on '+beat+' of '+OPS.length+' VETERAN raids');}
- console.log('balanced',JSON.stringify(res.balanced));out.composition={balanced:BAL,ops:OPS,gear:'equal Rare gear (pilot and allies Rare)',scoring:'a win first, then the faster clear; a loss by the damage dealt',results:res};}
+ function force(id,roles,k){const o=C.operations[id],q=o.entry||[o.x+22,o.z+26],p={x:q[0],z:q[1],y:W.groundAt(q[0],q[1]),surface:'ground'},B=new C.Operation(clone(R.STOCK_L),p,id);B.seed=seedOf(k);B.squad.orders=1;B.squad.f='wedge';
+  roles.forEach((r,i)=>{const sl=C.FORMS.wedge[i];B.friends.push(C.friendUnit({id:800000001+i,pid:'p'+i,role:r,kit:kitOf(r),x:p.x+sl[0]*.5,z:p.z+sl[1]*.5-4,m:1}));});return runB(B,p,{maxSteps:8400}).outcome==='victory'?1:0;}
+ const OPS=C.raidIds.filter(id=>C.operations[id].danger==='VETERAN'),SE=2,BAL=['guardian','lancer','mender','breacher'],wins=roles=>OPS.map(id=>{let n=0;for(let k=0;k<SE;k++)n+=force(id,roles,k);return n;});
+ const bal=wins(BAL),res={balanced:bal},sum=a=>a.reduce((x,y)=>x+y,0);
+ for(const r of C.ROLE_ORDER){const one=wins(Array(4).fill(r));res[r]=one;const atLeast=OPS.filter((_,i)=>bal[i]>=one[i]).length;
+  ok(sum(bal)>sum(one)&&atLeast>OPS.length/2,'composition matters: a balanced force wins '+sum(bal)+' of '+OPS.length*SE+' contested VETERAN fights, four '+C.ROLES[r].n+'s '+sum(one)+' (at least as many on '+atLeast+' of '+OPS.length+' raids)');}
+ out.composition={balanced:BAL,ops:OPS,seeds:SE,gear:'stock pilot, four allies in equal Rare gear',results:res};}
 fs.mkdirSync('docs/conquest/session6c',{recursive:true});if(!only)fs.writeFileSync('docs/conquest/session6c/guardrails.json',JSON.stringify(out,null,1)+'\n');
 console.log('PASS conquest-guardrails ('+passed+' checks)');

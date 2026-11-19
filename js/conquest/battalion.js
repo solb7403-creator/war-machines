@@ -40,7 +40,7 @@ const CHIP=Object.freeze({day:1,max:50,swap:'u'});
 // wingman from the rescue right after the first plate (operation WINGMAN below).
 const RECRUIT=Object.freeze({ms:28800000});
 // Downed allies return at half hull until repaired with alloy at the Refuge or your town (alloy per pilot: the lead's PROPOSAL
-// from the economy model, RESOURCE_ECONOMY.md §11; your own hull repair stays free)
+// from the economy model, RESOURCE_ECONOMY.md §15; your own hull repair stays free)
 const REPAIR=Object.freeze({alloy:6});
 const FORMATIONS=Object.freeze(['line','wedge','escort']),FORM_NAMES=Object.freeze({line:'LINE',wedge:'WEDGE',escort:'ESCORT'}),PRESETS=3;
 // what each role answers (blueprint §4) and its hint words for a briefing
@@ -74,7 +74,7 @@ function autoArm(gear,own,pilots){const W=[...(gear?.w||[])],Ch=[...(gear?.c||[]
  {const i=W.findIndex(x=>same(x,ow));if(i>=0)W.splice(i,1);}{const i=Ch.findIndex(x=>same(x,oc));if(i>=0)Ch.splice(i,1);}   // the pilot's own tank keeps its items
  const kits={};for(const p of pilots){const role=p.r||'',cls=C.ROLES[role]?.cls||null,pref=WPREF[role]||WPREF[''];
   const c=Ch.filter(x=>!cls||cls.includes(x.k)).sort((a,b)=>b.m-a.m||cls?.indexOf(a.k)-cls?.indexOf(b.k)||0)[0],w=W.slice().sort((a,b)=>b.m-a.m||pref.indexOf(a.k)-pref.indexOf(b.k))[0];
-  const M=militia(role),kit={w:w?{a:w.k,t:w.t,q:w.q,s:!!w.s}:M.w,c:c?{c:c.k,t:c.t,q:c.q,s:!!c.s}:M.c};if(w)used(W,w);if(c)used(Ch,c);if(!w&&!c)kit.mil=1;kits[p.id]=kit;}
+  const M=militia(role),kit={w:w?{a:w.k,t:w.t,q:w.q,s:!!w.s}:M.w,c:c?{c:c.k,t:c.t,q:c.q,s:!!c.s}:M.c};if(w)used(W,w);if(c)used(Ch,c);if(!(kit.w.t>0||kit.w.s||kit.w.a==='moon'||kit.c.t>0||kit.c.s))kit.mil=1;kits[p.id]=kit;}   /* Session 6C review 2: an all-Common kit (Common, no cores) is a militia crew, spare or not */
  return kits;}
 // ---- FORCE (the battalion rating, js/conquest/rating.js key 'force'): informational only, nothing reads it. The fielded pilots'
 // gear power (POWER of each ally's own kit) plus 4 a rank above 1 and 6 a Role Core level above 1.

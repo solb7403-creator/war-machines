@@ -5854,8 +5854,25 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   against the 'liv-*' ids: no overlap); (6) changing a role or preset mid-fight in the open world rebuilds the unit (its revive and
   super meter reset): low, open. Also found by the owner-rules lint while fixing: an inserted trailing // comment in hangar.js
   swallowed `c.append(tog)` (the brief's lesson, a fourth time): fixed, and the 6C journey now checks every card's force button.
-- NEXT: reviewer 2's report; the 6C journey at five sizes after all fixes (and section D's numbers), the 6B journey, perf.py; UX
-  critic round 2; re-review; dev/bump.sh, PR, CI, merge, deploy checks, ROADMAP 6C RELEASED, release record, final report.
+- REVIEWER 2 (gameplay, economy, UX, section 9; fresh, read-only): PASS on sections 2-6 rules, economy (--write byte-identical),
+  most UX; BLOCKERS, fixed: (B1) one spare Common item made an ally non-militia, so four Common spares let a stock pilot clear 11 of
+  15 VETERAN raids again: an all-Common kit (Common, no cores: the brief's own definition) is now a militia kit wherever it came from
+  (battalion.js autoArm), and section 10 tests a Common-armed Platoon (<= 3 of 15); Rare-armed crews keep ALLY's numbers (better gear
+  helps; the owner may decide otherwise); (B2) the rescue's briefing promised CP, salvage and points it never pays: it now says the
+  reward is the pilot, with no taper line; (B3) guardrail 4 could not fail as intended (every Battalion of nine wins every raid):
+  it now uses contested fights (a stock pilot + four allies in equal Rare gear, the 15 VETERAN raids, 2 seeds): the balanced force
+  must win more fights than each one-role force and at least as many on most raids. SHOULD-FIX taken: CD3 REVERSED (militia keep
+  ALLY's numbers in normal fights: the greener table cost the first wingman, 5 kills / 20.8% -> 2 / 13.6%, and bought nothing for
+  rule (a), which MILITIA_VET governs); (d)'s bar raised to 2 kills and 15% of the damage; the "before" numbers re-measured on the
+  current harness (militia Platoon 11/15, 50.6%; HARD alone 10/10; the first harness's 9/15 kept as history); START MISSION is a
+  full-width backed bar; no order flash inside the 1 s gap; copy ("freezes up against VETERAN"; REPAIR cites section 15). Recorded,
+  not taken: guardrail 2 has no hull tie-break (per-seed hull is too noisy to order: Epic 58% vs Starter 65% in one seed; win rates
+  stay the rule); the freeze reads operation danger only (open-world rings 4-5 and Session 7's LDF fillers: Session 7 decides); the
+  missing-role warning has no HANGAR link; REPAIR PILOTS has no browser capture (the Worker test covers it); PROPOSALS for the report:
+  Battalion (9) arrives day 17.1 at 60 min (the blueprint said weeks 4-5; it follows from the owner's Hangar gates), the weekly chip
+  pack caps chip spend near $3.9 a week, a Platoon wipe costs 24 alloy (more than a HARD first clear's +18).
+- NEXT: conquest-allies + guardrails re-run on these fixes; the 6C journey at five sizes on the final code; UX critic round 2;
+  re-review of the blockers; dev/bump.sh, PR, CI, merge, deploy checks, ROADMAP 6C RELEASED, release record, final report.
 - Earlier slices (the first 6C session):
 - DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
   sit in their own "Also (owner, Nov 18)" group). Research recorded below.

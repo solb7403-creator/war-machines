@@ -162,8 +162,8 @@ const ALLY=Object.freeze({decide:.6,react:2.9,reactLock:.5,turn:.5,align:.1,leas
 // would kill the pilot, not only their damage). In a VETERAN-danger operation they freeze up (MILITIA_VET); in every other fight
 // they stay useful. Allies armed from your real spare gear keep ALLY's numbers everywhere. Never an enemy stat.
 // Measured (dev/tests/conquest-allies.mjs section 10, docs/conquest/session6c/veteran-rule.json): with ALLY's numbers a stock pilot and
-// a militia Platoon cleared 9 of the 15 VETERAN raids (alone 0); these clear 1, an Epic-armed Platoon still 13, HARD 10 of 10 (alone 8).
-const MILITIA=Object.freeze({decide:.75,react:3.4,reactLock:.7,turn:.45,pilotBias:10});   /* a little greener than crews armed with your spare gear (AUTO-ARM matters), still a real wingman */
+// a militia Platoon cleared 11 of the 15 VETERAN raids (alone 0; the current harness); these clear at most 3, an Epic-armed Platoon still 13.
+const MILITIA=Object.freeze({decide:.6,react:2.9,reactLock:.5,turn:.5,pilotBias:0});   /* normal fights: ALLY's numbers (review 2: a greener table cost the first wingman and bought nothing for rule (a)) */
 const MILITIA_VET=Object.freeze({decide:2.4,react:9,reactLock:3.5,turn:.2,pilotBias:45});
 const tune=(B,f)=>f&&f.mil?(B&&B.operation&&B.operation.danger==='VETERAN'?MILITIA_VET:MILITIA):ALLY;
 // The six roles (blueprint §4 table; starting values for the simulations). Every number is the base at m = 1.
