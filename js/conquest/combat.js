@@ -155,6 +155,17 @@ const CAPS=Object.freeze({friends:10,hostile:20,drones:6,projectiles:160,enemyPr
 // on a new target before the first shot and turn their turret at ALLY.turn of the tank's rate. Tuned by the damage-split
 // measurement (dev/tests/conquest-allies.mjs), never through Parasite stats.
 const ALLY=Object.freeze({decide:.6,react:2.9,reactLock:.5,turn:.5,align:.1,leash:42,regroup:95,pilotBias:12,superSpacing:20,superGap:3,downHull:.5,returnS:15,quietR:60,fireLane:2.2});
+// Session 6C section 9 (owner, Nov 18): allies in a MILITIA kit (no spare gear: Common, no cores; kit.mil, js/conquest/battalion.js)
+// are green crews, tuned on their own so a militia Platoon never lets a stock pilot skip VETERAN (dev/tests/conquest-allies.mjs
+// section 10). Their aim and reaction only (decide / react / reactLock / turn), plus pilotBias: how much less a Parasite wants a
+// green crew than the pilot (lead's creative-director decision, Nov 19: the measured cause was the crews SOAKING the fire that
+// would kill the pilot, not only their damage). In a VETERAN-danger operation they freeze up (MILITIA_VET); in every other fight
+// they stay useful. Allies armed from your real spare gear keep ALLY's numbers everywhere. Never an enemy stat.
+// Measured (dev/tests/conquest-allies.mjs section 10, docs/conquest/session6c/veteran-rule.json): with ALLY's numbers a stock pilot and
+// a militia Platoon cleared 9 of the 15 VETERAN raids (alone 0); these clear 1, an Epic-armed Platoon still 13, HARD 10 of 10 (alone 8).
+const MILITIA=Object.freeze({decide:.75,react:3.4,reactLock:.7,turn:.45,pilotBias:10});   /* a little greener than crews armed with your spare gear (AUTO-ARM matters), still a real wingman */
+const MILITIA_VET=Object.freeze({decide:2.4,react:9,reactLock:3.5,turn:.2,pilotBias:45});
+const tune=(B,f)=>f&&f.mil?(B&&B.operation&&B.operation.danger==='VETERAN'?MILITIA_VET:MILITIA):ALLY;
 // The six roles (blueprint §4 table; starting values for the simulations). Every number is the base at m = 1.
 const ROLES=Object.freeze({
  '':Object.freeze({n:'WINGMAN',keep:.72,range:1}),
@@ -177,7 +188,7 @@ function allyLoadout(kit){const w=kit&&kit.w||{},c=kit&&kit.c||{},wa=w.a==='moon
 function friendStats(f){let t=FST.get(f);if(t)return t;const L=allyLoadout(f.kit);t={...tankOf(L,1),buffs:[]};t.wshot=(profiles[t.wtype]||profiles.pulse).interval;t.speed=machineSpeed(L,t);t.eng=engineeringValues(t,engineeringDefaults());FST.set(f,t);return t;}
 // A friendly unit at full (or half) hull. o: {id, side, pid, role, kit, m, x, z, hull, name}
 function friendUnit(o){const f={id:o.id,side:o.side==='ldf'?'ldf':'mine',ctl:'ai',pid:o.pid??null,role:ROLES[o.role]&&o.role?o.role:'',kit:{w:{...(o.kit?.w||{a:'pulse',t:0,q:1})},c:{...(o.kit?.c||{c:'vanguard',t:0,q:1})}},m:Math.max(1,Math.min(2,Number(o.m)||1)),
- x:o.x,z:o.z,y:W.groundAt(o.x,o.z),surface:'ground',heading:o.heading||0,turret:o.heading||0,vx:0,vz:0,cd:.6,heat:0,oh:0,dec:(o.id%10)*.045,react:0,tgt:0,charge:0,sup:-99,kills:0,down:0,hurt:0,rv:0,ch:0,fz:0,n:0};
+ x:o.x,z:o.z,y:W.groundAt(o.x,o.z),surface:'ground',heading:o.heading||0,turret:o.heading||0,vx:0,vz:0,cd:.6,heat:0,oh:0,dec:(o.id%10)*.045,react:0,tgt:0,charge:0,sup:-99,kills:0,down:0,hurt:0,rv:0,ch:0,fz:0,n:0};if(o.kit?.mil)f.mil=1;   /* a militia crew (MILITIA) */
  if(o.name)f.name=String(o.name).slice(0,24);const t=friendStats(f);f.maxHp=t.mhp;f.hp=Math.max(1,Math.round(t.mhp*(o.hull===.5?ALLY.downHull:1)));if(o.post)f.post={x:o.post.x,z:o.post.z};return f;}
 class Battle {
  constructor(loadout,playerPosition){
@@ -323,7 +334,7 @@ Object.assign(Battle.prototype,{
  friendStats(f){return friendStats(f);},
  // the unit a Parasite fires at: the nearest of the pilot and the friendly units by an effective distance (the pilot first by
  // ALLY.pilotBias m: Parasites focus the pilot; a Guardian inside its taunt radius draws fire). Position and role only.
- threat(e,pd){let best=null,bd=pd;for(const f of this.friends){if(f.down||f.hp<=0)continue;const d=Math.hypot(f.x-e.x,f.z-e.z),eff=f.role==='guardian'&&d<ROLES.guardian.taunt?d-ROLES.guardian.pull*f.m:d+ALLY.pilotBias;if(eff<bd){bd=eff;best=f;}}
+ threat(e,pd){let best=null,bd=pd;for(const f of this.friends){if(f.down||f.hp<=0)continue;const d=Math.hypot(f.x-e.x,f.z-e.z),eff=(f.role==='guardian'&&d<ROLES.guardian.taunt?d-ROLES.guardian.pull*f.m:d+ALLY.pilotBias)+(f.mil?tune(this,f).pilotBias:0);if(eff<bd){bd=eff;best=f;}}
   return best?{t:center(best),d:Math.hypot(best.x-e.x,best.z-e.z),f:best}:{t:this.player,d:pd};},
  // Guardian: a friendly unit (or the pilot) within its cover radius, with the Guardian on the shooter's side, takes less damage
  coverOf(t,q){const sh=this.enemies.find(e=>e.id===q.owner);if(!sh)return 0;let best=0;for(const g of this.friends){if(g===t||g.role!=='guardian'||g.down||g.hp<=0)continue;const gx=g.x-t.x,gz=g.z-t.z;if(Math.hypot(gx,gz)>ROLES.guardian.coverR||gx*(sh.x-t.x)+gz*(sh.z-t.z)<=0)continue;best=Math.max(best,Math.min(.45,ROLES.guardian.cover*g.m));}return best;},
@@ -378,7 +389,7 @@ Object.assign(Battle.prototype,{
   else if(f.role==='guardian'&&mine&&order==='follow'){let near=null,bd=60;for(const e of this.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-P.x,e.z-P.z);if(d<bd){bd=d;near=e;}}if(near){const l=bd||1;anchor={x:P.x+(near.x-P.x)/l*8,z:P.z+(near.z-P.z)/l*8};}}   // stands between the pilot and the nearest threat
   let t=null;if(mine&&order==='attack'&&S.t){t=this.enemies.find(e=>e.id===S.t&&e.hp>0)||null;if(!t){S.o='follow';S.t=0;}}
   if(!t)t=this.roleTarget(f,R,range,anchor,order==='fallback'||low||rv?Math.min(25,range):range+15,leash);
-  if((t?t.id:0)!==f.tgt){f.tgt=t?t.id:0;f.react=t&&t.id===this.lockId?ALLY.reactLock:ALLY.react;}   // reaction time: a new target waits before the first shot (less for the pilot's own lock: the squad datalink)
+  if((t?t.id:0)!==f.tgt){f.tgt=t?t.id:0;f.react=t&&t.id===this.lockId?tune(this,f).reactLock:tune(this,f).react;}   // reaction time: a new target waits before the first shot (less for the pilot's own lock: the squad datalink)
   if(t){const c=center(t);f.ax=c.x;f.ay=c.y;f.az=c.z;}   // the aim lag: the unit aims at where its target is now until it decides again
   const da=Math.hypot(f.x-anchor.x,f.z-anchor.z),speed=st.speed*(explore?2:1)*(da>leash+12?1.25:1),crowd=[...this.friends,{x:P.x,z:P.z,hp:1}];
   if(t&&!rv&&!low&&order!=='fallback'&&da<=leash+range*.5){this.steer(f,center(t),range*R.keep,speed,crowd,null);if(Math.hypot(f.x+f.vx-anchor.x,f.z+f.vz-anchor.z)>leash+range*.5)f.vx=f.vz=0;}
@@ -393,7 +404,7 @@ Object.assign(Battle.prototype,{
    if(f.down){if(explore&&quiet){f.dt=(f.dt||0)+dt;if(f.dt>=ALLY.returnS){const p=this.slotPoint(slot,explore);if(!W.solidAt(p.x,p.z)){f.x=p.x;f.z=p.z;f.y=W.groundAt(p.x,p.z);}f.down=0;f.dt=0;f.hp=Math.round(f.maxHp*ALLY.downHull);}}else if(explore)f.dt=0;continue;}   // never lost: it returns at half hull
    const st=friendStats(f),R=ROLES[f.role]||ROLES[''],cap=f.maxHp*(f.hc||1);f.dec-=dt;f.cd-=dt;f.react-=dt;
    if(quiet&&f.hp<cap)f.hp=Math.min(cap,f.hp+f.maxHp*.03*dt);
-   if(f.dec<=0){this.chooseFriend(f,st,R,slot,explore);f.dec=ALLY.decide;}
+   if(f.dec<=0){this.chooseFriend(f,st,R,slot,explore);f.dec=tune(this,f).decide;}
    f.heat=Math.max(0,f.heat-(f.oh?Math.max(st.eng.cooling,st.eng.capacity*.13):st.eng.cooling)*dt);if(f.oh&&f.heat<=st.eng.capacity*.35)f.oh=0;
    if(f.dash){f.dash.t-=dt;if(f.dash.t<=0)f.dash=null;}
    const vx=f.dash?f.dash.x*st.speed*5.1:f.vx,vz=f.dash?f.dash.z*st.speed*5.1:f.vz;
@@ -404,7 +415,7 @@ Object.assign(Battle.prototype,{
     if(best===P)this.playerHp=Math.min(this.playerMax,this.playerHp+this.playerMax*amt);else if(best)best.hp=Math.min(best.maxHp*(best.hc||1),best.hp+best.maxHp*amt);
     if(!f.rv){const d=this.friends.find(o=>o.down&&o.side===f.side&&Math.hypot(o.x-f.x,o.z-f.z)<6);if(d){f.rvT=(f.rvT||0)+dt;if(f.rvT>=H.reviveS){d.down=0;d.dt=0;d.hp=Math.round(d.maxHp*H.revive);f.rv=1;f.rvT=0;this.effects.push({kind:'nova',k:'pulse0',oc:0,x:d.x,y:d.y,z:d.z,r:4,life:.6,at:this.time,a:1});}}else f.rvT=0;}}
    const t=f.tgt?this.enemies.find(e=>e.id===f.tgt&&e.hp>0):null;if(!t||!Number.isFinite(f.ax))continue;
-   const want=Math.atan2(f.ax-f.x,f.az-f.z),delta=Math.atan2(Math.sin(want-f.turret),Math.cos(want-f.turret)),turn=STAT.turn*(st.turnM||1)*ALLY.turn*dt;f.turret+=clamp(delta,-turn,turn);
+   const want=Math.atan2(f.ax-f.x,f.az-f.z),delta=Math.atan2(Math.sin(want-f.turret),Math.cos(want-f.turret)),turn=STAT.turn*(st.turnM||1)*tune(this,f).turn*dt;f.turret+=clamp(delta,-turn,turn);
    const fc=center(f),aim={x:f.ax,y:f.ay,z:f.az},range=st.eng.range*R.range;
    if(f.cd<=0&&!f.oh&&f.react<=0&&Math.abs(delta)<ALLY.align&&dist(fc,aim)<range&&this.laneClear(f,fc,aim)&&lineClear(fc,aim)&&this.shoot(fc,aim,st,'ally',st.wtype,f.id)){
     f.cd=st.wshot/rofMult(st);f.heat+=st.eng.heatPerShot;if(f.heat>=st.eng.capacity){f.heat=st.eng.capacity;f.oh=1;}this.effects.push({kind:'muzzle',x:fc.x,y:fc.y,z:fc.z,weapon:st.wtype,life:.1,a:1});}
@@ -589,5 +600,5 @@ const RING_TIER=Object.freeze(['','STANDARD','STANDARD','HARD','VETERAN','VETERA
 const zoneBands=()=>Object.freeze(Object.fromEntries([1,2,3,4,5].map(r=>[r,DANGER_BAND[RING_TIER[r]]])));
 const zoneBand=ring=>DANGER_BAND[RING_TIER[ring]]||DANGER_BAND.STANDARD;
 const operationBand=o=>o&&DANGER_BAND[o.danger]?DANGER_BAND[o.danger]:zoneBand(o?W.ringAt(o.x,o.z):1);
-root.ConquestCombat=Object.freeze({CAPS,ALLY,ROLES,ROLE_ORDER,FORMS,ORDERS,allyLoadout,friendStats,friendUnit,DANGER_BAND,zoneBand,zoneBands,operationBand,hunter,LIVING,strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({CAPS,ALLY,MILITIA,MILITIA_VET,ROLES,ROLE_ORDER,FORMS,ORDERS,allyLoadout,friendStats,friendUnit,DANGER_BAND,zoneBand,zoneBands,operationBand,hunter,LIVING,strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

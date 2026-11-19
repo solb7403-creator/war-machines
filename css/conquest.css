@@ -104,7 +104,7 @@
 .cq .cq-ally-hp{position:relative;display:block;width:30px;height:3px;border-radius:2px;background:#ffffff26;overflow:hidden}.cq .cq-ally-hp i{position:absolute;inset:0;background:var(--rc,#d9c27a);transform-origin:left center}
 .cq .cq-ally-far{padding:2px;background:#07131c8c}.cq .cq-ally-far .cq-ally-cs,.cq .cq-ally-far .cq-ally-hp{display:none}
 .cq .cq-ally-down{border-color:#ff6b5a;background:#2a0b08d0}.cq .cq-ally-down .cq-ally-badge{background:#ff6b5a;animation:cqAllyDown 1s ease-in-out infinite}.cq .cq-ally-down .cq-ally-cs{color:#ffb4a8}
-.cq .cq-ally-ldf .cq-ally-badge{color:#2a2410}
+.cq .cq-ally-ldf .cq-ally-badge{color:#2a2410}.cq .cq-ally-edge{opacity:.82;box-shadow:0 0 0 1px #0008}
 @keyframes cqAllyDown{50%{opacity:.45}}
 @media(prefers-reduced-motion:reduce){.cq .cq-ally-down .cq-ally-badge{animation:none}}
 /* Session 6C COMMAND: the context slot in a fight (js/conquest/command.js). Tap = the smart order, hold = the order wheel */
@@ -547,6 +547,7 @@
 .cq .cq-bat-livery{display:grid;grid-template-columns:32px 1fr;gap:2px 8px;align-items:center;margin:6px 0}.cq .cq-bat-livery small,.cq .cq-bat-livery button,.cq .cq-bat-livery .cq-lab-off{grid-column:2}
 .cq .cq-bat-swatch{width:28px;height:28px;border-radius:6px;grid-row:span 2;border:1px solid #2c4256}
 .cq .cq-bat-help-row{display:grid;grid-template-columns:28px 1fr;gap:2px 8px;margin:6px 0}.cq .cq-bat-help-row small{grid-column:2}
+.cq .cq-bat-warn{display:block;padding:5px 8px;border-radius:7px;border:1px solid #ff9a55aa;background:#2a1408d9;color:#ffd2b0;font:700 12px/1.3 sans-serif}
 .cq .cq-bat-strip{border:1px solid #2c4256;border-radius:8px;padding:8px;margin:8px 0;background:#0a141ed9;display:flex;flex-direction:column;gap:6px}
 .cq .cq-bat-enemies,.cq .cq-bat-force{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .cq .cq-bat-strip-k{font:800 11px 'Chakra Petch',sans-serif;color:#9fb6c9;letter-spacing:.08em;min-width:64px}

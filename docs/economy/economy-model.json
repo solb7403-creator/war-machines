@@ -1956,5 +1956,163 @@
     }
    }
   }
+ },
+ "battalion": {
+  "light": {
+   "minutes": 30,
+   "ladder": {
+    "CC2": 3.3,
+    "CC3": 4.8,
+    "CC5": 10,
+    "CC7": 21.8,
+    "CC9": 42.8
+   },
+   "stage": {
+    "wingman": 0,
+    "wing": 3.3,
+    "platoon": 4.8,
+    "battalion": 43.1,
+    "rosterFull": 9
+   },
+   "scienceLabIV": 22.1,
+   "packChips": 0,
+   "roleCores": {
+    "firstMaxed": 23.4,
+    "allSix": 119.3,
+    "chips": 120
+   },
+   "ranks": {
+    "onePilot": {
+     "2": 1,
+     "3": 2,
+     "4": 4,
+     "5": 6,
+     "6": 11,
+     "7": 17,
+     "8": 25,
+     "9": 35,
+     "10": 49
+    },
+    "ninePilotsRank9": 89,
+    "rosterRank10": 208
+   }
+  },
+  "free": {
+   "minutes": 60,
+   "ladder": {
+    "CC2": 1.8,
+    "CC3": 2.8,
+    "CC5": 6,
+    "CC7": 9,
+    "CC9": 16.8
+   },
+   "stage": {
+    "wingman": 0,
+    "wing": 1.8,
+    "platoon": 2.8,
+    "battalion": 17.1,
+    "rosterFull": 8.1
+   },
+   "scienceLabIV": 9.3,
+   "packChips": 0,
+   "roleCores": {
+    "firstMaxed": 19.3,
+    "allSix": 119.3,
+    "chips": 120
+   },
+   "ranks": {
+    "onePilot": {
+     "2": 1,
+     "3": 1,
+     "4": 2,
+     "5": 3,
+     "6": 5,
+     "7": 8,
+     "8": 12,
+     "9": 18,
+     "10": 25
+    },
+    "ninePilotsRank9": 48,
+    "rosterRank10": 109
+   }
+  },
+  "heavy": {
+   "minutes": 120,
+   "ladder": {
+    "CC2": 0.9,
+    "CC3": 1.5,
+    "CC5": 3.4,
+    "CC7": 5.2,
+    "CC9": 9.9
+   },
+   "stage": {
+    "wingman": 0,
+    "wing": 1,
+    "platoon": 2,
+    "battalion": 10.2,
+    "rosterFull": 8
+   },
+   "scienceLabIV": 5.5,
+   "packChips": 0,
+   "roleCores": {
+    "firstMaxed": 19.3,
+    "allSix": 119.3,
+    "chips": 120
+   },
+   "ranks": {
+    "onePilot": {
+     "2": 1,
+     "3": 1,
+     "4": 1,
+     "5": 2,
+     "6": 3,
+     "7": 4,
+     "8": 6,
+     "9": 9,
+     "10": 12
+    },
+    "ninePilotsRank9": 26,
+    "rosterRank10": 58
+   }
+  },
+  "pack": {
+   "minutes": 60,
+   "ladder": {
+    "CC2": 1.8,
+    "CC3": 2.8,
+    "CC5": 6,
+    "CC7": 9,
+    "CC9": 16.8
+   },
+   "stage": {
+    "wingman": 0,
+    "wing": 1.8,
+    "platoon": 2.8,
+    "battalion": 17.1,
+    "rosterFull": 8.1
+   },
+   "scienceLabIV": 9.3,
+   "packChips": 5,
+   "roleCores": {
+    "firstMaxed": 13.3,
+    "allSix": 69.3,
+    "chips": 120
+   },
+   "ranks": {
+    "onePilot": {
+     "2": 1,
+     "3": 1,
+     "4": 2,
+     "5": 3,
+     "6": 5,
+     "7": 8,
+     "8": 12,
+     "9": 18,
+     "10": 25
+    },
+    "ninePilotsRank9": 48,
+    "rosterRank10": 109
+   }
+  }
  }
 }

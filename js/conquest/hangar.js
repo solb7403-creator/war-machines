@@ -13,7 +13,7 @@ const t2=ms=>{const v=Math.max(0,Math.ceil(ms/1000));return v>=3600?Math.floor(v
 function hangarLv(s){let lv=0;for(const b of Object.values(s?.plot?.b||{}))if(b?.t==='hangar')lv=Math.max(lv,b.l|0);return lv;}
 const rolesOpen=s=>hangarLv(s)>=BT().ROLES_AT;
 const rcLv=(s,r)=>r&&rolesOpen(s)?Math.max(1,s?.rs?.rc?.[r]|0||1):1;
-function gearLine(kit){if(!kit||kit.mil)return 'MILITIA KIT · Common, no cores';const W=(typeof WNAMES==='object'&&WNAMES[kit.w.a]?.[kit.w.t])||(kit.w.a==='moon'?'Moonbeam':kit.w.a),C=(typeof CNAMES==='object'&&CNAMES[kit.c.c]?.[kit.c.t])||kit.c.c;return String(W).toUpperCase()+' · '+String(C).toUpperCase();}
+function gearLine(kit){if(!kit||kit.mil)return 'MILITIA KIT · Common, no cores · a green crew: slow against VETERAN';const W=(typeof WNAMES==='object'&&WNAMES[kit.w.a]?.[kit.w.t])||(kit.w.a==='moon'?'Moonbeam':kit.w.a),C=(typeof CNAMES==='object'&&CNAMES[kit.c.c]?.[kit.c.t])||kit.c.c;return String(W).toUpperCase()+' · '+String(C).toUpperCase();}
 function badge(el,parent,role){const b=el('span','cq-bat-role',ROLE_L[role||''],parent);b.style.setProperty('--rc',ROLE_C[role||'']);b.dataset.role=role||'wingman';b.setAttribute('aria-hidden','true');return b;}
 // "COMMAND CHIP 0/1 TODAY" (1/1 once taken), shown beside the research line on the hub (phone and computer)
 function chipDay(s,now=Date.now()){const d=Math.floor(now/864e5),n=s?.bat?.ch?.d===d?1:0,left=Math.ceil((864e5-now%864e5)/36e5);return {n,of:1,text:'COMMAND CHIP '+n+'/1 TODAY'+(n?' · NEXT IN '+left+'H':''),rule:'Your first win each UTC day with at least one of your pilots fielded gives 1 command chip (one a day). Command chips raise Role Cores at the Science Lab.'};}
@@ -31,7 +31,7 @@ function screen(d,s,ctx){const {el,button}=ctx,B=BT(),T=s?.bat||{p:[],ps:[{f:'we
  {const row=el('div','cq-bat-presets',null,d);for(let i=0;i<B.PRESETS;i++){const p=T.ps[i]||{f:'wedge',ids:[]},b=button('P'+(i+1)+' · '+(B.FORM_NAMES[p.f]||'WEDGE'),()=>ctx.act('hangar-preset',{i}),'cq-bat-preset'+(i===(T.pa|0)?' cq-on':''));b.setAttribute('aria-pressed',String(i===(T.pa|0)));row.append(b);}
   const f=el('div','cq-bat-forms',null,d),cur=T.ps[T.pa|0]?.f||'wedge';for(const k of B.FORMATIONS){const b=button(B.FORM_NAMES[k],()=>ctx.act('hangar-preset',{i:T.pa|0,f:k}),'cq-bat-form'+(k===cur?' cq-on':''));b.disabled=!open&&k!==cur;b.setAttribute('aria-pressed',String(k===cur));f.append(b);}
   if(!open)el('small','cq-bat-lock','🔒 Formations, roles and COMMAND orders open with Hangar level II.',d);}
- {const r=el('div','cq-bat-tools',null,d);r.append(button('AUTO-ARM',()=>ctx.act('hangar-arm',{}),'cq-bat-arm'));el('small','','Your best spare weapons and chassis, one item per tank. No spare gear: a militia kit (Common, no cores).',r);}
+ {const r=el('div','cq-bat-tools',null,d);r.append(button('AUTO-ARM',()=>ctx.act('hangar-arm',{}),'cq-bat-arm'));el('small','','Your best spare weapons and chassis, one item per tank. No spare gear: a militia kit (Common, no cores): a green crew that hesitates, and freezes up against VETERAN hives.',r);}
  const hurt=T.p.filter(p=>p.h<1);if(hurt.length){const r=el('div','cq-bat-repair',null,d);const cost=B.REPAIR.alloy*hurt.length,b=button('REPAIR '+hurt.length+' PILOT'+(hurt.length>1?'S':'')+' · '+cost+' ALLOY',()=>ctx.act('hangar-repair',{}),'cq-bat-repair-go');r.append(b);el('small','',hurt.length+' at half hull (downed in a fight, never lost). Repair at the Refuge supply terminal or your town.',r);}
  // the roster: tap a card to put the pilot in (or take them out of) the active preset's force; the number is the order they deploy in
  const grid=el('div','cq-bat-grid',null,d),ids=T.ps[T.pa|0]?.ids||[],field=B.picked(T,lv,'battalion').map(p=>p.id);
@@ -69,6 +69,8 @@ function strip(parent,s,op,ctx){const {el,button}=ctx,B=BT();if(!B||!op)return n
  const mine=T?B.picked(T,lv,scale):[],fr=el('div','cq-bat-force',null,st);el('b','cq-bat-strip-k',scale==='battalion'?'BATTALION':scale==='platoon'?'PLATOON':'WING',fr);
  if(!mine.length)el('small','',T?.w?'No pilot fielded.':'Solo: rescue the downed pilot to fly with a wingman.',fr);
  for(const p of mine){const c=el('span','cq-bat-mine'+(p.h<1?' cq-bat-hurt':''),null,fr);badge(el,c,p.r);el('small','',p.cs+(p.h<1?' · ½':''),c);}
+ // Session 6C section 9: militia crews freeze up in a VETERAN operation (combat.js MILITIA_VET); say so where the force is picked
+ if(op.danger==='VETERAN'&&mine.some(p=>!p.kit||p.kit.mil)){const w=el('small','cq-bat-warn','⚠ MILITIA CREWS FREEZE UP AGAINST VETERAN HIVES · AUTO-ARM them with spare gear in the HANGAR',st);w.setAttribute('role','note');}
  if(T&&lv>=B.ROLES_AT&&ctx.act){const row=el('div','cq-bat-strip-presets',null,st);for(let i=0;i<B.PRESETS;i++){const b=button('P'+(i+1),()=>ctx.act('hangar-preset',{i}),'cq-bat-preset'+(i===(T.pa|0)?' cq-on':''));b.setAttribute('aria-pressed',String(i===(T.pa|0)));b.title='Preset '+(i+1)+': '+(B.FORM_NAMES[T.ps?.[i]?.f]||'WEDGE');row.append(b);}}
  forceChip(el,st,s,scale);return st;}
 // ---- the hub's BATTALION card ----
@@ -78,7 +80,7 @@ function hubCard(card,s,ctx){const {el,button}=ctx,B=BT(),T=s?.bat,lv=hangarLv(s
  const cd=chipDay(s,ctx.now||Date.now()),c=el('small','cq-hub-chip-day'+(cd.n?' cq-hub-part-done':''),cd.text+' · '+chipsHeld(s).total+' HELD',card);c.title=cd.rule;
  if(T?.rj){const left=Math.max(0,T.rj.left-Math.max(0,(ctx.now||Date.now())-(T.rj.at||0)));el('small','','RECRUIT ARRIVES IN '+t2(left),card);}
  else if(!p.length)el('small','',T?.w?'':'A downed pilot near the Refuge waits for rescue: your first wingman.',card);
- if(ctx.open)card.append(button('OPEN HANGAR',ctx.open,'cq-hub-hangar'));}
+ if(ctx.btn||ctx.open)card.append(ctx.btn||button('OPEN HANGAR',ctx.open,'cq-hub-hangar'));}   // ctx.btn: one persistent node (the hub rebuilds its cards every second: a fresh button each time could lose a tap)
 // ---- the after-action: what the fight did for your pilots ----
 function aarLines(t){const B=BT(),out=[];if(!t)return out;
  if(t.joined)out.push({t:'WINGMAN JOINED · '+t.joined.cs+' ('+t.joined.n+') flies with you now',c:'cq-aar-bat-join'});

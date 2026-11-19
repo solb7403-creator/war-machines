@@ -57,13 +57,13 @@ async def main():
   assert await page.evaluate('!Conquest.view.battle'),'briefing must require explicit start'
   await page.get_by_role('button',name='KEEP EXPLORING').click()
   # Portrait control hit targets must not overlap one another or mission guidance.
-  for width,height in [(390,844),(360,640)]:
+  for width,height in [(390,844),(390,700),(360,640),(320,568),(1366,768),(1920,1080)]:   # Session 6C: every size the owner tests
    await page.set_viewport_size({'width':width,'height':height});await page.wait_for_timeout(100)
    rects=await page.evaluate('''()=>Array.from(document.querySelectorAll('.cq-stick,.cq-aim,.cq-fire,.cq-zoom button,.cq-recover,.cq-mission-access,#cq-navigation')).filter(e=>!e.hidden&&e.getBoundingClientRect().width).map(e=>({name:e.className||e.id,x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height}))''')
    for i,a in enumerate(rects):
     for bb in rects[i+1:]:
      assert not (a['x']<bb['x']+bb['w'] and a['x']+a['w']>bb['x'] and a['y']<bb['y']+bb['h'] and a['y']+a['h']>bb['y']),('overlap',width,height,a,bb)
   assert not errors,errors
-  print(json.dumps({'status':'PASS','viewports':['390x844','360x640'],'checks':['first entry story','dismiss/replay/persistence','waypoint follows yaw','map preserves fog','reported position briefing','explicit start','control hit zones'],'errors':errors}))
+  print(json.dumps({'status':'PASS','viewports':['390x844','390x700','360x640','320x568','1366x768','1920x1080'],'checks':['first entry story','dismiss/replay/persistence','waypoint follows yaw','map preserves fog','reported position briefing','explicit start','control hit zones'],'errors':errors}))
   await b.close()
 asyncio.run(main())

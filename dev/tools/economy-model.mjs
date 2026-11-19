@@ -364,7 +364,7 @@ function ladderOf(minutes) { const g = k => AUDIT_ALL[k].base.hit; if (minutes <
 export function battalionModel({ minutes = 60, packChips = 0, rescueFrom = 1, days = 400 } = {}) {
   const BT = { FIELD: [1, 2, 4, 5, 7, 9], RC: [0, 0, 2, 4, 5, 9], RC_MS: 8, RANK_XP: [0, 4, 12, 25, 45, 75, 115, 170, 240, 330], ROSTER: 16 }, L = ladderOf(minutes), H = [15 / 3600, 3 / 60, 20 / 60, 2, 6];
   const hangarDay = lv => L['CC' + (2 * lv - 1 === 1 ? 2 : 2 * lv - 1)] + H[lv - 1] / 24, lab4 = L.CC7 + 6 / 24;
-  // pilots: the wingman (minute ~4), then a RECRUIT job each session once a Hangar stands (8 h: done by the next day) and the day's
+  // pilots: the wingman (minute ~13, the rescue right after the first plate), then a RECRUIT job each session once a Hangar stands (8 h: done by the next day) and the day's
   // rescue win from rescueFrom (BEACON EXTRACTION is HARD: most new pilots clear it from their second day)
   const pilotsBy = d => { let n = 1; const h1 = hangarDay(1); if (d >= h1 + 8 / 24) n += Math.floor(d - h1 - 8 / 24) + 1; if (d >= rescueFrom) n += Math.floor(d - rescueFrom) + 1; return Math.min(BT.ROSTER, n); };
   const dayWith = (pilots, lv) => { let d = Math.max(0, lv ? hangarDay(lv) : 0); while (pilotsBy(d) < pilots && d < days) d += 1 / 24; return Math.round(d * 10) / 10; };
@@ -421,7 +421,7 @@ const battalion = { light: battalionModel({ minutes: 30 }), free: battalionModel
 const BLAB = { light: '30 min/day', free: '60 min/day', heavy: '120 min/day', pack: '60 min/day + the chip pack every week (PROPOSAL: 5 chips)' };
 out.push('\n## Battalion (Session 6C): the day of each stage, Role Cores and ranks (report numbers, regular pilot; days from the first session)\n');
 out.push('| Pilot | First wingman | Wing (2) | Platoon (4) | Battalion (9) | Roster of 16 | Science Lab IV | First role maxed | All six maxed | Pilot rank 3 / 6 / 9 / 10 (always fielded) | 9 pilots rank 9 | Roster rank 10 |'); out.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|');
-for (const [k, b] of Object.entries(battalion)) out.push(`| ${BLAB[k]} | minute ~4 | ${b.stage.wing} | ${b.stage.platoon} | ${b.stage.battalion} | ${b.stage.rosterFull} | ${b.scienceLabIV} | ${b.roleCores.firstMaxed} | ${b.roleCores.allSix} | ${[3, 6, 9, 10].map(r => b.ranks.onePilot[r] ?? '>400').join(' / ')} | ${b.ranks.ninePilotsRank9 ?? '>400'} | ${b.ranks.rosterRank10 ?? '>400'} |`);
+for (const [k, b] of Object.entries(battalion)) out.push(`| ${BLAB[k]} | minute ~13 (right after the first plate) | ${b.stage.wing} | ${b.stage.platoon} | ${b.stage.battalion} | ${b.stage.rosterFull} | ${b.scienceLabIV} | ${b.roleCores.firstMaxed} | ${b.roleCores.allSix} | ${[3, 6, 9, 10].map(r => b.ranks.onePilot[r] ?? '>400').join(' / ')} | ${b.ranks.ninePilotsRank9 ?? '>400'} | ${b.ranks.rosterRank10 ?? '>400'} |`);
 if (isMain) console.log(out.join('\n'));
 
 if (isMain && process.argv.includes('--write')) {

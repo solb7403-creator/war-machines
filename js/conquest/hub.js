@@ -49,7 +49,7 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
   const j=p.job;el('small','',j?'BUILDER · '+(j.t==='cc'?'CC'+(j.l||''):(root.ConquestPlot?.BUILDINGS[j.t]?.n||j.t).toUpperCase()+' '+(j.l||''))+' · '+(j.ready>now?t2(j.ready-now):'READY'):'BUILDER FREE · open MY BASE to build',b);}
  else{el('p','cq-hub-big','NO BASE YET',b);partDay(b,s,now);const D=C?.baseDefinition,L=s?.ledger;el('small','',D&&L?'Claim your town: '+fmt(Math.min(L.cp,D.recipe.cp))+' / '+fmt(D.recipe.cp)+' CP. Seven sites, from crater rim to ash field; it grows with your Command Center.':'Win operations, bank salvage, then claim your own town.',b);el('small','cq-hub-where','⌂ Your base gate is next to the Refuge, about 90 m west. Tap MY BASE: the gold arrow takes you there.',b);}
  // Session 6C: your battalion (pilots, FORCE, the day's command chip, the RECRUIT job) and the HANGAR
- if(root.ConquestHangar&&s){const bc=card('BATTALION','cq-hub-battalion');root.ConquestHangar.hubCard(bc,s,{el:H.o.el,button:H.o.button,now,open:H.o.hangar||null});}
+ if(root.ConquestHangar&&s){const bc=card('BATTALION','cq-hub-battalion');root.ConquestHangar.hubCard(bc,s,{el:H.o.el,button:H.o.button,now,btn:H.o.hangar?(H.hangarBtn||(H.hangarBtn=H.o.button('OPEN HANGAR',()=>H.o.hangar(),'cq-hub-hangar'))):null});}   /* one OPEN HANGAR node for the hub's life: status() rebuilds the cards every second */
  // War Orders (Session 6, spec §6.1): today's three and this week's one
  if(root.ConquestOrders){const o=card('WAR ORDERS','cq-hub-orders');root.ConquestOrders.card(o,s,{el});}
  // events

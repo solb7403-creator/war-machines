@@ -25,19 +25,19 @@
     "none"
    ],
    "gear": "stock pilot + militia (Common, no cores)",
-   "allyShare": 0.263,
-   "pilotShare": 0.737,
+   "allyShare": 0.171,
+   "pilotShare": 0.829,
    "wins": "5/5",
    "rows": [
     {
      "id": "convoy",
      "outcome": "victory",
-     "secs": 10.9,
-     "pilot": 605,
-     "ally": 85,
-     "share": 0.123,
+     "secs": 11,
+     "pilot": 569,
+     "ally": 121,
+     "share": 0.175,
      "downs": 0,
-     "hp": 1537
+     "hp": 1499
     },
     {
      "id": "relay",
@@ -52,30 +52,30 @@
     {
      "id": "recon",
      "outcome": "victory",
-     "secs": 31.5,
-     "pilot": 270,
-     "ally": 90,
-     "share": 0.249,
+     "secs": 31.9,
+     "pilot": 235,
+     "ally": 125,
+     "share": 0.348,
      "downs": 0,
-     "hp": 1682
+     "hp": 1675
     },
     {
      "id": "rescue",
      "outcome": "victory",
-     "secs": 50.5,
-     "pilot": 665,
-     "ally": 75,
-     "share": 0.102,
+     "secs": 51.1,
+     "pilot": 666,
+     "ally": 74,
+     "share": 0.1,
      "downs": 0,
-     "hp": 1700
+     "hp": 1693
     },
     {
      "id": "redoubt",
      "outcome": "victory",
-     "secs": 16.7,
-     "pilot": 470,
-     "ally": 630,
-     "share": 0.573,
+     "secs": 18.4,
+     "pilot": 848,
+     "ally": 252,
+     "share": 0.229,
      "downs": 0,
      "hp": 1319
     }
@@ -90,109 +90,109 @@
     "breacher"
    ],
    "gear": "stock pilot + militia",
-   "allyShare": 0.539,
-   "pilotShare": 0.461,
-   "wins": "10/10",
+   "allyShare": 0.302,
+   "pilotShare": 0.698,
+   "wins": "4/10",
    "rows": [
     {
      "id": "raid-intercept-1",
      "outcome": "victory",
-     "secs": 27.8,
-     "pilot": 1326,
-     "ally": 458,
-     "share": 0.257,
+     "secs": 24.5,
+     "pilot": 973,
+     "ally": 811,
+     "share": 0.455,
      "downs": 0,
-     "hp": 1328
+     "hp": 1378
     },
     {
      "id": "raid-intercept-3",
-     "outcome": "victory",
-     "secs": 38.5,
-     "pilot": 1913,
-     "ally": 2734,
-     "share": 0.588,
+     "outcome": "defeat",
+     "secs": 24.3,
+     "pilot": 2124,
+     "ally": 105,
+     "share": 0.047,
      "downs": 0,
-     "hp": 1266
+     "hp": 0
     },
     {
      "id": "raid-sabotage-2",
      "outcome": "victory",
-     "secs": 41.7,
-     "pilot": 1283,
-     "ally": 1051,
-     "share": 0.45,
+     "secs": 47.5,
+     "pilot": 1621,
+     "ally": 713,
+     "share": 0.305,
      "downs": 0,
-     "hp": 884
+     "hp": 882
     },
     {
      "id": "raid-sabotage-4",
-     "outcome": "victory",
-     "secs": 41.8,
-     "pilot": 2016,
-     "ally": 1816,
-     "share": 0.474,
+     "outcome": "defeat",
+     "secs": 45.7,
+     "pilot": 2884,
+     "ally": 390,
+     "share": 0.119,
      "downs": 0,
-     "hp": 468
+     "hp": 0
     },
     {
      "id": "raid-battery-1",
      "outcome": "victory",
-     "secs": 209,
-     "pilot": 261,
-     "ally": 2205,
-     "share": 0.894,
+     "secs": 173.6,
+     "pilot": 316,
+     "ally": 2150,
+     "share": 0.872,
      "downs": 0,
-     "hp": 978
+     "hp": 704
     },
     {
      "id": "raid-battery-3",
-     "outcome": "victory",
-     "secs": 47.8,
-     "pilot": 2261,
-     "ally": 2618,
-     "share": 0.537,
+     "outcome": "defeat",
+     "secs": 26,
+     "pilot": 1886,
+     "ally": 965,
+     "share": 0.339,
      "downs": 0,
-     "hp": 353
+     "hp": 0
     },
     {
      "id": "raid-extraction-2",
      "outcome": "victory",
-     "secs": 63.7,
-     "pilot": 1755,
-     "ally": 1120,
-     "share": 0.39,
+     "secs": 54.3,
+     "pilot": 1459,
+     "ally": 944,
+     "share": 0.393,
      "downs": 0,
-     "hp": 1152
+     "hp": 1166
     },
     {
      "id": "raid-extraction-4",
-     "outcome": "victory",
-     "secs": 152,
-     "pilot": 3650,
-     "ally": 3211,
-     "share": 0.468,
+     "outcome": "defeat",
+     "secs": 69.2,
+     "pilot": 3977,
+     "ally": 411,
+     "share": 0.094,
      "downs": 0,
-     "hp": 1124
+     "hp": 0
     },
     {
      "id": "raid-siege-3",
-     "outcome": "victory",
-     "secs": 52.4,
-     "pilot": 1452,
-     "ally": 2803,
-     "share": 0.659,
+     "outcome": "defeat",
+     "secs": 53.2,
+     "pilot": 2306,
+     "ally": 1282,
+     "share": 0.357,
      "downs": 0,
-     "hp": 314
+     "hp": 0
     },
     {
      "id": "raid-siege-5",
-     "outcome": "victory",
-     "secs": 35.5,
-     "pilot": 1270,
-     "ally": 2094,
-     "share": 0.623,
+     "outcome": "defeat",
+     "secs": 30,
+     "pilot": 1822,
+     "ally": 627,
+     "share": 0.256,
      "downs": 0,
-     "hp": 1226
+     "hp": 0
     }
    ]
   },

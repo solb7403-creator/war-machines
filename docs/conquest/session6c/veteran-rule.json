@@ -1,0 +1,806 @@
+{
+ "generatedBy": "dev/tests/conquest-allies.mjs section 10",
+ "scope": "scripted physical-input pilot (the raids test's), the Worker's own start and fielding; not a human playtest",
+ "militia": {
+  "decide": 0.75,
+  "react": 3.4,
+  "reactLock": 0.7,
+  "turn": 0.45,
+  "pilotBias": 10
+ },
+ "militiaVeteran": {
+  "decide": 2.4,
+  "react": 9,
+  "reactLock": 3.5,
+  "turn": 0.2,
+  "pilotBias": 45
+ },
+ "ally": {
+  "decide": 0.6,
+  "react": 2.9,
+  "reactLock": 0.5,
+  "turn": 0.5,
+  "align": 0.1,
+  "leash": 42,
+  "regroup": 95,
+  "pilotBias": 12,
+  "superSpacing": 20,
+  "superGap": 3,
+  "downHull": 0.5,
+  "returnS": 15,
+  "quietR": 60,
+  "fireLane": 2.2
+ },
+ "before": {
+  "note": "the same harness with every militia number at ALLY's (Nov 19, before the fix)",
+  "veteranAlone": "0/15",
+  "veteranMilitiaPlatoon": "9/15 (allies 52.7% of the damage, 119 kills to the pilot's 77; the pilot took 1423 HP vs 1700 alone: the crews soaked 1174 HP a fight)",
+  "veteranEpicPlatoon": "13/15",
+  "hardAlone": "8/10",
+  "hardMilitiaPlatoon": "10/10 (allies 49.6%)",
+  "wingman": "field missions 3/5, 5 kills, 21.2% of the damage; rescue won"
+ },
+ "after": {
+  "veteranAlone": "0/15",
+  "veteranMilitiaPlatoon": "1/15 (allies 10.4%)",
+  "veteranEpicPlatoon": "13/15 (allies 57.9%)",
+  "hardAlone": "10/10",
+  "hardMilitiaPlatoon": "10/10 (allies 42.6%)",
+  "wingman": "field missions 4/5, 2 kills in 1, 13.6% of the damage; rescue victory"
+ },
+ "sets": {
+  "alone": {
+   "wins": 0,
+   "of": 15,
+   "allyShare": 0,
+   "allyKills": 0,
+   "rows": [
+    {
+     "id": "raid-intercept-3",
+     "outcome": "defeat",
+     "s": 17.5,
+     "hull": 0,
+     "kills": 2,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-intercept-4",
+     "outcome": "defeat",
+     "s": 52.3,
+     "hull": 0,
+     "kills": 9,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-intercept-5",
+     "outcome": "defeat",
+     "s": 39.1,
+     "hull": 0,
+     "kills": 5,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-sabotage-3",
+     "outcome": "defeat",
+     "s": 12.15,
+     "hull": 0,
+     "kills": 2,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-sabotage-4",
+     "outcome": "defeat",
+     "s": 20.35,
+     "hull": 0,
+     "kills": 3,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-sabotage-5",
+     "outcome": "defeat",
+     "s": 35.1,
+     "hull": 0,
+     "kills": 5,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-battery-3",
+     "outcome": "defeat",
+     "s": 21.05,
+     "hull": 0,
+     "kills": 3,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-battery-4",
+     "outcome": "defeat",
+     "s": 54.95,
+     "hull": 0,
+     "kills": 8,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-battery-5",
+     "outcome": "defeat",
+     "s": 80.25,
+     "hull": 0,
+     "kills": 11,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-extraction-3",
+     "outcome": "defeat",
+     "s": 38.15,
+     "hull": 0,
+     "kills": 4,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-extraction-4",
+     "outcome": "defeat",
+     "s": 54.25,
+     "hull": 0,
+     "kills": 8,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-extraction-5",
+     "outcome": "defeat",
+     "s": 117,
+     "hull": 0,
+     "kills": 14,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-siege-3",
+     "outcome": "defeat",
+     "s": 25.15,
+     "hull": 0,
+     "kills": 2,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-siege-4",
+     "outcome": "defeat",
+     "s": 61.4,
+     "hull": 0,
+     "kills": 10,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-siege-5",
+     "outcome": "defeat",
+     "s": 67.6,
+     "hull": 0,
+     "kills": 9,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    }
+   ]
+  },
+  "militia": {
+   "wins": 1,
+   "of": 15,
+   "allyShare": 0.104,
+   "allyKills": 11,
+   "rows": [
+    {
+     "id": "raid-intercept-3",
+     "outcome": "defeat",
+     "s": 17.5,
+     "hull": 0,
+     "kills": 2,
+     "allyKills": 0,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-intercept-4",
+     "outcome": "defeat",
+     "s": 48.6,
+     "hull": 0,
+     "kills": 8,
+     "allyKills": 1,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-intercept-5",
+     "outcome": "defeat",
+     "s": 43.35,
+     "hull": 0,
+     "kills": 5,
+     "allyKills": 1,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-sabotage-3",
+     "outcome": "defeat",
+     "s": 16.5,
+     "hull": 0,
+     "kills": 1,
+     "allyKills": 1,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-sabotage-4",
+     "outcome": "defeat",
+     "s": 23.15,
+     "hull": 0,
+     "kills": 4,
+     "allyKills": 0,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-sabotage-5",
+     "outcome": "defeat",
+     "s": 28.6,
+     "hull": 0,
+     "kills": 4,
+     "allyKills": 1,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-battery-3",
+     "outcome": "defeat",
+     "s": 31.35,
+     "hull": 0,
+     "kills": 3,
+     "allyKills": 1,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-battery-4",
+     "outcome": "defeat",
+     "s": 45.75,
+     "hull": 0,
+     "kills": 7,
+     "allyKills": 1,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-battery-5",
+     "outcome": "defeat",
+     "s": 44.7,
+     "hull": 0,
+     "kills": 8,
+     "allyKills": 0,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-extraction-3",
+     "outcome": "defeat",
+     "s": 36.55,
+     "hull": 0,
+     "kills": 4,
+     "allyKills": 1,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-extraction-4",
+     "outcome": "defeat",
+     "s": 90.3,
+     "hull": 0,
+     "kills": 11,
+     "allyKills": 3,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-extraction-5",
+     "outcome": "defeat",
+     "s": 54.6,
+     "hull": 0,
+     "kills": 8,
+     "allyKills": 1,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-siege-3",
+     "outcome": "defeat",
+     "s": 24,
+     "hull": 0,
+     "kills": 3,
+     "allyKills": 0,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-siege-4",
+     "outcome": "victory",
+     "s": 54.05,
+     "hull": 23,
+     "kills": 9,
+     "allyKills": 0,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-siege-5",
+     "outcome": "defeat",
+     "s": 48.45,
+     "hull": 0,
+     "kills": 7,
+     "allyKills": 0,
+     "fielded": 4,
+     "militia": 4
+    }
+   ]
+  },
+  "epic": {
+   "wins": 13,
+   "of": 15,
+   "allyShare": 0.579,
+   "allyKills": 131,
+   "rows": [
+    {
+     "id": "raid-intercept-3",
+     "outcome": "victory",
+     "s": 39.1,
+     "hull": 52,
+     "kills": 5,
+     "allyKills": 7,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-intercept-4",
+     "outcome": "defeat",
+     "s": 33.65,
+     "hull": 0,
+     "kills": 3,
+     "allyKills": 5,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-intercept-5",
+     "outcome": "victory",
+     "s": 63.6,
+     "hull": 77,
+     "kills": 6,
+     "allyKills": 7,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-sabotage-3",
+     "outcome": "defeat",
+     "s": 54.35,
+     "hull": 0,
+     "kills": 4,
+     "allyKills": 8,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-sabotage-4",
+     "outcome": "victory",
+     "s": 43.2,
+     "hull": 25,
+     "kills": 5,
+     "allyKills": 5,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-sabotage-5",
+     "outcome": "victory",
+     "s": 66.95,
+     "hull": 57,
+     "kills": 5,
+     "allyKills": 8,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-battery-3",
+     "outcome": "victory",
+     "s": 63.05,
+     "hull": 26,
+     "kills": 6,
+     "allyKills": 11,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-battery-4",
+     "outcome": "victory",
+     "s": 68.95,
+     "hull": 70,
+     "kills": 5,
+     "allyKills": 10,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-battery-5",
+     "outcome": "victory",
+     "s": 59.25,
+     "hull": 72,
+     "kills": 3,
+     "allyKills": 11,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-extraction-3",
+     "outcome": "victory",
+     "s": 73.35,
+     "hull": 22,
+     "kills": 3,
+     "allyKills": 16,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-extraction-4",
+     "outcome": "victory",
+     "s": 95,
+     "hull": 74,
+     "kills": 6,
+     "allyKills": 10,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-extraction-5",
+     "outcome": "victory",
+     "s": 58.1,
+     "hull": 75,
+     "kills": 4,
+     "allyKills": 10,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-siege-3",
+     "outcome": "victory",
+     "s": 45.35,
+     "hull": 42,
+     "kills": 6,
+     "allyKills": 6,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-siege-4",
+     "outcome": "victory",
+     "s": 55.25,
+     "hull": 58,
+     "kills": 4,
+     "allyKills": 8,
+     "fielded": 4,
+     "militia": 0
+    },
+    {
+     "id": "raid-siege-5",
+     "outcome": "victory",
+     "s": 70.85,
+     "hull": 68,
+     "kills": 5,
+     "allyKills": 9,
+     "fielded": 4,
+     "militia": 0
+    }
+   ]
+  },
+  "hardAlone": {
+   "wins": 10,
+   "of": 10,
+   "allyShare": 0,
+   "allyKills": 0,
+   "rows": [
+    {
+     "id": "raid-intercept-1",
+     "outcome": "victory",
+     "s": 48.05,
+     "hull": 61,
+     "kills": 8,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-intercept-2",
+     "outcome": "victory",
+     "s": 49.35,
+     "hull": 27,
+     "kills": 7,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-sabotage-1",
+     "outcome": "victory",
+     "s": 48.65,
+     "hull": 28,
+     "kills": 8,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-sabotage-2",
+     "outcome": "victory",
+     "s": 37.1,
+     "hull": 54,
+     "kills": 7,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-battery-1",
+     "outcome": "victory",
+     "s": 62.85,
+     "hull": 15,
+     "kills": 9,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-battery-2",
+     "outcome": "victory",
+     "s": 54.3,
+     "hull": 8,
+     "kills": 8,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-extraction-1",
+     "outcome": "victory",
+     "s": 81.5,
+     "hull": 37,
+     "kills": 12,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-extraction-2",
+     "outcome": "victory",
+     "s": 65.3,
+     "hull": 63,
+     "kills": 8,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-siege-1",
+     "outcome": "victory",
+     "s": 50.1,
+     "hull": 34,
+     "kills": 7,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    },
+    {
+     "id": "raid-siege-2",
+     "outcome": "victory",
+     "s": 49,
+     "hull": 50,
+     "kills": 6,
+     "allyKills": 0,
+     "fielded": 0,
+     "militia": 0
+    }
+   ]
+  },
+  "hardMilitia": {
+   "wins": 10,
+   "of": 10,
+   "allyShare": 0.426,
+   "allyKills": 53,
+   "rows": [
+    {
+     "id": "raid-intercept-1",
+     "outcome": "victory",
+     "s": 45.5,
+     "hull": 72,
+     "kills": 4,
+     "allyKills": 5,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-intercept-2",
+     "outcome": "victory",
+     "s": 31.9,
+     "hull": 68,
+     "kills": 4,
+     "allyKills": 4,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-sabotage-1",
+     "outcome": "victory",
+     "s": 45.65,
+     "hull": 66,
+     "kills": 5,
+     "allyKills": 3,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-sabotage-2",
+     "outcome": "victory",
+     "s": 46.45,
+     "hull": 58,
+     "kills": 5,
+     "allyKills": 5,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-battery-1",
+     "outcome": "victory",
+     "s": 53.6,
+     "hull": 52,
+     "kills": 4,
+     "allyKills": 6,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-battery-2",
+     "outcome": "victory",
+     "s": 38.3,
+     "hull": 54,
+     "kills": 3,
+     "allyKills": 8,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-extraction-1",
+     "outcome": "victory",
+     "s": 65.75,
+     "hull": 63,
+     "kills": 10,
+     "allyKills": 3,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-extraction-2",
+     "outcome": "victory",
+     "s": 62.55,
+     "hull": 79,
+     "kills": 2,
+     "allyKills": 11,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-siege-1",
+     "outcome": "victory",
+     "s": 64.35,
+     "hull": 72,
+     "kills": 6,
+     "allyKills": 5,
+     "fielded": 4,
+     "militia": 4
+    },
+    {
+     "id": "raid-siege-2",
+     "outcome": "victory",
+     "s": 34.8,
+     "hull": 84,
+     "kills": 4,
+     "allyKills": 3,
+     "fielded": 4,
+     "militia": 4
+    }
+   ]
+  },
+  "wing": {
+   "wins": 4,
+   "of": 5,
+   "allyShare": 0.136,
+   "allyKills": 2,
+   "rows": [
+    {
+     "id": "convoy",
+     "outcome": "victory",
+     "s": 6.7,
+     "hull": 81,
+     "kills": 3,
+     "allyKills": 0,
+     "fielded": 1,
+     "militia": 1
+    },
+    {
+     "id": "relay",
+     "outcome": "victory",
+     "s": 18.1,
+     "hull": 76,
+     "kills": 3,
+     "allyKills": 0,
+     "fielded": 1,
+     "militia": 1
+    },
+    {
+     "id": "recon",
+     "outcome": "victory",
+     "s": 27.35,
+     "hull": 92,
+     "kills": 1,
+     "allyKills": 2,
+     "fielded": 1,
+     "militia": 1
+    },
+    {
+     "id": "rescue",
+     "outcome": "victory",
+     "s": 48.8,
+     "hull": 76,
+     "kills": 7,
+     "allyKills": 0,
+     "fielded": 1,
+     "militia": 1
+    },
+    {
+     "id": "redoubt",
+     "outcome": "defeat",
+     "s": 20.9,
+     "hull": 0,
+     "kills": 3,
+     "allyKills": 0,
+     "fielded": 1,
+     "militia": 1
+    }
+   ]
+  },
+  "rescue": {
+   "outcome": "victory",
+   "s": 11.9,
+   "kills": 2
+  }
+ }
+}

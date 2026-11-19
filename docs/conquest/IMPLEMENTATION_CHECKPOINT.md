@@ -5767,11 +5767,62 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
     (squad.o 'attack'), V tap -> smart, hold V + 3 -> HOLD HERE (squad.o 'hold'), no page errors at 390x844 and 1366x768.
   - Node tests PASS after it: conquest-authority, -session, -allies, owner-rules, -research, -flagship-ui, -canvas-contract, -copy,
     lab-store-ui, -power-chip, -controls, -style, -assets; wtest conquest / lab-store / conquest-research.
-- NEXT, in this order: (3) section 9 (the VETERAN cause and the militia-only fix, the CI rule a-d in conquest-allies.mjs; the raids
-  test's pilot is shared as dev/tests/lib/raid-pilot.mjs) + guardrails 1, 2, 4; (4) the Worker HTTP test file for the Battalion
-  rules (incl. the sweep race: a gen cvn+1 blob survives); (5) economy-model --write + RESOURCE_ECONOMY; (6)
-  dev/tests/conquest-session6c.py at five sizes + conquest-session6b / -onboarding / -hub-browser / perf.py; the whole CI node list;
-  (7) at most two UX critic rounds, two fresh reviewers, release.
+- DONE slice 11 (session 2, Nov 19): section 9 (the VETERAN fix), guardrails 1, 2, 4, the Worker test, the model and its section.
+  - CAUSE (measured on the Worker's own start and fielding, `start-mission` + AUTO-ARM + `field`, then the raids test's pilot; the
+    harness is checked step for step against the reducer): with ALLY's numbers a stock pilot with a militia Platoon cleared 9 of the
+    15 VETERAN raids (alone 0, Epic Platoon 13); the militia crews dealt 52.7% of the damage (119 kills to the pilot's 77) AND soaked
+    the fire that would kill the pilot (the pilot took 1,423 HP a fight against 1,700 alone; the crews absorbed 1,174; the Mender
+    healed 111). Aim / reaction alone (six variants) plateaued at 4-6 of 15 because the soak remained: as their aim worsened the
+    Parasites still split their fire across them.
+  - FIX (militia-only, never an enemy stat; js/conquest/combat.js): MILITIA (normal fights) decide 0.75 s, react 3.4 s, reactLock
+    0.7 s, turret 0.45x, pilotBias +10 m; MILITIA_VET (a VETERAN-danger operation) decide 2.4 s, react 9 s, reactLock 3.5 s, turret
+    0.2x, pilotBias +45 m. CREATIVE-DIRECTOR DECISIONS (evidence above): (1) pilotBias, how much less a Parasite wants a green crew
+    than the pilot (the soak was the cause); (2) the freeze applies only in VETERAN operations, so the first wingman and militia
+    platoons stay real helpers in STANDARD / HARD fights (the first hour's hook) while VETERAN demands real gear (AUTO-ARM: every
+    spare weapon and chassis keeps its value); (3) the normal table is a little greener than gear-armed crews (same reason). The
+    briefing strip warns "MILITIA CREWS FREEZE UP AGAINST VETERAN HIVES · AUTO-ARM them" on a VETERAN op with a militia pick; the
+    HANGAR gear line and AUTO-ARM hint say it too. The unit carries `mil` from its kit (a static field: the cold part).
+  - AFTER (conquest-allies.mjs section 10, in CI; docs/conquest/session6c/veteran-rule.json): (a) militia Platoon 1 of 15 VETERAN
+    (allies 10.4% of the damage); (b) Epic Platoon 13 of 15 (57.9%); (c) HARD 10 of 10 with a militia Platoon, 10 alone; (d) the
+    rescue is won (11.9 s), then the wingman lands 2 kills and deals 13.6% of the damage in the five Wing field missions. (d)'s bar:
+    my first draft asked 3 kills in 2 missions; after the pilot fix below shortened fights the kills (lumpy last hits) fell to 2
+    while the damage share held, so the bar is the brief's words (rescue won, lands kills) plus a usefulness floor of 10% of the
+    damage. Re-measured split (section 9, militia kits now carry mil): Wing 17.1% (was 26.3%), Platoon 30.2% (was 53.9%), full
+    assault 61.8% with equal Epic gear (unchanged: the 60/40 target holds).
+  - The shared test pilot (dev/tests/lib/raid-pilot.mjs: the raids test's controller as a reducer pilot and a direct-engine pilot,
+    identical logic) got two fixes for long sweeps: it fires only at a target it can see, and after 10 s with no progress and no
+    route it breaks out sideways (a 409 s stalemate behind cover had made one Legendary run "lose"). conquest-raids.mjs keeps its
+    own copy, unchanged. conquest-allies.mjs section 10 checks the direct engine = the reducer (raid-intercept-4, raid-siege-4).
+  - Guardrail 1: conquest-combat.mjs (157 checks: identical Parasites, waves and spawn timing with 0 and 9 allies, stock and full
+    Legendary, militia or Epic allies at strength 1.0-1.7, field missions / raids of both dangers / a strike / a territory defense /
+    the town defense at base tiers 1-5; the enemy-side bodies enemyStats, doctrineOf, harden, deploy, spawnWave, choose, threat read
+    no gear, power, FORCE, league, purchases or town level; threat may read only an ally's own taunt strength and the militia flag);
+    conquest-power-chip.mjs (FORCE read only where shown, js/conquest/hangar.js; combat reads no FORCE / POWER; 22 -> 25 checks).
+  - Guardrail 2 (dev/tests/conquest-guardrails.mjs, its own CI job): Starter / Epic (Epic Pulse + Epic Vanguard) / Legendary
+    (Moonbeam + Epic Vanguard + Lunar Skin) on all 51 authored encounters (the field missions and the rescue via the Worker's start,
+    the 25 raids, 8 strikes, 6 territory defenses, the town defense at tiers 1-5), 4 seeds (the battle's crit seed + entry point):
+    no encounter where a better kit wins less often; totals 130 < 164 < 183 wins.
+  - Guardrail 4 (same file): a balanced Battalion (2 Guardian, 2 Lancer, Mender, 2 Breacher, Corroder, Frostline) against nine of
+    each role, equal Rare gear, the 15 VETERAN raids as authored: every force wins, so a win is ranked by the faster clear (hull kept
+    is not used: nine Menders heal everything). Probe: the balanced force beats each one-role force on 9-11 of 15. Rejected setting:
+    the old full-assault fixture (raids + 12 hardened Parasites): fights there end at the pilot's death in 15-35 s whatever the force,
+    and nine Guardians' stacked taunts tied the balanced force (an open design note for Session 7's Battalion content: watch taunt
+    stacking when real Battalion operations exist).
+  - Worker HTTP test dev/tests/wtest/conquest-battalion.mjs (94 checks, ~2 s, in CI): the eleven rules of section 8 incl. the sweep
+    race (written by a subagent from the lead's brief; no Worker bug found).
+  - Economy: economy-model --write (docs/economy/economy-model.json `battalion`); RESOURCE_ECONOMY.md section 15 (fielding, Role Cores
+    and chips, militia crews, the repair PROPOSAL 6 alloy a pilot, the store PROPOSALS, the paces as built). The model's first-wingman
+    column said minute ~4; it is minute ~13 (right after the first plate at minute 12).
+  - Browser: dev/tests/conquest-session6c.py (A the first wingman, B the Platoon, C Science Lab IV, D a full Battalion on LOW) PASS at
+    390x844 and 1366x768 so far. Found and fixed on the way: the hub rebuilt OPEN HANGAR every second (a tap could die): one persistent
+    node now; the done rescue still offered its site button: hidden once the pilot is safe; an ally just off a portrait screen now
+    keeps its badge at the screen edge. Test-only server helpers: `/fixture-op-clear` (the active operation won as it stands: the
+    Worker's own settlement runs), `/fixture-field` (field at a fight size), fixture `battalion`, wallet plates.
+  - conquest-onboarding.py and conquest-hub-browser.py now run at every size the owner tests. The owner's complete brief is stored
+    in docs/conquest/SESSION_6C_BRIEF.md.
+- NEXT, in this order: the remaining sizes of conquest-session6c.py (390x700, 320x568, 1920x1080) and section D's numbers; the whole
+  CI node list; conquest-session6b / -onboarding / -hub-browser / perf.py; at most two UX critic rounds; two fresh reviewers;
+  dev/bump.sh, PR, CI, merge, deploy checks, ROADMAP 6C RELEASED, release record, final report.
 - Earlier slices (the first 6C session):
 - DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
   sit in their own "Also (owner, Nov 18)" group). Research recorded below.

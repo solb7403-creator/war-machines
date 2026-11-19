@@ -29,6 +29,14 @@ let passed=0;const ok=(c,m)=>{assert(c,m);passed++;console.log('PASS '+m);};
  const src=fs.readFileSync('js/conquest/combat.js','utf8'),body=src.slice(0,src.indexOf('const DANGER_BAND'))+src.slice(src.indexOf('root.ConquestCombat=Object.freeze'));
  ok(!/zoneBand|operationBand|DANGER_BAND/.test(body.replace(/root\.ConquestCombat=Object\.freeze\(\{[^}]*\}/,'')),'no Parasite, spawn or reward code reads a zone band (they are shown, never used)');
  ok(!/powerOf\(/.test(fs.readFileSync('js/conquest/combat.js','utf8')),'the Conquest combat engine never reads the pilot\'s gear rating');}
+// ---- Session 6C guardrail 1, extended: FORCE (the battalion rating, js/conquest/rating.js key 'force') is informational only. It is
+// computed by ConquestBattalion.force (js/conquest/battalion.js) and read only where it is shown (js/conquest/hangar.js: the HANGAR,
+// the hub card and every briefing); no combat, reward, Worker or store code reads it, and the combat engine reads no gear rating
+{const files=[...fs.readdirSync('js/conquest').filter(f=>f.endsWith('.js')).map(f=>'js/conquest/'+f),...fs.readdirSync('worker/src').filter(f=>f.endsWith('.js')&&f!=='sim.gen.js').map(f=>'worker/src/'+f),'js/rules.js','js/game.js'];
+ const users=files.filter(f=>/\.force\(|forceOf\(|forceChip\(/.test(fs.readFileSync(f,'utf8')));
+ ok(users.length===1&&users[0]==='js/conquest/hangar.js','FORCE is read only where it is shown (js/conquest/hangar.js): '+users.join(', '));
+ const cb=fs.readFileSync('js/conquest/combat.js','utf8');ok(!/ConquestBattalion|ConquestRating|\bforce\b|tankPower/.test(cb.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/[^\n]*/g,'')),'the combat engine reads no FORCE, battalion rating or POWER');
+ const bt=fs.readFileSync('js/conquest/battalion.js','utf8');ok(/function force\(/.test(bt)&&!/rating|chip\(/.test(bt.slice(bt.indexOf('function force('),bt.indexOf('function force(')+400)),'FORCE is a pure sum over the fielded pilots (battalion.js force): no side effects');}
 // ---- Refuge Supply: BANK, REPAIR and the plating cards first, the ledger lines below; the engineering line ----
 {const app=fs.readFileSync('js/conquest/app.js','utf8'),sup=app.slice(app.indexOf('function supply(){'),app.indexOf('function engineeringLine('));
  const at=k=>sup.indexOf(k);ok(at("['bank','BANK SALVAGE']")>0&&at("['bank','BANK SALVAGE']")<at('platingCards(d,s)')&&at('platingCards(d,s)')<at("CP SECURED")&&at('CP SECURED')<at("'LUNAR ALLOY'"),'Refuge Supply opens on BANK and REPAIR, then the plating cards; the ledger lines are below');
