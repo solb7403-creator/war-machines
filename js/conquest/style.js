@@ -129,8 +129,8 @@ void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float 
 #include <colorspace_fragment>
 #include <fog_fragment>
 }`;
-const SOLID_VS=`attribute vec4 aCol;uniform vec4 uSite[8];uniform vec2 uOrigin;uniform vec3 uRimCol;uniform float uHigh;uniform sampler2D uAtmoMap,uShadowMap;uniform vec4 uAtmoBox;
-varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;varying float vShd;
+const SOLID_VS=`attribute vec4 aCol;uniform vec4 uSite[8];uniform vec2 uOrigin,uViewport;uniform vec3 uRimCol;uniform float uHigh,uOutline;uniform sampler2D uAtmoMap,uShadowMap;uniform vec4 uAtmoBox;
+varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;varying float vShd;varying vec3 vNW;
 #include <common>
 #include <fog_pars_vertex>
 float hv(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
@@ -140,23 +140,77 @@ void main(){
 #include <begin_vertex>
 #include <project_vertex>
 #include <fog_vertex>
- vN=transformedNormal;vV=-mvPosition.xyz;vCol=aCol;vec4 wp=vec4(transformed,1.);
+ vN=transformedNormal;vV=-mvPosition.xyz;vCol=aCol;vec4 wp=vec4(transformed,1.);vec3 nw=objectNormal;
+ // uOutline > 0 (Session 5E-2d1): the same program draws a tank's clean outline through a building — the hull grown by
+ // uOutline pixels in clip space, nudged toward the camera so the ground it stands on never passes the "behind" depth test
+ if(uOutline>0.){vec4 cn=projectionMatrix*vec4(mvPosition.xyz+normalize(transformedNormal),1.);vec2 od=cn.xy/cn.w-gl_Position.xy/gl_Position.w;float ol=length(od);if(ol>1e-6)gl_Position.xy+=od/ol*uOutline*2./uViewport*gl_Position.w;}
 #ifdef USE_INSTANCING
- wp=instanceMatrix*wp;vec2 io=(modelMatrix*vec4(instanceMatrix[3].xyz,1.)).xz+uOrigin;vCol.rgb*=.75+.5*hv(floor(io*4.));
+ nw=mat3(instanceMatrix)*nw;wp=instanceMatrix*wp;vec2 io=(modelMatrix*vec4(instanceMatrix[3].xyz,1.)).xz+uOrigin;vCol.rgb*=.75+.5*hv(floor(io*4.));
 #endif
- wp=modelMatrix*wp;vWP=wp.xyz;vec3 rc=uRimCol*2.2;vec2 uvA=(wp.xz+uOrigin-uAtmoBox.xy)*uAtmoBox.zw;vAtm=texture2D(uAtmoMap,uvA).r;vShd=texture2D(uShadowMap,uvA).r*vAtm;
+ wp=modelMatrix*wp;vWP=wp.xyz;vNW=normalize(mat3(modelMatrix)*nw);vec3 rc=uRimCol*2.2;vec2 uvA=(wp.xz+uOrigin-uAtmoBox.xy)*uAtmoBox.zw;vAtm=texture2D(uAtmoMap,uvA).r;vShd=texture2D(uShadowMap,uvA).r*vAtm;
  // HIGH tints each vertex's rim by the nearest friendly / Parasite site; LOW keeps the neutral rim (no per-vertex loop).
  if(uHigh>.5){vec2 w=wp.xz+uOrigin;float best=0.;for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float f=1.-smoothstep(s.z*.6,s.z*1.25,length(w-s.xy));if(f>best){best=f;rc=mix(uRimCol*2.2,s.w>0.?vec3(.06,.62,.8):vec3(.85,.05,.55),f);}}}
  vRim=rc;}`;
-const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV,uDaySun,uDayAmbUp,uDayAmbDn,uDaySunV;uniform float uTime,uGlow,uHigh,uFlash;
-varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;varying float vShd;
+// Surface codes (Session 5E-2d1, js/conquest/worldkit.js SURF): a vertex alpha below zero is no emission but a material whose
+// detail the HIGH branch paints from world-anchored coordinates and the shared detail texture (two fetches): armour panel
+// seams, chipped paint and rust, planks, concrete pores and stains, glass, corrugated scrap, cloth, chitin, leaves, rock,
+// soil, solar cells. LOW keeps the flat vertex colour. No texture from an artist, no extra shader program.
+// uPress: the footprint (centre x/z, half size, rotation) of the one building the tank is pressed against; its pixels are
+// thinned to a see-through screen (owner, Nov 17 + Nov 19: nothing else is ever see-through).
+const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV,uDaySun,uDayAmbUp,uDayAmbDn,uDaySunV,uOutlineCol;uniform float uTime,uGlow,uHigh,uFlash,uOutline,uPressK;uniform vec2 uOrigin,uPressR;uniform vec4 uPress;uniform sampler2D uDetail;
+varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;varying float vShd;varying vec3 vNW;
 #include <common>
 #include <fog_pars_fragment>
-void main(){vec3 N=normalize(vN),L=uSunV,R=uRimV,UP=uUpV; // view-space light directions, set once per frame
- float at=vAtm;L=normalize(mix(L,uDaySunV,at));vec3 base=vCol.rgb;float ndl=max(dot(N,L),0.);vec3 sunC=mix(uSunCol,uDaySun,at),aU=mix(uAmbUp,uDayAmbUp,at),aD=mix(uAmbDn,uDayAmbDn,at);
+float sh1(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
+float by2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}
+void main(){
+ if(uOutline>0.){gl_FragColor=vec4(uOutlineCol,1.);
+#include <colorspace_fragment>
+  return;}
+ if(uPress.z>0.&&uPressK>0.){vec2 q=vWP.xz+uOrigin-uPress.xy;q=vec2(q.x*uPressR.x+q.y*uPressR.y,q.y*uPressR.x-q.x*uPressR.y);if(abs(q.x)<uPress.z&&abs(q.y)<uPress.w&&by2(.5*gl_FragCoord.xy)*.25+by2(gl_FragCoord.xy)<uPressK)discard;}
+ vec3 N=normalize(vN),L=uSunV,R=uRimV,UP=uUpV; // view-space light directions, set once per frame
+ float at=vAtm;L=normalize(mix(L,uDaySunV,at));vec3 base=vCol.rgb;float a=vCol.a,spec=.16,shin=56.,wrap=0.,glassK=0.;vec3 emit=vec3(0.);
+ if(a<0.&&uHigh>.5){float sc=-a*10.+.02,code=floor(sc),wear=fract(sc)/.9;vec3 an=abs(vNW);vec3 wp=vec3(vWP.x+uOrigin.x,vWP.y,vWP.z+uOrigin.y);
+  bool top=an.y>.6;vec2 uv=top?wp.xz:(an.x>an.z?vec2(wp.z,wp.y):vec2(wp.x,wp.y));
+  vec4 tA=texture2D(uDetail,uv*.047+vec2(.31,.17)),tB=texture2D(uDetail,uv*.23+vec2(.7,.13));float nA=tA.a,nB=tB.a,m=nA*.62+nB*.38;vec2 bump=vec2(0.);
+  if(code<1.5){        // armour plate: staggered panel seams, per-panel tone, grime in the low noise, fine scuffs
+   vec2 pu=uv/vec2(2.1,1.3);pu.x+=.5*mod(floor(pu.y),2.);vec2 fp=fract(pu);float ed=min(min(fp.x,1.-fp.x)*2.1,min(fp.y,1.-fp.y)*1.3),seam=1.-smoothstep(.012,.05,ed),hl=smoothstep(.05,.075,ed)*(1.-smoothstep(.075,.12,ed));
+   base*=(.92+.16*sh1(floor(pu)))*(1.-.5*seam)*(1.+.1*hl)*(.93+.14*nB);base*=1.-(.18+.3*wear)*smoothstep(.5,.82,nA);spec=.42;shin=38.;}
+  else if(code<2.5){   // painted prefab: faint big panels, sun-faded tone, chips down to primer and rust
+   vec2 pu=uv/vec2(2.7,1.9);vec2 fp=fract(pu);float ed=min(min(fp.x,1.-fp.x)*2.7,min(fp.y,1.-fp.y)*1.9),seam=1.-smoothstep(.01,.04,ed);float th=mix(.9,.5,wear),chip=smoothstep(th,th+.035,m),ring=smoothstep(th-.06,th,m)*(1.-chip);
+   base*=(.94+.12*sh1(floor(pu)+7.))*(1.-.28*seam)*(.86+.26*nA);base=mix(base,base*1.3+.025,ring*.55);base=mix(base,vec3(.19,.075,.032)*(.6+.8*nB),chip*.9);base*=1.-.22*wear*smoothstep(.55,.9,tA.r);spec=.1;shin=24.;}
+  else if(code<3.5){   // timber: boards with gaps, butt joints, a tone per board and a grain
+   float pv=(top?uv.x:uv.y)/.36,al=top?uv.y:uv.x,id=floor(pv),f=fract(pv),gap=smoothstep(0.,.07,f)*(1.-smoothstep(.93,1.,f)),hb=sh1(vec2(id,3.)),jt=1.-step(.014,fract(al/2.6+hb));
+   float gr=sin(al*11.+hb*40.+sin(pv*2.1+al*.7)*2.4)*.5+.5;base*=(.5+.5*gap)*(.78+.4*hb)*(.9+.14*gr)*(1.-.5*jt)*(.9+.2*nB);base*=1.-.3*wear*smoothstep(.5,.85,nA);spec=.02;}
+  else if(code<4.5){   // concrete / stone slab: mottling, pores, form lines, leak stains, a hairline crack
+   float pore=smoothstep(.7,.78,nB),crack=1.-smoothstep(.0,.012,abs(nA-.47)),form=1.-smoothstep(.0,.03,abs(fract(uv.y/1.5)-.5)-.47);
+   base*=(.84+.3*nA)*(1.-.22*pore)*(1.-.4*crack*step(.4,nB))*(1.-.12*(top?0.:form));base*=1.-(.12+.3*wear)*smoothstep(.5,.8,tA.r);bump=vec2(nB-.5,nA-.5)*.35;spec=.03;}
+  else if(code<5.5){   // glass: panes with mullions, sky in the pane; wear = how brightly it is lit from inside
+   vec2 pu=uv/vec2(1.1,1.4),fp=fract(pu);float ed=min(min(fp.x,1.-fp.x)*1.1,min(fp.y,1.-fp.y)*1.4),mul=1.-smoothstep(.02,.05,ed);
+   base*=(.8+.3*sh1(floor(pu)+3.))*(1.-.6*mul);emit=vCol.rgb*wear*(1.-mul)*(.7+.6*sh1(floor(pu)+11.));glassK=1.-mul;spec=.9;shin=90.;}
+  else if(code<6.5){   // corrugated scrap sheet: ridges, heavy rust in the folds
+   float cg=sin((top?uv.x:uv.x)*17.),rst=smoothstep(mix(.75,.4,wear),.95,m);base*=(.82+.22*cg)*(.88+.22*nB);base=mix(base,vec3(.2,.085,.035)*(.6+.7*nB),rst*.85);bump=vec2(cg*.35,0.);spec=.12;shin=20.;}
+  else if(code<7.5){   // cloth, canvas, tarp: weave and soft folds
+   base*=(.88+.22*nB)*(.93+.1*sin(uv.x*7.+nA*6.));wrap=.25;spec=0.;}
+  else if(code<8.5){   // Parasite chitin: plated shell with glowing vein lines
+   float vein=1.-smoothstep(0.,.03,abs(nA-.5)),cell=smoothstep(.3,.7,nB);base*=(.6+.7*cell);emit=vec3(1.,.12,.78)*vein*(.25+.9*wear);bump=(tA.gb-.5)*.9;spec=.5;shin=30.;}
+  else if(code<9.5){   // leaves, moss, grass: clumped tone, sun-yellowed tips, light through the leaf
+   base*=(.7+.6*nB);base=mix(base,base*vec3(1.35,1.15,.55),clamp((nA-.42)*1.4,0.,.6));wrap=.45;spec=0.;bump=(tB.gb-.5)*.6;}
+  else if(code<10.5){  // rock: strata, mottling, cracks; wear = moss and lichen on the upward faces
+   float st=sin(wp.y*4.6+nA*9.)*.5+.5,crack=1.-smoothstep(0.,.014,abs(nB-.5));base*=(.78+.34*nA)*(.9+.16*st)*(1.-.45*crack);
+   float ms=wear*smoothstep(.15,.6,vNW.y)*smoothstep(.38,.6,nB);base=mix(base,vec3(.075,.105,.04)*(.7+.6*nA),ms);bump=(tA.gb-.5)*1.1;spec=.05;}
+  else if(code<11.5){  // soil, sandbags, gravel
+   base*=(.74+.5*nB)*(.9+.2*nA);bump=(tB.gb-.5)*.8;spec=0.;}
+  else{                // solar cells: a cell grid under glass
+   vec2 fp=fract(uv/vec2(.62,.62));float ed=min(min(fp.x,1.-fp.x),min(fp.y,1.-fp.y)),ln=1.-smoothstep(.02,.06,ed);base=mix(base*(.85+.3*nB),vec3(.2,.32,.46),ln*.7);spec=.8;shin=70.;glassK=.5;}
+  if(bump.x!=0.||bump.y!=0.){vec3 bw=top?vec3(bump.x,0.,bump.y):(an.x>an.z?vec3(0.,bump.y,bump.x):vec3(bump.x,bump.y,0.));N=normalize(N-mat3(viewMatrix)*bw);}
+ }
+ float ndl=max(dot(N,L),0.);ndl=mix(ndl,ndl*.5+.5,wrap);vec3 sunC=mix(uSunCol,uDaySun,at),aU=mix(uAmbUp,uDayAmbUp,at),aD=mix(uAmbDn,uDayAmbDn,at);
  vec3 lit=base*(sunC*ndl*(1.-.8*vShd)+mix(aD,aU,dot(N,UP)*.5+.5));float rl=max(dot(N,R),0.)*(1.-.7*at);lit+=base*vRim*rl*.5;
- if(uHigh>.5){vec3 V=normalize(vV);float fr=pow(1.-max(dot(N,V),0.),3.);lit+=mix(vRim,vec3(.55,.7,.9),at)*fr*(.25+.75*rl)*(.45-.3*at);vec3 H=normalize(L+V);lit+=sunC*pow(max(dot(N,H),0.),56.)*.16;}
- float a=vCol.a,em=clamp(a>1.?a-1.:a,0.,1.);float pulse=a>1.?.5+.5*sin(uTime*3.+dot(vWP,vec3(.37,.61,.23))):1.;
+ lit+=base*uDaySun*at*(.16+.1*max(-dot(N,L),0.))*(1.-ndl);   // daylight bounce (5E-2d1): a wall turned away from the low sun is lit off the ground, never black
+ if(uHigh>.5){vec3 V=normalize(vV);float fr=pow(1.-max(dot(N,V),0.),3.);lit+=mix(vRim,vec3(.55,.7,.9),at)*fr*(.25+.75*rl)*(.45-.3*at);vec3 H=normalize(L+V);lit+=sunC*pow(max(dot(N,H),0.),shin)*spec*(1.-.7*vShd);
+  if(glassK>0.)lit+=mix(vec3(.02,.05,.09),vec3(.32,.42,.55),at)*glassK*(.25+.75*fr);lit+=emit*uGlow*.55;}
+ float em=clamp(a>1.?a-1.:a,0.,1.);float pulse=a>1.?.5+.5*sin(uTime*3.+dot(vWP,vec3(.37,.61,.23))):1.;
  vec3 col=mix(lit,base*uGlow*(.45+.55*pulse),em);col=mix(col,vec3(1.,.62,.36)*1.35,uFlash*.6);gl_FragColor=vec4(col,1.);   // uFlash: the 80 ms hit flash (Session 6)
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
@@ -311,7 +365,7 @@ function create(T,opts={}){
  const sunDir=V3(-.55,.5,.67).normalize(),rimDir=V3(.62,.32,-.72).normalize(),daySunDir=V3(-.7,.26,.66).normalize();   // inside the zones: a low frontier sun (~15 deg)
  const U={uTime:{value:0},uSunDir:{value:sunDir},uSunCol:{value:lin(0xe4ecff).multiplyScalar(2.9/Math.PI)},uRimDir:{value:rimDir},uRimCol:{value:lin(0x52c6ff).multiplyScalar(1.15/Math.PI)},
   uAmbUp:{value:lin(0x3a5a9c).multiplyScalar(1.5/Math.PI)},uAmbDn:{value:lin(0x16131f).multiplyScalar(1.5/Math.PI)},uSite:{value:Array.from({length:8},()=>new T.Vector4(0,0,0,0))},
-  uOrigin:{value:new T.Vector2()},uGlow:{value:2.3},uHigh:{value:high?1:0},uSunV:{value:sunDir.clone()},uRimV:{value:rimDir.clone()},uUpV:{value:V3(0,1,0)},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
+  uOrigin:{value:new T.Vector2()},uOutline:{value:0},uOutlineCol:{value:new T.Color(0x7ff2ff)},uPress:{value:new T.Vector4(0,0,-1,-1)},uPressR:{value:new T.Vector2(1,0)},uPressK:{value:0},uGlow:{value:2.3},uHigh:{value:high?1:0},uSunV:{value:sunDir.clone()},uRimV:{value:rimDir.clone()},uUpV:{value:V3(0,1,0)},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
   fogColor:{value:new T.Color(0x06070f)},fogNear:{value:900},fogFar:{value:2600},fogDensity:{value:.00025}};
  // Terraformed zones (owner art direction): a breathable daytime world under the atmosphere dome. The atmosphere map holds
  // each spot's zone factor (ConquestWorld.terraformAt), sampled per vertex: terrain, buildings and hulls inside a zone get warm
@@ -345,7 +399,7 @@ function create(T,opts={}){
  G.octF=r=>fr['o'+r]||(fr['o'+r]=flat(new T.CylinderGeometry(r,1,1,8,1,false,Math.PI/8)).translate(0,.5,0));G.cylF=r=>fr['c'+r]||(fr['c'+r]=new T.CylinderGeometry(r,1,1,20,1).translate(0,.5,0));
  const tex={atlas:texMemo(T,'atlas'+high,()=>makeAtlas(T,high?512:256)),earth:texMemo(T,'earth'+high,()=>makeEarth(T,high?256:128,high?128:64)),detail:texMemo(T,'detail'+high,()=>makeDetail(T,high?256:128))};
  const mk=(vs,fs,extra,o)=>{const m=new T.ShaderMaterial(Object.assign({uniforms:Object.assign({},U,extra||{}),vertexShader:vs,fragmentShader:fs,fog:true},o||{}));m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
- const MAT={terrain:mk(TERRAIN_VS,TERRAIN_FS,{uDetail:{value:tex.detail}},{vertexColors:true}),solid:mk(SOLID_VS,SOLID_FS,{uFlash:{value:0}}),solidHit:mk(SOLID_VS,SOLID_FS,{uFlash:{value:1}}),   // Session 6: the hit flash swaps solid -> solidHit for 80 ms (same shaders: one program, a uniform swap)
+ const MAT={terrain:mk(TERRAIN_VS,TERRAIN_FS,{uDetail:{value:tex.detail}},{vertexColors:true}),solid:mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail}}),solidHit:mk(SOLID_VS,SOLID_FS,{uFlash:{value:1},uDetail:{value:tex.detail}}),   // Session 6: the hit flash swaps solid -> solidHit for 80 ms (same shaders: one program, a uniform swap)
 
   fx:mk(FX_VS,FX_FS,{uMap:{value:tex.atlas},uKind:{value:[V3(.1,.68,1).multiplyScalar(.6),V3(.3,1,.5).multiplyScalar(.5),V3(.6,.95,1).multiplyScalar(.9),V3(1,.1,.7).multiplyScalar(.7)]}},
    {transparent:true,premultipliedAlpha:true,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-8}),
