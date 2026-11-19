@@ -1,7 +1,7 @@
 name: Conquest regression
 on:
   pull_request:
-    paths: ['web/account-prompts.js', 'web/play.html', 'worker/sim-api.js', 'js/conquest/**', 'js/fx3d.js', 'worker/src/conquest*.js', 'worker/src/eco.js', 'worker/src/pvp.js', 'js/rules.js', 'js/game.js', 'js/models3d.js', 'js/render3d.js', 'js/ui.js', 'wiki.html', 'worker/build-sim.mjs', 'dev/tests/wtest/conquest*', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml', 'js/fx.js', 'js/net.js', 'js/core.js', 'js/main.js', 'js/match.js', 'js/render.js', 'js/pvp.js', 'worker/src/index.js', 'worker/src/proof.js', 'dev/tests/mod-behaviors.mjs', 'dev/tests/wtest/research-economy.mjs', 'worker/src/conquest-research.js', 'worker/src/conquest-loot.js', 'dev/tests/lab-store-ui.mjs', 'dev/tests/wtest/lab-store.mjs', 'dev/tests/owner-rules.mjs', 'docs/owner-rules.json', 'dev/tools/economy-model.mjs', 'dev/tools/chassis-kit-model.mjs']
+    paths: ['web/account-prompts.js', 'web/play.html', 'worker/sim-api.js', 'js/conquest/**', 'js/fx3d.js', 'worker/src/conquest*.js', 'worker/src/eco.js', 'worker/src/pvp.js', 'js/rules.js', 'js/game.js', 'js/models3d.js', 'js/render3d.js', 'js/ui.js', 'wiki.html', 'worker/build-sim.mjs', 'dev/tests/wtest/conquest*', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml', 'js/fx.js', 'js/net.js', 'js/core.js', 'js/main.js', 'js/match.js', 'js/render.js', 'js/pvp.js', 'worker/src/index.js', 'worker/src/proof.js', 'dev/tests/mod-behaviors.mjs', 'dev/tests/wtest/research-economy.mjs', 'worker/src/conquest-research.js', 'worker/src/conquest-loot.js', 'dev/tests/lab-store-ui.mjs', 'dev/tests/wtest/lab-store.mjs', 'dev/tests/owner-rules.mjs', 'docs/owner-rules.json', 'dev/tools/economy-model.mjs', 'dev/tools/chassis-kit-model.mjs', 'dev/tests/lib/**', 'js/conquest/battalion.js']
   workflow_dispatch:
 jobs:
   conquest:
@@ -92,9 +92,13 @@ jobs:
           node dev/tests/wtest/research-economy.mjs
           node dev/tests/mod-behaviors.mjs
           node dev/tests/conquest-power-chip.mjs
+          node dev/tests/conquest-allies.mjs
           node dev/tests/lab-store-ui.mjs
           node dev/tests/wtest/lab-store.mjs
           node dev/tests/wtest/proof-mods.mjs
+          # Session 6C: the Battalion rules through the Worker's HTTP routes (chips, Role Cores, recruits, field caps, the first Lab
+          # grant, ally-only kills, store kinds refused, the cold-blob sweep)
+          node dev/tests/wtest/conquest-battalion.mjs
           node dev/tests/owner-rules.mjs
       - uses: actions/setup-python@v5
         with:
@@ -139,6 +143,26 @@ jobs:
             docs/conquest/session5b
             docs/conquest/base-ui
             docs/conquest/session5d
+
+  # Session 6C guardrails (blueprint §12): 2 better gear always helps (every authored encounter and town tier, 3 kits x 4 seeds) and
+  # 4 composition matters (a balanced Battalion vs each one-role Battalion). A job of its own: they are long simulations.
+  guardrails:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - name: Guardrails 2 and 4
+        run: node dev/tests/conquest-guardrails.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-guardrails
+          path: docs/conquest/session6c
 
   transmission:
     runs-on: ubuntu-24.04

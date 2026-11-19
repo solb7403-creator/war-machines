@@ -61,7 +61,11 @@ assert.equal(G.hudOpen({airdrop:{ack:1}},'airdrop'),true);assert.equal(G.hudOpen
 const B={reason:'Oxygen infrastructure destroyed',objective:{x:1150,z:1080},enemies:[{x:1190,z:1040,hp:10},{x:1200,z:1050,hp:5}]};const [cause,fix]=G.failureLines(B);
 assert(/north-east/.test(cause)&&/red arrow/.test(fix),cause+' / '+fix);for(const r of ['War Machine disabled','Retreated beyond the defense perimeter','Armored carrier escaped','Operation perimeter abandoned or time expired','War Machine disabled by a telegraphed strike']){const L=G.failureLines({reason:r});assert(L[0]&&L[1]&&L[1]!==L[0],r);}
 // 8. the board after the coach: the claim as soon as it is affordable, else the nearest field mission
-const b={completed:{'oxygen-line':1},ledger:{cp:600,banked:{alloy:30,biomass:15,helium:2}}};assert.equal(G.boardOrder(b,p0).name,'CLAIM YOUR TOWN');
+// Session 6C (owner, Nov 18; the first-hour chain gains the wingman): right after the first plate, the rescue of the downed pilot comes
+// first (its own STANDARD mission near the Refuge), then the town
+{const w={completed:{'oxygen-line':1},ledger:{cp:600,banked:{alloy:30,biomass:15,helium:2}}};const o=G.boardOrder(w,p0);assert.equal(o.id,'wingman-rescue','after the plate: RESCUE THE DOWNED PILOT');assert.equal(o.reward,'A WINGMAN');
+ const R0=C.operations['wingman-rescue'];assert(Math.hypot(R0.x-T.x,R0.z-T.z)<=120&&W.ringAt(R0.x,R0.z)===1&&!C.fieldMissionIds.includes('wingman-rescue'),'the rescue is near the Refuge (Heartland), not one of the six field missions');}
+const b={completed:{'oxygen-line':1},bat:{w:1},ledger:{cp:600,banked:{alloy:30,biomass:15,helium:2}}};assert.equal(G.boardOrder(b,p0).name,'CLAIM YOUR TOWN');
 b.ledger.cp=599;const f=G.boardOrder(b,p0);assert(C.fieldMissionIds.includes(f.id)&&!b.completed[f.id],'next field mission');assert(/599 \/ 600 CP/.test(f.line));
 fs.mkdirSync('docs/conquest/session6',{recursive:true});fs.writeFileSync('docs/conquest/session6/first-hour.json',JSON.stringify(out,null,1)+'\n');
 console.log('PASS first hour: spawn',out.spawn,'| first defense',out.missions.map(m=>m.mode+' '+m.outcome+' '+m.seconds+'s, first kill '+m.firstKillSeconds+'s, hull min '+m.hullMin+'%').join(' · '));

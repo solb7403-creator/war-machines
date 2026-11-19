@@ -54,10 +54,11 @@ function fight(id){const o=C.operations[id],start=now;moment('first-fight');
  while(s.battle.state==='active'){const B=hydrate(s),p=s.position,required=B.enemies.filter(e=>e.hp>0&&(!e.resident||(['relay','redoubt'].includes(id)&&e.base?.id===o.site))),enemy=required.find(e=>e.id===B.carrierId)||nearest(B,required)||required[0];
   let target=enemy||B.objective,stop=enemy&&K.visible(B,p,enemy)?26:8;
   if(id==='oxygen-line'&&!enemy){target=p;stop=1;}
+  if(id==='wingman-rescue'&&!enemy)stop=4;   // Session 6C: hold beside the downed pilot's wreck (within 8 m) to pull them out
   if(id==='recon'&&B.nodes[B.scans]){target={x:B.nodes[B.scans][0],z:B.nodes[B.scans][1]};stop=5;}
   if(id==='relay'&&enemy?.immobile&&!K.visible(B,p,enemy)&&p.z>o.z-14){target={x:o.x-25,z:o.z-20};stop=5;}
   command(target,{stop,enemy});if((s.battle.kills|0)>0)moment('first-kill');assert(now-start<600000,'operation completes in its real time budget');}
- assert.equal(s.battle.state,'victory',id);assert(s.settlement.cp>0);record(id+'-victory');action('return-exploration');credit();sweep();}
+ assert.equal(s.battle.state,'victory',id);assert(id==='wingman-rescue'?s.settlement.kind==='wingman'&&s.settlement.cp===0&&!!s.settlement.bat?.joined:s.settlement.cp>0);record(id+'-victory');action('return-exploration');credit();sweep();}
 // 1. The first defense, right at the spawn (the radio plays over it on a phone; no dialog stands between spawn and fight).
 for(let i=0;i<10;i++)tick({x:0,z:0},10);assert.equal(s.hp,s.battle.playerMax);assert.deepEqual([s.position.x,s.position.z],[W.spawn.x,W.spawn.z]);
 action('start-mission',{mission:'oxygen-line'});fight('oxygen-line');
@@ -74,7 +75,7 @@ assert(acct.ap[0]===1,'the coach chain ends with the FRONT Ferrite plate fitted'
 let completed=1,baseMinute=null;
 while(!baseMinute&&now-initial<60*60000){const o=G.boardOrder(s,s.position,{pay:1});assert(o,'the NEXT chip always has an order');
  if(o.name==='CLAIM YOUR TOWN'){go(1080,1140);go(o.x,o.z,5);action('build-base',{plot:{site:'ridge'}});baseMinute=minutes();moment('first-town');break;}
- const id=o.id;assert(C.fieldMissionIds.includes(id),'the board leads to a field mission: '+o.name);go(o.x,o.z,Math.min(o.activationRadius-6,30));
+ const id=o.id;assert(C.fieldMissionIds.includes(id)||id==='wingman-rescue','the board leads to a field mission (or, right after the first plate, the rescue of the first wingman: Session 6C): '+o.name);go(o.x,o.z,Math.min(o.activationRadius-6,30));
  action('start-mission',{mission:id});fight(id);completed++;bankAt();moment('field-'+completed);}
 assert(baseMinute,'the town is claimed in the first session');assert(baseMinute<=22,'CLAIM YOUR TOWN at <= 22 simulated minutes (owner target): '+baseMinute);
 // 4. A real paid-for module must mature through input time; there is no readyAt or balance override (the earned-defense test continues this save).

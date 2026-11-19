@@ -4,6 +4,7 @@
 // weekly league minerals at the 20th verified match. Shared rules: HP per plate, set traits by damage type (Moonbeam exempt),
 // power equal to the approved model. docs/economy/RESOURCE_ECONOMY.md §5.5, §6
 import assert from 'node:assert/strict';
+import {cqLive} from './cqlive.mjs';   // Session 6C: the Conquest record is split (hot + cold blob)
 import {createHmac} from 'node:crypto';
 import {makeDB} from './fakedb.mjs';import {buildSim} from '../../../worker/build-sim.mjs';
 buildSim();const db=makeDB();
@@ -75,9 +76,9 @@ ok(!quit.mn&&JSON.stringify(eco(D).mn)===JSON.stringify(q0),'a quit drops nothin
 
 // ---- Conquest minerals reach the wallet exactly once (banked at the Refuge, through the outbox) ----
 {const B=9303;await call(B,'/api/sync');let r=await call(B,'/api/conquest/session');assert.equal(r.status,200,JSON.stringify(r.error));
- const s=db.get('conquest/tg_'+B);s.position={x:1174,z:1170,y:0,surface:'ground'};s.ledger.mn={fe:38,il:2};const w0=R.mnOf(eco(B).mn);
+ const s=cqLive(db,'tg_'+B);s.position={x:1174,z:1170,y:0,surface:'ground'};s.ledger.mn={fe:38,il:2};const w0=R.mnOf(eco(B).mn);
  r=await call(B,'/api/conquest/action',{seq:s.seq+1,action:'bank'});assert.equal(r.status,200,JSON.stringify(r.error));
- const w1=eco(B).mn,c=db.get('conquest/tg_'+B);
+ const w1=eco(B).mn,c=cqLive(db,'tg_'+B);
  ok(w1.fe-w0.fe===38&&w1.il-w0.il===2&&JSON.stringify(c.ledger.mn||{})==='{}'&&(c.airdrop.out||[]).length===0,'banking 38 Ferrite + 2 Ilmenite at the Refuge credits the account wallet at once; the outbox entry is acknowledged');
  ok(r.state.airdrop.view.mn.fe===w1.fe&&r.state.airdrop.credit?.minerals?.fe===38,'the response carries the wallet for the HUD and garage');
  const again=await call(B,'/api/conquest/action',{seq:s.seq+1,action:'bank'});ok(again.replayed&&eco(B).mn.fe===w1.fe,'a resent bank request is replayed without a second credit');}

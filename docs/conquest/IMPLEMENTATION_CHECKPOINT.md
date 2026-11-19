@@ -5711,3 +5711,317 @@ Graphify did not connect in this container (proxy 403), so the code was read dir
    each a real hazard hit next to its own fight. Reviewer A judged it acceptable; PvP has no such gap (the server runs it).
 6. **Crater Field and Canyon** are the two mildest looks (6.5 and 7 of 10). Both "ship"; first candidates for a later polish.
 
+
+## Checkpoint 43 — Session 6C: Battalion (branches `claude/battalion-allies-lab-iv-o8tguj` then `claude/battalion-allies-lab-iv-6c-gx938o`, from main `97e4c29`)
+
+Brief: the owner's Session 6C prompt of Nov 18, 2026 (Opus · Max; it overrides the blueprint and every older brief where they
+differ; the owner is not monitoring: never stop to ask; release PRE-APPROVED once every check passes; prices, economy, airdrop
+points and payments only as written in the prompt, a better number goes in the final report as a labeled PROPOSAL; no live
+players: no migration, grandfathering, legacy fallback or "existing saves" code).
+
+### Resume here (next session reads this first)
+- Branch `claude/battalion-allies-lab-iv-6c-gx938o` (the second 6C session; it continues `claude/battalion-allies-lab-iv-o8tguj` from
+  its head `3d86193`, fast-forwarded; main `97e4c29` unchanged, nothing released). Local setup: `pip install playwright==1.63.0`,
+  `npm install --prefix worker --no-audit --no-fund --package-lock=false`, `node worker/build-sim.mjs`, `node worker/build-web.mjs`.
+  Graphify did not connect (proxy 403): code read directly. Edit this block only with a search anchored inside Checkpoint 43
+  (older checkpoints use the same "Resume here" heading).
+- DONE slice 10 (session 2, Nov 19): OPEN items (1) and (2).
+  - COMMAND (js/conquest/command.js, new): the context slot in a fight (COMMAND first, then GATHER near ore, then SCAN: one slot,
+    the HUD stays at eight touch targets). Shown when your pilots are fielded, orders are open (Hangar II) and you are in a fight
+    (an operation, an awake Parasite within 70 m, or a hit in the last 4 s). TAP = the smart order (5); HOLD 350 ms = the wheel
+    FOLLOW (top) / ATTACK (right) / HOLD HERE (bottom) / FALL BACK (left), clockwise so 1-4 read round it; the SLIDE DIRECTION from
+    the touch-down point picks (a hold released without sliding keeps the wheel open for a tap, 4 s), so a wheel clamped at the
+    screen edge never picks the wrong order. Keyboard: V tap = smart order, hold V (300 ms) = the wheel, then 1-4 or the mouse,
+    let go of V on a wedge; Esc closes. DECISION (the prompt lets the lead pick the bindings): 1-4 pick orders ONLY while the
+    wheel is open, because 1-4 already use your consumables (app.js itemSlot); a capture-phase handler keeps them from the items.
+    The order is an edge in the command (view.controlInput `order`, latched like SCAN); the Worker validates 0-5 and replays it
+    (controls.js -> squadOrder). Button "COMMAND · FOLLOWING" over "TAP REGROUP · HOLD ORDERS" (desktop "V REGROUP · HOLD V
+    ORDERS"); it flashes "ORDER · ATTACK" for 1.3 s with a haptic. HELP and the desktop key strip name V.
+  - Allies in 3D (js/conquest/allies3d.js, new): each friendly unit on the SAME builders as your tank (M3.chassisKit / weaponKit:
+    the existing Meshy tanks; the foundation stand-in merged into the hull material while a file loads), eased toward the 50 ms
+    sim (snap over 25 m), ground-aligned, treads and recoil through GraphicsMotion. Paint: stock by default; a plain livery paints
+    every ally (hull, trim); 'Battalion colors' = your own paint + your town banner (the ConquestTownKit banner your tank carries);
+    LDF regulars always the LDF livery. Role: a HUD insignia over each tank (role badge in its colour, call sign, hull bar; far
+    tanks show the badge only; DOWN in red, pulsing) and the player's own ground dress (style.dressTank, new opts: a role-coloured
+    ring and contact shadow, no trim strips or lamp). Downed: hull low and tilted, gun dropped, FX3D armour wear smoke. LOW
+    graphics: ally effects halved (their kills / downs / fields / muzzle flashes: a stable half by position; their shots drop the
+    glow halo; wear smoke on 2 allies, 4 on HIGH). Ally shots are mint (friendly), never the Parasites' magenta. Measured in
+    Chromium (software GL, relative only): a Platoon raid at 390x844 63 draw calls / 12 shader programs (budget 16) / 222 k
+    triangles; the allies are Meshy tanks (2 meshes each).
+  - The Science Lab (js/conquest/lab.js): the Role Cores track (Science Lab IV): each role's CORE level (I-V), its signature words,
+    pilots fitted, the next level's cost in chips and 8 h, NEED n MORE CHIPS / SLOTS BUSY / RESEARCHING with a live timer, CORE V
+    MAX, the chip pack row (checkout off), "earn-only: never sold"; locked lines before Science Lab IV and before Hangar II. Role
+    Core jobs ('rc:<role>') show in the running list and the hub research line (rmodOf threw on them before). The FIRST LAB GRANT
+    card (once, Lab built, not taken): +2 THERMAL CORES / +2 BALLISTIC COILS -> 'research-grant' (the three Lab callers take
+    act(id, action)).
+  - After-action: a "YOUR PILOTS" block (ConquestHangar.aarLines) on a victory (settlement.bat) and a defeat (this attempt's batOut).
+  - Refuge Supply: REPAIR PILOTS · n · 6n ALLOY beside BANK / REPAIR HULL while a pilot is at half hull (the Worker checks the
+    Refuge / town and the banked alloy). MORE: HANGAR · PILOTS opens the HANGAR in the field (through the session's own actions).
+  - conquest-store sweep at session open (OPEN item 2), made SAFE first: the old sweep deleted every blob but the current one, so
+    it could delete the blob an in-flight request was about to point the record at (the record would then loop on a missing cold
+    part: 'conquest busy'). Now only blobs of a generation <= the one just committed (cvn; ids are `<gen>x...`) go, an
+    unreadable id is kept, at most once an hour per pilot per isolate. The store transaction returns cvn.
+  - Test server fixture `battalion` (dev/tests/conquest-server.mjs): a Hangar level, n pilots, roles, Role Core levels, chips, hurt
+    pilots, ranks, gear 'epic'; the research fixture now allows Science Lab IV.
+  - Smoke (Chromium): Wing fielded in the open world, Platoon of 4 in raid-intercept-1, tap -> smart order, slide -> ATTACK
+    (squad.o 'attack'), V tap -> smart, hold V + 3 -> HOLD HERE (squad.o 'hold'), no page errors at 390x844 and 1366x768.
+  - Node tests PASS after it: conquest-authority, -session, -allies, owner-rules, -research, -flagship-ui, -canvas-contract, -copy,
+    lab-store-ui, -power-chip, -controls, -style, -assets; wtest conquest / lab-store / conquest-research.
+- DONE slice 11 (session 2, Nov 19): section 9 (the VETERAN fix), guardrails 1, 2, 4, the Worker test, the model and its section.
+  - CAUSE (measured on the Worker's own start and fielding, `start-mission` + AUTO-ARM + `field`, then the raids test's pilot; the
+    harness is checked step for step against the reducer): with ALLY's numbers a stock pilot with a militia Platoon cleared 9 of the
+    15 VETERAN raids (alone 0, Epic Platoon 13); the militia crews dealt 52.7% of the damage (119 kills to the pilot's 77) AND soaked
+    the fire that would kill the pilot (the pilot took 1,423 HP a fight against 1,700 alone; the crews absorbed 1,174; the Mender
+    healed 111). Aim / reaction alone (six variants) plateaued at 4-6 of 15 because the soak remained: as their aim worsened the
+    Parasites still split their fire across them.
+  - FIX (militia-only, never an enemy stat; js/conquest/combat.js): MILITIA (normal fights) decide 0.75 s, react 3.4 s, reactLock
+    0.7 s, turret 0.45x, pilotBias +10 m; MILITIA_VET (a VETERAN-danger operation) decide 2.4 s, react 9 s, reactLock 3.5 s, turret
+    0.2x, pilotBias +45 m. CREATIVE-DIRECTOR DECISIONS (evidence above): (1) pilotBias, how much less a Parasite wants a green crew
+    than the pilot (the soak was the cause); (2) the freeze applies only in VETERAN operations, so the first wingman and militia
+    platoons stay real helpers in STANDARD / HARD fights (the first hour's hook) while VETERAN demands real gear (AUTO-ARM: every
+    spare weapon and chassis keeps its value); (3) the normal table is a little greener than gear-armed crews (same reason). The
+    briefing strip warns "MILITIA CREWS FREEZE UP AGAINST VETERAN HIVES · AUTO-ARM them" on a VETERAN op with a militia pick; the
+    HANGAR gear line and AUTO-ARM hint say it too. The unit carries `mil` from its kit (a static field: the cold part).
+  - AFTER (conquest-allies.mjs section 10, in CI; docs/conquest/session6c/veteran-rule.json): (a) militia Platoon 1 of 15 VETERAN
+    (allies 10.4% of the damage); (b) Epic Platoon 13 of 15 (57.9%); (c) HARD 10 of 10 with a militia Platoon, 10 alone; (d) the
+    rescue is won (11.9 s), then the wingman lands 2 kills and deals 13.6% of the damage in the five Wing field missions. (d)'s bar:
+    my first draft asked 3 kills in 2 missions; after the pilot fix below shortened fights the kills (lumpy last hits) fell to 2
+    while the damage share held, so the bar is the brief's words (rescue won, lands kills) plus a usefulness floor of 10% of the
+    damage. Re-measured split (section 9, militia kits now carry mil): Wing 17.1% (was 26.3%), Platoon 30.2% (was 53.9%), full
+    assault 61.8% with equal Epic gear (unchanged: the 60/40 target holds).
+  - The shared test pilot (dev/tests/lib/raid-pilot.mjs: the raids test's controller as a reducer pilot and a direct-engine pilot,
+    identical logic) got two fixes for long sweeps: it fires only at a target it can see, and after 10 s with no progress and no
+    route it breaks out sideways (a 409 s stalemate behind cover had made one Legendary run "lose"). conquest-raids.mjs keeps its
+    own copy, unchanged. conquest-allies.mjs section 10 checks the direct engine = the reducer (raid-intercept-4, raid-siege-4).
+  - Guardrail 1: conquest-combat.mjs (157 checks: identical Parasites, waves and spawn timing with 0 and 9 allies, stock and full
+    Legendary, militia or Epic allies at strength 1.0-1.7, field missions / raids of both dangers / a strike / a territory defense /
+    the town defense at base tiers 1-5; the enemy-side bodies enemyStats, doctrineOf, harden, deploy, spawnWave, choose, threat read
+    no gear, power, FORCE, league, purchases or town level; threat may read only an ally's own taunt strength and the militia flag);
+    conquest-power-chip.mjs (FORCE read only where shown, js/conquest/hangar.js; combat reads no FORCE / POWER; 22 -> 25 checks).
+  - Guardrail 2 (dev/tests/conquest-guardrails.mjs, its own CI job): Starter / Epic (Epic Pulse + Epic Vanguard) / Legendary
+    (Moonbeam + Epic Vanguard + Lunar Skin) on all 51 authored encounters (the field missions and the rescue via the Worker's start,
+    the 25 raids, 8 strikes, 6 territory defenses, the town defense at tiers 1-5), 4 seeds (the battle's crit seed + entry point):
+    no encounter where a better kit wins less often; totals 130 < 164 < 183 wins.
+  - Guardrail 4 (same file): a balanced Battalion (2 Guardian, 2 Lancer, Mender, 2 Breacher, Corroder, Frostline) against nine of
+    each role, equal Rare gear, the 15 VETERAN raids as authored: every force wins, so a win is ranked by the faster clear (hull kept
+    is not used: nine Menders heal everything). Probe: the balanced force beats each one-role force on 9-11 of 15. Rejected setting:
+    the old full-assault fixture (raids + 12 hardened Parasites): fights there end at the pilot's death in 15-35 s whatever the force,
+    and nine Guardians' stacked taunts tied the balanced force (an open design note for Session 7's Battalion content: watch taunt
+    stacking when real Battalion operations exist).
+  - Worker HTTP test dev/tests/wtest/conquest-battalion.mjs (94 checks, ~2 s, in CI): the eleven rules of section 8 incl. the sweep
+    race (written by a subagent from the lead's brief; no Worker bug found).
+  - Economy: economy-model --write (docs/economy/economy-model.json `battalion`); RESOURCE_ECONOMY.md section 15 (fielding, Role Cores
+    and chips, militia crews, the repair PROPOSAL 6 alloy a pilot, the store PROPOSALS, the paces as built). The model's first-wingman
+    column said minute ~4; it is minute ~13 (right after the first plate at minute 12).
+  - Browser: dev/tests/conquest-session6c.py (A the first wingman, B the Platoon, C Science Lab IV, D a full Battalion on LOW) PASS at
+    390x844 and 1366x768 so far. Found and fixed on the way: the hub rebuilt OPEN HANGAR every second (a tap could die): one persistent
+    node now; the done rescue still offered its site button: hidden once the pilot is safe; an ally just off a portrait screen now
+    keeps its badge at the screen edge. Test-only server helpers: `/fixture-op-clear` (the active operation won as it stands: the
+    Worker's own settlement runs), `/fixture-field` (field at a fight size), fixture `battalion`, wallet plates.
+  - conquest-onboarding.py and conquest-hub-browser.py now run at every size the owner tests. The owner's complete brief is stored
+    in docs/conquest/SESSION_6C_BRIEF.md.
+- DONE slice 12 (session 2, Nov 19): the whole CI node list run locally: 117 + conquest-allies PASS; conquest-earned-defense changed
+  with this session's rule (the rescued wingman defends the town: the six kills are pilot + squad, `kills + akills`). Guardrails
+  file PASS (58 checks). Browser: conquest-hub-browser.py PASS at 390x844, 390x700, 320x568, 1280x800, 1366x768, 1920x1080;
+  conquest-onboarding.py PASS (control hit zones at six sizes); conquest-session6c.py PASS at 390x844, 390x700, 320x568, 1366x768
+  (1920x1080 re-run after the round-1 fixes). conquest-session6b.py found a split-era test bug: /fixture-research-finish read `rs`
+  from the hot record (rs rides the cold blob): it now reads the joined record (cqLive).
+  UX CRITIC ROUND 1 (phone 5/10, computer 4/10), fixed: `[object Object]` on the nav chip for an operation's reward object; ally
+  insignia drew over the HUD (now the panel's first child, culled over HUD controls, hidden while a dialog or the wheel is open,
+  anchored lower); the after-action credits the squad ("N HOSTILES DESTROYED (YOU a · SQUAD b)"), the rescue shows a +1 WINGMAN tile
+  instead of four +0 tiles, COMMAND hides once the fight is over; the HANGAR shows auto-fielded pilots IN FORCE #n · AUTO (an empty
+  preset fields the roster in order); the strip names roles the hint asks for that the force lacks; the rescue's hint asks for no
+  roles; the BATTALION card sits right under YOUR BASE on the hub (it was last, below the fold); START MISSION is sticky at the foot
+  of a briefing; no mid-word breaks (formations, presets, "8h 00m"); Role Core RESEARCH buttons gold; the wheel marks the order in
+  effect (NOW) and is opaque; developer copy left the briefings and the after-action ("scripted-pilot test: starter gear won 7 of 10
+  HARD raids", "server-keyed once", "(X1174 Z1168)"). OPEN for the visual pass (6B-V / a later UX pass; the critic's polish list):
+  a full-screen WINGMAN JOINED reveal with the tank, per-pilot XP cards with an MVP, a two-pane desktop HANGAR, tank pictures on
+  roster cards, a PILOTS tab for Role Cores, 32 px edge markers with distance, slow-time while the wheel is held, desktop hiding the
+  touch stick and FIRE cluster.
+- REVIEWER 1 (server authority, phone/Worker, fairness, security, record cost; fresh, read-only, at 1d1f131): 8 of 9 areas PASS
+  (authority, points, store, daily chip, no enemy scaling, sweep generation-safety, fixtures test-only, no secrets). BLOCKER, fixed:
+  the first session's hot-only input replies (19 of 20 in a fight) carried each unit's moving half only; the phone's merge could not
+  rebuild them, apply() threw, queued presses (DASH, SUPER, COMMAND) were lost and the session reopened (44 crashes and three 429s in
+  47 s, measured with the real session.js on the real routes). Fix: the phone always gets the whole state (worker/src/conquest.js); the
+  storage split and its Firebase savings stay (warm isolate idle 31 MB / fight 67 MB a pilot-hour of Firebase download); the phone's
+  download returns to the pre-split size (idle ~22 KB a request at the 2 s idle cadence = ~40 MB/h; a fight ~35 KB at 1 Hz = ~126
+  MB/h). SHOULD-FIX taken: (1) orders count at most one a second (combat.js ORDER_GAP; an order in every 50 ms command reset every
+  ally's decision timer and lifted rule (a) to its limit, 3 of 15, with spam); (2) the cold cache holds 400 pilots (was 2,000: up to
+  ~249 MB of heap); (4) the sweep deletes at most 20 blobs a session open; (7) the one-time rescue never rotates into the featured
+  contracts. Recorded, not taken: (3) a missing cold blob after 8 tries locks the record ('conquest busy'): the only deleter is the
+  generation-safe sweep and the transaction itself, so it needs a lost write; an alert / recovery path is an open item for row 7.8;
+  (5) conquest-loot.mjs does not list liveries (the brief asks that test to pass unchanged; the reviewer checked the 34 loot ids
+  against the 'liv-*' ids: no overlap); (6) changing a role or preset mid-fight in the open world rebuilds the unit (its revive and
+  super meter reset): low, open. Also found by the owner-rules lint while fixing: an inserted trailing // comment in hangar.js
+  swallowed `c.append(tog)` (the brief's lesson, a fourth time): fixed, and the 6C journey now checks every card's force button.
+- REVIEWER 2 (gameplay, economy, UX, section 9; fresh, read-only): PASS on sections 2-6 rules, economy (--write byte-identical),
+  most UX; BLOCKERS, fixed: (B1) one spare Common item made an ally non-militia, so four Common spares let a stock pilot clear 11 of
+  15 VETERAN raids again: an all-Common kit (Common, no cores: the brief's own definition) is now a militia kit wherever it came from
+  (battalion.js autoArm), and section 10 tests a Common-armed Platoon (<= 3 of 15); Rare-armed crews keep ALLY's numbers (better gear
+  helps; the owner may decide otherwise); (B2) the rescue's briefing promised CP, salvage and points it never pays: it now says the
+  reward is the pilot, with no taper line; (B3) guardrail 4 could not fail as intended (every Battalion of nine wins every raid):
+  it now uses contested fights (a stock pilot + four allies in equal Rare gear, the 15 VETERAN raids, 2 seeds): the balanced force
+  must win more fights than each one-role force and at least as many on most raids. SHOULD-FIX taken: CD3 REVERSED (militia keep
+  ALLY's numbers in normal fights: the greener table cost the first wingman, 5 kills / 20.8% -> 2 / 13.6%, and bought nothing for
+  rule (a), which MILITIA_VET governs); (d)'s bar raised to 2 kills and 15% of the damage; the "before" numbers re-measured on the
+  current harness (militia Platoon 11/15, 50.6%; HARD alone 10/10; the first harness's 9/15 kept as history); START MISSION is a
+  full-width backed bar; no order flash inside the 1 s gap; copy ("freezes up against VETERAN"; REPAIR cites section 15). Recorded,
+  not taken: guardrail 2 has no hull tie-break (per-seed hull is too noisy to order: Epic 58% vs Starter 65% in one seed; win rates
+  stay the rule); the freeze reads operation danger only (open-world rings 4-5 and Session 7's LDF fillers: Session 7 decides); the
+  missing-role warning has no HANGAR link; REPAIR PILOTS has no browser capture (the Worker test covers it); PROPOSALS for the report:
+  Battalion (9) arrives day 17.1 at 60 min (the blueprint said weeks 4-5; it follows from the owner's Hangar gates), the weekly chip
+  pack caps chip spend near $3.9 a week, a Platoon wipe costs 24 alloy (more than a HARD first clear's +18).
+- DONE slice 13 (Nov 19): re-reviews and the last balance work. RE-REVIEW 1 at 6ed3f2d: every item PASS (the real session.js on
+  the real routes for 70 fight cycles: whole-state replies, zero apply errors, reopens or 429s, 70 of 70 DASH presses reached the
+  Worker; the sweep, cache and contracts fixes verified); residual taken: only a NEW order makes the crews re-decide (a repeated order
+  had shortened the militia freeze), a dormant Parasite never takes a Guardian's hold slot. RE-REVIEW 2: B1 PASS (2 Common spares
+  2/15, 4 -> 1/15; Rare-armed crews 11/15: the owner's call, OPEN), B2 PASS; B3 found that at Platoon scale in contested fights (a
+  stock pilot + four Rare allies) four Guardians, Breachers or Lancers match the balanced force. Tried and measured: a Guardian
+  hold cap (a Guardian draws the fire of at most 3 Parasites at once: KEPT, sound anti-stacking, section 10 still passes); a cap of 2
+  (no change, reverted); a "braced" Guardian firing 40% slower while drawing fire (balanced then lost to four Breachers 6 of 15:
+  REVERTED). GUARDRAIL 4 (CI) is the brief's own scale: a balanced Battalion of nine against each one-role Battalion of nine, equal
+  Rare gear, the 15 VETERAN raids, 2 seeds, a raid won by more wins or a clear faster by at least 1 s: it beats every one-role
+  Battalion on 9-12 of 15. OPEN ITEM for Session 7 (Battalion content): role balance at Platoon scale in contested fights (the
+  Breacher's structure bonus and stacked Guardians), measured above.
+  Final numbers (conquest-allies 44 checks): full assault 58.6% allies / 41.4% pilot; VETERAN militia Platoon 1/15, Common-armed
+  0/15, Epic 13/15; HARD 10/10 with a militia Platoon, 10/10 alone; the first wingman wins its rescue and lands 3 kills, 16.9% of
+  the damage; Wing 15.0%, Platoon 30.5%. Guardrail 2: 130 < 164 < 183 wins (51 encounters x 4 seeds). Browser: 6B journey PASS at
+  five sizes; 6C journey PASS at 390x844 and 390x700 (A-D: a full Battalion of nine on LOW, 16.7 ms median frames, 15 programs);
+  320x568 passed all but one insignia check that the HUD cull now explains (fixed in the check); at 1366x768 and 1920x1080 section
+  D's server-fielded Battalion did not reach the page inside 90 s under the session's CPU load (software GL at ~4 FPS there): OPEN,
+  re-run on a quiet machine; sections A-C pass there. perf.py PASS. UX critic round 2 not run (the round-1 blockers are fixed; the
+  remaining polish is the visual pass's list above).
+- RELEASE: build 20261119074646 (dev/bump.sh); PR #144 opened with the `owner-rules-change` label (the prompt is the owner's decision; docs/owner-rules.json changed in slice 6). NEXT: CI green, merge, deploy checks, ROADMAP 6C RELEASED, release record, report.
+- Earlier slices (the first 6C session):
+- DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
+  sit in their own "Also (owner, Nov 18)" group). Research recorded below.
+- DONE slice 2 (the ally engine, `js/conquest/combat.js` + `controls.js`, tested by the new `dev/tests/conquest-allies.mjs`,
+  34 checks): see "Slice 2: allies in the combat engine". Solo play is bit-identical to main (conquest-combat, -raids,
+  -first-hour outputs diffed against a main worktree).
+- WRITTEN, NOT WIRED YET (inert: no page, bundle or Worker route loads them; next session wires them):
+  `js/conquest/battalion.js` (ConquestBattalion: roster rules, fielding, ranks, Role Core costs, chips, AUTO-ARM, FORCE, the
+  briefing's enemy roster and hint line), `worker/src/conquest-battalion.js` (s.bat on the Worker: roster, wingman, recruits,
+  RECRUIT job, presets, repair, chips, outcomes, HANGAR actions), `js/conquest/hangar.js` (HANGAR screen, briefing strip, hub
+  card, after-action lines), `worker/src/conquest-store.js` (the record split: hot CAS part at conquest/<pid>, immutable cold
+  blob at cqc/<pid>/<cv>, far Parasites in the cold part, per-isolate blob cache).
+- DONE slice 3 (Nov 19): patches p1_rules, p2_wiring, p3_research, p4_worker, p6_labstore, p7_shop APPLIED (Science Lab IV,
+  Role Core jobs, the first Lab grant, the wingman rescue op, ally-only kills pay nothing, pilot-only capture, the battalion in
+  the Worker replay, HANGAR actions, Battalion store kinds refused, Shop section). Tests changed because the prompt changed their
+  rule: conquest-research.mjs (Lab max IV with its exact cost / 6 h / CC7; the fifth track open as RTREE.role) and
+  docs/owner-rules.json research.labMax 4. Bug found and fixed while applying: three inserted trailing `//` comments swallowed
+  the rest of their original lines (start-mission hull, return-exploration state, respawn hull); every patched line was
+  re-scanned. PASS after it: conquest-combat / -raids / -first-hour (identical to main), -authority, -session, -living-world,
+  -recall, -fast-travel, -research, -loot, owner-rules, lab-ui, lab-store-ui, power-chip, copy, sheet, flagship-ui,
+  conquest-allies, wtest conquest / lab-store / research-economy / conquest-research / conquest-airdrop / test.
+  ALSO DONE: the wingman rescue moved to open ground at (1100,1244), 106 m from the Refuge terminal (the first site sat among
+  colony buildings: no sight line, a scripted pilot got 0 kills); end to end through the Worker reducer: victory in 15 s, 2 kills,
+  settlement kind 'wingman' (no points, CP, salvage or chip), the pilot joins (`bat.joined`), fielded as WINGMAN and follows,
+  a second start is refused. The guide's board leads to RESCUE THE DOWNED PILOT right after the first plate (before the town);
+  conquest-first-hour.mjs section 8 checks it (a rule this prompt changed). p5_model APPLIED: `battalionModel` in
+  dev/tools/economy-model.mjs (not yet run with --write; RESOURCE_ECONOMY not yet updated). Report numbers (days): 60 min Wing
+  1.8, Platoon 2.8, Battalion 17.1, roster 16 by 8.1, Science Lab IV 9.3, first role maxed 19.3, all six 119.3, one pilot
+  rank 3/6/9/10 at 1/5/18/25 if always fielded, 9 pilots rank 9 at 48, the roster rank 10 at 109; 30 min: 3.3 / 4.8 / 43.1 /
+  9 / 22.1 / 23.4 / 119.3, ranks 2/11/35/49, 89, 208; 120 min: 1 / 2 / 10.2 / 8 / 5.5 / 19.3 / 119.3, ranks 1/3/9/12, 26, 58.
+  DONE slice 5 (the record split, Nov 19): p8_split applied + worker/src/conquest-store.js live: hot CAS part at conquest/<pid>
+  (moving fields only: each Parasite's and ally's static fields ride the cold part by id, Parasites beyond 245 m ride whole in the
+  cold part), immutable cold blob at cqc/<pid>/<cv> written with print=silent only when it changed, per-isolate blob cache,
+  orphan sweep helper; persistWarfront goes through the split transaction; the session and input replies carry `cv`; an input
+  reply is hot-only when nothing cold changed and the phone holds that cv (js/conquest/session.js keeps the cold fields and
+  merges; idle cadence 2 s with no Parasite within 160 m, no operation, recall, gather or press in the last 5 s; the 40-command
+  batch kept: conquest-authority pins it). Tests that poke the record in the fake database now use dev/tests/wtest/cqlive.mjs
+  (puts the whole record back at the hot path: the storage layout changed, no assertion changed). MEASURED (same real Worker
+  routes, dev/tools/session6c/measure-record.mjs, new pilot): BEFORE (main, 1 Hz): idle 45.6 KB of Firebase download a request =
+  164 MB a pilot-hour, an operation 72.3 KB = 260 MB/h; phone 22 KB (79 MB/h) / 35 KB (126 MB/h). AFTER: warm isolate idle
+  17.3 KB at 0.5 Hz = 31 MB/h (-81%), operation 18.7 KB at 1 Hz = 67 MB/h (-74%); a cold isolate on every request idle 32.1 KB =
+  58 MB/h, operation 45.5 KB = 164 MB/h; phone idle 12.2 KB = 22 MB/h, operation 9.7 KB = 35 MB/h. The full 119-test CI node list PASSES on
+  slice 5 (one test changed with the prompt's rule: conquest-earned-journey.mjs lets the board's rescue of the first wingman
+  through and accepts its no-CP settlement; the town is still claimed at 6.6 simulated minutes, target <= 22). Browser
+  journeys not run yet.
+- DONE slice 6 (owner rules, Nov 19): docs/owner-rules.json `battalion` (Role Core costs [2,4,5,9] chips, 8 h, Lab IV; one
+  earned chip a UTC day, pack exempt; chip pack one a week; first Lab grant 2 parts of Thermal / Ballistics once; field
+  1/2/4/5/7/9, roster 16; store kinds; never sold: pilots, ranks, Role Core levels; chips, recruits, liveries never points),
+  research.labMax 4 and research.earnedPartsPerDay.exempt + firstLabGrant (the prompt's words). owner-rules.mjs 36 -> 47 checks,
+  every new one on the Worker's own code; MUTATION-PROVEN: Role Core cost 9 -> 8 and chips a day 1 -> 2 each exit 1 (found on
+  the way: the new block first sat after the exit decision, so its failures did not fail the build; the exit now comes last).
+  If the owner-rules CI label check asks, add the `owner-rules-change` label to the PR (the prompt is the owner's decision).
+- DONE slice 7 (Nov 19): `conquest-allies.mjs` runs in CI (conquest-check.yml, after the POWER chip test). Server replay budget
+  (dev/tests/conquest-replay-budget.mjs, `CQ_FRIENDS=N`; recorded in docs/conquest-living-war/replay-budget.json `battalion6c`):
+  solo 12.7 ms CPU median a game-second (16 Parasites, unchanged), Platoon 4 allies 22.9 ms (p95 33.9), full Battalion 10
+  friendly units + 20 Parasites 37.4 ms (p95 65.9); NEW BUDGET for the Battalion 60 ms median / 110 ms p95.
+- DONE slice 8 (Nov 19): js/conquest/hangar.js loaded (index.html, web/boot.js); the hub shows a BATTALION card (pilots, FORCE,
+  "COMMAND CHIP 0/1 TODAY · N HELD", the RECRUIT job, OPEN HANGAR) and the chip line beside the research line; OPEN HANGAR opens
+  the HANGAR over the hub (app.js hangarOnly, like labOnly: session state only, every change a Worker action); styles in
+  css/conquest.css (.cq-bat-*). Chromium smoke at 390x844 and 1280x800: renders, no page errors (captures
+  docs/conquest/session6c/hangar-*.png); conquest-hub-browser.py PASS.
+- DONE slice 9: every operation briefing carries the strip (ConquestHangar.strip in app.js briefing(): enemy icons + hint
+  line, your picked force for the fight size, preset P1-P3 switch, FORCE chip). Not yet checked in a browser. Lesson repeated
+  three times this session: an inserted trailing `//` comment on a long minified line swallows the rest of it; use /* */.
+### Slice 2: allies in the combat engine (Nov 19; decisions and why)
+- `Battle.friends` (combat.js): units with `side` ('mine' your pilots, 'ldf' LDF regulars outside your command) and `ctl`
+  ('ai' now; any other controller is never driven by the AI: the co-op foundation). Stats are `friendStats` = tankOf() of the
+  unit's kit (allyLoadout: weapon + chassis with tier and roll; no cores, plating, engineering, mods), cached per object and never
+  saved; the pilot's and allies' projectiles name their owner instead of carrying stats (the record stays small).
+- The ally AI reuses the Parasites' steering (`steer`, refactored out of `choose` with identical arithmetic) with the side
+  flipped; the Parasites pick a target among the pilot and the friendly units (`threat`: nearest by effective distance, the pilot
+  first by 12 m, a Guardian inside 45 m draws fire by 20 m x m). Roles: Guardian cover 20% x m within 12 m (shooter side),
+  Breacher +40% x m vs structures, +50% x m vs frozen within 15 m, a 0.4 s charge every 9 s; Lancer range x1.4, x0.6 inside 20 m,
+  +50% x m vs drones, a shredded target is a full hit +30% x m; Mender heals 1.2% x m a second within 18 m (the pilot too),
+  revives one downed ally a fight at 35%; Corroder 4 stacks of +5% x m from everyone, 5 s; Frostline a 7 m cryo field every 8 s
+  (slow 50% x m, light units freeze 1.5 s x m). m = 1 + 0.1 a Role Core level above 1 + 0.1 at ranks 3, 6, 9 (1.0-1.7), set by
+  the Worker at deploy (combat.js never reads progression, gear rating or purchases).
+- Pilot-only (owner): objectives use the pilot's position only (test: allies on the uplink do nothing); a general's shield
+  core (`e.core`) takes only the pilot's damage. Damage flags `e.pd` (pilot) / `e.ad` (ally) feed the points rule.
+- Caps: 10 friendly units, the nearest 20 Parasites run each step, 6 drones, 160 projectiles with the Parasites' own 96 kept
+  (so allies never change how often a Parasite may fire). Ally supers: the player's charge rule (their own damage dealt and
+  taken, same constants) plus 20 s per unit and 3 s across units; fired as a normal hit; 8 in three full assaults in the test.
+- Downed allies are never lost: in the open world they return after 15 quiet seconds at half hull and stay capped there until
+  repaired (`hc`); in an operation a Mender can revive one; the Worker brings them back at half hull after the fight.
+- THE SPLIT (owner: about 60/40 in a full assault, tuned through aim lag and reaction time only): ALLY.decide 0.6 s (the aim is
+  where the target was at the last decision), react 2.9 s on a new target (0.5 s on the pilot's own lock: the squad datalink,
+  added because Wing allies otherwise did 5-11% in short field missions), turret 0.5x the tank's rate. Measured
+  (`docs/conquest/session6c/ally-split.json`, scripted pilot): Wing 26.3% allies (5/5 won), Platoon 53.9% (10/10, raids: the pilot
+  spends its time on objectives), Battalion full assault 61.8% (10/10, equal Epic gear, a test fixture of the siege raids + 12
+  VETERAN Parasites; real Battalion content arrives in 7/7B). Sweep record: react 1.1 -> 2.9 moved the Battalion share 69.8% ->
+  61.8%. Note for the report: a Platoon lets a stock pilot clear VETERAN raids (stock alone: 0/15); the ladder check models
+  fixed 90 s sorties, so it is unchanged by allies; real raid clears get shorter.
+- Record measurement before the split (real Worker routes, `dev/tools/session6c/measure-record.mjs`): a new pilot's record is
+  18,937 bytes (battle 13,376, 22 enemies at ~540 B), 45 KB of Firebase download per input request (GET + the CAS echo), 164 MB
+  a pilot-hour at 1 Hz; during an operation the record is 38.7 KB (the exploration battle kept beside the operation's: 16.8 KB)
+  and the reply to the phone is 22 KB a request (78 MB/h of mobile data).
+
+### Research: comparable games (Nov 19, before design; Checkpoint 41's research is not repeated)
+Searched this session (fan wikis, community guides and news; numbers from third parties are marked as such).
+- **Clash Royale (first).** Tower Troops (Dec 2023): a support defender picked before the match from four (Tower Princess
+  default; Cannoneer, Dagger Duchess, Royal Chef unlock by Arena), upgraded on its own track; the Royal Chef (Dec 2024) buffs the
+  level of nearby allied troops. Battle Banners (Summer 2023): frames and decorations from challenges, events, Pass Royale and the
+  shop (the Banner Box was removed); Tower Skins are sold "from time to time" (support.clashroyale.com); gem packs 80 / $0.99 to
+  14,000 / $99.99 and Pass Royale $4.99 (third-party). Card info says what a card targets (air / ground / buildings); the enemy
+  deck is unknown before a battle. Champions: one per deck, one ability with a cost and a cooldown.
+  Lessons used: the pre-fight pick is the decision moment (the briefing strip: enemy icons + your picked force, two taps); a
+  squad paint and banner are the tower-skin / banner equivalent, looks only, sold and earned; PvE lets us name the counters
+  outright (the hint line), which Clash Royale cannot; AI abilities on a charge plus a cooldown.
+- **Boom Beach (Supercell).** The Flare is one gunboat order that sends every troop to one spot; otherwise troops pick targets by
+  their own rules. Heavies (high hull, draw fire) in front of Zookas (high damage, fragile) is "the most versatile and reliable
+  combo"; Medics heal from behind and stand still when no other troop is alive; Cryoneers slow. Community tip: flare just behind
+  the target so fragile troops do not stop in the open. Lessons used: one COMMAND button for the whole force (tap = the smart
+  order); roles are a composition game (Guardian / Lancer / Mender mirror Heavy / Zooka / Medic); the Mender falls back behind
+  the front line; Attack sends each ally to its own role range around the target, never onto it.
+- **Squad Busters (Supercell, May 2024).** Shuts down Dec 14, 2026 (purchases off since late 2025): a squad game whose squad
+  fights mostly on its own did not hold players. Lesson: the pilot must never become a spectator. The owner's rules (pilot-only
+  objectives, about 40% of the damage) are exactly that guard; measured below per fight size.
+- **Last War: Survival / Whiteout Survival (top-grossing squad games).** Five-hero squads, 2 front + 3 back rows, unit types that
+  counter each other, a same-type bonus (+5% to +20% by source), a squad power number everywhere. Lessons: a visible FORCE number
+  and a formation pick before the fight sell; a same-type set bonus pushes one-type squads, which fights "composition matters",
+  so combos stay mechanical (blueprint §4) and guardrail 4 proves balanced beats one-role.
+- **XCOM 2.** Rookies promote by kills, at most one promotion per mission; nicknames from Sergeant; a memorial of the fallen.
+  Lessons: call sign + kill count on every roster card; at most one rank per operation, shown after the fight; pilots are never
+  lost (owner) so attachment never turns into the loss that drives casual players away.
+- **MechWarrior 5 / BattleTech.** Lancemates are hired for a fee; repairs take days and money ("half the battle is paying the
+  bills"). Lesson: repair is an alloy sink, but instant at the Refuge or your town (no downtime that blocks play).
+- **Darkest Dungeon.** The Stage Coach brings recruits on a weekly clock and the barracks upgrade raises the roster (to 25-30);
+  there are always enough recruits to field a party. Lessons: the roster grows with the Hangar, recruits arrive on a clock.
+- **Mass Effect 2/3.** Tap a mapped power to use it, hold to open the power wheel (left Shift on PC); squad orders move / attack /
+  rally. Lesson: tap = smart order, hold = the four-way wheel; on a computer one key for both plus four direct keys.
+- **War Robots pilots.** Paid pilots with the best perks drew pay-to-win criticism (Steam threads; Common Sense Media calls it a
+  "pay-to-win mech battler"). Lesson: the owner's "never sold: pilots, ranks, Role Core levels" is right; we sell looks (liveries)
+  and time (RECRUIT finish), never power through pilots.

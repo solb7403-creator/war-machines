@@ -3,6 +3,7 @@
 // outbox; the garage then fits it (lab_save) and power follows; the premium Lunar Pass on the account gives -25% time and a second
 // slot; bonus parts on the account (eco S.bpt) are spent after earned ones; a client can never write S.rm, S.lsm, S.bpt or S.rsx.
 import assert from 'node:assert/strict';
+import {cqLive} from './cqlive.mjs';   // Session 6C: the Conquest record is split (hot + cold blob)
 import {createHmac} from 'node:crypto';
 import {makeDB} from './fakedb.mjs';import {buildSim} from '../../../worker/build-sim.mjs';
 buildSim();const db=makeDB({pruneEmptyUnder:['conquest']});
@@ -13,7 +14,7 @@ const env={BOT_TOKEN:'conquest-research-test',FIREBASE_DB_SECRET:'SECRET'};
 let now=Date.UTC(2026,10,17,10,0,0);Date.now=()=>now;
 function auth(id){const p=new URLSearchParams({auth_date:String(Math.floor(now/1000)),user:JSON.stringify({id,first_name:'Pilot'})});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
 async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:7,initData:auth(id),...body})}),env);const text=await r.text();return {status:r.status,...(text.startsWith('{')?JSON.parse(text):{text})};}
-const eco=id=>db.get('eco/tg_'+id),cq=id=>db.get('conquest/tg_'+id),putCq=(id,v)=>{db.root.conquest['tg_'+id]=JSON.parse(JSON.stringify(v));},putEco=(id,v)=>{db.root.eco['tg_'+id]=JSON.parse(JSON.stringify(v));};
+const eco=id=>db.get('eco/tg_'+id),cq=id=>cqLive(db,'tg_'+id),putCq=(id,v)=>{db.root.conquest['tg_'+id]=JSON.parse(JSON.stringify(v));},putEco=(id,v)=>{db.root.eco['tg_'+id]=JSON.parse(JSON.stringify(v));};
 let passed=0;const ok=(cond,msg)=>{assert(cond,msg);passed++;console.log('PASS '+msg);};
 const MIN=60000;
 // a pilot with a town (CC cc) and a Science Lab at level lv, standing at the Command Gate, with research parts

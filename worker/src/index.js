@@ -318,6 +318,9 @@ const descOf = (d) => {
   // Stars invoice, TON or SOL payment can buy one. Opening it is an owner decision: set RULES.LAB_STORE_OPEN, add the kinds to the
   // Stars payload and grant paths below, and price "rsfin" from the Conquest record's running job (never from the phone).
   if (kind === "rspack" || kind === "rsleg" || kind === "rsfin") return null;
+  // Session 6C Battalion store (chip pack, liveries, RECRUIT instant finish): CHECKOUT OFF (RULES.BAT_STORE_OPEN false) in every
+  // currency, refused here like the Lab kinds; ecoGrant enforces the same sale rules itself (batSaleOk)
+  if (RULES.BAT_KINDS.includes(kind)) return null;
   return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind, c } : null;
 };
 async function payLog(env, b, user, pid, now = Date.now()) {
@@ -767,7 +770,7 @@ export default {
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
       if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261118100557"},409),req);
+        return cors(json({error:"update",build:"20261119074646"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);

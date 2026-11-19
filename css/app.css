@@ -958,7 +958,7 @@ button.q{display:flex;width:100%;text-align:left}
 .q.vol .volr{flex:none;width:46%;max-width:220px;height:32px;margin:0;accent-color:var(--ok);touch-action:pan-y;cursor:pointer}
 .q.vol.off{opacity:.55}.q.vol .volr:disabled{cursor:default}
 /* Session 6B: the Science Lab store entries in the Shop (checkout off: disabled buttons with their proposed prices) */
-.labshop{padding:12px}.labshop .mut{margin:0 0 8px}
+.labshop{padding:12px}.labshop-bat{padding:12px}.labshop .mut{margin:0 0 8px}
 .labshop-item{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;padding:8px 0;border-top:1px solid var(--edge2)}
 .labshop-item .grow{min-width:0;flex:1 1 150px}.labshop-item b{display:block}.labshop-item span{color:var(--dust);font-size:12px}
 .labshop-item.leg b{color:var(--gold)}.labshop-item button[disabled]{opacity:.75;cursor:default}
@@ -973,3 +973,4 @@ button.q{display:flex;width:100%;text-align:left}
 .labshop-item button[disabled]{opacity:.5}
 .labshop .labshop-note{margin:0 0 8px;color:var(--gold)}
 
+.labshop-bat .mut{margin:0 0 8px}.labshop-bat .labshop-note{margin:0 0 8px;color:var(--gold)}

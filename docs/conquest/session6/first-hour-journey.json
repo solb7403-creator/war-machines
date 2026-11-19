@@ -10,9 +10,10 @@
   "ferrite-banked": 3.12,
   "second-mission": 4.49,
   "first-plate": 4.49,
-  "field-2": 5.75,
-  "first-town": 5.97
+  "field-2": 5,
+  "field-3": 6.33,
+  "first-town": 6.6
  },
- "baseMinute": 5.97,
- "completed": 2
+ "baseMinute": 6.6,
+ "completed": 3
 }

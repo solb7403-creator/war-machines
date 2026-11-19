@@ -44,6 +44,8 @@ function orderReward(o,s,pay=1){const P=typeof CQ_PTS==='object'?CQ_PTS:null;if(
 // The board after the coach: claim the town once it is affordable, else the nearest field mission not cleared yet, else the War
 // Orders (js/conquest/orders.js, Part E). Everything else (raids, strikes) is picked from the MAP.
 function boardOrder(s,p,opts={}){if(!s)return null;const done=s.completed||{},D=C.baseDefinition,L=s.ledger;
+ // Session 6C (owner, Nov 18): the first wingman comes right after the first plate, before the town: one new thing per stage
+ {const w=C.operations['wingman-rescue'];if(w&&!s.bat?.w&&!done['wingman-rescue'])return {...w,reward:'A WINGMAN',line:'STANDARD · a pilot is down at the colony\'s south fields: save them and they fly with you'};}
  if(!s.base?.tier&&L){const have=Object.entries(D.recipe).every(([k,n])=>(k==='cp'?L.cp:L.banked?.[k]||0)>=n);if(have)return {kind:'base',x:D.x,z:D.z,radius:D.radius,name:'CLAIM YOUR TOWN',reward:fmt(D.recipe.cp)+' CP',line:'Command Gate: pick your site, name your town'};}
  const field=nearestOf(C.fieldMissionIds.filter(id=>!done[id]).map(id=>C.operations[id]),p);
  if(field){const town=!s.base?.tier&&L?' · TOWN '+fmt(Math.min(L.cp,D.recipe.cp))+' / '+fmt(D.recipe.cp)+' CP':'';return {...field,reward:orderReward(field,s,opts.pay||1),line:(field.danger||'STANDARD')+' · FIRST CLEAR'+town};}

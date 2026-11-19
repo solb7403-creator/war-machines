@@ -97,6 +97,41 @@
 /* Phase 3: scanner pulse, carried minerals and the Meteor Strike line (docs/economy/RESOURCE_ECONOMY.md §5) */
 .cq .cq-scan-access{position:absolute;left:16px;bottom:calc(146px + max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)));min-height:36px;min-width:64px;padding:6px 12px;font-size:10px;border:1px solid #57d2ea;color:#d6f6ff;background:#0a2230e6}
 @media(orientation:landscape) and (max-height:500px){.cq .cq-scan-access{left:140px;bottom:70px}}
+/* Session 6C: the insignia over each ally (js/conquest/allies3d.js tags): role badge, call sign, hull bar; DOWN when downed */
+.cq .cq-ally-tags{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.cq .cq-ally-tag{position:absolute;left:0;top:0;display:flex;align-items:center;gap:4px;margin:-12px 0 0 -12px;padding:2px 6px 2px 2px;border-radius:12px;background:#07131cc4;border:1px solid color-mix(in srgb,var(--rc,#d9c27a) 70%,transparent);color:#eaf6ff;font:700 11px/1 'Chakra Petch',sans-serif;letter-spacing:.04em;white-space:nowrap;will-change:transform;text-shadow:0 1px 2px #000}
+.cq .cq-ally-badge{display:inline-grid;place-items:center;width:18px;height:18px;flex:none;font:800 11px/1 'Chakra Petch',sans-serif;font-style:normal;color:#07131c;background:var(--rc,#d9c27a);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.cq .cq-ally-hp{position:relative;display:block;width:30px;height:3px;border-radius:2px;background:#ffffff26;overflow:hidden}.cq .cq-ally-hp i{position:absolute;inset:0;background:var(--rc,#d9c27a);transform-origin:left center}
+.cq .cq-ally-far{padding:2px;background:#07131c8c}.cq .cq-ally-far .cq-ally-cs,.cq .cq-ally-far .cq-ally-hp{display:none}
+.cq .cq-ally-down{border-color:#ff6b5a;background:#2a0b08d0}.cq .cq-ally-down .cq-ally-badge{background:#ff6b5a;animation:cqAllyDown 1s ease-in-out infinite}.cq .cq-ally-down .cq-ally-cs{color:#ffb4a8}
+.cq .cq-ally-ldf .cq-ally-badge{color:#2a2410}.cq .cq-ally-edge{opacity:.82;box-shadow:0 0 0 1px #0008}
+@keyframes cqAllyDown{50%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){.cq .cq-ally-down .cq-ally-badge{animation:none}}
+/* Session 6C COMMAND: the context slot in a fight (js/conquest/command.js). Tap = the smart order, hold = the order wheel */
+.cq .cq-command-access{position:absolute;left:16px;bottom:calc(146px + max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)));min-height:46px;min-width:132px;max-width:230px;padding:6px 12px 6px 34px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;text-align:left;border:1px solid #f4cf77;border-radius:10px;color:#ffeec4;background:linear-gradient(180deg,#3b2d10f2,#1c1608f2);box-shadow:0 0 0 1px #000a,0 6px 18px #0008,inset 0 1px 0 #ffe6a033;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.cq .cq-command-access::before{content:'';position:absolute;left:10px;top:50%;width:16px;height:16px;margin-top:-8px;background:conic-gradient(from 45deg,#f4cf77 0 25%,#8a6a22 0 50%,#f4cf77 0 75%,#8a6a22 0);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);filter:drop-shadow(0 0 4px #f4cf7799)}
+.cq .cq-command-access .cq-cmd-k{font:800 12px/1.1 'Chakra Petch',sans-serif;letter-spacing:.05em;color:#ffe2a0;white-space:nowrap}
+.cq .cq-command-access .cq-cmd-sub{font:600 11px/1.15 sans-serif;color:#e8dcc0;opacity:.92;white-space:nowrap}
+.cq .cq-command-access.cq-cmd-flash{border-color:#fff1c4;box-shadow:0 0 0 2px #f4cf77aa,0 0 22px #f4cf7799}
+.cq .cq-command-access.cq-cmd-flash .cq-cmd-sub{color:#fff3cf;opacity:1}
+@media(orientation:landscape) and (max-height:500px){.cq .cq-command-access{left:140px;bottom:70px}}
+.cq .cq-cmd-wheel{position:absolute;width:212px;height:212px;margin:-106px 0 0 -106px;border-radius:50%;z-index:40;touch-action:none;background:radial-gradient(circle,#0c1620f2 0 27%,#0c162099 28% 69%,transparent 70%);box-shadow:0 0 0 1px #f4cf7744,0 10px 40px #000a;animation:cqCmdIn .14s ease-out}
+.cq .cq-cmd-wheel[hidden]{display:none}
+@keyframes cqCmdIn{from{transform:scale(.82);opacity:0}to{transform:none;opacity:1}}
+.cq .cq-cmd-w{position:absolute;width:86px;min-height:56px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:1px solid #f4cf7799;border-radius:12px;background:#1a1408f0;color:#ffeec4;font:800 12px/1.1 'Chakra Petch',sans-serif;letter-spacing:.04em;touch-action:none}
+.cq .cq-cmd-w i{font-style:normal;font-size:18px;line-height:1;color:#f4cf77}
+.cq .cq-cmd-w kbd{display:none;font:700 11px/1 sans-serif;color:#0c1620;background:#f4cf77;border-radius:4px;padding:2px 5px;margin-top:2px}
+.cq .cq-cmd-kb .cq-cmd-w kbd{display:inline-block}
+@media(hover:hover) and (pointer:fine){.cq .cq-cmd-w kbd{display:inline-block}}
+.cq .cq-cmd-w.cq-on,.cq .cq-cmd-w:focus-visible{background:#f4cf77;color:#1b1406;border-color:#fff3cf;box-shadow:0 0 16px #f4cf77aa}
+.cq .cq-cmd-w.cq-on i,.cq .cq-cmd-w:focus-visible i{color:#1b1406}
+.cq .cq-cmd-w.cq-cur::after{content:'NOW';position:absolute;top:-8px;right:-6px;padding:1px 5px;border-radius:6px;background:#7cf0a8;color:#07131c;font:800 10px/1.2 sans-serif}
+.cq .cq-cmd-wheel{background:radial-gradient(circle,#0c1620fa 0 30%,#0c1620e0 31% 69%,transparent 70%)}
+.cq .cq-cmd-top{left:63px;top:0}.cq .cq-cmd-bottom{left:63px;bottom:0}.cq .cq-cmd-left{left:0;top:78px}.cq .cq-cmd-right{right:0;top:78px}
+.cq .cq-cmd-hub{position:absolute;left:50%;bottom:calc(100% + 8px);width:244px;transform:translateX(-50%);text-align:center;pointer-events:none;display:flex;flex-direction:column;gap:2px;padding:6px 10px;border-radius:9px;border:1px solid #f4cf7766;background:#0c1620f0;box-shadow:0 6px 18px #0009}
+.cq .cq-cmd-hub b{font:800 13px/1.1 'Chakra Petch',sans-serif;color:#ffe2a0;letter-spacing:.05em}.cq .cq-cmd-hub small{font:600 12px/1.25 sans-serif;color:#d9e3ea}
+.cq .cq-cmd-wheel::after{content:'';position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:2px solid #f4cf77aa;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.cq .cq-cmd-wheel{animation:none}}
 .cq-mn,.cq-strike{position:absolute;left:14px;right:14px;font:9px/1.4 sans-serif;pointer-events:none;text-shadow:0 1px 3px #000}
 .cq-mn{top:148px;color:#ffd9b8}.cq-strike{top:162px;color:#ffb37a;font-weight:700;letter-spacing:.04em}
 .cq-mn:empty,.cq-strike:empty{display:none}
@@ -415,6 +450,17 @@
 .cq .cq-lab-node .cq-lab-tag{display:block;margin-top:4px;font:800 11px 'Chakra Petch',sans-serif;color:#7cf0a8}
 .cq .cq-lab-node.cq-lab-running .cq-lab-tag{color:#ffd36b}
 .cq .cq-lab-node .cq-lab-go{margin-top:6px;width:100%;min-height:40px}
+.cq .cq-lab-grant{border:1px solid #f4cf77;border-radius:10px;padding:10px;margin:8px 0;background:linear-gradient(180deg,#2b2110f0,#14100af0);box-shadow:0 0 18px #f4cf7722}
+.cq .cq-lab-grant-k{display:block;font:800 13px 'Chakra Petch',sans-serif;color:#ffe2a0;letter-spacing:.06em}
+.cq .cq-lab-grant p{margin:4px 0 8px;font-size:12px;line-height:1.35;color:#e8dcc0}
+.cq .cq-lab-grant-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cq .cq-lab-grant-go{min-height:60px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:8px 10px;border:1px solid var(--tc);border-radius:9px;background:#0b141cf0;color:#eaf6ff;text-align:left}
+.cq .cq-lab-grant-go b{font:800 12px 'Chakra Petch',sans-serif;color:var(--tc)}.cq .cq-lab-grant-go small{font-size:12px;line-height:1.3;color:#c9d6df}
+.cq .cq-lab-rc h3{display:flex;align-items:center;gap:6px}.cq .cq-lab-rc{border-color:color-mix(in srgb,var(--rc,#f4cf77) 45%,#2c4256)}
+.cq .cq-lab-roles>summary{color:#ffe2a0}
+.cq .cq-aar-bat{margin:8px 0;padding:8px 10px;border:1px solid #f4cf7766;border-radius:9px;background:#1a1408d9;display:flex;flex-direction:column;gap:3px}
+.cq .cq-aar-bat-k{font:800 12px 'Chakra Petch',sans-serif;color:#ffe2a0;letter-spacing:.06em}.cq .cq-aar-bat p{margin:0;font-size:12px;line-height:1.35;color:#efe6cf}
+.cq .cq-aar-bat .cq-aar-bat-join,.cq .cq-aar-bat .cq-aar-bat-rank{color:#ffe9b0;font-weight:700}.cq .cq-aar-bat .cq-aar-bat-chip{color:#9fe8ff;font-weight:700}
 .cq .cq-lab-node.cq-lab-legnode{border-color:#7a6326;background:linear-gradient(90deg,#2a220c66,#0a141ed9 50%)}.cq .cq-lab-node.cq-lab-legnode h3{color:#ffcf4a}
 .cq .cq-lab-locked>summary{opacity:.75}
 .cq .cq-lab-reveal{border-top:4px solid var(--tc,#7fe8ff)}.cq .cq-lab-reveal h2{color:var(--tc,#fff)}
@@ -478,3 +524,46 @@
 .cq .cq-lab-node.cq-lab-ready .cq-lab-go:not(:disabled){background:color-mix(in srgb,var(--tc,#5aa9ff) 50%,#0f1d2b);color:#fff;font-weight:800;box-shadow:0 0 12px color-mix(in srgb,var(--tc,#5aa9ff) 45%,transparent)}
 @media(min-width:700px){.cq-dialog.cq-lab-hub,.cq-dialog.cq-lab-hub-reveal{box-shadow:0 0 0 100vmax #04080ed9,0 16px 80px #000b}}
 .cq .cq-hub-actions .cq-hub-deploy{max-width:none}
+/* Session 6C Battalion: the HANGAR, the briefing strip, the hub card */
+.cq .cq-hangar .cq-bat-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 6px}
+.cq .cq-bat-stage{font:700 12px 'Chakra Petch',sans-serif;color:#cfe6f3;letter-spacing:.04em}
+.cq .cq-bat-next,.cq .cq-bat-lock{display:block;font-size:12px;color:#ffd78a;margin:4px 0}
+.cq .cq-bat-presets,.cq .cq-bat-forms,.cq .cq-bat-strip-presets{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.cq .cq-bat-presets button,.cq .cq-bat-forms button,.cq .cq-bat-strip-presets button{min-height:44px;flex:1 1 0;min-width:72px}
+.cq .cq-hangar button.cq-on,.cq .cq-bat-strip button.cq-on{border-color:#7fe3ff;background:#12384a;color:#fff;box-shadow:0 0 0 1px #7fe3ff inset}
+.cq .cq-bat-forms button:disabled{opacity:.5;border-style:dashed}
+.cq .cq-bat-tools,.cq .cq-bat-repair,.cq .cq-bat-recruit{display:flex;flex-direction:column;gap:6px;margin:10px 0;padding:8px;border:1px solid #2c4256;border-radius:8px;background:#0a141ed9}
+.cq .cq-bat-tools button,.cq .cq-bat-repair button,.cq .cq-bat-recruit button{min-height:44px;align-self:flex-start}
+.cq .cq-bat-role{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;background:var(--rc,#d9c27a);color:#07131c;font:800 13px 'Chakra Petch',sans-serif;flex:none;transform:rotate(45deg)}
+.cq .cq-bat-role{transform:none;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.cq .cq-bat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}
+.cq .cq-bat-card{border:1px solid #2c4256;border-left:3px solid var(--rc,#d9c27a);border-radius:8px;padding:8px;background:#0a141ef0;display:flex;flex-direction:column;gap:3px}
+.cq .cq-bat-card.cq-bat-hurt{border-color:#ff9d8a;border-left-color:#ff9d8a}
+.cq .cq-bat-card-top{display:flex;align-items:center;gap:6px}.cq .cq-bat-cs{font:800 15px 'Chakra Petch',sans-serif;color:#fff;flex:1}
+.cq .cq-bat-slot{font:800 11px 'Chakra Petch',sans-serif;color:#7fe3ff}.cq .cq-bat-card small{font-size:12px;color:#b7cad8;line-height:1.3}
+.cq .cq-bat-rank{display:flex;align-items:center;gap:6px}.cq .cq-bat-chev{color:#ffd36b;font-size:10px;letter-spacing:-1px}
+.cq .cq-bat-card progress{width:100%;height:5px}.cq .cq-bat-card button{min-height:40px;margin-top:2px}
+.cq .cq-bat-picker{display:grid;gap:6px;margin:8px 0;padding:8px;border:1px solid #7fe3ff;border-radius:8px;background:#071019}
+.cq .cq-bat-pick{display:grid;grid-template-columns:28px 1fr;gap:2px 8px;align-items:center;text-align:left;min-height:48px}
+.cq .cq-bat-pick small{grid-column:2;font-size:11px;color:#9fb6c9}
+.cq .cq-bat-livery{display:grid;grid-template-columns:32px 1fr;gap:2px 8px;align-items:center;margin:6px 0}.cq .cq-bat-livery small,.cq .cq-bat-livery button,.cq .cq-bat-livery .cq-lab-off{grid-column:2}
+.cq .cq-bat-swatch{width:28px;height:28px;border-radius:6px;grid-row:span 2;border:1px solid #2c4256}
+.cq .cq-bat-help-row{display:grid;grid-template-columns:28px 1fr;gap:2px 8px;margin:6px 0}.cq .cq-bat-help-row small{grid-column:2}
+.cq .cq-bat-warn{display:block;padding:5px 8px;border-radius:7px;border:1px solid #ff9a55aa;background:#2a1408d9;color:#ffd2b0;font:700 12px/1.3 sans-serif}
+.cq .cq-bat-strip{border:1px solid #2c4256;border-radius:8px;padding:8px;margin:8px 0;background:#0a141ed9;display:flex;flex-direction:column;gap:6px}
+.cq .cq-bat-enemies,.cq .cq-bat-force{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cq .cq-bat-strip-k{font:800 11px 'Chakra Petch',sans-serif;color:#9fb6c9;letter-spacing:.08em;min-width:64px}
+.cq .cq-bat-foe,.cq .cq-bat-mine{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:999px;border:1px solid #6b2a2a;background:#2a1010;font-size:11px}
+.cq .cq-bat-foe i{font-style:normal;color:#ff6b5e}.cq .cq-bat-foe.cq-heavy{border-color:#a04a2a}.cq .cq-bat-foe.cq-boss{border-color:#ffd36b}.cq .cq-bat-foe.cq-boss i{color:#ffd36b}
+.cq .cq-bat-mine{border-color:#2c5a6e;background:#0d2733}.cq .cq-bat-mine .cq-bat-role{width:18px;height:18px;font-size:10px}
+.cq .cq-bat-hint{font-size:12px;color:#ffd78a;line-height:1.35}
+.cq .cq-hub-chip-day{display:block;font:700 12px 'Chakra Petch',sans-serif;color:#7fe3ff}.cq .cq-hub-chip-day.cq-hub-part-done{color:#ffd36b}
+
+/* Session 6C UX critic round 1 */
+.cq .cq-dialog>button:not(.cq-lab-close-top){scroll-margin-bottom:12px}
+.cq .cq-dialog:has(.cq-bat-strip)>button:first-of-type:not(.cq-lab-close-top){position:sticky;bottom:0;z-index:2;width:100%;min-height:52px;margin-top:8px;box-shadow:0 0 0 10px #07131c,0 -14px 22px #07131c}
+.cq .cq-bat-forms button,.cq .cq-bat-presets button,.cq .cq-lab-rc .cq-lab-go{white-space:nowrap}
+@media(max-width:340px){.cq .cq-bat-forms button,.cq .cq-bat-presets button{font-size:11px;letter-spacing:0;padding-left:6px;padding-right:6px}}
+.cq .cq-bat-miss{display:block;padding:4px 8px;border-radius:7px;border:1px solid #ff6b5a99;background:#2a0b08cc;color:#ffb4a8;font:700 12px/1.3 sans-serif}
+.cq .cq-lab-rc .cq-lab-go:not(:disabled){background:linear-gradient(180deg,#ffe08a,#e0b54a);color:#1b1406;border-color:#fff1c4;font-weight:800}
+.cq .cq-aar-wingtile strong{color:#ffe2a0}

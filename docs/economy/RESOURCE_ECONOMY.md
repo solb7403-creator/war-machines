@@ -1015,6 +1015,63 @@ Modeled with scenario layouts, not a human playtest.
 - **Refunds (no loops):** removing a wall returns 50% of its composite (rounded down per order) and none of its ore; removing a turret returns 50% of what all its levels cost (CP and materials, rounded down); other buildings nothing; dev-mode test records get nothing back.
 - **Hooks (data now, Session 7 gameplay):** garrison (`plot.gar`: one Hangar slot a level for defending tanks), loot protection (`loot()`: banked goods never raidable; the Storage Depot protects 25% + 10% a level, up to 75%, of the production store and composite), peace shield (`plot.shieldUntil`, set after a raid), attack alerts (`plot.alerts`: who, when, outcome, `sent:0` for the Telegram bot; drills and raids write them).
 
+## 15. Battalion (Session 6C, owner prompt Nov 18 2026)
+
+Allies are earned, never sold. **Never sold:** pilots, ranks, Role Core levels. **Never airdrop points:** chips, recruits, Role
+Cores, liveries, the wingman rescue; allies never multiply points (a kill pays points, CP and loot only when your own tank dealt
+part of the damage; `CQ_PTS.hourMax` 120 and `DAILY_CAP` 50,000 unchanged). Rules: `js/conquest/battalion.js` (shared),
+`worker/src/conquest-battalion.js` (authority), pinned in `docs/owner-rules.json` `battalion`.
+
+**15.1 Pilots and fielding.** No starter pilots: the first wingman is the pilot you rescue right after the first plate (about
+minute 13, its own STANDARD operation `wingman-rescue`, no points, CP or salvage: the reward is the pilot). Field caps: 1 with no
+Hangar, then Hangar I-V 2 / 4 / 5 / 7 / 9 (Hangar costs and gates unchanged, `js/conquest/plot.js`). Fight sizes: Wing 2 (roaming,
+field missions), Platoon 4 (raids, territory and town defenses, Meteor Strikes), Battalion 9 (Citadel assaults, Grand Offensives,
+co-op: Sessions 7 / 7B). Roster of 16 named recruits: 1 for your first BEACON EXTRACTION win each UTC day, and the Hangar's RECRUIT
+job (8 h on the Worker clock, time only, one at a time, none while the roster is full; instant finish priced by `rsFinPrice`,
+checkout off). Ranks 1-10 from operations fought (XP 1 / 2 / 3 by danger, 1 for a lost fight of 30 s or more, at most one rank an
+operation); ranks 3, 6, 9 strengthen the role signature (+10% each).
+
+**15.2 Role Cores and command chips.** Science Lab IV (4,424 CP + 249 alloy + 111 biomass + 41 helium, 6 h, Command Center 7)
+opens the fifth research track. Level 1 of each role is free with the role; levels 2-5 cost 2 / 4 / 5 / 9 command chips (20 a role,
+120 for all six), 8 h each in the Lab's research slots, chips and time only, never CP; +10% to the role's signature a level, on every
+pilot of that role. Command chips: your first win each UTC day with at least one of your pilots fielded gives 1 (the Worker's clock,
+like the daily research part); a chip found after the day's chip becomes 1 cosmetic fragment (pool 'u'); earned chips are held up to
+50; chips from the chip pack are a separate account total that ignores the daily limit.
+
+**15.3 Militia crews (Session 6C section 9).** With no spare gear an ally fights in a militia kit (Common, no cores). Militia crews
+are green: slower to decide and to open fire than crews you arm with your spare gear (AUTO-ARM), and they freeze up in a VETERAN
+operation (`js/conquest/combat.js` MILITIA / MILITIA_VET). Measured (`docs/conquest/session6c/veteran-rule.json`): a stock pilot
+with a militia Platoon cleared 9 of the 15 VETERAN raids before the fix and clears 1 now (alone 0; with an Epic-armed Platoon 13);
+on HARD raids a militia Platoon still helps (10 of 10, alone 8). This is a gear lever: your spare weapons and chassis arm your pilots,
+so every crate, salvage and Shop item keeps its value after you upgrade your own tank.
+
+**15.4 Repairs (PROPOSAL).** A downed pilot is never lost; it returns at half hull until repaired at the Refuge Supply terminal or in
+your town: **6 banked alloy a pilot (PROPOSAL)** (`BT.REPAIR.alloy`; your own hull repair stays free). A Platoon that lost all four
+pilots pays 24 alloy, about one HARD raid's alloy salvage: a sink that never blocks play.
+
+**15.5 Store (checkout off until Session 8; prices are PROPOSALS).** Command chip pack: **5 chips, 299 Stars (Telegram) / 4.8 TON (SOL
+at the live rate), one a UTC week (PROPOSAL)**: with it the first role maxes on day 13.3 instead of 19.3 and all six on day 69.3
+instead of 119.3 (60 min a day). Battalion liveries (looks only, never power or points; stock paint is the default, LDF regulars
+always wear the LDF livery): **Battalion colors (your paint and your town banner on every ally) 399 Stars / 6.4 TON; the plain sets
+Arctic, Ember, Verdant, Nightfall 199 Stars / 3.2 TON each (PROPOSAL)**. Every Battalion store kind (`chippack`, `livery`, `rcfin`) is
+refused by the Worker (`worker/src/index.js` descOf) and by `ecoGrant` while `BAT_STORE_OPEN` is false. The animated premium livery
+sets are row 6B-V (Fable).
+
+**15.6 Paces as built (report numbers, `node dev/tools/economy-model.mjs`, `docs/economy/economy-model.json` `battalion`; days from
+the first session).**
+
+| Pilot | First wingman | Wing (2) | Platoon (4) | Battalion (9) | Roster of 16 | Science Lab IV | First role maxed | All six maxed | One pilot rank 3 / 6 / 9 / 10 (always fielded) | 9 pilots rank 9 | Roster rank 10 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|
+| 30 min/day | minute ~13 | 3.3 | 4.8 | 43.1 | 9 | 22.1 | 23.4 | 119.3 | 2 / 11 / 35 / 49 | 89 | 208 |
+| 60 min/day | minute ~13 | 1.8 | 2.8 | 17.1 | 8.1 | 9.3 | 19.3 | 119.3 | 1 / 5 / 18 / 25 | 48 | 109 |
+| 120 min/day | minute ~13 | 1 | 2 | 10.2 | 8 | 5.5 | 19.3 | 119.3 | 1 / 3 / 9 / 12 | 26 | 58 |
+| 60 min/day + chip pack weekly (PROPOSAL) | minute ~13 | 1.8 | 2.8 | 17.1 | 8.1 | 9.3 | 13.3 | 69.3 | 1 / 5 / 18 / 25 | 48 | 109 |
+
+The rank pace is kept as built (owner, Nov 18). Read with the goal rules: nobody maxes quickly (all six Role Cores take about four
+months on the free path at any play time: chips are one a day), a payer gets there about seven weeks sooner with the weekly pack but
+never buys power directly (chips buy research time, not levels), and the Battalion stage (day 17 at an hour a day) gives the first
+month its big goal.
+
 ## Appendix: model assumptions (`dev/tools/economy-model.mjs`)
 
 - **Arcade points a minute:** same formula as `dev/tests/s2/ppm.mjs` (measured win rate and match length, +20 s of screens, streak bonus, no featured bonus) on `league-grid-standard.json`. It reproduces `docs/launch/LEAGUES.md`: 223 / 264 / 320 / 343 / 460 / 495 / 702.

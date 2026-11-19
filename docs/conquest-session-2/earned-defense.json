@@ -1,7 +1,7 @@
 {
   "scope": "Exact continuation of the continuous canonical starter earned save. No new resource/equipment/health/position/outcome fixture. Shared authoritative input replay, not a native browser combat recording.",
   "initial": {
-    "cp": 126,
+    "cp": 125,
     "loadout": {
       "w": {
         "a": "pulse",
@@ -32,23 +32,23 @@
       "paint": "stock"
     },
     "position": {
-      "x": 1080.9360907866958,
-      "z": 1156.3911609677434,
-      "y": -1.6484548160285646,
+      "x": 1082.478899580298,
+      "z": 1157.2889592908266,
+      "y": -1.4142256179212762,
       "surface": "ground"
     }
   },
-  "seconds": 10.1,
+  "seconds": 8.2,
   "kills": 6,
   "report": {
     "outcome": "victory",
-    "at": 1800000431400,
+    "at": 1800000467500,
     "ptsRaw": 708.75,
     "mn": {
       "fe": 2,
       "il": 1
     },
-    "cp": 161,
+    "cp": 160,
     "alloy": 15,
     "biomass": 10,
     "helium": 2,
@@ -57,11 +57,12 @@
     "damage": 0,
     "chain": {
       "links": 3,
-      "bonus": 0.0075
+      "bonus": 0,
+      "chance": 0.30000000000000004
     }
   },
-  "hp": 1523.705000000001,
-  "cp": 287,
+  "hp": 1612.8116000000005,
+  "cp": 285,
   "loadout": {
     "w": {
       "a": "pulse",
@@ -100,13 +101,17 @@
       "at": 1800000238450,
       "attempt": 2
     },
-    "convoy": {
-      "at": 1800000311800,
+    "wingman-rescue": {
+      "at": 1800000288700,
       "attempt": 3
     },
-    "base-defense": {
-      "at": 1800000431400,
+    "convoy": {
+      "at": 1800000339250,
       "attempt": 4
+    },
+    "base-defense": {
+      "at": 1800000467500,
+      "attempt": 5
     }
   }
 }

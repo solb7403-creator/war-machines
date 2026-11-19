@@ -24,7 +24,7 @@ async def main():
    exe=shutil.which('chromium') or ('/opt/pw-browsers/chromium' if pathlib.Path('/opt/pw-browsers/chromium').exists() else None)
    if exe:opts['executable_path']=exe
    browser=await pw.chromium.launch(**opts)
-   for w,h,mobile in [(390,844,True),(1280,800,False)]:
+   for w,h,mobile in [(390,844,True),(390,700,True),(320,568,True),(1280,800,False),(1366,768,False),(1920,1080,False)]:   # Session 6C: every size the owner tests
     ctx=await browser.new_context(viewport={'width':w,'height':h},has_touch=mobile,is_mobile=mobile);page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     await page.add_init_script('''window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'BrowserPilot'}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};''')
     async def route(r):

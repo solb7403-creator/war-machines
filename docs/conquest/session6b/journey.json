@@ -47,7 +47,7 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    4024,
+    4207,
     620
    ],
    "wide": false
@@ -197,7 +197,7 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    4024,
+    4207,
     764
    ],
    "wide": false
@@ -347,7 +347,7 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    4697,
+    4906,
     488
    ],
    "wide": false
@@ -497,7 +497,7 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    3598,
+    3741,
     688
    ],
    "wide": false
@@ -648,13 +648,13 @@
     "1FIELD CAPACITOR"
    ],
    "scroll": [
-    3598,
+    3741,
     1000
    ],
    "wide": false
   },
   "running": {
-   "job": "VENT BARREL \u00b7 20m 00s left",
+   "job": "VENT BARREL \u00b7 19m 59s left",
    "finish": "FINISH NOW \u00b7 8 \u2b50",
    "finishDisabled": true,
    "off": "Not on sale yet \u00b7 priced by the time left",

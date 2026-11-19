@@ -14,7 +14,7 @@ export function campaign(s,now){
  s.campaignVersion=2;s.campaignScore=Math.max(0,Number.isSafeInteger(s.campaignScore)?s.campaignScore:0);s.raidProgress=s.raidProgress||{shards:0,clears:0,blueprint:false,eliteBlueprint:false};s.territory=s.territory||{};s.reputation=Math.max(0,Number.isSafeInteger(s.reputation)?s.reputation:0);s.achievements=s.achievements||{};
  for(const sector of CONQUEST.Combat.sectors||[])if(!s.territory[sector.id])s.territory[sector.id]={owner:sector.id==='refuge'?'humanity':'parasites',status:sector.id==='refuge'?'secured':'active-parasites',...(sector.id==='refuge'?{defenseAt:now+1800000}:{})};
  for(const t of Object.values(s.territory)){t.status=t.status||(t.owner==='humanity'?'secured':'active-parasites');if(t.capturedAt&&!t.defenseAt)t.defenseAt=t.capturedAt+1200000;}
- const ids=Object.keys(CONQUEST.Combat.operations).filter(id=>id!=='base-defense'&&!CONQUEST.Combat.operations[id].defense&&!CONQUEST.Combat.operations[id].strike),rotation=Math.floor(now/1800000);s.contracts={ids:[ids[rotation%ids.length],ids[(rotation+3)%ids.length]],until:(rotation+1)*1800000};
+ const ids=Object.keys(CONQUEST.Combat.operations).filter(id=>id!=='base-defense'&&!CONQUEST.Combat.operations[id].defense&&!CONQUEST.Combat.operations[id].strike&&!CONQUEST.Combat.operations[id].wingman),rotation=Math.floor(now/1800000);s.contracts={ids:[ids[rotation%ids.length],ids[(rotation+3)%ids.length]],until:(rotation+1)*1800000};
  s.base=s.base||{tier:0,modules:{},builtAt:0,claimedAt:0};
  // Firebase drops empty maps: reconstruct this even when the base record already exists.
  s.base.modules=s.base.modules||{};s.base.pvpAvailable=false;if(s.base.tier&&!Number.isFinite(s.base.pointsAt))s.base.pointsAt=s.base.claimedAt||now;

@@ -33,5 +33,38 @@
     "blockedChecks": 93024,
     "differences": 0
   },
-  "review": "independent read-only review: no Critical/Important issue; additional1362points/13620checks passed"
+  "review": "independent read-only review: no Critical/Important issue; additional1362points/13620checks passed",
+  "battalion6c": {
+    "scope": "Session 6C: the same local warm Node replay (20 canonical commands = one game second) with friendly units beside the pilot (CQ_FRIENDS, six roles, militia kits) and 4 more Parasites; not Cloudflare production CPU or phone evidence",
+    "budget": {
+      "battalion": {
+        "friends": 10,
+        "hostiles": 20,
+        "cpuMedianMs": 60,
+        "cpuP95Ms": 110
+      },
+      "note": "the new server budget for a full Battalion fight (10 friendly units: the cap): about 1.6x the measured median, about 1.7x its p95; dev/tests/conquest-replay-budget.mjs with CQ_FRIENDS=10"
+    },
+    "measured": {
+      "battalion": {
+        "friends": 10,
+        "enemies": 20,
+        "projectiles": 4,
+        "wallMedianMs": 37.01750600000014,
+        "wallP95Ms": 66.45514200000002,
+        "cpuMedianMs": 37.433,
+        "cpuP95Ms": 65.934,
+        "node": "v22.23.5"
+      },
+      "platoon": {
+        "friends": 4,
+        "enemies": 20,
+        "projectiles": 5,
+        "wallMedianMs": 22.30897700000014,
+        "wallP95Ms": 26.153044000000023,
+        "cpuMedianMs": 22.927,
+        "cpuP95Ms": 33.867
+      }
+    }
+  }
 }

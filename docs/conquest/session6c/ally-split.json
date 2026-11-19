@@ -1,0 +1,321 @@
+{
+ "generatedBy": "dev/tests/conquest-allies.mjs",
+ "scope": "scripted pilot (locks the nearest, closes to 60% range, shield under 80%, super when full) with allies on the real shared engine; not a human playtest",
+ "ally": {
+  "decide": 0.6,
+  "react": 2.9,
+  "reactLock": 0.5,
+  "turn": 0.5,
+  "align": 0.1,
+  "leash": 42,
+  "regroup": 95,
+  "pilotBias": 12,
+  "superSpacing": 20,
+  "superGap": 3,
+  "downHull": 0.5,
+  "returnS": 15,
+  "quietR": 60,
+  "fireLane": 2.2
+ },
+ "sizes": {
+  "wing": {
+   "allies": 2,
+   "roles": [
+    "none",
+    "none"
+   ],
+   "gear": "stock pilot + militia (Common, no cores)",
+   "allyShare": 0.15,
+   "pilotShare": 0.85,
+   "wins": "5/5",
+   "rows": [
+    {
+     "id": "convoy",
+     "outcome": "victory",
+     "secs": 10.9,
+     "pilot": 605,
+     "ally": 85,
+     "share": 0.123,
+     "downs": 0,
+     "hp": 1537
+    },
+    {
+     "id": "relay",
+     "outcome": "victory",
+     "secs": 19.7,
+     "pilot": 450,
+     "ally": 0,
+     "share": 0,
+     "downs": 0,
+     "hp": 1557
+    },
+    {
+     "id": "recon",
+     "outcome": "victory",
+     "secs": 31.5,
+     "pilot": 270,
+     "ally": 90,
+     "share": 0.249,
+     "downs": 0,
+     "hp": 1682
+    },
+    {
+     "id": "rescue",
+     "outcome": "victory",
+     "secs": 50.5,
+     "pilot": 665,
+     "ally": 75,
+     "share": 0.102,
+     "downs": 0,
+     "hp": 1700
+    },
+    {
+     "id": "redoubt",
+     "outcome": "victory",
+     "secs": 18.4,
+     "pilot": 848,
+     "ally": 252,
+     "share": 0.229,
+     "downs": 0,
+     "hp": 1319
+    }
+   ]
+  },
+  "platoon": {
+   "allies": 4,
+   "roles": [
+    "guardian",
+    "lancer",
+    "mender",
+    "breacher"
+   ],
+   "gear": "stock pilot + militia",
+   "allyShare": 0.305,
+   "pilotShare": 0.695,
+   "wins": "4/10",
+   "rows": [
+    {
+     "id": "raid-intercept-1",
+     "outcome": "victory",
+     "secs": 27.8,
+     "pilot": 1326,
+     "ally": 458,
+     "share": 0.257,
+     "downs": 0,
+     "hp": 1328
+    },
+    {
+     "id": "raid-intercept-3",
+     "outcome": "defeat",
+     "secs": 24.3,
+     "pilot": 2124,
+     "ally": 105,
+     "share": 0.047,
+     "downs": 0,
+     "hp": 0
+    },
+    {
+     "id": "raid-sabotage-2",
+     "outcome": "victory",
+     "secs": 41.7,
+     "pilot": 1283,
+     "ally": 1051,
+     "share": 0.45,
+     "downs": 0,
+     "hp": 884
+    },
+    {
+     "id": "raid-sabotage-4",
+     "outcome": "defeat",
+     "secs": 45.7,
+     "pilot": 2884,
+     "ally": 390,
+     "share": 0.119,
+     "downs": 0,
+     "hp": 0
+    },
+    {
+     "id": "raid-battery-1",
+     "outcome": "victory",
+     "secs": 209,
+     "pilot": 261,
+     "ally": 2205,
+     "share": 0.894,
+     "downs": 0,
+     "hp": 978
+    },
+    {
+     "id": "raid-battery-3",
+     "outcome": "defeat",
+     "secs": 26,
+     "pilot": 1886,
+     "ally": 965,
+     "share": 0.339,
+     "downs": 0,
+     "hp": 0
+    },
+    {
+     "id": "raid-extraction-2",
+     "outcome": "victory",
+     "secs": 63.7,
+     "pilot": 1755,
+     "ally": 1120,
+     "share": 0.39,
+     "downs": 0,
+     "hp": 1152
+    },
+    {
+     "id": "raid-extraction-4",
+     "outcome": "defeat",
+     "secs": 69.2,
+     "pilot": 3977,
+     "ally": 411,
+     "share": 0.094,
+     "downs": 0,
+     "hp": 0
+    },
+    {
+     "id": "raid-siege-3",
+     "outcome": "defeat",
+     "secs": 53.2,
+     "pilot": 2306,
+     "ally": 1282,
+     "share": 0.357,
+     "downs": 0,
+     "hp": 0
+    },
+    {
+     "id": "raid-siege-5",
+     "outcome": "defeat",
+     "secs": 30,
+     "pilot": 1822,
+     "ally": 627,
+     "share": 0.256,
+     "downs": 0,
+     "hp": 0
+    }
+   ]
+  },
+  "battalion": {
+   "allies": 9,
+   "roles": [
+    "guardian",
+    "guardian",
+    "lancer",
+    "lancer",
+    "mender",
+    "breacher",
+    "breacher",
+    "corroder",
+    "frostline"
+   ],
+   "gear": "equal Epic gear (pilot and allies Epic, the pilot keeps its three cores)",
+   "fixture": "full assault: the siege raids + 12 VETERAN Parasites",
+   "allyShare": 0.586,
+   "pilotShare": 0.414,
+   "wins": "10/10",
+   "rows": [
+    {
+     "id": "raid-siege-1",
+     "outcome": "victory",
+     "secs": 81.3,
+     "pilot": 2656,
+     "ally": 3432,
+     "share": 0.564,
+     "downs": 0,
+     "hp": 1651
+    },
+    {
+     "id": "raid-siege-2",
+     "outcome": "victory",
+     "secs": 56.5,
+     "pilot": 3497,
+     "ally": 2591,
+     "share": 0.426,
+     "downs": 0,
+     "hp": 1351
+    },
+    {
+     "id": "raid-siege-3",
+     "outcome": "victory",
+     "secs": 56.5,
+     "pilot": 4220,
+     "ally": 5440,
+     "share": 0.563,
+     "downs": 0,
+     "hp": 1253
+    },
+    {
+     "id": "raid-siege-4",
+     "outcome": "victory",
+     "secs": 58.2,
+     "pilot": 3635,
+     "ally": 5134,
+     "share": 0.586,
+     "downs": 0,
+     "hp": 1138
+    },
+    {
+     "id": "raid-intercept-2",
+     "outcome": "victory",
+     "secs": 37.9,
+     "pilot": 3385,
+     "ally": 2549,
+     "share": 0.43,
+     "downs": 0,
+     "hp": 264
+    },
+    {
+     "id": "raid-intercept-4",
+     "outcome": "victory",
+     "secs": 58,
+     "pilot": 3462,
+     "ally": 5699,
+     "share": 0.622,
+     "downs": 0,
+     "hp": 743
+    },
+    {
+     "id": "raid-sabotage-3",
+     "outcome": "victory",
+     "secs": 61.6,
+     "pilot": 3890,
+     "ally": 6238,
+     "share": 0.616,
+     "downs": 0,
+     "hp": 1018
+    },
+    {
+     "id": "raid-sabotage-5",
+     "outcome": "victory",
+     "secs": 54.9,
+     "pilot": 2178,
+     "ally": 7059,
+     "share": 0.764,
+     "downs": 0,
+     "hp": 444
+    },
+    {
+     "id": "raid-battery-2",
+     "outcome": "victory",
+     "secs": 59.1,
+     "pilot": 3383,
+     "ally": 3233,
+     "share": 0.489,
+     "downs": 0,
+     "hp": 1452
+    },
+    {
+     "id": "raid-extraction-1",
+     "outcome": "victory",
+     "secs": 124.8,
+     "pilot": 2099,
+     "ally": 4454,
+     "share": 0.68,
+     "downs": 0,
+     "hp": 1341
+    }
+   ]
+  }
+ }
+}

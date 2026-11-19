@@ -860,7 +860,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','upc','glc','gsc','wOwn','cOwn','roll','salv',
  'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw','bmn','hz',   // hz: hazard takedowns per Arcade map (5E-2e)
- 'rm','lsm','bpt','rsx','rsj'];   // Session 6B: researched mods (Legendary set mods too, once researched), Legendary set mods bought, bonus research parts (pass tiers, packs; monotonic), instant-finish credits, Legendary set mods being researched
+ 'rm','lsm','bpt','rsx','rsj','bch','liv','rcx'];   // Session 6C: pack command chips (a monotonic total), liveries owned, RECRUIT instant-finish credits: written only by ecoGrant after a verified payment (checkout off)   // Session 6B: researched mods (Legendary set mods too, once researched), Legendary set mods bought, bonus research parts (pass tiers, packs; monotonic), instant-finish credits, Legendary set mods being researched
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S,opt){
@@ -983,6 +983,9 @@ function ecoPrice(S,d,X){
  if(d.kind==='rspack'){const P=RS_PACKS[d.tk];return P?{ton:P.ton,stars:P.stars}:null;}
  if(d.kind==='rsleg')return rsLegSet(d.tk)?{ton:RS_LEG_PRICE.ton,stars:RS_LEG_PRICE.stars}:null;
  if(d.kind==='rsfin')return rsFinPrice(d.left);   // the time left comes from the Conquest record's job on the Worker, never from the phone
+ if(d.kind==='chippack')return {ton:CHIP_PACK.ton,stars:CHIP_PACK.stars};
+ if(d.kind==='livery'){const L=LIVERIES[d.tk];return L?{ton:L.ton,stars:L.stars}:null;}
+ if(d.kind==='rcfin')return rsFinPrice(d.left);   // the RECRUIT job's time left, from the Conquest record on the Worker (Session 6C)
  if(d.kind==='respec'){const t=respecTier(upInvested(chUp(S,chFor(S,d.c))));return t?{ton:Math.round(t*RESPEC_TON_USD*100)/100,stars:Math.round(t*RESPEC_STARS_USD),usd:t}:null;}
  if(d.kind==='gear'){const tk=gearTk(d.tk);if(!tk||!(d.ri>=0&&d.ri<=2))return null;const m=ecoBoxMult(S,tk,d.ri,X)*CORE_X;return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m)};}   // 1.5x the crate's price right now (before any deal)
  if(d.kind==='core'){if(!isGem(d.tk)||!(d.ri>=0&&d.ri<=2))return null;const m=ecoBoxMult(S,'gem',d.ri,X)*CORE_X;return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m)};}   // 1.5x the gem cache's price right now (before any deal)
@@ -996,6 +999,9 @@ function ecoOwned(S,d,X){
  if(d.kind==='rsleg'){const set=rsLegSet(d.tk);return !set||!!(S.lsm&&S.lsm[d.tk])||!!(S.rm&&S.rm[d.tk])||!!(S.rsj&&S.rsj[d.tk])||!(S.rm&&S.rm[set]);}   // bought, researched or being researched (one ownership), or its track's set mod not researched yet: nothing to sell
  if(d.kind==='rspack')return !RS_PACKS[d.tk]||((S.buys&&S.buys[rsPackKey(d.tk,X)])|0)>=1;   // this week's one is bought
  if(d.kind==='rsfin')return !/^j\d{1,6}$/.test(String(d.job||''))||!!(S.rsx&&S.rsx[d.job]);   // that job is already paid for
+ if(d.kind==='chippack')return ((S.buys&&S.buys[chipPackKey(X)])|0)>=1;   // this week's one is bought
+ if(d.kind==='livery')return !LIVERIES[d.tk]||!!(S.liv&&S.liv[d.tk]);
+ if(d.kind==='rcfin')return !/^r\d{1,6}$/.test(String(d.job||''))||!!(S.rcx&&S.rcx[d.job]);
  if(d.kind==='core')return !isGem(d.tk)||!ownsCh(S,d.c)||(chGl(S,d.c)[d.tk]|0)>=5;
  if(d.kind==='gear'){const tk=gearTk(d.tk);return !tk||(tk==='weapon'?hasW(S,d.tk,d.ri):hasC(S,d.tk,d.ri));}   // a chosen item you already own: nothing to sell
  if(d.kind==='box'&&d.tk==='gem'&&d.c&&!ownsCh(S,d.c))return true;   // a gem cache named for a chassis you don't own: refused, never moved to another   // a chosen core for a chassis you don't own, or one already at level 5: nothing to sell
@@ -1154,6 +1160,9 @@ function ecoGrant(S,d,X){
  else if(d.kind==='rspack'){const P=RS_PACKS[d.tk];if(P&&labSaleOk(S,d,X)){const bk=rsPackKey(d.tk,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||P.ton;outs.push({tk:'rspack',id:d.tk,parts:ecoAddParts(S,P.each)});}}
  else if(d.kind==='rsleg'){if(labSaleOk(S,d,X)){S.lsm=S.lsm&&typeof S.lsm==='object'?S.lsm:{};S.lsm[d.tk]=1;S.spendGram+=Number(d.price)||RS_LEG_PRICE.ton;outs.push({tk:'rsleg',id:d.tk});}}
  else if(d.kind==='rsfin'){if(labSaleOk(S,d,X)){S.rsx=S.rsx&&typeof S.rsx==='object'?S.rsx:{};S.rsx[d.job]=1;S.spendGram+=Number(d.price)||0;outs.push({tk:'rsfin',job:d.job});}}   // Conquest finishes that job once (conquest-research.js account)
+ else if(d.kind==='chippack'){if(batSaleOk(S,d,X)){const bk=chipPackKey(X);S.buys[bk]=(S.buys[bk]||0)+1;S.bch=Math.min(1e5,(S.bch|0)+CHIP_PACK.chips);S.spendGram+=Number(d.price)||CHIP_PACK.ton;outs.push({tk:'chippack',chips:CHIP_PACK.chips});}}   // Session 6C: a separate chip total (never the daily limit's)
+ else if(d.kind==='livery'){if(batSaleOk(S,d,X)){S.liv=S.liv&&typeof S.liv==='object'?S.liv:{};S.liv[d.tk]=1;S.spendGram+=Number(d.price)||LIVERIES[d.tk].ton;outs.push({tk:'livery',id:d.tk});}}   // looks only
+ else if(d.kind==='rcfin'){if(batSaleOk(S,d,X)){S.rcx=S.rcx&&typeof S.rcx==='object'?S.rcx:{};S.rcx[d.job]=1;S.spendGram+=Number(d.price)||0;outs.push({tk:'rcfin',job:d.job});}}   // the Conquest record finishes that RECRUIT job once (conquest-battalion.js account)
  else if(d.kind==='vault'){const B=VAULT[d.tk];if(B){const lv0=vaultLevel(S.vg);S.vg=(S.vg||0)+B.g;const gg=GENESIS_OPEN?B.g:0;S.vgg=(S.vgg||0)+gg;S.spendGram+=Number(d.price)||B.ton;const lv=vaultLevel(S.vg);
   if(lv>=VAULT_PAINT_LV)S.paints.hyper=1;outs.push({tk:'vault',id:d.tk,g:B.g,gg,lv0,lv,t:S.vg});}}   // any number of times: the Vault never fills
  for(const r of outs)labGain(S,r);
@@ -1171,6 +1180,8 @@ function ecoRefund(S,kind,outs){
   else if(o.tk==='paint'){delete S.paints[o.id];if(o.id==='founder')S.founder=false;}
   else if(o.tk==='moonbeam')S.moonbeam=false;
   else if(o.tk==='rsleg'){if(S.lsm)delete S.lsm[o.id];}
+  else if(o.tk==='chippack'){S.bch=Math.max(0,(S.bch|0)-(o.chips|0));}
+  else if(o.tk==='livery'){if(S.liv)delete S.liv[o.id];}
   else if(o.tk==='rspack'&&o.parts){S.bpt=S.bpt||{};for(const k of CQ_PART_ORDER)S.bpt[k]=Math.max(0,(S.bpt[k]|0)-(o.parts[k]|0));}   // a finished skip (rsfin) cannot be taken back
   else if(o.tk==='skin')S.skin='default';
   else if(o.tk==='pass'){if(S.pass&&S.pass.s===o.s)S.pass.prem=false;}
@@ -1583,10 +1594,10 @@ const RTREE={tracks:{thermal:{n:'Thermal',part:'thermal',lab:1,c:'#ff8a3d',d:'Ke
   coil:{n:'Ballistics',part:'coil',lab:1,c:'#e8f4ff',d:'Precision: every hit counts.'},
   servo:{n:'Drive',part:'servo',lab:2,c:'#7be07b',d:'Movement is your weapon and your armor.'},
   cap:{n:'Field',part:'cap',lab:2,c:'#5aa9ff',d:'Your shield blocks, stores and strikes back.'}},
- order:['thermal','coil','servo','cap'],locked:{id:'role',n:'Role Cores',lab:4,d:'Coming with Science Lab level IV (battalions).'},
+ order:['thermal','coil','servo','cap'],role:{id:'role',n:'Role Cores',lab:4,part:'chip',d:'Your pilots\' roles: each level makes that role\'s signature stronger on every pilot fitted with it.'},
  mods:{thermal:['vent','overclock','heatsink','inferno'],coil:['pierce','marksman','predictor','rail'],servo:['traction','ram','momentum','overdrive'],cap:['capacitor','reflector','reflex','aegis']},
  legendary:{thermal:'sunfire',coil:'starfall',servo:'hyperdrive',cap:'aegisp'},
- cost:[2,4,5,9],timeMs:[0,1200000,7200000,28800000],passTime:0.75,slots:{base:1,lab3:1,pass:1},labMax:3,
+ cost:[2,4,5,9],timeMs:[0,1200000,7200000,28800000],passTime:0.75,slots:{base:1,lab3:1,pass:1},labMax:4,
  leg:{n:30,ms:28800000}};   // leg: a Legendary set mod's own research job (owner, Nov 17: 30 of its track's part, 8 h; Science Lab III and the track's set mod first)   // cost: parts for a track's 1st/2nd/3rd mod and its set mod (owner, Nov 17)
 const RTREE_ALL=RTREE.order.flatMap(t=>RTREE.mods[t]);   // the 16 earned mods
 const RTREE_LEG=RTREE.order.map(t=>RTREE.legendary[t]),RS_IDS=RTREE_ALL.concat(RTREE_LEG);   // the 4 Legendary set mods (researched or bought); every id a research job can hold
@@ -1637,6 +1648,24 @@ const PASS_PREM_PARTS=Object.freeze({10:1,20:1,30:1});
 // nothing new may be sold through the pass's live checkout while the Lab store is closed).
 const passResearch=(premium,open=LAB_STORE_OPEN)=>!!premium&&!!open;
 const passPartsAt=(i,open=LAB_STORE_OPEN)=>open?PASS_PREM_PARTS[i]|0:0;
+// ---- Session 6C Battalion store (owner prompt Nov 18): real entries with CHECKOUT OFF in every currency until Session 8 (gated like
+// the Lab store: BAT_STORE_OPEN false; the Worker's descOf refuses every kind and ecoGrant enforces the sale rules itself, so no
+// invoice, Telegram-confirmed payment, TON or SOL log can grant one). Prices are PROPOSALS at the shop's dollar rates (77 Stars,
+// 1.25 TON a dollar; SOL at the live TON rate). Nothing here gives points; never sold: pilots, ranks, Role Core levels.
+const BAT_STORE_OPEN=false;
+// the chip pack: command chips for the Role Cores (the account's own total, S.bch, outside the one-a-day limit), one a UTC week
+const CHIP_PACK=Object.freeze({n:'Command chip pack',chips:5,stars:299,ton:4.8});
+const chipPackKey=X=>'chp|'+X.week;
+// battalion liveries (blueprint §8 "Battalion colors and insignia: your paint and banner on every ally"), looks only, never power or
+// points. Allies wear their stock paint by default; the LDF livery is only for LDF troops. 'colors' puts your own paint and your
+// town banner on every ally; each plain set paints every ally one scheme (p: hull, a: trim). Ids never overlap a loot id.
+const LIVERIES=Object.freeze({'liv-colors':Object.freeze({n:'Battalion colors',d:'Your paint and your banner on every ally',own:1,stars:399,ton:6.4}),
+ 'liv-arctic':Object.freeze({n:'Arctic livery',d:'Ice white and glacier blue on every ally',p:'#e6eef2',a:'#7fc8ff',stars:199,ton:3.2}),
+ 'liv-ember':Object.freeze({n:'Ember livery',d:'Charcoal and ember orange on every ally',p:'#2c2c31',a:'#ff7a3d',stars:199,ton:3.2}),
+ 'liv-verdant':Object.freeze({n:'Verdant livery',d:'Colony green and brass on every ally',p:'#3f6b4a',a:'#e0b85a',stars:199,ton:3.2}),
+ 'liv-nightfall':Object.freeze({n:'Nightfall livery',d:'Midnight blue and silver on every ally',p:'#1d2740',a:'#c8d4e8',stars:199,ton:3.2})});
+const LIVERY_ORDER=Object.freeze(Object.keys(LIVERIES)),LDF_LIVERY=Object.freeze({p:'#5b646b',a:'#d9c27a'});
+const BAT_KINDS=Object.freeze(['chippack','livery','rcfin']),batSaleOk=(S,d,X)=>BAT_STORE_OPEN&&!ecoOwned(S,d,X);
 function ecoAddParts(S,n){S.bpt=S.bpt&&typeof S.bpt==='object'?S.bpt:{};const o={};for(const k of CQ_PART_ORDER){S.bpt[k]=Math.min(1e5,(S.bpt[k]|0)+n);o[k]=n;}return o;}
 // ---- Research mod behaviors: ONE engine for the Arcade/PvP sim (js/game.js) and Conquest (js/conquest/combat.js + controls.js),
 // on the phone and on the Worker. T: the tank (tankOf: T.rm = {behavior: numbers}); mf: its runtime state (plain numbers; Conquest

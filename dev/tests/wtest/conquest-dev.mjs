@@ -3,6 +3,7 @@
 // claims, builds, upgrades and walls cost nothing and every gain is kept; FINISH NOW completes the builder job; the record
 // is then a test record: no Conquest airdrop points and never ranked (top 20 / Base of the Week). Everyone else: unchanged.
 import assert from 'node:assert/strict';import {createHmac} from 'node:crypto';
+import {cqLive} from './cqlive.mjs';   // Session 6C: the Conquest record is split (hot + cold blob)
 import {makeDB} from './fakedb.mjs';import {buildSim} from '../../../worker/build-sim.mjs';
 buildSim();const db=makeDB({pruneEmptyUnder:['conquest']});
 globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/'))return db.handle(url,init);throw Error('Unexpected external request');};
@@ -16,7 +17,7 @@ let passed=0;const ok=(c,m)=>{assert(c,m);passed++;console.log('PASS '+m);};
 db.root.cfg={admin:{lunarbattle:PIN}};db.root.telegramLinks={[PIN]:OWNER};db.root.lunarAccounts={[OWNER]:{id:OWNER,type:'password',name:'Lunar',telegramId:PIN}};
 const owner={id:PIN,u:'LunarBattle'},other={id:7301},fake={id:7302,u:'LunarBattle'};   // fake: the admin username on another Telegram id
 const D=C.baseDefinition,gate={x:D.x,z:D.z,y:W.groundAt(D.x,D.z),surface:'ground'};
-const rec=pid=>db.get('conquest/'+pid);
+const rec=pid=>cqLive(db,pid);
 async function open(who){await call(who,'/api/sync');const r=await call(who,'/api/conquest/session');assert.equal(r.status,200,JSON.stringify(r).slice(0,200));return r.state;}
 async function act(who,pid,action,extra={}){const s=rec(pid);return call(who,'/api/conquest/action',{seq:s.seq+1,action,...extra});}
 function atGate(pid){const s=rec(pid);s.position=gate;s.battle.enemies=[];db.root.conquest[pid]=s;}

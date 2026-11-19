@@ -31,7 +31,7 @@ async def main():
     if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').tap()
     await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=60000)
    await enter()
-   assert await page.evaluate('Conquest.view.authority.state.base.tier===1&&Conquest.view.authority.state.base.modules.reactor===1&&Object.keys(Conquest.view.authority.state.completed).length===3')
+   assert await page.evaluate('Conquest.view.authority.state.base.tier===1&&Conquest.view.authority.state.base.modules.reactor===1&&["oxygen-line","recon","convoy","wingman-rescue"].every(k=>k in Conquest.view.authority.state.completed)&&Object.keys(Conquest.view.authority.state.completed).length===4')   # Session 6C (owner prompt Nov 18): the first wingman's rescue follows the first plate, so the first hour completes the three field missions and the rescue
    assert await page.evaluate('Conquest.view.authority.state.ledger.cp')==earned['final']['ledger']['cp']
    await page.screenshot(path=str(OUT/'chromium-earned-base-retained.png'))
    # Ordinary camera-relative keyboard steering through the real open gate; verified proximity.
