@@ -5744,7 +5744,16 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   re-scanned. PASS after it: conquest-combat / -raids / -first-hour (identical to main), -authority, -session, -living-world,
   -recall, -fast-travel, -research, -loot, owner-rules, lab-ui, lab-store-ui, power-chip, copy, sheet, flagship-ui,
   conquest-allies, wtest conquest / lab-store / research-economy / conquest-research / conquest-airdrop / test.
-  REMAINING patches: p5_model, p8_split (and everything under "STILL TO BUILD").
+  ALSO DONE: the wingman rescue moved to open ground at (1100,1244), 106 m from the Refuge terminal (the first site sat among
+  colony buildings: no sight line, a scripted pilot got 0 kills); end to end through the Worker reducer: victory in 15 s, 2 kills,
+  settlement kind 'wingman' (no points, CP, salvage or chip), the pilot joins (`bat.joined`), fielded as WINGMAN and follows,
+  a second start is refused. The guide's board leads to RESCUE THE DOWNED PILOT right after the first plate (before the town);
+  conquest-first-hour.mjs section 8 checks it (a rule this prompt changed). p5_model APPLIED: `battalionModel` in
+  dev/tools/economy-model.mjs (not yet run with --write; RESOURCE_ECONOMY not yet updated). Report numbers (days): 60 min Wing
+  1.8, Platoon 2.8, Battalion 17.1, roster 16 by 8.1, Science Lab IV 9.3, first role maxed 19.3, all six 119.3, one pilot
+  rank 3/6/9/10 at 1/5/18/25 if always fielded, 9 pilots rank 9 at 48, the roster rank 10 at 109; 30 min: 3.3 / 4.8 / 43.1 /
+  9 / 22.1 / 23.4 / 119.3, ranks 2/11/35/49, 89, 208; 120 min: 1 / 2 / 10.2 / 8 / 5.5 / 19.3 / 119.3, ranks 1/3/9/12, 26, 58.
+  REMAINING patch: p8_split (and everything under "STILL TO BUILD").
 - PREPARED PATCHES (apply in this order from the repo root, `python3 dev/tools/session6c/pN_*.py`; each asserts its anchors, then
   rebuild the sim and run the suites): p1_rules (store kinds chip pack / livery / rcfin with checkout off, BAT_STORE_OPEN,
   CHIP_PACK, LIVERIES, ECO_KEYS bch/liv/rcx, RTREE.labMax 4, RTREE.role; NOTE p1 renames RTREE.locked to RTREE.role: also

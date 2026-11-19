@@ -82,7 +82,7 @@ export function regroup(s,b,pos){(b.friends||[]).filter(f=>f.side==='mine').forE
 export function outcome(s,B,op,result,now){const T=bat(s),mine=(B.friends||[]).filter(f=>f.side==='mine'),out={};if(!op)return out;
  if(result==='victory'&&op.id===BT.WINGMAN.id&&!T.w){T.w=1;const p=newPilot(s,'wingman',now);if(p)out.joined={id:p.id,n:p.n,cs:p.cs};}
  const xp=result==='victory'?BT.XP[op.danger]||1:result==='defeat'&&B.time>=BT.FOUGHT_S?1:0;
- if(xp>0){out.xp=xp;out.up=[];for(const f of mine){const p=T.p.find(x=>x.id===f.pid);if(!p)continue;const r0=p.rk;p.xp+=xp;p.rk=Math.min(r0+1,BT.rankOf(p.xp));if(p.rk>r0)out.up.push({id:p.id,cs:p.cs,rk:p.rk,sig:BT.sigTier(p.rk)>BT.sigTier(r0)});}if(!out.up.length)delete out.up;}   // at most one rank an operation
+ if(xp>0&&mine.length){out.xp=xp;out.up=[];for(const f of mine){const p=T.p.find(x=>x.id===f.pid);if(!p)continue;const r0=p.rk;p.xp+=xp;p.rk=Math.min(r0+1,BT.rankOf(p.xp));if(p.rk>r0)out.up.push({id:p.id,cs:p.cs,rk:p.rk,sig:BT.sigTier(p.rk)>BT.sigTier(r0)});}if(!out.up.length)delete out.up;}   // at most one rank an operation
  if(result==='victory'&&mine.length){const c=grantChip(s,'win',now);if(c)out.chip=c;}
  if(result==='victory'&&op.id==='rescue'){const d=Math.floor(now/DAY);if(T.rd!==d&&T.p.length<BT.ROSTER_MAX){T.rd=d;const p=newPilot(s,'rescue',now);if(p)out.recruit={id:p.id,n:p.n,cs:p.cs};}}
  recover(s,B);return out;}

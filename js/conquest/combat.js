@@ -46,9 +46,9 @@ const legacyOperations=[
  {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',firstCp:100,brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
  {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',firstCp:150,brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
  // Session 6C (owner, Nov 18): the first wingman's rescue, right after the first plate (the coach chain's end): its own STANDARD
- // mission at the colony's south fields, 71 m from the Refuge terminal. It pays no airdrop points, CP, salvage or loot: its reward
+ // mission at the colony's south fields (open ground, clear sight lines from the drive in), 106 m from the Refuge terminal. It pays no airdrop points, CP, salvage or loot: its reward
  // is the pilot, who joins as your wingman (worker/src/conquest-battalion.js outcome). Not one of the six field missions.
- {id:'wingman-rescue',name:'RESCUE THE DOWNED PILOT',family:'wingman',wingman:true,site:'wingman-site',x:1138,z:1236,danger:'STANDARD',firstCp:0,brief:'A pilot is down at the colony\'s south fields and two interceptors are closing in. Clear them, then hold beside the wreck for 4 seconds to pull the pilot out: they fly with you as your wingman.'},
+ {id:'wingman-rescue',name:'RESCUE THE DOWNED PILOT',family:'wingman',wingman:true,site:'wingman-site',x:1100,z:1244,danger:'STANDARD',firstCp:0,brief:'A pilot is down at the colony\'s south fields and two interceptors are closing in. Clear them, then hold beside the wreck for 4 seconds to pull the pilot out: they fly with you as your wingman.'},
  {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',firstCp:220,brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
  ];
 // Five spatial layouts with different approach angles, routes and objective order.
@@ -464,7 +464,7 @@ class Operation extends Battle {
  // Installation missions fight the persistent world garrison attached by the session.
  const team=o.raid||o.defense||o.strike||id==='base-defense'||o.wingman?[]:id==='relay'||id==='redoubt'?[]:id==='rescue'?['raider','breacher','command']:['raider','raider'];
  team.forEach((kind,i)=>this.deploy(kind,o.x+18+i*12,o.z-25,'guard:'+i));
- if(o.wingman){for(const [i,dx] of [[0,-14],[1,14]].entries())this.deploy('raider',o.x+dx[1],o.z-22,'pinning:'+i);for(const e of this.enemies){e.noLoot=true;e.noKill=1;}   // pays nothing: no salvage, points, loot or War Order kill
+ if(o.wingman){[[-16,16],[-16,-16]].forEach(([dx,dz],i)=>this.deploy('raider',o.x+dx,o.z+dz,'pinning:'+i));for(const e of this.enemies){e.noLoot=true;e.noKill=1;}   // pays nothing: no salvage, points, loot or War Order kill
   const w=friendUnit({id:800000999,side:'ldf',kit:{w:{a:'pulse',t:0,q:1},c:{c:'vanguard',t:0,q:1}},x:o.x,z:o.z,heading:Math.PI});w.ctl='none';w.down=1;w.hp=0;w.wreck=1;this.friends.push(w);}   // the downed pilot's tank
  if(id==='convoy'){this.deploy('command',o.x,o.z-10,'carrier');this.carrierId=this.enemies.at(-1).id;}
  if(o.raid)this.setupRaid();if(id==='base-defense'||o.defense){this.objectiveDamageable=true;this.objectiveHp=this.objectiveMax=1800;this.defenseWave=0;this.deployDefense();}
