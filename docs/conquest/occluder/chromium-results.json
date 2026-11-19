@@ -1,9 +1,20 @@
 {
  "engine": "chromium",
  "status": "PASS",
- "setupPrograms": 10,
- "fadedPrograms": 11,
- "fadedOpacity": 0.22,
- "ownTankGhostMeshes": 0,
+ "programs": 14,
+ "outlinePixelsOpen": 18,
+ "outlinePixelsBehind": 317,
+ "cameraOpen": 45.306166904823606,
+ "cameraBehind": 45.306166904823606,
+ "pressed": {
+  "fp": [
+   1110,
+   1148,
+   9,
+   9
+  ],
+  "k": 0.78,
+  "cam": 40.98688631256012
+ },
  "physicalDeviceVerified": false
 }

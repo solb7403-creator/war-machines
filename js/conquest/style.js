@@ -143,7 +143,7 @@ void main(){
  vN=transformedNormal;vV=-mvPosition.xyz;vCol=aCol;vec4 wp=vec4(transformed,1.);vec3 nw=objectNormal;
  // uOutline > 0 (Session 5E-2d1): the same program draws a tank's clean outline through a building — the hull grown by
  // uOutline pixels in clip space, nudged toward the camera so the ground it stands on never passes the "behind" depth test
- if(uOutline>0.){vec4 cn=projectionMatrix*vec4(mvPosition.xyz+normalize(transformedNormal),1.);vec2 od=cn.xy/cn.w-gl_Position.xy/gl_Position.w;float ol=length(od);if(ol>1e-6)gl_Position.xy+=od/ol*uOutline*2./uViewport*gl_Position.w;}
+ if(uOutline>0.){vec4 cn=projectionMatrix*vec4(mvPosition.xyz+normalize(transformedNormal),1.),c0=projectionMatrix*modelViewMatrix*vec4(0.,0.,0.,1.);vec2 sp=gl_Position.xy/gl_Position.w,od=cn.xy/cn.w-sp,rd=(sp-c0.xy/c0.w)*uViewport;float ol=length(od*uViewport),rl=length(rd);vec2 dir=(ol>1e-5?od*uViewport/ol:vec2(0.))*.55+(rl>1e-5?rd/rl:vec2(0.))*.75;gl_Position.xy+=dir*uOutline*2./uViewport*gl_Position.w;if(uOutline>.5){vec4 m2=mvPosition;m2.z+=1.3;vec4 p2=projectionMatrix*m2;gl_Position.z=p2.z/p2.w*gl_Position.w;}}
 #ifdef USE_INSTANCING
  nw=mat3(instanceMatrix)*nw;wp=instanceMatrix*wp;vec2 io=(modelMatrix*vec4(instanceMatrix[3].xyz,1.)).xz+uOrigin;vCol.rgb*=.75+.5*hv(floor(io*4.));
 #endif
@@ -410,6 +410,30 @@ function create(T,opts={}){
  // Additive glow/decal draws are never tap targets (view pick() and the browser bots skip userData.noPick).
  const fxMesh=(geo,order=2)=>{const m=new T.Mesh(geo,MAT.fx);m.renderOrder=order;m.userData.noPick=true;return m;};
  const S={id:'neon-frontline',version:1,low,high,software,T,U,MAT,G,AT,SIGN,K,tex,footprints:F,shared:[],ground};
+ // ---------- Session 5E-2d1 (owner, Nov 17 + Nov 19): buildings are never see-through unless the tank is pressed against one ----------
+ // A tank hidden by a building shows through it as a clean outline (yours and your allies'; enemies never: cover stays real).
+ // Same solid program, two more materials: a stencil mask of every tracked tank's true shape (no colour, no depth test), then
+ // the hull grown by a few pixels where something stands in front of it (depth GREATER) outside that mask = the outline only.
+ MAT.outlineMask=mk(SOLID_VS,SOLID_FS,{uOutline:{value:1e-4},uDetail:{value:tex.detail}},{colorWrite:false,depthTest:false,depthWrite:false,stencilWrite:true,stencilFunc:519,stencilRef:1,stencilZPass:7681});
+ const outlineMat=hex=>mk(SOLID_VS,SOLID_FS,{uOutline:{value:3},uOutlineCol:{value:lin(hex)},uDetail:{value:tex.detail}},{depthFunc:6,depthWrite:false,stencilWrite:true,stencilFunc:517,stencilRef:1});
+ MAT.outline=outlineMat(0x8ff6ff);MAT.outlineAlly=outlineMat(0xffe29a);
+ // Twins of a tank's solid meshes, kept in their own group (nothing is ever added to a vehicle): sync(list, px) each frame with
+ // list = [{root, ally}] and px = the outline width in drawing-buffer pixels.
+ S.outliner=scene=>{const g=new T.Group();g.name='cq-outline';scene.add(g);const sets=new Map();
+  const drop=set=>{for(const t of set.tw){g.remove(t[0]);g.remove(t[1]);}};
+  const ok=o=>o.isMesh&&!o.isInstancedMesh&&o.material&&!Array.isArray(o.material)&&!o.material.transparent&&o.material.colorWrite!==false&&o.geometry?.attributes?.normal&&!o.userData.noOutline;
+  return {group:g,sets,
+   sync(list,px){MAT.outline.uniforms.uOutline.value=MAT.outlineAlly.uniforms.uOutline.value=px;const live=new Set();
+    for(const it of list){const rt=it.root;if(!rt||!rt.parent)continue;let shown=true;for(let p=rt;p;p=p.parent)if(!p.visible){shown=false;break;}if(!shown)continue;live.add(rt);rt.updateWorldMatrix(true,true);
+     const src=[];rt.traverse(o=>{if(!ok(o))return;for(let p=o;p&&p!==rt;p=p.parent)if(!p.visible)return;if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();if(o.geometry.boundingSphere.radius*o.matrixWorld.getMaxScaleOnAxis()>.3)src.push(o);});
+     let set=sets.get(rt);if(!set||set.src.length!==src.length||set.src.some((o,i)=>o!==src[i]||set.geo[i]!==o.geometry)){if(set)drop(set);set={src,geo:src.map(o=>o.geometry),tw:[]};
+      for(const o of src){const a=new T.Mesh(o.geometry,MAT.outlineMask),b=new T.Mesh(o.geometry,it.ally?MAT.outlineAlly:MAT.outline);a.renderOrder=9000;b.renderOrder=9001;for(const m of [a,b]){m.matrixAutoUpdate=false;m.frustumCulled=false;m.userData.noPick=true;m.userData.noOutline=true;m.userData.outlineTwin=true;}g.add(a,b);set.tw.push([a,b]);}sets.set(rt,set);}
+     set.src.forEach((o,i)=>{for(const m of set.tw[i]){m.matrix.copy(o.matrixWorld);m.matrixWorldNeedsUpdate=true;}});}
+    for(const [rt,set] of sets)if(!live.has(rt)){drop(set);sets.delete(rt);}},
+   clear(){for(const set of sets.values())drop(set);sets.clear();},dispose(){this.clear();g.parent?.remove(g);}};};
+ // The one footprint the tank is pressed against: {x, z, hw, hd, r} in the solid shader's world frame (render x/z + uOrigin),
+ // k = 0..1 how far its pixels are thinned (eased by the caller). null / k = 0: nothing is see-through.
+ S.press=(fp,k)=>{if(fp&&k>0){U.uPress.value.set(fp.x,fp.z,fp.hw,fp.hd);U.uPressR.value.set(Math.cos(fp.r||0),Math.sin(fp.r||0));U.uPressK.value=Math.min(.78,k*.78);}else{U.uPress.value.set(0,0,-1,-1);U.uPressK.value=0;}};
  const keep=g=>{g.userData.hfShared=true;S.shared.push(g);return g;};
  for(const g of Object.values(G))if(g&&g.isBufferGeometry)keep(g);
 

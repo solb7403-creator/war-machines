@@ -285,7 +285,7 @@ function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,R={T,S,k,wv:o
  yield;   // before the merge (one big Float32 build)
  if(mg.n){const m=new T.Mesh(mg.geometry(),S.MAT.solid);m.userData.merged=true;town.add(m);}
  damageFx(R,p,town);
- g.userData={lift:(.4-base)*sc*vy,counts:{walls:[...W.wim.values()].reduce((a,m)=>a+m.count,0),posts:W.wpost.size,rubble:pl.rubble.length,turrets:nT,homes:nH,builds:nB},plan:pl,R,half:half*sc,ccY:cy*sc};
+ g.userData={lift:(.4-base)*sc*vy,counts:{walls:[...W.wim.values()].reduce((a,m)=>a+m.count,0),posts:W.wpost.size,rubble:pl.rubble.length,turrets:nT,homes:nH,builds:nB,kit:!low},plan:pl,R,half:half*sc,ccY:cy*sc};
  return g;}
 function diorama(S,p,o={}){const it=dioramaGen(S,p,o);let r;do r=it.next();while(!r.done);return r.value;}
 

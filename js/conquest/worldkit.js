@@ -160,9 +160,9 @@ function kit(S){if(S.worldKit)return S.worldKit;
  const pendingSwap=new Set();
  function meshyReady(item){const My=root.Meshy3D;if(!My||!My.enabled||!My.slotAsset)return false;return !!My.slotAsset(item);}
  // instanced draws for every placement recorded in target.swaps (call once per batch group, add the result to the group)
- function swapMeshes(swaps,low){const My=root.Meshy3D,out=[];if(!My||!swaps)return out;for(const [id,L] of swaps){const item=swapped(id),set=item&&My.slotSet&&My.slotSet(item,L.length,low);if(!set)continue;const bb=set.box,bw=bb.max.x-bb.min.x,bh=bb.max.y-bb.min.y,bd=bb.max.z-bb.min.z;
-    L.forEach((pl,i)=>{const sc=Math.min(pl.w/bw,pl.d/bd,pl.h/bh);_m.makeTranslation(-(bb.min.x+bb.max.x)/2*sc,-bb.min.y*sc,-(bb.min.z+bb.max.z)/2*sc);_m2.makeScale(sc,sc,sc);_m.multiply(_m2);set.mesh.setMatrixAt(i,_m2.multiplyMatrices(pl.m,_m));});
-    set.mesh.count=L.length;set.mesh.instanceMatrix.needsUpdate=true;set.mesh.computeBoundingSphere();set.mesh.userData.slot=id;set.mesh.userData.noPick=true;out.push(set.mesh);}return out;}
+ function swapMeshes(swaps,low){const My=root.Meshy3D,out=[];if(!My||!swaps)return out;for(const [id,L] of swaps){const item=swapped(id),set=item&&My.slotSet&&My.slotSet(item,L.length,low);if(!set)continue;
+    L.forEach((pl,i)=>set.mesh.setMatrixAt(i,_m2.multiplyMatrices(pl.m,set.fit(_m,pl.w,pl.h,pl.d))));
+    set.mesh.count=L.length;set.mesh.instanceMatrix.needsUpdate=true;set.mesh.userData.slot=id;set.mesh.userData.noPick=true;out.push(set.mesh);}return out;}
  // The two families (owner, Nov 8): the MILITARY is cool gunmetal armour with pale ceramic plates, gold trim and cyan / white
  // lights (the owner's Meshy town items are the reference); SETTLERS are warm, painted, patched and hand-built with amber light.
  const pal={

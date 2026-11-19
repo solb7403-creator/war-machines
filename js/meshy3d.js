@@ -380,7 +380,7 @@ const Meshy3D=(()=>{
  // Pipeline space faces +X; the town kit faces +Z, so town models are turned a quarter once here.
  const TOWN_YAW=-Math.PI/2,townLive=new Set();
  const townScale=(type,l)=>type==='cc'?.78+.0245*(Math.max(1,l)-1):.82+.045*(Math.min(5,Math.max(1,l))-1);
- const townAsset=type=>enabled&&detail!=='none'?request('town-'+type,'light'):null;
+ const townAsset=(type,item)=>enabled&&detail!=='none'?request(item||'town-'+type,'light'):null;
  const townStamp=types=>enabled?types.map(t=>peek('town-'+t,'light')?1:0).join(''):'';
  const THEME_FINISH={sand:'#8f7c62',graphite:'#353d49'},THEME_LIGHT={cyan:'#22e6ff',amber:'#ffb347',violet:'#b78bff',green:'#3fe0c0',red:'#ff5a4a'};
  // one material per model and theme, shared by every instance (town motion is clock-driven, so nothing is per instance)
@@ -404,13 +404,26 @@ const Meshy3D=(()=>{
  // lod: a big town seen from the drive view or zoomed out draws the model's reduced index set (the LOW one) with the same
  // HIGH material (no new program), instead of the old kit model
  function lowGeo(asset){if(!asset.lowIndex)return asset.geometry;if(!asset.lowGeometry){const g=new THREE.BufferGeometry();for(const [k,a] of Object.entries(asset.geometry.attributes))g.setAttribute(k,a);g.setIndex(asset.lowIndex);g.boundingBox=asset.geometry.boundingBox;g.boundingSphere=asset.geometry.boundingSphere;g.userData.hfShared=true;g.userData.meshy=true;asset.lowGeometry=g;}return asset.lowGeometry;}
- function townBuilding(type,lvl,theme,low,lod){
-  const asset=townAsset(type);if(!asset)return null;
-  const g=new THREE.Group(),sc=townScale(type,lvl),mat=townMaterial(asset,theme,low),sp=lod?null:townSplit(asset),pv=townPivot(asset);g.scale.setScalar(sc);
+ // item + fit (Session 5E-2d1, js/conquest/slots.js): any manifest item can stand in a building's slot; fit = [w, h, d] is the
+ // slot's box, the model is scaled to stand inside it (its own size never matters)
+ function townBuilding(type,lvl,theme,low,lod,item,fit){
+  const asset=townAsset(type,item);if(!asset)return null;
+  const g=new THREE.Group(),sc=fit?slotScale(asset,fit[0],fit[1],fit[2]):townScale(type,lvl),mat=townMaterial(asset,theme,low),sp=lod?null:townSplit(asset),pv=townPivot(asset);g.scale.setScalar(sc);
   const place=geo=>{const m=new THREE.Mesh(geo,mat);m.onBeforeRender=envHook;m.rotation.y=TOWN_YAW;m.position.set(-(pv[0]*Math.cos(TOWN_YAW)+pv[1]*Math.sin(TOWN_YAW)),0,-(-pv[0]*Math.sin(TOWN_YAW)+pv[1]*Math.cos(TOWN_YAW)));m.userData.meshyTown=asset;return m;};
   if(sp){g.add(place(sp.base));const head=new THREE.Group();head.add(place(sp.head));g.add(head);g.userData.meshyHead=head;}else g.add(place(lod?lowGeo(asset):asset.geometry));
   g.userData.meshyTown=asset.id;asset.refs=(asset.refs||0)+1;g.userData.meshyTownRelease=()=>{asset.refs=Math.max(0,asset.refs-1);};return g;
  }
+ // ---- world-kit slots (Session 5E-2d1, owner Nov 19): a manifest item replaces a code-built world model ----
+ // The model is turned to the kit's +Z front, scaled uniformly to stand inside the slot's box (w x h x d), centred on its
+ // footprint and on the ground: size, ground fit and collision come from the slot, never from the model.
+ const slotAsset=id=>enabled&&detail!=='none'?request(id,'light'):null;
+ function slotBox(asset){if(asset.slotBox)return asset.slotBox;const g=asset.geometry;if(!g.boundingBox)g.computeBoundingBox();const b=g.boundingBox,c=Math.cos(TOWN_YAW),s=Math.sin(TOWN_YAW),X=[],Z=[];
+  for(const x of [b.min.x,b.max.x])for(const z of [b.min.z,b.max.z]){X.push(x*c+z*s);Z.push(-x*s+z*c);}return asset.slotBox={x0:Math.min(...X),x1:Math.max(...X),z0:Math.min(...Z),z1:Math.max(...Z),y0:b.min.y,y1:b.max.y};}
+ function slotScale(asset,w,h,d){const b=slotBox(asset);return Math.min(w/Math.max(1e-6,b.x1-b.x0),d/Math.max(1e-6,b.z1-b.z0),h/Math.max(1e-6,b.y1-b.y0));}
+ // {mesh: InstancedMesh, fit(out, w, h, d): model -> slot-local matrix}; the caller multiplies each placement by fit
+ function slotSet(id,count,low){const asset=slotAsset(id);if(!asset)return null;const mat=townMaterial(asset,null,low),mesh=new THREE.InstancedMesh(asset.geometry,mat,Math.max(1,count));mesh.onBeforeRender=envHook;mesh.frustumCulled=false;mesh.userData.meshyTown=asset;
+  const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),TOWN_YAW),p=new THREE.Vector3(),s3=new THREE.Vector3();asset.refs=(asset.refs||0)+1;mesh.userData.meshyTownRelease=()=>{asset.refs=Math.max(0,asset.refs-1);};
+  return {mesh,asset,fit(out,w,h,d){const b=slotBox(asset),sc=slotScale(asset,w,h,d);return out.compose(p.set(-(b.x0+b.x1)/2*sc,-b.y0*sc,-(b.z0+b.z1)/2*sc),q,s3.set(sc,sc,sc));}};}
  // instanced turret set: {base, hd, matrix(out, x, y, z, aim, kick, dead)} with the pedestal centred on the cell
  let noHead=null;
  function townTurret(type,count,lvl,theme,low){
@@ -433,6 +446,6 @@ const Meshy3D=(()=>{
  function prefetch(L){if(!L)return;try{if(L.c)request(itemId.chassis(L.c.c,Math.max(0,Math.min(2,L.c.t|0))),'light');if(L.w)request(itemId.weapon(L.w.a,Math.max(0,Math.min(2,L.w.t|0))),'light');}catch(e){}}
  function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();generation++;}
  return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get fit(){return fitOn;},set fit(v){if(fitOn!==!!v){fitOn=!!v;generation++;}},weaponFit,get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;},
-  decode,container,request,peek,best,withDetail,pending,stamp,itemId,loadManifest,GLOW,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,townStep,townStamp,townAsset,TOWN_YAW,hostRenderer,releaseHost,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
+  decode,container,request,peek,best,withDetail,pending,stamp,itemId,loadManifest,GLOW,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,slotAsset,slotSet,slotScale,townStep,townStamp,townAsset,TOWN_YAW,hostRenderer,releaseHost,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
 })();
 if(typeof module!=='undefined')module.exports=Meshy3D;

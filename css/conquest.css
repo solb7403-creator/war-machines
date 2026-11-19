@@ -312,7 +312,7 @@
 .cq-plot-drivebtn{position:absolute;left:10px;bottom:10px;z-index:2;min-height:44px;padding:6px 12px;font-size:11px;font-weight:800;background:#0f3a48f0;border-color:#22e6ff}.cq-plot-drivebtn[hidden]{display:none!important}
 .cq-plot-walls.cq-plot-fabon .cq-plot-drivebtn{display:none}
 .cq-plot-skip{position:absolute;right:10px;bottom:10px;z-index:3;min-height:44px;padding:6px 14px;font-size:11px;background:#0b1623e6}.cq-plot-skip[hidden]{display:none!important}
-.cq-plot-stick{position:absolute;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #22e6ff88;background:#0b162366;pointer-events:none;z-index:2;display:grid;place-items:center}.cq-plot-stick[hidden]{display:none!important}.cq-plot-stick i{display:block;width:44px;height:44px;border-radius:50%;background:#22e6ffaa;box-shadow:0 0 12px #22e6ff}
+.cq-plot-drivestick{z-index:3}.cq-plot-drivestick[hidden]{display:none!important}   /* the town's drive view uses the world's fixed DRIVE joystick (.cq-stick): same size, place and feel (5E-2d1) */
 .cq-plot-exit{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:3;padding:10px 14px;border-radius:10px;background:#0b1623ee;border:1px solid #22e6ff;color:#cdf6ff;font-size:12px;font-weight:800;letter-spacing:.06em;pointer-events:none}.cq-plot-exit[hidden]{display:none!important}
 .cq-plot-driving .cq-plot-rot,.cq-plot-driving .cq-plot-frame,.cq-plot-driving .cq-plot-pan{display:none}
 .cq-plot-driving .cq-plot-stage{cursor:move}
@@ -338,7 +338,7 @@
 /* Session 5D: BUILD at PEEK shows its first card (the resource line and the group title wait for HALF); the readout never wraps at 390 px */
 .cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-res,.cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-group:first-of-type{display:none}
 .cq-plot-body>.cq-plot-res{white-space:nowrap;overflow-x:auto;overflow-y:hidden;font-size:11px;letter-spacing:.01em}   /* the build readout only (its tokens are short enough for 320 px); the visit readout wraps */
-.cq-viewport:focus{outline:none}   /* focused by script after ENTER CONQUEST / ACKNOWLEDGE so the keyboard reaches the world; no ring around the whole screen */
+.cq-viewport:focus:not(:focus-visible){outline:none}.cq-viewport:focus-visible{outline:2px solid #79e2d2;outline-offset:-3px}   /* focused by script after ENTER CONQUEST / ACKNOWLEDGE so the keyboard reaches the world: no ring after a click or tap, the keyboard's own focus ring stays (5E-2d1) */
 
 /* the super timing bar (Session 5E-2b): bottom centre, above the ability buttons; one glance: blue zone, gold jackpot, white marker */
 .cq-supbar{position:absolute;left:50%;bottom:calc(max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)) + 262px);transform:translateX(-50%);width:min(300px,calc(100% - 44px));height:22px;padding:4px;border-radius:16px;background:rgba(6,10,18,.84);border:2px solid rgba(255,255,255,.55);z-index:7;touch-action:none;cursor:pointer}
@@ -495,6 +495,8 @@
 .cq .cq-rating .cq-rating-next{color:#ffcf6a;opacity:1}
 .cq-reward-ticker:not(:empty){width:fit-content;max-width:calc(100% - 24px);margin:0 auto;padding:3px 10px;border-radius:9px;background:#08121df0;box-shadow:0 0 0 1px #e0c27a55;z-index:6}
 .cq:has(.cq-dialog) .cq-keys{display:none}
+/* 5E-2d1 (5D leftover): on a narrow window with a mouse the key strip wrapped down into the reward ticker's line (top 112-152 px). There it sits below the ticker instead, compact, so the two can never share a line */
+@media(max-width:520px){.cq-keys{top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 184px);font-size:10px;line-height:1.35;padding:5px 8px;max-width:calc(100vw - 24px)}}
 .cq-supply .cq-supply-power{margin:0 0 8px}
 .cq-supply .cq-plating button{font-size:12px;line-height:1.35}
 
