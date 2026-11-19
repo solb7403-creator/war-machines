@@ -5891,7 +5891,7 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   D's server-fielded Battalion did not reach the page inside 90 s under the session's CPU load (software GL at ~4 FPS there): OPEN,
   re-run on a quiet machine; sections A-C pass there. perf.py PASS. UX critic round 2 not run (the round-1 blockers are fixed; the
   remaining polish is the visual pass's list above).
-- NEXT: dev/bump.sh, PR (label owner-rules-change if asked), CI, merge, deploy checks, ROADMAP 6C RELEASED, release record, report.
+- RELEASE: build 20261119074646 (dev/bump.sh); PR #144 opened with the `owner-rules-change` label (the prompt is the owner's decision; docs/owner-rules.json changed in slice 6). NEXT: CI green, merge, deploy checks, ROADMAP 6C RELEASED, release record, report.
 - Earlier slices (the first 6C session):
 - DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
   sit in their own "Also (owner, Nov 18)" group). Research recorded below.
