@@ -5764,8 +5764,10 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   routes, dev/tools/session6c/measure-record.mjs, new pilot): BEFORE (main, 1 Hz): idle 45.6 KB of Firebase download a request =
   164 MB a pilot-hour, an operation 72.3 KB = 260 MB/h; phone 22 KB (79 MB/h) / 35 KB (126 MB/h). AFTER: warm isolate idle
   17.3 KB at 0.5 Hz = 31 MB/h (-81%), operation 18.7 KB at 1 Hz = 67 MB/h (-74%); a cold isolate on every request idle 32.1 KB =
-  58 MB/h, operation 45.5 KB = 164 MB/h; phone idle 12.2 KB = 22 MB/h, operation 9.7 KB = 35 MB/h. Not yet run after it: the
-  full 119-test list, the browser journeys. NOT built yet: `sweep` is not called at session open; the startup of the hub (live)
+  58 MB/h, operation 45.5 KB = 164 MB/h; phone idle 12.2 KB = 22 MB/h, operation 9.7 KB = 35 MB/h. The full 119-test CI node list PASSES on
+  slice 5 (one test changed with the prompt's rule: conquest-earned-journey.mjs lets the board's rescue of the first wingman
+  through and accepts its no-CP settlement; the town is still claimed at 6.6 simulated minutes, target <= 22). Browser
+  journeys not run yet. NOT built yet: `sweep` is not called at session open; the startup of the hub (live)
   and labOnly still get whole states (fine). Everything under "STILL TO BUILD" except the split items is still open.
 - PREPARED PATCHES (apply in this order from the repo root, `python3 dev/tools/session6c/pN_*.py`; each asserts its anchors, then
   rebuild the sim and run the suites): p1_rules (store kinds chip pack / livery / rcfin with checkout off, BAT_STORE_OPEN,
