@@ -169,7 +169,7 @@ const tune=(B,f)=>f&&f.mil?(B&&B.operation&&B.operation.danger==='VETERAN'?MILIT
 // The six roles (blueprint §4 table; starting values for the simulations). Every number is the base at m = 1.
 const ROLES=Object.freeze({
  '':Object.freeze({n:'WINGMAN',keep:.72,range:1}),
- guardian:Object.freeze({n:'GUARDIAN',cls:['titan'],keep:.55,range:1,cover:.20,coverR:12,taunt:45,pull:20,hold:3,brace:1.4}),   /* hold: a Guardian draws the fire of at most 3 Parasites at once (review 2: stacked taunts made four Guardians beat a balanced force) */
+ guardian:Object.freeze({n:'GUARDIAN',cls:['titan'],keep:.55,range:1,cover:.20,coverR:12,taunt:45,pull:20,hold:3}),   /* hold: a Guardian draws the fire of at most 3 Parasites at once (review 2: stacked taunts made four Guardians beat a balanced force) */
  breacher:Object.freeze({n:'BREACHER',cls:['vanguard'],keep:.45,range:1,structure:.40,frozen:.50,frozenR:15,charge:9,chargeT:.4,chargeMin:12,chargeMax:35}),
  lancer:Object.freeze({n:'LANCER',cls:['titan','vanguard'],keep:.85,range:1.4,close:.6,closeR:20,air:.50,burst:.30}),
  mender:Object.freeze({n:'MENDER',cls:['scout','vanguard'],keep:.8,range:1,heal:.012,healR:18,revive:.35,reviveR:30,reviveS:2.5,low:.35}),
@@ -418,7 +418,7 @@ Object.assign(Battle.prototype,{
    const want=Math.atan2(f.ax-f.x,f.az-f.z),delta=Math.atan2(Math.sin(want-f.turret),Math.cos(want-f.turret)),turn=STAT.turn*(st.turnM||1)*tune(this,f).turn*dt;f.turret+=clamp(delta,-turn,turn);
    const fc=center(f),aim={x:f.ax,y:f.ay,z:f.az},range=st.eng.range*R.range;
    if(f.cd<=0&&!f.oh&&f.react<=0&&Math.abs(delta)<ALLY.align&&dist(fc,aim)<range&&this.laneClear(f,fc,aim)&&lineClear(fc,aim)&&this.shoot(fc,aim,st,'ally',st.wtype,f.id)){
-    f.cd=st.wshot/rofMult(st)*(f.role==='guardian'&&this.enemies.some(e=>e.hp>0&&e.tf===f.id)?ROLES.guardian.brace:1);f.heat+=st.eng.heatPerShot;   /* braced: a Guardian drawing fire shoots 40% slower (a force of Guardians must not out-tank a balanced one) */if(f.heat>=st.eng.capacity){f.heat=st.eng.capacity;f.oh=1;}this.effects.push({kind:'muzzle',x:fc.x,y:fc.y,z:fc.z,weapon:st.wtype,life:.1,a:1});}
+    f.cd=st.wshot/rofMult(st);f.heat+=st.eng.heatPerShot;if(f.heat>=st.eng.capacity){f.heat=st.eng.capacity;f.oh=1;}this.effects.push({kind:'muzzle',x:fc.x,y:fc.y,z:fc.z,weapon:st.wtype,life:.1,a:1});}
    // its super: the player's charge rule (its own damage dealt and taken) plus a minimum spacing, per unit and across all units
    if(f.charge>=SUPER_MAX&&this.allySuper&&this.time-f.sup>=ALLY.superSpacing&&this.time-(Number.isFinite(this.allySup)?this.allySup:-99)>=ALLY.superGap&&f.react<=0&&dist(fc,aim)<range&&lineClear(fc,aim)){f.sup=this.time;this.allySup=this.time;this.allySuper(f,st,aim);f.charge=0;}}}   // the meter empties after the shot (as the pilot's)
 });

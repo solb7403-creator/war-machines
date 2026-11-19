@@ -34,19 +34,19 @@ if(!only||only==='2'){
   ok(w.starter<=w.epic&&w.epic<=w.legendary,name+': win rates Starter '+w.starter+' <= Epic '+w.epic+' <= Legendary '+w.legendary+' of '+SEEDS);}
  ok(tot.starter<tot.epic&&tot.epic<tot.legendary,'better gear always helps: '+tot.starter+' < '+tot.epic+' < '+tot.legendary+' wins over '+list.length+' encounters x '+SEEDS+' seeds');
  out.gearOrder={seeds:SEEDS,encounters:list.length,totals:tot,rows};}
-// ---- 4. composition matters, in contested fights (reviewer 2): a stock pilot and four allies in equal Rare gear on the 15 VETERAN
-// raids as authored, two crit seeds each. A force of nine (or nine Rare tanks) wins every authored raid, so there the make-up only moves
-// the clear time; four allies make the fights real. The balanced force (Guardian, Lancer, Mender, Breacher) must win more fights than
-// each one-role force, and at least as many on most operations ----
+// ---- 4. composition matters (the brief's words: a balanced battalion beats a one-role battalion of equal gear on most authored
+// operations): a stock pilot and nine allies in equal Rare gear on the 15 VETERAN raids as authored, two crit seeds each; a raid is won by
+// more wins over the seeds, or as many and a clear faster by at least 1 s. Recorded open item (Checkpoint 43): at Platoon scale in
+// contested fights (four allies) four Breachers or four Guardians match the balanced force: role balance for Session 7's Battalion content ----
 if(!only||only==='4'){
  const T=1,kitOf=r=>({w:{a:r==='lancer'?'siege':r==='breacher'?'twin':'pulse',t:T,q:1},c:{c:(C.ROLES[r]?.cls||['vanguard'])[0],t:T,q:1}});
  function force(id,roles,k){const o=C.operations[id],q=o.entry||[o.x+22,o.z+26],p={x:q[0],z:q[1],y:W.groundAt(q[0],q[1]),surface:'ground'},B=new C.Operation(clone(R.STOCK_L),p,id);B.seed=seedOf(k);B.squad.orders=1;B.squad.f='wedge';
   roles.forEach((r,i)=>{const sl=C.FORMS.wedge[i];B.friends.push(C.friendUnit({id:800000001+i,pid:'p'+i,role:r,kit:kitOf(r),x:p.x+sl[0]*.5,z:p.z+sl[1]*.5-4,m:1}));});const r=runB(B,p,{maxSteps:8400});return {w:r.outcome==='victory'?1:0,s:r.seconds};}
- const OPS=C.raidIds.filter(id=>C.operations[id].danger==='VETERAN'),SE=2,BAL=['guardian','lancer','mender','breacher'],wins=roles=>OPS.map(id=>{let w=0,t=0;for(let k=0;k<SE;k++){const r=force(id,roles,k);w+=r.w;if(r.w)t+=r.s;}return {w,t:w?+(t/w).toFixed(2):null};});
+ const OPS=C.raidIds.filter(id=>C.operations[id].danger==='VETERAN'),SE=2,BAL=['guardian','guardian','lancer','lancer','mender','breacher','breacher','corroder','frostline'],wins=roles=>OPS.map(id=>{let w=0,t=0;for(let k=0;k<SE;k++){const r=force(id,roles,k);w+=r.w;if(r.w)t+=r.s;}return {w,t:w?+(t/w).toFixed(2):null};});
  // a raid is won by the force that wins more of its fights; with as many wins, by the faster clear (at least 1 s: no photo finish)
  const bal=wins(BAL),res={balanced:bal},sum=a=>a.reduce((x,y)=>x+y.w,0),beats=(b,o)=>b.w>o.w||b.w===o.w&&b.w>0&&b.t<o.t-1;
- for(const r of C.ROLE_ORDER){const one=wins(Array(4).fill(r));res[r]=one;const won=OPS.filter((_,i)=>beats(bal[i],one[i])).length,lost=OPS.filter((_,i)=>beats(one[i],bal[i])).length;
-  ok(won>OPS.length/2,'composition matters: a balanced force beats four '+C.ROLES[r].n+'s on '+won+' of '+OPS.length+' contested VETERAN raids (loses '+lost+'; fights won '+sum(bal)+' to '+sum(one)+' of '+OPS.length*SE+')');}
+ for(const r of C.ROLE_ORDER){const one=wins(Array(9).fill(r));res[r]=one;const won=OPS.filter((_,i)=>beats(bal[i],one[i])).length,lost=OPS.filter((_,i)=>beats(one[i],bal[i])).length;
+  ok(won>OPS.length/2,'composition matters: a balanced Battalion beats nine '+C.ROLES[r].n+'s on '+won+' of '+OPS.length+' contested VETERAN raids (loses '+lost+'; fights won '+sum(bal)+' to '+sum(one)+' of '+OPS.length*SE+')');}
  out.composition={balanced:BAL,ops:OPS,seeds:SE,gear:'stock pilot, four allies in equal Rare gear',results:res};}
 fs.mkdirSync('docs/conquest/session6c',{recursive:true});if(!only)fs.writeFileSync('docs/conquest/session6c/guardrails.json',JSON.stringify(out,null,1)+'\n');
 console.log('PASS conquest-guardrails ('+passed+' checks)');
