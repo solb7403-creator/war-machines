@@ -92,6 +92,7 @@ jobs:
           node dev/tests/wtest/research-economy.mjs
           node dev/tests/mod-behaviors.mjs
           node dev/tests/conquest-power-chip.mjs
+          node dev/tests/conquest-allies.mjs
           node dev/tests/lab-store-ui.mjs
           node dev/tests/wtest/lab-store.mjs
           node dev/tests/wtest/proof-mods.mjs
