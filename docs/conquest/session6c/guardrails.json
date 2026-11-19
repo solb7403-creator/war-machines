@@ -1,0 +1,1407 @@
+{
+ "generatedBy": "dev/tests/conquest-guardrails.mjs",
+ "scope": "scripted pilot (the raids test's physical-input controller) on the shared engine; not a human playtest",
+ "gearOrder": {
+  "seeds": 4,
+  "encounters": 51,
+  "totals": {
+   "starter": 130,
+   "epic": 164,
+   "legendary": 183
+  },
+  "rows": [
+   {
+    "id": "oxygen-line",
+    "danger": "STANDARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 293,
+     "epic": 355,
+     "legendary": 383
+    }
+   },
+   {
+    "id": "convoy",
+    "danger": "STANDARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 310,
+     "epic": 353,
+     "legendary": 367
+    }
+   },
+   {
+    "id": "relay",
+    "danger": "STANDARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 292,
+     "epic": 335,
+     "legendary": 348
+    }
+   },
+   {
+    "id": "recon",
+    "danger": "STANDARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 364,
+     "epic": 383,
+     "legendary": 386
+    }
+   },
+   {
+    "id": "rescue",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 296,
+     "epic": 349,
+     "legendary": 359
+    }
+   },
+   {
+    "id": "redoubt",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 32,
+     "legendary": 200
+    }
+   },
+   {
+    "id": "wingman-rescue",
+    "danger": "STANDARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 387,
+     "epic": 395,
+     "legendary": 394
+    }
+   },
+   {
+    "id": "raid-intercept-1",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 228,
+     "epic": 306,
+     "legendary": 334
+    }
+   },
+   {
+    "id": "raid-intercept-2",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 176,
+     "epic": 279,
+     "legendary": 322
+    }
+   },
+   {
+    "id": "raid-intercept-3",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 3
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 27
+    }
+   },
+   {
+    "id": "raid-intercept-4",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 1,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 4,
+     "epic": 117,
+     "legendary": 214
+    }
+   },
+   {
+    "id": "raid-intercept-5",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 3,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 53,
+     "legendary": 207
+    }
+   },
+   {
+    "id": "raid-sabotage-1",
+    "danger": "HARD",
+    "wins": {
+     "starter": 3,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 109,
+     "epic": 253,
+     "legendary": 276
+    }
+   },
+   {
+    "id": "raid-sabotage-2",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 58,
+     "epic": 266,
+     "legendary": 288
+    }
+   },
+   {
+    "id": "raid-sabotage-3",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 0
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 0
+    }
+   },
+   {
+    "id": "raid-sabotage-4",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 1,
+     "legendary": 3
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 7,
+     "legendary": 104
+    }
+   },
+   {
+    "id": "raid-sabotage-5",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 87
+    }
+   },
+   {
+    "id": "raid-battery-1",
+    "danger": "HARD",
+    "wins": {
+     "starter": 3,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 58,
+     "epic": 204,
+     "legendary": 250
+    }
+   },
+   {
+    "id": "raid-battery-2",
+    "danger": "HARD",
+    "wins": {
+     "starter": 3,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 63,
+     "epic": 246,
+     "legendary": 255
+    }
+   },
+   {
+    "id": "raid-battery-3",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 0
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 0
+    }
+   },
+   {
+    "id": "raid-battery-4",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 1,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 2,
+     "legendary": 115
+    }
+   },
+   {
+    "id": "raid-battery-5",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 3,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 23,
+     "legendary": 100
+    }
+   },
+   {
+    "id": "raid-extraction-1",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 171,
+     "epic": 254,
+     "legendary": 309
+    }
+   },
+   {
+    "id": "raid-extraction-2",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 246,
+     "epic": 302,
+     "legendary": 342
+    }
+   },
+   {
+    "id": "raid-extraction-3",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 2
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 33
+    }
+   },
+   {
+    "id": "raid-extraction-4",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 3,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 25,
+     "legendary": 237
+    }
+   },
+   {
+    "id": "raid-extraction-5",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 3,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 49,
+     "legendary": 196
+    }
+   },
+   {
+    "id": "raid-siege-1",
+    "danger": "HARD",
+    "wins": {
+     "starter": 3,
+     "epic": 3,
+     "legendary": 3
+    },
+    "hull": {
+     "starter": 143,
+     "epic": 212,
+     "legendary": 247
+    }
+   },
+   {
+    "id": "raid-siege-2",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 218,
+     "epic": 332,
+     "legendary": 363
+    }
+   },
+   {
+    "id": "raid-siege-3",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 1
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 14
+    }
+   },
+   {
+    "id": "raid-siege-4",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 2,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 56,
+     "epic": 203,
+     "legendary": 291
+    }
+   },
+   {
+    "id": "raid-siege-5",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 130,
+     "legendary": 268
+    }
+   },
+   {
+    "id": "strike-1",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 115,
+     "epic": 309,
+     "legendary": 314
+    }
+   },
+   {
+    "id": "strike-2",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 172,
+     "epic": 284,
+     "legendary": 330
+    }
+   },
+   {
+    "id": "strike-3",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 119,
+     "epic": 253,
+     "legendary": 336
+    }
+   },
+   {
+    "id": "strike-4",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 135,
+     "epic": 269,
+     "legendary": 324
+    }
+   },
+   {
+    "id": "strike-5",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 152,
+     "epic": 290,
+     "legendary": 337
+    }
+   },
+   {
+    "id": "strike-6",
+    "danger": "HARD",
+    "wins": {
+     "starter": 3,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 80,
+     "epic": 297,
+     "legendary": 339
+    }
+   },
+   {
+    "id": "strike-7",
+    "danger": "HARD",
+    "wins": {
+     "starter": 2,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 58,
+     "epic": 310,
+     "legendary": 337
+    }
+   },
+   {
+    "id": "strike-8",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 142,
+     "epic": 294,
+     "legendary": 340
+    }
+   },
+   {
+    "id": "sector-defense-refuge",
+    "danger": "HARD",
+    "wins": {
+     "starter": 3,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 380,
+     "epic": 391,
+     "legendary": 393
+    }
+   },
+   {
+    "id": "sector-defense-ash",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 377,
+     "epic": 388,
+     "legendary": 388
+    }
+   },
+   {
+    "id": "sector-defense-oxygen",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 375,
+     "epic": 389,
+     "legendary": 390
+    }
+   },
+   {
+    "id": "sector-defense-western",
+    "danger": "HARD",
+    "wins": {
+     "starter": 2,
+     "epic": 2,
+     "legendary": 2
+    },
+    "hull": {
+     "starter": 391,
+     "epic": 395,
+     "legendary": 396
+    }
+   },
+   {
+    "id": "sector-defense-helium",
+    "danger": "HARD",
+    "wins": {
+     "starter": 1,
+     "epic": 1,
+     "legendary": 1
+    },
+    "hull": {
+     "starter": 397,
+     "epic": 398,
+     "legendary": 398
+    }
+   },
+   {
+    "id": "sector-defense-ridge",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 382,
+     "epic": 394,
+     "legendary": 392
+    }
+   },
+   {
+    "id": "base-defense (town tier 1)",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 385,
+     "epic": 391,
+     "legendary": 400
+    }
+   },
+   {
+    "id": "base-defense (town tier 2)",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 389,
+     "epic": 391,
+     "legendary": 400
+    }
+   },
+   {
+    "id": "base-defense (town tier 3)",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 389,
+     "epic": 394,
+     "legendary": 400
+    }
+   },
+   {
+    "id": "base-defense (town tier 4)",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 389,
+     "epic": 396,
+     "legendary": 400
+    }
+   },
+   {
+    "id": "base-defense (town tier 5)",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 391,
+     "epic": 396,
+     "legendary": 400
+    }
+   }
+  ]
+ },
+ "composition": {
+  "balanced": [
+   "guardian",
+   "guardian",
+   "lancer",
+   "lancer",
+   "mender",
+   "breacher",
+   "breacher",
+   "corroder",
+   "frostline"
+  ],
+  "ops": [
+   "raid-intercept-3",
+   "raid-intercept-4",
+   "raid-intercept-5",
+   "raid-sabotage-3",
+   "raid-sabotage-4",
+   "raid-sabotage-5",
+   "raid-battery-3",
+   "raid-battery-4",
+   "raid-battery-5",
+   "raid-extraction-3",
+   "raid-extraction-4",
+   "raid-extraction-5",
+   "raid-siege-3",
+   "raid-siege-4",
+   "raid-siege-5"
+  ],
+  "gear": "equal Rare gear (pilot and allies Rare)",
+  "scoring": "a win first, then the faster clear; a loss by the damage dealt",
+  "results": {
+   "balanced": {
+    "raid-intercept-3": {
+     "win": 1,
+     "s": 37.55,
+     "dmg": 4647,
+     "v": 999962.45
+    },
+    "raid-intercept-4": {
+     "win": 1,
+     "s": 39.6,
+     "dmg": 3756,
+     "v": 999960.4
+    },
+    "raid-intercept-5": {
+     "win": 1,
+     "s": 31.25,
+     "dmg": 3756,
+     "v": 999968.75
+    },
+    "raid-sabotage-3": {
+     "win": 1,
+     "s": 38.6,
+     "dmg": 4723,
+     "v": 999961.4
+    },
+    "raid-sabotage-4": {
+     "win": 1,
+     "s": 42.4,
+     "dmg": 3832,
+     "v": 999957.6
+    },
+    "raid-sabotage-5": {
+     "win": 1,
+     "s": 83.4,
+     "dmg": 5538,
+     "v": 999916.6
+    },
+    "raid-battery-3": {
+     "win": 1,
+     "s": 49.5,
+     "dmg": 5949,
+     "v": 999950.5
+    },
+    "raid-battery-4": {
+     "win": 1,
+     "s": 35.35,
+     "dmg": 3988,
+     "v": 999964.65
+    },
+    "raid-battery-5": {
+     "win": 1,
+     "s": 37.25,
+     "dmg": 3988,
+     "v": 999962.75
+    },
+    "raid-extraction-3": {
+     "win": 1,
+     "s": 80.55,
+     "dmg": 6706,
+     "v": 999919.45
+    },
+    "raid-extraction-4": {
+     "win": 1,
+     "s": 80.5,
+     "dmg": 6861,
+     "v": 999919.5
+    },
+    "raid-extraction-5": {
+     "win": 1,
+     "s": 54.65,
+     "dmg": 5179,
+     "v": 999945.35
+    },
+    "raid-siege-3": {
+     "win": 1,
+     "s": 37.55,
+     "dmg": 4255,
+     "v": 999962.45
+    },
+    "raid-siege-4": {
+     "win": 1,
+     "s": 54.25,
+     "dmg": 4434,
+     "v": 999945.75
+    },
+    "raid-siege-5": {
+     "win": 1,
+     "s": 23.25,
+     "dmg": 3364,
+     "v": 999976.75
+    }
+   },
+   "guardian": {
+    "raid-intercept-3": {
+     "win": 1,
+     "s": 36.85,
+     "dmg": 4647,
+     "v": 999963.15
+    },
+    "raid-intercept-4": {
+     "win": 1,
+     "s": 38.65,
+     "dmg": 3756,
+     "v": 999961.35
+    },
+    "raid-intercept-5": {
+     "win": 1,
+     "s": 36.65,
+     "dmg": 3756,
+     "v": 999963.35
+    },
+    "raid-sabotage-3": {
+     "win": 1,
+     "s": 57.05,
+     "dmg": 5793,
+     "v": 999942.95
+    },
+    "raid-sabotage-4": {
+     "win": 1,
+     "s": 62.4,
+     "dmg": 4902,
+     "v": 999937.6
+    },
+    "raid-sabotage-5": {
+     "win": 1,
+     "s": 32.45,
+     "dmg": 3832,
+     "v": 999967.55
+    },
+    "raid-battery-3": {
+     "win": 1,
+     "s": 55.15,
+     "dmg": 5949,
+     "v": 999944.85
+    },
+    "raid-battery-4": {
+     "win": 1,
+     "s": 41.05,
+     "dmg": 3988,
+     "v": 999958.95
+    },
+    "raid-battery-5": {
+     "win": 1,
+     "s": 81.9,
+     "dmg": 5694,
+     "v": 999918.1
+    },
+    "raid-extraction-3": {
+     "win": 1,
+     "s": 65,
+     "dmg": 6070,
+     "v": 999935
+    },
+    "raid-extraction-4": {
+     "win": 1,
+     "s": 98.2,
+     "dmg": 6861,
+     "v": 999901.8
+    },
+    "raid-extraction-5": {
+     "win": 1,
+     "s": 73.65,
+     "dmg": 6861,
+     "v": 999926.35
+    },
+    "raid-siege-3": {
+     "win": 1,
+     "s": 33.75,
+     "dmg": 4255,
+     "v": 999966.25
+    },
+    "raid-siege-4": {
+     "win": 1,
+     "s": 54.15,
+     "dmg": 4434,
+     "v": 999945.85
+    },
+    "raid-siege-5": {
+     "win": 1,
+     "s": 70.15,
+     "dmg": 5071,
+     "v": 999929.85
+    }
+   },
+   "breacher": {
+    "raid-intercept-3": {
+     "win": 1,
+     "s": 35.65,
+     "dmg": 4647,
+     "v": 999964.35
+    },
+    "raid-intercept-4": {
+     "win": 1,
+     "s": 45.55,
+     "dmg": 3756,
+     "v": 999954.45
+    },
+    "raid-intercept-5": {
+     "win": 1,
+     "s": 32.85,
+     "dmg": 3756,
+     "v": 999967.15
+    },
+    "raid-sabotage-3": {
+     "win": 1,
+     "s": 40.35,
+     "dmg": 4723,
+     "v": 999959.65
+    },
+    "raid-sabotage-4": {
+     "win": 1,
+     "s": 57.55,
+     "dmg": 4902,
+     "v": 999942.45
+    },
+    "raid-sabotage-5": {
+     "win": 1,
+     "s": 56.3,
+     "dmg": 4902,
+     "v": 999943.7
+    },
+    "raid-battery-3": {
+     "win": 1,
+     "s": 64.2,
+     "dmg": 5949,
+     "v": 999935.8
+    },
+    "raid-battery-4": {
+     "win": 1,
+     "s": 38.4,
+     "dmg": 3988,
+     "v": 999961.6
+    },
+    "raid-battery-5": {
+     "win": 1,
+     "s": 37.2,
+     "dmg": 3988,
+     "v": 999962.8
+    },
+    "raid-extraction-3": {
+     "win": 1,
+     "s": 65.15,
+     "dmg": 6070,
+     "v": 999934.85
+    },
+    "raid-extraction-4": {
+     "win": 1,
+     "s": 96.3,
+     "dmg": 6861,
+     "v": 999903.7
+    },
+    "raid-extraction-5": {
+     "win": 1,
+     "s": 52.85,
+     "dmg": 5179,
+     "v": 999947.15
+    },
+    "raid-siege-3": {
+     "win": 1,
+     "s": 50.8,
+     "dmg": 5325,
+     "v": 999949.2
+    },
+    "raid-siege-4": {
+     "win": 1,
+     "s": 61.8,
+     "dmg": 4434,
+     "v": 999938.2
+    },
+    "raid-siege-5": {
+     "win": 1,
+     "s": 58,
+     "dmg": 4434,
+     "v": 999942
+    }
+   },
+   "lancer": {
+    "raid-intercept-3": {
+     "win": 1,
+     "s": 57.8,
+     "dmg": 5717,
+     "v": 999942.2
+    },
+    "raid-intercept-4": {
+     "win": 1,
+     "s": 77.35,
+     "dmg": 6508,
+     "v": 999922.65
+    },
+    "raid-intercept-5": {
+     "win": 1,
+     "s": 36.15,
+     "dmg": 3756,
+     "v": 999963.85
+    },
+    "raid-sabotage-3": {
+     "win": 1,
+     "s": 58.1,
+     "dmg": 5793,
+     "v": 999941.9
+    },
+    "raid-sabotage-4": {
+     "win": 1,
+     "s": 47.85,
+     "dmg": 3832,
+     "v": 999952.15
+    },
+    "raid-sabotage-5": {
+     "win": 1,
+     "s": 79.5,
+     "dmg": 5538,
+     "v": 999920.5
+    },
+    "raid-battery-3": {
+     "win": 1,
+     "s": 66.25,
+     "dmg": 5949,
+     "v": 999933.75
+    },
+    "raid-battery-4": {
+     "win": 1,
+     "s": 63.9,
+     "dmg": 5058,
+     "v": 999936.1
+    },
+    "raid-battery-5": {
+     "win": 1,
+     "s": 76.25,
+     "dmg": 5694,
+     "v": 999923.75
+    },
+    "raid-extraction-3": {
+     "win": 1,
+     "s": 63.5,
+     "dmg": 6070,
+     "v": 999936.5
+    },
+    "raid-extraction-4": {
+     "win": 1,
+     "s": 78.85,
+     "dmg": 6861,
+     "v": 999921.15
+    },
+    "raid-extraction-5": {
+     "win": 1,
+     "s": 64.95,
+     "dmg": 5179,
+     "v": 999935.05
+    },
+    "raid-siege-3": {
+     "win": 1,
+     "s": 35.05,
+     "dmg": 4255,
+     "v": 999964.95
+    },
+    "raid-siege-4": {
+     "win": 1,
+     "s": 52.05,
+     "dmg": 4434,
+     "v": 999947.95
+    },
+    "raid-siege-5": {
+     "win": 1,
+     "s": 32.9,
+     "dmg": 3364,
+     "v": 999967.1
+    }
+   },
+   "mender": {
+    "raid-intercept-3": {
+     "win": 1,
+     "s": 39.85,
+     "dmg": 4647,
+     "v": 999960.15
+    },
+    "raid-intercept-4": {
+     "win": 1,
+     "s": 38.75,
+     "dmg": 3756,
+     "v": 999961.25
+    },
+    "raid-intercept-5": {
+     "win": 1,
+     "s": 63.7,
+     "dmg": 4826,
+     "v": 999936.3
+    },
+    "raid-sabotage-3": {
+     "win": 1,
+     "s": 40.35,
+     "dmg": 4723,
+     "v": 999959.65
+    },
+    "raid-sabotage-4": {
+     "win": 1,
+     "s": 59.75,
+     "dmg": 4902,
+     "v": 999940.25
+    },
+    "raid-sabotage-5": {
+     "win": 1,
+     "s": 44.65,
+     "dmg": 3832,
+     "v": 999955.35
+    },
+    "raid-battery-3": {
+     "win": 1,
+     "s": 53.7,
+     "dmg": 5949,
+     "v": 999946.3
+    },
+    "raid-battery-4": {
+     "win": 1,
+     "s": 41.2,
+     "dmg": 3988,
+     "v": 999958.8
+    },
+    "raid-battery-5": {
+     "win": 1,
+     "s": 70.15,
+     "dmg": 5058,
+     "v": 999929.85
+    },
+    "raid-extraction-3": {
+     "win": 1,
+     "s": 63.35,
+     "dmg": 6070,
+     "v": 999936.65
+    },
+    "raid-extraction-4": {
+     "win": 1,
+     "s": 103.75,
+     "dmg": 6582,
+     "v": 999896.25
+    },
+    "raid-extraction-5": {
+     "win": 1,
+     "s": 91.65,
+     "dmg": 6861,
+     "v": 999908.35
+    },
+    "raid-siege-3": {
+     "win": 1,
+     "s": 64.55,
+     "dmg": 5325,
+     "v": 999935.45
+    },
+    "raid-siege-4": {
+     "win": 1,
+     "s": 39.95,
+     "dmg": 3364,
+     "v": 999960.05
+    },
+    "raid-siege-5": {
+     "win": 1,
+     "s": 53.45,
+     "dmg": 4434,
+     "v": 999946.55
+    }
+   },
+   "corroder": {
+    "raid-intercept-3": {
+     "win": 1,
+     "s": 57.35,
+     "dmg": 5717,
+     "v": 999942.65
+    },
+    "raid-intercept-4": {
+     "win": 1,
+     "s": 51.45,
+     "dmg": 4826,
+     "v": 999948.55
+    },
+    "raid-intercept-5": {
+     "win": 1,
+     "s": 40.7,
+     "dmg": 3756,
+     "v": 999959.3
+    },
+    "raid-sabotage-3": {
+     "win": 1,
+     "s": 42.4,
+     "dmg": 4723,
+     "v": 999957.6
+    },
+    "raid-sabotage-4": {
+     "win": 1,
+     "s": 58.6,
+     "dmg": 4902,
+     "v": 999941.4
+    },
+    "raid-sabotage-5": {
+     "win": 1,
+     "s": 33.2,
+     "dmg": 3832,
+     "v": 999966.8
+    },
+    "raid-battery-3": {
+     "win": 1,
+     "s": 58.65,
+     "dmg": 5949,
+     "v": 999941.35
+    },
+    "raid-battery-4": {
+     "win": 1,
+     "s": 43.15,
+     "dmg": 3988,
+     "v": 999956.85
+    },
+    "raid-battery-5": {
+     "win": 1,
+     "s": 64.9,
+     "dmg": 5058,
+     "v": 999935.1
+    },
+    "raid-extraction-3": {
+     "win": 1,
+     "s": 65.05,
+     "dmg": 6070,
+     "v": 999934.95
+    },
+    "raid-extraction-4": {
+     "win": 1,
+     "s": 101.25,
+     "dmg": 6582,
+     "v": 999898.75
+    },
+    "raid-extraction-5": {
+     "win": 1,
+     "s": 67.15,
+     "dmg": 5179,
+     "v": 999932.85
+    },
+    "raid-siege-3": {
+     "win": 1,
+     "s": 30.1,
+     "dmg": 4255,
+     "v": 999969.9
+    },
+    "raid-siege-4": {
+     "win": 1,
+     "s": 52.5,
+     "dmg": 4434,
+     "v": 999947.5
+    },
+    "raid-siege-5": {
+     "win": 1,
+     "s": 37.75,
+     "dmg": 3364,
+     "v": 999962.25
+    }
+   },
+   "frostline": {
+    "raid-intercept-3": {
+     "win": 1,
+     "s": 64.65,
+     "dmg": 5717,
+     "v": 999935.35
+    },
+    "raid-intercept-4": {
+     "win": 1,
+     "s": 34.85,
+     "dmg": 3756,
+     "v": 999965.15
+    },
+    "raid-intercept-5": {
+     "win": 1,
+     "s": 36.3,
+     "dmg": 3756,
+     "v": 999963.7
+    },
+    "raid-sabotage-3": {
+     "win": 1,
+     "s": 40.45,
+     "dmg": 4723,
+     "v": 999959.55
+    },
+    "raid-sabotage-4": {
+     "win": 1,
+     "s": 42.55,
+     "dmg": 3832,
+     "v": 999957.45
+    },
+    "raid-sabotage-5": {
+     "win": 1,
+     "s": 83.2,
+     "dmg": 5538,
+     "v": 999916.8
+    },
+    "raid-battery-3": {
+     "win": 1,
+     "s": 59.7,
+     "dmg": 5949,
+     "v": 999940.3
+    },
+    "raid-battery-4": {
+     "win": 1,
+     "s": 57.1,
+     "dmg": 5058,
+     "v": 999942.9
+    },
+    "raid-battery-5": {
+     "win": 1,
+     "s": 67.4,
+     "dmg": 5058,
+     "v": 999932.6
+    },
+    "raid-extraction-3": {
+     "win": 1,
+     "s": 65.05,
+     "dmg": 6070,
+     "v": 999934.95
+    },
+    "raid-extraction-4": {
+     "win": 1,
+     "s": 97.8,
+     "dmg": 6861,
+     "v": 999902.2
+    },
+    "raid-extraction-5": {
+     "win": 1,
+     "s": 85.45,
+     "dmg": 6861,
+     "v": 999914.55
+    },
+    "raid-siege-3": {
+     "win": 1,
+     "s": 30.8,
+     "dmg": 4255,
+     "v": 999969.2
+    },
+    "raid-siege-4": {
+     "win": 1,
+     "s": 37.3,
+     "dmg": 3364,
+     "v": 999962.7
+    },
+    "raid-siege-5": {
+     "win": 1,
+     "s": 29.15,
+     "dmg": 3364,
+     "v": 999970.85
+    }
+   }
+  }
+ }
+}

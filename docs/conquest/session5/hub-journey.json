@@ -1,25 +1,97 @@
 {
  "390x844": {
-  "firstPaintMs": 61.6,
+  "firstPaintMs": 31.2,
   "render": {
-   "calls": 15,
-   "triangles": 56627,
-   "programs": 9,
+   "calls": 24,
+   "triangles": 69324,
+   "programs": 12,
    "tankError": null,
-   "tankMeshes": 18
+   "tankMeshes": 28
   },
-  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nYIELD POINTS 0% \u00b7 4 operations to go today\nBUILDER FREE \u00b7 open MY BASE to build\nWAR ORDERS\n\n\u25cb Bank 60 alloy \u00b7 0/60\n\n\u25cb Finish a field mission in 3 sectors \u00b7 0/3\n\n\u25cb Min",
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nYIELD POINTS 0% \u00b7 4 operations to go today\nCOMMAND CHIP 0/1 TODAY\nRESEARCH PART 0/1 TODAY\nBUILDER FREE \u00b7 open MY BASE to build\nBATTALION\n\nNO PILOTS YET\n\nCOMMAND CHIP ",
   "actions": [
    "ENTER CONQUEST",
    "FAST TRAVEL",
    "MY BASE",
-   "RESEARCH \u00b7 COMING SOON (disabled)"
+   "RESEARCHPART 0/1 TODAY"
   ],
   "pageErrors": []
  },
  "myBase": "plot opened from the hub",
+ "390x700": {
+  "firstPaintMs": 6.7,
+  "render": {
+   "calls": 23,
+   "triangles": 74217,
+   "programs": 10,
+   "tankError": null,
+   "tankMeshes": 26
+  },
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nYIELD POINTS 0% \u00b7 4 operations to go today\nCOMMAND CHIP 0/1 TODAY\nRESEARCH PART 0/1 TODAY\nBUILDER FREE \u00b7 open MY BASE to build\nBATTALION\n\nNO PILOTS YET\n\nCOMMAND CHIP ",
+  "actions": [
+   "ENTER CONQUEST",
+   "FAST TRAVEL",
+   "MY BASE",
+   "RESEARCHPART 0/1 TODAY"
+  ],
+  "pageErrors": []
+ },
+ "320x568": {
+  "firstPaintMs": 4.7,
+  "render": {
+   "calls": 26,
+   "triangles": 60562,
+   "programs": 9,
+   "tankError": null,
+   "tankMeshes": 30
+  },
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nYIELD POINTS 0% \u00b7 4 operations to go today\nCOMMAND CHIP 0/1 TODAY\nRESEARCH PART 0/1 TODAY\nBUILDER FREE \u00b7 open MY BASE to build\nBATTALION\n\nNO PILOTS YET\n\nCOMMAND CHIP ",
+  "actions": [
+   "ENTER CONQUEST",
+   "FAST TRAVEL",
+   "MY BASE",
+   "RESEARCHPART 0/1 TODAY"
+  ],
+  "pageErrors": []
+ },
  "1280x800": {
-  "firstPaintMs": 6.6,
+  "firstPaintMs": 3.7,
+  "render": {
+   "calls": 30,
+   "triangles": 60594,
+   "programs": 9,
+   "tankError": null,
+   "tankMeshes": 30
+  },
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nYIELD POINTS 0% \u00b7 4 operations to go today\nCOMMAND CHIP 0/1 TODAY\nRESEARCH PART 0/1 TODAY\nBUILDER FREE \u00b7 open MY BASE to build\nBATTALION\n\nNO PILOTS YET\n\nCOMMAND CHIP ",
+  "actions": [
+   "ENTER CONQUEST",
+   "FAST TRAVEL",
+   "MY BASE",
+   "RESEARCHPART 0/1 TODAY"
+  ],
+  "pageErrors": []
+ },
+ "1366x768": {
+  "firstPaintMs": 7.2,
+  "render": {
+   "calls": 30,
+   "triangles": 60594,
+   "programs": 9,
+   "tankError": null,
+   "tankMeshes": 30
+  },
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nYIELD POINTS 0% \u00b7 4 operations to go today\nCOMMAND CHIP 0/1 TODAY\nRESEARCH PART 0/1 TODAY\nBUILDER FREE \u00b7 open MY BASE to build\nBATTALION\n\nNO PILOTS YET\n\nCOMMAND CHIP ",
+  "actions": [
+   "ENTER CONQUEST",
+   "FAST TRAVEL",
+   "MY BASE",
+   "RESEARCHPART 0/1 TODAY"
+  ],
+  "pageErrors": []
+ },
+ "1920x1080": {
+  "firstPaintMs": 13.8,
   "render": {
    "calls": 26,
    "triangles": 74241,
@@ -27,12 +99,12 @@
    "tankError": null,
    "tankMeshes": 26
   },
-  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nYIELD POINTS 0% \u00b7 4 operations to go today\nBUILDER FREE \u00b7 open MY BASE to build\nWAR ORDERS\n\n\u25cb Mine 12 ore \u00b7 0/12\n\n\u25cb Bank 60 alloy \u00b7 0/60\n\n\u25cb Finish a field mission in ",
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nYIELD POINTS 0% \u00b7 4 operations to go today\nCOMMAND CHIP 0/1 TODAY\nRESEARCH PART 0/1 TODAY\nBUILDER FREE \u00b7 open MY BASE to build\nBATTALION\n\nNO PILOTS YET\n\nCOMMAND CHIP ",
   "actions": [
    "ENTER CONQUEST",
    "FAST TRAVEL",
    "MY BASE",
-   "RESEARCH \u00b7 COMING SOON (disabled)"
+   "RESEARCHPART 0/1 TODAY"
   ],
   "pageErrors": []
  }
