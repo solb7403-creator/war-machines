@@ -8,7 +8,7 @@ const ctx2d=new Proxy({},{get:(o,k)=>k in o?o[k]:k==='createImageData'?(w,h)=>({
 let canvases=0;const document={createElement:()=>(canvases++,{width:0,height:0,style:{},getContext:()=>ctx2d}),fonts:{check:()=>true}};
 class ImageData{constructor(w,h){this.width=w;this.height=h;this.data=new Uint8ClampedArray(w*h*4);}}class Path2D{moveTo(){}lineTo(){}rect(){}}
 const c=vm.createContext({console,document,performance:{now:()=>0},ImageData,Path2D});
-for(const f of ['js/vendor/three.lunar.min.js','js/rules.js','js/conquest/world.js','js/conquest/combat.js','js/conquest/style.js'])vm.runInContext(fs.readFileSync(f,'utf8'),c,{filename:f});
+for(const f of ['js/vendor/three.lunar.min.js','js/rules.js','js/conquest/world.js','js/conquest/combat.js','js/conquest/slots.js','js/conquest/worldkit.js','js/conquest/kit/settler.js','js/conquest/kit/military.js','js/conquest/kit/nature.js','js/conquest/kit/town.js','js/conquest/style.js'])vm.runInContext(fs.readFileSync(f,'utf8'),c,{filename:f});
 const {THREE:T,ConquestStyle:CS,ConquestWorld:W,ConquestCombat:C}=c;
 const Box3=(()=>{const g=new T.BoxGeometry(1,1,1);g.computeBoundingBox();return g.boundingBox.constructor;})(); // not exported by the slim build
 assert.ok(CS&&typeof CS.create==='function','style module loads without THREE at boot and exposes create()');

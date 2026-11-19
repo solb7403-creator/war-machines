@@ -5,6 +5,8 @@
  *   solid  where collision comes from (never from a model): the shared world / plot rule named here
  *   model  null = the code-built model (js/conquest/kit/*.js). A Meshy item id from js/assets/meshy-v1/manifest.json here
  *          (for example "town-storage") replaces the code-built model at load with no other code change.
+ *   h      optional: the placement height the code-built model is drawn for when it is not the box height (a dam's crest
+ *          under its control hut, a block's walls under its roof kit); a replacement model still fits the whole box
  *   code   optional: slots whose HIGH model is already the owner's Meshy item keep a code-built LOW / loading stand-in
  * Presentation only. */
 (function(root){
@@ -27,7 +29,7 @@ root.ConquestSlots={version:1,items:{
  // ---- military: Command Base I-V in the world (ConquestStyle.commandBase) ----
  'base-pad':S('military','Command Base pad',[38,2.6,34],'none (drivable)'),
  'base-wall':S('military','Command Base perimeter wall',[6,5,35],'base rule baseBlocked (placement d = length)'),
- 'base-gate':S('military','Command Gate arch',[30,12,6],'base rule baseBlocked (corner towers)'),
+ 'base-gate':S('military','Command Gate arch and flank bastions',[40.8,12,6],'base rule baseBlocked (corner towers)'),
  'base-hangar':S('military','Command Base hangar',[16,8,16],'base rule baseBlocked'),
  'base-reactor':S('military','Command Base reactor',[16,12,16],'base rule baseBlocked (r8)'),
  'base-tower':S('military','Command Base gun tower',[8,14,8],'base rule baseBlocked (8x8)'),
@@ -39,7 +41,7 @@ root.ConquestSlots={version:1,items:{
  'frontier-watch':S('military','Frontier watchtower',[6.6,13.2,6.6],'colony lot'),
  'frontier-gate':S('military','Frontier gate tower',[5,9.4,5],'colony lot'),
  'atmo-pylon':S('military','Atmosphere pylon',[3.6,15.2,3.6],'none'),
- 'dam':S('military','Reservoir dam',[66,9,5],'world water rule (placement w = length, h = height)'),
+ 'dam':S('military','Reservoir dam',[66,12.6,5],'world water rule (placement w = length, h = crest height)',{h:9}),
  'creek-bridge':S('military','Creek bridge span',[18,2.2,7.2],'world deck (the drive surface follows deckAt)'),
  'ice-rig':S('military','Ice-mining drill rig',[5,9.6,5],'none'),
  'rail-pylon':S('military','Monorail pylon',[2.2,12.4,2.2],'none'),
@@ -48,7 +50,7 @@ root.ConquestSlots={version:1,items:{
  // ---- settlers: the colony (ConquestStyle.colonyWorld) ----
  'settler-home':S('settler','Settler dome home',[9,7.6,9],'colony lot'),
  'settler-hall':S('settler','Meeting hall',[10,13.5,8],'colony lot'),
- 'settler-block':S('settler','Habitat block',[10,12.2,8],'colony lot'),
+ 'settler-block':S('settler','Habitat block',[10,15,8],'colony lot (placement h = wall height; the roof kit stands above it)',{h:12.2}),
  'settler-shop':S('settler','Market workshop',[10,5.6,7],'colony lot'),
  'settler-barn':S('settler','Workshop barn',[16,9.6,11],'colony lot'),
  'settler-water-tower':S('settler','Water tower',[6,30,6],'colony lot'),
@@ -59,7 +61,7 @@ root.ConquestSlots={version:1,items:{
  'settler-solar':S('settler','Farm solar rack',[8,2.4,4],'colony lot'),
  'settler-plaza':S('settler','Market square',[20,.9,20],'none (drivable)'),
  'settler-pen':S('settler','Livestock pen',[14,1.4,10],'none'),
- 'settler-lamp':S('settler','Street lamp',[2,6.2,.6],'none'),
+ 'settler-lamp':S('settler','Street lamp',[.6,6.2,3.6],'none'),
  'settler-pole':S('settler','Power pole',[2.6,9.2,.4],'none'),
  'settler-fence':S('settler','Field fence (4 m)',[4,1.3,.3],'none'),
  'settler-rover':S('settler','Settler rover',[3.4,2.3,2],'none (moving)'),
@@ -99,7 +101,7 @@ root.ConquestSlots={version:1,items:{
  'ore-tq':S('nature','Tranquillityite deposit',[2.8,2.4,2.8],'none'),
  'ore-starter':S('nature','Starter vein',[4,4.8,4],'none'),
  'ore-spent':S('nature','Spent deposit',[1.8,.4,1.6],'none'),
- 'meteor':S('nature','Strike meteor',[10,18,3.4],'none'),
+ 'meteor':S('nature','Strike meteor',[17.8,18,3.4],'none (moving; the head is at the origin)'),
  'strike-crater':S('nature','Meteor Strike crater',[17.4,2.2,17.4],'none'),
  // ---- Parasite structures ----
  'hive':S('parasite','Parasite hive',[22,13.6,16],'world box 22 x 16'),

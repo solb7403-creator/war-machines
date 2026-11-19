@@ -139,7 +139,8 @@ function kit(S){if(S.worldKit)return S.worldKit;
  // build (or reuse) a slot's code model for these parameters; o must be JSON-plain
  function build(id,o={}){const k=id+'|'+JSON.stringify(o);let b=cache.get(k);if(b)return b;const def=MODELS[id];if(!def)throw new Error('ConquestWorldKit: no model for slot "'+id+'"');
   b=new KB(Object.assign({},def.o,o));b.k=K;def.build(b,Object.assign({w:0,d:0,h:0,seed:1,level:1},slotBox(id),o));cache.set(k,b);return b;}
- function slotBox(id){const s=root.ConquestSlots&&root.ConquestSlots.items[id];return s?{w:s.size[0],h:s.size[1],d:s.size[2]}:{};}
+ function slotBox(id){const s=root.ConquestSlots&&root.ConquestSlots.items[id];return s?{w:s.size[0],h:s.h??s.size[1],d:s.size[2]}:{};}
+ const slotOver=id=>{const s=root.ConquestSlots&&root.ConquestSlots.items[id];return s&&s.h?s.size[1]-s.h:0;};   // what stands above the placement height
  const swapped=id=>{const s=root.ConquestSlots&&root.ConquestSlots.items[id];return s&&s.model?s.model:null;};
  // append one buffer of a built model to a style Bld (merged batch) through a placement matrix
  function append(B,src,m4){if(!src.n)return;_nm.copy(m4).invert().transpose();const P=src.P,N=src.N,A=src.A,base=B.n,e=m4.elements,ne=_nm.elements;
@@ -148,10 +149,13 @@ function kit(S){if(S.worldKit)return S.worldKit;
   for(let k=0;k<src.I.length;k++)B.I.push(src.I[k]+base);B.n+=src.n;}
  // target = {main: Bld, det: Bld (optional), fx: Fx (optional), swaps: Map (optional)}; m4 = model -> batch space
  function place(id,target,m4,o){const sw=swapped(id);
-  if(sw&&target.swaps&&meshyReady(sw)){let L=target.swaps.get(id);if(!L)target.swaps.set(id,L=[]);const sb=slotBox(id);L.push({m:m4.clone(),w:o?.w||sb.w,h:o?.h||sb.h,d:o?.d||sb.d});return null;}
+  if(sw&&target.swaps&&meshyReady(sw)){let L=target.swaps.get(id);if(!L)target.swaps.set(id,L=[]);const sb=slotBox(id);L.push({m:m4.clone(),w:o?.w||sb.w,h:(o?.h||sb.h)+slotOver(id),d:o?.d||sb.d});return null;}
   if(sw&&target.swaps)pendingSwap.add(id);
   const b=build(id,o);append(target.main,b.buf.main,m4);append(target.det||target.main,b.buf.det,m4);
   if(target.fx&&b.fx.length&&!S.software)for(const f of b.fx){_v.set(f.x,f.y,f.z).applyMatrix4(m4);if(f.t==='bill')target.fx.bill(_v.x,_v.y,_v.z,f.s,S.AT.BLOB,f.c,f.o);else target.fx.flat(_v.x,_v.y,_v.z,f.hw,f.hd,S.AT.BLOB,f.c,f.o);}return b;}
+ // an ad-hoc part built with the toolkit (a pipe run, a wire, a plinth): b = new K.KB(), draw, then emit it into a batch
+ function emit(target,b,m4){append(target.main,b.buf.main,m4);append(target.det||target.main,b.buf.det,m4);return b;}
+ const part=(o)=>{const b=new KB(o||{});b.k=K;return b;};
  // one BufferGeometry of a model (main + detail merged) for an InstancedMesh; kept by the style instance
  const geos=new Map();
  function geometry(id,o={}){const k=id+'|'+JSON.stringify(o);let g=geos.get(k);if(g)return g;const b=build(id,o),B=new S.Bld();const I=new T.Matrix4();append(B,b.buf.main,I);append(B,b.buf.det,I);g=B.geometry();g.userData.hfShared=true;S.shared.push(g);geos.set(k,g);return g;}
@@ -176,7 +180,7 @@ function kit(S){if(S.worldKit)return S.worldKit;
    straw:mat(0xa89a5b,'leaf',0,.2),olive:mat(0x6b7a3a,'leaf',0,.2),ice:mat(0xa8dcf0,'glass',.25),soil:mat(0x4a3a28,'dirt',0),moss:mat(0x3e5a2e,'leaf',0,.2)},
   par:{chitin:mat(0x2b1531,'chitin',.6),chitinD:mat(0x150a19,'chitin',.3),bone:mat(0x4a3550,'chitin',.1),wall:mat(0x2c2833,'chitin',.2),wallTop:mat(0x4a4352,'metal',.4),mag:glow(0xff2bd6,1.85),magHot:glow(0xff7ae8,1.95),magDim:glow(0xff2bd6,1)},
   wreck:{hull:mat(0x3a3530,'scrap',.7),rust:mat(0x6a3f26,'scrap',.95),track:mat(0x1e1c1a,'metal',.8),moss:mat(0x3e5a2e,'leaf',0,.2),bag:mat(0x8f8064,'dirt',0,.15),wire:mat(0x2a2a2a,'metal',.9),post:mat(0x4a4038,'timber',.8),mud:mat(0x2a2018,'dirt',0)}};
- const K={S,T,hi,KB,pal,mat,glow,tint,mix,rect,circ,col,SURF,surfA,hash,rng,build,place,geometry,tris,swapMeshes,swapped,pendingSwap,unit,M:(x,y,z,ry=0,s=1)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(s,s,s));},clear(){cache.clear();geos.clear();}};
+ const K={S,T,hi,KB,pal,emit,part,mat,glow,tint,mix,rect,circ,col,SURF,surfA,hash,rng,build,place,geometry,tris,swapMeshes,swapped,pendingSwap,unit,M:(x,y,z,ry=0,s=1)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(s,s,s));},clear(){cache.clear();geos.clear();}};
  S.worldKit=K;return K;}
 
 // Slot swaps at runtime (tests, a later owner tool): model = a Meshy item id, or null for the code-built model. Views that
