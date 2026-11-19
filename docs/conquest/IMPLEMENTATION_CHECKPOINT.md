@@ -5774,7 +5774,26 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   research.labMax 4 and research.earnedPartsPerDay.exempt + firstLabGrant (the prompt's words). owner-rules.mjs 36 -> 47 checks,
   every new one on the Worker's own code; MUTATION-PROVEN: Role Core cost 9 -> 8 and chips a day 1 -> 2 each exit 1 (found on
   the way: the new block first sat after the exit decision, so its failures did not fail the build; the exit now comes last).
-  If the owner-rules CI label check asks, add the `owner-rules-change` label to the PR (the prompt is the owner's decision). NOT built yet: `sweep` is not called at session open; the startup of the hub (live)
+  If the owner-rules CI label check asks, add the `owner-rules-change` label to the PR (the prompt is the owner's decision).
+- DONE slice 7 (Nov 19): `conquest-allies.mjs` runs in CI (conquest-check.yml, after the POWER chip test). Server replay budget
+  (dev/tests/conquest-replay-budget.mjs, `CQ_FRIENDS=N`; recorded in docs/conquest-living-war/replay-budget.json `battalion6c`):
+  solo 12.7 ms CPU median a game-second (16 Parasites, unchanged), Platoon 4 allies 22.9 ms (p95 33.9), full Battalion 10
+  friendly units + 20 Parasites 37.4 ms (p95 65.9); NEW BUDGET for the Battalion 60 ms median / 110 ms p95.
+- NEXT SESSION, in this order (all still open): (1) the phone UI: HUD COMMAND in the context slot + wheel + keys V / hold V / 1-4,
+  allies drawn in 3D (Meshy kits, stock paint / livery / LDF livery, role badge, downed look, ally effects halved on LOW), the
+  HANGAR (js/conquest/hangar.js is written: load it in index.html + web/boot.js, open it from the hub like labOnly and from
+  MORE), the briefing strip + FORCE chip in app.js briefing(), the hub BATTALION card with "COMMAND CHIP 0/1 TODAY" beside the
+  research line, the Lab's Role Cores track and the first-grant card in lab.js, after-action lines (ConquestHangar.aarLines),
+  Refuge Supply REPAIR PILOTS; (2) call conquest-store `sweep` at session open; (3) guardrails 1 (extend conquest-combat /
+  conquest-power-chip: enemy stats identical with 0 and 9 allies, stock and legendary gear, any FORCE; no enemy path reads
+  gear / power / FORCE / league / purchases / CC level), 2 (Starter < Epic < Legendary win rates on every authored encounter and
+  town-raid level), 4 (balanced battalion beats one-role on most operations); (4) a Worker test file for the Battalion rules over
+  HTTP (chips day reset at 00:00 UTC, packs unlimited, Role Core gates, RECRUIT 8 h and roster cap 16, field caps per Hangar
+  level, ally-only kill pays nothing, first grant once, every new store kind refused by descOf); (5) economy-model --write +
+  RESOURCE_ECONOMY section (repair alloy 6 a pilot is the PROPOSAL; chip pack 5 chips 299 Stars / 4.8 TON PROPOSAL; liveries
+  399 / 199 Stars PROPOSAL); (6) dev/tests/conquest-session6c.py at five sizes + conquest-session6b.py, conquest-onboarding.py,
+  perf.py; (7) at most two UX critic rounds; two fresh reviewers; dev/bump.sh, PR (add the owner-rules-change label if asked),
+  CI, merge, verify the deploys, ROADMAP 6C RELEASED, release record, final report. NOT built yet: `sweep` is not called at session open; the startup of the hub (live)
   and labOnly still get whole states (fine). Everything under "STILL TO BUILD" except the split items is still open.
 - PREPARED PATCHES (apply in this order from the repo root, `python3 dev/tools/session6c/pN_*.py`; each asserts its anchors, then
   rebuild the sim and run the suites): p1_rules (store kinds chip pack / livery / rcfin with checkout off, BAT_STORE_OPEN,
