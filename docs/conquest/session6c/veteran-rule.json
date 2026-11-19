@@ -2,11 +2,11 @@
  "generatedBy": "dev/tests/conquest-allies.mjs section 10",
  "scope": "scripted physical-input pilot (the raids test's), the Worker's own start and fielding; not a human playtest",
  "militia": {
-  "decide": 0.75,
-  "react": 3.4,
-  "reactLock": 0.7,
-  "turn": 0.45,
-  "pilotBias": 10
+  "decide": 0.6,
+  "react": 2.9,
+  "reactLock": 0.5,
+  "turn": 0.5,
+  "pilotBias": 0
  },
  "militiaVeteran": {
   "decide": 2.4,
@@ -32,21 +32,23 @@
   "fireLane": 2.2
  },
  "before": {
-  "note": "the same harness with every militia number at ALLY's (Nov 19, before the fix)",
+  "note": "this harness (the shared pilot after its two fixes) with every militia number at ALLY's and no Common-kit rule (reviewer 2, Nov 19)",
   "veteranAlone": "0/15",
-  "veteranMilitiaPlatoon": "9/15 (allies 52.7% of the damage, 119 kills to the pilot's 77; the pilot took 1423 HP vs 1700 alone: the crews soaked 1174 HP a fight)",
+  "veteranMilitiaPlatoon": "11/15 (allies 50.6% of the damage)",
+  "veteranCommonPlatoon": "11/15 (Common spares made allies non-militia)",
   "veteranEpicPlatoon": "13/15",
-  "hardAlone": "8/10",
-  "hardMilitiaPlatoon": "10/10 (allies 49.6%)",
-  "wingman": "field missions 3/5, 5 kills, 21.2% of the damage; rescue won"
+  "hardAlone": "10/10",
+  "wingman": "5 kills, 20.8% of the damage; rescue won",
+  "firstHarness": "the old pilot (before its fixes): militia Platoon 9/15 (allies 52.7%, 119 kills to the pilot's 77; the pilot took 1423 HP vs 1700 alone: the crews soaked 1174 HP a fight), HARD alone 8/10"
  },
  "after": {
   "veteranAlone": "0/15",
   "veteranMilitiaPlatoon": "1/15 (allies 10.4%)",
+  "veteranCommonPlatoon": "0/15",
   "veteranEpicPlatoon": "13/15 (allies 57.9%)",
   "hardAlone": "10/10",
-  "hardMilitiaPlatoon": "10/10 (allies 42.6%)",
-  "wingman": "field missions 4/5, 2 kills in 1, 13.6% of the damage; rescue victory"
+  "hardMilitiaPlatoon": "10/10 (allies 44.8%)",
+  "wingman": "field missions 4/5, 3 kills in 2, 16.9% of the damage; rescue victory"
  },
  "sets": {
   "alone": {
@@ -634,15 +636,15 @@
   "hardMilitia": {
    "wins": 10,
    "of": 10,
-   "allyShare": 0.426,
-   "allyKills": 53,
+   "allyShare": 0.448,
+   "allyKills": 45,
    "rows": [
     {
      "id": "raid-intercept-1",
      "outcome": "victory",
-     "s": 45.5,
-     "hull": 72,
-     "kills": 4,
+     "s": 38.65,
+     "hull": 89,
+     "kills": 0,
      "allyKills": 5,
      "fielded": 4,
      "militia": 4
@@ -650,9 +652,9 @@
     {
      "id": "raid-intercept-2",
      "outcome": "victory",
-     "s": 31.9,
-     "hull": 68,
-     "kills": 4,
+     "s": 30.2,
+     "hull": 75,
+     "kills": 3,
      "allyKills": 4,
      "fielded": 4,
      "militia": 4
@@ -660,19 +662,19 @@
     {
      "id": "raid-sabotage-1",
      "outcome": "victory",
-     "s": 45.65,
-     "hull": 66,
-     "kills": 5,
-     "allyKills": 3,
+     "s": 61.7,
+     "hull": 62,
+     "kills": 6,
+     "allyKills": 5,
      "fielded": 4,
      "militia": 4
     },
     {
      "id": "raid-sabotage-2",
      "outcome": "victory",
-     "s": 46.45,
+     "s": 35.9,
      "hull": 58,
-     "kills": 5,
+     "kills": 4,
      "allyKills": 5,
      "fielded": 4,
      "militia": 4
@@ -680,59 +682,59 @@
     {
      "id": "raid-battery-1",
      "outcome": "victory",
-     "s": 53.6,
-     "hull": 52,
-     "kills": 4,
-     "allyKills": 6,
+     "s": 53.3,
+     "hull": 45,
+     "kills": 6,
+     "allyKills": 4,
      "fielded": 4,
      "militia": 4
     },
     {
      "id": "raid-battery-2",
      "outcome": "victory",
-     "s": 38.3,
-     "hull": 54,
+     "s": 40.2,
+     "hull": 70,
      "kills": 3,
-     "allyKills": 8,
+     "allyKills": 7,
      "fielded": 4,
      "militia": 4
     },
     {
      "id": "raid-extraction-1",
      "outcome": "victory",
-     "s": 65.75,
-     "hull": 63,
-     "kills": 10,
-     "allyKills": 3,
+     "s": 79.3,
+     "hull": 61,
+     "kills": 7,
+     "allyKills": 5,
      "fielded": 4,
      "militia": 4
     },
     {
      "id": "raid-extraction-2",
      "outcome": "victory",
-     "s": 62.55,
-     "hull": 79,
-     "kills": 2,
-     "allyKills": 11,
+     "s": 52.9,
+     "hull": 83,
+     "kills": 5,
+     "allyKills": 6,
      "fielded": 4,
      "militia": 4
     },
     {
      "id": "raid-siege-1",
      "outcome": "victory",
-     "s": 64.35,
-     "hull": 72,
+     "s": 35.25,
+     "hull": 66,
      "kills": 6,
-     "allyKills": 5,
+     "allyKills": 1,
      "fielded": 4,
      "militia": 4
     },
     {
      "id": "raid-siege-2",
      "outcome": "victory",
-     "s": 34.8,
-     "hull": 84,
-     "kills": 4,
+     "s": 30.6,
+     "hull": 76,
+     "kills": 5,
      "allyKills": 3,
      "fielded": 4,
      "militia": 4
@@ -742,14 +744,14 @@
   "wing": {
    "wins": 4,
    "of": 5,
-   "allyShare": 0.136,
-   "allyKills": 2,
+   "allyShare": 0.169,
+   "allyKills": 3,
    "rows": [
     {
      "id": "convoy",
      "outcome": "victory",
      "s": 6.7,
-     "hull": 81,
+     "hull": 83,
      "kills": 3,
      "allyKills": 0,
      "fielded": 1,
@@ -758,8 +760,8 @@
     {
      "id": "relay",
      "outcome": "victory",
-     "s": 18.1,
-     "hull": 76,
+     "s": 20.2,
+     "hull": 71,
      "kills": 3,
      "allyKills": 0,
      "fielded": 1,
@@ -768,20 +770,20 @@
     {
      "id": "recon",
      "outcome": "victory",
-     "s": 27.35,
-     "hull": 92,
-     "kills": 1,
-     "allyKills": 2,
+     "s": 27.45,
+     "hull": 93,
+     "kills": 2,
+     "allyKills": 1,
      "fielded": 1,
      "militia": 1
     },
     {
      "id": "rescue",
      "outcome": "victory",
-     "s": 48.8,
-     "hull": 76,
-     "kills": 7,
-     "allyKills": 0,
+     "s": 49.1,
+     "hull": 78,
+     "kills": 6,
+     "allyKills": 2,
      "fielded": 1,
      "militia": 1
     },
