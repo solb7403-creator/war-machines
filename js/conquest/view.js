@@ -88,7 +88,7 @@ class View {
  if(!wait&&L.vl>0&&typeof vaultParts==='function')vaultParts({body},{b:hullB},{vl:L.vl,vt:typeof vtOf==='function'?vtOf(L.vl):L.vl>=10?2:1},this.modelMats);
  const cosmetics=this.authority?.state?.cosmetics;if(root.ConquestCatalog&&cosmetics)for(const slot of ['armor','trail']){const id=cosmetics.equipped[slot];if(id){const g=root.ConquestCatalog.build(T,id,{low:this.autoLow||typeof gfxMode==='function'&&gfxMode()==='low',reducedMotion:true});g.userData.cosmetic=true;g.traverse(o=>o.userData.cosmetic=true);if(slot==='trail'){g.position.set(3.5,0,0);gun.add(g);}else body.add(g);this.mergeArchitecture(g);}}
  this.vehicle.scale.setScalar(1.65);
- if(this.style){this.vehicle.userData.body=body;this.vehicle.userData.gun=gun;try{this.style.dressTank(this.vehicle);}catch(_){}}
+ if(this.style){this.vehicle.userData.body=body;this.vehicle.userData.gun=gun;try{this.style.dressTank(this.vehicle);this.style.own?.(this.vehicle);}catch(_){}}
  if(typeof GraphicsMotion!=='undefined')this.motion=GraphicsMotion.attach(this.vehicle,H.meta.track||[(2.61-.48)/2,.24,.25,0],{includeOwned:!wait});
  }
  makeBeacon(){if(!root.ConquestCombat)return;const m=root.ConquestCombat.mission;this.beacon=new this.T.Group();if(this.style)this.beacon.add(this.style.holoMarker(0xffd36b,{height:18,radius:1.6}));else{this.form(this.beacon,this.cylinder,0,9,0,.3,18,.3,0x7fffe8);this.form(this.beacon,this.sphere,0,18,0,2,2,2,0xe9ca77);}this.scene.add(this.beacon);}

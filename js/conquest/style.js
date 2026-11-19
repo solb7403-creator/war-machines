@@ -417,6 +417,10 @@ function create(T,opts={}){
  MAT.outlineMask=mk(SOLID_VS,SOLID_FS,{uOutline:{value:1e-4},uDetail:{value:tex.detail}},{colorWrite:false,depthTest:false,depthWrite:false,stencilWrite:true,stencilFunc:519,stencilRef:1,stencilZPass:7681});
  const outlineMat=hex=>mk(SOLID_VS,SOLID_FS,{uOutline:{value:3},uOutlineCol:{value:lin(hex)},uDetail:{value:tex.detail}},{depthFunc:6,depthWrite:false,stencilWrite:true,stencilFunc:517,stencilRef:1});
  MAT.outline=outlineMat(0x8ff6ff);MAT.outlineAlly=outlineMat(0xffe29a);
+ // A tank's own solid parts (trim strips, LOW hull) are never thinned with the building it is pressed against: the same program
+ // with its own, always-off press uniforms. S.own(root) moves a vehicle's solid meshes onto it.
+ MAT.own=mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail},uPress:{value:new T.Vector4(0,0,-1,-1)},uPressK:{value:0}});
+ S.own=rt=>{rt?.traverse?.(o=>{if(o.isMesh&&o.material===MAT.solid)o.material=MAT.own;});return rt;};
  // Twins of a tank's solid meshes, kept in their own group (nothing is ever added to a vehicle): sync(list, px) each frame with
  // list = [{root, ally}] and px = the outline width in drawing-buffer pixels.
  S.outliner=scene=>{const g=new T.Group();g.name='cq-outline';scene.add(g);const sets=new Map();

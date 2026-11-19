@@ -6079,3 +6079,18 @@ Searched this session (fan wikis, community guides and news; numbers from third 
 - **War Robots pilots.** Paid pilots with the best perks drew pay-to-win criticism (Steam threads; Common Sense Media calls it a
   "pay-to-win mech battler"). Lesson: the owner's "never sold: pilots, ranks, Role Core levels" is right; we sell looks (liveries)
   and time (RECRUIT finish), never power through pilots.
+
+## Checkpoint 44 — Session 5E-2d1: Conquest world rebuild (branch `claude/conquest-world-rebuild-mu3ktv`, from main `0e681aa`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+- **Done and pushed:** slice 1 ROADMAP notes (`3f…` first commit on the branch); the world-kit core (`js/conquest/slots.js`,
+  `js/conquest/worldkit.js`, the surface-detail solid shader in `js/conquest/style.js`), the viewer
+  (`dev/tests/conquest-kit-viewer.py`) and capture tool (`dev/tests/conquest-world-kinds-captures.py`); the see-through rule
+  (world + town drive view), the town's fixed DRIVE joystick, the four desktop 5D leftovers
+  (`dev/tests/conquest-occluder.py` rewritten to the new rule, `dev/tests/conquest-seethrough-town.py` new).
+- **In progress:** the code-built models of every slot (`js/conquest/kit/settler.js`, `military.js`, `nature.js`, `town.js`),
+  then their integration into `js/conquest/style.js` (world) and `js/conquest/townkit.js` (town), `index.html` script tags.
+- **Next:** integration; `dev/tests/conquest-slots.mjs` + the browser swap test; captures (before = `docs/conquest/session5e2d1/kinds/before-*`);
+  three critic rounds; the desktop pass at 1366x768 and 1920x1080; the whole test list; two reviewers; release.
+- **How to look at a model:** `python3 dev/tests/conquest-kit-viewer.py --slots settler-home,refuge-habitat --out /tmp/cq-kit`.
+- **How to capture the world:** `python3 dev/tests/conquest-world-kinds-captures.py --tag after --quality high --size 390x844`.

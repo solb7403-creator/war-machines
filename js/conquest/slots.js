@@ -106,7 +106,6 @@ root.ConquestSlots={version:1,items:{
  'hive-mast':S('parasite','Hive mast',[4.2,20.4,4.2],'world disc r2'),
  'cover-wall':S('parasite','Raid cover wall',[18,5,3],'world raid obstacle box (placement w, d, h)'),
  'raid-spire':S('parasite','Raid spire',[8.8,7.4,7.6],'none'),
- 'battery':S('parasite','Plasma battery base',[7,6,6],'combat entity'),
  'loot-cache':S('prop','Loot cache',[2.4,1.6,1.8],'none'),
  'wreck-cache':S('prop','Wreck salvage',[3,1.6,2.2],'none'),
  'sector-flag':S('prop','Sector flag mast',[2.6,8,1],'none'),

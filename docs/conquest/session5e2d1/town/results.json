@@ -1,0 +1,96 @@
+{
+ "high": {
+  "stick": {
+   "w": 104,
+   "h": 104,
+   "left": 16,
+   "cx": 68,
+   "cy": 476,
+   "hidden": false,
+   "inStage": true,
+   "floating": false,
+   "text": "DRIVE"
+  },
+  "world": {
+   "w": 104,
+   "h": 104,
+   "left": 16
+  },
+  "drove": 30.8,
+  "behind": {
+   "n": 1,
+   "ghost": 0,
+   "k": 0,
+   "cur": 31,
+   "dist": 31,
+   "camD": 31
+  },
+  "pressed": {
+   "ghost": 1,
+   "solidMat": 0,
+   "other": 0,
+   "fp": [
+    -2,
+    -2,
+    8.3
+   ],
+   "want": [
+    -2,
+    -2,
+    8.3
+   ],
+   "k": 0.78
+  },
+  "drive": {
+   "calls": 58,
+   "programs": 12
+  }
+ },
+ "low": {
+  "stick": {
+   "w": 104,
+   "h": 104,
+   "left": 16,
+   "cx": 68,
+   "cy": 476,
+   "hidden": false,
+   "inStage": true,
+   "floating": false,
+   "text": "DRIVE"
+  },
+  "world": {
+   "w": 104,
+   "h": 104,
+   "left": 16
+  },
+  "drove": 25.9,
+  "behind": {
+   "n": 1,
+   "ghost": 0,
+   "k": 0,
+   "cur": 31,
+   "dist": 31,
+   "camD": 31
+  },
+  "pressed": {
+   "ghost": 0,
+   "solidMat": 1,
+   "other": 0,
+   "fp": [
+    -2,
+    -2,
+    8.3
+   ],
+   "want": [
+    -2,
+    -2,
+    8.3
+   ],
+   "k": 0.78
+  },
+  "drive": {
+   "calls": 58,
+   "programs": 10
+  }
+ }
+}
