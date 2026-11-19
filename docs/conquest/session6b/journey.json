@@ -65,12 +65,69 @@
    ]
   },
   "powerBefore": 59,
-  "finishedJobs": 0,
-  "crash": "Page.wait_for_selector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator(\".cq-lab-reveal\") to be visible\n",
+  "finishedJobs": 1,
+  "reveal": {
+   "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
+   "name": "VENT BARREL",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "cost": "Trade-off: \u22127% damage per second",
+   "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
+   "buttons": [
+    "FIT ON MY TANK",
+    "SCIENCE LAB",
+    "LATER"
+   ]
+  },
+  "powerPending": {
+   "garage": 60,
+   "mods": "{\"hull\":\"stock\",\"mobility\":\"stock\",\"mount\":\"vent\"}",
+   "chip": "POWER59\u2192 60 at the Refuge",
+   "toast": "Vent Barrel fitted"
+  },
+  "powerAfter": {
+   "field": 60,
+   "chip": "POWER59 \u2192 60",
+   "pending": false,
+   "at": [
+    1168,
+    1160
+   ]
+  },
+  "supply": [
+   "REFUGE SUPPLY",
+   "POWER60",
+   "BANK SALVAGE",
+   "REPAIR HULL",
+   "HULL PLATING \u00b7 EVERY MODE",
+   "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "LEFT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE +",
+   "RIGHT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "TURRET \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE"
+  ],
+  "ambience": {
+   "bed": "cq-core",
+   "zone": "cq-core",
+   "ac": "running",
+   "vol": 1
+  },
+  "leftConquest": false,
+  "volume": {
+   "vol": 0.4,
+   "label": "40%",
+   "gain": 0.08,
+   "stored": 0.4
+  },
+  "muted": {
+   "sound": false,
+   "slider": true,
+   "label": "Sound is off",
+   "bed": null
+  },
+  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
   "crashState": {
    "dialogs": [],
-   "active": true,
-   "connected": true
+   "active": false,
+   "connected": false
   }
  },
  {
@@ -139,12 +196,69 @@
    ]
   },
   "powerBefore": 59,
-  "finishedJobs": 0,
-  "crash": "Page.wait_for_selector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator(\".cq-lab-reveal\") to be visible\n",
+  "finishedJobs": 1,
+  "reveal": {
+   "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
+   "name": "VENT BARREL",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "cost": "Trade-off: \u22127% damage per second",
+   "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
+   "buttons": [
+    "FIT ON MY TANK",
+    "SCIENCE LAB",
+    "LATER"
+   ]
+  },
+  "powerPending": {
+   "garage": 60,
+   "mods": "{\"hull\":\"stock\",\"mobility\":\"stock\",\"mount\":\"vent\"}",
+   "chip": "POWER59\u2192 60 at the Refuge",
+   "toast": "Vent Barrel fitted"
+  },
+  "powerAfter": {
+   "field": 60,
+   "chip": "POWER59 \u2192 60",
+   "pending": false,
+   "at": [
+    1168,
+    1160
+   ]
+  },
+  "supply": [
+   "REFUGE SUPPLY",
+   "POWER60",
+   "BANK SALVAGE",
+   "REPAIR HULL",
+   "HULL PLATING \u00b7 EVERY MODE",
+   "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "LEFT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE +",
+   "RIGHT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "TURRET \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE"
+  ],
+  "ambience": {
+   "bed": "cq-core",
+   "zone": "cq-core",
+   "ac": "running",
+   "vol": 1
+  },
+  "leftConquest": false,
+  "volume": {
+   "vol": 0.4,
+   "label": "40%",
+   "gain": 0.08,
+   "stored": 0.4
+  },
+  "muted": {
+   "sound": false,
+   "slider": true,
+   "label": "Sound is off",
+   "bed": null
+  },
+  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
   "crashState": {
    "dialogs": [],
-   "active": true,
-   "connected": true
+   "active": false,
+   "connected": false
   }
  },
  {
@@ -201,7 +315,7 @@
    "wide": false
   },
   "running": {
-   "job": "VENT BARREL \u00b7 19m 59s left",
+   "job": "VENT BARREL \u00b7 20m 00s left",
    "finish": "FINISH NOW \u00b7 8 \u2b50",
    "finishDisabled": true,
    "off": "Not on sale yet \u00b7 priced by the time left",
@@ -213,12 +327,69 @@
    ]
   },
   "powerBefore": 59,
-  "finishedJobs": 0,
-  "crash": "Page.wait_for_selector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator(\".cq-lab-reveal\") to be visible\n",
+  "finishedJobs": 1,
+  "reveal": {
+   "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
+   "name": "VENT BARREL",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "cost": "Trade-off: \u22127% damage per second",
+   "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
+   "buttons": [
+    "FIT ON MY TANK",
+    "SCIENCE LAB",
+    "LATER"
+   ]
+  },
+  "powerPending": {
+   "garage": 60,
+   "mods": "{\"hull\":\"stock\",\"mobility\":\"stock\",\"mount\":\"vent\"}",
+   "chip": "POWER59\u2192 60 at the Refuge",
+   "toast": "Vent Barrel fitted"
+  },
+  "powerAfter": {
+   "field": 60,
+   "chip": "POWER59 \u2192 60",
+   "pending": false,
+   "at": [
+    1168,
+    1160
+   ]
+  },
+  "supply": [
+   "REFUGE SUPPLY",
+   "POWER60",
+   "BANK SALVAGE",
+   "REPAIR HULL",
+   "HULL PLATING \u00b7 EVERY MODE",
+   "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "LEFT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE +",
+   "RIGHT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "TURRET \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE"
+  ],
+  "ambience": {
+   "bed": "cq-core",
+   "zone": "cq-core",
+   "ac": "running",
+   "vol": 1
+  },
+  "leftConquest": false,
+  "volume": {
+   "vol": 0.35,
+   "label": "35%",
+   "gain": 0.061,
+   "stored": 0.35
+  },
+  "muted": {
+   "sound": false,
+   "slider": true,
+   "label": "Sound is off",
+   "bed": null
+  },
+  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
   "crashState": {
    "dialogs": [],
-   "active": true,
-   "connected": true
+   "active": false,
+   "connected": false
   }
  },
  {
@@ -275,7 +446,7 @@
    "wide": false
   },
   "running": {
-   "job": "VENT BARREL \u00b7 19m 58s left",
+   "job": "VENT BARREL \u00b7 20m 00s left",
    "finish": "FINISH NOW \u00b7 8 \u2b50",
    "finishDisabled": true,
    "off": "Not on sale yet \u00b7 priced by the time left",
@@ -288,18 +459,197 @@
   },
   "powerBefore": 59,
   "escClosed": true,
-  "finishedJobs": 0,
-  "crash": "Page.wait_for_selector: Timeout 60000ms exceeded.\nCall log:\n  - waiting for locator(\".cq-lab-reveal\") to be visible\n",
+  "finishedJobs": 1,
+  "reveal": {
+   "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
+   "name": "VENT BARREL",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "cost": "Trade-off: \u22127% damage per second",
+   "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
+   "buttons": [
+    "FIT ON MY TANK",
+    "SCIENCE LAB",
+    "LATER"
+   ]
+  },
+  "powerPending": {
+   "garage": 60,
+   "mods": "{\"hull\":\"stock\",\"mobility\":\"stock\",\"mount\":\"vent\"}",
+   "chip": "POWER59\u2192 60 at the Refuge",
+   "toast": "Vent Barrel fitted"
+  },
+  "powerAfter": {
+   "field": 60,
+   "chip": "POWER59 \u2192 60",
+   "pending": false,
+   "at": [
+    1168,
+    1160
+   ]
+  },
+  "supply": [
+   "REFUGE SUPPLY",
+   "POWER60",
+   "BANK SALVAGE",
+   "REPAIR HULL",
+   "HULL PLATING \u00b7 EVERY MODE",
+   "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "LEFT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE +",
+   "RIGHT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "TURRET \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE"
+  ],
+  "ambience": {
+   "bed": "cq-core",
+   "zone": "cq-core",
+   "ac": "running",
+   "vol": 1
+  },
+  "leftConquest": false,
+  "volume": {
+   "vol": 0.4,
+   "label": "40%",
+   "gain": 0.08,
+   "stored": 0.4
+  },
+  "muted": {
+   "sound": false,
+   "slider": true,
+   "label": "Sound is off",
+   "bed": null
+  },
+  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
   "crashState": {
    "dialogs": [],
-   "active": true,
-   "connected": true
+   "active": false,
+   "connected": false
   }
  },
  {
   "size": "1920x1080",
   "input": "mouse+keyboard",
-  "crash": "Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://lunar.test/index.html\", waiting until \"load\"\n",
+  "hub": {
+   "chip": "POWER59",
+   "research": "RESEARCHPART 0/1 TODAY",
+   "disabled": false,
+   "partDay": "RESEARCH PART 0/1 TODAY"
+  },
+  "labOverHub": {
+   "hub": true,
+   "world": false,
+   "view": false
+  },
+  "labEnd": {
+   "bottom": 992,
+   "limit": 1014,
+   "onTop": true
+  },
+  "legNode": {
+   "two": "A step stronger than Inferno Core. Two ways to own it: research it here (30 Thermal Cores, 8h 00m, Science Lab III, after Inferno Core), or buy it in the Lab store.",
+   "research": "RESEARCH \u00b7 30 THERMAL CORES \u00b7 8h 00m",
+   "lock": "\ud83d\udd12 research Inferno Core first",
+   "buy": "BUY \u00b7 LEGENDARY \u00b7 599 \u2b50",
+   "off": "Not on sale yet \u00b7 and only after Inferno Core"
+  },
+  "lab": {
+   "title": "SCIENCE LAB III",
+   "tracks": 5,
+   "nodes": 23,
+   "ready": [
+    "RESEARCH \u00b7 2 THERMAL CORES \u00b7 20m 00s",
+    "RESEARCH \u00b7 2 THERMAL CORES \u00b7 20m 00s",
+    "RESEARCH \u00b7 2 THERMAL CORES \u00b7 20m 00s",
+    "RESEARCH \u00b7 2 BALLISTIC COILS \u00b7 20m 00s",
+    "RESEARCH \u00b7 2 BALLISTIC COILS \u00b7 20m 00s",
+    "RESEARCH \u00b7 2 BALLISTIC COILS \u00b7 20m 00s",
+    "RESEARCH \u00b7 2 DRIVE SERVOS \u00b7 2h 00m",
+    "RESEARCH \u00b7 2 DRIVE SERVOS \u00b7 2h 00m",
+    "RESEARCH \u00b7 2 DRIVE SERVOS \u00b7 2h 00m"
+   ],
+   "parts": [
+    "3THERMAL CORES",
+    "2BALLISTIC COILS",
+    "2DRIVE SERVOS",
+    "1FIELD CAPACITOR"
+   ],
+   "scroll": [
+    3741,
+    1000
+   ],
+   "wide": false
+  },
+  "running": {
+   "job": "VENT BARREL \u00b7 20m 00s left",
+   "finish": "FINISH NOW \u00b7 8 \u2b50",
+   "finishDisabled": true,
+   "off": "Not on sale yet \u00b7 priced by the time left",
+   "parts": [
+    "1THERMAL CORE",
+    "2BALLISTIC COILS",
+    "2DRIVE SERVOS",
+    "1FIELD CAPACITOR"
+   ]
+  },
+  "powerBefore": 59,
+  "escClosed": true,
+  "finishedJobs": 1,
+  "reveal": {
+   "kicker": "RESEARCH COMPLETE \u00b7 THERMAL",
+   "name": "VENT BARREL",
+   "what": "Keep firing for 3\u00a0s and your next shot is a VENT ROUND: it hits for an extra half second of damage and bursts on the enemies beside its target.",
+   "cost": "Trade-off: \u22127% damage per second",
+   "power": "POWER 59 \u2192 60 when you fit it (in the field: at the Refuge)",
+   "buttons": [
+    "FIT ON MY TANK",
+    "SCIENCE LAB",
+    "LATER"
+   ]
+  },
+  "powerPending": {
+   "garage": 60,
+   "mods": "{\"hull\":\"stock\",\"mobility\":\"stock\",\"mount\":\"vent\"}",
+   "chip": "POWER59\u2192 60 at the Refuge",
+   "toast": "Vent Barrel fitted"
+  },
+  "powerAfter": {
+   "field": 60,
+   "chip": "POWER59 \u2192 60",
+   "pending": false,
+   "at": [
+    1168,
+    1160
+   ]
+  },
+  "supply": [
+   "REFUGE SUPPLY",
+   "POWER60",
+   "BANK SALVAGE",
+   "REPAIR HULL",
+   "HULL PLATING \u00b7 EVERY MODE",
+   "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "LEFT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE +",
+   "RIGHT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE ",
+   "TURRET \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE"
+  ],
+  "ambience": {
+   "bed": "cq-core",
+   "zone": "cq-core",
+   "ac": "running",
+   "vol": 1
+  },
+  "leftConquest": false,
+  "volume": {
+   "vol": 0.4,
+   "label": "40%",
+   "gain": 0.08,
+   "stored": 0.4
+  },
+  "muted": {
+   "sound": false,
+   "slider": true,
+   "label": "Sound is off",
+   "bed": null
+  },
+  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
   "crashState": {
    "dialogs": [],
    "active": false,

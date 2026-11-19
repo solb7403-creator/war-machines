@@ -1,6 +1,6 @@
 [
  {
-  "size": "390x700",
+  "size": "390x844",
   "input": "touch",
   "errors": [],
   "hubFresh": "NO PILOTS YET",
@@ -10,15 +10,15 @@
    "enemies": [
     "\u25cf2\u00d7 INTERCEPTOR"
    ],
-   "hint": "2 interceptors. Bring a Guardian and a Lancer.",
+   "hint": "2 interceptors guard the wreck. Clear them, then hold beside it for 4 seconds.",
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 SHALE (Dmitri Voss) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 RAVEN (Farid Nakamura) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "SHALE",
+     "cs": "RAVEN",
      "role": "wingman",
      "mil": true
     }
@@ -32,12 +32,12 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WSHALE"
+    "WRAVEN"
    ]
   },
   "hubCard": {
-   "chipDay": "COMMAND CHIP 0/1 TODAY",
-   "card": "YOUR BASERIDGE TOWN \u00b7 CC3TOWN SCORE 366 \u00b7 DEFENSE RATING 150WALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense DrillDAILY BASE YIELD 34% \u00b7 +27 CP so farYIELD POINTS 0% \u00b7 4 operations to go todayCOMMAND CHI",
+   "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
+   "card": "BATTALION4 PILOTS \u00b7 FIELD 4FORCE247COMMAND CHIP 0/1 TODAY \u00b7 0 HELDOPEN HANGAR",
    "force": true
   },
   "hangar": {
@@ -61,10 +61,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GCOMET",
-    "BKESTREL",
-    "LORBIT",
-    "MFROST"
+    "GBLITZ",
+    "BBASTION",
+    "LBANSHEE",
+    "MCINDER"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -82,7 +82,155 @@
    ],
    "tags": 4,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 69,
+   "calls": 65,
+   "programs": 16,
+   "targets": 9,
+   "slot": [
+    "#cq-command-access"
+   ],
+   "commandBox": [
+    16,
+    652,
+    219,
+    46
+   ]
+  },
+  "tap": 5,
+  "wheelOpen": true,
+  "wheelOrder": {
+   "k": 2,
+   "o": "attack"
+  },
+  "raidCleared": 4,
+  "raidAar": "YOUR PILOTS+2 XP to every pilot fielded+1 COMMAND CHIP \u00b7 1 held (your first win today)",
+  "grantCard": "FIRST LAB GRANTPick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.+2 THERMAL CORESTHERMAL \u00b7 Keep firing: heat becomes damage.+2 BALLISTIC COILSBALLISTICS \u00b7 Precision: every hit counts.",
+  "afterGrant": [
+   "2THERMAL CORES",
+   "0BALLISTIC COILS",
+   "0DRIVE SERVOS",
+   "0FIELD CAPACITORS"
+  ],
+  "roleCores": [
+   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
+  ],
+  "perfPlatoon": {
+   "median": 149.9,
+   "p95": 200,
+   "worst": 233.4,
+   "calls": 64,
+   "tris": 246870,
+   "programs": 15,
+   "friends": 4,
+   "views": 4,
+   "hostiles": 2,
+   "low": "low"
+  },
+  "fielded": 9,
+  "perfBattalion": {
+   "median": 16.7,
+   "p95": 16.8,
+   "worst": 16.8,
+   "calls": 64,
+   "tris": 246870,
+   "programs": 15,
+   "friends": 9,
+   "views": 4,
+   "hostiles": 2,
+   "low": "low"
+  },
+  "verdict": [
+   "a full Battalion of 9 drawn on LOW within the 16-program budget: {\"median\": 16.7, \"p95\": 16.8, \"worst\": 16.8, \"calls\": 64, \"tris\": 246870, \"programs\": 15, \"friends\": 9, \"views\": 4, \"hostiles\": 2, \"low\": \"low\"}"
+  ]
+ },
+ {
+  "size": "390x700",
+  "input": "touch",
+  "errors": [],
+  "hubFresh": "NO PILOTS YET",
+  "nextChip": "RESCUE THE DOWNED PILOT",
+  "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
+  "rescueStrip": {
+   "enemies": [
+    "\u25cf2\u00d7 INTERCEPTOR"
+   ],
+   "hint": "2 interceptors guard the wreck. Clear them, then hold beside it for 4 seconds.",
+   "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
+  },
+  "rescueCleared": 2,
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 BLITZ (Vik Grieve) flies with you now",
+  "wing": {
+   "friends": [
+    {
+     "cs": "BLITZ",
+     "role": "wingman",
+     "mil": true
+    }
+   ],
+   "views": 1,
+   "state": {
+    "w": 1,
+    "done": true,
+    "roster": 1
+   },
+   "next": "SIGNAL RECOVERY",
+   "access": null,
+   "tags": [
+    "WBLITZ"
+   ]
+  },
+  "hubCard": {
+   "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
+   "card": "BATTALION4 PILOTS \u00b7 FIELD 4FORCE247COMMAND CHIP 0/1 TODAY \u00b7 0 HELDOPEN HANGAR",
+   "force": true
+  },
+  "hangar": {
+   "cards": 4,
+   "arm": true,
+   "presets": 3,
+   "forms": [
+    "LINE",
+    "WEDGE",
+    "ESCORT"
+   ]
+  },
+  "hangarCloseVisible": true,
+  "openWorld": {
+   "targets": 11,
+   "slot": [
+    "#cq-command-access"
+   ]
+  },
+  "raidStrip": {
+   "enemies": 5,
+   "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
+   "force": [
+    "GLYNX",
+    "BWARDEN",
+    "LSHALE",
+    "MCINDER"
+   ],
+   "label": "PLATOON",
+   "presets": 3,
+   "force_chip": true,
+   "warn": null
+  },
+  "fight": {
+   "friends": 4,
+   "views": 4,
+   "meshes": [
+    3,
+    3,
+    3,
+    3
+   ],
+   "tags": 4,
+   "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
+   "calls": 66,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -111,19 +259,19 @@
    "0FIELD CAPACITORS"
   ],
   "roleCores": [
-   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m"
+   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 133.3,
-   "p95": 166.7,
-   "worst": 200,
-   "calls": 70,
-   "tris": 253498,
+   "median": 166.6,
+   "p95": 250,
+   "worst": 399.9,
+   "calls": 69,
+   "tris": 253288,
    "programs": 15,
    "friends": 4,
    "views": 4,
@@ -131,19 +279,10 @@
    "low": "low"
   },
   "fielded": 9,
-  "perfBattalion": {
-   "median": 16.7,
-   "p95": 16.8,
-   "worst": 16.8,
-   "calls": 83,
-   "tris": 377572,
-   "programs": 15,
-   "friends": 9,
-   "views": 9,
-   "hostiles": 2,
-   "low": "low"
-  },
-  "verdict": "PASS"
+  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
+  "verdict": [
+   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
+  ]
  },
  {
   "size": "320x568",
@@ -156,15 +295,15 @@
    "enemies": [
     "\u25cf2\u00d7 INTERCEPTOR"
    ],
-   "hint": "2 interceptors. Bring a Guardian and a Lancer.",
+   "hint": "2 interceptors guard the wreck. Clear them, then hold beside it for 4 seconds.",
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 LYNX (Wren Novak) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 ONYX (Amara Yilmaz) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "LYNX",
+     "cs": "ONYX",
      "role": "wingman",
      "mil": true
     }
@@ -177,13 +316,11 @@
    },
    "next": "SIGNAL RECOVERY",
    "access": null,
-   "tags": [
-    "WLYNX"
-   ]
+   "tags": []
   },
   "hubCard": {
-   "chipDay": "COMMAND CHIP 0/1 TODAY",
-   "card": "YOUR BASERIDGE TOWN \u00b7 CC3TOWN SCORE 366 \u00b7 DEFENSE RATING 150WALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense DrillDAILY BASE YIELD 34% \u00b7 +27 CP so farYIELD POINTS 0% \u00b7 4 operations to go todayCOMMAND CHI",
+   "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
+   "card": "BATTALION4 PILOTS \u00b7 FIELD 4FORCE247COMMAND CHIP 0/1 TODAY \u00b7 0 HELDOPEN HANGAR",
    "force": true
   },
   "hangar": {
@@ -207,10 +344,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GORBIT",
-    "BCINDER",
-    "LUMBRA",
-    "MDUSK"
+    "GQUILL",
+    "BRELIC",
+    "LFROST",
+    "MLANCE"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -226,9 +363,9 @@
     3,
     3
    ],
-   "tags": 4,
+   "tags": 3,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 69,
+   "calls": 70,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -257,44 +394,51 @@
    "0FIELD CAPACITORS"
   ],
   "roleCores": [
-   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m"
+   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 133.3,
-   "p95": 166.7,
-   "worst": 183.4,
-   "calls": 70,
-   "tris": 253548,
+   "median": 149.9,
+   "p95": 216.7,
+   "worst": 266.7,
+   "calls": 68,
+   "tris": 253254,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 3,
+   "hostiles": 2,
    "low": "low"
   },
   "fielded": 9,
   "perfBattalion": {
    "median": 16.7,
-   "p95": 16.8,
+   "p95": 16.7,
    "worst": 16.8,
-   "calls": 84,
-   "tris": 377600,
+   "calls": 68,
+   "tris": 253254,
    "programs": 15,
    "friends": 9,
-   "views": 9,
+   "views": 4,
    "hostiles": 2,
    "low": "low"
   },
-  "verdict": "PASS"
+  "verdict": [
+   "the wingman in 3D with its insignia: {\"friends\": [{\"cs\": \"ONYX\", \"role\": \"wingman\", \"mil\": true}], \"views\": 1, \"state\": {\"w\": 1, \"done\": true, \"roster\": 1}, \"next\": \"SIGNAL RECOVERY\", \"access\": null, \"tags\": []}",
+   "allies in 3D {\"friends\": 4, \"views\": 4, \"meshes\": [3, 3, 3, 3], \"tags\": 3, \"command\": \"COMMAND \\u00b7 FOLLOWINGTAP REGROUP \\u00b7 HOLD ORDERS\", \"calls\": 70, \"programs\": 16, \"targets\": 9, \"slot\": [\"#cq-command-access\"], \"commandBox\": [16, 376, 219, 46]}",
+   "a full Battalion of 9 drawn on LOW within the 16-program budget: {\"median\": 16.7, \"p95\": 16.7, \"worst\": 16.8, \"calls\": 68, \"tris\": 253254, \"programs\": 15, \"friends\": 9, \"views\": 4, \"hostiles\": 2, \"low\": \"low\"}"
+  ]
  },
  {
-  "size": "1920x1080",
+  "size": "1366x768",
   "input": "mouse+keyboard",
-  "errors": [],
+  "errors": [
+   "console:Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+   "console:Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
   "hubFresh": "NO PILOTS YET",
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
@@ -302,15 +446,15 @@
    "enemies": [
     "\u25cf2\u00d7 INTERCEPTOR"
    ],
-   "hint": "2 interceptors. Bring a Guardian and a Lancer.",
+   "hint": "2 interceptors guard the wreck. Clear them, then hold beside it for 4 seconds.",
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 SPARROW (Esme Moreau) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 BLITZ (Esme Petrov) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "SPARROW",
+     "cs": "BLITZ",
      "role": "wingman",
      "mil": true
     }
@@ -324,12 +468,12 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WSPARROW"
+    "WBLITZ"
    ]
   },
   "hubCard": {
-   "chipDay": "COMMAND CHIP 0/1 TODAY",
-   "card": "YOUR BASERIDGE TOWN \u00b7 CC3TOWN SCORE 366 \u00b7 DEFENSE RATING 150WALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense DrillDAILY BASE YIELD 34% \u00b7 +27 CP so farYIELD POINTS 0% \u00b7 4 operations to go todayCOMMAND CHI",
+   "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
+   "card": "BATTALION4 PILOTS \u00b7 FIELD 4FORCE247COMMAND CHIP 0/1 TODAY \u00b7 0 HELDOPEN HANGAR",
    "force": true
   },
   "hangar": {
@@ -353,10 +497,152 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GFLINT",
-    "BMAGPIE",
-    "LCOMET",
-    "MKESTREL"
+    "GFROST",
+    "BGHOST",
+    "LDUSK",
+    "MDAGGER"
+   ],
+   "label": "PLATOON",
+   "presets": 3,
+   "force_chip": true,
+   "warn": null
+  },
+  "fight": {
+   "friends": 4,
+   "views": 4,
+   "meshes": [
+    3,
+    3,
+    3,
+    3
+   ],
+   "tags": 4,
+   "command": "COMMAND \u00b7 FOLLOWINGV REGROUP \u00b7 HOLD V ORDERS",
+   "calls": 114,
+   "programs": 16,
+   "targets": 9,
+   "slot": [
+    "#cq-command-access"
+   ],
+   "commandBox": [
+    16,
+    576,
+    215,
+    46
+   ]
+  },
+  "tap": 5,
+  "wheelOpen": true,
+  "wheelOrder": {
+   "k": 3,
+   "o": "hold",
+   "items": "{\"repair\":0,\"shield\":0,\"scanner\":0,\"decoy\":0}"
+  },
+  "mouseOrder": {
+   "k": 2,
+   "o": "attack"
+  },
+  "raidCleared": 4,
+  "raidAar": "YOUR PILOTS+2 XP to every pilot fielded+1 COMMAND CHIP \u00b7 1 held (your first win today)",
+  "grantCard": "FIRST LAB GRANTPick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.+2 THERMAL CORESTHERMAL \u00b7 Keep firing: heat becomes damage.+2 BALLISTIC COILSBALLISTICS \u00b7 Precision: every hit counts.",
+  "afterGrant": [
+   "2THERMAL CORES",
+   "0BALLISTIC COILS",
+   "0DRIVE SERVOS",
+   "0FIELD CAPACITORS"
+  ],
+  "roleCores": [
+   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
+  ],
+  "perfPlatoon": {
+   "median": 216.7,
+   "p95": 266.6,
+   "worst": 366.6,
+   "calls": 154,
+   "tris": 423564,
+   "programs": 15,
+   "friends": 4,
+   "views": 4,
+   "hostiles": 2,
+   "low": "low"
+  },
+  "fielded": 9,
+  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
+  "verdict": [
+   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
+  ]
+ },
+ {
+  "size": "1920x1080",
+  "input": "mouse+keyboard",
+  "errors": [],
+  "hubFresh": "NO PILOTS YET",
+  "nextChip": "RESCUE THE DOWNED PILOT",
+  "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
+  "rescueStrip": {
+   "enemies": [
+    "\u25cf2\u00d7 INTERCEPTOR"
+   ],
+   "hint": "2 interceptors guard the wreck. Clear them, then hold beside it for 4 seconds.",
+   "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
+  },
+  "rescueCleared": 2,
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 ZEPHYR (Mina Kowal) flies with you now",
+  "wing": {
+   "friends": [
+    {
+     "cs": "ZEPHYR",
+     "role": "wingman",
+     "mil": true
+    }
+   ],
+   "views": 1,
+   "state": {
+    "w": 1,
+    "done": true,
+    "roster": 1
+   },
+   "next": "SIGNAL RECOVERY",
+   "access": null,
+   "tags": [
+    "WZEPHYR"
+   ]
+  },
+  "hubCard": {
+   "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
+   "card": "BATTALION4 PILOTS \u00b7 FIELD 4FORCE247COMMAND CHIP 0/1 TODAY \u00b7 0 HELDOPEN HANGAR",
+   "force": true
+  },
+  "hangar": {
+   "cards": 4,
+   "arm": true,
+   "presets": 3,
+   "forms": [
+    "LINE",
+    "WEDGE",
+    "ESCORT"
+   ]
+  },
+  "hangarCloseVisible": true,
+  "openWorld": {
+   "targets": 11,
+   "slot": [
+    "#cq-command-access"
+   ]
+  },
+  "raidStrip": {
+   "enemies": 5,
+   "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
+   "force": [
+    "GBLITZ",
+    "BIRIS",
+    "LWARDEN",
+    "MCINDER"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -408,29 +694,29 @@
    "0FIELD CAPACITORS"
   ],
   "roleCores": [
-   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m",
-   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h 00m"
+   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 266.6,
-   "p95": 400,
-   "worst": 483.3,
-   "calls": 150,
-   "tris": 397921,
+   "median": 283.3,
+   "p95": 366.6,
+   "worst": 400,
+   "calls": 153,
+   "tris": 422408,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 4,
+   "hostiles": 2,
    "low": "low"
   },
   "fielded": 9,
-  "crash": "Page.wait_for_function: Timeout 30000ms exceeded.",
+  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
   "verdict": [
-   "crash: Page.wait_for_function: Timeout 30000ms exceeded."
+   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
   ]
  }
 ]
