@@ -93,6 +93,7 @@ function enemyRoster(op){if(!op)return {units:[],hint:'',want:[]};const count={}
  else if(op.id===WINGMAN.id)add('raider',2);
  else if(op.id==='oxygen-line'){add('raider',3);add('sentinel');add('breacher');add('command');}
  else if(op.id==='rescue'){add('raider');add('breacher');add('command');}else if(op.id==='convoy')add('command',2);else if(op.id==='redoubt'){add('raider',2);add('command',2);add('sentinel');}else add('raider',2);
+ if(op.id===WINGMAN.id)return {units:[{k:'raider',n:2,name:'interceptor',light:true,heavy:false,air:false}],want:[],hint:'2 interceptors guard the wreck. Clear them, then hold beside it for 4 seconds.'};   // a solo rescue: no roles to bring
  const units=Object.entries(count).map(([k,n])=>({k,n,name:ENEMY[k].n,heavy:!!ENEMY[k].heavy,light:!!ENEMY[k].light,air:!!ENEMY[k].air}));if(boss)units.push({k:'boss',n:1,name:BOSS[boss]||'commander',boss,heavy:1});
  const light=units.filter(u=>u.light&&!u.air).reduce((a,u)=>a+u.n,0),want=[];
  if(light>=3)want.push('frostline');if(units.some(u=>u.air)||op.hazard==='drone')want.push('lancer');if(op.family==='sabotage'||op.family==='battery'||boss==='shield')want.push('breacher');

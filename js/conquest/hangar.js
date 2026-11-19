@@ -40,7 +40,7 @@ function screen(d,s,ctx){const {el,button}=ctx,B=BT(),T=s?.bat||{p:[],ps:[{f:'we
   el('small','cq-bat-name',p.n,c);el('small','cq-bat-rolename',roleName(p.r)+(p.r?' · CORE '+ROMAN[rcLv(s,p.r)]:''),c);
   {const nx=B.RANK_XP[p.rk]??null,base=B.RANK_XP[p.rk-1]||0,row=el('div','cq-bat-rank',null,c);el('span','cq-bat-chev','▲'.repeat(Math.min(3,B.sigTier(p.rk)+1)),row);el('small','','R'+p.rk+' '+B.RANK_NAMES[p.rk]+(nx?' · '+(p.xp-base)+'/'+(nx-base)+' XP':' · MAX'),row);if(nx){const bar=el('progress','cq-bat-xp',null,c);bar.max=nx-base;bar.value=Math.max(0,p.xp-base);bar.setAttribute('aria-label',p.cs+' rank progress');}}
   el('small','cq-bat-gear',gearLine(p.kit),c);el('small','cq-bat-status',(p.h<1?'HALF HULL · REPAIR':'READY')+' · '+(p.k|0)+' KILLS',c);
-  const tog=button(at>=0?'IN FORCE #'+(at+1):'ADD TO FORCE',()=>{const list=at>=0?ids.filter(x=>x!==p.id):[...ids,p.id].slice(0,9);ctx.act('hangar-preset',{i:T.pa|0,ids:list});},'cq-bat-toggle'+(at>=0?' cq-on':''));c.append(tog);
+  const auto=at<0&&deployed>=0&&deployed<cap,tog=button(at>=0?'IN FORCE #'+(at+1):auto?'IN FORCE #'+(deployed+1)+' · AUTO':'ADD TO FORCE',()=>{const list=at>=0?ids.filter(x=>x!==p.id):auto?field.slice(0,cap).filter(x=>x!==p.id):[...ids,p.id].slice(0,9);ctx.act('hangar-preset',{i:T.pa|0,ids:list});},'cq-bat-toggle'+(at>=0||auto?' cq-on':''));   // an empty preset fields the roster in order: those pilots read IN FORCE (AUTO)c.append(tog);
   if(open){const r=button('ROLE · '+roleName(p.r),()=>rolePicker(d,s,p,ctx),'cq-bat-rolebtn');c.append(r);}}
  // recruits: the Hangar's RECRUIT job (8 h, time only), the day's BEACON EXTRACTION win
  {const r=el('div','cq-bat-recruit',null,d);el('h3','','RECRUITS',r);
@@ -70,6 +70,7 @@ function strip(parent,s,op,ctx){const {el,button}=ctx,B=BT();if(!B||!op)return n
  if(!mine.length)el('small','',T?.w?'No pilot fielded.':'Solo: rescue the downed pilot to fly with a wingman.',fr);
  for(const p of mine){const c=el('span','cq-bat-mine'+(p.h<1?' cq-bat-hurt':''),null,fr);badge(el,c,p.r);el('small','',p.cs+(p.h<1?' · ½':''),c);}
  // Session 6C section 9: militia crews freeze up in a VETERAN operation (combat.js MILITIA_VET); say so where the force is picked
+ if(T&&lv>=B.ROLES_AT&&mine.length){const miss=R.want.filter(r=>!mine.some(p=>p.r===r));if(miss.length){const w=el('small','cq-bat-miss','✗ NO '+miss.map(r=>B.ROLE_INFO[r].n.toUpperCase()).join(' OR ')+' IN THIS FORCE · set a role in the HANGAR',st);w.setAttribute('role','note');}}   // the hint's roles you are not bringing
  if(op.danger==='VETERAN'&&mine.some(p=>!p.kit||p.kit.mil)){const w=el('small','cq-bat-warn','⚠ MILITIA CREWS FREEZE UP AGAINST VETERAN HIVES · AUTO-ARM them with spare gear in the HANGAR',st);w.setAttribute('role','note');}
  if(T&&lv>=B.ROLES_AT&&ctx.act){const row=el('div','cq-bat-strip-presets',null,st);for(let i=0;i<B.PRESETS;i++){const b=button('P'+(i+1),()=>ctx.act('hangar-preset',{i}),'cq-bat-preset'+(i===(T.pa|0)?' cq-on':''));b.setAttribute('aria-pressed',String(i===(T.pa|0)));b.title='Preset '+(i+1)+': '+(B.FORM_NAMES[T.ps?.[i]?.f]||'WEDGE');row.append(b);}}
  forceChip(el,st,s,scale);return st;}

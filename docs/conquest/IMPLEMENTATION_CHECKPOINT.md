@@ -5820,9 +5820,27 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
     Worker's own settlement runs), `/fixture-field` (field at a fight size), fixture `battalion`, wallet plates.
   - conquest-onboarding.py and conquest-hub-browser.py now run at every size the owner tests. The owner's complete brief is stored
     in docs/conquest/SESSION_6C_BRIEF.md.
-- NEXT, in this order: the remaining sizes of conquest-session6c.py (390x700, 320x568, 1920x1080) and section D's numbers; the whole
-  CI node list; conquest-session6b / -onboarding / -hub-browser / perf.py; at most two UX critic rounds; two fresh reviewers;
-  dev/bump.sh, PR, CI, merge, deploy checks, ROADMAP 6C RELEASED, release record, final report.
+- DONE slice 12 (session 2, Nov 19): the whole CI node list run locally: 117 + conquest-allies PASS; conquest-earned-defense changed
+  with this session's rule (the rescued wingman defends the town: the six kills are pilot + squad, `kills + akills`). Guardrails
+  file PASS (58 checks). Browser: conquest-hub-browser.py PASS at 390x844, 390x700, 320x568, 1280x800, 1366x768, 1920x1080;
+  conquest-onboarding.py PASS (control hit zones at six sizes); conquest-session6c.py PASS at 390x844, 390x700, 320x568, 1366x768
+  (1920x1080 re-run after the round-1 fixes). conquest-session6b.py found a split-era test bug: /fixture-research-finish read `rs`
+  from the hot record (rs rides the cold blob): it now reads the joined record (cqLive).
+  UX CRITIC ROUND 1 (phone 5/10, computer 4/10), fixed: `[object Object]` on the nav chip for an operation's reward object; ally
+  insignia drew over the HUD (now the panel's first child, culled over HUD controls, hidden while a dialog or the wheel is open,
+  anchored lower); the after-action credits the squad ("N HOSTILES DESTROYED (YOU a · SQUAD b)"), the rescue shows a +1 WINGMAN tile
+  instead of four +0 tiles, COMMAND hides once the fight is over; the HANGAR shows auto-fielded pilots IN FORCE #n · AUTO (an empty
+  preset fields the roster in order); the strip names roles the hint asks for that the force lacks; the rescue's hint asks for no
+  roles; the BATTALION card sits right under YOUR BASE on the hub (it was last, below the fold); START MISSION is sticky at the foot
+  of a briefing; no mid-word breaks (formations, presets, "8h 00m"); Role Core RESEARCH buttons gold; the wheel marks the order in
+  effect (NOW) and is opaque; developer copy left the briefings and the after-action ("scripted-pilot test: starter gear won 7 of 10
+  HARD raids", "server-keyed once", "(X1174 Z1168)"). OPEN for the visual pass (6B-V / a later UX pass; the critic's polish list):
+  a full-screen WINGMAN JOINED reveal with the tank, per-pilot XP cards with an MVP, a two-pane desktop HANGAR, tank pictures on
+  roster cards, a PILOTS tab for Role Cores, 32 px edge markers with distance, slow-time while the wheel is held, desktop hiding the
+  touch stick and FIRE cluster.
+- NEXT: the 6C journey at 1920x1080 + section D's Battalion LOW numbers; the 6B journey; perf.py; UX critic round 2; reviewer 1
+  (server) and reviewer 2 (gameplay) reports, fix blockers, re-review; dev/bump.sh, PR, CI, merge, deploy checks, ROADMAP 6C
+  RELEASED, release record, final report.
 - Earlier slices (the first 6C session):
 - DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
   sit in their own "Also (owner, Nov 18)" group). Research recorded below.

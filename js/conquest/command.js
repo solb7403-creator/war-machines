@@ -24,7 +24,7 @@ const mine=B=>(B?.friends||[]).filter(f=>f.side==='mine');
 function inFight(v,B){if(!B||!(B.playerHp>0))return false;if(v.battle)return true;const p=v.p||B.player;if(!p)return false;
  if(Date.now()-(v.lastHitAt||0)<4000)return true;for(const e of B.enemies||[])if(e.hp>0&&!e.dormant&&Math.hypot(e.x-p.x,e.z-p.z)<70)return true;return false;}
 // shown when your pilots are in the field, COMMAND orders are open (Hangar II) and you are in a fight
-function wanted(v){const B=v?.battle||v?.encounter;return !!B&&!!B.squad?.orders&&mine(B).some(f=>!f.down&&f.hp>0)&&inFight(v,B);}
+function wanted(v){const B=v?.battle||v?.encounter;return !!B&&B.state==='active'&&!!B.squad?.orders&&mine(B).some(f=>!f.down&&f.hp>0)&&inFight(v,B);}
 function issue(k,how){if(!X)return false;const v=X.view();if(!v?.pendingAbilities)return false;v.pendingAbilities.order=k;X.last={k,at:Date.now(),how};
  if(typeof fx==='function')fx('tap');try{root.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.(k===5?'light':'medium');}catch(_){}
  const B=v.battle||v.encounter,said=k===5?(lockAlive(B)?'ATTACK · LOCKED TARGET':'REGROUP'):SAID[k];X.flash='ORDER · '+said;X.flashUntil=Date.now()+1300;draw(v);return true;}
@@ -35,7 +35,7 @@ function light(k){X.hot=k|0;for(const b of X.wheel.querySelectorAll('.cq-cmd-w')
  const W=WEDGES.find(w=>w.k===X.hot);X.hub.textContent=W?W.n:'ORDERS';X.hubSub.textContent=W?W.d:(X.kb?'1-4 or click · Esc closes':'Slide onto an order');}
 // open the wheel around a point on the screen (kept inside the play area), the thumb's or the button's
 function open(x,y,kb){const P=X.panel.getBoundingClientRect(),R=106,C=130,cx=Math.max(P.left+C,Math.min(P.right-C,x)),cy=Math.max(P.top+R+84,Math.min(P.bottom-R-8,y));   /* C: room for the caption above the wheel */
- const w=X.wheel;w.style.left=Math.round(cx-P.left)+'px';w.style.top=Math.round(cy-P.top)+'px';X.kb=!!kb;w.classList.toggle('cq-cmd-kb',!!kb);w.hidden=false;X.openAt=Date.now();light(0);
+ const w=X.wheel;w.style.left=Math.round(cx-P.left)+'px';w.style.top=Math.round(cy-P.top)+'px';X.kb=!!kb;w.classList.toggle('cq-cmd-kb',!!kb);w.hidden=false;X.openAt=Date.now();light(0);{const v=X.view(),o=(v?.battle||v?.encounter)?.squad?.o,cur=({follow:1,attack:2,hold:3,fallback:4})[o]||0;for(const b of w.querySelectorAll('.cq-cmd-w'))b.classList.toggle('cq-cur',Number(b.dataset.k)===cur);}   /* the order in effect is marked */
  clearTimeout(X.sticky);X.sticky=setTimeout(()=>close(),STICKY_MS*2);if(typeof fx==='function')fx('tap');try{root.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();}catch(_){}}
 function close(){if(!X)return;clearTimeout(X.sticky);X.wheel.hidden=true;X.hot=0;X.kb=false;X.keyHeld=false;}
 const isOpen=()=>!!X&&!X.wheel.hidden;

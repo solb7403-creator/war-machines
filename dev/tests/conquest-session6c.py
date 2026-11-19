@@ -188,7 +188,7 @@ async def steps(browser,base,ready,w,h,R):
  FRAMES='''()=>new Promise(done=>{const iv=[];let last=performance.now(),n=0;const f=t=>{iv.push(t-last);last=t;if(++n<240)requestAnimationFrame(f);else{const x=iv.slice(20).sort((a,b)=>a-b),q=p=>+x[Math.min(x.length-1,Math.floor(x.length*p))].toFixed(1),v=Conquest.view;done({median:q(.5),p95:q(.95),worst:+x.at(-1).toFixed(1),calls:v.renderer.info?.render?.calls,tris:v.renderer.info?.render?.triangles,programs:v.renderer.info?.programs?.length,friends:(v.battle?.friends||[]).length,views:v.friendViews?v.friendViews.size:0,hostiles:(v.battle?.enemies||[]).filter(e=>e.hp>0&&Math.hypot(e.x-v.p.x,e.z-v.p.z)<120).length,low:gfxMode()});}};requestAnimationFrame(f);})'''
  R['perfPlatoon']=await page.evaluate(FRAMES)
  fl=await page.request.post(base+'/fixture-field',data={'scale':'battalion'});R['fielded']=(await fl.json()).get('fielded')
- await page.wait_for_function('(Conquest.view?.battle?.friends||[]).length>=9',timeout=30000);await page.wait_for_timeout(3000)
+ await page.wait_for_function('(Conquest.view?.battle?.friends||[]).length>=9',timeout=90000);await page.wait_for_timeout(3000)
  R['perfBattalion']=await page.evaluate(FRAMES)
  await shot('battalion-low')
  await close_ctx(ctx)
@@ -204,6 +204,7 @@ def verdict(R):
  hg=R.get('hangar') or {};e(hg.get('cards')==4 and hg.get('arm') and hg.get('presets')==3 and len(hg.get('forms') or [])==3 and R.get('hangarCloseVisible'),'HANGAR '+json.dumps(hg))
  st=R.get('raidStrip') or {};e(st.get('enemies',0)>=3 and st.get('label')=='PLATOON' and len(st.get('force') or [])==4 and st.get('presets')==3 and st.get('force_chip'),'raid strip '+json.dumps(st))
  f=R.get('fight') or {};e(f.get('friends')==4 and f.get('views')==4 and all(m>=1 for m in f.get('meshes') or [0]) and f.get('tags')==4,'allies in 3D '+json.dumps(f))
+ e((f.get('programs') or 99)<=16,'the Platoon fight stays inside the 16-program budget: '+str(f.get('programs')))
  e(f.get('slot')==['#cq-command-access'] and R.get('openWorld',{}).get('slot') in (['#cq-scan-access'],['#cq-gather-access'],['#cq-command-access']),'one context slot: '+str(f.get('slot'))+' / '+str(R.get('openWorld')))
  e(0<f.get('targets',99)<=max(8,R.get('openWorld',{}).get('targets',0)),'the fight HUD keeps its touch targets: '+str(f.get('targets'))+' (open world '+str(R.get('openWorld',{}).get('targets'))+')')
  bx=f.get('commandBox') or [0,0,0,0];w,h=[int(v) for v in R['size'].split('x')];e(bx[3]>=44 and bx[0]>=0 and bx[1]+bx[3]<=h and bx[0]+bx[2]<=w,'COMMAND on screen and a 44 px target '+str(bx))

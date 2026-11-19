@@ -85,7 +85,7 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
     el('p','cq-lab-what',I.sig+'. Each level adds 10% to it, on every '+I.n+' you field (now +'+(lv-1)*10+'%).',row);
     if(lv>=BT.RC.max)el('b','cq-lab-tag','✓ CORE V · MAX',row);
     else if(j){const jl=jobLeft(j,L,now),tg=el('b','cq-lab-tag','RESEARCHING CORE '+ROMAN[j.lv|0]+' · '+(L.ruined?'paused':fmtT(jl)+' left'),row);if(!L.ruined)live.push({t:tg,pre:'RESEARCHING CORE '+ROMAN[j.lv|0]+' · ',end:now+jl});want.push(role);}
-    else{const ok=ro&&!L.ruined&&!busy&&held.total>=n,b=button(held.total<n?'NEED '+(n-held.total)+' MORE CHIP'+(n-held.total>1?'S':'')+' ('+held.total+'/'+n+')':(busy?'SLOTS BUSY':'RESEARCH CORE '+ROMAN[lv+1])+' · '+n+' CHIP'+(n>1?'S':'')+' · '+fmtT(BT.RC.ms),async()=>{b.disabled=true;const done=await ctx.act('rc:'+role);if(!done)b.disabled=false;},'cq-lab-go');b.disabled=!ok;row.append(b);if(ok)want.push(role);}}
+    else{const ok=ro&&!L.ruined&&!busy&&held.total>=n,b=button(held.total<n?'NEED '+(n-held.total)+' MORE CHIP'+(n-held.total>1?'S':'')+' ('+held.total+'/'+n+')':(busy?'SLOTS BUSY':'RESEARCH CORE '+ROMAN[lv+1])+' · '+n+' CHIP'+(n>1?'S':'')+' · '+fmtT(BT.RC.ms).replace(/ /g,'\u00a0'),async()=>{b.disabled=true;const done=await ctx.act('rc:'+role);if(!done)b.disabled=false;},'cq-lab-go');b.disabled=!ok;row.append(b);if(ok)want.push(role);}}
    if(want.length)f.open=true;
    el('small','cq-lab-uses','Role Core levels are earn-only: never sold. A role\'s level reaches every pilot fitted with it, now and later.',f);
    if(ctx.store)ctx.store(f,'chippack',{});}}
