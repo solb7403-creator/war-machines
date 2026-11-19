@@ -44,7 +44,7 @@ ok(C.LIVING.chain.per===K.SORTIE_CHAIN.per&&C.LIVING.chain.item===K.SORTIE_CHAIN
  // one earned part a day, on the Worker's own pickup path (worker/src/conquest-loot.js bind): the second the same UTC day is a fragment
  const {bind}=await import('../../worker/src/conquest-loot.js'),t0=Date.UTC(2026,10,18,9),st={};
  bind(st,{pt:{thermal:1},src:'elite'},t0);bind(st,{pt:{thermal:1},src:'elite'},t0+6e4);const day1=st.inv.pt.thermal;bind(st,{pt:{coil:1},src:'commander'},t0+864e5);
- ok(R.CQ_PART_DAY===Rs.earnedPartsPerDay.n&&day1===1&&st.inv.pt.coil===1&&J(Rs.earnedPartsPerDay.exempt)===J(['packs','pass']),'one earned research part a day per account (a second the same UTC day became a fragment; the next day counts again); packs and the Lunar Pass exempt');
+ ok(R.CQ_PART_DAY===Rs.earnedPartsPerDay.n&&day1===1&&st.inv.pt.coil===1&&J(Rs.earnedPartsPerDay.exempt)===J(['packs','pass','firstLabGrant']),'one earned research part a day per account (a second the same UTC day became a fragment; the next day counts again); packs and the Lunar Pass exempt');
  {const S0=R.ecoNorm({});R.ecoAddParts(S0,3);R.ecoAddParts(S0,3);ok(R.CQ_PART_ORDER.every(k=>S0.bpt[k]===6),'pack and pass parts (the account\'s bonus parts) carry no daily count');}
  // the Legendary set mods' free research path and its two gates
  const L=Rs.legendaryResearch,legOk=R.RTREE_LEG.every(id=>{const t=R.rmodOf(id).F.rs,set=R.RTREE.mods[t][3],mods=R.RTREE.mods[t];
@@ -98,5 +98,26 @@ for(const g of O.guards){const src=fs.existsSync(g.file)?fs.readFileSync(g.file,
  const src=fs.readFileSync('js/rules.js','utf8'),g=src.slice(src.indexOf('function ecoGrant('),src.indexOf('function ecoRefund('));
  const lab=g.split('\n').filter(l=>/kind==='(rspack|rsleg|rsfin)'/.test(l));ok(lab.length===3&&lab.every(l=>!/ecoAward|\.pts\b|earned|dailyPts/.test(l)),'Science Lab purchases never award points');
  const ra=fs.readFileSync('worker/src/conquest-research.js','utf8');ok(!/ecoAward|ptsRaw|\.pts\s*[+]=/.test(ra),'research jobs never award points');}
+// ---- Session 6C Battalion (owner, Nov 18): checked on the Worker's own code ----
+{const Bo=O.battalion,{CONQUEST:CQ,RULES:RR}=await import('../../worker/src/sim.gen.js'),BT=CQ.Battalion,{grantChip,chipsHeld,outcome}=await import('../../worker/src/conquest-battalion.js'),
+ {researchAction,research}=await import('../../worker/src/conquest-research.js'),{killLoot}=await import('../../worker/src/conquest-economy.js'),{createState}=await import('../../worker/src/conquest-sim.js'),{inventory}=await import('../../worker/src/conquest-loot.js');
+ const day=Date.UTC(2026,10,20,12),mk=()=>{const s=createState(RR.STOCK_L,day);s.plot={cc:7,site:'ridge',b:{lab:{t:'lab',l:4},hangar:{t:'hangar',l:2}}};return s;};
+ ok(J(BT.RC.cost.slice(2))===J(Bo.roleCoreCost)&&BT.RC.ms===Bo.roleCoreMs&&RR.RTREE.role.lab===Bo.roleCoreLab&&RR.RTREE.role.part==='chip','Role Core levels 2-5 cost '+BT.RC.cost.slice(2).join(' / ')+' command chips, '+BT.RC.ms/3600000+' h jobs, opened by Science Lab '+['','I','II','III','IV'][RR.RTREE.role.lab]);
+ {const s=mk();s.bat={ch:{e:2,d:0,bs:0}};const cp=s.ledger.cp;research(s);researchAction(s,{action:'research-start',mod:'rc:guardian'},day,{bch:0});const j=s.rs.jobs.at(-1);
+  ok(j&&j.part==='chip'&&j.lv===2&&s.ledger.cp===cp&&s.bat.ch.e===0&&j.ms===Bo.roleCoreMs,'a Role Core job is chips and time only (2 chips spent, CP unchanged), never CP');
+  const s2=mk();s2.plot.b.lab.l=3;s2.bat={ch:{e:9,d:0,bs:0}};research(s2);let refused=false;try{researchAction(s2,{action:'research-start',mod:'rc:guardian'},day,{bch:0});}catch(e){refused=/Science Lab level IV/.test(e.message);}ok(refused,'no Role Core job before Science Lab IV');}
+ {const s=mk(),a=grantChip(s,'win',day),b=grantChip(s,'win',day+1000),c=grantChip(s,'drop',day+2000),d=grantChip(s,'win',day+864e5);
+  ok(BT.CHIP.day===Bo.chipsPerDay.n&&a?.chip===1&&b===null&&c?.swap===1&&d?.chip===1&&chipsHeld(s,5).total===s.bat.ch.e+5&&J(Bo.chipsPerDay.exempt)===J(['pack']),'one earned command chip a UTC day (a later win gives none, a later find is a fragment, the next day gives one); pack chips are never limited');}
+ {const S=RR.ecoNorm({}),X={day:20000,week:2857};S.buys[RR.chipPackKey?RR.chipPackKey(X):'chp|'+X.week]=1;ok(RR.ecoOwned(S,{kind:'chippack'},X)===true&&Bo.chipPackPerWeek===1&&RR.CHIP_PACK.chips>0,'the chip pack: one a UTC week');}
+ {const s=mk();research(s);const v=inventory(s),pd=J(v.pd);researchAction(s,{action:'research-grant',mod:'coil'},day,{});let twice=false;try{researchAction(s,{action:'research-grant',mod:'thermal'},day,{});}catch(e){twice=true;}
+  ok(v.pt.coil===Bo.firstLabGrant.parts&&J(v.pd)===pd&&twice&&J(Bo.firstLabGrant.choices)===J(['thermal','coil']),'the first Science Lab grant: '+Bo.firstLabGrant.parts+' parts of Thermal or Ballistics, once, outside the one-a-day limit');}
+ ok(J(BT.FIELD)===J(Bo.field)&&BT.ROSTER_MAX===Bo.roster,'allies fielded: 1 with no Hangar, then '+BT.FIELD.slice(1).join(' / ')+'; a roster of '+BT.ROSTER_MAX);
+ {const s=mk(),e={id:1,key:'patrol-01',kind:'raider',x:1200,y:0,z:1100,hp:0,ad:1,base:{kind:'patrol',id:'patrol-01'}};const pend=J(s.airdrop?.pend||null),drops=s.drops.length;killLoot(s,e,day);
+  ok(J(s.airdrop?.pend||null)===pend&&s.drops.length===drops,'allies never multiply points: a kill only allies damaged pays no points, CP, salvage or loot');}
+ {const open=RR.ecoGrant.toString(),grants=Bo.storeKinds.every(k=>RR.BAT_KINDS.includes(k))&&RR.BAT_KINDS.length===Bo.storeKinds.length,S=RR.ecoNorm({}),X={day:20000,week:2857};const pts=S.pts;for(const k of RR.BAT_KINDS)RR.ecoGrant(S,{kind:k,tk:'liv-arctic',job:'r1'},X);
+  ok(grants&&RR.BAT_STORE_OPEN===false&&S.pts===pts&&!S.bch&&!S.liv&&!S.rcx,'the Battalion store kinds ('+RR.BAT_KINDS.join(', ')+') grant nothing while checkout is off, and never points');
+  ok(J(Bo.neverSold)===J(['pilots','ranks','roleCoreLevels'])&&!/\bbat\b|\.rc\[|rcLevel|rank/.test(open),'never sold: pilots, ranks, Role Core levels (no store grant touches them)');}
+ {const s=mk();s.bat={p:[{id:'p1',n:'A B',cs:'ANVIL',r:'',xp:0,rk:1,k:0,h:1}],ch:{e:0,d:0,bs:0}};const pend=J(s.airdrop?.pend||null);outcome(s,{friends:[{side:'mine',pid:'p1',kills:2}],time:60},CQ.Combat.operations.rescue,'victory',day);
+  ok(J(s.airdrop?.pend||null)===pend&&s.bat.ch.e===1&&s.bat.p.length===2&&J(Bo.noPoints)===J(['chips','recruits','liveries']),'command chips and recruits (and liveries) never award points: a won rescue gave a chip and a recruit, no points');}}
 if(fails.length){console.log('FAIL owner-rules: '+fails.length+' of '+(fails.length+passed)+' checks: '+fails.join(' || '));process.exit(1);}
 console.log('PASS owner-rules ('+passed+' checks)');

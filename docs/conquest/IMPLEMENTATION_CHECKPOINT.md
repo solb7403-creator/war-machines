@@ -5767,7 +5767,14 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   58 MB/h, operation 45.5 KB = 164 MB/h; phone idle 12.2 KB = 22 MB/h, operation 9.7 KB = 35 MB/h. The full 119-test CI node list PASSES on
   slice 5 (one test changed with the prompt's rule: conquest-earned-journey.mjs lets the board's rescue of the first wingman
   through and accepts its no-CP settlement; the town is still claimed at 6.6 simulated minutes, target <= 22). Browser
-  journeys not run yet. NOT built yet: `sweep` is not called at session open; the startup of the hub (live)
+  journeys not run yet.
+- DONE slice 6 (owner rules, Nov 19): docs/owner-rules.json `battalion` (Role Core costs [2,4,5,9] chips, 8 h, Lab IV; one
+  earned chip a UTC day, pack exempt; chip pack one a week; first Lab grant 2 parts of Thermal / Ballistics once; field
+  1/2/4/5/7/9, roster 16; store kinds; never sold: pilots, ranks, Role Core levels; chips, recruits, liveries never points),
+  research.labMax 4 and research.earnedPartsPerDay.exempt + firstLabGrant (the prompt's words). owner-rules.mjs 36 -> 47 checks,
+  every new one on the Worker's own code; MUTATION-PROVEN: Role Core cost 9 -> 8 and chips a day 1 -> 2 each exit 1 (found on
+  the way: the new block first sat after the exit decision, so its failures did not fail the build; the exit now comes last).
+  If the owner-rules CI label check asks, add the `owner-rules-change` label to the PR (the prompt is the owner's decision). NOT built yet: `sweep` is not called at session open; the startup of the hub (live)
   and labOnly still get whole states (fine). Everything under "STILL TO BUILD" except the split items is still open.
 - PREPARED PATCHES (apply in this order from the repo root, `python3 dev/tools/session6c/pN_*.py`; each asserts its anchors, then
   rebuild the sim and run the suites): p1_rules (store kinds chip pack / livery / rcfin with checkout off, BAT_STORE_OPEN,

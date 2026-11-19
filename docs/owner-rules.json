@@ -42,7 +42,7 @@
   }
  },
  "research": {
-  "about": "Owner decision 1 (Session 6B): research costs research parts and time only (no CP, alloy, biomass or helium); Worker clock I 20 min / II 2 h / III 8 h; one job at a time, a second slot at Science Lab III; the lab stays max level 3, built from CC3. Session 6B finish (owner, Nov 17, 2026): costs 2/4/5/9 a track (80 parts in all); one EARNED research part a day per account (Lab store packs and the Lunar Pass are not limited); each Legendary set mod also has a free research path (30 of its track's part, 8 h) once Science Lab III stands and its track's set mod is researched; it is bought only after that set mod (Science Lab III alone never opens it); one of each part pack a UTC week. The Claude-invented tree target of 6-10 weeks was removed (it was never the owner's).",
+  "about": "Owner decision 1 (Session 6B): research costs research parts and time only (no CP, alloy, biomass or helium); Worker clock I 20 min / II 2 h / III 8 h; one job at a time, a second slot at Science Lab III; the lab max level 4 since Session 6C (owner, Nov 18: Science Lab IV opens the Role Cores track), built from CC3. Session 6B finish (owner, Nov 17, 2026): costs 2/4/5/9 a track (80 parts in all); one EARNED research part a day per account (Lab store packs and the Lunar Pass are not limited); each Legendary set mod also has a free research path (30 of its track's part, 8 h) once Science Lab III stands and its track's set mod is researched; it is bought only after that set mod (Science Lab III alone never opens it); one of each part pack a UTC week. The Claude-invented tree target of 6-10 weeks was removed (it was never the owner's).",
   "timeMs": [
    0,
    1200000,
@@ -65,7 +65,8 @@
    "n": 1,
    "exempt": [
     "packs",
-    "pass"
+    "pass",
+    "firstLabGrant"
    ]
   },
   "legendaryResearch": {
@@ -166,5 +167,55 @@
    "minCC10Day": 21,
    "minCC5Day": 4
   }
+ },
+ "battalion": {
+  "about": "Session 6C (owner, Nov 18, 2026): Role Core levels 2-5 cost 2/4/5/9 command chips (chips and time only, never CP), 8 h jobs in the Science Lab's slots, opened by Science Lab IV; one EARNED command chip a UTC day per account (the chip pack is not limited); the chip pack one a UTC week; the first Science Lab grant: 2 parts of Thermal or Ballistics, once per account, outside the one-a-day part limit; allies never multiply points (a kill only allies damaged pays nothing); never sold: pilots, ranks, Role Core levels; command chips, recruits and liveries never award points; allies fielded: 1 with no Hangar, then 2/4/5/7/9 by Hangar level; a roster of 16.",
+  "roleCoreCost": [
+   2,
+   4,
+   5,
+   9
+  ],
+  "roleCoreMs": 28800000,
+  "roleCoreLab": 4,
+  "chipsPerDay": {
+   "n": 1,
+   "exempt": [
+    "pack"
+   ]
+  },
+  "chipPackPerWeek": 1,
+  "firstLabGrant": {
+   "parts": 2,
+   "choices": [
+    "thermal",
+    "coil"
+   ],
+   "once": true
+  },
+  "field": [
+   1,
+   2,
+   4,
+   5,
+   7,
+   9
+  ],
+  "roster": 16,
+  "storeKinds": [
+   "chippack",
+   "livery",
+   "rcfin"
+  ],
+  "neverSold": [
+   "pilots",
+   "ranks",
+   "roleCoreLevels"
+  ],
+  "noPoints": [
+   "chips",
+   "recruits",
+   "liveries"
+  ]
  }
 }
