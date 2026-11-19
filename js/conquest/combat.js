@@ -169,7 +169,7 @@ const tune=(B,f)=>f&&f.mil?(B&&B.operation&&B.operation.danger==='VETERAN'?MILIT
 // The six roles (blueprint §4 table; starting values for the simulations). Every number is the base at m = 1.
 const ROLES=Object.freeze({
  '':Object.freeze({n:'WINGMAN',keep:.72,range:1}),
- guardian:Object.freeze({n:'GUARDIAN',cls:['titan'],keep:.55,range:1,cover:.20,coverR:12,taunt:45,pull:20}),
+ guardian:Object.freeze({n:'GUARDIAN',cls:['titan'],keep:.55,range:1,cover:.20,coverR:12,taunt:45,pull:20,hold:3}),   /* hold: a Guardian draws the fire of at most 3 Parasites at once (review 2: stacked taunts made four Guardians beat a balanced force) */
  breacher:Object.freeze({n:'BREACHER',cls:['vanguard'],keep:.45,range:1,structure:.40,frozen:.50,frozenR:15,charge:9,chargeT:.4,chargeMin:12,chargeMax:35}),
  lancer:Object.freeze({n:'LANCER',cls:['titan','vanguard'],keep:.85,range:1.4,close:.6,closeR:20,air:.50,burst:.30}),
  mender:Object.freeze({n:'MENDER',cls:['scout','vanguard'],keep:.8,range:1,heal:.012,healR:18,revive:.35,reviveR:30,reviveS:2.5,low:.35}),
@@ -207,7 +207,7 @@ class Battle {
  choose(e){
  const a=archetypes[e.kind],ec=center(e),pd=dist(ec,this.player);
  // Session 6C: a Parasite that hunts the pilot picks among the pilot and the friendly units (threat: position and role only)
- const role=e.role||a.role,T=this.friends.length&&!e.guardReturning&&(role==='player'||role==='support')?this.threat(e,pd):null,p=T?T.t:this.player,tdist=T?T.d:pd;
+ const role=e.role||a.role,T=this.friends.length&&!e.guardReturning&&(role==='player'||role==='support')?this.threat(e,pd):null,p=T?T.t:this.player,tdist=T?T.d:pd;e.tf=T&&T.f?T.f.id:0;
  e.target=e.guardReturning?(e.navGoal||e.home):role==='player'&&tdist<90||role==='support'&&tdist<38?p:this.objective;
  this.steer(e,e.target,e.guardReturning?0:a.range*.72,a.speed,this.enemies,ec);
  }
@@ -334,7 +334,7 @@ Object.assign(Battle.prototype,{
  friendStats(f){return friendStats(f);},
  // the unit a Parasite fires at: the nearest of the pilot and the friendly units by an effective distance (the pilot first by
  // ALLY.pilotBias m: Parasites focus the pilot; a Guardian inside its taunt radius draws fire). Position and role only.
- threat(e,pd){let best=null,bd=pd;for(const f of this.friends){if(f.down||f.hp<=0)continue;const d=Math.hypot(f.x-e.x,f.z-e.z),eff=(f.role==='guardian'&&d<ROLES.guardian.taunt?d-ROLES.guardian.pull*f.m:d+ALLY.pilotBias)+(f.mil?tune(this,f).pilotBias:0);if(eff<bd){bd=eff;best=f;}}
+ threat(e,pd){let best=null,bd=pd;const held=g=>{let n=0;for(const x of this.enemies)if(x!==e&&x.hp>0&&x.tf===g.id)n++;return n;};for(const f of this.friends){if(f.down||f.hp<=0)continue;const d=Math.hypot(f.x-e.x,f.z-e.z),eff=(f.role==='guardian'&&d<ROLES.guardian.taunt&&(e.tf===f.id||held(f)<ROLES.guardian.hold)?d-ROLES.guardian.pull*f.m:d+ALLY.pilotBias)+(f.mil?tune(this,f).pilotBias:0);if(eff<bd){bd=eff;best=f;}}
   return best?{t:center(best),d:Math.hypot(best.x-e.x,best.z-e.z),f:best}:{t:this.player,d:pd};},
  // Guardian: a friendly unit (or the pilot) within its cover radius, with the Guardian on the shooter's side, takes less damage
  coverOf(t,q){const sh=this.enemies.find(e=>e.id===q.owner);if(!sh)return 0;let best=0;for(const g of this.friends){if(g===t||g.role!=='guardian'||g.down||g.hp<=0)continue;const gx=g.x-t.x,gz=g.z-t.z;if(Math.hypot(gx,gz)>ROLES.guardian.coverR||gx*(sh.x-t.x)+gz*(sh.z-t.z)<=0)continue;best=Math.max(best,Math.min(.45,ROLES.guardian.cover*g.m));}return best;},

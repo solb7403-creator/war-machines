@@ -82,9 +82,10 @@ function run({B,p},{maxS=420,KK=K,CC=C,each=null}={}){let t=0;const st={lock:nul
 // ---- 7. orders (Hangar II): follow, attack, hold here, fall back; LOCKED before Hangar II ----
 {const {B,p}=stage('raid-intercept-1',['breacher','lancer']);B.squad.orders=0;ok(!B.squadOrder(3),'before Hangar II there are no orders (the first wingman only follows and fights)');
  B.squad.orders=1;const e=B.enemies.find(x=>x.hp>0&&!x.resident);B.lockId=e.id;ok(B.squadOrder(5)&&B.squad.o==='attack'&&B.squad.t===e.id,'the smart order with a lock: ATTACK my locked target');
- B.lockId=null;ok(B.squadOrder(5)&&B.squad.o==='follow','the smart order with nothing locked: REGROUP (follow)');
+ ok(!B.squadOrder(1)&&B.squad.o==='attack','a second order inside a second does not count (one order a second: Session 6C review 1)');B.time+=1.1;
+ B.lockId=null;ok(B.squadOrder(5)&&B.squad.o==='follow','the smart order with nothing locked: REGROUP (follow)');B.time+=1.1;
  B.squadOrder(3);const hx=B.squad.x,hz=B.squad.z;ok(B.squad.o==='hold'&&hx===p.x&&hz===p.z,'HOLD HERE marks where you are');
- B.squadOrder(4);ok(B.squad.o==='fallback','FALL BACK');}
+ B.time+=1.1;B.squadOrder(4);ok(B.squad.o==='fallback','FALL BACK');}
 // ---- 8. deterministic: the phone's own files == the Worker bundle; a save and reload mid-fight continues exactly ----
 {const ctx=vm.createContext({console,Math,JSON,Object,Array,Number,Set,Map,WeakMap,Infinity,isFinite,String,Error});ctx.globalThis=ctx;
  for(const f of ['js/range-host.js','js/rules.js','js/game.js','js/conquest/world.js','js/conquest/combat.js','js/conquest/controls.js'])vm.runInContext(fs.readFileSync(f,'utf8'),ctx);

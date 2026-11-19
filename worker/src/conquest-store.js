@@ -18,7 +18,7 @@ const COLD=new Set(COLD_KEYS);
 export const FAR=245;   // m: a Parasite farther than this from the pilot rides whole in the cold part (AI runs within 240 m: it does not move)
 // the fields of a unit that change while it fights; everything else about it (its definition, stats, home, route, kit) is static
 // and rides in the cold part keyed by id (a static field that does change simply makes the cold part change: always correct)
-const DYN=new Set(['id','x','y','z','surface','hp','heading','turret','decision','dec','cd','vx','vz','target','guardReturning','navGoal','routeIndex','radioUntil','radioCalled','lootCreated','shielded','telegraph','enraged','nextPattern','drones','burns','bT','fz','fzA','sh','pd','ad','core','launchedAt','charge','heat','oh','react','tgt','ax','ay','az','sup','kills','down','hurt','hc','rv','rvT','ch','n','dt','dash','dormant','resident']);
+const DYN=new Set(['id','x','y','z','surface','hp','heading','turret','decision','dec','cd','vx','vz','target','guardReturning','navGoal','routeIndex','radioUntil','radioCalled','lootCreated','shielded','telegraph','enraged','nextPattern','drones','burns','bT','fz','fzA','sh','pd','ad','core','launchedAt','tf','charge','heat','oh','react','tgt','ax','ay','az','sup','kills','down','hurt','hc','rv','rvT','ch','n','dt','dash','dormant','resident']);
 const halves=e=>{const d={},st={};for(const [k,v] of Object.entries(e))(DYN.has(k)?d:st)[k]=v;return [d,st];};
 // a state -> {hot, cold}; the far Parasites keep their place in the list (key 'e<index>': Firebase keeps it an object)
 export function split(s){const hot={},cold={};for(const [k,v] of Object.entries(s||{}))(COLD.has(k)?cold:hot)[k]=v;
