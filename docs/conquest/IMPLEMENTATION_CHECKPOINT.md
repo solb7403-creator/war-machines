@@ -5727,3 +5727,40 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
 - NEXT: research (comparable games), then the ally engine slice (combat.js friendly list), then the remaining slices in the order
   of the prompt's sections 2-8. Local setup: `pip install playwright==1.63.0`, `npm install --prefix worker`, then
   `node worker/build-sim.mjs` and `node worker/build-web.mjs` before the Worker tests. Graphify did not connect (proxy 403).
+
+### Research: comparable games (Nov 19, before design; Checkpoint 41's research is not repeated)
+Searched this session (fan wikis, community guides and news; numbers from third parties are marked as such).
+- **Clash Royale (first).** Tower Troops (Dec 2023): a support defender picked before the match from four (Tower Princess
+  default; Cannoneer, Dagger Duchess, Royal Chef unlock by Arena), upgraded on its own track; the Royal Chef (Dec 2024) buffs the
+  level of nearby allied troops. Battle Banners (Summer 2023): frames and decorations from challenges, events, Pass Royale and the
+  shop (the Banner Box was removed); Tower Skins are sold "from time to time" (support.clashroyale.com); gem packs 80 / $0.99 to
+  14,000 / $99.99 and Pass Royale $4.99 (third-party). Card info says what a card targets (air / ground / buildings); the enemy
+  deck is unknown before a battle. Champions: one per deck, one ability with a cost and a cooldown.
+  Lessons used: the pre-fight pick is the decision moment (the briefing strip: enemy icons + your picked force, two taps); a
+  squad paint and banner are the tower-skin / banner equivalent, looks only, sold and earned; PvE lets us name the counters
+  outright (the hint line), which Clash Royale cannot; AI abilities on a charge plus a cooldown.
+- **Boom Beach (Supercell).** The Flare is one gunboat order that sends every troop to one spot; otherwise troops pick targets by
+  their own rules. Heavies (high hull, draw fire) in front of Zookas (high damage, fragile) is "the most versatile and reliable
+  combo"; Medics heal from behind and stand still when no other troop is alive; Cryoneers slow. Community tip: flare just behind
+  the target so fragile troops do not stop in the open. Lessons used: one COMMAND button for the whole force (tap = the smart
+  order); roles are a composition game (Guardian / Lancer / Mender mirror Heavy / Zooka / Medic); the Mender falls back behind
+  the front line; Attack sends each ally to its own role range around the target, never onto it.
+- **Squad Busters (Supercell, May 2024).** Shuts down Dec 14, 2026 (purchases off since late 2025): a squad game whose squad
+  fights mostly on its own did not hold players. Lesson: the pilot must never become a spectator. The owner's rules (pilot-only
+  objectives, about 40% of the damage) are exactly that guard; measured below per fight size.
+- **Last War: Survival / Whiteout Survival (top-grossing squad games).** Five-hero squads, 2 front + 3 back rows, unit types that
+  counter each other, a same-type bonus (+5% to +20% by source), a squad power number everywhere. Lessons: a visible FORCE number
+  and a formation pick before the fight sell; a same-type set bonus pushes one-type squads, which fights "composition matters",
+  so combos stay mechanical (blueprint §4) and guardrail 4 proves balanced beats one-role.
+- **XCOM 2.** Rookies promote by kills, at most one promotion per mission; nicknames from Sergeant; a memorial of the fallen.
+  Lessons: call sign + kill count on every roster card; at most one rank per operation, shown after the fight; pilots are never
+  lost (owner) so attachment never turns into the loss that drives casual players away.
+- **MechWarrior 5 / BattleTech.** Lancemates are hired for a fee; repairs take days and money ("half the battle is paying the
+  bills"). Lesson: repair is an alloy sink, but instant at the Refuge or your town (no downtime that blocks play).
+- **Darkest Dungeon.** The Stage Coach brings recruits on a weekly clock and the barracks upgrade raises the roster (to 25-30);
+  there are always enough recruits to field a party. Lessons: the roster grows with the Hangar, recruits arrive on a clock.
+- **Mass Effect 2/3.** Tap a mapped power to use it, hold to open the power wheel (left Shift on PC); squad orders move / attack /
+  rally. Lesson: tap = smart order, hold = the four-way wheel; on a computer one key for both plus four direct keys.
+- **War Robots pilots.** Paid pilots with the best perks drew pay-to-win criticism (Steam threads; Common Sense Media calls it a
+  "pay-to-win mech battler"). Lesson: the owner's "never sold: pilots, ranks, Role Core levels" is right; we sell looks (liveries)
+  and time (RECRUIT finish), never power through pilots.
