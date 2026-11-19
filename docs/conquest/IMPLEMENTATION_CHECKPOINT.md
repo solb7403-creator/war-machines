@@ -5711,3 +5711,19 @@ Graphify did not connect in this container (proxy 403), so the code was read dir
    each a real hazard hit next to its own fight. Reviewer A judged it acceptable; PvP has no such gap (the server runs it).
 6. **Crater Field and Canyon** are the two mildest looks (6.5 and 7 of 10). Both "ship"; first candidates for a later polish.
 
+
+## Checkpoint 43 — Session 6C: Battalion (branch `claude/battalion-allies-lab-iv-o8tguj`, from main `97e4c29`)
+
+Brief: the owner's Session 6C prompt of Nov 18, 2026 (Opus · Max; it overrides the blueprint and every older brief where they
+differ; the owner is not monitoring: never stop to ask; release PRE-APPROVED once every check passes; prices, economy, airdrop
+points and payments only as written in the prompt, a better number goes in the final report as a labeled PROPOSAL; no live
+players: no migration, grandfathering, legacy fallback or "existing saves" code).
+
+### Resume here (next session reads this first)
+- Branch `claude/battalion-allies-lab-iv-o8tguj` from main `97e4c29` (Session 6B released, build 20261118100557).
+- DONE slice 1 (docs only): ROADMAP rows 6C (the first Science Lab grant), 6B-V (a) Conquest rain + (b) animated premium
+  liveries, 8 (c) Lab store price ceiling + (d) pass research perks with the Lab store. Row 8 already had an (a)-(c) group from
+  Session 6B, so the owner's (c)/(d) sit in their own "Also (owner, Nov 18)" group with the owner's lettering.
+- NEXT: research (comparable games), then the ally engine slice (combat.js friendly list), then the remaining slices in the order
+  of the prompt's sections 2-8. Local setup: `pip install playwright==1.63.0`, `npm install --prefix worker`, then
+  `node worker/build-sim.mjs` and `node worker/build-web.mjs` before the Worker tests. Graphify did not connect (proxy 403).
