@@ -5712,7 +5712,7 @@ Graphify did not connect in this container (proxy 403), so the code was read dir
 6. **Crater Field and Canyon** are the two mildest looks (6.5 and 7 of 10). Both "ship"; first candidates for a later polish.
 
 
-## Checkpoint 43 — Session 6C: Battalion (branches `claude/battalion-allies-lab-iv-o8tguj` then `claude/battalion-allies-lab-iv-6c-gx938o`, from main `97e4c29`)
+## Checkpoint 43 — Session 6C: Battalion (branches `claude/battalion-allies-lab-iv-o8tguj` then `claude/battalion-allies-lab-iv-6c-gx938o`, from main `97e4c29`) — RELEASED Nov 19 (PR #144, merge `4a5ba1a`, build `20261119074646`)
 
 Brief: the owner's Session 6C prompt of Nov 18, 2026 (Opus · Max; it overrides the blueprint and every older brief where they
 differ; the owner is not monitoring: never stop to ask; release PRE-APPROVED once every check passes; prices, economy, airdrop
@@ -5720,8 +5720,11 @@ points and payments only as written in the prompt, a better number goes in the f
 players: no migration, grandfathering, legacy fallback or "existing saves" code).
 
 ### Resume here (next session reads this first)
+- **SESSION 6C IS RELEASED** (Nov 19, 2026: PR #144, merge `4a5ba1a`, build 20261119074646; section "Release record (Nov 19,
+  2026)" below; ROADMAP row 6C). Next on the roadmap: row 7 (Living Front) and row 6B-V (the visual half; the UX critic's polish
+  list in slice 12 below goes there). Open items for the owner: "Open items (Session 6C)" in the release record.
 - Branch `claude/battalion-allies-lab-iv-6c-gx938o` (the second 6C session; it continues `claude/battalion-allies-lab-iv-o8tguj` from
-  its head `3d86193`, fast-forwarded; main `97e4c29` unchanged, nothing released). Local setup: `pip install playwright==1.63.0`,
+  its head `3d86193`, fast-forwarded; from main `97e4c29`). Local setup: `pip install playwright==1.63.0`,
   `npm install --prefix worker --no-audit --no-fund --package-lock=false`, `node worker/build-sim.mjs`, `node worker/build-web.mjs`.
   Graphify did not connect (proxy 403): code read directly. Edit this block only with a search anchored inside Checkpoint 43
   (older checkpoints use the same "Resume here" heading).
@@ -5891,7 +5894,7 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   D's server-fielded Battalion did not reach the page inside 90 s under the session's CPU load (software GL at ~4 FPS there): OPEN,
   re-run on a quiet machine; sections A-C pass there. perf.py PASS. UX critic round 2 not run (the round-1 blockers are fixed; the
   remaining polish is the visual pass's list above).
-- RELEASE: build 20261119074646 (dev/bump.sh); PR #144 opened with the `owner-rules-change` label (the prompt is the owner's decision; docs/owner-rules.json changed in slice 6). NEXT: CI green, merge, deploy checks, ROADMAP 6C RELEASED, release record, report.
+- RELEASE: build 20261119074646 (dev/bump.sh); PR #144 opened with the `owner-rules-change` label (the prompt is the owner's decision; docs/owner-rules.json changed in slice 6). CI green on `b876741` after two test-only fixes (release record); merged Nov 19 as `4a5ba1a`; deploys checked (release record).
 - Earlier slices (the first 6C session):
 - DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
   sit in their own "Also (owner, Nov 18)" group). Research recorded below.
@@ -5956,6 +5959,55 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
 - DONE slice 9: every operation briefing carries the strip (ConquestHangar.strip in app.js briefing(): enemy icons + hint
   line, your picked force for the fight size, preset P1-P3 switch, FORCE chip). Not yet checked in a browser. Lesson repeated
   three times this session: an inserted trailing `//` comment on a long minified line swallows the rest of it; use /* */.
+### Release record (Nov 19, 2026)
+- PR #144 merged 09:06 UTC as `4a5ba1a` (merge commit; head `b876741`), all 12 checks green on the head: owner-rules, conquest,
+  guardrails, transmission chromium + webkit, signup-browsers chromium / webkit / firefox, website, balance, asset-integrity,
+  verify. Release pre-approved in the owner's prompt; both independent reviews PASS after re-review before the merge.
+- CI needed two test-only fixes (no game code changed):
+  1. `dev/tests/wtest/cqlive.mjs` (new this session) statically imported `worker/src/conquest-store.js`, which reads the generated
+     `worker/src/sim.gen.js`. A static import is linked before the importing test's own `buildSim()` runs, so on CI's clean
+     checkout `dev/tests/conquest-server.mjs` exited at startup and every transmission journey failed (local runs still had the
+     generated file). The helper now builds the sim first and loads the store with a dynamic import (`b8d7c36`); checked from a
+     clean state (sim.gen.js deleted) for the server and the ten tests that use the helper.
+  2. `dev/tests/conquest-earned-browser.py` asserted exactly 3 completed operations in the earned first-hour save. This prompt's
+     rule (the first wingman's rescue follows the first plate) makes it the three field missions plus the rescue: the check now
+     names that exact set of 4 (`b876741`). A test changed by a decision in this prompt, as the prompt allows. Nothing in the game
+     counts `completed` (every use is an id lookup), so the rescue's entry changes no number on screen.
+- Local only (this container's software GL at 4-12 FPS), the same on main `97e4c29` in a separate worktree:
+  `conquest-airdrop-browser.py` loses its COLLECT YIELD tap at times (main 1 of 3 runs, the branch 2 of 3: the town sheet rebuilds
+  its buttons when stored production ticks over, so a tap that spans a rebuild lands on nothing); `conquest-terraform-captures.py`'s
+  GATHER hold never fills (main too); `conquest-desktop-keys.py`'s post-wait drive starts about 1 m from a wall south of the Refuge
+  (main's margin 1.54 m, the branch 0.2-0.7 m; both engines move and dash identically step for step from the same spot, the
+  distance comes from frame-timed key holds). All three pass in CI. Open: make them robust (resend the tap until the action is
+  sent; drive a fixed number of steps; gather on open ground).
+- Worker: `Deploy Stars server (Cloudflare)` run 44493395464 on `4a5ba1a`: in progress when this was written (server tests).
+- GitHub Pages: `pages build and deployment` run 44493393034 SUCCESS on `4a5ba1a` (deployed 09:08 UTC). This cloud container cannot
+  reach github.io or workers.dev (network policy, proxy 403, tried again), so the live values come from the deploy jobs' own checks.
+- No live players: no migration code. Revert plan if broken: revert `4a5ba1a` on main (both deploys follow main). Not needed.
+- This record and ROADMAP row 6C went to main in a second, docs-only PR from the same branch (restarted from main).
+
+### Open items (Session 6C)
+1. Role balance at Platoon scale in contested fights: four Breachers or four Guardians match a balanced Platoon (slice 13); a
+   balanced Battalion of nine wins (guardrail 4). For Session 7's Battalion content.
+2. Rare-armed crews clear 11 of 15 VETERAN raids (Epic 13, militia 1, Common 0): the owner's call whether Rare should sit lower.
+3. `conquest-session6c.py` section D at 1366x768 / 1920x1080 timed out under CPU load (sections A-C pass there; A-D pass at
+   390x844 / 390x700): re-run on a quiet machine.
+4. The UX critic's polish list (slice 12) for the visual pass (row 6B-V).
+5. Smaller (the reviewers' recorded residuals): guardrail 2 has no hull tie-break (per-seed hull is too noisy; win rates stay the
+   rule); the militia freeze reads the operation's danger only (open-world rings 4-5 and Session 7's LDF fillers: Session 7
+   decides); the missing-role warning has no HANGAR link; a cold blob missing after 8 tries locks the record ('conquest busy'; it
+   needs a lost write; an alert / recovery path for row 7.8); changing a role or preset mid-fight in the open world rebuilds the
+   unit (its revive and super meter reset); REPAIR PILOTS has no browser capture (the Worker test covers it).
+6. The three local-only test flakes above (pre-existing, also on main).
+7. Graphify: the MCP server is blocked by this container's network (proxy 403), and Graphify's PR reviews are paused (the
+   workspace was idle 7 days; an owner can resume them on app.graphify.com).
+8. Physical iPhone not tested (software-renderer frame numbers only).
+9. PROPOSALS awaiting the owner (RESOURCE_ECONOMY §15): repair 6 banked alloy a pilot (a Platoon wipe 24); command chip pack 5 chips,
+   299 Stars / 4.8 TON, one a UTC week (about $3.9 a week: the first role maxes on day 13.3 instead of 19.3, all six on day 69.3
+   instead of 119.3 at 60 min a day); liveries 399 Stars / 6.4 TON (premium) and 199 Stars / 3.2 TON (Arctic, Ember, Verdant,
+   Nightfall); the Battalion of nine arrives on day 17.1 at an hour a day, sooner than the blueprint's weeks 4-5 (kept: the prompt
+   keeps the rank pace as built).
+
 ### Slice 2: allies in the combat engine (Nov 19; decisions and why)
 - `Battle.friends` (combat.js): units with `side` ('mine' your pilots, 'ldf' LDF regulars outside your command) and `ctl`
   ('ai' now; any other controller is never driven by the AI: the co-op foundation). Stats are `friendStats` = tankOf() of the
