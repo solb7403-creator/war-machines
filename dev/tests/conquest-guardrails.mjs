@@ -46,7 +46,7 @@ if(!only||only==='4'){
  // a raid is won by the force that wins more of its fights; with as many wins, by the faster clear (at least 1 s: no photo finish)
  const bal=wins(BAL),res={balanced:bal},sum=a=>a.reduce((x,y)=>x+y.w,0),beats=(b,o)=>b.w>o.w||b.w===o.w&&b.w>0&&b.t<o.t-1;
  for(const r of C.ROLE_ORDER){const one=wins(Array(9).fill(r));res[r]=one;const won=OPS.filter((_,i)=>beats(bal[i],one[i])).length,lost=OPS.filter((_,i)=>beats(one[i],bal[i])).length;
-  ok(won>OPS.length/2,'composition matters: a balanced Battalion beats nine '+C.ROLES[r].n+'s on '+won+' of '+OPS.length+' contested VETERAN raids (loses '+lost+'; fights won '+sum(bal)+' to '+sum(one)+' of '+OPS.length*SE+')');}
+  ok(won>OPS.length/2,'composition matters: a balanced Battalion beats nine '+C.ROLES[r].n+'s on '+won+' of '+OPS.length+' VETERAN raids (loses '+lost+'; fights won '+sum(bal)+' to '+sum(one)+' of '+OPS.length*SE+')');}
  out.composition={balanced:BAL,ops:OPS,seeds:SE,gear:'stock pilot, four allies in equal Rare gear',results:res};}
 fs.mkdirSync('docs/conquest/session6c',{recursive:true});if(!only)fs.writeFileSync('docs/conquest/session6c/guardrails.json',JSON.stringify(out,null,1)+'\n');
 console.log('PASS conquest-guardrails ('+passed+' checks)');

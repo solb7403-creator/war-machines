@@ -5871,8 +5871,27 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   missing-role warning has no HANGAR link; REPAIR PILOTS has no browser capture (the Worker test covers it); PROPOSALS for the report:
   Battalion (9) arrives day 17.1 at 60 min (the blueprint said weeks 4-5; it follows from the owner's Hangar gates), the weekly chip
   pack caps chip spend near $3.9 a week, a Platoon wipe costs 24 alloy (more than a HARD first clear's +18).
-- NEXT: conquest-allies + guardrails re-run on these fixes; the 6C journey at five sizes on the final code; UX critic round 2;
-  re-review of the blockers; dev/bump.sh, PR, CI, merge, deploy checks, ROADMAP 6C RELEASED, release record, final report.
+- DONE slice 13 (Nov 19): re-reviews and the last balance work. RE-REVIEW 1 at 6ed3f2d: every item PASS (the real session.js on
+  the real routes for 70 fight cycles: whole-state replies, zero apply errors, reopens or 429s, 70 of 70 DASH presses reached the
+  Worker; the sweep, cache and contracts fixes verified); residual taken: only a NEW order makes the crews re-decide (a repeated order
+  had shortened the militia freeze), a dormant Parasite never takes a Guardian's hold slot. RE-REVIEW 2: B1 PASS (2 Common spares
+  2/15, 4 -> 1/15; Rare-armed crews 11/15: the owner's call, OPEN), B2 PASS; B3 found that at Platoon scale in contested fights (a
+  stock pilot + four Rare allies) four Guardians, Breachers or Lancers match the balanced force. Tried and measured: a Guardian
+  hold cap (a Guardian draws the fire of at most 3 Parasites at once: KEPT, sound anti-stacking, section 10 still passes); a cap of 2
+  (no change, reverted); a "braced" Guardian firing 40% slower while drawing fire (balanced then lost to four Breachers 6 of 15:
+  REVERTED). GUARDRAIL 4 (CI) is the brief's own scale: a balanced Battalion of nine against each one-role Battalion of nine, equal
+  Rare gear, the 15 VETERAN raids, 2 seeds, a raid won by more wins or a clear faster by at least 1 s: it beats every one-role
+  Battalion on 9-12 of 15. OPEN ITEM for Session 7 (Battalion content): role balance at Platoon scale in contested fights (the
+  Breacher's structure bonus and stacked Guardians), measured above.
+  Final numbers (conquest-allies 44 checks): full assault 58.6% allies / 41.4% pilot; VETERAN militia Platoon 1/15, Common-armed
+  0/15, Epic 13/15; HARD 10/10 with a militia Platoon, 10/10 alone; the first wingman wins its rescue and lands 3 kills, 16.9% of
+  the damage; Wing 15.0%, Platoon 30.5%. Guardrail 2: 130 < 164 < 183 wins (51 encounters x 4 seeds). Browser: 6B journey PASS at
+  five sizes; 6C journey PASS at 390x844 and 390x700 (A-D: a full Battalion of nine on LOW, 16.7 ms median frames, 15 programs);
+  320x568 passed all but one insignia check that the HUD cull now explains (fixed in the check); at 1366x768 and 1920x1080 section
+  D's server-fielded Battalion did not reach the page inside 90 s under the session's CPU load (software GL at ~4 FPS there): OPEN,
+  re-run on a quiet machine; sections A-C pass there. perf.py PASS. UX critic round 2 not run (the round-1 blockers are fixed; the
+  remaining polish is the visual pass's list above).
+- NEXT: dev/bump.sh, PR (label owner-rules-change if asked), CI, merge, deploy checks, ROADMAP 6C RELEASED, release record, report.
 - Earlier slices (the first 6C session):
 - DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
   sit in their own "Also (owner, Nov 18)" group). Research recorded below.
