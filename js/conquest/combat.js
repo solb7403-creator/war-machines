@@ -45,6 +45,10 @@ const legacyOperations=[
  {id:'relay',name:'SABOTAGE THE RELAY',family:'sabotage',site:'west-depot',x:994,z:944,danger:'STANDARD',firstCp:130,brief:'Destroy the guarded relay, then remain at its terminal for eight seconds to disable the uplink.'},
  {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',firstCp:100,brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
  {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',firstCp:150,brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
+ // Session 6C (owner, Nov 18): the first wingman's rescue, right after the first plate (the coach chain's end): its own STANDARD
+ // mission at the colony's south fields, 71 m from the Refuge terminal. It pays no airdrop points, CP, salvage or loot: its reward
+ // is the pilot, who joins as your wingman (worker/src/conquest-battalion.js outcome). Not one of the six field missions.
+ {id:'wingman-rescue',name:'RESCUE THE DOWNED PILOT',family:'wingman',wingman:true,site:'wingman-site',x:1138,z:1236,danger:'STANDARD',firstCp:0,brief:'A pilot is down at the colony\'s south fields and two interceptors are closing in. Clear them, then hold beside the wreck for 4 seconds to pull the pilot out: they fly with you as your wingman.'},
  {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',firstCp:220,brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
  ];
 // Five spatial layouts with different approach angles, routes and objective order.
@@ -458,8 +462,10 @@ class Operation extends Battle {
  constructor(loadout,p,id){super(loadout,p);this.operation=operations[id];if(!this.operation)throw Error('unknown operation');this.localEncounter=true;this.enemies=[];this.id=20000;this.stage=0;this.work=0;this.scans=0;this.objectiveHp=this.objectiveMax=1200;this.objectiveDamageable=id==='rescue';this.approachGrace=0;const o=this.operation;this.objective={x:o.x,y:W.groundAt(o.x,o.z)+2.2,z:o.z};
  this.nodes=id==='recon'?[[o.x,o.z],[o.x+30,o.z+20],[o.x+55,o.z-10]]:[];
  // Installation missions fight the persistent world garrison attached by the session.
- const team=o.raid||o.defense||o.strike||id==='base-defense'?[]:id==='relay'||id==='redoubt'?[]:id==='rescue'?['raider','breacher','command']:['raider','raider'];
+ const team=o.raid||o.defense||o.strike||id==='base-defense'||o.wingman?[]:id==='relay'||id==='redoubt'?[]:id==='rescue'?['raider','breacher','command']:['raider','raider'];
  team.forEach((kind,i)=>this.deploy(kind,o.x+18+i*12,o.z-25,'guard:'+i));
+ if(o.wingman){for(const [i,dx] of [[0,-14],[1,14]].entries())this.deploy('raider',o.x+dx[1],o.z-22,'pinning:'+i);for(const e of this.enemies){e.noLoot=true;e.noKill=1;}   // pays nothing: no salvage, points, loot or War Order kill
+  const w=friendUnit({id:800000999,side:'ldf',kit:{w:{a:'pulse',t:0,q:1},c:{c:'vanguard',t:0,q:1}},x:o.x,z:o.z,heading:Math.PI});w.ctl='none';w.down=1;w.hp=0;w.wreck=1;this.friends.push(w);}   // the downed pilot's tank
  if(id==='convoy'){this.deploy('command',o.x,o.z-10,'carrier');this.carrierId=this.enemies.at(-1).id;}
  if(o.raid)this.setupRaid();if(id==='base-defense'||o.defense){this.objectiveDamageable=true;this.objectiveHp=this.objectiveMax=1800;this.defenseWave=0;this.deployDefense();}
  if(id==='relay'){this.deploy('command',o.x,o.z,'relay');const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=450;this.relayId=e.id;}
@@ -526,6 +532,7 @@ class Operation extends Battle {
  if(o.id==='relay'){const relay=this.enemies.find(e=>e.id===this.relayId);this.stage=relay.hp<=0?1:0;if(this.stage&&!living.length&&d<12)this.work+=dt;if(this.work>=8&&!living.length)this.state='victory';}
  if(o.id==='recon'){const node=this.nodes[this.scans];if(node&&Math.hypot(this.player.x-node[0],this.player.z-node[1])<9){this.work+=dt;if(this.work>=3){this.scans++;this.work=0;}}this.stage=this.scans;if(this.scans===3)this.state='victory';}
  if(o.id==='rescue'){if(d<28){const q=W.advance({x:this.objective.x,z:this.objective.z,y:this.objective.y-2.2,surface:'ground'},0,dt*2);Object.assign(this.objective,{x:q.x,y:q.y+2.2,z:q.z});}this.stage=Math.min(100,Math.floor((this.objective.z-o.z)/.8));if(this.stage>=100)this.state='victory';}
+ if(o.wingman){const dw=Math.hypot(this.player.x-o.x,this.player.z-o.z);this.stage=living.length?0:1;if(!living.length&&dw<8)this.work+=dt;else if(living.length)this.work=0;if(this.work>=4)this.state='victory';}   // only the pilot extracts
  if(o.id==='redoubt'){if(!living.length&&this.stage===0){this.stage=1;this.deploy('sentinel',o.x+12,o.z-8,'commander');this.enemies.at(-1).commander=true;}else if(!living.length&&this.stage===1&&d<18){this.work+=dt;if(this.work>=6){this.stage=2;this.state='victory';}}}
  if(Math.hypot(this.player.x-o.x,this.player.z-o.z)>260||this.time>600){this.state='defeat';this.reason='Operation perimeter abandoned or time expired';}
  if(this.state!=='active')this.projectiles=[];
@@ -544,7 +551,7 @@ function baseYield(base,reputation=0,now=Date.now()){const b=base||{},Y=CQ_YIELD
 // premium Lunar Pass owners (entitlement read by the Worker from the account, never from the client).
 const RECALL=freeze({channelMs:15000,cooldownMs:600000,premiumCooldownMs:300000});
 // Owner rule: raids unlock only after the six opening field missions each have a verified clear.
-const fieldMissionIds=freeze(Object.keys(operations).filter(id=>!operations[id].raid&&!operations[id].defense&&!operations[id].strike&&id!=='base-defense'));
+const fieldMissionIds=freeze(Object.keys(operations).filter(id=>!operations[id].raid&&!operations[id].defense&&!operations[id].strike&&!operations[id].wingman&&id!=='base-defense'));   // the six (the wingman's rescue is not one)
 function fieldProgress(completed){return fieldMissionIds.filter(id=>completed?.[id]).length;}
 function raidsUnlocked(completed){return fieldProgress(completed)>=fieldMissionIds.length;}
 // Fast travel network, shared by client and Worker: the Refuge, the Command Base once built, and every frontier sector

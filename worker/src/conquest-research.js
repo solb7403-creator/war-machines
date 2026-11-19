@@ -11,7 +11,12 @@
 import {CONQUEST,RULES as R} from './sim.gen.js';
 import {inventory} from './conquest-loot.js';
 import {researchUnlock,researchLegStart} from './conquest-airdrop.js';
-export const RESEARCH_ACTIONS=['research-start','research-seen'];
+import {chipsHeld,spendChips,rolesOpen} from './conquest-battalion.js';
+export const RESEARCH_ACTIONS=['research-start','research-seen','research-grant'];
+// Session 6C (owner, Nov 18): the Role Cores track opens at Science Lab IV: a role's level 2-5 is a job here (RTREE.role; costs in
+// command chips, ConquestBattalion.RC: chips and time only, never CP, 8 h, in the same research slots as the mods). Level 1 comes
+// free with the role. A role's level reaches every pilot fitted with that Role Core (s.rs.rc, read by conquest-battalion.js).
+const BT=CONQUEST.Battalion,RC_IDS=CONQUEST.Combat.ROLE_ORDER.map(r=>'rc:'+r),isRc=id=>RC_IDS.includes(id);
 const fail=m=>{throw Error('conquest: '+m);};
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v),int=v=>Math.max(0,Math.floor(Number(v)||0));
 const list=v=>Array.isArray(v)?v.filter(record):record(v)?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]).filter(record):[];
@@ -22,12 +27,14 @@ const isMod=id=>typeof id==='string'&&R.RS_IDS.includes(id);   // the 16 earned 
 // acct: the account's research view at the last session open or research action (bonus parts held, premium pass)
 export function research(s){
  const r=record(s.rs)?s.rs:(s.rs={});r.v=1;r.n=int(r.n);
- r.jobs=list(r.jobs).filter(j=>isMod(j.mod)&&typeof j.id==='string'&&R.CQ_PARTS[j.part]).map(j=>({id:j.id,mod:j.mod,part:j.part,paid:{e:int(j.paid?.e),b:int(j.paid?.b)},ms:int(j.ms),left:Math.max(0,Number(j.left)||0),at:int(j.at),st:int(j.st),pass:j.pass?1:0})).slice(0,3);
+ r.jobs=list(r.jobs).filter(j=>typeof j.id==='string'&&(isMod(j.mod)&&R.CQ_PARTS[j.part]||isRc(j.mod)&&j.part==='chip')).map(j=>({id:j.id,mod:j.mod,part:j.part,paid:{e:int(j.paid?.e),b:int(j.paid?.b)},ms:int(j.ms),left:Math.max(0,Number(j.left)||0),at:int(j.at),st:int(j.st),pass:j.pass?1:0,...(isRc(j.mod)?{lv:Math.max(2,Math.min(BT.RC.max,int(j.lv)))}:{})})).slice(0,3);
+ const rc={};for(const k of CONQUEST.Combat.ROLE_ORDER)rc[k]=Math.max(1,Math.min(BT.RC.max,int(record(r.rc)?r.rc[k]:1)||1));r.rc=rc;   // Role Core levels (1 = free with the role)
+ r.g=r.g==='thermal'||r.g==='coil'?r.g:'';   // the first Science Lab grant, once per account: the part picked
  const done={};for(const [k,t] of Object.entries(record(r.done)?r.done:{}))if(isMod(k))done[k]=int(t)||1;r.done=done;
  const bs={};for(const k of R.CQ_PART_ORDER)bs[k]=int(record(r.bs)?r.bs[k]:0);r.bs=bs;
  const fx={};for(const k of Object.keys(record(r.fx)?r.fx:{}))if(/^j\d{1,6}$/.test(k))fx[k]=1;r.fx=fx;
  const seen={};for(const k of Object.keys(record(r.seen)?r.seen:{}))if(isMod(k))seen[k]=1;r.seen=seen;
- const a=record(r.acct)?r.acct:{};r.acct={bpt:R.CQ_PART_ORDER.reduce((o,k)=>(o[k]=int(a.bpt?.[k]),o),{}),prem:a.prem?1:0,at:int(a.at),lsm:(Array.isArray(a.lsm)?a.lsm:record(a.lsm)?Object.values(a.lsm):[]).filter(id=>R.RTREE_LEG.includes(id))};
+ const a=record(r.acct)?r.acct:{};r.acct={bpt:R.CQ_PART_ORDER.reduce((o,k)=>(o[k]=int(a.bpt?.[k]),o),{}),bch:int(a.bch),prem:a.prem?1:0,at:int(a.at),lsm:(Array.isArray(a.lsm)?a.lsm:record(a.lsm)?Object.values(a.lsm):[]).filter(id=>R.RTREE_LEG.includes(id))};
  return r;}
 // The Science Lab: its level (the highest lab building's) and whether it stands (a ruined lab pauses research).
 export function lab(s){const p=s.plot;let lv=0,ruined=false,any=false;if(!p?.b)return {lv,ruined,any};const PL=CONQUEST.Plot;
@@ -35,7 +42,9 @@ export function lab(s){const p=s.plot;let lv=0,ruined=false,any=false;if(!p?.b)r
 // bonus parts still unspent: the account's total (fresh in an action's ctx, else the last view) minus what research spent here
 export function bonusLeft(s,bpt){const r=research(s),src=record(bpt)?bpt:r.acct.bpt,o={};for(const k of R.CQ_PART_ORDER)o[k]=Math.max(0,int(src?.[k])-r.bs[k]);return o;}
 export function partsHeld(s,bpt){const v=inventory(s),b=bonusLeft(s,bpt),o={};for(const k of R.CQ_PART_ORDER)o[k]={earned:v.pt[k],bonus:b[k],total:v.pt[k]+b[k]};return o;}
-function finish(s,j,at){const r=research(s);r.jobs=r.jobs.filter(x=>x.id!==j.id);if(r.done[j.mod])return;r.done[j.mod]=at;researchUnlock(s,j.mod);
+function finish(s,j,at){const r=research(s);r.jobs=r.jobs.filter(x=>x.id!==j.id);
+ if(isRc(j.mod)){const role=j.mod.slice(3);r.rc[role]=Math.max(r.rc[role]|0,j.lv|0);s.notice={kind:'research-done',mod:j.mod,lv:r.rc[role],at};return;}   // a Role Core level: the Conquest record only (allies exist only in Conquest), never points
+ if(r.done[j.mod])return;r.done[j.mod]=at;researchUnlock(s,j.mod);
  s.notice={kind:'research-done',mod:j.mod,at};}
 // Advance every running job to upTo (server clock). Paused while the lab is ruined or gone: the clock moves, the job does not.
 export function tick(s,upTo){const r=research(s);if(!r.jobs.length)return;const L=lab(s),run=L.any&&!L.ruined;
@@ -43,15 +52,24 @@ export function tick(s,upTo){const r=research(s);if(!r.jobs.length)return;const 
 // The account side of research at a session open or a research action: bonus parts and the premium pass for the lab screen, and
 // instant-finish credits (eco S.rsx, written only by a verified purchase: Session 8 certifies payments; checkout is off).
 export function account(s,acct,now){const r=research(s);if(!record(acct))return r;
- r.acct={bpt:R.CQ_PART_ORDER.reduce((o,k)=>(o[k]=int(acct.bpt?.[k]),o),{}),prem:acct.prem?1:0,at:now,lsm:R.RTREE_LEG.filter(id=>record(acct.lsm)&&acct.lsm[id])};   // lsm: the Legendary set mods bought (the lab screen shows them owned; research refuses them)
+ r.acct={bpt:R.CQ_PART_ORDER.reduce((o,k)=>(o[k]=int(acct.bpt?.[k]),o),{}),bch:int(acct.bch),prem:acct.prem?1:0,at:now,lsm:R.RTREE_LEG.filter(id=>record(acct.lsm)&&acct.lsm[id])};   // lsm: the Legendary set mods bought (the lab screen shows them owned; research refuses them)
  const rsx=record(acct.rsx)?acct.rsx:{};for(const j of [...r.jobs])if(rsx[j.id]&&!r.fx[j.id]){r.fx[j.id]=1;finish(s,j,now);}
  return r;}
 export function researchAction(s,req,now,ctx={}){
- const r=research(s);if(r.acct&&ctx&&(ctx.bpt||ctx.premium!==undefined))account(s,{bpt:ctx.bpt||r.acct.bpt,prem:!!ctx.premium,rsx:ctx.rsx,lsm:ctx.lsm},now);
+ const r=research(s);if(r.acct&&ctx&&(ctx.bpt||ctx.premium!==undefined))account(s,{bpt:ctx.bpt||r.acct.bpt,bch:ctx.bch??r.acct.bch,prem:!!ctx.premium,rsx:ctx.rsx,lsm:ctx.lsm},now);
+ // the first Science Lab grant (owner, Nov 18; planning pick for the mechanism): once your first Science Lab stands, pick Thermal
+ // or Ballistics and take 2 of that research part, once per account, outside the one-a-day limit, so the first mod (2 parts) can
+ // start that day (Checkpoint 41 open item 1)
+ if(req.action==='research-grant'){if(r.g)fail('your first Science Lab grant is already taken');const L0=lab(s);if(!s.plot||!L0.any||L0.lv<1)fail('build your first Science Lab first');
+  if(req.mod!=='thermal'&&req.mod!=='coil')fail('pick Thermal or Ballistics');const v=inventory(s),n=Math.max(0,Math.min(2,R.CQ_PART_MAX-v.pt[req.mod]));v.pt[req.mod]+=n;r.g=req.mod;s.notice={kind:'research-grant',part:req.mod,n};return;}
  if(req.action==='research-seen'){if(!isMod(req.mod))fail('invalid mod');if(!r.done[req.mod])fail('not researched yet');r.seen[req.mod]=1;s.notice={kind:'research-seen',mod:req.mod};return;}
  if(req.action!=='research-start')fail('invalid research action');
  if(!s.plot)fail('claim your town first: the Science Lab is built in it');const L=lab(s);
  if(!L.any||L.lv<1)fail('build a Science Lab first (Command Center 3)');if(L.ruined)fail('the Science Lab is ruined: repair it to research');
+ if(isRc(req.mod)){const role=req.mod.slice(3),premium=!!ctx.premium;if(L.lv<R.RTREE.role.lab)fail('Role Cores open with Science Lab level IV (Command Center 7)');if(!rolesOpen(s))fail('roles open with Hangar level II');
+  if(r.jobs.some(j=>j.mod===req.mod))fail('already researching');const cur=r.rc[role]|0||1;if(cur>=BT.RC.max)fail('already at level '+BT.RC.max);const lv=cur+1,n=BT.RC.cost[lv],ms=Math.round(BT.RC.ms*(premium?R.RTREE.passTime:1));
+  const slots=R.rsSlots(L.lv,premium);if(r.jobs.length>=slots)fail('every research slot is busy ('+slots+')');const paid=spendChips(s,n,ctx.bch??r.acct.bch);if(!paid)fail('needs '+n+' command chips (you have '+chipsHeld(s,ctx.bch??r.acct.bch).total+')');
+  r.n++;r.jobs.push({id:'j'+r.n,mod:req.mod,part:'chip',paid,ms,left:ms,at:now,st:now,pass:premium?1:0,lv});s.notice={kind:'research-started',mod:req.mod,ms,part:'chip',n,lv};return;}
  if(!isMod(req.mod))fail('invalid mod');const premium=!!ctx.premium,q=R.rsQuote(r,req.mod,L.lv,premium,record(ctx.lsm)?ctx.lsm:{});if(q.err)fail(q.err);   // a Legendary set mod: Science Lab III, its track's set mod researched, never one already bought (the account's record, read fresh)
  const slots=R.rsSlots(L.lv,premium);if(r.jobs.length>=slots)fail('every research slot is busy ('+slots+')');
  const v=inventory(s),b=bonusLeft(s,ctx.bpt),have=v.pt[q.part]+b[q.part];if(have<q.n)fail('needs '+q.n+' '+R.CQ_PARTS[q.part].n+(q.n>1?'s':'')+' (you have '+have+')');

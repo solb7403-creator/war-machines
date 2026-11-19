@@ -5735,6 +5735,16 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   RECRUIT job, presets, repair, chips, outcomes, HANGAR actions), `js/conquest/hangar.js` (HANGAR screen, briefing strip, hub
   card, after-action lines), `worker/src/conquest-store.js` (the record split: hot CAS part at conquest/<pid>, immutable cold
   blob at cqc/<pid>/<cv>, far Parasites in the cold part, per-isolate blob cache).
+- DONE slice 3 (Nov 19): patches p1_rules, p2_wiring, p3_research, p4_worker, p6_labstore, p7_shop APPLIED (Science Lab IV,
+  Role Core jobs, the first Lab grant, the wingman rescue op, ally-only kills pay nothing, pilot-only capture, the battalion in
+  the Worker replay, HANGAR actions, Battalion store kinds refused, Shop section). Tests changed because the prompt changed their
+  rule: conquest-research.mjs (Lab max IV with its exact cost / 6 h / CC7; the fifth track open as RTREE.role) and
+  docs/owner-rules.json research.labMax 4. Bug found and fixed while applying: three inserted trailing `//` comments swallowed
+  the rest of their original lines (start-mission hull, return-exploration state, respawn hull); every patched line was
+  re-scanned. PASS after it: conquest-combat / -raids / -first-hour (identical to main), -authority, -session, -living-world,
+  -recall, -fast-travel, -research, -loot, owner-rules, lab-ui, lab-store-ui, power-chip, copy, sheet, flagship-ui,
+  conquest-allies, wtest conquest / lab-store / research-economy / conquest-research / conquest-airdrop / test.
+  REMAINING patches: p5_model, p8_split (and everything under "STILL TO BUILD").
 - PREPARED PATCHES (apply in this order from the repo root, `python3 dev/tools/session6c/pN_*.py`; each asserts its anchors, then
   rebuild the sim and run the suites): p1_rules (store kinds chip pack / livery / rcfin with checkout off, BAT_STORE_OPEN,
   CHIP_PACK, LIVERIES, ECO_KEYS bch/liv/rcx, RTREE.labMax 4, RTREE.role; NOTE p1 renames RTREE.locked to RTREE.role: also

@@ -10,7 +10,12 @@ const MATERIALS=['alloy','biomass','helium'],empty=()=>({alloy:0,biomass:0,heliu
 export function ledger(s,now){s.ledger=s.ledger||{cp:0,banked:empty(),cargo:empty()};s.ledger.mn=s.ledger.mn&&typeof s.ledger.mn==='object'?s.ledger.mn:{};s.drops=s.drops||[];s.wrecks=s.wrecks||[];s.spawns=s.spawns||{};s.missionClaims=s.missionClaims||{};const day=Math.floor(now/POLICY.day);if(s.daily?.day!==day)s.daily={day,cp:0,...empty(),missionKills:[]};s.drops=s.drops.filter(d=>d.expires>now).slice(-POLICY.maxDrops);s.wrecks=s.wrecks.filter(d=>d.expires>now).slice(-POLICY.maxWrecks);return s.ledger;}
 function grant(s,amount,mission=false){const awarded={};for(const k of ['cp',...MATERIALS]){const n=Math.max(0,mission?(amount[k]||0):amount[k]||0);s.daily[k]+=n;awarded[k]=n;if(k==='cp')s.ledger.cp+=n;else s.ledger.cargo[k]+=n;}s.reputation=(s.reputation||0)+Math.floor((awarded.cp||0)/3);s.notice={kind:'reward',...awarded};return awarded;}
 export function killLoot(s,e,now){
- ledger(s,now);if(e.lootCreated)return;e.lootCreated=true;orderEvent(s,'kill');   // War Orders: every verified kill
+ ledger(s,now);if(e.lootCreated)return;e.lootCreated=true;
+ // Session 6C (blueprint §8, owner Nov 18): allies never multiply points. A kill pays points (a world kill now, an operation's held
+ // kill if it fails), CP, salvage, loot and its War Order count only when your own tank dealt part of its damage (e.pd); a kill
+ // only allies touched (e.ad) pays nothing. The wingman's rescue pays nothing at all (e.noKill).
+ if(e.noKill||e.ad&&!e.pd)return;
+ orderEvent(s,'kill');   // War Orders: every verified kill
  // Raid reinforcement waves are combat pressure only; they never add salvage beyond the authored raid economy.
  if(e.noLoot)return;
  let id;if(s.mission&&!e.resident){const key=e.rewardKey;if(!key||s.daily.missionKills.includes(key))return;s.daily.missionKills.push(key);id='m:'+s.daily.day+':'+key;}
@@ -32,6 +37,7 @@ function claim(s,d,now){if(noLoot(d.loot))return null;const mn=d.loot.mn||{};for
 export function pickups(s,now){ledger(s,now);for(const d of [...s.drops])if(Math.hypot(d.x-s.position.x,d.z-s.position.z)<=POLICY.pickupRadius&&Math.abs(d.y-s.position.y)<6){grant(s,d.amount);const got=claim(s,d,now);if(got)s.notice={...s.notice,loot:got,r:d.r|0,label:d.label};s.drops=s.drops.filter(x=>x.id!==d.id);}for(const w of [...s.wrecks])if(Math.hypot(w.x-s.position.x,w.z-s.position.z)<=POLICY.pickupRadius&&Math.abs(w.y-s.position.y)<6){for(const k of MATERIALS)s.ledger.cargo[k]+=w.amount[k];for(const [k,v] of Object.entries(w.amount.mn||{}))s.ledger.mn[k]=(s.ledger.mn[k]||0)+v;s.wrecks=s.wrecks.filter(x=>x.id!==w.id);s.notice={kind:'wreck-recovered',...w.amount};}}
 export function death(s,now){ledger(s,now);if(s.death?.active)return;chainBreak(s);s.deathSerial=(s.deathSerial||0)+1;const amount=empty();for(const k of MATERIALS){amount[k]=Math.floor(s.ledger.cargo[k]/2);s.ledger.cargo[k]-=amount[k];}const mn={};for(const [k,v] of Object.entries(s.ledger.mn)){const h=Math.floor(v/2);if(h>0){mn[k]=h;s.ledger.mn[k]=v-h;}}if(Object.keys(mn).length)amount.mn=mn;const id='wreck:'+s.deathSerial;s.wrecks.push({id,...s.position,amount,expires:now+POLICY.wreckLife});s.wrecks=s.wrecks.slice(-POLICY.maxWrecks);s.death={active:true,id,at:now,expires:now+POLICY.wreckLife,position:{...s.position},amount};s.notice={kind:'defeat'};}
 export function missionReward(s,now){ledger(s,now);const id=s.mission,claim=s.missionClaims[id],reputationBefore=s.reputation||0,op=CONQUEST.Combat.operations[id],raid=!!op?.raid;
+ if(op?.wingman)return {kind:'wingman',cp:0,alloy:0,biomass:0,helium:0};   // Session 6C: its reward is the pilot (no points, CP, salvage, chain link or War Order)
  if(op?.strike)return strikeReward(s,op,now);
  if(raid&&s.raidReceipts?.[s.attempt])return s.raidReceipts[s.attempt];
  if(claim&&now-(claim.lastAt||claim.firstAt)<POLICY.missionRepeat)return {kind:'cooldown',cp:0,alloy:0,biomass:0,helium:0};

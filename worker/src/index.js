@@ -318,6 +318,9 @@ const descOf = (d) => {
   // Stars invoice, TON or SOL payment can buy one. Opening it is an owner decision: set RULES.LAB_STORE_OPEN, add the kinds to the
   // Stars payload and grant paths below, and price "rsfin" from the Conquest record's running job (never from the phone).
   if (kind === "rspack" || kind === "rsleg" || kind === "rsfin") return null;
+  // Session 6C Battalion store (chip pack, liveries, RECRUIT instant finish): CHECKOUT OFF (RULES.BAT_STORE_OPEN false) in every
+  // currency, refused here like the Lab kinds; ecoGrant enforces the same sale rules itself (batSaleOk)
+  if (RULES.BAT_KINDS.includes(kind)) return null;
   return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind, c } : null;
 };
 async function payLog(env, b, user, pid, now = Date.now()) {

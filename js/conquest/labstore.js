@@ -1,4 +1,4 @@
-/* Science Lab store rows (owner decision 8, Nov 16, 2026): instant finish on a running job, the Legendary set mods and the research
+/* Science Lab store rows (owner decision 8, Nov 16, 2026; Session 6C adds the Battalion kinds: RECRUIT finish, liveries, the chip pack): instant finish on a running job, the Legendary set mods and the research
    part packs, shown with their proposed prices and a disabled button. Checkout is off in every currency: nothing here can be bought
    (the Worker refuses every Lab kind, worker/src/index.js descOf). Prices come from js/rules.js (rsFinPrice, RS_PACKS, RS_LEG_PRICE);
    labPriceLabel (js/net.js) shows Stars in Telegram and TON + SOL (live rate) on the website. 2D, the town sheet's own style. */
@@ -21,6 +21,12 @@ function row(parent,kind,info,ctx){const {el,button,state}=ctx||{};if(!el||!butt
   for(const k of RS_PACK_ORDER){const P=RS_PACKS[k],a=el('article','cq-lab-node cq-lab-pack',null,f);el('h3','',P.n.toUpperCase(),a);
    el('p','cq-lab-what','+'+P.each+' of every research part ('+P.each*CQ_PART_ORDER.length+' parts)',a);offer(el,button,a,'BUY',P);}
   el('small','cq-lab-uses','Instant finish shows on a running job; Legendary set mods on their track. Purchases never give points.',f);return f;}
+ // Session 6C Battalion store (checkout off: the Worker refuses every kind, BAT_STORE_OPEN false): the RECRUIT job's instant finish,
+ // a livery, the command chip pack (one a UTC week, its own chip total outside the one-a-day limit). Never points.
+ if(kind==='rcfin'){const left=Number(info?.left)||0,p=rsFinPrice(left);if(!p)return null;return offer(el,button,parent,'FINISH NOW',p,'priced by the time left');}
+ if(kind==='livery'){const L=typeof LIVERIES==='object'&&LIVERIES[info?.tk];if(!L)return null;return offer(el,button,parent,'BUY',{stars:L.stars,ton:L.ton},'looks only');}
+ if(kind==='chippack'){if(typeof CHIP_PACK!=='object')return null;const a=el('article','cq-lab-node cq-lab-pack cq-bat-chippack',null,parent);el('h3','',CHIP_PACK.n.toUpperCase(),a);
+  el('p','cq-lab-what','+'+CHIP_PACK.chips+' command chips for your Role Cores (one pack a week; they do not count toward the one-a-day chip)',a);offer(el,button,a,'BUY',{stars:CHIP_PACK.stars,ton:CHIP_PACK.ton});return a;}
  return null;}
 root.ConquestLabStore=Object.freeze({row,OFF});
 })(globalThis);
