@@ -21,12 +21,13 @@ const record=v=>v&&typeof v==='object'&&!Array.isArray(v),fail=m=>{throw Error('
 const list=v=>Array.isArray(v)?v:v&&typeof v==='object'?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]):[];
 export function validateCommands(input){
  if(!Array.isArray(input)||input.length<1||input.length>MAX_FRAMES)fail('invalid batch');
- return input.map(c=>{if(!record(c)||Object.keys(c).some(k=>!['x','z','aimYaw','aimPitch','fire','tapFire','lockId','super','dash','shield','gather','scan'].includes(k)))fail('invalid command');
+ return input.map(c=>{if(!record(c)||Object.keys(c).some(k=>!['x','z','aimYaw','aimPitch','fire','tapFire','lockId','super','dash','shield','gather','scan','order'].includes(k)))fail('invalid command');
+ if(own(c,'order')&&!(Number.isInteger(c.order)&&c.order>=0&&c.order<=5))fail('invalid order');   // Session 6C COMMAND: 1 follow, 2 attack, 3 hold here, 4 fall back, 5 the smart order
  if(!Number.isFinite(c.x)||!Number.isFinite(c.z)||Math.hypot(c.x,c.z)>1.000001)fail('invalid movement');
  for(const k of ['fire','tapFire','super','dash','shield','gather'])if(own(c,k)&&typeof c[k]!=='boolean')fail('invalid ability');
  if(own(c,'aimYaw')&&!Number.isFinite(c.aimYaw)||own(c,'aimPitch')&&(!Number.isFinite(c.aimPitch)||c.aimPitch<-.4||c.aimPitch>.5))fail('invalid aim');
  if(c.lockId!=null&&(!Number.isSafeInteger(c.lockId)||c.lockId<1||c.lockId>1e9))fail('invalid target');
- return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan};});
+ return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan,order:c.order|0};});
 }
 // Session 6: every pilot starts (and respawns) at the Refuge spawn (ConquestWorld.spawn), ~40 m from the supply terminal.
 export const spawnPoint=()=>({x:W.spawn.x,z:W.spawn.z,y:W.groundAt(W.spawn.x,W.spawn.z),surface:'ground'});
@@ -35,8 +36,8 @@ export function createState(loadout,now){
  const s={v:1,seq:0,lastWall:now,creditMs:0,position,hp:B.playerHp,loadout:copy(B.snapshot),mission:null,battle:copy(B),checkpoint:{...position},safe:[{...position}],stuckMs:0,recoveryAt:0};refreshState(s,now);return s;
 }
 function stats(v){v.gems=list(v.gems);v.buffs=list(v.buffs);return v;}
-export function hydrate(s){const B=s.mission?(s.mission==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,s.mission)):new C.Encounter(s.loadout,s.position);const canonicalStats=B.playerStats;Object.assign(B,copy(s.battle));B.playerHp=s.hp;B.playerStats=canonicalStats;B.engineering=C.engineeringDefaults(s.engineering);B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;B.enemies=list(B.enemies);B.projectiles=list(B.projectiles);B.effects=list(B.effects);B.hazards=list(B.hazards);B.nodes=list(B.nodes);B.superShells=list(B.superShells);B.id=Math.max(Number(B.id)||0,...B.enemies.map(e=>e.id));stats(B.playerStats);K.ensure(B);
- for(const q of B.projectiles)stats(q.stats);for(const e of B.enemies){stats(e.stats);const t=e.target;if(t&&e.home&&t.x===e.home.x&&t.z===e.home.z)e.target=e.home;else if(t&&e.navGoal&&t.x===e.navGoal.x&&t.z===e.navGoal.z)e.target=e.navGoal;else if(t&&t.x===B.objective.x&&t.z===B.objective.z)e.target=B.objective;}return B;}
+export function hydrate(s){const B=s.mission?(s.mission==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,s.mission)):new C.Encounter(s.loadout,s.position);const canonicalStats=B.playerStats;Object.assign(B,copy(s.battle));B.playerHp=s.hp;B.playerStats=canonicalStats;B.engineering=C.engineeringDefaults(s.engineering);B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;B.enemies=list(B.enemies);B.projectiles=list(B.projectiles);B.effects=list(B.effects);B.hazards=list(B.hazards);B.nodes=list(B.nodes);B.superShells=list(B.superShells);B.friends=list(B.friends);B.fields=list(B.fields);B.id=Math.max(Number(B.id)||0,...B.enemies.map(e=>e.id));stats(B.playerStats);K.ensure(B);
+ for(const q of B.projectiles)if(q.stats)stats(q.stats);for(const e of B.enemies){stats(e.stats);const t=e.target;if(t&&e.home&&t.x===e.home.x&&t.z===e.home.z)e.target=e.home;else if(t&&e.navGoal&&t.x===e.navGoal.x&&t.z===e.navGoal.z)e.target=e.navGoal;else if(t&&t.x===B.objective.x&&t.z===B.objective.z)e.target=B.objective;}return B;}
 // One-time server migration for pilots/salvage standing inside newly constructed frontier bunkers.
 // Never exposed as a client action; existing HP, thermal debt, materials and expiries are unchanged.
 function migrateRegion(s,now){

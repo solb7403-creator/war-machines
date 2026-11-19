@@ -1,0 +1,321 @@
+{
+ "generatedBy": "dev/tests/conquest-allies.mjs",
+ "scope": "scripted pilot (locks the nearest, closes to 60% range, shield under 80%, super when full) with allies on the real shared engine; not a human playtest",
+ "ally": {
+  "decide": 0.6,
+  "react": 2.9,
+  "reactLock": 0.5,
+  "turn": 0.5,
+  "align": 0.1,
+  "leash": 42,
+  "regroup": 95,
+  "pilotBias": 12,
+  "superSpacing": 20,
+  "superGap": 3,
+  "downHull": 0.5,
+  "returnS": 15,
+  "quietR": 60,
+  "fireLane": 2.2
+ },
+ "sizes": {
+  "wing": {
+   "allies": 2,
+   "roles": [
+    "none",
+    "none"
+   ],
+   "gear": "stock pilot + militia (Common, no cores)",
+   "allyShare": 0.263,
+   "pilotShare": 0.737,
+   "wins": "5/5",
+   "rows": [
+    {
+     "id": "convoy",
+     "outcome": "victory",
+     "secs": 10.9,
+     "pilot": 605,
+     "ally": 85,
+     "share": 0.123,
+     "downs": 0,
+     "hp": 1537
+    },
+    {
+     "id": "relay",
+     "outcome": "victory",
+     "secs": 19.7,
+     "pilot": 450,
+     "ally": 0,
+     "share": 0,
+     "downs": 0,
+     "hp": 1557
+    },
+    {
+     "id": "recon",
+     "outcome": "victory",
+     "secs": 31.5,
+     "pilot": 270,
+     "ally": 90,
+     "share": 0.249,
+     "downs": 0,
+     "hp": 1682
+    },
+    {
+     "id": "rescue",
+     "outcome": "victory",
+     "secs": 50.5,
+     "pilot": 665,
+     "ally": 75,
+     "share": 0.102,
+     "downs": 0,
+     "hp": 1700
+    },
+    {
+     "id": "redoubt",
+     "outcome": "victory",
+     "secs": 16.7,
+     "pilot": 470,
+     "ally": 630,
+     "share": 0.573,
+     "downs": 0,
+     "hp": 1319
+    }
+   ]
+  },
+  "platoon": {
+   "allies": 4,
+   "roles": [
+    "guardian",
+    "lancer",
+    "mender",
+    "breacher"
+   ],
+   "gear": "stock pilot + militia",
+   "allyShare": 0.539,
+   "pilotShare": 0.461,
+   "wins": "10/10",
+   "rows": [
+    {
+     "id": "raid-intercept-1",
+     "outcome": "victory",
+     "secs": 27.8,
+     "pilot": 1326,
+     "ally": 458,
+     "share": 0.257,
+     "downs": 0,
+     "hp": 1328
+    },
+    {
+     "id": "raid-intercept-3",
+     "outcome": "victory",
+     "secs": 38.5,
+     "pilot": 1913,
+     "ally": 2734,
+     "share": 0.588,
+     "downs": 0,
+     "hp": 1266
+    },
+    {
+     "id": "raid-sabotage-2",
+     "outcome": "victory",
+     "secs": 41.7,
+     "pilot": 1283,
+     "ally": 1051,
+     "share": 0.45,
+     "downs": 0,
+     "hp": 884
+    },
+    {
+     "id": "raid-sabotage-4",
+     "outcome": "victory",
+     "secs": 41.8,
+     "pilot": 2016,
+     "ally": 1816,
+     "share": 0.474,
+     "downs": 0,
+     "hp": 468
+    },
+    {
+     "id": "raid-battery-1",
+     "outcome": "victory",
+     "secs": 209,
+     "pilot": 261,
+     "ally": 2205,
+     "share": 0.894,
+     "downs": 0,
+     "hp": 978
+    },
+    {
+     "id": "raid-battery-3",
+     "outcome": "victory",
+     "secs": 47.8,
+     "pilot": 2261,
+     "ally": 2618,
+     "share": 0.537,
+     "downs": 0,
+     "hp": 353
+    },
+    {
+     "id": "raid-extraction-2",
+     "outcome": "victory",
+     "secs": 63.7,
+     "pilot": 1755,
+     "ally": 1120,
+     "share": 0.39,
+     "downs": 0,
+     "hp": 1152
+    },
+    {
+     "id": "raid-extraction-4",
+     "outcome": "victory",
+     "secs": 152,
+     "pilot": 3650,
+     "ally": 3211,
+     "share": 0.468,
+     "downs": 0,
+     "hp": 1124
+    },
+    {
+     "id": "raid-siege-3",
+     "outcome": "victory",
+     "secs": 52.4,
+     "pilot": 1452,
+     "ally": 2803,
+     "share": 0.659,
+     "downs": 0,
+     "hp": 314
+    },
+    {
+     "id": "raid-siege-5",
+     "outcome": "victory",
+     "secs": 35.5,
+     "pilot": 1270,
+     "ally": 2094,
+     "share": 0.623,
+     "downs": 0,
+     "hp": 1226
+    }
+   ]
+  },
+  "battalion": {
+   "allies": 9,
+   "roles": [
+    "guardian",
+    "guardian",
+    "lancer",
+    "lancer",
+    "mender",
+    "breacher",
+    "breacher",
+    "corroder",
+    "frostline"
+   ],
+   "gear": "equal Epic gear (pilot and allies Epic, the pilot keeps its three cores)",
+   "fixture": "full assault: the siege raids + 12 VETERAN Parasites",
+   "allyShare": 0.618,
+   "pilotShare": 0.382,
+   "wins": "10/10",
+   "rows": [
+    {
+     "id": "raid-siege-1",
+     "outcome": "victory",
+     "secs": 73.7,
+     "pilot": 1421,
+     "ally": 4667,
+     "share": 0.767,
+     "downs": 0,
+     "hp": 1943
+    },
+    {
+     "id": "raid-siege-2",
+     "outcome": "victory",
+     "secs": 56.2,
+     "pilot": 3530,
+     "ally": 2558,
+     "share": 0.42,
+     "downs": 0,
+     "hp": 1466
+    },
+    {
+     "id": "raid-siege-3",
+     "outcome": "victory",
+     "secs": 56,
+     "pilot": 3157,
+     "ally": 6503,
+     "share": 0.673,
+     "downs": 0,
+     "hp": 1092
+    },
+    {
+     "id": "raid-siege-4",
+     "outcome": "victory",
+     "secs": 56.6,
+     "pilot": 3867,
+     "ally": 4902,
+     "share": 0.559,
+     "downs": 0,
+     "hp": 923
+    },
+    {
+     "id": "raid-intercept-2",
+     "outcome": "victory",
+     "secs": 38.9,
+     "pilot": 3152,
+     "ally": 2782,
+     "share": 0.469,
+     "downs": 0,
+     "hp": 322
+    },
+    {
+     "id": "raid-intercept-4",
+     "outcome": "victory",
+     "secs": 63.8,
+     "pilot": 3225,
+     "ally": 5936,
+     "share": 0.648,
+     "downs": 0,
+     "hp": 1530
+    },
+    {
+     "id": "raid-sabotage-3",
+     "outcome": "victory",
+     "secs": 51,
+     "pilot": 2892,
+     "ally": 7236,
+     "share": 0.714,
+     "downs": 0,
+     "hp": 1522
+    },
+    {
+     "id": "raid-sabotage-5",
+     "outcome": "victory",
+     "secs": 46.4,
+     "pilot": 3106,
+     "ally": 6131,
+     "share": 0.664,
+     "downs": 0,
+     "hp": 710
+    },
+    {
+     "id": "raid-battery-2",
+     "outcome": "victory",
+     "secs": 58.6,
+     "pilot": 3633,
+     "ally": 2983,
+     "share": 0.451,
+     "downs": 0,
+     "hp": 750
+    },
+    {
+     "id": "raid-extraction-1",
+     "outcome": "victory",
+     "secs": 93.7,
+     "pilot": 1918,
+     "ally": 4635,
+     "share": 0.707,
+     "downs": 0,
+     "hp": 1467
+    }
+   ]
+  }
+ }
+}

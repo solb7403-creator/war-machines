@@ -18,25 +18,31 @@ function aim(B,p,input,dt){
  const pitch=B.lockId!==null?Math.atan2(locked.y-p.y,Math.hypot(locked.x-p.x,locked.z-p.z)):input.aimPitch||0;
  return {x:p.x+Math.sin(B.turretYaw)*160,y:p.y+2.2+Math.tan(clamp(pitch,-1.2,1.2))*160,z:p.z+Math.cos(B.turretYaw)*160};
 }
-function hurt(B,e,amount){B.alert?.(e);const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:B.time});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
-function superDamage(B,e,base){const t=B.playerStats;return base*(t.wmult||TIER_MULT[Math.max(0,t.wtier||0)])*dmgMult(t)*cmult(t,e.stats)*(e.stats.supTk||1)*(1-armor(e.stats));}
-function fireSuper(B,s){
+// src: 0 the pilot; otherwise the friendly unit firing its own super (Session 6C): its kill, its damage flag (e.ad), never the pilot's
+function hurt(B,e,amount,src=0){B.alert?.(e);if(e.sh&&e.sh.t>B.time)amount*=1+e.sh.k*e.sh.n;const f=src?B.friendById?.(src):null;if(e.core>0){if(src)amount=0;else{const c=Math.min(e.core,amount);e.core-=c;amount-=c;}}   // a general's shield core: the pilot's own damage only
+ if(src){e.ad=1;B.allyDmg=(B.allyDmg||0)+Math.min(e.hp,amount);}else{e.pd=1;B.pilotDmg=(B.pilotDmg||0)+Math.min(e.hp,amount);}const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){if(src)B.friendKill?.(e,f);else{B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:B.time});}}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25,...(src?{a:1}:{})});}
+function superDamage(B,e,base,t=B.playerStats){return base*(t.wmult||TIER_MULT[Math.max(0,t.wtier||0)])*dmgMult(t)*cmult(t,e.stats)*(e.stats.supTk||1)*(1-armor(e.stats));}
+function fireSuper(B,s,T=B.playerStats,src=0){
  const raw=SUP[s.weapon],spec={...raw,dmg:SUP_CQ[s.weapon]*SUP_OC[s.oc||0]};for(const k of ['w','len','r','spd','range'])if(Number.isFinite(spec[k]))spec[k]*=SUPER_WORLD_SCALE;const p=s.origin,dx=Math.sin(s.yaw),dz=Math.cos(s.yaw);
  if(spec.kind==='shell'){
-  const speed=spec.spd*(1+gsum(B.playerStats,'vel'));
-  B.superShells.push({x:p.x,y:p.y+2.2,z:p.z,vx:dx*speed,vz:dz*speed,vy:Math.tan(s.pitch)*speed,life:spec.range/speed,range:spec.r,damage:spec.dmg*projectileImpactMult(B.playerStats),k:s.k,oc:s.oc||0});return;
+  const speed=spec.spd*(1+gsum(T,'vel'));
+  B.superShells.push({x:p.x,y:p.y+2.2,z:p.z,vx:dx*speed,vz:dz*speed,vy:Math.tan(s.pitch)*speed,life:spec.range/speed,range:spec.r,damage:spec.dmg*projectileImpactMult(T),k:s.k,oc:s.oc||0,...(src?{src}:{})});return;
  }
  if(spec.kind==='nova'){
-  for(const e of B.enemies){const d=Math.hypot(e.x-p.x,e.y-p.y,e.z-p.z);if(e.hp>0&&d<spec.r+2&&visible(B,p,e,spec.r+2))hurt(B,e,superDamage(B,e,spec.dmg*(1-.4*d/(spec.r+2))));}
-  B.effects.push({kind:'nova',x:p.x,y:p.y+2,z:p.z,r:spec.r,life:.45,k:s.k,oc:s.oc||0,at:B.time});return;
+  for(const e of B.enemies){const d=Math.hypot(e.x-p.x,e.y-p.y,e.z-p.z);if(e.hp>0&&d<spec.r+2&&visible(B,p,e,spec.r+2))hurt(B,e,superDamage(B,e,spec.dmg*(1-.4*d/(spec.r+2)),T),src);}
+  B.effects.push({kind:'nova',x:p.x,y:p.y+2,z:p.z,r:spec.r,life:.45,k:s.k,oc:s.oc||0,at:B.time,...(src?{a:1}:{})});return;
  }
  // Pulse retains Arcade cover penetration; elevation blocks beams at the ground. Moonfall also stops at structures.
  const start={x:p.x,y:p.y+2.2,z:p.z};let length=spec.len;
  for(let d=.3;d<length;d+=.3)if(s.weapon==='pulse'?start.y+Math.tan(s.pitch)*d<=W.groundAt(start.x+dx*d,start.z+dz*d)+.08:C.blocked(start.x+dx*d,start.y+Math.tan(s.pitch)*d,start.z+dz*d)){length=d;break;}
  for(const e of B.enemies){const ex=e.x-p.x,ez=e.z-p.z,along=ex*dx+ez*dz,side=Math.abs(ex*dz-ez*dx),ey=p.y+Math.tan(s.pitch)*along;
- if(e.hp>0&&along>0&&along<=length&&side<spec.w+1.2&&Math.abs(e.y-ey)<3)hurt(B,e,superDamage(B,e,spec.dmg));}
- B.effects.push({kind:'beam',x:start.x,y:start.y,z:start.z,ex:start.x+dx*length,ey:start.y+Math.tan(s.pitch)*length,ez:start.z+dz*length,life:.4,weapon:s.weapon,k:s.k,oc:s.oc||0,w:spec.w,at:B.time});
+ if(e.hp>0&&along>0&&along<=length&&side<spec.w+1.2&&Math.abs(e.y-ey)<3)hurt(B,e,superDamage(B,e,spec.dmg,T),src);}
+ B.effects.push({kind:'beam',x:start.x,y:start.y,z:start.z,ex:start.x+dx*length,ey:start.y+Math.tan(s.pitch)*length,ez:start.z+dz*length,life:.4,weapon:s.weapon,k:s.k,oc:s.oc||0,w:spec.w,at:B.time,...(src?{a:1}:{})});
 }
+// Session 6C: a friendly unit's super (combat.js friendStep decides when: a full meter of its own damage, the minimum spacing).
+// Its weapon's Conquest super, a normal hit (no timing bar for the AI), aimed from the unit at its target.
+C.Battle.prototype.allySuper=function(f,T,aim){const weapon=T.wtype,yaw=Math.atan2(aim.x-f.x,aim.z-f.z),pitch=Math.atan2(aim.y-f.y-2.2,Math.max(1,Math.hypot(aim.x-f.x,aim.z-f.z)));
+ fireSuper(this,{weapon,k:supKey(weapon,T.wtier),oc:1,yaw,pitch,origin:{x:f.x,y:f.y,z:f.z}},T,f.id);};
 C.Battle.prototype.abilityStep=function(dt){
  ensure(this);const T=this.playerStats,rm=T.rm,mf=rm?this.modState():null;
  // research mods (Session 6B, rules.js mf*): Overdrive's dash charges, Capacitor Bank's faster shield, Aegis Matrix when the shield ends
@@ -55,7 +61,7 @@ C.Battle.prototype.abilityStep=function(dt){
  if(this.superAttack){this.superAttack.t-=dt;if(this.superAttack.t<=0){this.superAttack.origin={x:this.player.x,y:this.player.y-2.2,z:this.player.z};fireSuper(this,this.superAttack);this.superAttack=null;}}
  for(const q of this.superShells){const n=Math.max(1,Math.ceil(Math.hypot(q.vx,q.vz)*dt/.3));for(let i=0;i<n&&q.life>0;i++){q.x+=q.vx*dt/n;q.z+=q.vz*dt/n;q.y+=q.vy*dt/n;
  const hit=this.enemies.some(e=>e.hp>0&&Math.hypot(e.x-q.x,e.z-q.z)<2.5&&Math.abs(e.y+2.2-q.y)<3);
- if(hit||C.blocked(q.x,q.y,q.z)||q.life<=dt){for(const e of this.enemies){const d=Math.hypot(e.x-q.x,e.y+2.2-q.y,e.z-q.z);if(e.hp>0&&d<q.range+2&&C.lineClear(q,{x:e.x,y:e.y+2.2,z:e.z}))hurt(this,e,superDamage(this,e,q.damage*(1-.65*d/(q.range+2))));}this.effects.push({kind:'destroy',x:q.x,y:q.y,z:q.z,life:.5,k:q.k,oc:q.oc||0,r:q.range,at:this.time});q.life=0;}}
+ if(hit||C.blocked(q.x,q.y,q.z)||q.life<=dt){const T=q.src?C.friendStats(this.friendById(q.src)||{kit:null}):this.playerStats;for(const e of this.enemies){const d=Math.hypot(e.x-q.x,e.y+2.2-q.y,e.z-q.z);if(e.hp>0&&d<q.range+2&&C.lineClear(q,{x:e.x,y:e.y+2.2,z:e.z}))hurt(this,e,superDamage(this,e,q.damage*(1-.65*d/(q.range+2)),T),q.src||0);}this.effects.push({kind:'destroy',x:q.x,y:q.y,z:q.z,life:.5,k:q.k,oc:q.oc||0,r:q.range,at:this.time});q.life=0;}}
  q.life-=dt;}
  this.superShells=this.superShells.filter(q=>q.life>0).slice(-4);
 };
@@ -77,6 +83,7 @@ function advance(B,p,input,dt,exploration){
  if(!baseBlocked(B,q)&&!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
  if(p!==old)B.heading=Math.atan2(p.x-old.x,p.z-old.z);
  const target=aim(B,p,input,h);
+ if(first&&input.order&&B.squadOrder)B.squadOrder(input.order);   // Session 6C COMMAND: an order is an edge, decided where the lock stands now
  // SUPER is an edge: it acts once, on the first slice of the command it arrives in. No super charging: it starts one (the bar
  // is drawn from the battle clock, the same on the phone and on the Worker that replays the command). A bar sweeping: it stops
  // it. A command is STEP long, so the stop is judged at the middle of the step it arrived in (fair to an early and a late thumb)
@@ -92,10 +99,10 @@ function advance(B,p,input,dt,exploration){
 // normalized command the Worker replays, so reconciliation reproduces the prediction instead of correcting it.
 const STEP=.05;
 function command(c){let x=Number(c.x)||0,z=Number(c.z)||0;const l=Math.hypot(x,z);if(l>1){x/=l;z/=l;}const yaw=Number.isFinite(c.aimYaw)?c.aimYaw:0,pitch=Number.isFinite(c.aimPitch)?clamp(c.aimPitch,-.4,.5):0;
- return {x,z,aimPitch:pitch||0,aimYaw:Math.atan2(Math.sin(yaw),Math.cos(yaw)),lockId:Number.isSafeInteger(c.lockId)&&c.lockId>=1&&c.lockId<=1e9?c.lockId:null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan};}
+ const o={x,z,aimPitch:pitch||0,aimYaw:Math.atan2(Math.sin(yaw),Math.cos(yaw)),lockId:Number.isSafeInteger(c.lockId)&&c.lockId>=1&&c.lockId<=1e9?c.lockId:null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan};if(Number.isInteger(c.order)&&c.order>=1&&c.order<=5)o.order=c.order;return o;}   // order: Session 6C COMMAND (sent only when given)
 // The Worker's validateCommands mapping, verbatim. Predict and replay with validated(sent) so both sides compute bit-identical
 // steps (re-wrapping an angle is not always idempotent in floating point).
-function validated(c){return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan};}
+function validated(c){return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan,order:c.order|0};}
 // Presentation only: where the hull will be after a partial step with the current input. Never mutates the battle.
 function preview(B,p,input,dt,exploration){
  if(!(dt>0)||B.playerHp<=0||B.state!=='active')return p;const values=C.engineeringValues(B.playerStats,B.engineering);

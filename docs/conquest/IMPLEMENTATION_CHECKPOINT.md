@@ -5720,13 +5720,83 @@ points and payments only as written in the prompt, a better number goes in the f
 players: no migration, grandfathering, legacy fallback or "existing saves" code).
 
 ### Resume here (next session reads this first)
-- Branch `claude/battalion-allies-lab-iv-o8tguj` from main `97e4c29` (Session 6B released, build 20261118100557).
-- DONE slice 1 (docs only): ROADMAP rows 6C (the first Science Lab grant), 6B-V (a) Conquest rain + (b) animated premium
-  liveries, 8 (c) Lab store price ceiling + (d) pass research perks with the Lab store. Row 8 already had an (a)-(c) group from
-  Session 6B, so the owner's (c)/(d) sit in their own "Also (owner, Nov 18)" group with the owner's lettering.
-- NEXT: research (comparable games), then the ally engine slice (combat.js friendly list), then the remaining slices in the order
-  of the prompt's sections 2-8. Local setup: `pip install playwright==1.63.0`, `npm install --prefix worker`, then
-  `node worker/build-sim.mjs` and `node worker/build-web.mjs` before the Worker tests. Graphify did not connect (proxy 403).
+- Branch `claude/battalion-allies-lab-iv-o8tguj` from main `97e4c29`. Local setup: `pip install playwright==1.63.0`,
+  `npm install --prefix worker --no-audit --no-fund --package-lock=false`, `node worker/build-sim.mjs`, `node worker/build-web.mjs`.
+  Graphify did not connect (proxy 403): code read directly. Every node test named in the CI workflows (119) PASSES on slice 2
+  (`conquest-earned-defense.mjs` reads a file `conquest-earned-journey.mjs` writes: run that one first, as CI does).
+- DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
+  sit in their own "Also (owner, Nov 18)" group). Research recorded below.
+- DONE slice 2 (the ally engine, `js/conquest/combat.js` + `controls.js`, tested by the new `dev/tests/conquest-allies.mjs`,
+  34 checks): see "Slice 2: allies in the combat engine". Solo play is bit-identical to main (conquest-combat, -raids,
+  -first-hour outputs diffed against a main worktree).
+- WRITTEN, NOT WIRED YET (inert: no page, bundle or Worker route loads them; next session wires them):
+  `js/conquest/battalion.js` (ConquestBattalion: roster rules, fielding, ranks, Role Core costs, chips, AUTO-ARM, FORCE, the
+  briefing's enemy roster and hint line), `worker/src/conquest-battalion.js` (s.bat on the Worker: roster, wingman, recruits,
+  RECRUIT job, presets, repair, chips, outcomes, HANGAR actions), `js/conquest/hangar.js` (HANGAR screen, briefing strip, hub
+  card, after-action lines), `worker/src/conquest-store.js` (the record split: hot CAS part at conquest/<pid>, immutable cold
+  blob at cqc/<pid>/<cv>, far Parasites in the cold part, per-isolate blob cache).
+- PREPARED PATCHES (apply in this order from the repo root, `python3 dev/tools/session6c/pN_*.py`; each asserts its anchors, then
+  rebuild the sim and run the suites): p1_rules (store kinds chip pack / livery / rcfin with checkout off, BAT_STORE_OPEN,
+  CHIP_PACK, LIVERIES, ECO_KEYS bch/liv/rcx, RTREE.labMax 4, RTREE.role; NOTE p1 renames RTREE.locked to RTREE.role: also
+  change `js/conquest/lab.js` line ~66 to read RTREE.role and draw the Role Cores track), p2_wiring (Science Lab IV in plot.js
+  with its own time list, battalion.js in index.html / web/boot.js / build-sim + `Battalion` in the CONQUEST export), p3_research
+  (Role Core jobs 'rc:<role>' paid in chips, the first Science Lab grant 'research-grant'), p4_worker (the wingman rescue
+  operation `wingman-rescue` at (1138,1236), 71 m from the Refuge terminal, pays nothing; allies-only kills pay nothing in
+  killLoot; installation capture needs the pilot; the battalion in start-mission / return / respawn / travel; HANGAR actions;
+  account context gear / liveries / rcx; descOf refuses BAT_KINDS), p5_model (economy-model battalionModel), p6_labstore
+  (rows rcfin / livery / chippack), p7_shop (the Shop's Battalion section), p8_split (conquest.js on the split store; hot-only
+  input replies when the phone's cv matches).
+- STILL TO BUILD after the patches: the phone side of the split (session.js: send `cv`, merge `hot` replies over the cold fields
+  in COLD_KEYS + veins, idle cadence 3 s when no hostile within 160 m and not in an operation: raise SEND / MAX_FRAMES 40 -> 60);
+  persistWarfront on the split transaction (it writes campaignHistory / achievements: cold); the test helper for tests that poke
+  cold fields (conquest-dev, conquest-war, conquest-visit, conquest-warfront, conquest-server /inspect: read with
+  conquest-store readState / write a whole record to the hot path); the COMMAND button in the HUD context slot (tap = smart order
+  5, hold 350 ms = wheel 1-4; keys V / hold V / 1-4: Q E R F G C T are taken) feeding `view.pendingAbilities.order` into
+  controlInput; the 3D view of friendly units (M3.chassisKit / weaponKit like syncLoadout, stock paint, livery tint, LDF livery,
+  role badge, downed look; ally effects tagged `a:1` are halved on LOW); the HANGAR entry on the hub (o.hangar like labOnly) and
+  in MORE; the briefing strip in app.js briefing(); FORCE chip beside the band; "COMMAND CHIP 0/1 TODAY" beside the research
+  line; the guide's board leads to the wingman rescue after the first plate (conquest-first-hour.mjs section 8 changes with it);
+  the Lab's Role Cores track UI and the first-grant card; after-action lines; Refuge Supply REPAIR PILOTS. Then: owner-rules.json
+  + owner-rules.mjs (labMax 4, Role Core costs [2,4,5,9] chips 8 h, one earned chip a day exempting packs, chip pack weekly, the
+  first Lab grant in earnedPartsPerDay.exempt, allies never multiply points, never sold: pilots / ranks / Role Core levels;
+  mutation-prove one), guardrails 1-4 in CI (extend conquest-combat + conquest-power-chip; gear ordering per encounter; supers
+  are in conquest-allies; composition sim), new Worker tests (chips day / fragment swap / packs, Role Core gates, RECRUIT timing
+  and roster cap 16, field caps 1/2/4/5/7/9, ally-only kill pays nothing, first grant once, store kinds refused), the replay
+  budget for 10 friendly units, economy-model --write + RESOURCE_ECONOMY, `dev/tests/conquest-session6c.py` at five sizes, two
+  UX critic rounds at most, two fresh reviewers, release.
+
+### Slice 2: allies in the combat engine (Nov 19; decisions and why)
+- `Battle.friends` (combat.js): units with `side` ('mine' your pilots, 'ldf' LDF regulars outside your command) and `ctl`
+  ('ai' now; any other controller is never driven by the AI: the co-op foundation). Stats are `friendStats` = tankOf() of the
+  unit's kit (allyLoadout: weapon + chassis with tier and roll; no cores, plating, engineering, mods), cached per object and never
+  saved; the pilot's and allies' projectiles name their owner instead of carrying stats (the record stays small).
+- The ally AI reuses the Parasites' steering (`steer`, refactored out of `choose` with identical arithmetic) with the side
+  flipped; the Parasites pick a target among the pilot and the friendly units (`threat`: nearest by effective distance, the pilot
+  first by 12 m, a Guardian inside 45 m draws fire by 20 m x m). Roles: Guardian cover 20% x m within 12 m (shooter side),
+  Breacher +40% x m vs structures, +50% x m vs frozen within 15 m, a 0.4 s charge every 9 s; Lancer range x1.4, x0.6 inside 20 m,
+  +50% x m vs drones, a shredded target is a full hit +30% x m; Mender heals 1.2% x m a second within 18 m (the pilot too),
+  revives one downed ally a fight at 35%; Corroder 4 stacks of +5% x m from everyone, 5 s; Frostline a 7 m cryo field every 8 s
+  (slow 50% x m, light units freeze 1.5 s x m). m = 1 + 0.1 a Role Core level above 1 + 0.1 at ranks 3, 6, 9 (1.0-1.7), set by
+  the Worker at deploy (combat.js never reads progression, gear rating or purchases).
+- Pilot-only (owner): objectives use the pilot's position only (test: allies on the uplink do nothing); a general's shield
+  core (`e.core`) takes only the pilot's damage. Damage flags `e.pd` (pilot) / `e.ad` (ally) feed the points rule.
+- Caps: 10 friendly units, the nearest 20 Parasites run each step, 6 drones, 160 projectiles with the Parasites' own 96 kept
+  (so allies never change how often a Parasite may fire). Ally supers: the player's charge rule (their own damage dealt and
+  taken, same constants) plus 20 s per unit and 3 s across units; fired as a normal hit; 8 in three full assaults in the test.
+- Downed allies are never lost: in the open world they return after 15 quiet seconds at half hull and stay capped there until
+  repaired (`hc`); in an operation a Mender can revive one; the Worker brings them back at half hull after the fight.
+- THE SPLIT (owner: about 60/40 in a full assault, tuned through aim lag and reaction time only): ALLY.decide 0.6 s (the aim is
+  where the target was at the last decision), react 2.9 s on a new target (0.5 s on the pilot's own lock: the squad datalink,
+  added because Wing allies otherwise did 5-11% in short field missions), turret 0.5x the tank's rate. Measured
+  (`docs/conquest/session6c/ally-split.json`, scripted pilot): Wing 26.3% allies (5/5 won), Platoon 53.9% (10/10, raids: the pilot
+  spends its time on objectives), Battalion full assault 61.8% (10/10, equal Epic gear, a test fixture of the siege raids + 12
+  VETERAN Parasites; real Battalion content arrives in 7/7B). Sweep record: react 1.1 -> 2.9 moved the Battalion share 69.8% ->
+  61.8%. Note for the report: a Platoon lets a stock pilot clear VETERAN raids (stock alone: 0/15); the ladder check models
+  fixed 90 s sorties, so it is unchanged by allies; real raid clears get shorter.
+- Record measurement before the split (real Worker routes, `dev/tools/session6c/measure-record.mjs`): a new pilot's record is
+  18,937 bytes (battle 13,376, 22 enemies at ~540 B), 45 KB of Firebase download per input request (GET + the CAS echo), 164 MB
+  a pilot-hour at 1 Hz; during an operation the record is 38.7 KB (the exploration battle kept beside the operation's: 16.8 KB)
+  and the reply to the phone is 22 KB a request (78 MB/h of mobile data).
 
 ### Research: comparable games (Nov 19, before design; Checkpoint 41's research is not repeated)
 Searched this session (fan wikis, community guides and news; numbers from third parties are marked as such).
