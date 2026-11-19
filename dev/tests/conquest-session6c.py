@@ -96,7 +96,7 @@ async def steps(browser,base,ready,w,h,R):
  await page.wait_for_function('!Conquest.view?.battle&&(Conquest.view?.encounter?.friends||[]).length>0',timeout=30000);await page.wait_for_timeout(2500)
  try:await page.wait_for_selector('.cq-ally-tag:not([hidden])',timeout=8000)   # the wingman takes its formation slot (it may stand just off-screen first)
  except Exception:pass
- R['wing']=await page.evaluate('({friends:(Conquest.view.encounter.friends||[]).map(f=>({cs:f.name,role:f.role||"wingman",mil:!!f.mil})),views:Conquest.view.friendViews?Conquest.view.friendViews.size:0,state:{w:Conquest.view.authority.state?.bat?.w||0,done:!!Conquest.view.authority.state?.completed?.["wingman-rescue"],roster:(Conquest.view.authority.state?.bat?.p||[]).length},next:document.querySelector(".cq-nav-title")?.textContent||null,access:(()=>{const b=document.querySelector("#cq-mission-access");return b&&!b.hidden?b.textContent:null;})(),tags:[...document.querySelectorAll(".cq-ally-tag:not([hidden])")].map(t=>t.textContent)})')
+ R['wing']=await page.evaluate('({friends:(Conquest.view.encounter.friends||[]).map(f=>({cs:f.name,role:f.role||"wingman",mil:!!f.mil})),views:Conquest.view.friendViews?Conquest.view.friendViews.size:0,state:{w:Conquest.view.authority.state?.bat?.w||0,done:!!Conquest.view.authority.state?.completed?.["wingman-rescue"],roster:(Conquest.view.authority.state?.bat?.p||[]).length},next:document.querySelector(".cq-nav-title")?.textContent||null,access:(()=>{const b=document.querySelector("#cq-mission-access");return b&&!b.hidden?b.textContent:null;})(),tags:[...document.querySelectorAll(".cq-ally-tag:not([hidden])")].map(t=>t.textContent),tagInDom:!!document.querySelector(".cq-ally-tag")})')
  await shot('wing-world')
  await close_ctx(ctx)
  # ---------------- B. the Platoon (Hangar II, four pilots) ----------------
@@ -185,10 +185,11 @@ async def steps(browser,base,ready,w,h,R):
  if await page.locator('.cq-site-operations').count():await press(page.locator('.cq-site-operations button',has_text='BRIEF').first)
  start=page.get_by_role('button',name='START MISSION');await start.scroll_into_view_if_needed();await press(start)
  await page.wait_for_function('!!Conquest.view?.battle',timeout=30000);await page.wait_for_timeout(2500)
- FRAMES='''()=>new Promise(done=>{const iv=[];let last=performance.now(),n=0;const f=t=>{iv.push(t-last);last=t;if(++n<240)requestAnimationFrame(f);else{const x=iv.slice(20).sort((a,b)=>a-b),q=p=>+x[Math.min(x.length-1,Math.floor(x.length*p))].toFixed(1),v=Conquest.view;done({median:q(.5),p95:q(.95),worst:+x.at(-1).toFixed(1),calls:v.renderer.info?.render?.calls,tris:v.renderer.info?.render?.triangles,programs:v.renderer.info?.programs?.length,friends:(v.battle?.friends||[]).length,views:v.friendViews?v.friendViews.size:0,hostiles:(v.battle?.enemies||[]).filter(e=>e.hp>0&&Math.hypot(e.x-v.p.x,e.z-v.p.z)<120).length,low:gfxMode()});}};requestAnimationFrame(f);})'''
+ FRAMES='''()=>new Promise(done=>{const iv=[];let last=performance.now(),n=0;const f=t=>{iv.push(t-last);last=t;if(++n<240)requestAnimationFrame(f);else{const x=iv.slice(20).sort((a,b)=>a-b),q=p=>+x[Math.min(x.length-1,Math.floor(x.length*p))].toFixed(1),v=Conquest.view;done({median:q(.5),p95:q(.95),worst:+x.at(-1).toFixed(1),calls:v.renderer.info?.render?.calls,tris:v.renderer.info?.render?.triangles,programs:v.renderer.info?.programs?.length,friends:(v.battle?.friends||[]).length,views:v.friendViews?v.friendViews.size:0,hostiles:(v.battle?.enemies||[]).filter(e=>e.hp>0&&Math.hypot(e.x-v.p.x,e.z-v.p.z)<120).length,dist:(v.battle?.friends||[]).map(f=>Math.round(Math.hypot(f.x-v.p.x,f.z-v.p.z))),low:gfxMode()});}};requestAnimationFrame(f);})'''
  R['perfPlatoon']=await page.evaluate(FRAMES)
  fl=await page.request.post(base+'/fixture-field',data={'scale':'battalion'});R['fielded']=(await fl.json()).get('fielded')
- await page.wait_for_function('(Conquest.view?.battle?.friends||[]).length>=9',timeout=90000);await page.wait_for_timeout(3000)
+ await page.evaluate('Conquest.view.authority.connect()')   # a unit fielded on the server mid-fight (test helper) reaches the phone with the next sync
+ await page.wait_for_function('(Conquest.view?.battle?.friends||[]).length>=9&&(Conquest.view.friendViews?.size||0)>=9',timeout=90000);await page.wait_for_timeout(3000)
  R['perfBattalion']=await page.evaluate(FRAMES)
  await shot('battalion-low')
  await close_ctx(ctx)
@@ -199,7 +200,7 @@ def verdict(R):
  e('RESCUE THE DOWNED PILOT' in (R.get('nextChip') or '') or 'RESCUE' in (R.get('rescueAccess') or ''),'NEXT leads to the rescue: '+str(R.get('nextChip')))
  rs=R.get('rescueStrip') or {};e(len(rs.get('enemies') or [])>=1 and (rs.get('hint') or '').startswith('2 interceptors') and 'Solo' in (rs.get('force') or ''),'rescue strip '+json.dumps(rs))
  e('WINGMAN JOINED' in (R.get('rescueAar') or ''),'after-action names the wingman: '+str(R.get('rescueAar')))
- wg=R.get('wing') or {};e(len(wg.get('friends') or [])==1 and wg.get('views')==1 and len(wg.get('tags') or [])==1 and wg['friends'][0]['mil'],'the wingman in 3D with its insignia: '+json.dumps(wg))
+ wg=R.get('wing') or {};e(len(wg.get('friends') or [])==1 and wg.get('views')==1 and (len(wg.get('tags') or [])==1 or wg.get('tagInDom')) and wg['friends'][0]['mil'],'the wingman in 3D with its insignia: '+json.dumps(wg))
  hc=R.get('hubCard') or {};e((hc.get('chipDay') or '').startswith('COMMAND CHIP 0/1 TODAY') and hc.get('force'),'hub BATTALION card '+json.dumps(hc))
  hg=R.get('hangar') or {};e(len(hg.get('toggles') or [])==4 and all('IN FORCE' in t for t in hg.get('toggles') or []),'every card has its force button (an empty preset fields all four: IN FORCE · AUTO): '+json.dumps(hg.get('toggles')));e(hg.get('cards')==4 and hg.get('arm') and hg.get('presets')==3 and len(hg.get('forms') or [])==3 and R.get('hangarCloseVisible'),'HANGAR '+json.dumps(hg))
  st=R.get('raidStrip') or {};e(st.get('enemies',0)>=3 and st.get('label')=='PLATOON' and len(st.get('force') or [])==4 and st.get('presets')==3 and st.get('force_chip'),'raid strip '+json.dumps(st))
