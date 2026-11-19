@@ -88,6 +88,7 @@ export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData']))return response(400,'invalid conquest session');
  const {loadout:L,legacy,view,rsAcct,batAcct}=await canonical(env,a.pid,now);
  const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);researchAccount(state,rsAcct,now);batAccount(state,batAcct,now);if(!state.mission)batField(state,state.battle,state.position,'wing');refitState(state,L);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state);return {state,anq};},now);
+ if(!r0.abort&&r0.cv)await sweep(env,a.pid,r0.cv,r0.cvn,now);   // Session 6C: orphan cold blobs (an attempt that died between its blob and its CAS), throttled
  if(!r0.abort&&r0.anq?.length)await flush(env,r0.anq,r0.state?.an?.f,now);   // Session 6 analytics: entry, cohort and return, after the write
  const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r0,now,true),now);if(out.status===200&&r0.cv)out.body.cv=r0.cv;   // Session 6C: the cold version the phone now holds
  if(out.status===200&&out.body?.state?.plot)await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // builder jobs settle on open

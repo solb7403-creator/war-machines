@@ -5712,7 +5712,7 @@ Graphify did not connect in this container (proxy 403), so the code was read dir
 6. **Crater Field and Canyon** are the two mildest looks (6.5 and 7 of 10). Both "ship"; first candidates for a later polish.
 
 
-## Checkpoint 43 — Session 6C: Battalion (branch `claude/battalion-allies-lab-iv-o8tguj`, from main `97e4c29`)
+## Checkpoint 43 — Session 6C: Battalion (branches `claude/battalion-allies-lab-iv-o8tguj` then `claude/battalion-allies-lab-iv-6c-gx938o`, from main `97e4c29`)
 
 Brief: the owner's Session 6C prompt of Nov 18, 2026 (Opus · Max; it overrides the blueprint and every older brief where they
 differ; the owner is not monitoring: never stop to ask; release PRE-APPROVED once every check passes; prices, economy, airdrop
@@ -5720,10 +5720,59 @@ points and payments only as written in the prompt, a better number goes in the f
 players: no migration, grandfathering, legacy fallback or "existing saves" code).
 
 ### Resume here (next session reads this first)
-- Branch `claude/battalion-allies-lab-iv-o8tguj` from main `97e4c29`. Local setup: `pip install playwright==1.63.0`,
+- Branch `claude/battalion-allies-lab-iv-6c-gx938o` (the second 6C session; it continues `claude/battalion-allies-lab-iv-o8tguj` from
+  its head `3d86193`, fast-forwarded; main `97e4c29` unchanged, nothing released). Local setup: `pip install playwright==1.63.0`,
   `npm install --prefix worker --no-audit --no-fund --package-lock=false`, `node worker/build-sim.mjs`, `node worker/build-web.mjs`.
-  Graphify did not connect (proxy 403): code read directly. Every node test named in the CI workflows (119) PASSES on slice 2
-  (`conquest-earned-defense.mjs` reads a file `conquest-earned-journey.mjs` writes: run that one first, as CI does).
+  Graphify did not connect (proxy 403): code read directly. Edit this block only with a search anchored inside Checkpoint 43
+  (older checkpoints use the same "Resume here" heading).
+- DONE slice 10 (session 2, Nov 19): OPEN items (1) and (2).
+  - COMMAND (js/conquest/command.js, new): the context slot in a fight (COMMAND first, then GATHER near ore, then SCAN: one slot,
+    the HUD stays at eight touch targets). Shown when your pilots are fielded, orders are open (Hangar II) and you are in a fight
+    (an operation, an awake Parasite within 70 m, or a hit in the last 4 s). TAP = the smart order (5); HOLD 350 ms = the wheel
+    FOLLOW (top) / ATTACK (right) / HOLD HERE (bottom) / FALL BACK (left), clockwise so 1-4 read round it; the SLIDE DIRECTION from
+    the touch-down point picks (a hold released without sliding keeps the wheel open for a tap, 4 s), so a wheel clamped at the
+    screen edge never picks the wrong order. Keyboard: V tap = smart order, hold V (300 ms) = the wheel, then 1-4 or the mouse,
+    let go of V on a wedge; Esc closes. DECISION (the prompt lets the lead pick the bindings): 1-4 pick orders ONLY while the
+    wheel is open, because 1-4 already use your consumables (app.js itemSlot); a capture-phase handler keeps them from the items.
+    The order is an edge in the command (view.controlInput `order`, latched like SCAN); the Worker validates 0-5 and replays it
+    (controls.js -> squadOrder). Button "COMMAND · FOLLOWING" over "TAP REGROUP · HOLD ORDERS" (desktop "V REGROUP · HOLD V
+    ORDERS"); it flashes "ORDER · ATTACK" for 1.3 s with a haptic. HELP and the desktop key strip name V.
+  - Allies in 3D (js/conquest/allies3d.js, new): each friendly unit on the SAME builders as your tank (M3.chassisKit / weaponKit:
+    the existing Meshy tanks; the foundation stand-in merged into the hull material while a file loads), eased toward the 50 ms
+    sim (snap over 25 m), ground-aligned, treads and recoil through GraphicsMotion. Paint: stock by default; a plain livery paints
+    every ally (hull, trim); 'Battalion colors' = your own paint + your town banner (the ConquestTownKit banner your tank carries);
+    LDF regulars always the LDF livery. Role: a HUD insignia over each tank (role badge in its colour, call sign, hull bar; far
+    tanks show the badge only; DOWN in red, pulsing) and the player's own ground dress (style.dressTank, new opts: a role-coloured
+    ring and contact shadow, no trim strips or lamp). Downed: hull low and tilted, gun dropped, FX3D armour wear smoke. LOW
+    graphics: ally effects halved (their kills / downs / fields / muzzle flashes: a stable half by position; their shots drop the
+    glow halo; wear smoke on 2 allies, 4 on HIGH). Ally shots are mint (friendly), never the Parasites' magenta. Measured in
+    Chromium (software GL, relative only): a Platoon raid at 390x844 63 draw calls / 12 shader programs (budget 16) / 222 k
+    triangles; the allies are Meshy tanks (2 meshes each).
+  - The Science Lab (js/conquest/lab.js): the Role Cores track (Science Lab IV): each role's CORE level (I-V), its signature words,
+    pilots fitted, the next level's cost in chips and 8 h, NEED n MORE CHIPS / SLOTS BUSY / RESEARCHING with a live timer, CORE V
+    MAX, the chip pack row (checkout off), "earn-only: never sold"; locked lines before Science Lab IV and before Hangar II. Role
+    Core jobs ('rc:<role>') show in the running list and the hub research line (rmodOf threw on them before). The FIRST LAB GRANT
+    card (once, Lab built, not taken): +2 THERMAL CORES / +2 BALLISTIC COILS -> 'research-grant' (the three Lab callers take
+    act(id, action)).
+  - After-action: a "YOUR PILOTS" block (ConquestHangar.aarLines) on a victory (settlement.bat) and a defeat (this attempt's batOut).
+  - Refuge Supply: REPAIR PILOTS · n · 6n ALLOY beside BANK / REPAIR HULL while a pilot is at half hull (the Worker checks the
+    Refuge / town and the banked alloy). MORE: HANGAR · PILOTS opens the HANGAR in the field (through the session's own actions).
+  - conquest-store sweep at session open (OPEN item 2), made SAFE first: the old sweep deleted every blob but the current one, so
+    it could delete the blob an in-flight request was about to point the record at (the record would then loop on a missing cold
+    part: 'conquest busy'). Now only blobs of a generation <= the one just committed (cvn; ids are `<gen>x...`) go, an
+    unreadable id is kept, at most once an hour per pilot per isolate. The store transaction returns cvn.
+  - Test server fixture `battalion` (dev/tests/conquest-server.mjs): a Hangar level, n pilots, roles, Role Core levels, chips, hurt
+    pilots, ranks, gear 'epic'; the research fixture now allows Science Lab IV.
+  - Smoke (Chromium): Wing fielded in the open world, Platoon of 4 in raid-intercept-1, tap -> smart order, slide -> ATTACK
+    (squad.o 'attack'), V tap -> smart, hold V + 3 -> HOLD HERE (squad.o 'hold'), no page errors at 390x844 and 1366x768.
+  - Node tests PASS after it: conquest-authority, -session, -allies, owner-rules, -research, -flagship-ui, -canvas-contract, -copy,
+    lab-store-ui, -power-chip, -controls, -style, -assets; wtest conquest / lab-store / conquest-research.
+- NEXT, in this order: (3) section 9 (the VETERAN cause and the militia-only fix, the CI rule a-d in conquest-allies.mjs; the raids
+  test's pilot is shared as dev/tests/lib/raid-pilot.mjs) + guardrails 1, 2, 4; (4) the Worker HTTP test file for the Battalion
+  rules (incl. the sweep race: a gen cvn+1 blob survives); (5) economy-model --write + RESOURCE_ECONOMY; (6)
+  dev/tests/conquest-session6c.py at five sizes + conquest-session6b / -onboarding / -hub-browser / perf.py; the whole CI node list;
+  (7) at most two UX critic rounds, two fresh reviewers, release.
+- Earlier slices (the first 6C session):
 - DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
   sit in their own "Also (owner, Nov 18)" group). Research recorded below.
 - DONE slice 2 (the ally engine, `js/conquest/combat.js` + `controls.js`, tested by the new `dev/tests/conquest-allies.mjs`,
@@ -5787,52 +5836,6 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
 - DONE slice 9: every operation briefing carries the strip (ConquestHangar.strip in app.js briefing(): enemy icons + hint
   line, your picked force for the fight size, preset P1-P3 switch, FORCE chip). Not yet checked in a browser. Lesson repeated
   three times this session: an inserted trailing `//` comment on a long minified line swallows the rest of it; use /* */.
-- NEXT SESSION, in this order (all still open): (1) the phone UI (the hub HANGAR and the briefing strip are done): HUD COMMAND in the context slot + wheel + keys V / hold V / 1-4,
-  allies drawn in 3D (Meshy kits, stock paint / livery / LDF livery, role badge, downed look, ally effects halved on LOW), the
-  HANGAR (js/conquest/hangar.js is written: load it in index.html + web/boot.js, open it from the hub like labOnly and from
-  MORE), the briefing strip + FORCE chip in app.js briefing(), the hub BATTALION card with "COMMAND CHIP 0/1 TODAY" beside the
-  research line, the Lab's Role Cores track and the first-grant card in lab.js, after-action lines (ConquestHangar.aarLines),
-  Refuge Supply REPAIR PILOTS; (2) call conquest-store `sweep` at session open; (3) guardrails 1 (extend conquest-combat /
-  conquest-power-chip: enemy stats identical with 0 and 9 allies, stock and legendary gear, any FORCE; no enemy path reads
-  gear / power / FORCE / league / purchases / CC level), 2 (Starter < Epic < Legendary win rates on every authored encounter and
-  town-raid level), 4 (balanced battalion beats one-role on most operations); (4) a Worker test file for the Battalion rules over
-  HTTP (chips day reset at 00:00 UTC, packs unlimited, Role Core gates, RECRUIT 8 h and roster cap 16, field caps per Hangar
-  level, ally-only kill pays nothing, first grant once, every new store kind refused by descOf); (5) economy-model --write +
-  RESOURCE_ECONOMY section (repair alloy 6 a pilot is the PROPOSAL; chip pack 5 chips 299 Stars / 4.8 TON PROPOSAL; liveries
-  399 / 199 Stars PROPOSAL); (6) dev/tests/conquest-session6c.py at five sizes + conquest-session6b.py, conquest-onboarding.py,
-  perf.py; (7) at most two UX critic rounds; two fresh reviewers; dev/bump.sh, PR (add the owner-rules-change label if asked),
-  CI, merge, verify the deploys, ROADMAP 6C RELEASED, release record, final report. NOT built yet: `sweep` is not called at session open; the startup of the hub (live)
-  and labOnly still get whole states (fine). Everything under "STILL TO BUILD" except the split items is still open.
-- PREPARED PATCHES (apply in this order from the repo root, `python3 dev/tools/session6c/pN_*.py`; each asserts its anchors, then
-  rebuild the sim and run the suites): p1_rules (store kinds chip pack / livery / rcfin with checkout off, BAT_STORE_OPEN,
-  CHIP_PACK, LIVERIES, ECO_KEYS bch/liv/rcx, RTREE.labMax 4, RTREE.role; NOTE p1 renames RTREE.locked to RTREE.role: also
-  change `js/conquest/lab.js` line ~66 to read RTREE.role and draw the Role Cores track), p2_wiring (Science Lab IV in plot.js
-  with its own time list, battalion.js in index.html / web/boot.js / build-sim + `Battalion` in the CONQUEST export), p3_research
-  (Role Core jobs 'rc:<role>' paid in chips, the first Science Lab grant 'research-grant'), p4_worker (the wingman rescue
-  operation `wingman-rescue` at (1138,1236), 71 m from the Refuge terminal, pays nothing; allies-only kills pay nothing in
-  killLoot; installation capture needs the pilot; the battalion in start-mission / return / respawn / travel; HANGAR actions;
-  account context gear / liveries / rcx; descOf refuses BAT_KINDS), p5_model (economy-model battalionModel), p6_labstore
-  (rows rcfin / livery / chippack), p7_shop (the Shop's Battalion section), p8_split (conquest.js on the split store; hot-only
-  input replies when the phone's cv matches).
-- STILL TO BUILD after the patches: the phone side of the split (session.js: send `cv`, merge `hot` replies over the cold fields
-  in COLD_KEYS + veins, idle cadence 3 s when no hostile within 160 m and not in an operation: raise SEND / MAX_FRAMES 40 -> 60);
-  persistWarfront on the split transaction (it writes campaignHistory / achievements: cold); the test helper for tests that poke
-  cold fields (conquest-dev, conquest-war, conquest-visit, conquest-warfront, conquest-server /inspect: read with
-  conquest-store readState / write a whole record to the hot path); the COMMAND button in the HUD context slot (tap = smart order
-  5, hold 350 ms = wheel 1-4; keys V / hold V / 1-4: Q E R F G C T are taken) feeding `view.pendingAbilities.order` into
-  controlInput; the 3D view of friendly units (M3.chassisKit / weaponKit like syncLoadout, stock paint, livery tint, LDF livery,
-  role badge, downed look; ally effects tagged `a:1` are halved on LOW); the HANGAR entry on the hub (o.hangar like labOnly) and
-  in MORE; the briefing strip in app.js briefing(); FORCE chip beside the band; "COMMAND CHIP 0/1 TODAY" beside the research
-  line; the guide's board leads to the wingman rescue after the first plate (conquest-first-hour.mjs section 8 changes with it);
-  the Lab's Role Cores track UI and the first-grant card; after-action lines; Refuge Supply REPAIR PILOTS. Then: owner-rules.json
-  + owner-rules.mjs (labMax 4, Role Core costs [2,4,5,9] chips 8 h, one earned chip a day exempting packs, chip pack weekly, the
-  first Lab grant in earnedPartsPerDay.exempt, allies never multiply points, never sold: pilots / ranks / Role Core levels;
-  mutation-prove one), guardrails 1-4 in CI (extend conquest-combat + conquest-power-chip; gear ordering per encounter; supers
-  are in conquest-allies; composition sim), new Worker tests (chips day / fragment swap / packs, Role Core gates, RECRUIT timing
-  and roster cap 16, field caps 1/2/4/5/7/9, ally-only kill pays nothing, first grant once, store kinds refused), the replay
-  budget for 10 friendly units, economy-model --write + RESOURCE_ECONOMY, `dev/tests/conquest-session6c.py` at five sizes, two
-  UX critic rounds at most, two fresh reviewers, release.
-
 ### Slice 2: allies in the combat engine (Nov 19; decisions and why)
 - `Battle.friends` (combat.js): units with `side` ('mine' your pilots, 'ldf' LDF regulars outside your command) and `ctl`
   ('ai' now; any other controller is never driven by the AI: the co-op foundation). Stats are `friendStats` = tankOf() of the

@@ -58,10 +58,15 @@ export async function transaction(env,pid,fn,guard){const path='conquest/'+pid;
   const {hot,cold:c2}=split(state),k2=canon(c2)||{},same=record(h)&&!!h.cv&&JSON.stringify(canon(cold)||{})===JSON.stringify(k2);
   let cv=record(h)?h.cv:null,fresh=null;if(!same){fresh=cvId((record(h)?h.cvn|0:0)+1,i);await putBlob(env,pid,fresh,k2);cv=fresh;}
   hot.cv=cv;hot.cvn=fresh?(record(h)?h.cvn|0:0)+1:(record(h)?h.cvn|0:0);
-  if(await writeIf(env,path,hot,tag)){if(fresh){remember(env,pid,fresh,k2);if(record(h)&&h.cv)await dropBlob(env,pid,h.cv);}r.cold=fresh?1:0;r.cv=cv;return r;}
+  if(await writeIf(env,path,hot,tag)){if(fresh){remember(env,pid,fresh,k2);if(record(h)&&h.cv)await dropBlob(env,pid,h.cv);}r.cold=fresh?1:0;r.cv=cv;r.cvn=hot.cvn;return r;}
   if(fresh)await dropBlob(env,pid,fresh);}   // the CAS lost: this attempt's blob is an orphan
  throw Error('conquest busy');}
-// at a session open: delete orphan blobs (an attempt that died between its blob and its CAS); keys only (shallow)
-export async function sweep(env,pid,cv){try{const r=await fetch(dbUrl(env,'cqc/'+pid,{shallow:'true'}));if(!r.ok)return 0;const v=await r.json();if(!record(v))return 0;let n=0;for(const k of Object.keys(v))if(k!==cv){n++;await dropBlob(env,pid,k);}return n;}catch{return 0;}}
+// at a session open: delete orphan blobs (an attempt that died between its blob and its CAS); keys only (shallow). Only blobs of a
+// generation at or below the one just committed (cvn) can be orphans: a request still in flight writes generation cvn + 1 or later
+// before its CAS, so it is never touched (deleting it would strand the record on a missing cold part). An id it cannot read is kept.
+const genOf=k=>{const m=/^(\d{1,12})x/.exec(k);return m?Number(m[1]):Infinity;};
+const SWEPT=new WeakMap(),SWEEP_MS=3600000;   // at most once an hour per pilot per isolate: a shallow read is cheap, not free
+export async function sweep(env,pid,cv,cvn,now=Date.now()){if(!cv||!Number.isFinite(cvn))return 0;let m=SWEPT.get(env);if(!m){m=new Map();SWEPT.set(env,m);}const last=m.get(pid);if(last&&now-last<SWEEP_MS)return 0;m.set(pid,now);if(m.size>5000)m.delete(m.keys().next().value);
+ try{const r=await fetch(dbUrl(env,'cqc/'+pid,{shallow:'true'}));if(!r.ok)return 0;const v=await r.json();if(!record(v))return 0;let n=0;for(const k of Object.keys(v))if(k!==cv&&genOf(k)<=cvn){n++;await dropBlob(env,pid,k);}return n;}catch{return 0;}}
 // the whole state, read only (tests, admin)
 export async function readState(env,pid){const {v:h}=await readTag(env,'conquest/'+pid);if(!record(h)||!h.cv)return h;const c=await coldOf(env,pid,h.cv);return join(h,c);}

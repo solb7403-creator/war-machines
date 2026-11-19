@@ -5,7 +5,11 @@
    when a job finishes. 2D, the town sheet's own style. */
 (function(root){
 'use strict';
-const ROMAN=['','I','II','III','IV'];
+const ROMAN=['','I','II','III','IV','V'];
+// Session 6C: a Role Core job ('rc:<role>', paid in command chips, ConquestBattalion.RC) shares the research slots with the mods
+const rcJob=j=>typeof j?.mod==='string'&&j.mod.startsWith('rc:');
+const jobName=j=>{if(rcJob(j)){const r=j.mod.slice(3),I=root.ConquestBattalion?.ROLE_INFO?.[r];return 'ROLE CORE · '+(I?I.n.toUpperCase():r.toUpperCase())+' '+ROMAN[j.lv|0];}return rmodOf(j.mod).F.n.toUpperCase();};
+const jobColor=j=>rcJob(j)?'#f4cf77':RTREE.tracks[rmodOf(j.mod).F.rs].c;
 const SLOT_N={hull:'HULL',mobility:'MOBILITY',mount:'MOUNT'};
 const WORD={hp:'max hull',spd:'speed',dps:'damage per second',dashCd:'dash recharge',shieldCd:'shield recharge',turn:'turret turn',shotSpd:'shot speed',charge:'super charge',hitCharge:'super charge from hits',supTaken:'damage from supers'};
 const LOWGOOD=new Set(['dashCd','shieldCd','supTaken']);
@@ -41,11 +45,15 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
  else if(!L.any)el('p','cq-lab-why','Build a Science Lab in your town (Command Center 3) to start researching. Research turns the parts you find into new mods for every mode.',d);
  else{el('p','cq-lab-status',(L.ruined?'⚠ RUINED · research paused until you repair it · ':'')+(r.jobs||[]).length+' of '+slots+' research slot'+(slots>1?'s':'')+' running'+(L.lv<3?' · a second slot at Science Lab III':''),d);
   }
+ // Session 6C: the first Science Lab grant (owner, Nov 18): once, pick Thermal or Ballistics and take 2 of that part (outside the
+ // one-a-day limit), so the first mod (2 parts) can start the day the Lab stands
+ if(L.any&&!r.g&&s?.plot){const g=el('div','cq-lab-grant',null,d);el('b','cq-lab-grant-k','FIRST LAB GRANT',g);el('p','','Pick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.',g);const row=el('div','cq-lab-grant-row',null,g);
+  for(const k of ['thermal','coil']){const T=RTREE.tracks[k],b=button('',async()=>{for(const x of row.querySelectorAll('button'))x.disabled=true;const ok=await ctx.act(k,'research-grant');if(!ok)for(const x of row.querySelectorAll('button'))x.disabled=false;},'cq-lab-grant-go');b.style.setProperty('--tc',T.c);el('b','','+2 '+CQ_PARTS[k].n.toUpperCase()+'S',b);el('small','',T.n.toUpperCase()+' · '+T.d,b);row.append(b);}}
  const pr=el('div','cq-lab-parts',null,d);for(const k of CQ_PART_ORDER)partChip(el,pr,k,parts[k]);
  // running jobs, with their timers
- for(const j of r.jobs||[]){const F=rmodOf(j.mod).F,left=jobLeft(j,L,now),box=el('div','cq-lab-job',null,d);box.style.setProperty('--tc',RTREE.tracks[F.rs].c);
-  const tb=el('b','',F.n.toUpperCase()+' · '+(L.ruined?'PAUSED':fmtT(left)+' left'),box);const bar=el('progress','',null,box);bar.max=1;bar.value=Math.max(0,Math.min(1,1-left/Math.max(1,j.ms)));bar.setAttribute('aria-label',F.n+' research progress');
-  if(!L.ruined)live.push({t:tb,pre:F.n.toUpperCase()+' · ',end:now+left,bar,ms:j.ms});
+ for(const j of r.jobs||[]){const nm=jobName(j),left=jobLeft(j,L,now),box=el('div','cq-lab-job',null,d);box.style.setProperty('--tc',jobColor(j));
+  const tb=el('b','',nm+' · '+(L.ruined?'PAUSED':fmtT(left)+' left'),box);const bar=el('progress','',null,box);bar.max=1;bar.value=Math.max(0,Math.min(1,1-left/Math.max(1,j.ms)));bar.setAttribute('aria-label',nm+' research progress');
+  if(!L.ruined)live.push({t:tb,pre:nm+' · ',end:now+left,bar,ms:j.ms});
   if(ctx.store)ctx.store(box,'rsfin',{job:j,left});}
  // the tree: one fold per track, then the locked fifth track
  for(const t of RTREE.order){const T=RTREE.tracks[t],open=L.lv>=T.lab,f=el('details','cq-map-fold cq-lab-track',null,d),sm=el('summary','',T.n.toUpperCase()+' · '+(open?T.d:'opens at Science Lab '+ROMAN[T.lab]),f);sm.dataset.k='lab-'+t;f.style.setProperty('--tc',T.c);
@@ -63,7 +71,24 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
    else{const q=n.q,pn=CQ_PARTS[q.part].n.toUpperCase(),b=button(n.st==='short'?'NEED '+(q.n-n.have)+' MORE '+pn+(q.n-n.have>1?'S':'')+' ('+n.have+'/'+q.n+')':(n.st==='ready'?'RESEARCH':'SLOTS BUSY')+' · '+q.n+' '+pn+(q.n>1?'S':'')+' · '+fmtT(q.ms),async()=>{b.disabled=true;const ok=await ctx.act(id);if(!ok)b.disabled=false;},'cq-lab-go');
     b.disabled=n.st!=='ready';row.append(b);if(n.st==='short')el('small','cq-lab-lock','Parts drop from heavy Parasites, raid commanders and Meteor Strikes (you can earn 1 a day).',row);}
    if(F.leg&&ctx.store&&n.st!=='done'&&n.st!=='bought'&&n.st!=='running')ctx.store(row,'rsleg',{id});}}
- {const Lk=RTREE.role,f=el('details','cq-map-fold cq-lab-track cq-lab-locked',null,d),sm=el('summary','','🔒 '+Lk.n.toUpperCase()+' · '+Lk.d,f);sm.dataset.k='lab-role';el('small','',Lk.n+' open with Science Lab level '+ROMAN[Lk.lab]+'.',f);}
+ // Session 6C: the fifth track, Role Cores (Science Lab IV): levels II-V of each role, paid in command chips (ConquestBattalion.RC),
+ // 8 h each in the same research slots; a role's level reaches every pilot fitted with that Role Core. Earn-only: never sold
+ {const Lk=RTREE.role,open=L.lv>=Lk.lab,BT=root.ConquestBattalion,Hg=root.ConquestHangar,f=el('details','cq-map-fold cq-lab-track cq-lab-roles'+(open?'':' cq-lab-locked'),null,d),sm=el('summary','',(open?'':'🔒 ')+Lk.n.toUpperCase()+' · '+(open?Lk.d:'opens at Science Lab '+ROMAN[Lk.lab]),f);sm.dataset.k='lab-role';f.style.setProperty('--tc','#f4cf77');
+  if(!open||!BT)el('small','',Lk.n+' open with Science Lab level '+ROMAN[Lk.lab]+' (Command Center 7): each level makes a role\'s signature stronger on every pilot fitted with it.',f);
+  else{const held=Hg?Hg.chipsHeld(s):{e:0,b:0,total:0},ro=!!Hg?.rolesOpen(s),busy=(r.jobs||[]).length>=slots,want=[];
+   el('small','cq-lab-uses','COMMAND CHIPS · '+held.total+' HELD'+(held.b?' ('+held.b+' from packs)':'')+' · core II-V cost '+BT.RC.cost.slice(2).join(' → ')+' chips, '+fmtT(BT.RC.ms)+' each · you earn 1 a day (your first win with a pilot fielded)',f);
+   if(!ro)el('small','cq-lab-lock','🔒 Roles open with Hangar level II: build it in your town to give your pilots roles.',f);
+   for(const role of root.ConquestCombat.ROLE_ORDER){const I=BT.ROLE_INFO[role],lv=Math.max(1,Math.min(BT.RC.max,s?.rs?.rc?.[role]|0||1)),j=(r.jobs||[]).find(x=>x.mod==='rc:'+role),n=BT.RC.cost[lv+1]||0,pilots=(s?.bat?.p||[]).filter(p=>p.r===role).length;
+    const row=el('article','cq-lab-node cq-lab-rc '+(lv>=BT.RC.max?'cq-lab-done':j?'cq-lab-running':held.total>=n&&ro&&!busy?'cq-lab-ready':'cq-lab-short'),null,f);row.style.setProperty('--rc',Hg?.ROLE_C?.[role]||'#f4cf77');
+    const h=el('h3','',null,row);if(Hg)Hg.badge(el,h,role);el('span','',' '+I.n.toUpperCase()+' CORE '+ROMAN[lv]+' / V',h);
+    el('small','cq-lab-meta',I.chassis.toUpperCase()+' · '+(pilots?pilots+' PILOT'+(pilots>1?'S':'')+' FITTED':'NO PILOT FITTED YET'),row);
+    el('p','cq-lab-what',I.sig+'. Each level adds 10% to it, on every '+I.n+' you field (now +'+(lv-1)*10+'%).',row);
+    if(lv>=BT.RC.max)el('b','cq-lab-tag','✓ CORE V · MAX',row);
+    else if(j){const jl=jobLeft(j,L,now),tg=el('b','cq-lab-tag','RESEARCHING CORE '+ROMAN[j.lv|0]+' · '+(L.ruined?'paused':fmtT(jl)+' left'),row);if(!L.ruined)live.push({t:tg,pre:'RESEARCHING CORE '+ROMAN[j.lv|0]+' · ',end:now+jl});want.push(role);}
+    else{const ok=ro&&!L.ruined&&!busy&&held.total>=n,b=button(held.total<n?'NEED '+(n-held.total)+' MORE CHIP'+(n-held.total>1?'S':'')+' ('+held.total+'/'+n+')':(busy?'SLOTS BUSY':'RESEARCH CORE '+ROMAN[lv+1])+' · '+n+' CHIP'+(n>1?'S':'')+' · '+fmtT(BT.RC.ms),async()=>{b.disabled=true;const done=await ctx.act('rc:'+role);if(!done)b.disabled=false;},'cq-lab-go');b.disabled=!ok;row.append(b);if(ok)want.push(role);}}
+   if(want.length)f.open=true;
+   el('small','cq-lab-uses','Role Core levels are earn-only: never sold. A role\'s level reaches every pilot fitted with it, now and later.',f);
+   if(ctx.store)ctx.store(f,'chippack',{});}}
  // below the tree (UX critic round 2): how research works, then the pass perk (an offer, so it never sits above the research itself)
  el('p','cq-lab-explain','Research costs only research parts and time. A finished mod is yours for good: fit it in the garage (one per slot) and it works in every mode, PvP too.',d);
  if(L.any)el('small','cq-lab-pass',prem?'LUNAR PASS PREMIUM · +1 research slot and 25% faster jobs':LAB_STORE_OPEN?'LUNAR PASS PREMIUM adds a research slot, 25% faster jobs and research parts on its tiers':'Coming with the Lab store: LUNAR PASS PREMIUM adds a research slot, 25% faster jobs and research parts on its tiers',d);
@@ -78,7 +103,7 @@ function tickTimers(d,live,done){if(!live.length||typeof setInterval!=='function
   if(zero&&!fired&&typeof done==='function'){fired=true;clearInterval(iv);setTimeout(()=>{if(d.isConnected)done();},1200);}},1000);}
 // a compact line for the hub and the HOME tab: what is running, what can start
 function line(s,now=Date.now()){const r=rsOf(s),L=labOf(s);if(!L.any)return null;const j=(r.jobs||[])[0];
- if(j){const F=rmodOf(j.mod).F;return 'RESEARCH · '+F.n.toUpperCase()+' · '+(L.ruined?'PAUSED (lab ruined)':fmtT(jobLeft(j,L,now))+' left')+((r.jobs||[]).length>1?' · +'+((r.jobs||[]).length-1):'');}
+ if(j){return 'RESEARCH · '+jobName(j)+' · '+(L.ruined?'PAUSED (lab ruined)':fmtT(jobLeft(j,L,now))+' left')+((r.jobs||[]).length>1?' · +'+((r.jobs||[]).length-1):'');}
  const ready=RS_IDS.filter(id=>nodeOf(s,id,now).st==='ready').length,free=Math.max(1,rsSlots(L.lv,!!r.acct?.prem)-(r.jobs||[]).length);
  return ready?'RESEARCH · '+free+' slot'+(free>1?'s':'')+' free · '+ready+' mod'+(ready>1?'s':'')+' to choose from':'RESEARCH · '+Object.keys(r.done||{}).length+' of '+RTREE_ALL.length+' researched';}
 // the reveal card for a finished mod: what it does in plain words, the trade-off, the power change if fitted; FIT asks the
