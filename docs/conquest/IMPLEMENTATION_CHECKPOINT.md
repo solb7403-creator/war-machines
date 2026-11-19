@@ -5784,7 +5784,10 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   the HANGAR over the hub (app.js hangarOnly, like labOnly: session state only, every change a Worker action); styles in
   css/conquest.css (.cq-bat-*). Chromium smoke at 390x844 and 1280x800: renders, no page errors (captures
   docs/conquest/session6c/hangar-*.png); conquest-hub-browser.py PASS.
-- NEXT SESSION, in this order (all still open): (1) the phone UI (the hub HANGAR is done): HUD COMMAND in the context slot + wheel + keys V / hold V / 1-4,
+- DONE slice 9: every operation briefing carries the strip (ConquestHangar.strip in app.js briefing(): enemy icons + hint
+  line, your picked force for the fight size, preset P1-P3 switch, FORCE chip). Not yet checked in a browser. Lesson repeated
+  three times this session: an inserted trailing `//` comment on a long minified line swallows the rest of it; use /* */.
+- NEXT SESSION, in this order (all still open): (1) the phone UI (the hub HANGAR and the briefing strip are done): HUD COMMAND in the context slot + wheel + keys V / hold V / 1-4,
   allies drawn in 3D (Meshy kits, stock paint / livery / LDF livery, role badge, downed look, ally effects halved on LOW), the
   HANGAR (js/conquest/hangar.js is written: load it in index.html + web/boot.js, open it from the hub like labOnly and from
   MORE), the briefing strip + FORCE chip in app.js briefing(), the hub BATTALION card with "COMMAND CHIP 0/1 TODAY" beside the
