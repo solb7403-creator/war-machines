@@ -1,6 +1,7 @@
 // Shared warfront outbox projection. A per-pilot monotonic watermark and aggregate
 // live in one Firebase CAS document, so retries and parallel tabs cannot double count.
 import {readTag,writeIf} from './eco.js';
+import {transaction as cqTx} from './conquest-store.js';
 const PATH='conquestWarfront/frontier-v1',GOAL=1000;
 function view(v,pending=false){const score=v?.score||0;return {id:'frontier-v1',score,participants:v?.participants||0,goal:GOAL,stage:Math.floor(score/GOAL),monument:{unlocked:score>=GOAL,x:1030,z:1120,stage:Math.floor(score/GOAL)},updatedAt:v?.updatedAt||0,pending,worldBossAvailable:false,worldBossBlocker:'Coordinated human multiplayer is not authenticated or load-certified.'};}
 // Every Conquest request projects the shared campaign. A pilot whose campaign score has not risen past what this isolate already
@@ -31,6 +32,7 @@ export function applyWarfront(s,war,now){
 // Persist milestone receipts independently of action sequence. Re-read and CAS the
 // newest pilot record: a delayed projection cannot roll back another tab's inputs.
 export async function persistWarfront(env,pid,war,now){
- for(let i=0;i<8;i++){const {v,tag}=await readTag(env,'conquest/'+pid);if(!v)return null;const s=structuredClone(v);applyWarfront(s,war,now);if(await writeIf(env,'conquest/'+pid,s,tag))return s;}
- throw Error('conquest: milestone persistence busy');
+ // Session 6C: the record is split (conquest-store.js); campaignHistory and achievements ride the cold part, so this goes through
+ // the same split transaction (whole state in, hot CAS + cold blob out)
+ const r=await cqTx(env,pid,s=>s?(applyWarfront(s,war,now),{state:s}):{abort:true});return r.abort?null:r.state;
 }

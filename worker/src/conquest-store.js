@@ -13,18 +13,24 @@ import {dbUrl,SILENT} from './db.js';
 import {readTag,writeIf} from './eco.js';
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v);
 // cold: large or rarely changed (a whole state still works if any of these is in the hot part: hot fields win in join)
-export const COLD_KEYS=Object.freeze(['plot','lodes','explorationBattle','raidReceipts','missionClaims','cosmetics','campaignHistory','achievements','contracts','warfront','territory','strikes','regionRevision','raidProgress','lseed','deposits','harvest','found','ambushed']);
+export const COLD_KEYS=Object.freeze(['plot','lodes','explorationBattle','raidReceipts','missionClaims','cosmetics','campaignHistory','achievements','contracts','warfront','territory','strikes','regionRevision','raidProgress','lseed','deposits','harvest','found','ambushed','spawns','loadout','engineering','wo','rs','bat','firsts','checkpoint','completed','orders','reputation','campaignScore','resonance','incursions']);
 const COLD=new Set(COLD_KEYS);
-export const FAR=320;   // m: a Parasite farther than this from the pilot rides in the cold part (it does not move: AI runs within 240 m)
+export const FAR=245;   // m: a Parasite farther than this from the pilot rides whole in the cold part (AI runs within 240 m: it does not move)
+// the fields of a unit that change while it fights; everything else about it (its definition, stats, home, route, kit) is static
+// and rides in the cold part keyed by id (a static field that does change simply makes the cold part change: always correct)
+const DYN=new Set(['id','x','y','z','surface','hp','heading','turret','decision','dec','cd','vx','vz','target','guardReturning','navGoal','routeIndex','radioUntil','radioCalled','lootCreated','shielded','telegraph','enraged','nextPattern','drones','burns','bT','fz','fzA','sh','pd','ad','core','launchedAt','charge','heat','oh','react','tgt','ax','ay','az','sup','kills','down','hurt','hc','rv','rvT','ch','n','dt','dash','dormant','resident']);
+const halves=e=>{const d={},st={};for(const [k,v] of Object.entries(e))(DYN.has(k)?d:st)[k]=v;return [d,st];};
 // a state -> {hot, cold}; the far Parasites keep their place in the list (key 'e<index>': Firebase keeps it an object)
 export function split(s){const hot={},cold={};for(const [k,v] of Object.entries(s||{}))(COLD.has(k)?cold:hot)[k]=v;
  const b=hot.battle,p=hot.position;if(record(b)&&Array.isArray(b.enemies)&&p&&Number.isFinite(p.x)){const near=[],far={};let n=0;
-  b.enemies.forEach((e,i)=>{if(e&&Number.isFinite(e.x)&&Math.hypot(e.x-p.x,e.z-p.z)>FAR){far['e'+i]=e;n++;}else near.push(e);});
-  if(n){hot.battle={...b,enemies:near};cold.fe={n:b.enemies.length,e:far};}}
+  const es={},fs={};b.enemies.forEach((e,i)=>{if(e&&Number.isFinite(e.x)&&Math.hypot(e.x-p.x,e.z-p.z)>FAR){far['e'+i]=e;n++;}else if(e&&Number.isSafeInteger(e.id)){const [d,st]=halves(e);es['i'+e.id]=st;near.push(d);}else near.push(e);});
+  const fr=(Array.isArray(b.friends)?b.friends:[]).map(f=>{if(!f||!Number.isSafeInteger(f.id))return f;const [d,st]=halves(f);fs['i'+f.id]=st;return d;});
+  hot.battle={...b,enemies:near,friends:fr};cold.fe={n:b.enemies.length,e:far};cold.es=es;cold.fs=fs;}
  return {hot,cold};}
 const list=v=>Array.isArray(v)?v:record(v)?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]):[];
 // {hot, cold} -> the state (hot fields win, so a whole record written to the hot path, with no cv, is read as it is)
-export function join(hot,cold){if(!record(hot))return hot;const s={...(record(cold)?cold:{}),...hot};delete s.fe;delete s.cv;delete s.cvn;
+export function join(hot,cold){if(!record(hot))return hot;const s={...(record(cold)?cold:{}),...hot};delete s.fe;delete s.es;delete s.fs;delete s.cv;delete s.cvn;
+ if(record(s.battle)&&record(cold)){const es=record(cold.es)?cold.es:{},fs=record(cold.fs)?cold.fs:{};s.battle={...s.battle,enemies:list(s.battle.enemies).map(d=>d&&es['i'+d.id]?{...es['i'+d.id],...d}:d),friends:list(s.battle.friends).map(d=>d&&fs['i'+d.id]?{...fs['i'+d.id],...d}:d)};}
  const fe=record(cold)?cold.fe:null;if(record(fe)&&record(fe.e)&&record(s.battle)){const near=list(s.battle.enemies),at=fe.e,total=Math.max(fe.n|0,near.length+Object.keys(at).length),out=[];let k=0;
   for(let i=0;i<total;i++){const e=at['e'+i];if(e)out.push(e);else if(k<near.length)out.push(near[k++]);}while(k<near.length)out.push(near[k++]);s.battle={...s.battle,enemies:out};}
  return s;}
@@ -52,7 +58,7 @@ export async function transaction(env,pid,fn,guard){const path='conquest/'+pid;
   const {hot,cold:c2}=split(state),k2=canon(c2)||{},same=record(h)&&!!h.cv&&JSON.stringify(canon(cold)||{})===JSON.stringify(k2);
   let cv=record(h)?h.cv:null,fresh=null;if(!same){fresh=cvId((record(h)?h.cvn|0:0)+1,i);await putBlob(env,pid,fresh,k2);cv=fresh;}
   hot.cv=cv;hot.cvn=fresh?(record(h)?h.cvn|0:0)+1:(record(h)?h.cvn|0:0);
-  if(await writeIf(env,path,hot,tag)){if(fresh){remember(env,pid,fresh,k2);if(record(h)&&h.cv)await dropBlob(env,pid,h.cv);}r.cold=fresh?1:0;return r;}
+  if(await writeIf(env,path,hot,tag)){if(fresh){remember(env,pid,fresh,k2);if(record(h)&&h.cv)await dropBlob(env,pid,h.cv);}r.cold=fresh?1:0;r.cv=cv;return r;}
   if(fresh)await dropBlob(env,pid,fresh);}   // the CAS lost: this attempt's blob is an orphan
  throw Error('conquest busy');}
 // at a session open: delete orphan blobs (an attempt that died between its blob and its CAS); keys only (shallow)

@@ -7,6 +7,7 @@ import {readEco,readTag,writeIf,creditConquest} from './eco.js';
 import {seal,due,pending,acknowledge,airdrop} from './conquest-airdrop.js';
 import {RULES} from './sim.gen.js';
 import {hex} from './db.js';
+import {transaction as store,split as splitState,sweep,COLD_KEYS} from './conquest-store.js';
 import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS,LOOT_ACTIONS} from './conquest-sim.js';
 import {RESEARCH_ACTIONS,account as researchAccount} from './conquest-research.js';
 import {BAT_ACTIONS,account as batAccount,gearOf,field as batField} from './conquest-battalion.js';
@@ -47,12 +48,10 @@ export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.s
 export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};out.veins=publicVeins(s,s.lastWall||0);
  // Meteor Strike core rolls stay server-side until the strike is secured; the client only needs whether a slot is claimed.
  if(s.strikes&&typeof s.strikes==='object')out.strikes=Object.fromEntries(Object.entries(s.strikes).map(([k,v])=>[k,{claimed:v?.claimed?1:0}]));return out;}
+// Session 6C: the record is split (worker/src/conquest-store.js): the hot part is the CAS document, the cold part an immutable blob
+// named by it. fn sees the whole state exactly as before; the per-minute request limit is checked on the result, as before.
 async function transaction(env,pid,fn,now){
- const path='conquest/'+pid;
- for(let i=0;i<8;i++){const {v,tag}=await readTag(env,path);const s=v?structuredClone(v):null;const r=await fn(s);if(r.abort)return r;
- const state=r.state,m=Math.floor(now/60000);state.rate=state.rate?.m===m?state.rate:{m,n:0};if(++state.rate.n>90)return {abort:true,error:'rate',status:429,state:v};
- if(await writeIf(env,path,state,tag))return r;}
- throw Error('conquest busy');
+ return store(env,pid,fn,(state,h)=>{const m=Math.floor(now/60000);state.rate=state.rate?.m===m?state.rate:{m,n:0};if(++state.rate.n>90)return {abort:true,error:'rate',status:429,state:h};return null;});
 }
 export function passPremium(S,now){return S?.pass?.prem===true&&S.pass.s===RULES.ecoSeason({day:Math.floor(now/86400000)});}
 // Bounded per-isolate cache so repeated recall taps cost no extra account reads; read errors fail closed and are not cached.
@@ -79,33 +78,38 @@ async function settleAirdrop(env,pid,r,now,force=false){
  let c;try{c=await creditConquest(env,pid,pending(s),now);}catch{return r;}
  const view={d:c.day,dailyPts:c.dailyPts,cap:RULES.DAILY_CAP,cq:c.cqToday,lgi:c.lgi,pay:c.pay,at:now,mn:c.mn,ap:c.ap,pts:c.pts,rm:c.rm||[]};
  // Prune with its own CAS loop: server bookkeeping, not a pilot request (never counts against the request rate limit).
- for(let i=0;i<8;i++){const {v,tag}=await readTag(env,'conquest/'+pid);if(!v||v.v!==1)break;const cur=structuredClone(v);acknowledge(cur,c.cqw,view);if(await writeIf(env,'conquest/'+pid,cur,tag))break;}
+ for(let i=0;i<8;i++){const {v,tag}=await readTag(env,'conquest/'+pid);if(!v||v.v!==1)break;const cur=structuredClone(v);acknowledge(cur,c.cqw,view);if(await writeIf(env,'conquest/'+pid,cur,tag))break;}   // the outbox rides the hot part (conquest-store.js): this prune never touches the cold blob
  acknowledge(s,c.cqw,view);s.airdrop.credit={base:c.base,awarded:c.awarded,capped:c.capped,at:now,...(Object.keys(c.minerals||{}).length?{minerals:c.minerals}:{})};return r;}
 function result(r){return r.error?response(r.status||409,r.error,r.state):{status:200,body:{ok:true,state:publicState(r.state),replayed:!!r.replayed}};}
+// Session 6C: an input reply carries the hot part only when nothing cold changed and the phone already holds this cold version
+// (it sends the cv it has); the phone keeps its cold fields (js/conquest/session.js). Every other reply is the whole state.
+export function publicHot(s){const {hot}=splitState(s),{lastDigest,rate,raidRoll,...out}=hot;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData']))return response(400,'invalid conquest session');
  const {loadout:L,legacy,view,rsAcct,batAcct}=await canonical(env,a.pid,now);
  const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);researchAccount(state,rsAcct,now);batAccount(state,batAcct,now);if(!state.mission)batField(state,state.battle,state.position,'wing');refitState(state,L);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state);return {state,anq};},now);
  if(!r0.abort&&r0.anq?.length)await flush(env,r0.anq,r0.state?.an?.f,now);   // Session 6 analytics: entry, cohort and return, after the write
- const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r0,now,true),now);
+ const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r0,now,true),now);if(out.status===200&&r0.cv)out.body.cv=r0.cv;   // Session 6C: the cold version the phone now holds
  if(out.status===200&&out.body?.state?.plot)await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // builder jobs settle on open
  return out;
 }
-async function submit(env,a,request,reduce,now){
+async function submit(env,a,request,reduce,now,cv=null){
  const digest=hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(request))));
  const r=await transaction(env,a.pid,previous=>{
   if(previous?.v!==1)return {abort:true,error:'open conquest session first'};
   if(request.seq===previous.seq){if(digest===previous.lastDigest)return {abort:true,state:previous,replayed:true};return {abort:true,error:'sequence already used',state:previous};}
   try{const state=reduce(previous,request,now);seal(state,now);state.lastDigest=digest;const anq=takeQueue(state);return {state,anq};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
  },now);if(!r.abort&&r.anq?.length)await flush(env,r.anq,r.state?.an?.f,now);   // Session 6 analytics: counted only after the CAS write
- return projected(env,a.pid,await settleAirdrop(env,a.pid,r,now),now);
+ const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r,now),now);
+ if(out.status===200&&r.state){const hcv=r.cv;if(hcv){out.body.cv=hcv;if(cv&&cv===hcv&&!r.cold&&!r.replayed){const st=out.body.state;out.body.hot=publicHot(r.state);if(st?.warfront)out.body.hot.warfront=st.warfront;if(st?.airdrop)out.body.hot.airdrop=st.airdrop;delete out.body.state;}}}
+ return out;
 }
 // Session 6 analytics: the phone's screen events (the opening radio, where a session ended, its length). Fixed enums only.
 export async function conquestEvent(env,a,now=Date.now()){if(!allowed(a.b,['gv','initData','e','k']))return response(400,'invalid event');const q=clientEvent(a.b,a.pid,now);if(q)await flush(env,q,null,now);return {status:200,body:{ok:true}};}
 export async function conquestInput(env,a,now=Date.now()){
- if(!allowed(a.b,['gv','initData','seq','commands'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1)return response(400,'invalid conquest input');
+ if(!allowed(a.b,['gv','initData','seq','commands','cv'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||a.b.cv!==undefined&&(typeof a.b.cv!=='string'||a.b.cv.length>40))return response(400,'invalid conquest input');
  let commands;try{commands=validateCommands(a.b.commands);}catch{return response(400,'invalid conquest command');}
- return submit(env,a,{seq:a.b.seq,commands},applyCommands,now);
+ return submit(env,a,{seq:a.b.seq,commands},applyCommands,now,a.b.cv||null);
 }
 export async function conquestAction(env,a,now=Date.now()){
  if(a.b&&DEV_ACTIONS.includes(a.b.action)){

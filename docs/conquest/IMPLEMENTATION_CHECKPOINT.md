@@ -5753,7 +5753,20 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   1.8, Platoon 2.8, Battalion 17.1, roster 16 by 8.1, Science Lab IV 9.3, first role maxed 19.3, all six 119.3, one pilot
   rank 3/6/9/10 at 1/5/18/25 if always fielded, 9 pilots rank 9 at 48, the roster rank 10 at 109; 30 min: 3.3 / 4.8 / 43.1 /
   9 / 22.1 / 23.4 / 119.3, ranks 2/11/35/49, 89, 208; 120 min: 1 / 2 / 10.2 / 8 / 5.5 / 19.3 / 119.3, ranks 1/3/9/12, 26, 58.
-  REMAINING patch: p8_split (and everything under "STILL TO BUILD").
+  DONE slice 5 (the record split, Nov 19): p8_split applied + worker/src/conquest-store.js live: hot CAS part at conquest/<pid>
+  (moving fields only: each Parasite's and ally's static fields ride the cold part by id, Parasites beyond 245 m ride whole in the
+  cold part), immutable cold blob at cqc/<pid>/<cv> written with print=silent only when it changed, per-isolate blob cache,
+  orphan sweep helper; persistWarfront goes through the split transaction; the session and input replies carry `cv`; an input
+  reply is hot-only when nothing cold changed and the phone holds that cv (js/conquest/session.js keeps the cold fields and
+  merges; idle cadence 2 s with no Parasite within 160 m, no operation, recall, gather or press in the last 5 s; the 40-command
+  batch kept: conquest-authority pins it). Tests that poke the record in the fake database now use dev/tests/wtest/cqlive.mjs
+  (puts the whole record back at the hot path: the storage layout changed, no assertion changed). MEASURED (same real Worker
+  routes, dev/tools/session6c/measure-record.mjs, new pilot): BEFORE (main, 1 Hz): idle 45.6 KB of Firebase download a request =
+  164 MB a pilot-hour, an operation 72.3 KB = 260 MB/h; phone 22 KB (79 MB/h) / 35 KB (126 MB/h). AFTER: warm isolate idle
+  17.3 KB at 0.5 Hz = 31 MB/h (-81%), operation 18.7 KB at 1 Hz = 67 MB/h (-74%); a cold isolate on every request idle 32.1 KB =
+  58 MB/h, operation 45.5 KB = 164 MB/h; phone idle 12.2 KB = 22 MB/h, operation 9.7 KB = 35 MB/h. Not yet run after it: the
+  full 119-test list, the browser journeys. NOT built yet: `sweep` is not called at session open; the startup of the hub (live)
+  and labOnly still get whole states (fine). Everything under "STILL TO BUILD" except the split items is still open.
 - PREPARED PATCHES (apply in this order from the repo root, `python3 dev/tools/session6c/pN_*.py`; each asserts its anchors, then
   rebuild the sim and run the suites): p1_rules (store kinds chip pack / livery / rcfin with checkout off, BAT_STORE_OPEN,
   CHIP_PACK, LIVERIES, ECO_KEYS bch/liv/rcx, RTREE.labMax 4, RTREE.role; NOTE p1 renames RTREE.locked to RTREE.role: also

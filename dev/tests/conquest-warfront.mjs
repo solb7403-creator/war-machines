@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {cqLive} from './wtest/cqlive.mjs';   // Session 6C: the Conquest record is split (hot + cold blob)
 import {makeDB} from './wtest/fakedb.mjs';
 import {syncWarfront} from '../../worker/src/conquest-warfront.js';
 const db=makeDB({pruneEmptyUnder:['conquestWarfront']});
@@ -13,7 +14,7 @@ await assert.rejects(syncWarfront(env,'tg_test1',-1,5000),/invalid/);assert(!('c
 console.log('PASS real Firebase-shaped shared CAS: eight-way same-pilot replay, eight distinct pilots, exact monotonic totals, truthful participants and private contribution ledger');
 const {persistWarfront}=await import('../../worker/src/conquest-warfront.js');
 await db.handle('https://warmachines-a6034-default-rtdb.firebaseio.com/conquest/tg_projection.json?auth=SECRET',{method:'PUT',body:JSON.stringify({v:1,seq:73,ledger:{cp:417,banked:{alloy:42}},achievements:{original:123}})});
-const stage1={id:'frontier-v1',stage:1,score:1000},stage2={id:'frontier-v1',stage:2,score:2000};await Promise.all([persistWarfront(env,'tg_projection',stage2,6000),persistWarfront(env,'tg_projection',stage1,6001)]);let p=db.get('conquest/tg_projection');assert.equal(p.seq,73);assert.equal(p.ledger.cp,417);assert.equal(p.ledger.banked.alloy,42);assert.equal(p.achievements.original,123);assert.equal(p.warfront.stage,2,'late projection never lowers stored stage');assert(p.campaignHistory['frontier-v1:1']);assert(p.campaignHistory['frontier-v1:2']);const stamp=p.campaignHistory['frontier-v1:1'].at;await persistWarfront(env,'tg_projection',stage1,7000);p=db.get('conquest/tg_projection');assert.equal(p.campaignHistory['frontier-v1:1'].at,stamp);assert.equal(p.warfront.stage,2);
+const stage1={id:'frontier-v1',stage:1,score:1000},stage2={id:'frontier-v1',stage:2,score:2000};await Promise.all([persistWarfront(env,'tg_projection',stage2,6000),persistWarfront(env,'tg_projection',stage1,6001)]);let p=cqLive(db,'tg_projection');assert.equal(p.seq,73);assert.equal(p.ledger.cp,417);assert.equal(p.ledger.banked.alloy,42);assert.equal(p.achievements.original,123);assert.equal(p.warfront.stage,2,'late projection never lowers stored stage');assert(p.campaignHistory['frontier-v1:1']);assert(p.campaignHistory['frontier-v1:2']);const stamp=p.campaignHistory['frontier-v1:1'].at;await persistWarfront(env,'tg_projection',stage1,7000);p=cqLive(db,'tg_projection');assert.equal(p.campaignHistory['frontier-v1:1'].at,stamp);assert.equal(p.warfront.stage,2);
 console.log('PASS shared milestone metadata CAS preserves latest sequence/balances/history during out-of-order concurrent projections');
 // Bounded read load: a pilot with no new contribution is served this isolate's newest aggregate for up to 30s instead of a
 // shared-document read on every request; any score increase, or an expired cache, reads and CASes again.

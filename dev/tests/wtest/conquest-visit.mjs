@@ -2,6 +2,7 @@
 // minerals, timers or positions); the top 20 by Command Power and Base of the Week (largest verified weekly gain) update by
 // CAS; visits are read-only and open only to the top 20, your squad and the Base of the Week.
 import assert from 'node:assert/strict';import {createHmac} from 'node:crypto';
+import {cqLive} from './cqlive.mjs';   // Session 6C: the Conquest record is split (hot + cold blob)
 import {makeDB} from './fakedb.mjs';import {buildSim} from '../../../worker/build-sim.mjs';
 buildSim();const db=makeDB({pruneEmptyUnder:['conquest']});
 globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/'))return db.handle(url,init);throw Error('Unexpected external request');};
@@ -11,7 +12,7 @@ function auth(id){const p=new URLSearchParams({auth_date:String(Math.floor(now/1
 async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:7,initData:auth(id),...body})}),env);const t=await r.text();return {status:r.status,...(t.startsWith('{')?JSON.parse(t):{error:t})};}
 let passed=0;const ok=(c,m)=>{assert(c,m);passed++;console.log('PASS '+m);};
 const D=C.baseDefinition,gate={x:D.x,z:D.z,y:W.groundAt(D.x,D.z),surface:'ground'};
-async function pilotWithBase(id,site){await call(id,'/api/sync');await call(id,'/api/conquest/session');const s=db.get('conquest/tg_'+id);s.position=gate;s.battle.enemies=[];s.ledger.cp=1e6;s.ledger.banked={alloy:1e5,biomass:1e5,helium:1e5};db.root.conquest['tg_'+id]=s;
+async function pilotWithBase(id,site){await call(id,'/api/sync');await call(id,'/api/conquest/session');const s=cqLive(db,'tg_'+id);s.position=gate;s.battle.enemies=[];s.ledger.cp=1e6;s.ledger.banked={alloy:1e5,biomass:1e5,helium:1e5};db.root.conquest['tg_'+id]=s;
  const r=await call(id,'/api/conquest/action',{seq:s.seq+1,action:'build-base',plot:{site}});assert.equal(r.status,200,JSON.stringify(r).slice(0,200));return r.state;}
 const a=await pilotWithBase(8201,'canyon');const snap=db.get('cqbase/tg_8201');
 ok(snap&&snap.site==='canyon'&&snap.cc===1&&snap.pw===a.plot.power&&snap.n==='Pilot8201'&&snap.b.cc,'claiming a plot publishes its public snapshot (site, CC, Command Power, layout)');
@@ -19,9 +20,9 @@ ok(!('ledger' in snap)&&!('st' in snap)&&!('mnSpent' in snap)&&!('job' in snap)&
 ok(db.get('cqtop').list.some(x=>x.p==='tg_8201'),'the pilot enters the Command Power top 20');
 ok(snap.w0===snap.pw&&!db.root.cqweek,'a first publish starts the week at its own power: an existing base is not "gain" (review fix)');
 // a second pilot builds more: their verified gain makes them Base of the Week
-const b=await pilotWithBase(8202,'ridge');now+=1000;let s=db.get('conquest/tg_8202');const at=P.autoPlace(s.plot,'refinery');
+const b=await pilotWithBase(8202,'ridge');now+=1000;let s=cqLive(db,'tg_8202');const at=P.autoPlace(s.plot,'refinery');
 let r=await call(8202,'/api/conquest/action',{seq:s.seq+1,action:'plot-build',plot:{type:'refinery',...at}});now+=16000;r=await call(8202,'/api/conquest/session');
-s=db.get('conquest/tg_8202');r=await call(8202,'/api/conquest/action',{seq:s.seq+1,action:'plot-upgrade',plot:{id:'cc'}});now+=31000;await call(8202,'/api/conquest/session');
+s=cqLive(db,'tg_8202');r=await call(8202,'/api/conquest/action',{seq:s.seq+1,action:'plot-upgrade',plot:{id:'cc'}});now+=31000;await call(8202,'/api/conquest/session');
 const wk=Object.keys(db.root.cqweek||{})[0],bow=db.get('cqweek/'+wk);ok(bow?.p==='tg_8202'&&bow.g>0,'Base of the Week: the largest verified weekly Command Power gain (+'+bow?.g+', no votes)');
 const top=db.get('cqtop').list;ok(top[0].p==='tg_8202'&&top.length===2,'top list sorted by Command Power');
 // visits: lists, read-only snapshot, permissions
