@@ -5980,7 +5980,9 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   (main's margin 1.54 m, the branch 0.2-0.7 m; both engines move and dash identically step for step from the same spot, the
   distance comes from frame-timed key holds). All three pass in CI. Open: make them robust (resend the tap until the action is
   sent; drive a fixed number of steps; gather on open ground).
-- Worker: `Deploy Stars server (Cloudflare)` run 44493395464 on `4a5ba1a`: in progress when this was written (server tests).
+- Worker: `Deploy Stars server (Cloudflare)` run 44493395464 SUCCESS on `4a5ba1a` (server tests, the live-match smoke test in the
+  Workers runtime, deploy 09:11 UTC, webhook): `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`, live
+  `version.json` = `{"v":"20261119074646"}` = repo (09:13 UTC; this time the first check already read the new build).
 - GitHub Pages: `pages build and deployment` run 44493393034 SUCCESS on `4a5ba1a` (deployed 09:08 UTC). This cloud container cannot
   reach github.io or workers.dev (network policy, proxy 403, tried again), so the live values come from the deploy jobs' own checks.
 - No live players: no migration code. Revert plan if broken: revert `4a5ba1a` on main (both deploys follow main). Not needed.
