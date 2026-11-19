@@ -1,7 +1,7 @@
 {
   "scope": "Exact continuation of the continuous canonical starter earned save. No new resource/equipment/health/position/outcome fixture. Shared authoritative input replay, not a native browser combat recording.",
   "initial": {
-    "cp": 165,
+    "cp": 125,
     "loadout": {
       "w": {
         "a": "pulse",
@@ -38,11 +38,11 @@
       "surface": "ground"
     }
   },
-  "seconds": 9.65,
+  "seconds": 8.2,
   "kills": 6,
   "report": {
     "outcome": "victory",
-    "at": 1800000467950,
+    "at": 1800000467500,
     "ptsRaw": 708.75,
     "mn": {
       "fe": 2,
@@ -58,12 +58,11 @@
     "chain": {
       "links": 3,
       "bonus": 0,
-      "chance": 0.30000000000000004,
-      "item": "repair"
+      "chance": 0.30000000000000004
     }
   },
-  "hp": 1562.2691000000007,
-  "cp": 325,
+  "hp": 1612.8116000000005,
+  "cp": 285,
   "loadout": {
     "w": {
       "a": "pulse",
@@ -107,11 +106,11 @@
       "attempt": 3
     },
     "convoy": {
-      "at": 1800000338250,
+      "at": 1800000339250,
       "attempt": 4
     },
     "base-defense": {
-      "at": 1800000467950,
+      "at": 1800000467500,
       "attempt": 5
     }
   }

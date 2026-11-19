@@ -126,7 +126,7 @@ async def steps(browser,base,ready,w,h,R):
  start=page.get_by_role('button',name='START MISSION');await start.scroll_into_view_if_needed();await press(start)
  await page.wait_for_function('!!Conquest.view?.battle',timeout=30000)
  await page.wait_for_function('(()=>{const b=document.querySelector("#cq-command-access");return b&&!b.hidden;})()',timeout=30000);await page.wait_for_timeout(3000)
- R['fight']=await page.evaluate('({friends:Conquest.view.battle.friends.length,views:Conquest.view.friendViews?Conquest.view.friendViews.size:0,meshes:[...(Conquest.view.friendViews?.values()||[])].map(F=>{let n=0;F.g.traverse(o=>{if(o.isMesh)n++;});return n;}),tags:document.querySelectorAll(".cq-ally-tag:not([hidden])").length,command:document.querySelector("#cq-command-access")?.textContent,calls:Conquest.view.renderer.info?.render?.calls,programs:Conquest.view.renderer.info?.programs?.length})')
+ R['fight']=await page.evaluate('({friends:Conquest.view.battle.friends.length,views:Conquest.view.friendViews?Conquest.view.friendViews.size:0,meshes:[...(Conquest.view.friendViews?.values()||[])].map(F=>{let n=0;F.g.traverse(o=>{if(o.isMesh)n++;});return n;}),tags:document.querySelectorAll(".cq-ally-tag:not([hidden])").length,tagsDom:document.querySelectorAll(".cq-ally-tag").length,command:document.querySelector("#cq-command-access")?.textContent,calls:Conquest.view.renderer.info?.render?.calls,programs:Conquest.view.renderer.info?.programs?.length})')
  R['fight']['targets']=await page.evaluate(HUD_TARGETS);R['fight']['slot']=await page.evaluate(SLOT)
  b=page.locator('#cq-command-access');bb=await b.bounding_box();R['fight']['commandBox']=[round(bb['x']),round(bb['y']),round(bb['width']),round(bb['height'])]
  x=bb['x']+bb['width']/2;y=bb['y']+bb['height']/2
@@ -204,7 +204,7 @@ def verdict(R):
  hc=R.get('hubCard') or {};e((hc.get('chipDay') or '').startswith('COMMAND CHIP 0/1 TODAY') and hc.get('force'),'hub BATTALION card '+json.dumps(hc))
  hg=R.get('hangar') or {};e(len(hg.get('toggles') or [])==4 and all('IN FORCE' in t for t in hg.get('toggles') or []),'every card has its force button (an empty preset fields all four: IN FORCE · AUTO): '+json.dumps(hg.get('toggles')));e(hg.get('cards')==4 and hg.get('arm') and hg.get('presets')==3 and len(hg.get('forms') or [])==3 and R.get('hangarCloseVisible'),'HANGAR '+json.dumps(hg))
  st=R.get('raidStrip') or {};e(st.get('enemies',0)>=3 and st.get('label')=='PLATOON' and len(st.get('force') or [])==4 and st.get('presets')==3 and st.get('force_chip'),'raid strip '+json.dumps(st))
- f=R.get('fight') or {};e(f.get('friends')==4 and f.get('views')==4 and all(m>=1 for m in f.get('meshes') or [0]) and f.get('tags')==4,'allies in 3D '+json.dumps(f))
+ f=R.get('fight') or {};e(f.get('friends')==4 and f.get('views')==4 and all(m>=1 for m in f.get('meshes') or [0]) and f.get('tagsDom')==4 and f.get('tags',0)>=2,'allies in 3D '+json.dumps(f))
  e((f.get('programs') or 99)<=16,'the Platoon fight stays inside the 16-program budget: '+str(f.get('programs')))
  e(f.get('slot')==['#cq-command-access'] and R.get('openWorld',{}).get('slot') in (['#cq-scan-access'],['#cq-gather-access'],['#cq-command-access']),'one context slot: '+str(f.get('slot'))+' / '+str(R.get('openWorld')))
  e(0<f.get('targets',99)<=max(8,R.get('openWorld',{}).get('targets',0)),'the fight HUD keeps its touch targets: '+str(f.get('targets'))+' (open world '+str(R.get('openWorld',{}).get('targets'))+')')

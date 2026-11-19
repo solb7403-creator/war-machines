@@ -123,12 +123,31 @@
    "label": "Sound is off",
    "bed": null
   },
-  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
-  "crashState": {
-   "dialogs": [],
-   "active": false,
-   "connected": false
-  }
+  "shop": {
+   "items": [
+    "Field kit",
+    "Lab crate",
+    "Research cache",
+    "\u2605 Sunfire Core",
+    "\u2605 Starfall Driver",
+    "\u2605 Hyperdrive",
+    "\u2605 Aegis Prime"
+   ],
+   "prices": [
+    "99 \u2b50",
+    "249 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50"
+   ],
+   "allDisabled": true,
+   "off": 7,
+   "note": "Not on sale yet: nothing in this section can be bought.",
+   "fits": true
+  },
+  "errors": []
  },
  {
   "size": "390x844",
@@ -254,12 +273,31 @@
    "label": "Sound is off",
    "bed": null
   },
-  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
-  "crashState": {
-   "dialogs": [],
-   "active": false,
-   "connected": false
-  }
+  "shop": {
+   "items": [
+    "Field kit",
+    "Lab crate",
+    "Research cache",
+    "\u2605 Sunfire Core",
+    "\u2605 Starfall Driver",
+    "\u2605 Hyperdrive",
+    "\u2605 Aegis Prime"
+   ],
+   "prices": [
+    "99 \u2b50",
+    "249 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50"
+   ],
+   "allDisabled": true,
+   "off": 7,
+   "note": "Not on sale yet: nothing in this section can be bought.",
+   "fits": true
+  },
+  "errors": []
  },
  {
   "size": "320x568",
@@ -385,12 +423,31 @@
    "label": "Sound is off",
    "bed": null
   },
-  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
-  "crashState": {
-   "dialogs": [],
-   "active": false,
-   "connected": false
-  }
+  "shop": {
+   "items": [
+    "Field kit",
+    "Lab crate",
+    "Research cache",
+    "\u2605 Sunfire Core",
+    "\u2605 Starfall Driver",
+    "\u2605 Hyperdrive",
+    "\u2605 Aegis Prime"
+   ],
+   "prices": [
+    "99 \u2b50",
+    "249 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50"
+   ],
+   "allDisabled": true,
+   "off": 7,
+   "note": "Not on sale yet: nothing in this section can be bought.",
+   "fits": true
+  },
+  "errors": []
  },
  {
   "size": "1366x768",
@@ -517,12 +574,31 @@
    "label": "Sound is off",
    "bed": null
   },
-  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
-  "crashState": {
-   "dialogs": [],
-   "active": false,
-   "connected": false
-  }
+  "shop": {
+   "items": [
+    "Field kit",
+    "Lab crate",
+    "Research cache",
+    "\u2605 Sunfire Core",
+    "\u2605 Starfall Driver",
+    "\u2605 Hyperdrive",
+    "\u2605 Aegis Prime"
+   ],
+   "prices": [
+    "99 \u2b50",
+    "249 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50"
+   ],
+   "allDisabled": true,
+   "off": 7,
+   "note": "Not on sale yet: nothing in this section can be bought.",
+   "fits": true
+  },
+  "errors": []
  },
  {
   "size": "1920x1080",
@@ -578,7 +654,7 @@
    "wide": false
   },
   "running": {
-   "job": "VENT BARREL \u00b7 20m 00s left",
+   "job": "VENT BARREL \u00b7 19m 59s left",
    "finish": "FINISH NOW \u00b7 8 \u2b50",
    "finishDisabled": true,
    "off": "Not on sale yet \u00b7 priced by the time left",
@@ -649,11 +725,30 @@
    "label": "Sound is off",
    "bed": null
   },
-  "crash": "Locator.scroll_into_view_if_needed: Error: strict mode violation: locator(\".labshop\") resolved to 2 elements:\n    1) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For the Science Lab in\")\n    2) <div class=\"labshop panel\">\u2026</div> aka get_by_text(\"Not on sale yet: nothing in this section can be bought.For your pilots in\")\n\nCall log:\n  - waiting for locator(\".labshop\")\n",
-  "crashState": {
-   "dialogs": [],
-   "active": false,
-   "connected": false
-  }
+  "shop": {
+   "items": [
+    "Field kit",
+    "Lab crate",
+    "Research cache",
+    "\u2605 Sunfire Core",
+    "\u2605 Starfall Driver",
+    "\u2605 Hyperdrive",
+    "\u2605 Aegis Prime"
+   ],
+   "prices": [
+    "99 \u2b50",
+    "249 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50",
+    "599 \u2b50"
+   ],
+   "allDisabled": true,
+   "off": 7,
+   "note": "Not on sale yet: nothing in this section can be bought.",
+   "fits": true
+  },
+  "errors": []
  }
 ]
