@@ -8,42 +8,46 @@ import argparse,asyncio,json,math,pathlib,shutil
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2]
-def look(fx,fz):return math.atan2(-fx,-fz)   # camera behind the hull looking along (fx, fz)
-# name, jump [x, z], camera yaw, pitch, distance
+# name, subject (a JS expression for [x, z] in the page, F = the style's footprints, W = ConquestWorld), the side the tank
+# stands on (degrees from +x toward +z, seen from the subject), stand-off (m), camera pitch, camera distance.
+# The tank is placed on open ground at the stand-off and the camera looks over it at the subject.
 SHOTS=[
- ('refuge-habitats',[1132,1140],look(0,1),.42,44),
- ('refuge-habitat-close',[1121,1160],look(-.6,-.8),.34,24),
- ('refuge-processors',[1180,1118],look(0,-1),.3,70),
- ('refuge-processor-base',[1165,1098],look(.3,-1),.3,34),
- ('refuge-terminal',[1174,1180],look(0,-1),.36,26),
- ('refuge-solar',[1142,1214],look(0,1),.4,36),
- ('viaduct',[1020,1044],look(0,-1),.3,56),
- ('viaduct-deck',[1000,1024],look(1,0),.3,30),
- ('command-base-site',[1080,1126],look(0,1),.5,52),
- ('hive',[1240,950],look(0,-1),.36,48),
- ('raid-cover',[915,960],look(0,-1),.45,40),
- ('colony-core',[1096,1128],look(.92,-.38),.3,46),
- ('colony-homes',[1000,1072],look(-.2,-1),.36,32),
- ('colony-shop',[1006,1072],look(-.3,-1),.3,22),
- ('colony-hall',[1118,1096],look(-.5,-1),.34,34),
- ('colony-block',[1222,1066],look(1,0),.34,32),
- ('colony-water-tower',[1056,1072],look(-.4,-1),.3,40),
- ('colony-hangar',[1110,1068],look(-1,-.4),.34,34),
- ('colony-plaza',[1012,1112],look(0,-1),.5,40),
- ('farm-silos',[913,1094],look(0,-1),.32,34),
- ('farm-greenhouse',[918,1178],look(0,-1),.36,30),
- ('farm-fields',[946,1102],look(-1,.1),.34,44),
- ('frontier-wall',[1006,1074],look(-.2,-1),.34,40),
- ('frontier-gate',[1062,1082],look(0,-1),.34,34),
- ('frontier-watch',[1300,1104],look(.6,-.6),.34,34),
- ('atmo-pylon',[1004,1136],look(0,-1),.3,34),
- ('dam',[800,1380],look(0,-1),.36,60),
- ('creek-bridge',[953,1186],look(-.85,.5),.3,36),
- ('ice-crater',[946,1196],look(-.7,-.7),.4,40),
- ('forest',[990,1222],look(-1,-.2),.3,36),
- ('wild-meadow',[990,1300],look(-.6,-.8),.24,34),
- ('wreck-band',[1250,1040],look(.4,-1),.34,40),
- ('barren-rocks',[1300,900],look(0,-1),.34,36),
+ ('refuge-habitats','[F.habitats[0].x,F.habitats[0].z]',90,22,.32,26),
+ ('refuge-habitat-close','[F.habitats[1].x,F.habitats[1].z]',60,14,.26,15),
+ ('refuge-processors','[F.processors[1].x,F.processors[1].z]',270,48,.16,60),
+ ('refuge-processor-base','[F.processors[1].x,F.processors[1].z]',255,23,.24,22),
+ ('refuge-terminal','[F.terminal.x,F.terminal.z]',90,12,.32,15),
+ ('refuge-solar','[F.solar[2].x,F.solar[2].z]',90,14,.36,20),
+ ('viaduct','[1020,1024]',90,34,.2,42),
+ ('viaduct-deck','[1040,1024]',180,30,.3,20),
+ ('command-base-site','[ConquestCombat.baseDefinition.x,ConquestCombat.baseDefinition.z]',270,34,.4,38),
+ ('hive','[F.installations[0].solid.x,F.installations[0].solid.z]',180,26,.3,32),
+ ('raid-cover','[915,942]',90,14,.4,24),
+ ('colony-core','[1062,1090]',135,24,.32,38),
+ ('colony-homes','[1146,1108]',90,13,.3,17),
+ ('colony-shop','[1194,1060]',80,12,.28,15),
+ ('colony-hall','[1014,1144]',90,15,.28,21),
+ ('colony-block','[1194,1096]',90,14,.24,20),
+ ('colony-water-tower','[1218,1096]',90,20,.1,30),
+ ('colony-hangar','[1098,1060]',90,18,.28,23),
+ ('colony-plaza','[1012,1096]',90,16,.5,28),
+ ('colony-monorail','[1100,1100]',90,18,.08,30),
+ ('farm-silos','[919,1080]',90,15,.18,23),
+ ('farm-greenhouse','[918,1164]',90,13,.3,19),
+ ('farm-fields','[906,1119]',0,26,.4,32),
+ ('frontier-wall','[1272,1146]',350,20,.26,27),
+ ('frontier-defences','[1255,1166]',200,13,.3,18),
+ ('frontier-gate','[1062,1066]',270,18,.26,25),
+ ('frontier-watch','[1311,1094]',20,18,.18,25),
+ ('atmo-pylon','[1004,1122]',90,14,.18,22),
+ ('dam','[801,1364]',90,30,.3,42),
+ ('creek-bridge','[936.5,1197.4]',60,20,.3,24),
+ ('ice-crater','[922,1179]',315,18,.34,25),
+ ('pipeline','[975,1171]',90,8,.3,15),
+ ('forest','[972,1216]',0,26,.24,28),
+ ('wild-meadow','[990,1300]',45,10,.22,24),
+ ('wreck-band','(Conquest.view.frontier&&Conquest.view.frontier.userData.wrecks&&Conquest.view.frontier.userData.wrecks[0])||[1250,1040]',90,9,.3,14),
+ ('barren-rocks','[1300,900]',90,8,.3,18),
 ]
 async def main(a):
  w,h=[int(v) for v in a.size.split('x')];out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True)
@@ -64,8 +68,14 @@ async def main(a):
   if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
   await page.wait_for_function('Conquest.view.pending===0',timeout=240000)
   info={}
-  for name,pos,yaw,pitch,dist in shots:
-   await page.evaluate('([x,z,yaw,pitch,dist])=>{const v=Conquest.view;v.jump(x,z);v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;}',[pos[0],pos[1],yaw,pitch,dist])
+  for name,subj,deg,stand,pitch,dist in shots:
+   # the tank stands on open ground beside the subject (never inside a solid: it would be pressed against it and thin it);
+   # local raiders are stood down so the frame shows the place, not a fight
+   yaw=await page.evaluate('''([deg,stand,pitch,dist])=>{const v=Conquest.view,W=ConquestWorld,F=v.style.footprints,S=('''+subj+'''),a=deg*Math.PI/180,dx=Math.cos(a),dz=Math.sin(a);
+    const free=(x,z)=>{for(let k=0;k<8;k++)if(W.solidAt(x+Math.cos(k*.785)*5,z+Math.sin(k*.785)*5))return false;return !W.solidAt(x,z)&&!W.waterAt(x,z);};
+    let x=S[0]+dx*stand,z=S[1]+dz*stand;if(!free(x,z)){search:for(let r=2;r<=22;r+=2)for(let k=0;k<16;k++){const p=x+Math.cos(k*.3927)*r,q=z+Math.sin(k*.3927)*r;if(free(p,q)){x=p;z=q;break search;}}}
+    const fx=S[0]-x,fz=S[1]-z,yaw=Math.atan2(-fx,-fz);v.jump(x,z);v.heading=Math.atan2(fx,fz);v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;
+    const E=v.encounter;if(E){for(const e of E.enemies||[]){e.hp=0;if(E.cleared)E.cleared[e.key]=true;}E.playerHp=E.playerMax;}return yaw;}''',[deg,stand,pitch,dist])
    await page.wait_for_timeout(400)
    try:await page.wait_for_function('Conquest.view.pending===0',timeout=180000)
    except Exception:pass

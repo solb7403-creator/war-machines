@@ -6083,14 +6083,85 @@ Searched this session (fan wikis, community guides and news; numbers from third 
 ## Checkpoint 44 — Session 5E-2d1: Conquest world rebuild (branch `claude/conquest-world-rebuild-mu3ktv`, from main `0e681aa`) — IN PROGRESS
 
 ### Resume here (kept current after every slice)
-- **Done and pushed:** slice 1 ROADMAP notes (`3f…` first commit on the branch); the world-kit core (`js/conquest/slots.js`,
-  `js/conquest/worldkit.js`, the surface-detail solid shader in `js/conquest/style.js`), the viewer
-  (`dev/tests/conquest-kit-viewer.py`) and capture tool (`dev/tests/conquest-world-kinds-captures.py`); the see-through rule
-  (world + town drive view), the town's fixed DRIVE joystick, the four desktop 5D leftovers
-  (`dev/tests/conquest-occluder.py` rewritten to the new rule, `dev/tests/conquest-seethrough-town.py` new).
-- **In progress:** the code-built models of every slot (`js/conquest/kit/settler.js`, `military.js`, `nature.js`, `town.js`),
-  then their integration into `js/conquest/style.js` (world) and `js/conquest/townkit.js` (town), `index.html` script tags.
-- **Next:** integration; `dev/tests/conquest-slots.mjs` + the browser swap test; captures (before = `docs/conquest/session5e2d1/kinds/before-*`);
-  three critic rounds; the desktop pass at 1366x768 and 1920x1080; the whole test list; two reviewers; release.
-- **How to look at a model:** `python3 dev/tests/conquest-kit-viewer.py --slots settler-home,refuge-habitat --out /tmp/cq-kit`.
-- **How to capture the world:** `python3 dev/tests/conquest-world-kinds-captures.py --tag after --quality high --size 390x844`.
+- **Done and pushed:** slice 1 ROADMAP notes; the world-kit core (`js/conquest/slots.js`, `js/conquest/worldkit.js`, the
+  surface-detail solid shader in `js/conquest/style.js`), the viewer (`dev/tests/conquest-kit-viewer.py`) and capture tool
+  (`dev/tests/conquest-world-kinds-captures.py`); the see-through rule (world + town drive view), the town's fixed DRIVE joystick,
+  the four desktop 5D leftovers; the code-built models of all 133 slots (`js/conquest/kit/settler.js`, `military.js`, `nature.js`,
+  `town.js`), HIGH and LOW; **integration**: every world builder in `js/conquest/style.js` and every town model in
+  `js/conquest/townkit.js` now places slot models (nothing in the world or town is drawn from boxes any more); the slot swap in
+  the views (`view.js` `kitSync`, `plotview.js` `slotOf`); `dev/tests/conquest-slots.mjs` and `dev/tests/conquest-slots-browser.py`.
+- **In progress:** captures of every kind (after, HIGH 390x844 first), then critic round 1 against the Meshy town items.
+- **Next, in order:** (1) run `python3 dev/tests/conquest-slots-browser.py` and the browser tests the integration can touch
+  (`conquest-occluder.py`, `conquest-seethrough-town.py`, `conquest-session5c.py`, `conquest-session5d.py`, `conquest-hub-browser.py`,
+  `conquest-flagship-browser.py`, `conquest-plot-ui.py`), fix what they find; (2) before-captures with the NEW framing from a
+  main worktree (`git worktree add /tmp/main origin/main`, copy the capture tool in, `--tag before`); after-captures at 390x844,
+  390x700, 320x568 (touch) and 1366x768, 1920x1080 (`--mouse`), HIGH and LOW, plus `conquest-town-captures.py` and
+  `conquest-flagship-captures.py`; (3) three critic rounds (phone + desktop judged together, later rounds re-capture only what
+  changed); (4) the 5E-2a town-item recolour re-check against the Meshy originals; (5) the desktop pass at 1366x768 and
+  1920x1080; (6) the whole test list; (7) two fresh read-only reviewers; (8) release (`dev/bump.sh`, PR, CI, merge, deploy check,
+  ROADMAP row 5E-2d1 -> RELEASED).
+- **How to look at a model:** `python3 dev/tests/conquest-kit-viewer.py --slots settler-home,refuge-habitat --out /tmp/cq-kit`
+  (`--params '{"level":3}'`, `--day 0` for the barren Moon, `--seeds 1,2`).
+- **How to capture the world:** `python3 dev/tests/conquest-world-kinds-captures.py --tag after --quality high --size 390x844`
+  (each shot stands the tank on open ground beside its subject; about 40 s a shot on the software renderer).
+
+### Inventory: every code-drawn building and prop kind (the slot list `js/conquest/slots.js` is the source; 133 slots)
+Taken from the code, not from the brief: `style.js` (props, flora, terraWorld, mineralWorld, colonyWorld, frontierWorld, refuge,
+viaduct, installations, cover, raidSpire, commandBase, cache, flag) and `townkit.js` (building, head, wallGeo, wallMini, post,
+postMini, rubble, home, person, rover, decor).
+- **military** (31): refuge-habitat, refuge-processor, refuge-pipe, refuge-terminal, refuge-solar, refuge-lamp, relay-mast, viaduct-segment, viaduct-pier, viaduct-lamp, viaduct-gantry, base-pad, base-wall, base-gate, base-hangar, base-reactor, base-tower, base-module, base-spire, base-kiosk, veteran-monument, frontier-wall, frontier-watch, frontier-gate, atmo-pylon, dam, creek-bridge, ice-rig, rail-pylon, rail-beam, rail-train
+- **settler** (26): settler-home, settler-hall, settler-block, settler-shop, settler-barn, settler-water-tower, settler-greenhouse, settler-silo, settler-turbine, settler-rotor, settler-solar, settler-plaza, settler-pen, settler-lamp, settler-pole, settler-fence, settler-rover, settler-person, livestock, town-home-dome, town-home-block, town-home-tower, town-home-green, town-home-shop, town-person, town-rover
+- **nature** (28): bird, hopper, rock, rock-moss, crystal-growth, fungus-growth, tree-conifer, tree-broadleaf, tree-dead, tree-far, scrub, flower-patch, fern, crystal-sprout, moss-cushion, burnt-stump, grass-tuft, bio-node, bio-node-dim, ice-block, ore-fe, ore-il, ore-ar, ore-tq, ore-starter, ore-spent, meteor, strike-crater
+- **wreck** (6): tank-wreck, sandbags, barbed-wire, pipeline, crane-wreck, drill-wreck
+- **parasite** (4): hive, hive-mast, cover-wall, raid-spire
+- **prop** (3): loot-cache, wreck-cache, sector-flag
+- **town** (35): town-foundry, town-biodome, town-hangar, town-helium, town-radar, town-radar-dish, town-uplink, town-trophy, town-gate, town-cc (Meshy on HIGH), town-refinery (Meshy on HIGH), town-storage (Meshy on HIGH), town-reactor (Meshy on HIGH), town-shield (Meshy on HIGH), town-lab (Meshy on HIGH), town-missile, town-mortar, town-flame, town-siege, town-lasercannon, town-cannon (Meshy on HIGH), town-mg (Meshy on HIGH), town-laser (Meshy on HIGH), town-rocket (Meshy on HIGH), town-tesla (Meshy on HIGH), town-railgun (Meshy on HIGH), town-wall, town-post, town-rubble, decor-lamps, decor-crates, decor-antenna, decor-plants, decor-statue, decor-flags
+- **Found beyond the brief's list:** the five town turrets with no Meshy model (missile, mortar, flame, siege, lasercannon) were
+  code-drawn boxes on HIGH too, and the six Meshy turrets had box stand-ins on LOW / while loading: all eleven are slots now
+  (pedestal + turning head, `o.part`). There is no "drill" town building in `ConquestPlot.BUILDINGS` (the brief's ninth name);
+  the drill kinds that exist are the ice-mining rig and the abandoned drill machine, both rebuilt. The Command Base's veteran
+  monument and radar post, the stream boulders, ford stones, pipe runs and power wires were also code-drawn and are kit parts.
+- **Not rebuilt, on purpose:** Parasite war machines and town raiders (units, not buildings or props), the player's banner
+  (the player's own two colours and shape: a cosmetic they chose), terrain, water, roads and crop rows (surfaces: they got the
+  kit's surface detail codes, not models), holographic signs, decals and glows (effects).
+
+### Research: the best-looking comparable games (before the first draft)
+Sources: Supercell Helsinki on stylized content for Clash of Clans / Clash Royale (Adobe Substance 3D magazine); games.gg and
+PocketGamer.biz on Clash's readability; 80.lv "Stylized production tips and tricks", "Tips on stylized environment building",
+"Building a stylized mountain cabin" and Fanny Vergne on World of Warcraft environments; Creative Bloq "How to make low-poly
+buildings for games"; Nic Williams (lead artist) on Boom Beach: Frontlines running on low-end phones. What they share, and the
+rule each one became here:
+1. **Silhouette before shading** (Clash, WoW: "every building has a very strong silhouette and shape language"). Rule: each kind
+   must be told from its outline at phone size; LOW keeps at least 70% of the HIGH extent on every axis (tested).
+2. **Function reads at a glance in a fight** (Clash "strategic readability"). Rule: the door, the light and the working part
+   (stack, dish, barrel, tank) are the brightest and largest marks; every turret head has its own outline.
+3. **Limited, punchy palettes per people** (Clash; Boom Beach's Blackguard vs islanders). Rule: three families that never
+   share an accent: military gunmetal + pale ceramic + gold + cyan / white light; settlers faded paint + rust + timber + amber
+   light; Parasite violet chitin + bone + magenta glow.
+4. **Edge highlight + ambient occlusion on plain colour** (80.lv texture stack "base colour, edge highlights, AO"; Creative
+   Bloq: bevel the edges or it looks like cardboard). Rule: every hard-surface block is bevelled with a lighter edge, vertex AO
+   darkens the foot, and the solid shader adds panel seams / rust / planks per surface code on HIGH with no texture download.
+5. **Keep detail contrast low, put contrast at the focal point** (80.lv value pass). Rule: big calm wall planes; contrast only
+   at lights, doors and signs; glows are small.
+6. **Many small things make a place cohesive** (Vergne). Rule: settlers leave things lying about (crates, barrels, laundry,
+   tools, carts); the military stacks things tidily; the frontier is littered with wrecks and wire.
+7. **Phone budgets** (Unity stylized packs: 2-7 k quads a building; Frontlines "ancient telephones"). Rule: 0.5-4 k triangles a
+   building on HIGH, about a quarter of that on LOW, instanced kinds under 300; merged batches, one material, 16 programs.
+8. **A level-up must be visible** (Clash town halls). Rule: every town building changes shape with its level (taller stack,
+   more tanks, a second column, gold at the top level).
+
+### Design changes made in this session (each with its reason)
+- **The processor towers' pipe bridge is level** at the higher tower's 9.6 m (it used to slope up to 47 degrees between towers
+  on different ground). Reason: a level pipe reads as engineering, and it keeps the 8 m drive clearance on both sides.
+- **The oxygen processors are turned half a turn** so the blast door stands under the tower's holographic sign (the sign was on
+  the blank back face).
+- **The wind-pump rotor turns about its own axle** (it was spun about the wrong axis and tumbled).
+- **Settler lots stand on a field-stone footing** that runs down to the lot's lowest corner instead of a 4 m concrete block
+  under every building. Reason: rugged and hand-built, not a slab; flat lots show no footing at all.
+- **Rovers, settlers and livestock come in two or three looks** (seeded paint, hats, hides) instead of one clone. Reason: a
+  crowd of identical figures reads as a tech demo. Cost: 4 more instanced draws in the colony.
+- **Monorail rail top is 0.6 m higher** (beam and train share one rail line; the pylon heads meet the beam's underside).
+- **Chimney smoke, lamp glows and beacons come from the models themselves** (`b.halo` / `b.pool`), so a swapped Meshy model
+  does not keep a floating glow where the old chimney was.
+- **The capture tool stands the tank on open ground beside each subject** (the old framing parked it inside buildings, which
+  the new see-through rule rightly treats as "pressed against").

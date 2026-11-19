@@ -105,6 +105,15 @@ class View {
  g.position.set(D.x-ox,W.groundAt(D.x,D.z)+11+Math.sin((this.style?.U.uTime.value||0)*1.2)*.25,D.z-oz);g.rotation.y=(this.style?.U.uTime.value||0)*.15;
  if(n!==g.userData.n){g.userData.n=n;g.userData.orbs.forEach((m,i)=>{m.material=n>10?g.userData.full:i<n?g.userData.lit:g.userData.dim;});}this.yieldFill=y.fill;}
  // The terraformed south (forests, water, pylons, dam, bridge, crater, bio-flora): world coordinates, moved by the origin.
+ // Session 5E-2d1 (owner, Nov 19): a slot's model changed (js/conquest/slots.js was edited, or a listed Meshy model has finished
+ // loading): redraw what the style built from the world kit. Rare (a load, an owner tool, a test), so it is simply rebuilt.
+ kitSync(now){const WK=root.ConquestWorldKit,K=this.style?.worldKit;if(!WK||!K)return;const st=WK.generation+':'+(K.pendingSwap.size&&typeof Meshy3D!=='undefined'?Meshy3D.generation:0);
+  if(this.kitStamp===undefined)this.kitStamp=st;if(st===this.kitStamp){this.kitDue=0;return;}if(!this.kitDue){this.kitDue=now+500;return;}if(now<this.kitDue)return;this.kitStamp=st;this.kitDue=0;K.pendingSwap.clear();
+  const drop=g=>{if(!g)return;g.parent?.remove(g);g.traverse(o=>{o.userData?.meshyTownRelease?.();if(o.geometry&&!o.geometry.userData.hfShared&&!o.userData?.meshyTown){const i=this.shared?this.shared.indexOf(o.geometry):-1;if(i>=0)this.shared.splice(i,1);o.geometry.dispose();}});};
+  for(const g of this.styleGroups||[])drop(g);this.makeLandmarks();for(const k of ['terra','colony','frontier','veil','mineralsG'])if(this[k]){drop(this[k]);this[k]=null;}this.baseVisualKey=null;
+  for(const g of this.lootMeshes?.values()||[])drop(g);this.lootMeshes?.clear();for(const g of this.flags?.values()||[])drop(g);this.flags?.clear();
+  for(const c of this.chunks?.values()||[]){const G=c.group,kp=G?.userData.kitProps;if(!kp)continue;drop(kp.g);G.add(kp.g=this.style.props(kp.items,kp.cx,kp.cz));if(G.userData.flora&&this.style.flora){drop(G.userData.flora);G.add(G.userData.flora=this.style.flora(kp.cx,kp.cz,kp.legacy));}}
+  this.kitRebuilds=(this.kitRebuilds||0)+1;}
  mineralRender(ox,oz){if(!this.style?.mineralWorld)return;if(!this.mineralsG){this.mineralsG=this.style.mineralWorld();this.scene.add(this.mineralsG);}this.mineralsG.position.set(-ox,0,-oz);this.mineralsG.userData.update?.(this.authority?.state,Date.now());}
  terraRender(ox,oz){if(!this.style?.terraWorld)return;if(!this.terra){this.terra=this.style.terraWorld();this.scene.add(this.terra);}this.terra.position.set(-ox,0,-oz);this.terra.userData.update?.(this.authority?.state?.harvest,Date.now());this.terra.userData.lod?.(this.camera);
   if(this.style.colonyWorld){if(!this.colony){this.colony=this.style.colonyWorld();this.frontier=this.style.frontierWorld?.();this.veil=this.style.atmoVeil?.();this.scene.add(this.colony);if(this.frontier)this.scene.add(this.frontier);if(this.veil)this.scene.add(this.veil);}this.colony.position.set(-ox,0,-oz);if(this.frontier){this.frontier.position.set(-ox,0,-oz);this.frontier.userData.update?.(this.camera);}if(this.veil)this.veil.position.set(-ox,0,-oz);this.colony.userData.update?.(Date.now(),this.camera);}}
@@ -209,7 +218,7 @@ class View {
    const dead=B.playerHp<=0;if(dead&&this.fxDead===false){F.shatter('armor',p.x-ox,p.y,p.z-oz,2.8,2.4,0,0);F.blast(p.x-ox,p.y,p.z-oz,3,1);}this.fxDead=dead;}
   F.end();
   if(this.fxShakeT>0){this.fxShakeT-=dt;const m=(this.fxShake||0)*Math.min(1,this.fxShakeT*3)*.035;this.camera.position.x+=(Math.random()-.5)*m;this.camera.position.y+=(Math.random()-.5)*m;if(this.fxShakeT<=0)this.fxShake=0;}}
- combatRender(){if(this.renderer.isConquestCanvas)return;this.homeBeaconRender(this.origin.x,this.origin.z);this.terraRender(this.origin.x,this.origin.z);this.mineralRender(this.origin.x,this.origin.z);const ox=this.origin.x,oz=this.origin.z,m=this.routeTarget||this.nearOperation||root.ConquestCombat?.mission;if(this.beacon&&m){this.beacon.position.set(m.x-ox,W.groundAt(m.x,m.z),m.z-oz);this.beacon.visible=!this.battle&&Math.hypot(this.p.x-m.x,this.p.z-m.z)<350;}
+ combatRender(){if(this.renderer.isConquestCanvas)return;this.kitSync(performance.now());this.homeBeaconRender(this.origin.x,this.origin.z);this.terraRender(this.origin.x,this.origin.z);this.mineralRender(this.origin.x,this.origin.z);const ox=this.origin.x,oz=this.origin.z,m=this.routeTarget||this.nearOperation||root.ConquestCombat?.mission;if(this.beacon&&m){this.beacon.position.set(m.x-ox,W.groundAt(m.x,m.z),m.z-oz);this.beacon.visible=!this.battle&&Math.hypot(this.p.x-m.x,this.p.z-m.z)<350;}
  const B=this.battle||this.encounter;this.fxFrame(B);if(!B)return;
  if(!this.reticle){const geo=new this.T.RingGeometry(.65,.85,16);this.shared.push(geo);this.reticle=new this.T.Mesh(geo,this.mat(0xf4cf77));this.scene.add(this.reticle);}this.reticle.visible=B.state==='active';if(this.aimPoint){this.reticle.position.set(this.aimPoint.x-ox,this.aimPoint.y,this.aimPoint.z-oz);this.reticle.quaternion.copy(this.camera.quaternion);}
  const visible=new Set(B.enemies.filter(e=>Math.hypot(e.x-this.p.x,e.z-this.p.z)<240).map(e=>e.id));
@@ -416,7 +425,7 @@ class View {
  // Trees have separate trunks and varied layered crowns; all repetition is instanced and distance culled.
  if(k.step===4&&this.style){const D=root.ConquestCombat.baseDefinition,sc=W.scenery(k.cx,k.cz),outsideBase=p=>Math.abs(p.x-D.x)>24||Math.abs(p.z-D.z)>22;
  // Rocks and relays keep the Neon props; legacy 'tree' items and the new flora field are drawn by today's terraform zone.
- group.add(this.style.props(sc.filter(p=>p.kind!=='tree'),k.cx,k.cz));const legacyTrees=sc.filter(p=>p.kind==='tree'&&outsideBase(p));
+ const legacyTrees=sc.filter(p=>p.kind==='tree'&&outsideBase(p)),kp=group.userData.kitProps={items:sc.filter(p=>p.kind!=='tree'),cx:k.cx,cz:k.cz,legacy:legacyTrees,g:null};group.add(kp.g=this.style.props(kp.items,k.cx,k.cz));
  if(this.style.floraJob)(this.floraJobs||(this.floraJobs=[])).push({key:k.key,group,job:this.style.floraJob(k.cx,k.cz,legacyTrees)});else if(this.style.flora)group.add(group.userData.flora=this.style.flora(k.cx,k.cz,legacyTrees));}
  else if(k.step===4){const D=root.ConquestCombat.baseDefinition,list=W.scenery(k.cx,k.cz).filter(p=>p.kind!=='tree'||Math.abs(p.x-D.x)>24||Math.abs(p.z-D.z)>22),trees=list.filter(p=>p.kind==='tree'),pines=trees.filter(p=>p.variant>=.4),broad=trees.filter(p=>p.variant<.4),relays=list.filter(p=>p.kind==='relay'),rocks=list.filter(p=>p.kind==='rock'&&p.variant>.45);
  const batch=(items,geo,color,shape)=>{if(!items.length)return;const mesh=new T.InstancedMesh(geo,this.mat(color),items.length),o=new T.Object3D();items.forEach((p,i)=>{shape(o,p);o.position.x+=p.x-k.cx*128;o.position.z+=p.z-k.cz*128;o.updateMatrix();mesh.setMatrixAt(i,o.matrix);});group.add(mesh);};

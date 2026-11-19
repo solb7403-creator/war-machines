@@ -455,6 +455,13 @@ WK.model('base-kiosk',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi;
   for(const s of [-1,1])hazard(b,s*.6,.34,.71,.5,.5,3);b.bev(.5,3.46,-.3,.5,.2,.4,M.trim,{ch:.04});b.halo(0,2.5,.7,1.1,0xffb347,.25);}
 });
 
+// ------------------------------------------------------------------ veteran-monument ------------------------------------
+// The field veteran's monument (3 x 3, 5.6 high): a stepped armoured plinth, a gold obelisk with a lit band and a white tip.
+WK.model('veteran-monument',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,X=(r,y)=>ngon(b,4,r,y,Math.PI/4);
+ b.bev(0,0,0,3,.5,3,M.hull2,{ch:.1});b.bev(0,.5,0,2.2,.5,2.2,M.hull,{ch:.08});if(hi){b.box(0,.56,1.11,1.2,.34,.04,M.gold);for(const s of [-1,1])b.box(s*1.2,.5,1.2,.3,.3,.3,M.cyan);}
+ b.loft([X(.95,1),X(.8,1.5),X(.62,1.56),X(.3,4.6),X(.02,5.4)],(r)=>r===1?M.cyan:M.gold,{top:false});b.gem(0,5.5,0,.14,.2,.14,M.white);b.halo(0,5.4,0,1.6,0xffd36b,.9);
+},{aoH:2,aoMin:.6});
+
 // ================================================================== the frontier wall ===================================
 // ------------------------------------------------------------------ frontier-wall ---------------------------------------
 // A run of the frontier wall the colonists hold. o.w = run length along x, o.d / o.h = the lot's depth and height (3 / 5):

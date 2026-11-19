@@ -8,6 +8,10 @@
    turrets, homes and raiders are instanced); the 2D setting gets a top-down canvas town with the same controls. */
 (function(root){
 'use strict';
+// Session 5E-2d1 (owner, Nov 19): which model stands in a town building's slot (js/conquest/slots.js). item = a Meshy item of
+// js/assets/meshy-v1/manifest.json, or null for the code-built model; fit = the slot's box when the listed item is not the
+// building's own Meshy model (a stand-in is scaled to stand inside the box; the owner's own model keeps its level scale).
+const slotOf=t=>{const s=root.ConquestSlots?.items['town-'+t];return s?{item:s.model||null,fit:s.model&&s.model!=='town-'+t?s.size:null}:{item:null,fit:null};};
 const P=root.ConquestPlot;
 let X=null;   // the open town view
 const fmt=n=>typeof fmtNum==='function'?fmtNum(n):String(n);
@@ -80,7 +84,7 @@ function spriteModel(R,w){const {T,k}=R,g=new T.Group(),lv=Math.max(1,w.level||1
   else if(w.key==='skin-turret-neon'){add(tint(k.building('railgun',5,null).geometry(),neon,2));add(tint(k.head('railgun',5).geometry(),neon,2),0,2.15,.7);}else if(w.key==='theme-aurora'){g.add(k.building('cc',10,{light:'violet',finish:'graphite'}).mesh());}
   else if(w.key==='foundry-rush'){g.add(k.building('foundry',5,{light:'amber'}).mesh());}else if(w.key==='builder-2'){g.add(k.building('hangar',4,null).mesh());}else g.add(k.building('storage',3,null).mesh());
   g.rotation.y=-.4;return g;}
- const my=typeof Meshy3D!=='undefined'&&!R.S.low?Meshy3D.townBuilding(w.key,w.key==='cc'?Math.min(10,lv):lv,null,false):null;if(my){if(my.userData.meshyHead)my.userData.meshyHead.rotation.y=.7;g.add(my);g.userData.meshy=true;return g;}   // the owner's Meshy model once its file is in
+ const sl=slotOf(w.key),my=typeof Meshy3D!=='undefined'&&!R.S.low&&sl.item?Meshy3D.townBuilding(w.key,w.key==='cc'?Math.min(10,lv):lv,null,false,false,sl.item,sl.fit):null;if(my){if(my.userData.meshyHead)my.userData.meshyHead.rotation.y=.7;g.add(my);g.userData.meshy=true;return g;}   // the owner's Meshy model once its file is in
  const b=k.building(w.key,w.key==='cc'?Math.min(10,lv):lv,null).mesh();g.add(b);const B=P.BUILDINGS[w.key];if(B?.turret||w.key==='radar'){const hd=k.head(w.key,lv).mesh();hd.position.y=w.key==='radar'?3.3+lv*.5:1.4+lv*.15;hd.rotation.y=.7;g.add(hd);}return g;}
 function spriteStep(R){if(!SPRITE_WAIT.length||!R||!X)return;const w=SPRITE_WAIT.shift();if(SPRITES.has(w.k))return;const {T}=R,r=X.ctx.view.renderer,el=r.domElement,px=144;if(!el||el.height<px||el.width<px)return;
  try{if(!R.spr){const sc=new T.Scene();sc.fog=new T.Fog(0x06070f,3000,4000);const L=[new T.HemisphereLight(0x3a5a9c,0x16131f,2.8),new T.DirectionalLight(0xe4ecff,4.6),new T.DirectionalLight(0x52c6ff,1.9)];/* 5E-2a: brighter, the town models are dark armour now (town-refs-v1); same light count */L[1].position.set(200,400,150);L[2].position.set(-300,200,-200);sc.add(...L);R.spr={sc,cam:new T.PerspectiveCamera(30,1,.1,500),v:new T.Vector3(),c:document.createElement('canvas')};R.spr.c.width=R.spr.c.height=px;}
@@ -352,10 +356,10 @@ function sync(){const R=X?.R,p=plotOf();if(!p)return;if(!R){draw2d();return;}con
  if(R.keys.ter!==p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j)){R.keys.ter=p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j);wipe(g.terrain);for(const m of TK.terrain(S,p.site,p.cc,p,{}))g.terrain.add(m);}
  const pl=TK.plan(p),want=new Set(),turs=[],theme=p.theme,MY=!S.low&&typeof Meshy3D!=='undefined'?Meshy3D:null,lod=!!R.far;   /* 5E-2a: Meshy in big towns too (reduced index set when far / driving) */R.anim=[];R.plan=pl;
  for(const [id,b,lvl,building] of pl.builds){const B=P.BUILDINGS[b.t];
-  const key=[b.t,lvl,b.i,b.j,b.r|0,building?1:0,theme?.finish||'',theme?.light||'',MY?MY.townStamp([b.t])+(lod?'f':''):''].join(':');want.add(id);let e=R.meshes.get(id);
+  const sl=slotOf(b.t),key=[b.t,lvl,b.i,b.j,b.r|0,building?1:0,theme?.finish||'',theme?.light||'',MY?(sl.item||'-')+MY.townStamp([(sl.item||'town-'+b.t).replace(/^town-/,'')])+(lod?'f':''):''].join(':');want.add(id);let e=R.meshes.get(id);
   if(!e||e.key!==key){if(e){g.build.remove(e.o);MY?.release(e.o);e.o.traverse(o=>{if(!keep.has(o.geometry)&&!o.geometry?.userData?.meshy)o.geometry?.dispose?.();});}const o=new T.Group(),s2=P.sizeOf(b.t,b.r|0);o.position.set(P.cellX(b.i)+(s2.w-1)*P.GRID.cell/2,footY(p.site,b),P.cellZ(b.j)+(s2.d-1)*P.GRID.cell/2);o.rotation.y=-(b.r|0)*Math.PI/2;
    // the owner's Meshy model when its file is in (HIGH); the kit model until then and on LOW
-   const my=MY&&(lvl>0||building)?MY.townBuilding(b.t,Math.max(1,lvl),theme,false,lod&&!B?.turret):null;
+   const my=MY&&sl.item&&(lvl>0||building)?MY.townBuilding(b.t,Math.max(1,lvl),theme,false,lod&&!B?.turret,sl.item,sl.fit):null;
    if(my){my.userData.id=id;my.traverse(c=>{c.userData.id=id;});o.add(my);if(my.userData.meshyHead)o.userData.head=my.userData.meshyHead;}
    else if(lvl>0||building){const m=k.building(b.t,Math.max(1,lvl),theme).mesh();m.userData.id=id;o.add(m);}
    const hd=!my&&(B?.turret||b.t==='radar')?k.head(b.t,Math.max(1,lvl)).mesh():null;if(hd){hd.position.y=b.t==='radar'?3.3+lvl*.5:1.4+lvl*.15;o.add(hd);o.userData.head=hd;o.userData.radar=b.t==='radar';}
@@ -395,7 +399,7 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  const M4=R._fm||(R._fm=new T.Matrix4()),_q=R._fq||(R._fq=new T.Quaternion()),_v=R._fv||(R._fv=new T.Vector3()),_s=R._fs||(R._fs=new T.Vector3()),up=R._up||(R._up=new T.Vector3(0,1,0));
  for(const t of R.tur.values()){for(const it of t.items){const a=it.aim??(X.clock*.4+it.spin)%(Math.PI*2);if(it.kick)it.kick=Math.max(0,it.kick-dt*5);
    if(t.meshy)t.meshy.matrix(M4,it.x,it.y,it.z,a,(it.kick||0)*t.meshy.recoil,it.dead);else{_q.setFromAxisAngle(up,a);M4.compose(_v.set(it.x,it.y,it.z),_q,_s.set(it.dead?0:1,it.dead?0:1,it.dead?0:1));}t.hd.setMatrixAt(it.n,M4);}t.hd.instanceMatrix.needsUpdate=true;}
- if(typeof Meshy3D!=='undefined'){Meshy3D.townStep(X.clock,typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced());if(R.myGen!==Meshy3D.generation){R.myGen=Meshy3D.generation;try{sync();meshySprites();}catch(e){}}}
+ if(typeof Meshy3D!=='undefined'){Meshy3D.townStep(X.clock,typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced());const kg=root.ConquestWorldKit?root.ConquestWorldKit.generation:0;if(R.myGen!==Meshy3D.generation||R.kitGen!==kg){R.myGen=Meshy3D.generation;R.kitGen=kg;try{sync();meshySprites();}catch(e){}}}
  for(const o of R.anim){const dr=o.userData.drones;dr.rotation.y=X.clock*1.4;dr.position.y=Math.sin(X.clock*3)*.4;}
  const big=(R.wcell?.size||0)>600,far=X.view==='drive'?big:big?(R.far?c.dist>60:c.dist>80):(R.far?c.dist>165:c.dist>195);/* 5C: big towns stay light in the close drive view and the closer default camera */if(far!==!!R.far){R.far=far;const lo=!!R.S.low||far;for(const [code,m] of R.wim)m.geometry=cached(R.wgeo,code+':'+lo,()=>R.k.wallGeo(code,lo));{const pm=R.wpost?.values().next().value?.[0];if(pm)pm.geometry=cached(R.wgeo,'post:'+lo,()=>R.k.post(lo));}for(const [kind,m] of R.him)m.geometry=cached(R.hgeo,kind+lo,()=>R.k.home(kind,lo));
   const pp=plotOf();if(pp){R.keys.walls=JSON.stringify(pp.w)+lo+JSON.stringify(pp.dmg||{});R.keys.homes=P.homes(pp).map(h=>h.id).join()+pp.site+pp.cc+lo;}try{sync();}catch(e){}}   // distance LOD with hysteresis: zoomed out, walls and homes switch to the lighter geometry (no instance rebuild)

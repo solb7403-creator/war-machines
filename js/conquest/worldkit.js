@@ -41,13 +41,13 @@ function kit(S){if(S.worldKit)return S.worldKit;
 
  // ------------------------------------------------------------------ the builder ---------------------------------------
  class KB{
-  constructor(o={}){this.hi=hi;this.o=o;this.buf={main:{P:[],N:[],A:[],I:[],n:0},det:{P:[],N:[],A:[],I:[],n:0}};this.cur=this.buf.main;this.fx=[];this.st=[new T.Matrix4()];this.aoH=o.aoH??2.2;this.aoMin=o.aoMin??.62;this.rnd=rng(o.seed||1);this.jit=1;}
+  constructor(o={}){this.hi=hi&&!o.lod;this.o=o;this.buf={main:{P:[],N:[],A:[],I:[],n:0},det:{P:[],N:[],A:[],I:[],n:0}};this.cur=this.buf.main;this.fx=[];this.st=[new T.Matrix4()];this.aoH=o.aoH??2.2;this.aoMin=o.aoMin??.62;this.rnd=rng(o.seed||1);this.jit=1;}
   get M(){return this.st[this.st.length-1];}
   // run fn with a local frame (translate, yaw, then pitch/roll, uniform scale)
   at(x,y,z,ry,fn,rx=0,rz=0,s=1){_e.set(rx,ry,rz,'YXZ');_q.setFromEuler(_e);const m=new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(s,s,s));this.st.push(new T.Matrix4().multiplyMatrices(this.M,m));try{fn(this);}finally{this.st.pop();}return this;}
   // small parts go to the detail batch (it drops out with distance); HIGH-only parts are skipped on LOW
   detail(fn){const c=this.cur;this.cur=this.buf.det;try{fn(this);}finally{this.cur=c;}return this;}
-  high(fn){if(hi)fn(this);return this;}
+  high(fn){if(this.hi)fn(this);return this;}
   part(){this.jit=1+((this.rnd()-.5)*2);return this;}   // a new jitter value for the next primitive(s)
   _v(x,y,z,nx,ny,nz,m){const B=this.cur,e=this.M.elements,px=e[0]*x+e[4]*y+e[8]*z+e[12],py=e[1]*x+e[5]*y+e[9]*z+e[13],pz=e[2]*x+e[6]*y+e[10]*z+e[14];
    let ax=e[0]*nx+e[4]*ny+e[8]*nz,ay=e[1]*nx+e[5]*ny+e[9]*nz,az=e[2]*nx+e[6]*ny+e[10]*nz;const l=Math.hypot(ax,ay,az)||1;ax/=l;ay/=l;az/=l;
@@ -75,22 +75,22 @@ function kit(S){if(S.worldKit)return S.worldKit;
   // plain box: centre x/z, BASE y (everything in the kit stands on its base)
   box(x,y,z,w,h,d,m,ry=0){if(ry)return this.at(x,y,z,ry,b=>b.box(0,0,0,w,h,d,m));return this.loft([{p:rect(w,d,0,x,z),y},{p:rect(w,d,0,x,z),y:y+h}],m,{bot:true});}
   // bevelled box: chamfered edges catch the light (the "edge highlight" every premium hard-surface model has). LOW: a box.
-  bev(x,y,z,w,h,d,m,o={}){if(o.ry)return this.at(x,y,z,o.ry,b=>b.bev(0,0,0,w,h,d,m,Object.assign({},o,{ry:0})));if(!hi)return this.box(x,y,z,w,h,d,m);
+  bev(x,y,z,w,h,d,m,o={}){if(o.ry)return this.at(x,y,z,o.ry,b=>b.bev(0,0,0,w,h,d,m,Object.assign({},o,{ry:0})));if(!this.hi)return this.box(x,y,z,w,h,d,m);
    const ch=Math.min(o.ch??.1,w*.3,h*.3,d*.3),e=o.edge||tint(m,o.e??1.28,.012),top=o.top||tint(m,1.06);
    return this.loft([{p:rect(w-2*ch,d-2*ch,ch,x,z),y},{p:rect(w,d,ch,x,z),y:y+ch},{p:rect(w,d,ch,x,z),y:y+h-ch},{p:rect(w-2*ch,d-2*ch,ch,x,z),y:y+h}],(r,i)=>r!==1||i%2===0?(r===1?m:e):e,{bot:!!o.bot,topMat:top});}
   // upright cylinder / frustum (r2 = top radius); o.n sides, o.bev rim chamfer, o.rz elliptical depth
-  cyl(x,y,z,r,h,m,o={}){const n=o.n||(hi?14:8),r2=o.r2??r,k=o.rz?o.rz/r:1,bv=hi?Math.min(o.bev||0,h*.3,r*.5):0,R=[];
+  cyl(x,y,z,r,h,m,o={}){const n=o.n||(this.hi?14:8),r2=o.r2??r,k=o.rz?o.rz/r:1,bv=this.hi?Math.min(o.bev||0,h*.3,r*.5):0,R=[];
    if(bv)R.push({p:circ(r-bv,n,x,z,(r-bv)*k),y});R.push({p:circ(r,n,x,z,r*k),y:y+bv});R.push({p:circ(r2,n,x,z,r2*k),y:y+h-bv});if(bv)R.push({p:circ(r2-bv,n,x,z,(r2-bv)*k),y:y+h});
    return this.loft(R,o.band||m,{smooth:o.flat?false:true,bot:!!o.bot,top:o.top!==false,topMat:o.topMat||tint(m,1.06)});}
   // tube between two points (pipes, struts, barrels); n sides, r2 = end radius
-  tube(a,b,r,m,o={}){const n=o.n||(hi?7:4),r2=o.r2??r;_a.set(a[0],a[1],a[2]);_b.set(b[0],b[1],b[2]);const d=_c.subVectors(_b,_a),L=d.length();if(L<1e-6)return this;d.multiplyScalar(1/L);
+  tube(a,b,r,m,o={}){const n=o.n||(this.hi?7:4),r2=o.r2??r;_a.set(a[0],a[1],a[2]);_b.set(b[0],b[1],b[2]);const d=_c.subVectors(_b,_a),L=d.length();if(L<1e-6)return this;d.multiplyScalar(1/L);
    const ux=Math.abs(d.y)>.99?1:0,uy=Math.abs(d.y)>.99?0:1;let sx=d.y*0-d.z*uy,sy=d.z*ux-d.x*0,sz=d.x*uy-d.y*ux;const sl=Math.hypot(sx,sy,sz);sx/=sl;sy/=sl;sz/=sl;const tx=d.y*sz-d.z*sy,ty=d.z*sx-d.x*sz,tz=d.x*sy-d.y*sx,I=this.cur.I,ids=[];
    for(const [P,rr] of [[a,r],[b,r2]])for(let i=0;i<n;i++){const an=i/n*TAU,c=Math.cos(an),s=Math.sin(an),nx=sx*c+tx*s,ny=sy*c+ty*s,nz=sz*c+tz*s;ids.push(this._v(P[0]+nx*rr,P[1]+ny*rr,P[2]+nz*rr,nx,ny,nz,m));}
    for(let i=0;i<n;i++){const j=(i+1)%n;I.push(ids[i],ids[j],ids[n+j],ids[i],ids[n+j],ids[n+i]);}
    if(o.caps){for(const [P,rr,sg,off] of [[a,r,-1,0],[b,r2,1,n]]){const c0=this._v(P[0],P[1],P[2],d.x*sg,d.y*sg,d.z*sg,m),cs=[];for(let i=0;i<n;i++){const an=i/n*TAU,c=Math.cos(an),s=Math.sin(an);cs.push(this._v(P[0]+(sx*c+tx*s)*rr,P[1]+(sy*c+ty*s)*rr,P[2]+(sz*c+tz*s)*rr,d.x*sg,d.y*sg,d.z*sg,m));}for(let i=0;i<n;i++){const j=(i+1)%n;if(sg>0)I.push(c0,cs[i],cs[j]);else I.push(c0,cs[j],cs[i]);}}}
    return this;}
   // a pipe run through points with a collar at each joint
-  pipe(pts,r,m,o={}){for(let i=1;i<pts.length;i++)this.tube(pts[i-1],pts[i],r,m,{n:o.n,caps:i===1||i===pts.length-1});if(hi)for(let i=1;i<pts.length-1;i++)this.ball(pts[i][0],pts[i][1],pts[i][2],r*1.25,o.joint||m,true);return this;}
+  pipe(pts,r,m,o={}){for(let i=1;i<pts.length;i++)this.tube(pts[i-1],pts[i],r,m,{n:o.n,caps:i===1||i===pts.length-1});if(this.hi)for(let i=1;i<pts.length-1;i++)this.ball(pts[i][0],pts[i][1],pts[i][2],r*1.25,o.joint||m,true);return this;}
   // any unit geometry with a matrix (torus rings, gems): material colour + AO like the rest
   geo(g,m4,m){const P=g.attributes.position,N=g.attributes.normal,ix=g.index,B=this.cur,base=B.n;_nm.copy(m4).invert().transpose();for(let i=0;i<P.count;i++){_v.fromBufferAttribute(P,i).applyMatrix4(m4);_n.fromBufferAttribute(N,i).transformDirection(_nm);this._v(_v.x,_v.y,_v.z,_n.x,_n.y,_n.z,m);}
    if(ix)for(let k=0;k<ix.count;k++)B.I.push(base+ix.getX(k));else for(let k=0;k<P.count;k++)B.I.push(base+k);return this;}
@@ -99,35 +99,35 @@ function kit(S){if(S.worldKit)return S.worldKit;
   // horizontal ring (a collar, a light band): R radius, t thickness scale
   ring(x,y,z,R,m,o={}){_e.set(Math.PI/2+(o.rx||0),0,o.rz||0);_q.setFromEuler(_e);return this.geo(o.thin?unit.torusThin:unit.torus,_m.compose(_p.set(x,y,z),_q,_s.set(R,o.rz2?o.rz2:R,R*(o.t||1))).clone(),m);}
   // hemisphere dome on a base ring (rx, rz radii, h height); o.rings latitude bands, o.n sides, o.cut = fraction kept
-  dome(x,y,z,rx,h,rz,m,o={}){const n=o.n||(hi?14:8),L=o.rings||(hi?5:3),R=[];for(let i=0;i<=L;i++){const t=i/L*(Math.PI/2)*(o.cut??1),c=Math.cos(t),s=Math.sin(t);R.push({p:circ(Math.max(.001,rx*c),n,x,z,Math.max(.001,rz*c)),y:y+h*s});}
+  dome(x,y,z,rx,h,rz,m,o={}){const n=o.n||(this.hi?14:8),L=o.rings||(this.hi?5:3),R=[];for(let i=0;i<=L;i++){const t=i/L*(Math.PI/2)*(o.cut??1),c=Math.cos(t),s=Math.sin(t);R.push({p:circ(Math.max(.001,rx*c),n,x,z,Math.max(.001,rz*c)),y:y+h*s});}
    return this.loft(R,m,{smooth:!o.flat,top:(o.cut??1)<1,topMat:o.topMat});}
   // gable roof over a w x d rectangle, ridge along x; over = eave overhang
   gable(x,y,z,w,h,d,m,o={}){const ov=o.over??.25,hw=w/2+ov,hd=d/2+ov,th=o.th??.12,ins=[x,y-1,z];
    this.quad([x-hw,y,z+hd],[x+hw,y,z+hd],[x+hw,y+h,z],[x-hw,y+h,z],m,ins).quad([x-hw,y,z-hd],[x+hw,y,z-hd],[x+hw,y+h,z],[x-hw,y+h,z],m,ins);
    const g=o.gable||m;for(const s of [-1,1])this.tri([x+s*(w/2),y,z-d/2],[x+s*(w/2),y,z+d/2],[x+s*(w/2),y+h*(d/2)/(hd),z],g,[x,y,z]);
-   if(hi&&th){const e=o.edge||tint(m,.7);for(const s of [-1,1])this.quad([x-hw,y-th,z+s*hd],[x+hw,y-th,z+s*hd],[x+hw,y,z+s*hd],[x-hw,y,z+s*hd],e,ins);this.tube([x-hw,y+h+.03,z],[x+hw,y+h+.03,z],.07,e,{n:4});}return this;}
+   if(this.hi&&th){const e=o.edge||tint(m,.7);for(const s of [-1,1])this.quad([x-hw,y-th,z+s*hd],[x+hw,y-th,z+s*hd],[x+hw,y,z+s*hd],[x-hw,y,z+s*hd],e,ins);this.tube([x-hw,y+h+.03,z],[x+hw,y+h+.03,z],.07,e,{n:4});}return this;}
   // barrel vault (half cylinder) along x: hangars, greenhouses; o.ribs adds hoops, o.ends closes the gables
-  vault(x,y,z,len,r,m,o={}){const n=o.n||(hi?10:6),h=o.h??r,I=[];for(let i=0;i<=n;i++){const a=i/n*Math.PI;I.push([Math.cos(a)*r,Math.sin(a)*h]);}const x0=x-len/2,x1=x+len/2,ins=[x,y,z];
+  vault(x,y,z,len,r,m,o={}){const n=o.n||(this.hi?10:6),h=o.h??r,I=[];for(let i=0;i<=n;i++){const a=i/n*Math.PI;I.push([Math.cos(a)*r,Math.sin(a)*h]);}const x0=x-len/2,x1=x+len/2,ins=[x,y,z];
    for(let i=0;i<n;i++){const [z0,y0]=I[i],[z1,y1]=I[i+1];this.quad([x0,y+y0,z+z0],[x1,y+y0,z+z0],[x1,y+y1,z+z1],[x0,y+y1,z+z1],typeof m==='function'?m(i):m,ins);}
    if(o.ends)for(const xe of [x0,x1])for(let i=0;i<n;i++){const [z0,y0]=I[i],[z1,y1]=I[i+1];this.tri([xe,y,z],[xe,y+y0,z+z0],[xe,y+y1,z+z1],o.ends,[x,y+h*.4,z]);}
-   if(hi&&o.ribs){const k=o.ribs,rm=o.ribMat||tint(typeof m==='function'?m(0):m,.6);for(let j=0;j<=k;j++){const xr=x0+len*j/k;for(let i=0;i<n;i++){const [z0,y0]=I[i],[z1,y1]=I[i+1];this.tube([xr,y+y0*1.02,z+z0*1.02],[xr,y+y1*1.02,z+z1*1.02],o.ribR||.07,rm,{n:4});}}}return this;}
+   if(this.hi&&o.ribs){const k=o.ribs,rm=o.ribMat||tint(typeof m==='function'?m(0):m,.6);for(let j=0;j<=k;j++){const xr=x0+len*j/k;for(let i=0;i<n;i++){const [z0,y0]=I[i],[z1,y1]=I[i+1];this.tube([xr,y+y0*1.02,z+z0*1.02],[xr,y+y1*1.02,z+z1*1.02],o.ribR||.07,rm,{n:4});}}}return this;}
   // lattice mast between two heights: four legs, cross braces every `step`
   truss(x,y,z,w0,w1,h,m,o={}){const st=o.step||2.2,r=o.r||.07,n=Math.max(1,Math.round(h/st)),leg=(t,sx,sz)=>{const w=(w0+(w1-w0)*t)/2;return [x+sx*w,y+h*t,z+sz*w];};
    for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]])this.tube(leg(0,sx,sz),leg(1,sx,sz),r*1.3,m,{n:4});
-   for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,C=[[-1,-1],[1,-1],[1,1],[-1,1]];for(let i=0;i<4;i++){const a=C[i],b=C[(i+1)%4];this.tube(leg(t1,a[0],a[1]),leg(t1,b[0],b[1]),r,m,{n:3});if(hi||i%2===0)this.tube(leg(t0,a[0],a[1]),leg(t1,b[0],b[1]),r*.8,m,{n:3});}}return this;}
+   for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,C=[[-1,-1],[1,-1],[1,1],[-1,1]];for(let i=0;i<4;i++){const a=C[i],b=C[(i+1)%4];this.tube(leg(t1,a[0],a[1]),leg(t1,b[0],b[1]),r,m,{n:3});if(this.hi||i%2===0)this.tube(leg(t0,a[0],a[1]),leg(t1,b[0],b[1]),r*.8,m,{n:3});}}return this;}
   // window on a wall whose outward normal is +z of the current frame: frame, glass (lit or dark) and a sill
   window(x,y,z,w,h,o={}){const f=o.frame||mat(0x20242a,'metal'),g=o.lit===false?mat(0x0c1218,'glass',.1):(o.glass||glow(o.color||0xffc47a,o.k??.8));this.box(x,y,z+.03,w,h,.04,g);
-   if(hi){const t=o.t||.07;this.box(x,y-t,z+.05,w+2*t,t,.09,f).box(x,y+h,z+.05,w+2*t,t,.07,f).box(x-w/2-t/2,y,z+.05,t,h,.07,f).box(x+w/2+t/2,y,z+.05,t,h,.07,f);if(o.bars)for(let k=1;k<=o.bars;k++)this.box(x-w/2+w*k/(o.bars+1),y,z+.055,t*.6,h,.04,f);if(o.mid)this.box(x,y+h/2-t*.3,z+.055,w,t*.6,.04,f);}return this;}
-  door(x,y,z,w,h,o={}){const f=o.frame||mat(0x20242a,'metal'),d=o.mat||mat(0x3a2a1e,'timber');this.box(x,y,z+.02,w,h,.06,d);if(hi){this.box(x,y+h,z+.04,w+.24,.12,.12,f).box(x-w/2-.06,y,z+.04,.12,h,.1,f).box(x+w/2+.06,y,z+.04,.12,h,.1,f);this.box(x+w*.3,y+h*.45,z+.06,.07,.16,.05,o.handle||glow(0xffc47a,.5));if(o.step!==false)this.box(x,y-.12,z+.3,w+.5,.12,.6,o.stepMat||mat(0x5a5a58,'concrete'));}return this;}
+   if(this.hi){const t=o.t||.07;this.box(x,y-t,z+.05,w+2*t,t,.09,f).box(x,y+h,z+.05,w+2*t,t,.07,f).box(x-w/2-t/2,y,z+.05,t,h,.07,f).box(x+w/2+t/2,y,z+.05,t,h,.07,f);if(o.bars)for(let k=1;k<=o.bars;k++)this.box(x-w/2+w*k/(o.bars+1),y,z+.055,t*.6,h,.04,f);if(o.mid)this.box(x,y+h/2-t*.3,z+.055,w,t*.6,.04,f);}return this;}
+  door(x,y,z,w,h,o={}){const f=o.frame||mat(0x20242a,'metal'),d=o.mat||mat(0x3a2a1e,'timber');this.box(x,y,z+.02,w,h,.06,d);if(this.hi){this.box(x,y+h,z+.04,w+.24,.12,.12,f).box(x-w/2-.06,y,z+.04,.12,h,.1,f).box(x+w/2+.06,y,z+.04,.12,h,.1,f);this.box(x+w*.3,y+h*.45,z+.06,.07,.16,.05,o.handle||glow(0xffc47a,.5));if(o.step!==false)this.box(x,y-.12,z+.3,w+.5,.12,.6,o.stepMat||mat(0x5a5a58,'concrete'));}return this;}
   // rails: posts every `step` along a polyline at height h with one or two bars
-  rail(pts,h,m,o={}){const st=o.step||1.4,r=o.r||.035;for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],L=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]),n=Math.max(1,Math.round(L/st));this.tube([a[0],a[1]+h,a[2]],[b[0],b[1]+h,b[2]],r,m,{n:4});if(hi&&o.mid!==false)this.tube([a[0],a[1]+h*.5,a[2]],[b[0],b[1]+h*.5,b[2]],r*.8,m,{n:3});
+  rail(pts,h,m,o={}){const st=o.step||1.4,r=o.r||.035;for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],L=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]),n=Math.max(1,Math.round(L/st));this.tube([a[0],a[1]+h,a[2]],[b[0],b[1]+h,b[2]],r,m,{n:4});if(this.hi&&o.mid!==false)this.tube([a[0],a[1]+h*.5,a[2]],[b[0],b[1]+h*.5,b[2]],r*.8,m,{n:3});
     for(let k=0;k<=n;k++){if(k===0&&i>1)continue;const t=k/n,x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t,z=a[2]+(b[2]-a[2])*t;this.tube([x,y,z],[x,y+h,z],r*1.2,m,{n:4});}}return this;}
   ladder(a,b,m,o={}){const w=o.w||.42,L=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]),n=Math.max(2,Math.round(L/.42)),dx=o.dx??1,dz=o.dz??0;for(const s of [-1,1])this.tube([a[0]+dx*s*w/2,a[1],a[2]+dz*s*w/2],[b[0]+dx*s*w/2,b[1],b[2]+dz*s*w/2],.03,m,{n:4});
-   if(hi)for(let k=1;k<n;k++){const t=k/n,x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t,z=a[2]+(b[2]-a[2])*t;this.tube([x-dx*w/2,y,z-dz*w/2],[x+dx*w/2,y,z+dz*w/2],.022,m,{n:3});}return this;}
+   if(this.hi)for(let k=1;k<n;k++){const t=k/n,x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t,z=a[2]+(b[2]-a[2])*t;this.tube([x-dx*w/2,y,z-dz*w/2],[x+dx*w/2,y,z+dz*w/2],.022,m,{n:3});}return this;}
   // sagging cable / string between two points
-  cable(a,b,sag,r,m,o={}){const n=o.n||(hi?6:3);let p=a;for(let k=1;k<=n;k++){const t=k/n,q=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t-sag*4*t*(1-t),a[2]+(b[2]-a[2])*t];this.tube(p,q,r,m,{n:3});p=q;}return this;}
+  cable(a,b,sag,r,m,o={}){const n=o.n||(this.hi?6:3);let p=a;for(let k=1;k<=n;k++){const t=k/n,q=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t-sag*4*t*(1-t),a[2]+(b[2]-a[2])*t];this.tube(p,q,r,m,{n:3});p=q;}return this;}
   // vertical ribs / buttresses around an upright cylinder (the Meshy reactor read)
-  ribs(x,y,z,r,h,n,m,o={}){const w=o.w||.22,dp=o.dp||.18;for(let i=0;i<n;i++){const a=i/n*TAU+(o.rot||0);this.at(x+Math.cos(a)*(r+dp/2-.02),y,z+Math.sin(a)*(r+dp/2-.02),-a+Math.PI/2,b=>hi&&o.bev!==false?b.bev(0,0,0,w,h,dp,m,{ch:Math.min(.05,w*.3)}):b.box(0,0,0,w,h,dp,m));}return this;}
+  ribs(x,y,z,r,h,n,m,o={}){const w=o.w||.22,dp=o.dp||.18;for(let i=0;i<n;i++){const a=i/n*TAU+(o.rot||0);this.at(x+Math.cos(a)*(r+dp/2-.02),y,z+Math.sin(a)*(r+dp/2-.02),-a+Math.PI/2,b=>this.hi&&o.bev!==false?b.bev(0,0,0,w,h,dp,m,{ch:Math.min(.05,w*.3)}):b.box(0,0,0,w,h,dp,m));}return this;}
   // glow billboard / ground glow (collected for the fx batch); colour is linear rgb * k
   halo(x,y,z,s,hex,k=1,o=0){const c=col(hex);_v.set(x,y,z).applyMatrix4(this.M);this.fx.push({t:'bill',x:_v.x,y:_v.y,z:_v.z,s,c:[c[0]*k,c[1]*k,c[2]*k],o});return this;}
   pool(x,y,z,hw,hd,hex,k=1,o=0){const c=col(hex);_v.set(x,y,z).applyMatrix4(this.M);this.fx.push({t:'flat',x:_v.x,y:_v.y,z:_v.z,hw,hd,c:[c[0]*k,c[1]*k,c[2]*k],o});return this;}
@@ -160,6 +160,12 @@ function kit(S){if(S.worldKit)return S.worldKit;
  const geos=new Map();
  function geometry(id,o={}){const k=id+'|'+JSON.stringify(o);let g=geos.get(k);if(g)return g;const b=build(id,o),B=new S.Bld();const I=new T.Matrix4();append(B,b.buf.main,I);append(B,b.buf.det,I);g=B.geometry();g.userData.hfShared=true;S.shared.push(g);geos.set(k,g);return g;}
  const tris=(id,o)=>build(id,o).tris();
+ // one instanced draw of a slot (trees, rocks, deposits, animals, moving things): the code-built geometry on the style's solid
+ // material, or the slot's Meshy model when the list names one and it has loaded (setAt then fits each instance into the box)
+ function instanced(id,count,o){const sw=swapped(id),My=root.Meshy3D;
+  if(sw&&meshyReady(sw)){const set=My.slotSet(sw,Math.max(1,count),!hi);if(set){const sb=Object.assign(slotBox(id),o||{});set.mesh.count=count;set.mesh.userData.slot=id;set.mesh.userData.slotFit=set.fit(new T.Matrix4(),sb.w,sb.h+slotOver(id),sb.d);return set.mesh;}}
+  if(sw)pendingSwap.add(id);const im=new T.InstancedMesh(geometry(id,o),S.MAT.solid,Math.max(1,count));im.count=count;im.userData.slot=id;return im;}
+ const setAt=(im,i,m4)=>im.setMatrixAt(i,im.userData.slotFit?_m2.multiplyMatrices(m4,im.userData.slotFit):m4);
  // ---- Meshy replacement of a slot (owner, Nov 19): the listed item is fitted into the slot's box, standing on its ground ----
  const pendingSwap=new Set();
  function meshyReady(item){const My=root.Meshy3D;if(!My||!My.enabled||!My.slotAsset)return false;return !!My.slotAsset(item);}
@@ -180,7 +186,7 @@ function kit(S){if(S.worldKit)return S.worldKit;
    straw:mat(0xa89a5b,'leaf',0,.2),olive:mat(0x6b7a3a,'leaf',0,.2),ice:mat(0xa8dcf0,'glass',.25),soil:mat(0x4a3a28,'dirt',0),moss:mat(0x3e5a2e,'leaf',0,.2)},
   par:{chitin:mat(0x2b1531,'chitin',.6),chitinD:mat(0x150a19,'chitin',.3),bone:mat(0x4a3550,'chitin',.1),wall:mat(0x2c2833,'chitin',.2),wallTop:mat(0x4a4352,'metal',.4),mag:glow(0xff2bd6,1.85),magHot:glow(0xff7ae8,1.95),magDim:glow(0xff2bd6,1)},
   wreck:{hull:mat(0x3a3530,'scrap',.7),rust:mat(0x6a3f26,'scrap',.95),track:mat(0x1e1c1a,'metal',.8),moss:mat(0x3e5a2e,'leaf',0,.2),bag:mat(0x8f8064,'dirt',0,.15),wire:mat(0x2a2a2a,'metal',.9),post:mat(0x4a4038,'timber',.8),mud:mat(0x2a2018,'dirt',0)}};
- const K={S,T,hi,KB,pal,emit,part,mat,glow,tint,mix,rect,circ,col,SURF,surfA,hash,rng,build,place,geometry,tris,swapMeshes,swapped,pendingSwap,unit,M:(x,y,z,ry=0,s=1)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(s,s,s));},clear(){cache.clear();geos.clear();}};
+ const K={S,T,hi,KB,pal,emit,part,mat,glow,tint,mix,rect,circ,col,SURF,surfA,hash,rng,build,place,geometry,instanced,setAt,tris,swapMeshes,swapped,pendingSwap,unit,M:(x,y,z,ry=0,s=1)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(s,s,s));},clear(){cache.clear();geos.clear();}};
  S.worldKit=K;return K;}
 
 // Slot swaps at runtime (tests, a later owner tool): model = a Meshy item id, or null for the code-built model. Views that

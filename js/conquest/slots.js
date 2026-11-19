@@ -36,6 +36,7 @@ root.ConquestSlots={version:1,items:{
  'base-module':S('military','Command Base module',[4,9,4],'on the back wall line'),
  'base-spire':S('military','Command tower (tier V)',[8,34,8],'on the back wall line'),
  'base-kiosk':S('military','Build terminal',[2.2,5,1.8],'none'),
+ 'veteran-monument':S('military','Field veteran monument',[3,5.8,3],'none'),
  // ---- military: the frontier wall and the terraformers' works ----
  'frontier-wall':S('military','Frontier wall run',[13,6,3.4],'colony lot (placement w = length)'),
  'frontier-watch':S('military','Frontier watchtower',[6.6,13.2,6.6],'colony lot'),
@@ -128,6 +129,18 @@ root.ConquestSlots={version:1,items:{
  'town-reactor':S('town','Reactor',[12,8,12],'plot footprint 3x3',{model:'town-reactor',code:'low'}),
  'town-shield':S('town','Shield generator',[8,9,8],'plot footprint 2x2',{model:'town-shield',code:'low'}),
  'town-lab':S('town','Science Lab',[12,7,12],'plot footprint 3x3',{model:'town-lab',code:'low'}),
+ // ---- the town: turrets (one slot each: pedestal + turning head). Five are code-built at every quality; six are the owner's Meshy items on HIGH ----
+ 'town-missile':S('town','Missile turret',[4,3.4,4],'plot footprint 1x1'),
+ 'town-mortar':S('town','Mortar turret',[4,3.8,4],'plot footprint 1x1'),
+ 'town-flame':S('town','Flame turret',[4,2.8,4.4],'plot footprint 1x1'),
+ 'town-siege':S('town','Siege turret',[8,2.9,10],'plot footprint 2x1 (the barrel overhangs as it turns)'),
+ 'town-lasercannon':S('town','Laser cannon turret',[8,2.7,4.6],'plot footprint 2x1'),
+ 'town-cannon':S('town','Cannon turret',[4,2.7,7.2],'plot footprint 1x1 (the barrel overhangs as it turns)',{model:'town-cannon',code:'low'}),
+ 'town-mg':S('town','Machine-gun turret',[4,2.6,6],'plot footprint 1x1 (the barrels overhang as it turns)',{model:'town-mg',code:'low'}),
+ 'town-laser':S('town','Laser turret',[4,3,4.4],'plot footprint 1x1',{model:'town-laser',code:'low'}),
+ 'town-rocket':S('town','Rocket turret',[4,3.4,4],'plot footprint 1x1',{model:'town-rocket',code:'low'}),
+ 'town-tesla':S('town','Tesla turret',[8,4.6,4],'plot footprint 2x1',{model:'town-tesla',code:'low'}),
+ 'town-railgun':S('town','Railgun turret',[8,2.7,9.4],'plot footprint 2x1 (the rails overhang as it turns)',{model:'town-railgun',code:'low'}),
  // ---- the town: walls, settler homes and decorations ----
  'town-wall':S('town','Town wall cell',[4.2,4,4.2],'plot wall cell (placement ore, level)'),
  'town-post':S('town','Wall corner post',[1.9,5.6,1.9],'none (on a wall cell)'),

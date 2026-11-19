@@ -75,6 +75,8 @@ jobs:
           node dev/tests/conquest-cosmetics-authority.mjs
           node dev/tests/conquest-assets.mjs
           node dev/tests/conquest-style.mjs
+          # Session 5E-2d1: the one model list of the code-built world (every slot code-built on HIGH and LOW inside its box, swap to a model and back)
+          node dev/tests/conquest-slots.mjs
           node dev/tests/conquest-flagship-ui.mjs
           node dev/tests/conquest-canvas-contract.mjs
           node dev/tests/wtest/conquest-war.mjs
@@ -124,6 +126,8 @@ jobs:
           python dev/tests/conquest-find-base.py
           python dev/tests/conquest-plot-ui.py
           python dev/tests/conquest-session5d.py
+          python dev/tests/conquest-seethrough-town.py
+          python dev/tests/conquest-slots-browser.py
           python dev/tests/conquest-super-fx.py
       - name: Desktop keyboard journey (website build)
         run: python dev/tests/conquest-desktop-keys.py
@@ -143,6 +147,8 @@ jobs:
             docs/conquest/session5b
             docs/conquest/base-ui
             docs/conquest/session5d
+            docs/conquest/session5e2d1/slots
+            docs/conquest/session5e2d1/town
 
   # Session 6C guardrails (blueprint §12): 2 better gear always helps (every authored encounter and town tier, 3 kits x 4 seeds) and
   # 4 composition matters (a balanced Battalion vs each one-role Battalion). A job of its own: they are long simulations.
