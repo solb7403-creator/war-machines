@@ -180,7 +180,7 @@ const ROLE_ORDER=Object.freeze(['guardian','breacher','lancer','mender','corrode
 const FORMS=Object.freeze({line:Object.freeze([[-7,-3],[7,-3],[-14,-3],[14,-3],[-21,-3],[21,-3],[-28,-3],[28,-3],[0,-10],[0,-17]]),
  wedge:Object.freeze([[-6,-7],[6,-7],[-12,-14],[12,-14],[-18,-21],[18,-21],[-24,-28],[24,-28],[0,-14],[0,-24]]),
  escort:Object.freeze([[0,9],[-9,0],[9,0],[0,-9],[-7,7],[7,7],[-7,-7],[7,-7],[0,-15],[0,15]])});
-const ORDERS=Object.freeze(['','follow','attack','hold','fallback','smart']);
+const ORDERS=Object.freeze(['','follow','attack','hold','fallback','smart']);const ORDER_GAP=1;   // s between two orders that count
 const FST=new WeakMap(),GHOST=Object.freeze({kit:null});   // a unit's stats, derived from its kit on each side (never saved with the battle)
 // The loadout a friendly unit fights with: its kit's weapon and chassis (tier and roll), nothing else (militia: Common, no cores)
 function allyLoadout(kit){const w=kit&&kit.w||{},c=kit&&kit.c||{},wa=w.a==='moon'||WORDER.includes(w.a)?w.a:'pulse',cc=CHORDER.includes(c.c)?c.c:'vanguard',q=v=>Number(v)>0&&Number(v)<2?Number(v):1;
@@ -355,7 +355,7 @@ Object.assign(Battle.prototype,{
   if(near){const l=bd||1;return {x:P.x-(near.x-P.x)/l*16,z:P.z-(near.z-P.z)/l*16};}const h=Number.isFinite(this.squad.hd)?this.squad.hd:0;return {x:P.x-Math.sin(h)*14,z:P.z-Math.cos(h)*14};},
  // COMMAND (owner, Nov 18): 1 follow, 2 attack (the locked target; with no lock the Parasite nearest your aim), 3 hold here, 4 fall
  // back, 5 the smart order (attack my locked target, or regroup when nothing is locked). Your pilots only; LDF regulars keep theirs.
- squadOrder(k){const S=this.squad;if(!S.orders||!this.friends.some(f=>f.side==='mine'))return false;k=k|0;const P=this.player;
+ squadOrder(k){const S=this.squad;if(!S.orders||!this.friends.some(f=>f.side==='mine'))return false;{const g=this.time-(Number.isFinite(S.ot)?S.ot:-99);if(g>=0&&g<ORDER_GAP)return false;}S.ot=this.time;k=k|0;const P=this.player;   /* one order a second (reviewer 1: an order in every command reset every ally's decision timer and undid the aim lag) */
   if(k===5)k=this.lockId!=null&&this.enemies.some(e=>e.id===this.lockId&&e.hp>0)?2:1;if(k<1||k>4)return false;let t=0;
   if(k===2){t=this.lockId!=null&&this.enemies.some(e=>e.id===this.lockId&&e.hp>0)?this.lockId:0;if(!t){let bs=.5;const y=this.turretYaw||0;for(const e of this.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-P.x,e.z-P.z);if(d>120)continue;const a=Math.abs(Math.atan2(Math.sin(Math.atan2(e.x-P.x,e.z-P.z)-y),Math.cos(Math.atan2(e.x-P.x,e.z-P.z)-y)));if(a<bs){bs=a;t=e.id;}}}if(!t)k=1;}
   S.o=ORDERS[k];S.t=t;S.at=this.time;if(k===3){S.x=P.x;S.z=P.z;}for(const f of this.friends)if(f.side==='mine')f.dec=Math.min(f.dec,(f.id%5)*.04);

@@ -5838,9 +5838,24 @@ players: no migration, grandfathering, legacy fallback or "existing saves" code)
   a full-screen WINGMAN JOINED reveal with the tank, per-pilot XP cards with an MVP, a two-pane desktop HANGAR, tank pictures on
   roster cards, a PILOTS tab for Role Cores, 32 px edge markers with distance, slow-time while the wheel is held, desktop hiding the
   touch stick and FIRE cluster.
-- NEXT: the 6C journey at 1920x1080 + section D's Battalion LOW numbers; the 6B journey; perf.py; UX critic round 2; reviewer 1
-  (server) and reviewer 2 (gameplay) reports, fix blockers, re-review; dev/bump.sh, PR, CI, merge, deploy checks, ROADMAP 6C
-  RELEASED, release record, final report.
+- REVIEWER 1 (server authority, phone/Worker, fairness, security, record cost; fresh, read-only, at 1d1f131): 8 of 9 areas PASS
+  (authority, points, store, daily chip, no enemy scaling, sweep generation-safety, fixtures test-only, no secrets). BLOCKER, fixed:
+  the first session's hot-only input replies (19 of 20 in a fight) carried each unit's moving half only; the phone's merge could not
+  rebuild them, apply() threw, queued presses (DASH, SUPER, COMMAND) were lost and the session reopened (44 crashes and three 429s in
+  47 s, measured with the real session.js on the real routes). Fix: the phone always gets the whole state (worker/src/conquest.js); the
+  storage split and its Firebase savings stay (warm isolate idle 31 MB / fight 67 MB a pilot-hour of Firebase download); the phone's
+  download returns to the pre-split size (idle ~22 KB a request at the 2 s idle cadence = ~40 MB/h; a fight ~35 KB at 1 Hz = ~126
+  MB/h). SHOULD-FIX taken: (1) orders count at most one a second (combat.js ORDER_GAP; an order in every 50 ms command reset every
+  ally's decision timer and lifted rule (a) to its limit, 3 of 15, with spam); (2) the cold cache holds 400 pilots (was 2,000: up to
+  ~249 MB of heap); (4) the sweep deletes at most 20 blobs a session open; (7) the one-time rescue never rotates into the featured
+  contracts. Recorded, not taken: (3) a missing cold blob after 8 tries locks the record ('conquest busy'): the only deleter is the
+  generation-safe sweep and the transaction itself, so it needs a lost write; an alert / recovery path is an open item for row 7.8;
+  (5) conquest-loot.mjs does not list liveries (the brief asks that test to pass unchanged; the reviewer checked the 34 loot ids
+  against the 'liv-*' ids: no overlap); (6) changing a role or preset mid-fight in the open world rebuilds the unit (its revive and
+  super meter reset): low, open. Also found by the owner-rules lint while fixing: an inserted trailing // comment in hangar.js
+  swallowed `c.append(tog)` (the brief's lesson, a fourth time): fixed, and the 6C journey now checks every card's force button.
+- NEXT: reviewer 2's report; the 6C journey at five sizes after all fixes (and section D's numbers), the 6B journey, perf.py; UX
+  critic round 2; re-review; dev/bump.sh, PR, CI, merge, deploy checks, ROADMAP 6C RELEASED, release record, final report.
 - Earlier slices (the first 6C session):
 - DONE slice 1 (docs): ROADMAP rows 6C / 6B-V (a)(b) / 8 (c)(d) (row 8's earlier (a)-(c) group is from 6B, so the owner's (c)/(d)
   sit in their own "Also (owner, Nov 18)" group). Research recorded below.

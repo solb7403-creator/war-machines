@@ -102,7 +102,7 @@ async function submit(env,a,request,reduce,now,cv=null){
   try{const state=reduce(previous,request,now);seal(state,now);state.lastDigest=digest;const anq=takeQueue(state);return {state,anq};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
  },now);if(!r.abort&&r.anq?.length)await flush(env,r.anq,r.state?.an?.f,now);   // Session 6 analytics: counted only after the CAS write
  const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r,now),now);
- if(out.status===200&&r.state){const hcv=r.cv;if(hcv){out.body.cv=hcv;if(cv&&cv===hcv&&!r.cold&&!r.replayed){const st=out.body.state;out.body.hot=publicHot(r.state);if(st?.warfront)out.body.hot.warfront=st.warfront;if(st?.airdrop)out.body.hot.airdrop=st.airdrop;delete out.body.state;}}}
+ if(out.status===200&&r.state&&r.cv)out.body.cv=r.cv;   // Session 6C review (reviewer 1 blocker): the phone always gets the whole state. A hot-only reply carried each unit's moving half only and the phone could not rebuild it (apply threw, inputs were lost, the session reopened); the storage split, where the Firebase savings are, stays
  return out;
 }
 // Session 6 analytics: the phone's screen events (the opening radio, where a session ended, its length). Fixed enums only.

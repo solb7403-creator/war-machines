@@ -39,7 +39,7 @@ export function join(hot,cold){if(!record(hot))return hot;const s={...(record(co
 export function canon(v){if(Array.isArray(v)){const a=v.map(canon).filter(x=>x!==undefined);return a.length?a:undefined;}
  if(record(v)){const o={};for(const k of Object.keys(v).sort()){const x=canon(v[k]);if(x!==undefined)o[k]=x;}return Object.keys(o).length?o:undefined;}
  return v===null||v===undefined||typeof v==='function'||(typeof v==='number'&&!Number.isFinite(v))?undefined:v;}
-const caches=new WeakMap(),CACHE_PILOTS=2000;
+const caches=new WeakMap(),CACHE_PILOTS=400;   // reviewer 1: a full CC10 town's cold part is ~127 KB of heap: 400 pilots stay near 50 MB of a 128 MB isolate
 function cacheOf(env){if(!env||typeof env!=='object')return null;let c=caches.get(env);if(!c)caches.set(env,c=new Map());return c;}
 export const stats={hotReads:0,coldReads:0,coldHits:0,coldWrites:0,coldDeletes:0};
 async function coldOf(env,pid,cv){const c=cacheOf(env),hit=c?.get(pid);if(hit&&hit.cv===cv){stats.coldHits++;c.delete(pid);c.set(pid,hit);return structuredClone(hit.v);}
@@ -65,8 +65,8 @@ export async function transaction(env,pid,fn,guard){const path='conquest/'+pid;
 // generation at or below the one just committed (cvn) can be orphans: a request still in flight writes generation cvn + 1 or later
 // before its CAS, so it is never touched (deleting it would strand the record on a missing cold part). An id it cannot read is kept.
 const genOf=k=>{const m=/^(\d{1,12})x/.exec(k);return m?Number(m[1]):Infinity;};
-const SWEPT=new WeakMap(),SWEEP_MS=3600000;   // at most once an hour per pilot per isolate: a shallow read is cheap, not free
+const SWEPT=new WeakMap(),SWEEP_MS=3600000,SWEEP_MAX=20;   // at most 20 deletes in one session open (the subrequest budget); the rest go an hour later   // at most once an hour per pilot per isolate: a shallow read is cheap, not free
 export async function sweep(env,pid,cv,cvn,now=Date.now()){if(!cv||!Number.isFinite(cvn))return 0;let m=SWEPT.get(env);if(!m){m=new Map();SWEPT.set(env,m);}const last=m.get(pid);if(last&&now-last<SWEEP_MS)return 0;m.set(pid,now);if(m.size>5000)m.delete(m.keys().next().value);
- try{const r=await fetch(dbUrl(env,'cqc/'+pid,{shallow:'true'}));if(!r.ok)return 0;const v=await r.json();if(!record(v))return 0;let n=0;for(const k of Object.keys(v))if(k!==cv&&genOf(k)<=cvn){n++;await dropBlob(env,pid,k);}return n;}catch{return 0;}}
+ try{const r=await fetch(dbUrl(env,'cqc/'+pid,{shallow:'true'}));if(!r.ok)return 0;const v=await r.json();if(!record(v))return 0;let n=0;for(const k of Object.keys(v))if(k!==cv&&genOf(k)<=cvn&&n<SWEEP_MAX){n++;await dropBlob(env,pid,k);}return n;}catch{return 0;}}
 // the whole state, read only (tests, admin)
 export async function readState(env,pid){const {v:h}=await readTag(env,'conquest/'+pid);if(!record(h)||!h.cv)return h;const c=await coldOf(env,pid,h.cv);return join(h,c);}
