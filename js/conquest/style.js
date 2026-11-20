@@ -423,16 +423,39 @@ function create(T,opts={}){
  S.own=rt=>{rt?.traverse?.(o=>{if(o.isMesh&&o.material===MAT.solid)o.material=MAT.own;});return rt;};
  // Twins of a tank's solid meshes, kept in their own group (nothing is ever added to a vehicle): sync(list, px) each frame with
  // list = [{root, ally}] and px = the outline width in drawing-buffer pixels.
- S.outliner=scene=>{const g=new T.Group();g.name='cq-outline';scene.add(g);const sets=new Map();
-  const drop=set=>{for(const t of set.tw){g.remove(t[0]);g.remove(t[1]);}};
+ // The twins draw the whole tank twice more, so they are only drawn while something stands in front of it. Each frame one
+ // box around the tank (all its parts as they stand now, turret included; the lowest 30% left out so the grass it stands in
+ // does not count) asks the GPU whether anything is nearer than its front faces: a WebGL2 occlusion query, 12 triangles, no
+ // colour, no depth write, the solid program. The answer arrives a frame later and holds the twins on for a few frames.
+ // Without WebGL2 queries, without a camera, or when an answer never comes back, the twins are always drawn, as before.
+ MAT.outlineProbe=mk(SOLID_VS,SOLID_FS,{uOutline:{value:.51},uDetail:{value:tex.detail}},{colorWrite:false,depthFunc:6,depthWrite:false});
+ const PROBE_I=[0,2,3,0,3,1,4,5,7,4,7,6,0,1,5,0,5,4,2,6,7,2,7,3,0,4,6,0,6,2,1,3,7,1,7,5];   // a box's 12 triangles, corners numbered x + 2y + 4z, wound outward
+ S.outliner=scene=>{const g=new T.Group();g.name='cq-outline';scene.add(g);const sets=new Map();let frame=0;const _pv=V3(),_pc=V3(),_pm=new T.Matrix4(),_pi=new T.Matrix4();
+  const drop=set=>{for(const t of set.tw){g.remove(t[0]);g.remove(t[1]);}if(set.probe){g.remove(set.probe);set.probe.geometry.dispose();if(set.q&&set.gl)try{set.gl.deleteQuery(set.q);}catch(_){}set.q=null;set.probe=null;}};
+  const probe=set=>{const geo=new T.BufferGeometry(),N=new Float32Array(24);for(let i=0;i<8;i++)N[i*3+1]=1;
+   geo.setAttribute('position',new T.BufferAttribute(new Float32Array(24),3));geo.setAttribute('normal',new T.BufferAttribute(N,3));geo.setAttribute('aCol',new T.BufferAttribute(new Float32Array(32),4));geo.setIndex(PROBE_I.slice());set.flip=false;
+   const m=new T.Mesh(geo,MAT.outlineProbe);m.renderOrder=8999;m.matrixAutoUpdate=false;m.frustumCulled=false;m.userData.noPick=true;m.userData.noOutline=true;m.userData.outlineProbe=true;set.pend=0;set.busy=false;set.hot=frame+3;set.ok=true;
+   m.onBeforeRender=rd=>{if(set.pend||set.busy||!set.ok)return;const gl=rd.getContext();if(!gl||!gl.beginQuery||gl.ANY_SAMPLES_PASSED_CONSERVATIVE===undefined){set.ok=false;return;}try{if(!set.q||set.gl!==gl){set.gl=gl;set.q=gl.createQuery();}gl.beginQuery(gl.ANY_SAMPLES_PASSED_CONSERVATIVE,set.q);set.busy=true;}catch(_){set.ok=false;}};
+   m.onAfterRender=()=>{if(!set.busy)return;set.busy=false;try{set.gl.endQuery(set.gl.ANY_SAMPLES_PASSED_CONSERVATIVE);set.pend=frame;}catch(_){set.ok=false;}};g.add(m);return m;};
+  // true = draw this tank's twins this frame
+  const ask=(set,rt,cam)=>{if(!set.probe||!set.ok||!cam)return true;const P=set.probe.geometry.attributes.position,A=P.array,cp=cam.position;let x0=1e9,y0=1e9,z0=1e9,x1=-1e9,y1=-1e9,z1=-1e9;_pi.copy(rt.matrixWorld).invert();
+   for(const o of set.src){const b=o.geometry.boundingBox||(o.geometry.computeBoundingBox(),o.geometry.boundingBox);_pm.multiplyMatrices(_pi,o.matrixWorld);for(let i=0;i<8;i++){_pv.set(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z).applyMatrix4(_pm);x0=Math.min(x0,_pv.x);x1=Math.max(x1,_pv.x);y0=Math.min(y0,_pv.y);y1=Math.max(y1,_pv.y);z0=Math.min(z0,_pv.z);z1=Math.max(z1,_pv.z);}}
+   const px=(x1-x0)*.04,pz=(z1-z0)*.04,h=y1-y0;x0-=px;x1+=px;z0-=pz;z1+=pz;y0+=h*.3;y1+=h*.06;_pc.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2).applyMatrix4(rt.matrixWorld);
+   const dx=_pc.x-cp.x,dy=_pc.y-cp.y,dz=_pc.z-cp.z,dl=Math.hypot(dx,dy,dz)||1,sh=1/dl;   // the shader brings the box 1.3 m nearer in depth (as it does the outline); 1 m back here leaves it .3 m nearer than it stands
+   for(let i=0;i<8;i++){_pv.set(i&1?x1:x0,i&2?y1:y0,i&4?z1:z0).applyMatrix4(rt.matrixWorld);A[i*3]=_pv.x+dx*sh;A[i*3+1]=_pv.y+dy*sh;A[i*3+2]=_pv.z+dz*sh;}P.needsUpdate=true;
+   const e=rt.matrixWorld.elements,flip=(e[0]*(e[5]*e[10]-e[6]*e[9])-e[4]*(e[1]*e[10]-e[2]*e[9])+e[8]*(e[1]*e[6]-e[2]*e[5]))<0;
+   if(flip!==set.flip){set.flip=flip;const I=set.probe.geometry.index.array;for(let t=0;t<36;t+=3){I[t+1]=PROBE_I[t+(flip?2:1)];I[t+2]=PROBE_I[t+(flip?1:2)];}set.probe.geometry.index.needsUpdate=true;}
+   if(set.pend){let done=false,hit=true;try{done=!!set.gl.getQueryParameter(set.q,set.gl.QUERY_RESULT_AVAILABLE);if(done)hit=!!set.gl.getQueryParameter(set.q,set.gl.QUERY_RESULT);}catch(_){set.ok=false;return true;}
+    if(done){set.pend=0;if(hit)set.hot=frame+10;}else if(frame-set.pend>40){set.pend=0;set.hot=frame+40;try{set.gl.deleteQuery(set.q);}catch(_){}set.q=null;}}   // an answer that never comes (a lost context): draw the twins and ask again
+   return frame<=set.hot;};
   const ok=o=>o.isMesh&&!o.isInstancedMesh&&o.material&&!Array.isArray(o.material)&&!o.material.transparent&&o.material.colorWrite!==false&&o.geometry?.attributes?.normal&&!o.userData.noOutline;
   return {group:g,sets,
-   sync(list,px){MAT.outline.uniforms.uOutline.value=MAT.outlineAlly.uniforms.uOutline.value=px;const live=new Set();
+   sync(list,px,cam){MAT.outline.uniforms.uOutline.value=MAT.outlineAlly.uniforms.uOutline.value=px;const live=new Set();frame++;
     for(const it of list){const rt=it.root;if(!rt||!rt.parent)continue;let shown=true;for(let p=rt;p;p=p.parent)if(!p.visible){shown=false;break;}if(!shown)continue;live.add(rt);rt.updateWorldMatrix(true,true);
      const src=[];rt.traverse(o=>{if(!ok(o))return;for(let p=o;p&&p!==rt;p=p.parent)if(!p.visible)return;if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();if(o.geometry.boundingSphere.radius*o.matrixWorld.getMaxScaleOnAxis()>.3)src.push(o);});
      let set=sets.get(rt);if(!set||set.src.length!==src.length||set.src.some((o,i)=>o!==src[i]||set.geo[i]!==o.geometry)){if(set)drop(set);set={src,geo:src.map(o=>o.geometry),tw:[]};
-      for(const o of src){const a=new T.Mesh(o.geometry,MAT.outlineMask),b=new T.Mesh(o.geometry,it.ally?MAT.outlineAlly:MAT.outline);a.renderOrder=9000;b.renderOrder=9001;for(const m of [a,b]){m.matrixAutoUpdate=false;m.frustumCulled=false;m.userData.noPick=true;m.userData.noOutline=true;m.userData.outlineTwin=true;}g.add(a,b);set.tw.push([a,b]);}sets.set(rt,set);}
-     set.src.forEach((o,i)=>{for(const m of set.tw[i]){m.matrix.copy(o.matrixWorld);m.matrixWorldNeedsUpdate=true;}});}
+      for(const o of src){const a=new T.Mesh(o.geometry,MAT.outlineMask),b=new T.Mesh(o.geometry,it.ally?MAT.outlineAlly:MAT.outline);a.renderOrder=9000;b.renderOrder=9001;for(const m of [a,b]){m.matrixAutoUpdate=false;m.frustumCulled=false;m.userData.noPick=true;m.userData.noOutline=true;m.userData.outlineTwin=true;}g.add(a,b);set.tw.push([a,b]);}set.probe=src.length?probe(set):null;sets.set(rt,set);}
+     const on=ask(set,rt,cam);set.on=on;set.src.forEach((o,i)=>{for(const m of set.tw[i]){m.visible=on;if(on){m.matrix.copy(o.matrixWorld);m.matrixWorldNeedsUpdate=true;}}});}
     for(const [rt,set] of sets)if(!live.has(rt)){drop(set);sets.delete(rt);}},
    clear(){for(const set of sets.values())drop(set);sets.clear();},dispose(){this.clear();g.parent?.remove(g);}};};
  // The one footprint the tank is pressed against: {x, z, hw, hd, r} in the solid shader's world frame (render x/z + uOrigin),

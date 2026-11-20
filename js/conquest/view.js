@@ -511,7 +511,7 @@ class View {
  seeThrough(dt){
   if(this.renderer.isConquestCanvas||!this.vehicle||!this.camera||!this.style?.outliner)return;
   const O=this.outline||(this.outline=this.style.outliner(this.scene)),list=[{root:this.vehicle,ally:false}];for(const F of this.friendViews?.values()||[])list.push({root:F.g,ally:true});
-  O.sync(list,2.4*(this.renderer.getPixelRatio?.()||1));
+  O.sync(list,2.4*(this.renderer.getPixelRatio?.()||1),this.camera);
   const fp=this.pressFootprint(),P=this.pressState||(this.pressState={k:0,fp:null});if(fp){if(!P.fp||P.fp.x!==fp.x||P.fp.z!==fp.z)P.k=Math.min(P.k,.35);P.fp=fp;}
   P.k+=((fp?1:0)-P.k)*Math.min(1,dt*(fp?9:6));if(P.k<.02&&!fp){P.k=0;P.fp=null;}this.style.press(P.fp,P.k);
  }

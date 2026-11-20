@@ -475,7 +475,7 @@ function camPose(){const R=X.R;if(!R)return null;return {p:R.cam.position.clone(
 // clean outline; only the wall cell, home or building the hull is pressed against goes see-through, and only while it is.
 function driveSee(R,dt){const v=X.ctx.view,S=R.S;if(!v?.fadeCore||!S.outliner||!R.cam)return;const F=R.fade||(R.fade=v.fadeState()),O=R.outline||(R.outline=S.outliner(R.sc)),P0=R.press||(R.press={k:0,fp:null});
  const on=X.view==='drive'&&X.drive&&!X.tour&&X.tank;F.hits.clear();let fp=null;
- if(on){O.sync([{root:X.tank,ally:false}],2.2*(v.renderer.getPixelRatio?.()||1));
+ if(on){O.sync([{root:X.tank,ally:false}],2.2*(v.renderer.getPixelRatio?.()||1),R.cam);
   const D=X.drive,p=D.plot||plotOf(),c=P.GRID.cell;if(p){if(D.occKey!==D.key){D.occKey=D.key;D.occ=P.occupancy(p);D.homeAt=new Map();for(const h of P.homes(p))for(const [a,b] of [[0,0],[1,0],[0,1],[1,1]])D.homeAt.set(P.key(h.i+a,h.j+b),h);}
    out:for(const rr of [TANK_R+1.4,TANK_R+.4])for(let i=0;i<8;i++){const a=D.h+[0,1,-1,2,-2,3,-3,4][i]*Math.PI/4,x=D.x+Math.sin(a)*rr,z=D.z+Math.cos(a)*rr,ci=cellOf(x),cj=cellOf(z);if(!D.block(ci,cj))continue;const k=P.key(ci,cj),o=D.occ.get(k),hm=D.homeAt.get(k);
      if(o==='wall')fp={x:P.cellX(ci),z:P.cellZ(cj),hw:c/2+.12,hd:c/2+.12,r:0};
