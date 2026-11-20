@@ -1,0 +1,185 @@
+{
+ "errors": [],
+ "shots": {
+  "refuge-habitats": {
+   "calls": 147,
+   "tris": 463950,
+   "programs": 14
+  },
+  "refuge-habitat-close": {
+   "calls": 141,
+   "tris": 467391,
+   "programs": 14
+  },
+  "refuge-processors": {
+   "calls": 142,
+   "tris": 427777,
+   "programs": 14
+  },
+  "refuge-processor-base": {
+   "calls": 128,
+   "tris": 361645,
+   "programs": 14
+  },
+  "refuge-terminal": {
+   "calls": 107,
+   "tris": 421891,
+   "programs": 14
+  },
+  "refuge-solar": {
+   "calls": 103,
+   "tris": 347552,
+   "programs": 14
+  },
+  "viaduct": {
+   "calls": 148,
+   "tris": 478909,
+   "programs": 14
+  },
+  "viaduct-deck": {
+   "calls": 138,
+   "tris": 430011,
+   "programs": 14
+  },
+  "command-base-site": {
+   "calls": 122,
+   "tris": 408770,
+   "programs": 14
+  },
+  "hive": {
+   "calls": 103,
+   "tris": 229499,
+   "programs": 14
+  },
+  "raid-cover": {
+   "calls": 124,
+   "tris": 291668,
+   "programs": 14
+  },
+  "colony-core": {
+   "calls": 168,
+   "tris": 541955,
+   "programs": 14
+  },
+  "colony-homes": {
+   "calls": 166,
+   "tris": 558329,
+   "programs": 14
+  },
+  "colony-shop": {
+   "calls": 123,
+   "tris": 357924,
+   "programs": 14
+  },
+  "colony-hall": {
+   "calls": 146,
+   "tris": 506460,
+   "programs": 14
+  },
+  "colony-block": {
+   "calls": 167,
+   "tris": 553711,
+   "programs": 14
+  },
+  "colony-water-tower": {
+   "calls": 157,
+   "tris": 462969,
+   "programs": 14
+  },
+  "colony-hangar": {
+   "calls": 153,
+   "tris": 516038,
+   "programs": 14
+  },
+  "colony-plaza": {
+   "calls": 146,
+   "tris": 497216,
+   "programs": 14
+  },
+  "colony-monorail": {
+   "calls": 164,
+   "tris": 511248,
+   "programs": 14
+  },
+  "farm-silos": {
+   "calls": 124,
+   "tris": 341966,
+   "programs": 14
+  },
+  "farm-greenhouse": {
+   "calls": 154,
+   "tris": 507369,
+   "programs": 14
+  },
+  "farm-fields": {
+   "calls": 106,
+   "tris": 301556,
+   "programs": 14
+  },
+  "frontier-wall": {
+   "calls": 106,
+   "tris": 363455,
+   "programs": 14
+  },
+  "frontier-defences": {
+   "calls": 88,
+   "tris": 259909,
+   "programs": 14
+  },
+  "frontier-gate": {
+   "calls": 136,
+   "tris": 431873,
+   "programs": 14
+  },
+  "frontier-watch": {
+   "calls": 114,
+   "tris": 321249,
+   "programs": 14
+  },
+  "atmo-pylon": {
+   "calls": 157,
+   "tris": 551690,
+   "programs": 14
+  },
+  "dam": {
+   "calls": 146,
+   "tris": 484511,
+   "programs": 14
+  },
+  "creek-bridge": {
+   "calls": 116,
+   "tris": 330464,
+   "programs": 14
+  },
+  "ice-crater": {
+   "calls": 115,
+   "tris": 310036,
+   "programs": 14
+  },
+  "pipeline": {
+   "calls": 137,
+   "tris": 458304,
+   "programs": 14
+  },
+  "forest": {
+   "calls": 130,
+   "tris": 445797,
+   "programs": 14
+  },
+  "wild-meadow": {
+   "calls": 89,
+   "tris": 284172,
+   "programs": 14
+  },
+  "wreck-band": {
+   "calls": 94,
+   "tris": 248569,
+   "programs": 14
+  },
+  "barren-rocks": {
+   "calls": 73,
+   "tris": 141677,
+   "programs": 14
+  }
+ }
+}
