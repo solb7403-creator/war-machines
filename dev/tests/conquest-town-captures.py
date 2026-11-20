@@ -9,7 +9,7 @@ real Worker reducer on a disposable local DB, scenario placements only:
  4. (--kinds) the camera on one building of every type in the CC10 ridge town, build view and drive view
 Writes docs/conquest/session5b/*.png and captures.json (or --out)."""
 import argparse,asyncio,json,pathlib,shutil
-ap=argparse.ArgumentParser();ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default='');ap.add_argument('--quality',default='high,low');ap.add_argument('--only',default='gallery,raid,towns');ap.add_argument('--kinds',action='store_true');ap.add_argument('--sites',default='crater,delta,ridge,canyon,plateau,ice,ash');ap.add_argument('--dpr',type=float,default=2)
+ap=argparse.ArgumentParser();ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default='');ap.add_argument('--quality',default='high,low');ap.add_argument('--only',default='gallery,raid,towns');ap.add_argument('--kinds',action='store_true');ap.add_argument('--sites',default='crater,delta,ridge,canyon,plateau,ice,ash');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--ratio',type=float,default=0)
 A=ap.parse_args();VW,VH=[int(v) for v in A.size.split('x')];TAG='390' if A.size=='390x844' else A.size
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
@@ -46,6 +46,7 @@ async def main():
     await page.request.post(base+'/fixture',data=fixture)
     await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
     await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=90000)
+    if A.ratio:await page.evaluate('r=>{const v=Conquest.view;v.res=null;v.renderer.setPixelRatio(r);}',A.ratio)
     await page.locator('#cq-base-access').click();await page.wait_for_selector('.cq-plot-tabs');await page.wait_for_timeout(1500)
     return ctx,page,errors
    cam=lambda page,x,z,d,tilt=.95,yaw=0:page.evaluate(f'(()=>{{const c=ConquestPlotView.state.cam;c.x={x};c.z={z};c.dist={d};c.tilt={tilt};c.yaw={yaw};}})()')

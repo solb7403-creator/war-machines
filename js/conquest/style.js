@@ -459,6 +459,8 @@ function create(T,opts={}){
   v(x,y,z,u,v,e,o,bx=0,by=0,bz=0){this.P.push(x,y,z);this.U.push(u,v);this.A.push(e[0],e[1],e[2],o);this.B.push(bx,by,bz);return this.n++;}
   q4(a,b,c,d){this.I.push(a,b,c,a,c,d);}
   bill(x,y,z,s,r,e,o=0){if(software&&!this.keep)return;const a=this.v(x,y,z,r[0],r[1],e,o,-s,-s,1),b=this.v(x,y,z,r[2],r[1],e,o,s,-s,1),c=this.v(x,y,z,r[2],r[3],e,o,s,s,1),d=this.v(x,y,z,r[0],r[3],e,o,-s,s,1);this.q4(a,b,c,d);}
+  // a free-standing holographic sign: it turns to the camera, so it never reads mirrored from behind (5E-2d1)
+  sign(x,y,z,w,h,r,e,o=0){this.q4(this.v(x,y,z,r[0],r[1],e,o,-w/2,-h/2,1),this.v(x,y,z,r[2],r[1],e,o,w/2,-h/2,1),this.v(x,y,z,r[2],r[3],e,o,w/2,h/2,1),this.v(x,y,z,r[0],r[3],e,o,-w/2,h/2,1));}
   quadV(x,y,z,w,h,ry,r,e,o=0){const cx=Math.cos(ry)*w/2,cz=-Math.sin(ry)*w/2;this.q4(this.v(x-cx,y-h/2,z-cz,r[0],r[1],e,o),this.v(x+cx,y-h/2,z+cz,r[2],r[1],e,o),this.v(x+cx,y+h/2,z+cz,r[2],r[3],e,o),this.v(x-cx,y+h/2,z-cz,r[0],r[3],e,o));}
   quad(p,r,e,o=0){this.q4(this.v(p[0].x,p[0].y,p[0].z,r[0],r[1],e,o),this.v(p[1].x,p[1].y,p[1].z,r[2],r[1],e,o),this.v(p[2].x,p[2].y,p[2].z,r[2],r[3],e,o),this.v(p[3].x,p[3].y,p[3].z,r[0],r[3],e,o));}
   flat(x,y,z,hw,hd,r,e,o=0){this.q4(this.v(x-hw,y,z-hd,r[0],r[1],e,o),this.v(x+hw,y,z-hd,r[2],r[1],e,o),this.v(x+hw,y,z+hd,r[2],r[3],e,o),this.v(x-hw,y,z+hd,r[0],r[3],e,o));}
@@ -785,7 +787,7 @@ function create(T,opts={}){
   for(const x of [970,1070])for(const z of [1018,1030]){const gy=ground(x,z);Kk.place('viaduct-pier',tk,KM(x,gy,z),{h:r2(deck(x)-1.4-gy)});X.decal(x,z,4.5,4.5,0,AT.BLOB,[0,0,0],.55,4,.12);}
   // Light posts along both edges (the lamp reaches over the deck); spill on the deck.
   for(let x=916;x<1140;x+=24)for(const [z,s] of [[zA,-1],[zB,1]]){const y=deck(x);Kk.place('viaduct-lamp',tk,KM(x,y,z+s*.2,s<0?0:Math.PI),{});X.flat(x,y+.08,z-s*2.2,2.6,2.2,AT.BLOB,E(0x22e6ff,.22));}
-  for(const x of [904,1136]){const y=deck(x);X.quadV(x,y+3.6,1024,4.4,1.1,Math.PI/2,AT[SIGN.CORRIDOR],E(0x22e6ff,1.4));Kk.place('viaduct-gantry',tk,KM(x,y,1024),{});}
+  for(const x of [904,1136]){const y=deck(x);X.sign(x,y+3.6,1024,4.4,1.1,AT[SIGN.CORRIDOR],E(0x22e6ff,1.4));Kk.place('viaduct-gantry',tk,KM(x,y,1024),{});}
   const g=kdone(pair(Sb,X),tk);g.name='cq-style-viaduct';g.userData.site={x:1020,z:1024,range:1400};return g;};
 
  // ---------- Parasite installations (enemy bases) and raid cover ----------
@@ -820,7 +822,7 @@ function create(T,opts={}){
   decal(0,0,5.6,5.6,AT.HEX,E(tier?0x22e6ff:0xffb347,.9),0,low?8:10,.38);
   // Build terminal (exists before purchase): kiosk with amber holo.
   if(!shell){put('base-kiosk',-10,-7,{},HT,.3);X.quadV(-10,y+4.9,-7.2,3.4,3.4,0,AT.ICON,E(0xffb347,1.2));}   // 5D: not under the town diorama (the shell)
-  if(!tier){decal(0,0,19,17,AT.DASH,E(0xffb347,.75),0,low?10:16,.4);X.quadV(0,y+6.5,-17.4,4.8,1.2,0,AT[SIGN['BUILD SITE']],E(0xffb347,1.5));}
+  if(!tier){decal(0,0,19,17,AT.DASH,E(0xffb347,.75),0,low?10:16,.4);X.sign(0,y+6.5,-17.4,4.8,1.2,AT[SIGN['BUILD SITE']],E(0xffb347,1.5));}
   if(tier){
    // Perimeter barrier (side walls |x|=17, back wall z=16; 6 m thick in the sim).
    put('base-wall',-17,-.5,{d:35});put('base-wall',17,-.5,{d:35});put('base-wall',0,16,{d:29.6},Math.PI/2);

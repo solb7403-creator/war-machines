@@ -2,7 +2,7 @@
 Shipped client (index.html, local economy), real renderer, scenario placements only (a jump + a camera framing).
 Software GL: relative look only, never a phone frame rate.
 usage: python3 dev/tests/conquest-world-kinds-captures.py [--quality high|low] [--size 390x844] [--mouse] [--out DIR]
-       [--tag before|after] [--only name,name] [--dpr 2]
+       [--tag before|after] [--only name,name] [--dpr 2] [--ratio 2]
 Sizes used by the session: 390x844, 390x700, 320x568 (touch) and 1366x768, 1920x1080 (--mouse: keyboard + mouse)."""
 import argparse,asyncio,json,math,pathlib,shutil
 from urllib.parse import urlparse
@@ -67,6 +67,8 @@ async def main(a):
   await page.wait_for_function('typeof Conquest!=="undefined"&&!!Conquest.view',timeout=120000)
   if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
   await page.wait_for_function('Conquest.view.pending===0',timeout=900000)
+  # --ratio: draw at a phone's real resolution (the software renderer otherwise holds the view at .75x, which reads as pixelated)
+  if a.ratio:await page.evaluate('r=>{const v=Conquest.view;v.res=null;v.renderer.setPixelRatio(r);}',a.ratio)
   info={}
   for name,subj,deg,stand,pitch,dist in shots:
    # the tank stands on open ground beside the subject (never inside a solid: it would be pressed against it and thin it);
@@ -84,7 +86,7 @@ async def main(a):
    await page.wait_for_timeout(400)
    try:await page.wait_for_function('Conquest.view.pending===0',timeout=180000)
    except Exception:pass
-   await page.evaluate('([yaw,pitch,dist])=>{const v=Conquest.view;v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;}',[yaw,pitch,dist])
+   await page.evaluate('([yaw,pitch,dist])=>{const v=Conquest.view;v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;if(v.style&&v.style.atmo)v.style.atmo(v.p,10);}',[yaw,pitch,dist])   # the sky eases toward the place the tank stands in: a capture jumps, so it is settled at once
    await page.wait_for_timeout(a.settle)
    if a.clean:await page.add_style_tag(content='.cq-hud,.cq-top,.cq-toast,.cq-guide,.cq-ticker,#cq-ui,.cq-ui{visibility:hidden!important}') if not info else None
    await page.screenshot(path=str(out/f'{a.tag}-{name}-{a.size}-{a.quality}.png'))
@@ -93,5 +95,5 @@ async def main(a):
   (out/f'{a.tag}-{a.size}-{a.quality}.json').write_text(json.dumps({'errors':errors,'shots':info},indent=1))
   assert not errors,errors
   await browser.close()
-ap=argparse.ArgumentParser();ap.add_argument('--quality',default='high');ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default=str(ROOT/'docs/conquest/session5e2d1/kinds'));ap.add_argument('--tag',default='after');ap.add_argument('--only',default='');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=900);ap.add_argument('--clean',action='store_true')
+ap=argparse.ArgumentParser();ap.add_argument('--quality',default='high');ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default=str(ROOT/'docs/conquest/session5e2d1/kinds'));ap.add_argument('--tag',default='after');ap.add_argument('--only',default='');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=900);ap.add_argument('--clean',action='store_true');ap.add_argument('--ratio',type=float,default=0)
 asyncio.run(main(ap.parse_args()))
