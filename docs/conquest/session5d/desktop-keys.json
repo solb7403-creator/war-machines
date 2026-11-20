@@ -14,7 +14,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 4
+    "fps": 6.487187804086944
    },
    "ArrowLeft": {
     "keys": [
@@ -28,7 +28,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 4
+    "fps": 5.807200929152164
    },
    "KeyS": {
     "keys": [
@@ -42,7 +42,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 4
+    "fps": 7.500468779298664
    },
    "KeyD": {
     "keys": [
@@ -56,7 +56,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 4
+    "fps": 6.667777962993816
    },
    "ArrowUp": {
     "keys": [
@@ -70,7 +70,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 4
+    "fps": 6.666666666666667
    }
   },
   "viewport": [
@@ -87,14 +87,14 @@
     "x": 1162,
     "z": 1130
    },
-   "hint": false
+   "hint": true
   },
   "moved": {
-   "KeyW": 2.5300000000015643,
-   "ArrowLeft": 2.5300000000015643,
-   "KeyS": 2.5300000000015643,
-   "KeyD": 2.5300000000015643,
-   "ArrowUp": 2.5300000000015643
+   "KeyW": 7.893764705887179,
+   "ArrowLeft": 7.480000000004793,
+   "KeyS": 7.877411764710814,
+   "KeyD": 8.602000000005319,
+   "ArrowUp": 8.33376470588746
   },
   "spaceFires": true,
   "shiftRightDash": true,
@@ -105,12 +105,12 @@
    "connected": true,
    "keys": [],
    "p": {
-    "x": 1162,
-    "z": 1117.936599999999
+    "x": 1163.1220000000005,
+    "z": 1112.6738823529392
    },
    "hint": false
   },
-  "movedAfter10s": 2.2000000000014097,
+  "movedAfter10s": 7.480000000004793,
   "pageErrors": []
  },
  {
@@ -128,7 +128,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 9.678668215253607
+    "fps": 14.545454545454545
    },
    "ArrowLeft": {
     "keys": [
@@ -142,7 +142,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 9.089256498818422
+    "fps": 11.614401858304328
    },
    "KeyS": {
     "keys": [
@@ -156,7 +156,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 9.678668215253573
+    "fps": 11.666666666666668
    },
    "KeyD": {
     "keys": [
@@ -170,7 +170,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 8.573388203017823
+    "fps": 12.727272727272727
    },
    "ArrowUp": {
     "keys": [
@@ -184,7 +184,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 8.573388203017823
+    "fps": 14.121800529567517
    }
   },
   "viewport": [
@@ -204,11 +204,11 @@
    "hint": true
   },
   "moved": {
-   "KeyW": 3.54200000000219,
-   "ArrowLeft": 3.54200000000219,
-   "KeyS": 3.036000000001877,
-   "KeyD": 3.036000000001877,
-   "ArrowUp": 3.036000000001877
+   "KeyW": 7.453764705886897,
+   "ArrowLeft": 5.720000000003665,
+   "KeyS": 6.4254117647099065,
+   "KeyD": 5.5660000000034415,
+   "ArrowUp": 5.561764705885707
   },
   "spaceFires": true,
   "shiftRightDash": true,
@@ -219,12 +219,12 @@
    "connected": true,
    "keys": [],
    "p": {
-    "x": 1161.4939999999997,
-    "z": 1117.0928999999992
+    "x": 1161.8459999999998,
+    "z": 1114.4338823529404
    },
    "hint": false
   },
-  "movedAfter10s": 2.6400000000016917,
+  "movedAfter10s": 2.4219607843151607,
   "pageErrors": []
  }
 ]

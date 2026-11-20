@@ -312,7 +312,7 @@
 .cq-plot-drivebtn{position:absolute;left:10px;bottom:10px;z-index:2;min-height:44px;padding:6px 12px;font-size:11px;font-weight:800;background:#0f3a48f0;border-color:#22e6ff}.cq-plot-drivebtn[hidden]{display:none!important}
 .cq-plot-walls.cq-plot-fabon .cq-plot-drivebtn{display:none}
 .cq-plot-skip{position:absolute;right:10px;bottom:10px;z-index:3;min-height:44px;padding:6px 14px;font-size:11px;background:#0b1623e6}.cq-plot-skip[hidden]{display:none!important}
-.cq-plot-stick{position:absolute;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #22e6ff88;background:#0b162366;pointer-events:none;z-index:2;display:grid;place-items:center}.cq-plot-stick[hidden]{display:none!important}.cq-plot-stick i{display:block;width:44px;height:44px;border-radius:50%;background:#22e6ffaa;box-shadow:0 0 12px #22e6ff}
+.cq-plot-drivestick{z-index:3}.cq-plot-drivestick[hidden]{display:none!important}   /* the town's drive view uses the world's fixed DRIVE joystick (.cq-stick): same size, place and feel (5E-2d1) */
 .cq-plot-exit{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:3;padding:10px 14px;border-radius:10px;background:#0b1623ee;border:1px solid #22e6ff;color:#cdf6ff;font-size:12px;font-weight:800;letter-spacing:.06em;pointer-events:none}.cq-plot-exit[hidden]{display:none!important}
 .cq-plot-driving .cq-plot-rot,.cq-plot-driving .cq-plot-frame,.cq-plot-driving .cq-plot-pan{display:none}
 .cq-plot-driving .cq-plot-stage{cursor:move}
@@ -338,7 +338,7 @@
 /* Session 5D: BUILD at PEEK shows its first card (the resource line and the group title wait for HALF); the readout never wraps at 390 px */
 .cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-res,.cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-group:first-of-type{display:none}
 .cq-plot-body>.cq-plot-res{white-space:nowrap;overflow-x:auto;overflow-y:hidden;font-size:11px;letter-spacing:.01em}   /* the build readout only (its tokens are short enough for 320 px); the visit readout wraps */
-.cq-viewport:focus{outline:none}   /* focused by script after ENTER CONQUEST / ACKNOWLEDGE so the keyboard reaches the world; no ring around the whole screen */
+.cq-viewport:focus:not(:focus-visible){outline:none}.cq-viewport:focus-visible{outline:2px solid #79e2d2;outline-offset:-3px}   /* focused by script after ENTER CONQUEST / ACKNOWLEDGE so the keyboard reaches the world: no ring after a click or tap, the keyboard's own focus ring stays (5E-2d1) */
 
 /* the super timing bar (Session 5E-2b): bottom centre, above the ability buttons; one glance: blue zone, gold jackpot, white marker */
 .cq-supbar{position:absolute;left:50%;bottom:calc(max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)) + 262px);transform:translateX(-50%);width:min(300px,calc(100% - 44px));height:22px;padding:4px;border-radius:16px;background:rgba(6,10,18,.84);border:2px solid rgba(255,255,255,.55);z-index:7;touch-action:none;cursor:pointer}
@@ -495,6 +495,8 @@
 .cq .cq-rating .cq-rating-next{color:#ffcf6a;opacity:1}
 .cq-reward-ticker:not(:empty){width:fit-content;max-width:calc(100% - 24px);margin:0 auto;padding:3px 10px;border-radius:9px;background:#08121df0;box-shadow:0 0 0 1px #e0c27a55;z-index:6}
 .cq:has(.cq-dialog) .cq-keys{display:none}
+/* 5E-2d1 (5D leftover): on a narrow window with a mouse the key strip wrapped down into the reward ticker's line (top 112-152 px). There it sits below the ticker instead, compact, so the two can never share a line */
+@media(max-width:520px){.cq-keys{top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 184px);font-size:10px;line-height:1.35;padding:5px 8px;max-width:calc(100vw - 24px)}}
 .cq-supply .cq-supply-power{margin:0 0 8px}
 .cq-supply .cq-plating button{font-size:12px;line-height:1.35}
 
@@ -567,3 +569,36 @@
 .cq .cq-bat-miss{display:block;padding:4px 8px;border-radius:7px;border:1px solid #ff6b5a99;background:#2a0b08cc;color:#ffb4a8;font:700 12px/1.3 sans-serif}
 .cq .cq-lab-rc .cq-lab-go:not(:disabled){background:linear-gradient(180deg,#ffe08a,#e0b54a);color:#1b1406;border-color:#fff1c4;font-weight:800}
 .cq .cq-aar-wingtile strong{color:#ffe2a0}
+/* Session 5E-2d1 (critic round 3, computer): the town's tab strip was the phone sheet stretched across the window (five 270 px tabs with 9 px labels). On a keyboard-and-mouse computer it is capped, centred and its labels are larger */
+@media(hover:hover) and (pointer:fine) and (min-width:900px){.cq-plot-tabs{width:100%;max-width:780px;margin-left:auto;margin-right:auto}.cq-plot-tabs button{font-size:12px;min-height:50px}.cq-plot-tabs button i{font-size:18px}.cq-plot-step{font-size:11px}}
+/* Session 5E-2d1, critic round 3 (computer and small phones). A keyboard-and-mouse computer is not a stretched phone: no
+   touch joystick (WASD drives), the four actions are a centred bar with their keys on them, the heat bar sits over it, the
+   HUD's small text is larger and the hull bar is not a hairline across the whole window; the map uses two columns. */
+@media(hover:hover) and (pointer:fine) and (min-width:900px){
+ html:not(.cq-touch) .cq-world .cq-stick,html:not(.cq-touch) .cq-plot-drivestick{display:none!important}   /* .cq-touch: a finger has touched the screen (a touch laptop, a tablet with a mouse): the stick comes back */
+ .cq-world .cq-actions{left:50%;right:auto;transform:translateX(-50%);grid-template-columns:repeat(4,66px);grid-template-rows:66px;gap:12px}
+ .cq-world .cq-actions .cq-action{grid-area:auto;width:64px;height:64px;border-radius:12px;font-size:11px}
+ .cq-world .cq-actions .cq-fire{order:1;font-size:12px}.cq-world .cq-actions .cq-dash{order:2}.cq-world .cq-actions .cq-shield{order:3}.cq-world .cq-actions .cq-super{order:4}
+ .cq-world .cq-actions .cq-action::after{position:absolute;top:-10px;right:-8px;padding:1px 6px;border-radius:4px;background:#0b1721;border:1px solid #79e2d2aa;color:#cfe6ec;font:700 10px/14px 'Chakra Petch',sans-serif;letter-spacing:.04em;pointer-events:none}
+ .cq-world .cq-actions .cq-fire::after{content:'SPACE'}.cq-world .cq-actions .cq-dash::after{content:'SHIFT'}.cq-world .cq-actions .cq-shield::after{content:'F'}.cq-world .cq-actions .cq-super::after{content:'R'}
+ .cq-world .cq-heat{left:50%;right:auto;transform:translateX(-50%);bottom:calc(max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)) + 96px);width:300px}
+ .cq-world .cq-top button{font-size:12px;min-width:52px;min-height:48px}.cq-world .cq-home-d{font-size:11px}
+ .cq-world .cq-vital{max-width:520px}.cq-world .cq-vital-label{font-size:12px}.cq-world .cq-nav-title{font-size:13px}
+ .cq-world .cq-net{font-size:11px;display:inline-block;padding:2px 7px;border-radius:4px;background:#0b1420b8}
+ .cq-world #cq-base-access,.cq-world #cq-scan-access,.cq-world #cq-gather-access,.cq-world #cq-supply-access,.cq-world .cq-mission-access{font-size:13px}
+ .cq-world:has(>.cq-dialog.cq-map)>:not(.cq-dialog):not(.cq-viewport){visibility:hidden}   /* the world HUD is put away while the map is open (it showed beside the map) */
+ .cq-dialog.cq-map{box-shadow:0 0 0 100vmax #050a12f5;max-width:min(1240px,calc(100vw - 48px));display:grid;grid-template-columns:minmax(0,1fr) 400px;column-gap:22px;align-content:start}
+ .cq-dialog.cq-map>*:has(~canvas){grid-column:1/-1}.cq-dialog.cq-map>canvas{grid-column:1;grid-row:auto/span 40;width:min(100%,calc(min(100vh - 210px,880px)*.857));height:auto;margin:6px auto}.cq-dialog.cq-map>canvas~*{grid-column:2}
+}
+/* Small phones (critic round 3): the heat panel and the long prompts covered the player's tank. The heat panel docks on the
+   POWER row at the right (portrait only: in landscape that corner holds the item button); the map is smaller so its
+   buttons come sooner. */
+@media(pointer:coarse) and (max-height:720px) and (orientation:portrait){
+ .cq-world .cq-heat{top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 120px);bottom:auto;right:12px;width:112px;height:24px;display:flex;align-items:center;gap:6px;padding:2px 6px}
+ .cq-world .cq-heat .cq-heat-label{font-size:9px;line-height:1;white-space:nowrap}.cq-world .cq-heat .cq-heat-track{flex:1;min-width:30px}
+ .cq-map canvas{width:min(100%,calc(min(36vh,250px)*.857));height:auto}.cq-map h2{font-size:15px;white-space:nowrap}
+}
+@media(pointer:coarse) and (max-height:600px) and (orientation:portrait){.cq-map canvas{width:min(100%,190px);height:auto}
+ /* the map's buttons (zoom, LOCATE SELF, CLOSE MAP) come straight after the map on a short phone: they were below the fold */
+ .cq-dialog.cq-map{display:flex;flex-direction:column}.cq-dialog.cq-map>h2{order:-4}.cq-dialog.cq-map>.cq-map-mission{order:-3}.cq-dialog.cq-map>canvas{order:-2}.cq-dialog.cq-map>.cq-map-controls{order:-1}}
+@media(pointer:coarse) and (max-width:360px) and (orientation:portrait){.cq-world .cq-heat{width:84px;gap:4px;padding:2px 5px}.cq-world .cq-heat .cq-heat-label{font-size:8px}}

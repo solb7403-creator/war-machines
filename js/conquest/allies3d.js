@@ -34,7 +34,7 @@ function build(v,f,pt,key,bn){const T=v.T,L=loadoutOf(f),team='#88cbdc',g=new T.
  if(pt.banner&&bn&&v.style&&root.ConquestTownKit){try{const m=root.ConquestTownKit.kit(v.style).banner(bn,.42).mesh();m.position.set(-2.1,1.1,-.9);m.rotation.y=Math.PI;m.userData.noPick=true;m.userData.allyBanner=true;g.add(m);}catch(_){}}   // Battalion colors: your town banner on every ally
  g.scale.setScalar(1.65);g.userData.ally=f.id;
  // the player's own grounding (style.dressTank: contact shadow and ring) in the role's colour (LDF: their trim gold), no trim strips or lamp
- if(v.style){g.userData.body=body;g.userData.gun=gun;try{v.style.dressTank(g,{ring:parseInt(String(f.side==='ldf'?'#d9c27a':ROLE_C[f.role||'']||'#d9c27a').slice(1),16),ringA:.42,blobA:.14,strips:false,lamp:false});}catch(_){}}
+ if(v.style){g.userData.body=body;g.userData.gun=gun;try{v.style.dressTank(g,{ring:parseInt(String(f.side==='ldf'?'#d9c27a':ROLE_C[f.role||'']||'#d9c27a').slice(1),16),ringA:.42,blobA:.14,strips:false,lamp:false});v.style.own?.(g);}catch(_){}}
  const motion=typeof GraphicsMotion!=='undefined'?GraphicsMotion.attach(g,H.meta.track||[(2.61-.48)/2,.24,.25,0],{includeOwned:!wait}):null;
  v.scene.add(g);return {g,body,gun,motion,key,arch:L.w.a,cls:L.c.c,ct:L.c.t,shots:f.n|0,x:f.x,y:f.y,z:f.z,h:f.heading||0,t:f.turret||0};}
 function drop(v,F){v.scene.remove(F.g);try{F.motion?.dispose();}catch(_){}if(typeof Equipment3D!=='undefined')try{Equipment3D.releaseTree(F.g);}catch(_){}

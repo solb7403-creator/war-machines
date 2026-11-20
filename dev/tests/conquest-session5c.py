@@ -138,6 +138,9 @@ async def main():
    await page.locator('button',has_text='SHARE MY TOWN').click();await page.wait_for_selector('.cq-plot-share-img');await page.wait_for_timeout(300);await page.locator('.cq-plot-share-img').screenshot(path=str(OUT/'share-card-cc1.png'));shot=await page.evaluate('ConquestPlotView.state.shareShot')
    await page.locator('.cq-plot-leave').click();await page.wait_for_timeout(1200)
    back=await page.evaluate('!document.querySelector(".cq-plot")&&!!document.querySelector("#cq-base-access")')
+   # the pad's town model is rebuilt in idle slices after the town closes (a few frames on a phone, seconds on a software renderer): wait for it, then check it
+   try:await page.wait_for_function('!!Conquest.view.diorama?.userData?.counts',timeout=45000)
+   except Exception:pass
    pad1=await page.evaluate('Conquest.view.diorama?.userData.counts');thumb1=await page.evaluate('!!document.querySelector("#cq-home-btn .cq-home-thumb")')
    await page.screenshot(path=str(OUT/'pad-diorama-cc1-walls-390.png'))
    R['homeSector']={'handleOpens':handleOpens,'cc1Render':cc1,'open':hs,'moved':round(moved,1),'buildView':v1,'driveBack':v2[0],'sameScene':v2[1]==scene0,'walls':nW,'wallBlocks':blocked,'title':title,'badNameKept':kept,'shareShot':shot,'back':back,'padBefore':pad0,'padAfter':pad1,'thumb':[thumb,thumb1],'pageErrors':errors}

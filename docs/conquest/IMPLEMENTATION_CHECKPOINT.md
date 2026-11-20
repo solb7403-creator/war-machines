@@ -6079,3 +6079,413 @@ Searched this session (fan wikis, community guides and news; numbers from third 
 - **War Robots pilots.** Paid pilots with the best perks drew pay-to-win criticism (Steam threads; Common Sense Media calls it a
   "pay-to-win mech battler"). Lesson: the owner's "never sold: pilots, ranks, Role Core levels" is right; we sell looks (liveries)
   and time (RECRUIT finish), never power through pilots.
+
+## Checkpoint 44 — Session 5E-2d1: Conquest world rebuild (branch `claude/conquest-world-rebuild-mu3ktv`, from main `0e681aa`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md first; it governs everything.
+- **Done and pushed** (do not redo): slice 1 ROADMAP notes (`c7fa6ea`); the world-kit core (`js/conquest/slots.js`,
+  `js/conquest/worldkit.js`, the surface-detail solid shader in `js/conquest/style.js`), the viewer
+  (`dev/tests/conquest-kit-viewer.py`) and the capture tools; the see-through rule (world and town drive view); the town's
+  fixed DRIVE joystick; the four desktop 5D leftovers; the code-built models of all 133 slots (`js/conquest/kit/`), HIGH and
+  LOW; integration into `js/conquest/style.js` and `js/conquest/townkit.js`; the slot swap and its tests
+  (`conquest-slots.mjs`, `conquest-slots-browser.py`); critic round 1 and its fixes (`aa280ca`); the holographic signs fix
+  (`2254650`); critic round 2 and its fixes (`93da4b2`, `e2a48d0`); the tank outline drawn only while something blocks it
+  (`f0461ff`).
+- **Done (Nov 20): the colony's town core drawn by 80 m ground cell** (`Bld.cells()` in `js/conquest/style.js`; record and
+  numbers under "Performance record" below; `conquest-occluder.py` and `conquest-seethrough-town.py` re-run after it: PASS).
+- **Done (Nov 20): critic round 3, critic 1 of 3 (the world on a phone) and its fixes** (record under "Critic rounds";
+  the lead's own findings from the first look at the captures went in with it). Checked on model sheets and in the real
+  renderer at 390x844 HIGH and LOW before the commit.
+- **In progress (Nov 20):** the round-3 capture farm (world kinds, town, flagship at 390x844, 390x700, 320x568, 1366x768,
+  1920x1080, HIGH and LOW; phone runs `--dpr 2 --ratio 2`, computer runs `--mouse --dpr 1 --ratio 1`). It was started
+  before the critic-1 fixes, so: 390x844 and 1366x768 world shots (HIGH and LOW) and 320x568 / 390x700 HIGH show the world
+  BEFORE those fixes and are re-captured after critics 2 and 3; jobs that start after this commit show the fixed world.
+  Jobs that failed on a slow first frame and wait for a re-run with the fixed tools: town 390x844 (towns), world
+  1920x1080 HIGH, flagship touch HIGH and mouse HIGH, town 1920x1080.
+- **Done (Nov 20): critic round 3, critic 3 of 3 (the town and the colour re-check)** and its fixes (record under "Critic
+  rounds"). Checked: tests, model sheets, and in the real renderer the sky fix, the ground, the lamps, the site colours and
+  the computer tab strip. NOT yet seen in the game: the helper's rebuilt town models (sheets only) and the Meshy colour
+  fix for storage / lab / tesla (the first two tries did not reach the items: the look table was keyed by a field the
+  loaded item does not carry; now keyed by the item id; a re-capture was running at this commit).
+- **Done (Nov 20): critic round 3, critic 2 of 3 (computer, small phones, the Command Base)** and its fixes (record under
+  "Critic rounds"); seen in the real client at 1366x768, 1920x1080, 320x568 and 390x700 (the Command Base and the map).
+  **Critic round 3 is complete (three critics). No item is left that a critic marked clearly below and that was not
+  either fixed or recorded with its reason, so there is no round 4.** The Meshy colour fix and the helper's town models
+  are confirmed in the game (storage lighter gunmetal, lab mint, tesla ice white; radar dish, siege, laser cannon, walls).
+- **Open from round 3 (small):** at 320x568 the map's CLOSE MAP button is still below the fold (scroll reaches it) and the
+  docked heat panel touches the end of a long POWER pill.
+- **Done (Nov 20): two reviewers** (record under "Reviewers"): every blocker fixed and seen in a capture.
+- **Done (Nov 20): the whole test list at the release candidate.** Node: all 133 tests named in the CI workflows pass.
+  Browser (Chromium, software renderer, each passing when run on a quiet machine): conquest-slots-browser, conquest-occluder,
+  conquest-seethrough-town, conquest-session5c (town drive and build views: 67 draw calls, 11-12 programs on HIGH, 10 on
+  LOW), conquest-session5d, conquest-session6b, conquest-session6c (five sizes), conquest-onboarding, conquest-hub-browser,
+  conquest-flagship-browser (390 and 320), conquest-assets-browser, conquest-plot-ui, weather-browser, perf, weather-perf,
+  conquest-desktop-keys. Failures on the way and what they were: flagship 390 and desktop keys failed once on a loaded
+  machine and pass alone; four tests could not start (they look for Chromium at `/usr/bin/chromium`, missing in this
+  container until linked); occluder, 5C and 6C needed the harness changes recorded under "Critic rounds".
+- **Final pictures:** `docs/conquest/session5e2d1/kinds/after-*` (the finished world at 390x844 HIGH and LOW and 1366x768
+  HIGH, beside the `before-*` set). The 320x568, 390x700 and 1920x1080 world sets were captured before round 3's fixes
+  (scratch only, used by the critics); the Command Base and map were captured after the fixes at all six sizes.
+- **Release:** see "Release" at the end of this checkpoint.
+- **Nov 20, release CI:** PR #146's first run failed `transmission (chromium / webkit)` on the relay fight's draw-call
+  budget (97 against 80). Fixed in code, test unchanged; see "Draw calls in the relay fight" under "Performance record".
+  After the fix is green: merge, verify the deploy, then the ROADMAP row and the release record (docs-only follow-up).
+- **The account's usage limit was hit once (about 12:00 UTC) and reset at 12:20:** work in small committed slices.
+- **To re-run on an idle machine:** `conquest-town.mjs` and `fair-arcade.mjs` failed a wall-clock limit while the capture farm
+  had every core busy; no limit is changed.
+- **Next, in order:** (2) critic round 3, the last one (a 4th only for an item the reviewer marks
+  clearly below its reference, never more than 4), with captures at all five sizes on HIGH and LOW (re-capture only what
+  changed since round 2, plus any size or quality not yet captured); (3) the 5E-2a town-item recolour re-check against the
+  Meshy originals (record whether rounds 1-2 already covered it); (4) the desktop pass at 1366x768 and 1920x1080; (5) the
+  whole test list; (6) two fresh read-only reviewers; (7) release (`dev/bump.sh`, PR, CI, merge, deploy check, ROADMAP row
+  5E-2d1 -> RELEASED).
+- **How to look at a model:** `python3 dev/tests/conquest-kit-viewer.py --slots settler-home,refuge-habitat --out /tmp/cq-kit`
+  (`--params '{"level":3}'`, `--day 0` for the barren Moon, `--seeds 1,2`).
+- **How to capture the world:** `python3 dev/tests/conquest-world-kinds-captures.py --tag after --quality high --size 390x844`
+  (each shot stands the tank on open ground beside its subject; about 40 s a shot on the software renderer).
+
+### Inventory: every code-drawn building and prop kind (the slot list `js/conquest/slots.js` is the source; 133 slots)
+Taken from the code, not from the brief: `style.js` (props, flora, terraWorld, mineralWorld, colonyWorld, frontierWorld, refuge,
+viaduct, installations, cover, raidSpire, commandBase, cache, flag) and `townkit.js` (building, head, wallGeo, wallMini, post,
+postMini, rubble, home, person, rover, decor).
+- **military** (31): refuge-habitat, refuge-processor, refuge-pipe, refuge-terminal, refuge-solar, refuge-lamp, relay-mast, viaduct-segment, viaduct-pier, viaduct-lamp, viaduct-gantry, base-pad, base-wall, base-gate, base-hangar, base-reactor, base-tower, base-module, base-spire, base-kiosk, veteran-monument, frontier-wall, frontier-watch, frontier-gate, atmo-pylon, dam, creek-bridge, ice-rig, rail-pylon, rail-beam, rail-train
+- **settler** (26): settler-home, settler-hall, settler-block, settler-shop, settler-barn, settler-water-tower, settler-greenhouse, settler-silo, settler-turbine, settler-rotor, settler-solar, settler-plaza, settler-pen, settler-lamp, settler-pole, settler-fence, settler-rover, settler-person, livestock, town-home-dome, town-home-block, town-home-tower, town-home-green, town-home-shop, town-person, town-rover
+- **nature** (28): bird, hopper, rock, rock-moss, crystal-growth, fungus-growth, tree-conifer, tree-broadleaf, tree-dead, tree-far, scrub, flower-patch, fern, crystal-sprout, moss-cushion, burnt-stump, grass-tuft, bio-node, bio-node-dim, ice-block, ore-fe, ore-il, ore-ar, ore-tq, ore-starter, ore-spent, meteor, strike-crater
+- **wreck** (6): tank-wreck, sandbags, barbed-wire, pipeline, crane-wreck, drill-wreck
+- **parasite** (4): hive, hive-mast, cover-wall, raid-spire
+- **prop** (3): loot-cache, wreck-cache, sector-flag
+- **town** (35): town-foundry, town-biodome, town-hangar, town-helium, town-radar, town-radar-dish, town-uplink, town-trophy, town-gate, town-cc (Meshy on HIGH), town-refinery (Meshy on HIGH), town-storage (Meshy on HIGH), town-reactor (Meshy on HIGH), town-shield (Meshy on HIGH), town-lab (Meshy on HIGH), town-missile, town-mortar, town-flame, town-siege, town-lasercannon, town-cannon (Meshy on HIGH), town-mg (Meshy on HIGH), town-laser (Meshy on HIGH), town-rocket (Meshy on HIGH), town-tesla (Meshy on HIGH), town-railgun (Meshy on HIGH), town-wall, town-post, town-rubble, decor-lamps, decor-crates, decor-antenna, decor-plants, decor-statue, decor-flags
+- **Found beyond the brief's list:** the five town turrets with no Meshy model (missile, mortar, flame, siege, lasercannon) were
+  code-drawn boxes on HIGH too, and the six Meshy turrets had box stand-ins on LOW / while loading: all eleven are slots now
+  (pedestal + turning head, `o.part`). There is no "drill" town building in `ConquestPlot.BUILDINGS` (the brief's ninth name);
+  the drill kinds that exist are the ice-mining rig and the abandoned drill machine, both rebuilt. The Command Base's veteran
+  monument and radar post, the stream boulders, ford stones, pipe runs and power wires were also code-drawn and are kit parts.
+- **Not rebuilt, on purpose:** Parasite war machines and town raiders (units, not buildings or props), the player's banner
+  (the player's own two colours and shape: a cosmetic they chose), terrain, water, roads and crop rows (surfaces: they got the
+  kit's surface detail codes, not models), holographic signs, decals and glows (effects).
+
+### Research: the best-looking comparable games (before the first draft)
+Sources: Supercell Helsinki on stylized content for Clash of Clans / Clash Royale (Adobe Substance 3D magazine); games.gg and
+PocketGamer.biz on Clash's readability; 80.lv "Stylized production tips and tricks", "Tips on stylized environment building",
+"Building a stylized mountain cabin" and Fanny Vergne on World of Warcraft environments; Creative Bloq "How to make low-poly
+buildings for games"; Nic Williams (lead artist) on Boom Beach: Frontlines running on low-end phones. What they share, and the
+rule each one became here:
+1. **Silhouette before shading** (Clash, WoW: "every building has a very strong silhouette and shape language"). Rule: each kind
+   must be told from its outline at phone size; LOW keeps at least 70% of the HIGH extent on every axis (tested).
+2. **Function reads at a glance in a fight** (Clash "strategic readability"). Rule: the door, the light and the working part
+   (stack, dish, barrel, tank) are the brightest and largest marks; every turret head has its own outline.
+3. **Limited, punchy palettes per people** (Clash; Boom Beach's Blackguard vs islanders). Rule: three families that never
+   share an accent: military gunmetal + pale ceramic + gold + cyan / white light; settlers faded paint + rust + timber + amber
+   light; Parasite violet chitin + bone + magenta glow.
+4. **Edge highlight + ambient occlusion on plain colour** (80.lv texture stack "base colour, edge highlights, AO"; Creative
+   Bloq: bevel the edges or it looks like cardboard). Rule: every hard-surface block is bevelled with a lighter edge, vertex AO
+   darkens the foot, and the solid shader adds panel seams / rust / planks per surface code on HIGH with no texture download.
+5. **Keep detail contrast low, put contrast at the focal point** (80.lv value pass). Rule: big calm wall planes; contrast only
+   at lights, doors and signs; glows are small.
+6. **Many small things make a place cohesive** (Vergne). Rule: settlers leave things lying about (crates, barrels, laundry,
+   tools, carts); the military stacks things tidily; the frontier is littered with wrecks and wire.
+7. **Phone budgets** (Unity stylized packs: 2-7 k quads a building; Frontlines "ancient telephones"). Rule: 0.5-4 k triangles a
+   building on HIGH, about a quarter of that on LOW, instanced kinds under 300; merged batches, one material, 16 programs.
+8. **A level-up must be visible** (Clash town halls). Rule: every town building changes shape with its level (taller stack,
+   more tanks, a second column, gold at the top level).
+
+### Critic rounds (a fresh read-only art director each round; phone and desktop in the same round)
+**Round 1** (all 133 model sheets HIGH / game distance / LOW, the town and the world at 390x844, against the owner's Meshy
+town items and tanks). Verdict: settler buildings AT BAR (home, hall, shop, barn, block, silo: "the best work here"); military
+world CLOSE on hero pieces, CLEARLY BELOW on infrastructure ("navy slabs on a navy Moon"); nature CLEARLY BELOW (blob foliage,
+ground cover invisible); wrecks, Parasite, props CLOSE; town buildings, turrets and walls CLEARLY BELOW ("black boxes with
+yellow tape beside the Meshy items; turrets look like a different game"). The 25 ranked fixes and what was done:
+- 1-4 town value, turret pedestal, light, gold: the town armour is lifted to slate-blue gunmetal (`TP` `#48535f`, recesses only
+  go near-black); every turret stands on the Meshy turrets' low round disc with a few light pads, its head drawn 1.3x and
+  barrels in gunmetal with gold muzzle rings (head pivot 0.86 m, `townkit.headY`); lights are cyan-family at every level
+  (`#7fe9ff` / `#62f0e2` / `#a8f8ff`) as pads, and gold is trim only. **Design change:** the level-5 accent light is no
+  longer gold: gold light strips read as hazard tape; level 5 keeps its gold trim, crowns and collars.
+- 5-9: the composite wall is a slate armour cell with pale plates and a dim cyan coping; the town gate is two pylons and a
+  lintel over a recessed chevron door; the Command Center stand-in is never fewer than three tiers and always wears a gold
+  crown ring; the reactor dome is `#dfeef2` (not blown out); the hangar roof has pale ceramic plates and a gold door header.
+- 14-16, 23: no Parasite colours on the town (tesla orb white-cyan, laser cannon cyan-white, lab green-white like the
+  Meshy lab); the rocket pod's top plate is ceramic, not a lit slab.
+- 13, 22, 25 (town file): lattices twice as thick with half the braces (helium, uplink, crane); sandbags are sagging pillows
+  with dark seams in three staggered rows; barbed wire has a heavy leaning post and a pale coil; planters are lobed shrubs;
+  corner posts have a gold cap and pale plates; rubble shows pale armour shards.
+- 10-12, 17-21, 24 and the LOW notes: reworked in `settler.js` (people, livestock, towers, lamps, poles, fences, solar,
+  turbine, greenhouse, rover), `nature.js` (foliage, ground cover, cover wall, hive mast, flag, caches) and `military.js`
+  (walls, dam, piers, pylons, viaduct girder, rail beam, lattices, modules, LOW lights); the military palette is lifted one
+  step (`pal.mil` hull `#4a5562`).
+- Not changed, with the reason: the build kiosk keeps its amber screen (amber is "build here" in the HUD); the refinery keeps
+  its orange furnace glow (the owner's Meshy refinery has it); the atmosphere dome that overlaps one habitat block is the
+  world's own layout (collision and placement are not this session's to move).
+
+**Round 2** (a fresh art director; all 133 model sheets re-rendered after round 1, then the world and the town in the real
+renderer at a phone's true resolution). Verdict on the models: settler AT BAR; wrecks, Parasite, caches and props AT BAR
+("hive, hive-mast and raid-spire are the best pieces in the set"); military CLOSE (hero pieces AT BAR, some infrastructure
+under-built); nature CLOSE (was CLEARLY BELOW; conifer and scrub foliage sat at the ground's own olive and vanished at game
+distance); town buildings CLOSE (was CLEARLY BELOW; bodies filled only 35-55% of their pads); turrets and decor CLOSE, with
+town-wall, town-rocket and town-rubble still CLEARLY BELOW. The 25 ranked fixes and what was done:
+- 1-4, 6-10, 22, 23 (town): the wall cell gets a flared plinth, two merlons, one recessed dark panel a face and a thin cyan
+  coping; the Command Center stand-in fills 80% of its pad, stands about 12 m, wears a gold crown ring and discrete cyan
+  windows; the rocket pod is two pitched four-tube pods on a yoke (the Meshy pod's shape); the refinery stand-in gets its
+  second tank, pipes with gold collars, a chimney and an ore-filled hopper; every turret disc carries four (six on the 8 m
+  discs) fat cyan lozenges on a lighter rim; the cannon barrel is 1.8x thicker with a mantlet and muzzle collar, the twin MG
+  has drum magazines; missile tips are red-orange with a white band; LOW laser, mortar, laser cannon and flame keep their
+  identity; radar, shield, uplink and reactor bodies fill 75-80% of their pads; rubble is broken slabs, a pillar stub and
+  rebar; the tesla coil is thicker with two gold-capped pylons; the trophy hall roof is navy panels with gold hips.
+- 5, 12-14, 16, 20, 21 (nature): conifer and far-tree foliage moved to a deeper blue-green with dark tier undersides, scrub
+  and grass get light tips over a dark base; the flower patch is stems with flat petal discs on a low mound; the hopper's tuft
+  is attached and it has a pale belly; conifer tiers are centred on the trunk; rocks sit among half-buried pebbles instead of
+  stray spikes; LOW ice uses the HIGH palette; the strike crater has a raised scorched rim and a dark bowl.
+- 15, 17-19, 24 (military, livestock): the reactor's rings are thin and cyan with fins between them; the base gate has full
+  5 m towers, a deeper beam with a sign block and amber lamps (the drive-through span is unchanged); the veteran monument is
+  dark stone with gold only on the cap, one band and the plinth edge; the dam's back has buttresses, a walkway rail and two
+  outflow stubs; livestock horns are shorter and curved with a cream muzzle and belly.
+- Not changed, with the reason: 25 viaduct-segment (the deck is the road surface, drawn by the terrain; the guard rails
+  are already continuous in the game, see the viaduct-deck capture); 11 refuge-processor was judged from a far-away sheet:
+  checked close up before any change (see the result below).
+
+**Round 3, critic 1 of 3: the world on a phone** (a fresh art director; all 36 world shots at 390x844 HIGH and LOW in the real
+renderer, the military / settler / nature / wreck sheets, the Meshy references). Verdict: settler AT BAR; Parasite AT BAR
+("hive, mast and spire are the best things in the set"); military CLOSE (one consistent language, strong silhouettes;
+still boxier than the Meshy bar); nature CLOSE with **water CLEARLY BELOW** ("near-black navy with white streaks,
+indistinguishable from the dashed asphalt roads"); wrecks and props CLOSE. The 20 ranked fixes and what was done:
+- 1 (the only CLEARLY BELOW): **water** is a new shader (`WATER_FS`): teal, deep in the middle (#1f5f7a) and pale in the
+  shallows (#3fa3b5), short curved ripple strokes that drift with the flow (one stroke a cell, each with its own place,
+  angle, length and bend), a pale foam edge and a wet-soil bank line. The bank is drawn at the real shoreline: the flow
+  attribute now carries the metres from the middle of the water to where the ground rises through the surface
+  (`shore()` in `terraWorld`), so the line sits on the bank and not under it. Creek, reservoir, crater pool and canals.
+- 2: the greenhouse (and the town's greenhouse home) on LOW has pale blue-white panes, rust rib bands and amber patch
+  panels (LOW has no glass shader; it read as a khaki tent).
+- 3: the viaduct deck no longer goes electric blue: concrete is matte, so it takes 18% of the edge sheen (a flat deck seen
+  at a low angle picked up the friendly-site cyan rim light). A dark expansion joint every 24 m, between the lamp pools.
+- 4: solar cells are a deeper blue (#15264d), the grid lines a mid blue, and the sky sheen on them is capped (they washed
+  out to pale lavender in daylight). 5: tree bark is a new surface look ("bark": upright grooves that wander, a tone a
+  ridge, cracks) on every trunk; the dead tree is dry brown (timber boards read as brick on a trunk). 6: ice is a new
+  surface look ("ice": pale fractures on two slants, frost on the upward faces); the glass look drew window panes on it.
+- 7: the cover wall is the hive's glossy black-violet chitin with glowing veins (it was matte lilac). 8: barbed wire is
+  pale steel on a grey picket with a rust cap, with a round three-loop concertina coil (black on navy vanished).
+- 9: the bio-flora glow is the pods' own pink and no wider than the plant (a big white glow bleached the pods).
+  10: the cyan "flood" round the habitats was three things, all cut back: the light pool under each Refuge lamp pylon
+  (an 11 m saturated pool; now a 6.8 m pale one), the habitat's ground ring (now 1.5 m past the plinth, pale and faint)
+  and the door glow. The processors' ground glow and the supply terminal's pad decals are dimmed the same way (the
+  terminal's pad was a saturated cyan slab in daylight; its hex outline stays).
+- 11, 19: on LOW the habitat and the watchtower keep four dark mullions on each window band, the habitat door and the
+  processor's blast door keep their centre line, the processor keeps its gold door frame and four of its deck tanks.
+- 12: the monorail beam has a deep rib under mid-span, a dark conduit with clips down each side and a pale bracket under
+  each end (HIGH). 13: the plaza's lamps on LOW stand on posts. 14: the moss cushion is three overlapping domes up to
+  0.35 m (slot box height 0.2 -> 0.35). 15: the base pad on LOW keeps its hex outline and hazard corners.
+- 16: flowers are five separate cupped petals tilted 20 degrees, with two leaf blades; ferns have a dark midrib (HIGH).
+  17: settlers wear rust, teal or mustard coats (the three seeds in the colony), with darker sleeves held off the body,
+  a cuff and a bare hand. 18: the veteran monument has a three-tier plinth, a lit bollard on each corner, a gold plaque
+  and a cyan channel up each face. 20: dark rib strips on the pale band of the base tower and the frontier gate, a gold
+  ring under the gate's cap light.
+- Bugs the critic listed, and what was done: **dotted squares on ground cover beside the tank** (the "pressed against"
+  screen was applied to everything inside the pressed object's footprint): what stands lower than 0.9 m above the ground
+  under the tank now stays solid (`uPressY`). **A black band across the top of the screen on LOW** under the monorail and
+  the viaduct: their LOW soffits are gunmetal, not near-black. **The barren Moon was flat navy up close on LOW** (LOW drew
+  only the 96 m crater layer): LOW now draws one more layer of small craters near the camera (one more texture read).
+  **A bare bank was one flat brown** (the crater rim the frontier wall climbs): bare soil is mottled, and on HIGH a bank
+  cut into a slope shows its layers (one more texture read on HIGH); the "lime polygon" beside it is a scrub bush right
+  at the lens of a camera lying on that slope. Shell craters on the grass have a dark mud centre, not a pure black one.
+  The tall dotted shape beside the settler block is the atmosphere pylon the capture parks the tank against: the rule
+  working, not a fault. The objective guide beam through the BUILD SITE lettering and the raid flag is the guide effect
+  (an effect, not a model: left as it is; a thinner beam is a PROPOSAL for the final report). Square gravel, near-black ground turned from the sun and
+  the sparse wild cover: the lead's fixes from the first look at the captures (see below). Not changed, with the reason:
+  the atmosphere dome that crosses one settler block (the world's own layout); the two power wires over the terminal (they
+  are the colony's power line, seen from straight above in that capture).
+- **Found by the lead in the round-3 captures and fixed with this round:** the bare-ground gravel was one square a cell
+  and read as pixels close up (round stones of two sizes now, `TERRAIN_FS`); terraformed ground turned away from the low
+  sun went near-black (a small sky fill, the same idea as the walls' daylight bounce); the wild ground cover was sparse
+  (HIGH step 4.8 m -> 4.6 m, a higher cover floor, wild flowers in the thick patches; the densest ground chunk is 27,481
+  triangles, was 24,387, cap 30,000).
+- **Two more tests changed their harness, not their checks, and why** (both failed only on this machine's software renderer,
+  where a frame of the rebuilt world takes about a third longer: 133 ms against 100 ms at 390x844 in the 6C raid).
+  `conquest-session5c.py` read the base pad's town model 1.2 s after leaving the town; the model is rebuilt in idle
+  slices (a few frames on a phone, seconds here), so the test now waits for it (up to 45 s) before the same check.
+  `conquest-session6c.py` sampled 240 frames of the Platoon before fielding the Battalion; here 240 frames outlasted
+  the raid (the Platoon won it) and units fielded after a victory are not drawn, so the nine views never appeared: the
+  sample is now 240 frames or 16 s, whichever comes first (at least 60 frames). Found with a diagnostic copy of the test:
+  nine friends alive, four views, raid state "victory", and all nine views built at once when the allies' draw was
+  called by hand. Two smaller harness fixes in the same test: the keyboard hold that opens the command wheel is read
+  once a frame, and at 1366x768 a frame takes 300 ms here, so the test waits up to 3 s for the wheel after its 450 ms
+  hold; and this machine's proxy reports a blocked outside request as `ERR_TUNNEL_CONNECTION_FAILED`, which the test
+  now ignores exactly as it already ignored `ERR_FAILED`. **What it says about the game: in that raid scene LOW draws 285,055 triangles against 197,849 on
+  main (+44%, the rebuilt colony), HIGH more; real-phone frame time is unmeasured.**
+- **A second test changed, and why:** `conquest-occluder.py` counted pixels of the outline's colour round the tank and
+  wanted fewer than 40 of them in open country. On the darker terraformed soil of round 3 the tank's own cyan ground
+  ring falls inside that colour window (274 pixels, none of them outline). The test now counts only what the outline
+  pass adds: the frame with the outline group drawn minus the same frame without it (25 in the open, 317 behind the
+  blocker). Same limits, a cleaner measure; nothing skipped or loosened.
+- **A test changed, and why:** `conquest-slots.mjs` checked every vertex alpha against a fixed floor of -1.3 (the last
+  surface code). Two surface looks were added (bark, ice), so the floor is now read from the surface-code list itself
+  (`ConquestWorldKit.SURF`); an alpha below the last code still fails. Nothing skipped or loosened.
+
+**Round 3, critic 3 of 3: the town, and the colour re-check of the owner's twelve Meshy town items** (a fresh art director;
+36 town pages: whole CC10 towns on the seven sites at 390x844, every building, turret, wall, home and decoration kind close
+up at 1366x768 HIGH and LOW, 390x700 and 320x568, the turret gallery and wall blends, the town model sheets, the owner's
+references). Verdict: town buildings CLOSE (biodome, helium, foundry, trophy hall "hold up beside the Meshy CC and reactor";
+the gate CLEARLY BELOW); turrets CLOSE; walls and posts CLOSE; homes and decorations CLOSE (homes at bar; yard lamps and
+pad bollards "the crudest props in the town"); **the town as a whole scene CLEARLY BELOW** (computer HIGH a washed-out blue
+night scene; the ground outside the paved core a blank gradient; six of seven sites alike). What was done:
+- 1 (CLEARLY BELOW, and a real fault): **the town on computer HIGH was a blue night scene.** The town is a guest of the
+  world's sky and took whatever the sky had eased to when it was opened; opened in the first seconds of a session it kept
+  the half-eased night light for good. The town stands at the Command Base, so it now takes that place's sky at once
+  (`plotview.js scene3d`). Seen in the re-capture: computer HIGH is the same warm day as the phone.
+- 2 (CLEARLY BELOW): **the ground** carries the soil surface on HIGH (mottled and grained; it was one flat gradient), every
+  dust road has two wheel ruts, a worn patrol track runs just inside the town edge, and loose stones lie in a few open
+  cells (under 0.3 m; HIGH). Turret bases and homes stand on a compacted apron (in their models: no extra draw).
+- 4 (CLEARLY BELOW): **yard and street lamps** are the kit's town lamp (a square stick with a cube cap before); the pad
+  bollards are rebuilt in the models. 3 (CLEARLY BELOW): **the gate** is rebuilt (see the model list below).
+- 5: the seven sites are pushed apart in ground colour (ash dark cool grey, canyon red rock, ice pale blue, plateau sand,
+  ridge grey, crater neutral, delta green).
+- 20 (computer): the town's tab strip is capped at 780 px and centred with 12 px labels on a keyboard-and-mouse computer
+  (it was the phone sheet stretched across the window: five 270 px tabs with 9 px labels).
+- Models (7 turret bases, 8 laser cannon, 9 siege, 10 radar dish, 11 foundry pour, 12 the LOW stand-ins of the Meshy
+  items, 13-14 wall tiers, 15 hangar door, 16 home slabs, 17 biodome LOW): see "Town models, round 3" below.
+- **The colour re-check (5E-2a's town items against the owner's references):** nine of twelve MATCH or are CLOSE; the
+  common gap was armour reading near-black navy where the references are gunmetal. Three READ WORSE: the Storage Depot
+  (one dark block with no accent), the Science Lab (its green identity lost: it glowed the Command Center's cyan) and the
+  Tesla Coil (lilac, the only purple in the town). Fixed in the town's material, not in the owner's files
+  (`meshy3d.js TOWN_LOOK`): the stock town finish is lifted a step and warmed a little (armour panels only), the Storage
+  Depot further with brighter, whiter light strips, the lab's lit parts are mint green and the tesla's orb and coil are
+  ice white. The lit parts' colour sits in their paint as well as their glow, so the town's glow tint now recolours both
+  (`uGlowBase`, town items only: tanks and weapons are untouched). A chosen town theme still overrides it.
+- Not changed, with the reason: 6 the drive view's opening camera (the owner's rule: the camera does not move to avoid
+  buildings; the tank shows through as an outline); 18 raid effects (effects, not models; the six frames are a drill at
+  rest); 19 the town card's subtitle fading at the bottom of the PEEK sheet (the owner's own PEEK design, 5C); the sheet's
+  drag handle on a computer (it is how the sheet is resized with a mouse too); jagged texture edges on the Meshy refinery
+  and lab (the owner's models, as delivered).
+- **Town models, round 3** (`kit/town.js`, the town homes in `kit/settler.js`; checked on model sheets, HIGH and LOW; in-game
+  re-capture pending): the gate is two chamfered gunmetal pylons with a gold cap band and hooded beacons over a recessed
+  door of amber slats under a cyan header (676 / 96 triangles; the slot box is 4 m, so 4.0 m and not the critic's 1.3x);
+  one shared bollard (octagonal tapered post, collar, gold band, cyan slit under a chamfered cap) on the vital pads, the
+  Command Center corners and the radar; the town lamp has a hooded head with a glowing underside; the turret pedestal is a
+  16-sided dark disc with a lighter rim and four or six small cyan lights; a compacted-regolith apron under every turret
+  and home, and the homes' slab sides are a regolith berm; the laser cannon is a dark 16-sided dish with one cyan ring, a
+  bright core and two yoke arms (the old dish cut 0.28 m into its own pedestal: fixed); the siege gun is navy-charcoal
+  with a recoil sleeve and a slotted muzzle brake; the radar dish is steel blue-grey with dark ribs and a half-width gold
+  rim; the foundry's melt and pour are graded and lit with a warm ground glow; the hangar door has segment lines, an
+  amber sill and skylights on the ridge; the LOW stand-ins of the Meshy items follow their HIGH look (refinery bin,
+  mint lab, dark railgun lid with a cyan strip, three shield rings, a box laser with a lens, MG drums, pale biodome
+  glass); the seven wall tiers read as their materials (concrete, rusted concrete with straps and bolts, steel with
+  plate seams, dark stone with a cyan seam, obsidian with gold flecks, pale glass with white edges, ruby with a lit
+  core), the walkway is 25% darker and the merlons carry a lighter rim (shape, size and LOW / mini silhouettes
+  unchanged). The 2D map, the thumbnail and the blend buttons use the same families (`ORE_LOOK`).
+- Also fixed with this batch: the Command Base gate's COMMAND sign and the BASE tier sign turn to the camera like the
+  other free-standing signs (from inside the base the gate sign read mirrored: seen in the new flagship captures).
+- **The flagship capture tool was dead** (`conquest-flagship-captures.py` clicked "CONSTRUCT BASE I", a terminal the game
+  has not had since the base moved into the town): it now takes a fixture town, shows the Command Base from above and
+  from beside its wall and gate, and opens the map, at 390x844, 320x568, 390x700, 430x932 (touch) and 1366x768,
+  1920x1080 (mouse). `conquest-town-captures.py` gained `--kindset a,b,c` (re-capture chosen kinds only).
+
+**Round 3, critic 2 of 3: the world on a computer and on small phones, and the Command Base** (a fresh art director; the
+36 world shots at 1366x768 HIGH and LOW, 1920x1080 LOW and the first 13 at HIGH, 320x568 and 390x700 HIGH and LOW; the
+Command Base from above and beside and the map at six sizes). Verdict: **the computer as a whole CLEARLY BELOW** ("the 3D
+holds up, but the screen is a phone interface pasted onto a monitor": touch joystick and touch buttons drawn on every
+computer capture, 7 to 9 px text, the hull bar a hairline across the whole window, the map a 648 px phone column); the
+3D on HIGH AT BAR for buildings; small phones CLOSE at 390x700 and CLEARLY BELOW at 320x568 (panels cover the tank); the
+Command Base wall, gate and towers CLOSE, **the town model on its pad CLEARLY BELOW** ("confetti"). What was done:
+- 1-2 (CLEARLY BELOW): on a keyboard-and-mouse computer (`hover: hover`, `pointer: fine`, 900 px and wider) the touch
+  joystick is not drawn (WASD drives; the town's drive view too), the four actions are a centred bar of square slots
+  in the order FIRE, DASH, SHIELD, SUPER with their keys on them (SPACE, SHIFT, F, R), the heat bar sits over that bar,
+  the top buttons, tracker, hull label, base line and prompts use 11 to 13 px text, the "practice" line has a dark
+  backing and the hull bar is at most 520 px wide (`css/conquest.css`).
+- 3 (CLEARLY BELOW): the region map on a computer is two columns (the map up to 880 px tall on the left, lists and
+  buttons in a 400 px column on the right) inside the window.
+- 6-7 (CLEARLY BELOW, small phones): under 720 px of height on a touch phone the heat panel docks on the POWER row at the
+  right (it covered the tank), a base / scan / gather / supply prompt is one short line (150 px, ellipsis) and the map
+  leaves room for its buttons (CLOSE MAP was below the fold).
+- 5 (CLEARLY BELOW): the gate's COMMAND sign read mirrored from inside the base: it and the BASE tier sign turn to the
+  camera (already in the town batch). 11, 17: the atmosphere veil thins out within 46 m of the camera (beside it, it
+  washed out a third of the screen and drew hard blue planes over the colony shop). 20: the monorail's soffit is
+  gunmetal on HIGH too. 4 (LOW): the town model's LOW homes are no longer pink and red (muted settler paints).
+- Not changed, with the reason: 4 the town model on the pad as "nine to thirteen hero pieces" (it is the pilot's actual
+  town in miniature, an owner-approved 5C feature: changing what it shows is a design decision; PROPOSAL in the final
+  report); 9 base tower / wall / pad polish beyond round 3's rib strips (POLISH; the pad is the town's board); 10 the
+  320 px top stack order (POLISH; a HUD re-layout, not a looks fix); 12 the overhead camera at the frontier wall (the
+  capture stands the tank on a 40 degree rim, where the game lifts the camera over the ground behind it); 13-14 blocky
+  ground rings and wide objective beams at monitor size (effects drawn from the shared 1024 px mask atlas; PROPOSAL: a
+  larger atlas); 15 map zoom and label spacing; 18 the outline bracket where a building hides the tank (the outline is
+  the tank's own silhouette; at the capture's distance it is a few pixels); 19 scorch blots (already softened in this
+  round); the sky's flat beige on wide screens (POLISH; PROPOSAL). Capture faults, not game faults: the tank parked
+  inside the ice drill, HIGH and LOW halves standing in different places on four shots.
+
+### Reviewers (two fresh, independent, read-only)
+**Reviewer 2 (performance and budgets, controls, regressions), at `5f88039`:** budgets PASS on the code and node tests (no
+new shader program or material: the water shader was rewritten in place, bark / ice are branches of the solid shader,
+`uPressY` and `uGlowBase` are uniforms; occluder 14 programs, town drive view 59 calls and 12 programs); economy, points
+and payments PASS (no diff in `js/rules.js`, `worker/`); footprints, collision and placement PASS (world equivalence:
+15,360 points, 0 differences); the see-through rule PASS (only the player's and allied tanks are outlined, the camera
+does not move); tests changed PASS (nothing deleted or loosened); outside Conquest PASS (`uGlowBase` is 0 for tanks and
+weapons; `meshy.mjs` 1,802 checks); slot swap PASS; no migration code PASS. **Controls FAIL, one blocker, fixed:** the
+round-3 map rules set only the map canvas's height, so the map was drawn stretched on every computer and squashed on
+small phones (329 x 558 at 1366x768; taps still landed). Now the width drives and the height follows (seen in a capture).
+Its notes, also fixed: the docked heat panel is portrait only (in landscape that corner holds the item button); the
+heat bar sits 8 px lower on a computer (the super timing bar's note touched it); the town's first-drive hint says "WASD
+OR THE ARROW KEYS" on a computer; a finger on the screen brings the joystick back on a device taken for a computer (a
+touch laptop, a tablet with a mouse); the one-line ellipsis on prompts is withdrawn (it cut "UNDER FIRE · CLEAR ENEMIES,
+THEN GATHER"). Noted, not changed: `pressFootprint` repeats Refuge coordinates from `world.js`; once a world slot lists a
+Meshy model each pending asset load rebuilds the world kit; real-phone frame times are unmeasured (software renderer
+here). **Bytes added to the page load by this session: +420,920 raw (about +153.5 KB gzipped), +17% of the page's JS and
+CSS** (the four kit files 380 KB of it; `style.js` and `townkit.js` shrank). All six new scripts load with the page.
+
+**Reviewer 1 (looks), on the finished world's pictures** (every place before / after HIGH / after LOW on a phone, the same
+places on a computer, the town, the Command Base and the map at phone and computer sizes, the last round's model
+sheets): rebuilt to the Meshy bar PASS for the military world (close), the settler colony (at bar, "the best work in
+the set"), nature (close), wrecks / Parasite / props, and the town's code-built models (close); settlers a different
+people PASS; terraformed land PASS; LOW silhouettes PASS; the see-through rule PASS on what the pictures show; before
+against after PASS ("no place is worse; most are far better"); phone and computer equal PASS for the world HUD, FAIL on
+map details. **Four blockers, all fixed:** (1) "flat discs floating over the Command Base" are the base's yield meter
+(ten pips: how full the stores are; an earlier session's indicator): as 1.5 m balls they read as discs, now small
+lozenge pips; (2) at 320x568 the map's buttons were below the fold and the docked heat panel covered the end of the
+POWER pill: the buttons come straight after the map on a short phone and the heat panel is narrower under 360 px;
+(3) the computer map let the world HUD show beside it: it has a full-window backdrop; (4) the town ground on LOW was a
+blank gradient: stronger vertex mottling with one finer layer on LOW (no extra draw). Also from its notes: the cover
+wall on LOW is darker black-violet (it read lilac). **Its notes kept for the owner (final report):** the tank's outline
+behind thin things (a pylon, a lattice leg) is a ragged bracket: draw the whole silhouette once a third of the tank is
+hidden; the atmosphere veil still crosses the settler block; the map opens too far out and its labels collide; the
+objective beam is a wide slab at monitor size; the Command Base tower and wall are the plainest military pieces; steep
+banks smear the ground texture; the town's HIGH ground repeats its crater pattern on a visible grid; the town miniature
+on the pad is noise at phone size; the town drive opens with the tank behind a roof.
+
+### Performance record (software renderer: the counts are exact, the frame times are relative only)
+- **The colony's town core by ground cell** (`3ba537c`, measured Nov 20 at 390x844, five camera spots in the colony, before =
+  `f0461ff`, after = the cell split). Triangles drawn, before -> after. HIGH: 392,789 -> 362,134; 367,394 -> 311,956;
+  434,550 -> 391,732; 404,815 -> 347,634; 404,335 -> 334,757 (8% to 17% fewer). LOW: 160,667 -> 152,639; 187,280 -> 173,476;
+  196,322 -> 184,572; 179,718 -> 164,874; 175,245 -> 159,861 (5% to 9% fewer). Draw calls: HIGH 66-88 -> 70-96 (4 to 8 more),
+  LOW 61-70 -> 64-77 (3 to 7 more). Shader programs unchanged (13-14 of 16). A triangle goes to exactly one cell and keeps its
+  own vertices, normals and colours, so there is nothing to seam; the look at the colony captures is recorded with round 3.
+
+- **Draw calls in the relay fight (release CI, Nov 20).** The first CI run on PR #146 failed one check in both browsers:
+  `conquest-living-war.py --quality high` allows 80 draw calls in the relay fight at 320x568 and measured 97 (main: 70 in the
+  same scene). Not run locally before the PR (it is not in the brief's list; it runs only in CI's `transmission` jobs).
+  The budget stays 80; the test is unchanged. Where the 27 came from, measured draw by draw against main: the camera no
+  longer pulls in front of the relay (owner's rule), so it sees four enemies, two cover walls and five far ground chunks
+  where main saw two, none and one; the tank outline (probe + six twins, on here because the relay hides part of the tank);
+  and ten colony draws that were never on screen. Fixed in the code, nothing visible removed:
+  - the colony's moving life (rovers, settlers, livestock, birds, hoppers, rotors, the train) had view culling switched off
+    and was drawn from anywhere within 700 m. Each set now keeps a bounding sphere around where its instances stand this
+    frame and is hidden with the rest of the moving life beyond 700 m (ten draws when the colony is off screen);
+  - `S.tight` (`js/conquest/style.js`, called by `view.js` around the world's render): the renderer tests one sphere per
+    mesh, so a ring wall, a road net or a scatter of instances was drawn while wholly off screen. Large solid and glow /
+    decal meshes are now tested by their box, small instanced sets instance by instance, against the view; what is wholly
+    outside is skipped for that one render (boxes grown by 3 m, plus the widest camera-facing quad for glows);
+  - `S.markersSync`: every hostile's marker is one instanced draw per state (was one draw per hostile);
+  - the two 3.5 cm light strips on the player's deck are left out of the outline twins (inside the hull's outline).
+  Result at 320x568, same scene: 97-98 -> 76-77 draw calls (chromium, software renderer); 390x844: 71. In the colony at
+  390x844 (tank on the plaza road): 61. Programs unchanged (14).
+
+### Design changes made in this session (each with its reason)
+- **The processor towers' pipe bridge is level** at the higher tower's 9.6 m (it used to slope up to 47 degrees between towers
+  on different ground). Reason: a level pipe reads as engineering, and it keeps the 8 m drive clearance on both sides.
+- **The oxygen processors are turned half a turn** so the blast door stands under the tower's holographic sign (the sign was on
+  the blank back face).
+- **The wind-pump rotor turns about its own axle** (it was spun about the wrong axis and tumbled).
+- **Settler lots stand on a field-stone footing** that runs down to the lot's lowest corner instead of a 4 m concrete block
+  under every building. Reason: rugged and hand-built, not a slab; flat lots show no footing at all.
+- **Rovers, settlers and livestock come in two or three looks** (seeded paint, hats, hides) instead of one clone. Reason: a
+  crowd of identical figures reads as a tech demo. Cost: 4 more instanced draws in the colony.
+- **Monorail rail top is 0.6 m higher** (beam and train share one rail line; the pylon heads meet the beam's underside).
+- **Chimney smoke, lamp glows and beacons come from the models themselves** (`b.halo` / `b.pool`), so a swapped Meshy model
+  does not keep a floating glow where the old chimney was.
+- **The capture tool stands the tank on open ground beside each subject** (the old framing parked it inside buildings, which
+  the new see-through rule rightly treats as "pressed against").

@@ -45,7 +45,7 @@ class View {
  try{const p=JSON.parse(localStorage.getItem('lunar-conquest-position-v1'));if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z)){this.jump(p.x,p.z);if(p.surface==='bridge'){const deck=W.deckAt(this.p.x,this.p.z);if(deck!==null){this.p.surface='bridge';this.p.y=deck;}}}}catch(_){}
  this.discovery=root.ConquestDiscovery?.create();
  if(this.p.x===W.spawn.x&&this.p.z===W.spawn.z)this.discovery?.spawn(this.p);
- try{if(typeof gfxMode==='function'&&gfxMode()==='2d')throw Error('2d selected');const lowGfx=typeof gfxMode==='function'&&gfxMode()==='low',GR=typeof GraphicsResolution!=='undefined'?GraphicsResolution:null;this.renderer=new T.WebGLRenderer({antialias:GR?GR.antialias(lowGfx?'low':'high'):false,powerPreference:lowGfx?'low-power':'high-performance'});}catch(_){this.renderer=canvasRenderer(this);}if(typeof Meshy3D!=='undefined')Meshy3D.hostRenderer(this.renderer);this.setupResolution();host.append(this.renderer.domElement);if(!this.renderer.isConquestCanvas&&typeof park3D==='function')park3D(true);   /* the Arcade battle canvas frees its buffers while Conquest is open (5E-2a) */
+ try{if(typeof gfxMode==='function'&&gfxMode()==='2d')throw Error('2d selected');const lowGfx=typeof gfxMode==='function'&&gfxMode()==='low',GR=typeof GraphicsResolution!=='undefined'?GraphicsResolution:null;this.renderer=new T.WebGLRenderer({antialias:GR?GR.antialias(lowGfx?'low':'high'):false,powerPreference:lowGfx?'low-power':'high-performance',stencil:true});   /* stencil: the tank's outline through buildings (5E-2d1) */}catch(_){this.renderer=canvasRenderer(this);}if(typeof Meshy3D!=='undefined')Meshy3D.hostRenderer(this.renderer);this.setupResolution();host.append(this.renderer.domElement);if(!this.renderer.isConquestCanvas&&typeof park3D==='function')park3D(true);   /* the Arcade battle canvas frees its buffers while Conquest is open (5E-2a) */
  this.hfRelease=typeof Equipment3D!=='undefined'?Equipment3D.attach():null;if(typeof Equipment3D!=='undefined')Equipment3D.configure(this.renderer);
  this.scene=new T.Scene();
  // Neon Frontline art direction (js/conquest/style.js): one instance per view and quality. Absent or failing -> the original look.
@@ -88,7 +88,7 @@ class View {
  if(!wait&&L.vl>0&&typeof vaultParts==='function')vaultParts({body},{b:hullB},{vl:L.vl,vt:typeof vtOf==='function'?vtOf(L.vl):L.vl>=10?2:1},this.modelMats);
  const cosmetics=this.authority?.state?.cosmetics;if(root.ConquestCatalog&&cosmetics)for(const slot of ['armor','trail']){const id=cosmetics.equipped[slot];if(id){const g=root.ConquestCatalog.build(T,id,{low:this.autoLow||typeof gfxMode==='function'&&gfxMode()==='low',reducedMotion:true});g.userData.cosmetic=true;g.traverse(o=>o.userData.cosmetic=true);if(slot==='trail'){g.position.set(3.5,0,0);gun.add(g);}else body.add(g);this.mergeArchitecture(g);}}
  this.vehicle.scale.setScalar(1.65);
- if(this.style){this.vehicle.userData.body=body;this.vehicle.userData.gun=gun;try{this.style.dressTank(this.vehicle);}catch(_){}}
+ if(this.style){this.vehicle.userData.body=body;this.vehicle.userData.gun=gun;try{this.style.dressTank(this.vehicle);this.style.own?.(this.vehicle);}catch(_){}}
  if(typeof GraphicsMotion!=='undefined')this.motion=GraphicsMotion.attach(this.vehicle,H.meta.track||[(2.61-.48)/2,.24,.25,0],{includeOwned:!wait});
  }
  makeBeacon(){if(!root.ConquestCombat)return;const m=root.ConquestCombat.mission;this.beacon=new this.T.Group();if(this.style)this.beacon.add(this.style.holoMarker(0xffd36b,{height:18,radius:1.6}));else{this.form(this.beacon,this.cylinder,0,9,0,.3,18,.3,0x7fffe8);this.form(this.beacon,this.sphere,0,18,0,2,2,2,0xe9ca77);}this.scene.add(this.beacon);}
@@ -100,11 +100,20 @@ class View {
  // ConquestCombat.baseYield, the same numbers the Worker settles. Shared sphere and cached basic materials (no new program).
  yieldMeterRender(s,ox,oz){const C=root.ConquestCombat,D=C.baseDefinition,base=s?.base,show=!!base?.tier&&!this.battle&&Math.hypot(D.x-this.p.x,D.z-this.p.z)<160;
  if(!this.yieldMeter){if(!show)return;const g=new this.T.Group();g.name='cq-yield-meter';g.userData={orbs:[],lit:this.effectMaterial(0xffc96b,false),dim:this.effectMaterial(0x41505c,false),full:this.effectMaterial(0xfff1b8,false),n:-1};
-  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,m=new this.T.Mesh(this.sphere,g.userData.dim);m.userData.noPick=true;m.scale.setScalar(.75);m.position.set(Math.sin(a)*6,0,Math.cos(a)*6);g.userData.orbs.push(m);g.add(m);}this.scene.add(g);this.yieldMeter=g;}
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,m=new this.T.Mesh(this.sphere,g.userData.dim);m.userData.noPick=true;m.scale.set(.42,.3,.42);m.position.set(Math.sin(a)*6,0,Math.cos(a)*6);   /* 5E-2d1 (reviewer 1): small lozenge pips; as 1.5 m balls they read as flat discs hanging over the base */g.userData.orbs.push(m);g.add(m);}this.scene.add(g);this.yieldMeter=g;}
  const g=this.yieldMeter;g.visible=show;if(!show)return;const y=C.baseYield?.(base,s.reputation,Date.now())||{fill:0},n=y.fill>=1?11:Math.floor(y.fill*10);
  g.position.set(D.x-ox,W.groundAt(D.x,D.z)+11+Math.sin((this.style?.U.uTime.value||0)*1.2)*.25,D.z-oz);g.rotation.y=(this.style?.U.uTime.value||0)*.15;
  if(n!==g.userData.n){g.userData.n=n;g.userData.orbs.forEach((m,i)=>{m.material=n>10?g.userData.full:i<n?g.userData.lit:g.userData.dim;});}this.yieldFill=y.fill;}
  // The terraformed south (forests, water, pylons, dam, bridge, crater, bio-flora): world coordinates, moved by the origin.
+ // Session 5E-2d1 (owner, Nov 19): a slot's model changed (js/conquest/slots.js was edited, or a listed Meshy model has finished
+ // loading): redraw what the style built from the world kit. Rare (a load, an owner tool, a test), so it is simply rebuilt.
+ kitSync(now){const WK=root.ConquestWorldKit,K=this.style?.worldKit;if(!WK||!K)return;const st=WK.generation+':'+(K.pendingSwap.size&&typeof Meshy3D!=='undefined'?Meshy3D.generation:0);
+  if(this.kitStamp===undefined)this.kitStamp=st;if(st===this.kitStamp){this.kitDue=0;return;}if(!this.kitDue){this.kitDue=now+500;return;}if(now<this.kitDue)return;this.kitStamp=st;this.kitDue=0;K.pendingSwap.clear();
+  const drop=g=>{if(!g)return;g.parent?.remove(g);g.traverse(o=>{o.userData?.meshyTownRelease?.();if(o.geometry&&!o.geometry.userData.hfShared&&!o.userData?.meshyTown){const i=this.shared?this.shared.indexOf(o.geometry):-1;if(i>=0)this.shared.splice(i,1);o.geometry.dispose();}});};
+  for(const g of this.styleGroups||[])drop(g);this.makeLandmarks();for(const k of ['terra','colony','frontier','veil','mineralsG'])if(this[k]){drop(this[k]);this[k]=null;}this.baseVisualKey=null;
+  for(const g of this.lootMeshes?.values()||[])drop(g);this.lootMeshes?.clear();for(const g of this.flags?.values()||[])drop(g);this.flags?.clear();
+  for(const c of this.chunks?.values()||[]){const G=c.group,kp=G?.userData.kitProps;if(!kp)continue;drop(kp.g);G.add(kp.g=this.style.props(kp.items,kp.cx,kp.cz));if(G.userData.flora&&this.style.flora){drop(G.userData.flora);G.add(G.userData.flora=this.style.flora(kp.cx,kp.cz,kp.legacy));}}
+  this.kitRebuilds=(this.kitRebuilds||0)+1;}
  mineralRender(ox,oz){if(!this.style?.mineralWorld)return;if(!this.mineralsG){this.mineralsG=this.style.mineralWorld();this.scene.add(this.mineralsG);}this.mineralsG.position.set(-ox,0,-oz);this.mineralsG.userData.update?.(this.authority?.state,Date.now());}
  terraRender(ox,oz){if(!this.style?.terraWorld)return;if(!this.terra){this.terra=this.style.terraWorld();this.scene.add(this.terra);}this.terra.position.set(-ox,0,-oz);this.terra.userData.update?.(this.authority?.state?.harvest,Date.now());this.terra.userData.lod?.(this.camera);
   if(this.style.colonyWorld){if(!this.colony){this.colony=this.style.colonyWorld();this.frontier=this.style.frontierWorld?.();this.veil=this.style.atmoVeil?.();this.scene.add(this.colony);if(this.frontier)this.scene.add(this.frontier);if(this.veil)this.scene.add(this.veil);}this.colony.position.set(-ox,0,-oz);if(this.frontier){this.frontier.position.set(-ox,0,-oz);this.frontier.userData.update?.(this.camera);}if(this.veil)this.veil.position.set(-ox,0,-oz);this.colony.userData.update?.(Date.now(),this.camera);}}
@@ -209,7 +218,7 @@ class View {
    const dead=B.playerHp<=0;if(dead&&this.fxDead===false){F.shatter('armor',p.x-ox,p.y,p.z-oz,2.8,2.4,0,0);F.blast(p.x-ox,p.y,p.z-oz,3,1);}this.fxDead=dead;}
   F.end();
   if(this.fxShakeT>0){this.fxShakeT-=dt;const m=(this.fxShake||0)*Math.min(1,this.fxShakeT*3)*.035;this.camera.position.x+=(Math.random()-.5)*m;this.camera.position.y+=(Math.random()-.5)*m;if(this.fxShakeT<=0)this.fxShake=0;}}
- combatRender(){if(this.renderer.isConquestCanvas)return;this.homeBeaconRender(this.origin.x,this.origin.z);this.terraRender(this.origin.x,this.origin.z);this.mineralRender(this.origin.x,this.origin.z);const ox=this.origin.x,oz=this.origin.z,m=this.routeTarget||this.nearOperation||root.ConquestCombat?.mission;if(this.beacon&&m){this.beacon.position.set(m.x-ox,W.groundAt(m.x,m.z),m.z-oz);this.beacon.visible=!this.battle&&Math.hypot(this.p.x-m.x,this.p.z-m.z)<350;}
+ combatRender(){if(this.renderer.isConquestCanvas)return;this.kitSync(root.performance?root.performance.now():Date.now());this.homeBeaconRender(this.origin.x,this.origin.z);this.terraRender(this.origin.x,this.origin.z);this.mineralRender(this.origin.x,this.origin.z);const ox=this.origin.x,oz=this.origin.z,m=this.routeTarget||this.nearOperation||root.ConquestCombat?.mission;if(this.beacon&&m){this.beacon.position.set(m.x-ox,W.groundAt(m.x,m.z),m.z-oz);this.beacon.visible=!this.battle&&Math.hypot(this.p.x-m.x,this.p.z-m.z)<350;}
  const B=this.battle||this.encounter;this.fxFrame(B);if(!B)return;
  if(!this.reticle){const geo=new this.T.RingGeometry(.65,.85,16);this.shared.push(geo);this.reticle=new this.T.Mesh(geo,this.mat(0xf4cf77));this.scene.add(this.reticle);}this.reticle.visible=B.state==='active';if(this.aimPoint){this.reticle.position.set(this.aimPoint.x-ox,this.aimPoint.y,this.aimPoint.z-oz);this.reticle.quaternion.copy(this.camera.quaternion);}
  const visible=new Set(B.enemies.filter(e=>Math.hypot(e.x-this.p.x,e.z-this.p.z)<240).map(e=>e.id));
@@ -416,7 +425,7 @@ class View {
  // Trees have separate trunks and varied layered crowns; all repetition is instanced and distance culled.
  if(k.step===4&&this.style){const D=root.ConquestCombat.baseDefinition,sc=W.scenery(k.cx,k.cz),outsideBase=p=>Math.abs(p.x-D.x)>24||Math.abs(p.z-D.z)>22;
  // Rocks and relays keep the Neon props; legacy 'tree' items and the new flora field are drawn by today's terraform zone.
- group.add(this.style.props(sc.filter(p=>p.kind!=='tree'),k.cx,k.cz));const legacyTrees=sc.filter(p=>p.kind==='tree'&&outsideBase(p));
+ const legacyTrees=sc.filter(p=>p.kind==='tree'&&outsideBase(p)),kp=group.userData.kitProps={items:sc.filter(p=>p.kind!=='tree'),cx:k.cx,cz:k.cz,legacy:legacyTrees,g:null};group.add(kp.g=this.style.props(kp.items,k.cx,k.cz));
  if(this.style.floraJob)(this.floraJobs||(this.floraJobs=[])).push({key:k.key,group,job:this.style.floraJob(k.cx,k.cz,legacyTrees)});else if(this.style.flora)group.add(group.userData.flora=this.style.flora(k.cx,k.cz,legacyTrees));}
  else if(k.step===4){const D=root.ConquestCombat.baseDefinition,list=W.scenery(k.cx,k.cz).filter(p=>p.kind!=='tree'||Math.abs(p.x-D.x)>24||Math.abs(p.z-D.z)>22),trees=list.filter(p=>p.kind==='tree'),pines=trees.filter(p=>p.variant>=.4),broad=trees.filter(p=>p.variant<.4),relays=list.filter(p=>p.kind==='relay'),rocks=list.filter(p=>p.kind==='rock'&&p.variant>.45);
  const batch=(items,geo,color,shape)=>{if(!items.length)return;const mesh=new T.InstancedMesh(geo,this.mat(color),items.length),o=new T.Object3D();items.forEach((p,i)=>{shape(o,p);o.position.x+=p.x-k.cx*128;o.position.z+=p.z-k.cz*128;o.updateMatrix();mesh.setMatrixAt(i,o.matrix);});group.add(mesh);};
@@ -478,14 +487,15 @@ class View {
  const px=hull.x,pz=hull.z,d=this.distance;this.camCy=Number.isFinite(this.camCy)?this.camCy+(shown.y+3-this.camCy)*blend(10):shown.y+3;const cy=this.camCy;let cx=px+Math.sin(this.yaw)*Math.cos(this.pitch)*d,cz=pz+Math.cos(this.yaw)*Math.cos(this.pitch)*d,hy=cy+Math.sin(this.pitch)*d;
  // Sample the sight ray to lift the camera above intervening terrain and opaque bridge surfaces.
  for(let i=1;i<=16;i++){const t=i/16,x=px+(cx-px)*t,z=pz+(cz-pz)*t;const ground=W.groundAt(x,z)+3;hy=Math.max(hy,cy+(ground-cy)/t);const deck=W.deckAt(x,z);if(deck!==null&&shown.surface==='bridge')hy=Math.max(hy,cy+(deck+3-cy)/t);}
- // Pull camera in front of opaque structures rather than looking through processor walls.
- let reach=1;for(let i=1;i<=96;i++){const t=i/96,x=px+(cx-px)*t,z=pz+(cz-pz)*t,y=cy+(hy-cy)*t;if(W.blockedAt(x,y,z)){reach=Math.max(.03,(i-2)/96);break;}}
+ // Owner (Nov 17 + Nov 19): the camera never moves to avoid a building. A building in the way stays solid and the tank shows
+ // through it as an outline (seeThrough below); only terrain and the bridge deck above still lift the camera.
+ const reach=1;
  // Pull in quickly, ease back out, and rise faster than the camera settles so the frame never bobs with each terrain facet.
  this.camReach=Number.isFinite(this.camReach)&&reach>this.camReach?this.camReach+(reach-this.camReach)*blend(3):reach;this.camHy=Number.isFinite(this.camHy)?this.camHy+(hy-this.camHy)*blend(hy>this.camHy?22:6):hy;
  cx=px+(cx-px)*this.camReach;cz=pz+(cz-pz)*this.camReach;hy=cy+(Math.max(hy,this.camHy)-cy)*this.camReach;hy=Math.max(hy,W.groundAt(cx,cz)+1.5);
  // A close obstruction must not push the camera inside our own hull.
  if(Math.hypot(cx-px,cz-pz)<7){cx=px;cz=pz+.1;hy=Math.max(hy,shown.y+Math.max(18,d*.8));}
- this.camera.position.set(cx-ox,hy,cz-oz);this.camera.lookAt(px-ox,cy,pz-oz);this.camSnap=false;this.occluderFade(dt);this.style?.viewLights(this.camera);this.withShownActors(()=>{this.combatRender();const renderStart=root.performance?root.performance.now():Date.now();this.renderer.render(this.scene,this.camera);this.renderCpuMs=(root.performance?root.performance.now():Date.now())-renderStart;const calls=this.renderer.info?.render?.calls||0;if(calls>(this.maxDrawCalls||0))this.maxDrawCalls=calls;});
+ this.camera.position.set(cx-ox,hy,cz-oz);this.camera.lookAt(px-ox,cy,pz-oz);this.camSnap=false;this.seeThrough(dt);this.style?.viewLights(this.camera);this.withShownActors(()=>{this.combatRender();const renderStart=root.performance?root.performance.now():Date.now();this.scene.updateMatrixWorld();this.style?.markersSync?.(this.scene,this.enemyMeshes);const untight=this.style?.tight?.(this.scene,this.camera),autoM=this.scene.matrixWorldAutoUpdate;if(this.style)this.scene.matrixWorldAutoUpdate=false;/* just updated above: the markers and the culling read them */try{this.renderer.render(this.scene,this.camera);}finally{this.scene.matrixWorldAutoUpdate=autoM;if(untight)untight();}this.renderCpuMs=(root.performance?root.performance.now():Date.now())-renderStart;const calls=this.renderer.info?.render?.calls||0;if(calls>(this.maxDrawCalls||0))this.maxDrawCalls=calls;});
  }
  // Interpolate other actors between the last two fixed steps for presentation only, then restore the simulated values.
  rememberActors(B){const from=this.shownFrom||(this.shownFrom=new Map());from.clear();for(const e of B.enemies)from.set(e.id,{x:e.x,y:e.y,z:e.z,heading:e.heading,turret:e.turret});this.shownTurret=B.turretYaw;}
@@ -494,32 +504,37 @@ class View {
  // Shots fly straight between steps: lead them by the elapsed part of the step so they leave the muzzle with the hull.
  for(const p of [...(B.projectiles||[]),...(B.superShells||[])])if(Number.isFinite(p.vx)&&Number.isFinite(p.vz)){const t=Math.min(lead,Math.max(0,p.life||0));shots.push([p,p.x,p.y,p.z]);p.x+=p.vx*t;p.y+=(p.vy||0)*t;p.z+=p.vz*t;}
  try{fn();}finally{for(const [e,x,y,z,h,t] of saved){e.x=x;e.y=y;e.z=z;e.heading=h;e.turret=t;}for(const [p,x,y,z] of shots){p.x=x;p.y=y;p.z=z;}}}
- // See-through occluders (Session 5E-2a, owner): a building or prop between the camera and the tank, or the path just ahead,
- // fades to a see-through ghost, so the tank and its way forward stay visible in the world and around the town. The ghost is
- // the same material kind as the laser halo (MeshBasicMaterial, transparent, no depth write), so it shares that program and
- // never adds one to Conquest's 16-program budget. Checked every third frame against bounding spheres first, then the exact
- // triangles of the few meshes on the line; instanced sets (walls, turrets) are low and never block the view.
- occluderFade(dt){
-  if(this.renderer.isConquestCanvas||!this.vehicle||!this.camera)return;
-  const F=this.fade||(this.fade=this.fadeState()),veh=this.vehicle.position;this.fadeCore(F,dt,[this.props,this.baseGroup,this.monument,this.raidArt,this.colony,this.frontier],this.camera.position,veh.x,veh.y,veh.z,this.heading||0);
+ // See-through rule (owner, Nov 17 + Nov 19; replaces 5E-2a's always-on ghost fade): buildings are never see-through unless the
+ // tank is pressed directly against one. A building or object that blocks the camera's view of your tank stays solid and the
+ // tank shows through it as a clean outline (your allies' tanks too; enemies never: cover stays real). Only the building or
+ // object the tank is pressed against is thinned to a see-through screen, and only while it is. The camera never moves for it.
+ seeThrough(dt){
+  if(this.renderer.isConquestCanvas||!this.vehicle||!this.camera||!this.style?.outliner)return;
+  const O=this.outline||(this.outline=this.style.outliner(this.scene)),list=[{root:this.vehicle,ally:false}];for(const F of this.friendViews?.values()||[])list.push({root:F.g,ally:true});
+  O.sync(list,2.4*(this.renderer.getPixelRatio?.()||1),this.camera);
+  const fp=this.pressFootprint(),P=this.pressState||(this.pressState={k:0,fp:null});if(fp){const q=this.renderP||this.p;fp.y=W.groundAt(q.x,q.z);}if(fp){if(!P.fp||P.fp.x!==fp.x||P.fp.z!==fp.z)P.k=Math.min(P.k,.35);P.fp=fp;}
+  P.k+=((fp?1:0)-P.k)*Math.min(1,dt*(fp?9:6));if(P.k<.02&&!fp){P.k=0;P.fp=null;}this.style.press(P.fp,P.k);
  }
- fadeState(){const T=this.T;return {list:[],scan:99,n:0,faded:new Map(),ray:new T.Raycaster(),c:new T.Vector3(),v:new T.Vector3(),w:new T.Vector3(),pts:[new T.Vector3(),new T.Vector3()],hits:new Set()};}
- // the shared fade (world view above, and the town's drive view: js/conquest/plotview.js): roots = groups whose meshes may
- // block, cam = camera position, (x, y, z) the tank in the same space, h its heading
- fadeCore(F,dt,roots,cam,tx,ty,tz,h){const T=this.T;
-  F.scan+=dt;
-  if(F.scan>1){F.scan=0;F.list.length=0;for(const r of roots)if(r)r.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||Array.isArray(o.material)||o.userData.noFade||!o.geometry?.attributes?.position)return;if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();if(o.geometry.boundingSphere.radius>1.2)F.list.push(o);});}
-  if(F.n++%3===0){
-   F.pts[0].set(tx,ty+1.8,tz);F.pts[1].set(tx+Math.sin(h)*9,ty+1.2,tz+Math.cos(h)*9);F.hits.clear();
-   for(const o of F.list){let p=o,shown=true;while(p){if(!p.visible){shown=false;break;}p=p.parent;}if(!shown)continue;
-    const bs=o.geometry.boundingSphere,rad=bs.radius*o.matrixWorld.getMaxScaleOnAxis();F.c.copy(bs.center).applyMatrix4(o.matrixWorld);   // (the bundled three has no Sphere class: plain vectors)
-    for(const q of F.pts){const len=F.w.subVectors(q,cam).length();if(len<2)continue;F.w.divideScalar(len);const t=Math.max(0,Math.min(len,F.v.subVectors(F.c,cam).dot(F.w)));if(F.v.copy(cam).addScaledVector(F.w,t).distanceTo(F.c)>rad)continue;
-     F.ray.set(cam,F.w);F.ray.far=len-1.2;F.ray.near=0;const fo=F.faded.get(o);if(fo)o.material=fo.orig;const hit=F.ray.intersectObject(o,false);if(fo)o.material=fo.ghost;if(hit.length){F.hits.add(o);break;}}}   // a faded mesh is hit-tested with its own material (its side), so it never flickers
-   for(const o of F.hits)if(!F.faded.has(o)){const ghost=new T.MeshBasicMaterial({color:0xa9c8de,transparent:true,opacity:.62,depthWrite:false});F.faded.set(o,{orig:o.material,ghost,a:.62,out:false});o.userData.fadeOrig=o.material;o.material=ghost;}
-   for(const [o,f] of F.faded)f.out=!F.hits.has(o);
-  }
-  // ease: in to .22 while it blocks, back up before the real material returns (no pop to opaque)
-  for(const [o,f] of F.faded){f.a+=((f.out?.7:.22)-f.a)*Math.min(1,dt*9);f.ghost.opacity=f.a;if(f.out&&f.a>.66||!o.parent){o.material=f.orig;delete o.userData.fadeOrig;f.ghost.dispose();F.faded.delete(o);}}
+ // What is the hull pressed against? Probes a hull length ahead first, then around it, on the shared collision rules; the
+ // footprint comes from the same rules (a colony lot, a Refuge pod or tower, a hive, raid cover, the dam, a pylon), or a small
+ // box around the contact point for anything else (a rock, a Command Base wall).
+ pressFootprint(){const p=this.renderP||this.p,B=this.battle||this.encounter,K=root.ConquestControl,tier=this.authority?.state?.base?.tier||B?.baseTier||0;if(!p||p.surface==='bridge')return null;const h=this.heading||0;
+  const solid=(x,z)=>W.solidAt(x,z)||!!(tier&&K?.baseBlocked?.({baseTier:tier},{x,z}));
+  for(const R of [2.7,1.3])for(let i=0;i<8;i++){const a=h+[0,1,-1,2,-2,3,-3,4][i]*Math.PI/4,x=p.x+Math.sin(a)*R,z=p.z+Math.cos(a)*R;if(solid(x,z))return this.footprintAt(x,z);}return null;}
+ footprintAt(x,z){const l=W.colonyLotAt?.(x,z);if(l)return {x:l.x,z:l.z,hw:l.w/2+.8,hd:l.d/2+.8,r:l.r||0};
+  for(let i=0;i<9;i++){const hx=1110+i%3*22,hz=1148+Math.floor(i/3)*25;if(Math.hypot(x-hx,z-hz)<8.4)return {x:hx,z:hz,hw:9,hd:9,r:0};}
+  for(let i=0;i<3;i++){const tx=1150+i*30;if(Math.hypot(x-tx,z-1080)<12.6)return {x:tx,z:1080,hw:13.4,hd:13.4,r:0};}
+  for(const b of W.installations||[]){if(Math.abs(x-b.x)<11.5&&Math.abs(z-b.z-8)<8.5)return {x:b.x,z:b.z+8,hw:12.4,hd:9.4,r:0};if(Math.hypot(x-b.x-14,z-b.z-10)<2.6)return {x:b.x+14,z:b.z+10,hw:3.4,hd:3.4,r:0};}
+  for(const o of W.raidObstacles||[])if(Math.abs(x-o.x)<o.width/2+.4&&Math.abs(z-o.z)<o.depth/2+.4)return {x:o.x,z:o.z,hw:o.width/2+.4,hd:o.depth/2+.4,r:0};
+  const dm=W.water?.dam;if(dm&&x>dm.x0-1&&x<dm.x1+1&&Math.abs(z-dm.z)<dm.depth/2+1)return {x:(dm.x0+dm.x1)/2,z:dm.z,hw:(dm.x1-dm.x0)/2+1,hd:dm.depth/2+2.5,r:0};
+  for(const q of W.pylons||[])if(Math.hypot(x-q.x,z-q.z)<2.4)return {x:q.x,z:q.z,hw:2.6,hd:2.6,r:0};
+  return {x:Math.round(x),z:Math.round(z),hw:4.2,hd:4.2,r:0};}
+ // A mesh that is not drawn by the style's solid program (a Meshy town building in the drive view) is pressed see-through by a
+ // plain ghost material instead (the laser halo's program: no new shader program). hits = the meshes pressed right now.
+ fadeState(){return {faded:new Map(),hits:new Set()};}
+ fadeCore(F,dt,hits){const T=this.T;
+  for(const o of hits)if(!F.faded.has(o)){const ghost=new T.MeshBasicMaterial({color:0xa9c8de,transparent:true,opacity:.7,depthWrite:false});F.faded.set(o,{orig:o.material,ghost,a:.7,out:false});o.userData.fadeOrig=o.material;o.material=ghost;}
+  for(const [o,f] of F.faded){f.out=!hits.has(o);f.a+=((f.out?.75:.24)-f.a)*Math.min(1,dt*9);f.ghost.opacity=f.a;if(f.out&&f.a>.7||!o.parent){o.material=f.orig;delete o.userData.fadeOrig;f.ghost.dispose();F.faded.delete(o);}}
  }
  // render resolution (Session 5E-2a): the shared ceiling (LOW 1x, phone up to 2.5x, desktop the full ratio, CPU rasterizer 1x) and
  // in auto mode the frame-time governor (js/graphics.js). A CPU rasterizer starts and may stay at .75x (it cannot hold full size).

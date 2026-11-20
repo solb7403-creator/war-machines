@@ -89,6 +89,7 @@ async def main():
     if not await page.locator('.cq-hub').count():await page.locator('#tabbar [data-act="conquest"]').click()
     await page.wait_for_function('ConquestHub.state?.town',timeout=60000);await page.wait_for_timeout(1500)
     await page.screenshot(path=str(OUT/f'hub-hero-town-cc{cc}-390.png'));R['hub'+str(cc)]=await page.evaluate('ConquestHub.state.town');assert not errors,errors
+    assert R['hub'+str(cc)] and R['hub'+str(cc)].get('kit') is True and R['hub'+str(cc)]['builds']>=1,('the hub hero is built from the kit models on HIGH, not stand-in blocks (5E-2d1)',R['hub'+str(cc)])
     await close(ctx)
    # ---- 5 + 6: BUILD at PEEK shows a card, the readout is one line; the Cannon sprite is lit ----
    # a CC5 town with buildings left to place (the fully built CC10 town has no cards: it shows the all-placed hint, which is right)

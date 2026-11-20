@@ -8,6 +8,10 @@
    turrets, homes and raiders are instanced); the 2D setting gets a top-down canvas town with the same controls. */
 (function(root){
 'use strict';
+// Session 5E-2d1 (owner, Nov 19): which model stands in a town building's slot (js/conquest/slots.js). item = a Meshy item of
+// js/assets/meshy-v1/manifest.json, or null for the code-built model; fit = the slot's box when the listed item is not the
+// building's own Meshy model (a stand-in is scaled to stand inside the box; the owner's own model keeps its level scale).
+const slotOf=t=>{const s=root.ConquestSlots?.items['town-'+t];return s?{item:s.model||null,fit:s.model&&s.model!=='town-'+t?s.size:null}:{item:null,fit:null};};
 const P=root.ConquestPlot;
 let X=null;   // the open town view
 const fmt=n=>typeof fmtNum==='function'?fmtNum(n):String(n);
@@ -52,6 +56,7 @@ const FX_OF={cannon:'tracer',mg:'tracer',laser:'beam',rocket:'blast',missile:'bl
 const FX_LOOK={tracer:[0xffb347,.16,2.4],beam:[0x22e6ff,.12,2.6],rail:[0xd8f6ff,.18,3],arc:[0xb08cff,.1,3],flame:[0xff7a2d,.9,2.2],blast:[0xff5a2a,.3,2.6],shell:[0xffd36b,.34,2.8],burst:[0xff6ae0,.36,3]};
 function scene3d(view){const S=view.style,T=view.T;if(!S||view.renderer.isConquestCanvas)return null;const k=kit(S),sc=new T.Scene();
  // The same light counts as the world scene (hemi + sun + rim): the style programs are shared, no new program variants.
+ {const D=root.ConquestCombat?.baseDefinition;if(S.atmo&&D)S.atmo(D,10);}   // 5E-2d1: the town stands at the Command Base, so it takes that place's sky at once (opened in the first seconds of a session it kept the half-eased night light: critic round 3 saw a blue night town on computer HIGH)
  const env=S.environment(sc,null,{guest:true});if(S.atmoApply)S.atmoApply(sc,420,1500);else sc.fog=new T.Fog(0x06070f,420,1500);   /* owner gate: a guest of the world sky (the world keeps its atmosphere), with the zone's own haze */   // 5C Max pass: the world's own sky (stars, Earth, galaxy) and light set over the town; compiled programs are shared
  const cam=new T.PerspectiveCamera(50,1,.5,2000);const g={terrain:new T.Group(),build:new T.Group(),walls:new T.Group(),turrets:new T.Group(),homes:new T.Group(),holo:new T.Group(),grid:new T.Group(),fx:new T.Group(),actors:new T.Group()};for(const v of Object.values(g))sc.add(v);
  const im=(geo,n)=>{const m=new T.InstancedMesh(geo,S.MAT.solid,n);m.count=0;m.frustumCulled=false;m.visible=false;return m;};
@@ -77,18 +82,25 @@ function spriteModel(R,w){const {T,k}=R,g=new T.Group(),lv=Math.max(1,w.level||1
  if(w.kind==='x'){const tint=(geo,c,e)=>{const a=geo.attributes.aCol;for(let i=0;i<a.count;i++){if(a.getW(i)>.3)a.setXYZW(i,c.r*1.4,c.g*1.4,c.b*1.4,e);else a.setXYZ(i,c.r*.55+a.getX(i)*.3,c.g*.55+a.getY(i)*.3,c.b*.55+a.getZ(i)*.3);}return geo;},gold=new T.Color(0xd8a640),neon=new T.Color(0xff2bd6);
   const add=(geo,x=0,y=0,ry=0)=>{const m=new T.Mesh(geo,R.S.MAT.solid);m.position.set(x,y,0);m.rotation.y=ry;g.add(m);};
   if(w.key==='wall-ext-10'){for(let n=-1;n<=1;n++)add(k.wallGeo(P.wcode(3,2),false),n*4.02);add(k.post(false),6.1);}else if(w.key==='skin-gilded'){for(let n=-1;n<=1;n++)add(tint(k.wallGeo(P.wcode(5,3),false),gold,1.4),n*4.02);}
-  else if(w.key==='skin-turret-neon'){add(tint(k.building('railgun',5,null).geometry(),neon,2));add(tint(k.head('railgun',5).geometry(),neon,2),0,2.15,.7);}else if(w.key==='theme-aurora'){g.add(k.building('cc',10,{light:'violet',finish:'graphite'}).mesh());}
+  else if(w.key==='skin-turret-neon'){add(tint(k.building('railgun',5,null).geometry(),neon,2));add(tint(k.head('railgun',5).geometry(),neon,2),0,k.headY('railgun',5),.7);}else if(w.key==='theme-aurora'){g.add(k.building('cc',10,{light:'violet',finish:'graphite'}).mesh());}
   else if(w.key==='foundry-rush'){g.add(k.building('foundry',5,{light:'amber'}).mesh());}else if(w.key==='builder-2'){g.add(k.building('hangar',4,null).mesh());}else g.add(k.building('storage',3,null).mesh());
   g.rotation.y=-.4;return g;}
- const my=typeof Meshy3D!=='undefined'&&!R.S.low?Meshy3D.townBuilding(w.key,w.key==='cc'?Math.min(10,lv):lv,null,false):null;if(my){if(my.userData.meshyHead)my.userData.meshyHead.rotation.y=.7;g.add(my);g.userData.meshy=true;return g;}   // the owner's Meshy model once its file is in
- const b=k.building(w.key,w.key==='cc'?Math.min(10,lv):lv,null).mesh();g.add(b);const B=P.BUILDINGS[w.key];if(B?.turret||w.key==='radar'){const hd=k.head(w.key,lv).mesh();hd.position.y=w.key==='radar'?3.3+lv*.5:1.4+lv*.15;hd.rotation.y=.7;g.add(hd);}return g;}
+ const sl=slotOf(w.key),my=typeof Meshy3D!=='undefined'&&!R.S.low&&sl.item?Meshy3D.townBuilding(w.key,w.key==='cc'?Math.min(10,lv):lv,null,false,false,sl.item,sl.fit):null;if(my){if(my.userData.meshyHead)my.userData.meshyHead.rotation.y=.7;g.add(my);g.userData.meshy=true;return g;}   // the owner's Meshy model once its file is in
+ const b=k.building(w.key,w.key==='cc'?Math.min(10,lv):lv,null).mesh();g.add(b);const B=P.BUILDINGS[w.key];if(B?.turret||w.key==='radar'){const hd=k.head(w.key,lv).mesh();hd.position.y=k.headY(w.key,lv);hd.rotation.y=.7;g.add(hd);}return g;}
 function spriteStep(R){if(!SPRITE_WAIT.length||!R||!X)return;const w=SPRITE_WAIT.shift();if(SPRITES.has(w.k))return;const {T}=R,r=X.ctx.view.renderer,el=r.domElement,px=144;if(!el||el.height<px||el.width<px)return;
  try{if(!R.spr){const sc=new T.Scene();sc.fog=new T.Fog(0x06070f,3000,4000);const L=[new T.HemisphereLight(0x3a5a9c,0x16131f,2.8),new T.DirectionalLight(0xe4ecff,4.6),new T.DirectionalLight(0x52c6ff,1.9)];/* 5E-2a: brighter, the town models are dark armour now (town-refs-v1); same light count */L[1].position.set(200,400,150);L[2].position.set(-300,200,-200);sc.add(...L);R.spr={sc,cam:new T.PerspectiveCamera(30,1,.1,500),v:new T.Vector3(),c:document.createElement('canvas')};R.spr.c.width=R.spr.c.height=px;}
   const Sp=R.spr,g=spriteModel(R,w);Sp.sc.add(g);g.updateMatrixWorld(true);const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9],v=Sp.v;g.traverse(o=>{const pa=o.geometry?.attributes?.position;if(!pa)return;for(let i=0;i<pa.count;i+=Math.max(1,pa.count>>9)){v.fromBufferAttribute(pa,i).applyMatrix4(o.matrixWorld);for(let a2=0;a2<3;a2++){const q=v.getComponent(a2);if(q<lo[a2])lo[a2]=q;if(q>hi[a2])hi[a2]=q;}}});   // the vendored three has no Box3
   const ctr=new T.Vector3((lo[0]+hi[0])/2,(lo[1]+hi[1])/2,(lo[2]+hi[2])/2),rad=Math.max(1.5,Math.hypot(hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2])/2),d=rad/Math.sin(15*Math.PI/180)*.8;
   Sp.cam.position.set(ctr.x+Math.sin(.65)*Math.cos(.5)*d,ctr.y+Math.sin(.5)*d,ctr.z+Math.cos(.65)*Math.cos(.5)*d);Sp.cam.lookAt(ctr);R.S.viewLights(Sp.cam);
-  const old=new T.Color();r.getClearColor(old);const oa=r.getClearAlpha();r.setScissorTest(true);r.setViewport(0,0,px/(r.getPixelRatio?.()||1),px/(r.getPixelRatio?.()||1));r.setScissor(0,0,px/(r.getPixelRatio?.()||1),px/(r.getPixelRatio?.()||1));r.setClearColor(0x10283a,1);r.clear();R.S.guest?.(true);const U=R.S.U||{},boost=[['uAmbUp',2.4],['uAmbDn',2.4],['uDayAmbUp',2.4],['uDayAmbDn',2.4],['uSunCol',1.4],['uDaySun',1.4]].map(([n,f])=>U[n]?.value?.clone?[U[n].value,U[n].value.clone(),f]:null).filter(Boolean);for(const [v,,f] of boost)v.multiplyScalar(f);try{r.render(Sp.sc,Sp.cam);}finally{for(const [v,v0] of boost)v.copy(v0);R.S.guest?.(false);r.setClearColor(old,oa);r.setScissorTest(false);}   /* 5D: brighter ambient and sun for the card only, night AND day terms (the shader mixes them by the atmosphere factor: scaling only the night ambient did nothing by day, so the dark-steel Cannon read as its background); everything restored even if the render throws */
-  const cx=Sp.c.getContext('2d');cx.clearRect(0,0,px,px);cx.drawImage(el,0,el.height-px,px,px,0,0,px,px);const url=Sp.c.toDataURL('image/png');Sp.sc.remove(g);g.traverse(o=>{if(o.geometry&&!o.geometry.userData?.hfShared)o.geometry.dispose();});if(typeof Meshy3D!=='undefined')Meshy3D.release(g);if(g.userData.meshy)SPRITE_MESHY.add(w.k);
+  const old=new T.Color();r.getClearColor(old);const oa=r.getClearAlpha();r.setScissorTest(true);r.setViewport(0,0,px/(r.getPixelRatio?.()||1),px/(r.getPixelRatio?.()||1));r.setScissor(0,0,px/(r.getPixelRatio?.()||1),px/(r.getPixelRatio?.()||1));r.setClearColor(0x10283a,1);r.clear();R.S.guest?.(true);const U=R.S.U||{},boost=[['uAmbUp',2.4],['uAmbDn',2.4],['uDayAmbUp',2.4],['uDayAmbDn',2.4],['uSunCol',1.4],['uDaySun',1.4]].map(([n,f])=>U[n]?.value?.clone?[U[n].value,U[n].value.clone(),f]:null).filter(Boolean);const cx=Sp.c.getContext('2d',{willReadFrequently:true}),lights=Sp.sc.children.filter(o=>o.isLight),li=lights.map(l=>l.intensity);
+  // per-sprite lift (5E-2d1, a 5D leftover): dark steel (the Cannon) read only just above its card (luminance 41 vs 35). The
+  // model's own pixels are measured after the first draw; a dark model is drawn once more with every light raised by the same
+  // factor, toward a mean the light models already have. Light models are not touched.
+  const drawOnce=k=>{for(const [v,v0,f] of boost)v.copy(v0).multiplyScalar(f*k);lights.forEach((l,i)=>l.intensity=li[i]*k);r.clear();r.render(Sp.sc,Sp.cam);cx.clearRect(0,0,px,px);cx.drawImage(el,0,el.height-px,px,px,0,0,px,px);};
+  try{drawOnce(1);let sum=0,n=0;try{const d=cx.getImageData(0,0,px,px).data;for(let i=0;i<d.length;i+=16){if(Math.abs(d[i]-16)+Math.abs(d[i+1]-40)+Math.abs(d[i+2]-58)<14)continue;sum+=.299*d[i]+.587*d[i+1]+.114*d[i+2];n++;}}catch(_){}
+   const mean=n?sum/n:255;if(mean<78){Sp.lift=Math.min(2.6,84/Math.max(20,mean));drawOnce(Sp.lift);}else Sp.lift=1;(X.sprLift||(X.sprLift={}))[w.k]={mean:Math.round(mean),lift:+Sp.lift.toFixed(2)};}
+  finally{for(const [v,v0] of boost)v.copy(v0);lights.forEach((l,i)=>l.intensity=li[i]);R.S.guest?.(false);r.setClearColor(old,oa);r.setScissorTest(false);}   /* 5D: brighter ambient and sun for the card only, night AND day terms (the shader mixes them by the atmosphere factor: scaling only the night ambient did nothing by day, so the dark-steel Cannon read as its background); everything restored even if the render throws */
+  const url=Sp.c.toDataURL('image/png');Sp.sc.remove(g);g.traverse(o=>{if(o.geometry&&!o.geometry.userData?.hfShared)o.geometry.dispose();});if(typeof Meshy3D!=='undefined')Meshy3D.release(g);if(g.userData.meshy)SPRITE_MESHY.add(w.k);
   SPRITES.set(w.k,url);for(const n of X.d.querySelectorAll('[data-spr="'+w.k+'"]')){const i=document.createElement('img');i.className='cq-plot-ico cq-plot-spr';i.src=url;i.alt='';i.dataset.spr=w.k;n.replaceWith(i);}}
  catch(e){SPRITES.set(w.k,'');if(X)X.sprErr=String(e&&e.message||e);}}
 
@@ -345,13 +357,13 @@ function sync(){const R=X?.R,p=plotOf();if(!p)return;if(!R){draw2d();return;}con
  if(R.keys.ter!==p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j)){R.keys.ter=p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j);wipe(g.terrain);for(const m of TK.terrain(S,p.site,p.cc,p,{}))g.terrain.add(m);}
  const pl=TK.plan(p),want=new Set(),turs=[],theme=p.theme,MY=!S.low&&typeof Meshy3D!=='undefined'?Meshy3D:null,lod=!!R.far;   /* 5E-2a: Meshy in big towns too (reduced index set when far / driving) */R.anim=[];R.plan=pl;
  for(const [id,b,lvl,building] of pl.builds){const B=P.BUILDINGS[b.t];
-  const key=[b.t,lvl,b.i,b.j,b.r|0,building?1:0,theme?.finish||'',theme?.light||'',MY?MY.townStamp([b.t])+(lod?'f':''):''].join(':');want.add(id);let e=R.meshes.get(id);
+  const sl=slotOf(b.t),key=[b.t,lvl,b.i,b.j,b.r|0,building?1:0,theme?.finish||'',theme?.light||'',MY?(sl.item||'-')+MY.townStamp([(sl.item||'town-'+b.t).replace(/^town-/,'')])+(lod?'f':''):''].join(':');want.add(id);let e=R.meshes.get(id);
   if(!e||e.key!==key){if(e){g.build.remove(e.o);MY?.release(e.o);e.o.traverse(o=>{if(!keep.has(o.geometry)&&!o.geometry?.userData?.meshy)o.geometry?.dispose?.();});}const o=new T.Group(),s2=P.sizeOf(b.t,b.r|0);o.position.set(P.cellX(b.i)+(s2.w-1)*P.GRID.cell/2,footY(p.site,b),P.cellZ(b.j)+(s2.d-1)*P.GRID.cell/2);o.rotation.y=-(b.r|0)*Math.PI/2;
    // the owner's Meshy model when its file is in (HIGH); the kit model until then and on LOW
-   const my=MY&&(lvl>0||building)?MY.townBuilding(b.t,Math.max(1,lvl),theme,false,lod&&!B?.turret):null;
+   const my=MY&&sl.item&&(lvl>0||building)?MY.townBuilding(b.t,Math.max(1,lvl),theme,false,lod&&!B?.turret,sl.item,sl.fit):null;
    if(my){my.userData.id=id;my.traverse(c=>{c.userData.id=id;});o.add(my);if(my.userData.meshyHead)o.userData.head=my.userData.meshyHead;}
    else if(lvl>0||building){const m=k.building(b.t,Math.max(1,lvl),theme).mesh();m.userData.id=id;o.add(m);}
-   const hd=!my&&(B?.turret||b.t==='radar')?k.head(b.t,Math.max(1,lvl)).mesh():null;if(hd){hd.position.y=b.t==='radar'?3.3+lvl*.5:1.4+lvl*.15;o.add(hd);o.userData.head=hd;o.userData.radar=b.t==='radar';}
+   const hd=!my&&(B?.turret||b.t==='radar')?k.head(b.t,Math.max(1,lvl)).mesh():null;if(hd){hd.position.y=k.headY(b.t,lvl);o.add(hd);o.userData.head=hd;o.userData.radar=b.t==='radar';}
    if(building){const sc=new S.Bld(),s3=P.sizeOf(b.t),W=s3.w*P.GRID.cell,D=s3.d*P.GRID.cell,h=b.t==='cc'?10+p.cc:6;for(const [x,z] of [[-1,-1],[1,-1],[1,1],[-1,1]])sc.box(x*W/2,h/2,z*D/2,.18,h,.18,k.C.amber,.6);for(let y=1.5;y<h;y+=2.2){sc.box(0,y,-D/2,W,.12,.12,k.C.amber,.5);sc.box(0,y,D/2,W,.12,.12,k.C.amber,.5);sc.box(-W/2,y,0,.12,.12,D,k.C.amber,.5);sc.box(W/2,y,0,.12,.12,D,k.C.amber,.5);}
     o.add(sc.mesh());const dr=new S.Bld();for(let q=0;q<3;q++)dr.box(Math.cos(q*2.1)*W*.6,h+1.5,Math.sin(q*2.1)*D*.6,.8,.25,.8,k.C.cyan,2);const drm=dr.mesh();o.add(drm);o.userData.drones=drm;}
    g.build.add(o);e={o,key,id};R.meshes.set(id,e);}
@@ -383,12 +395,12 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  const R=X.R;if(!R){if(X.drill)drillStep(dt);draw2d();return;}const {view}=X.ctx,T=R.T,c=X.cam,host=view.host;
  // Draw only inside the visible stage with its own aspect, so cellAt() (stage rect) matches the picture exactly.
  const hr=host.getBoundingClientRect(),sr=X.stage.getBoundingClientRect(),w=Math.max(1,sr.width||390),h=Math.max(1,sr.height||400);if(R.cam.aspect!==w/h){R.cam.aspect=w/h;R.cam.updateProjectionMatrix();}
- if(X.view==='drive'&&X.drive&&!X.tour){driveStep(dt);if(!X)return;}placeCam(dt);driveFade(R,dt);driveUi();if(X.tank&&!X.visit&&s?.plot&&s.plot!==X.flagPlot){X.flagPlot=s.plot;tankFlag(R,s.plot);}
+ if(X.view==='drive'&&X.drive&&!X.tour){driveStep(dt);if(!X)return;}placeCam(dt);driveSee(R,dt);driveUi();if(X.tank&&!X.visit&&s?.plot&&s.plot!==X.flagPlot){X.flagPlot=s.plot;tankFlag(R,s.plot);}
  for(const o of R.meshes.values()){const hd=o.o.userData.head;if(hd)hd.rotation.y=hd.userData.aim??(X.clock*(o.o.userData.radar?1:.4))%(Math.PI*2);}
  const M4=R._fm||(R._fm=new T.Matrix4()),_q=R._fq||(R._fq=new T.Quaternion()),_v=R._fv||(R._fv=new T.Vector3()),_s=R._fs||(R._fs=new T.Vector3()),up=R._up||(R._up=new T.Vector3(0,1,0));
  for(const t of R.tur.values()){for(const it of t.items){const a=it.aim??(X.clock*.4+it.spin)%(Math.PI*2);if(it.kick)it.kick=Math.max(0,it.kick-dt*5);
    if(t.meshy)t.meshy.matrix(M4,it.x,it.y,it.z,a,(it.kick||0)*t.meshy.recoil,it.dead);else{_q.setFromAxisAngle(up,a);M4.compose(_v.set(it.x,it.y,it.z),_q,_s.set(it.dead?0:1,it.dead?0:1,it.dead?0:1));}t.hd.setMatrixAt(it.n,M4);}t.hd.instanceMatrix.needsUpdate=true;}
- if(typeof Meshy3D!=='undefined'){Meshy3D.townStep(X.clock,typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced());if(R.myGen!==Meshy3D.generation){R.myGen=Meshy3D.generation;try{sync();meshySprites();}catch(e){}}}
+ if(typeof Meshy3D!=='undefined'){Meshy3D.townStep(X.clock,typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced());const kg=root.ConquestWorldKit?root.ConquestWorldKit.generation:0;if(R.myGen!==Meshy3D.generation||R.kitGen!==kg){R.myGen=Meshy3D.generation;R.kitGen=kg;try{sync();meshySprites();}catch(e){}}}
  for(const o of R.anim){const dr=o.userData.drones;dr.rotation.y=X.clock*1.4;dr.position.y=Math.sin(X.clock*3)*.4;}
  const big=(R.wcell?.size||0)>600,far=X.view==='drive'?big:big?(R.far?c.dist>60:c.dist>80):(R.far?c.dist>165:c.dist>195);/* 5C: big towns stay light in the close drive view and the closer default camera */if(far!==!!R.far){R.far=far;const lo=!!R.S.low||far;for(const [code,m] of R.wim)m.geometry=cached(R.wgeo,code+':'+lo,()=>R.k.wallGeo(code,lo));{const pm=R.wpost?.values().next().value?.[0];if(pm)pm.geometry=cached(R.wgeo,'post:'+lo,()=>R.k.post(lo));}for(const [kind,m] of R.him)m.geometry=cached(R.hgeo,kind+lo,()=>R.k.home(kind,lo));
   const pp=plotOf();if(pp){R.keys.walls=JSON.stringify(pp.w)+lo+JSON.stringify(pp.dmg||{});R.keys.homes=P.homes(pp).map(h=>h.id).join()+pp.site+pp.cc+lo;}try{sync();}catch(e){}}   // distance LOD with hysteresis: zoomed out, walls and homes switch to the lighter geometry (no instance rebuild)
@@ -438,7 +450,7 @@ function startDrive(){const R=X?.R,p=plotOf();if(!R||!p)return;const owner=!X.vi
  if(X.padMesh){X.padMesh.parent?.remove(X.padMesh);X.padMesh.traverse(o=>o.geometry?.dispose?.());}{const S=R.S,y=P.heightAt(p.site,pad.x,pad.z),b=new S.Bld(),fx=new S.Fx(),grp=new R.T.Group();b.add(S.G.hex,R.k.M(pad.x,y,pad.z,0,0,0,5.2,.25,5.2),R.k.C.dark2);b.add(S.G.hex,R.k.M(pad.x,y+.27,pad.z,0,0,0,4.6,.05,4.6),R.k.C.dark);b.add(S.G.hex,R.k.M(pad.x,y+.3,pad.z,0,0,0,4.75,.03,4.75),R.k.C.cyan,.3);b.add(S.G.hex,R.k.M(pad.x,y+.31,pad.z,0,0,0,4.45,.04,4.45),R.k.C.dark);for(const sx of [-1,1]){b.box(pad.x+sx*6,y+2.2,pad.z,.6,4.4,.9,R.k.C.dark);b.box(pad.x+sx*6,y+4.6,pad.z,.9,.3,1.2,R.k.C.cyan,1);}fx.ringGlow(pad.x,pad.z,y+.7,4.8,1,[.012,.1,.13],32);grp.add(b.mesh(),fx.mesh());X.padMesh=grp;R.g.actors.add(grp);}
  if(!X.visit&&!reduced()){let seen=false;try{seen=localStorage.getItem(TOUR_KEY)==='1';}catch(_){seen=true;}if(!seen){X.tour={t:0,dur:6};try{localStorage.setItem(TOUR_KEY,'1');}catch(_){}}}}
 function setView(v){if(!X||!X.R&&v==='drive')return;endTour();if(v===X.view)return;X.camFrom=camPose();X.camT=0;X.view=v;if(v==='drive'){X.place=null;X.draw=null;X.erase=null;X.sel=null;if(!X.drive)startDrive();}render();}
-// the pilot's input: a floating stick (one finger anywhere on the map), WASD / arrow keys; camera-relative like the world
+// the pilot's input: the world's fixed DRIVE joystick (bottom left), WASD / arrow keys; camera-relative like the world
 function driveStep(dt){const D=X.drive,p=plotOf();if(!D||!p)return;const k=D.keys;let sx=D.stick.x+((k.d||k.arrowright)?1:0)-((k.a||k.arrowleft)?1:0),sz=D.stick.z+((k.s||k.arrowdown)?1:0)-((k.w||k.arrowup)?1:0);const L=Math.hypot(sx,sz);if(L>1){sx/=L;sz/=L;}
  if(p!==D.plot){D.plot=p;const key=JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site]);if(key!==D.key){D.key=key;D.block=blockMap(p,D.owner);}}   // only when the Worker sends a new plot, never per frame
  const cy=X.chase.yaw,fx=-Math.sin(cy),fz=-Math.cos(cy),rx=Math.cos(cy),rz=-Math.sin(cy),wx=rx*sx-fx*sz,wz=rz*sx-fz*sz,mag=Math.min(1,Math.hypot(wx,wz));
@@ -447,34 +459,49 @@ function driveStep(dt){const D=X.drive,p=plotOf();if(!D||!p)return;const k=D.key
  const step=D.v*dt,nx=D.x+Math.sin(D.h)*step,nz=D.z+Math.cos(D.h)*step;if(!hits(D,nx,nz)){D.x=nx;D.z=nz;}else if(!hits(D,nx,D.z))D.x=nx;else if(!hits(D,D.x,nz))D.z=nz;else D.v*=.3;   // slide along walls
  const lim=(P.GRID.n/2-1)*P.GRID.cell;D.x=Math.max(-lim,Math.min(lim,D.x));D.z=Math.max(-lim,Math.min(lim,D.z));
  // the chase camera swings behind the hull while it moves (never while the pilot only turns on the spot)
- if(D.v>2){let d=D.h+Math.PI-X.chase.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));X.chase.yaw+=d*Math.min(1,dt*1.6);}
+ // (5E-2d1: the chase camera no longer swings behind the hull by itself. The world's camera never does, and with the fixed
+ // joystick a turning camera turns the stick's own axes under the thumb; a drag on the map orbits it instead.)
  const pd=Math.hypot(D.x-D.pad.x,D.z-D.pad.z);if(pd>9)D.left=true;if(D.left&&pd<5&&!X.visit){D.exit+=dt;if(D.exit>1.1){close();return;}}else D.exit=0;
  X.tank.position.set(D.x,P.heightAt(p.site,D.x,D.z),D.z);X.tank.rotation.set(0,D.h,0);}
 const _cp={};
 // The share card frames the built-up part of the town (walls, buildings, homes) with a margin, at least 40 m, at most the town.
 function shareHalf(p,C0){const c=P.GRID.cell;let m=40;const at=(i,j)=>{m=Math.max(m,Math.abs(P.cellX(i)-C0.x)*1.15+6,Math.abs(P.cellZ(j)-C0.z)*1.15+6);};for(const k of Object.keys(p.w||{})){const [i,j]=k.split(',').map(Number);at(i,j);}for(const b of Object.values(p.b||{}))at(b.i,b.j);for(const h of P.homes(p))at(h.i,h.j);return Math.min(m,(P.townH(p.cc)+2)*c);}
-// Obstacle heights along the chase line (approximate: walls 4.5 m, homes and turrets 6, buildings 7 + level, the CC 12 + 2 per
-// level); the camera comes in to the first one that would hide the hull, and eases back out.
-function camHeights(p){const occ=P.occupancy(p),h=new Map();for(const [k,o] of occ){const b=p.b[o];h.set(k,o==='wall'?4.5:!b?6:b.t==='cc'?12+2*(b.l||1):P.BUILDINGS[b.t]?.turret||b.t==='gate'?6:7+(b.l||1));}for(const hm of P.homes(p))for(const [a,b] of [[0,0],[1,0],[0,1],[1,1]])h.set(P.key(hm.i+a,hm.j+b),6);return h;}
-function chaseDist(D,cy,dt){const p=D.plot;if(!D.camH||D.camKey!==D.key){D.camH=camHeights(p);D.camKey=D.key;}let want=X.chase.dist;const hf=.36+.16*Math.max(0,Math.min(1,(p.cc-4)/5));for(let s2=6;s2<want;s2+=2){const hh=D.camH.get(P.key(cellOf(D.x+Math.sin(cy)*s2),cellOf(D.z+Math.cos(cy)*s2)));if(hh&&hh>s2*hf+2){want=Math.max(9,s2-2.5);break;}}
- X.chase.cur=X.chase.cur==null||want<X.chase.cur?want:X.chase.cur+(want-X.chase.cur)*Math.min(1,(dt||0)*1.5);return X.chase.cur;}
+// Owner (Nov 17 + Nov 19): the chase camera never comes in for a building; a building in the way stays solid and the tank shows
+// through it as an outline (driveSee below).
+function chaseDist(){return X.chase.cur=X.chase.dist;}
 function camPose(){const R=X.R;if(!R)return null;return {p:R.cam.position.clone(),t:(X.camLook||new R.T.Vector3()).clone()};}
 // camera: drive (chase), tour (a 6 s orbit of the town the first time), or the build view (3/4, overhead to place/draw)
-// drive view (5E-2a, owner): buildings between the chase camera and your tank, or the road just ahead, fade see-through (the
-// world view's fade, js/conquest/view.js fadeCore: same ghost material and program, no new shader program)
-function driveFade(R,dt){const v=X.ctx.view;if(!v?.fadeCore||!R.cam||!X.tank)return;const F=R.fade||(R.fade=v.fadeState()),T=R.T;
- if(!(X.view==='drive'&&X.drive)||X.tour){if(F.faded.size){F.scan=99;v.fadeCore(F,dt,[],R.cam.position,0,-1e4,0,0);}return;}   // leaving the drive view eases every ghost back
- const w=R._fw||(R._fw=new T.Vector3()),c=R._fc||(R._fc=new T.Vector3());X.tank.getWorldPosition(w);R.cam.getWorldPosition(c);v.fadeCore(F,dt,[R.g.build],c,w.x,w.y,w.z,X.drive.h||0);}
+// drive view (owner, Nov 17 + Nov 19; the world's rule, js/conquest/view.js seeThrough): buildings are never see-through unless
+// the tank is pressed against one. A building between the camera and the tank stays solid and the tank shows through it as a
+// clean outline; only the wall cell, home or building the hull is pressed against goes see-through, and only while it is.
+function driveSee(R,dt){const v=X.ctx.view,S=R.S;if(!v?.fadeCore||!S.outliner||!R.cam)return;const F=R.fade||(R.fade=v.fadeState()),O=R.outline||(R.outline=S.outliner(R.sc)),P0=R.press||(R.press={k:0,fp:null});
+ const on=X.view==='drive'&&X.drive&&!X.tour&&X.tank;F.hits.clear();let fp=null;
+ if(on){O.sync([{root:X.tank,ally:false}],2.2*(v.renderer.getPixelRatio?.()||1),R.cam);
+  const D=X.drive,p=D.plot||plotOf(),c=P.GRID.cell;if(p){if(D.occKey!==D.key){D.occKey=D.key;D.occ=P.occupancy(p);D.homeAt=new Map();for(const h of P.homes(p))for(const [a,b] of [[0,0],[1,0],[0,1],[1,1]])D.homeAt.set(P.key(h.i+a,h.j+b),h);}
+   out:for(const rr of [TANK_R+1.4,TANK_R+.4])for(let i=0;i<8;i++){const a=D.h+[0,1,-1,2,-2,3,-3,4][i]*Math.PI/4,x=D.x+Math.sin(a)*rr,z=D.z+Math.cos(a)*rr,ci=cellOf(x),cj=cellOf(z);if(!D.block(ci,cj))continue;const k=P.key(ci,cj),o=D.occ.get(k),hm=D.homeAt.get(k);
+     if(o==='wall')fp={x:P.cellX(ci),z:P.cellZ(cj),hw:c/2+.12,hd:c/2+.12,r:0};
+     else if(o&&p.b[o]){const b=p.b[o],s2=P.sizeOf(b.t,b.r|0);fp={x:P.cellX(b.i)+(s2.w-1)*c/2,z:P.cellZ(b.j)+(s2.d-1)*c/2,hw:s2.w*c/2+.3,hd:s2.d*c/2+.3,r:0};const e=R.meshes.get(o);
+      if(e)e.o.traverse(m=>{if(m.isMesh&&!m.isInstancedMesh&&!Array.isArray(m.material)&&(m.userData.fadeOrig||m.material)!==S.MAT.solid&&!(m.userData.fadeOrig||m.material).transparent)F.hits.add(m);});}   // a Meshy model is not drawn by the solid program: the ghost material thins it instead
+     else if(hm)fp={x:P.cellX(hm.i)+c/2,z:P.cellZ(hm.j)+c/2,hw:c+.2,hd:c+.2,r:0};
+     if(fp)break out;}}
+  if(fp){const o=S.U.uOrigin.value;fp.x+=o.x;fp.z+=o.y;if(!P0.fp||P0.fp.x!==fp.x||P0.fp.z!==fp.z)P0.k=Math.min(P0.k,.35);P0.fp=fp;}}
+ else O.clear();
+ P0.k+=((fp?1:0)-P0.k)*Math.min(1,dt*(fp?9:6));if(P0.k<.02&&!fp){P0.k=0;P0.fp=null;}S.press(P0.fp,P0.k);v.fadeCore(F,dt,F.hits);}
 function placeCam(dt){const R=X.R,T=R.T,c=X.cam,p=plotOf(),pos=R._cpos||(R._cpos=new T.Vector3()),look=R._clook||(R._clook=new T.Vector3());
  if(X.tour&&X.drive){const t=(X.tour.t+=dt),C0=TK.ccCenter(p),rad=(P.townH(p.cc)+4)*P.GRID.cell*.75,a=-Math.PI/2+t/X.tour.dur*Math.PI*1.6;pos.set(C0.x+Math.cos(a)*rad,18+rad*.14+6*Math.sin(t*.5),C0.z+Math.sin(a)*rad);look.set(C0.x,6,C0.z);
   if(t>=X.tour.dur){X.tour=null;X.camFrom={p:pos.clone(),t:look.clone()};X.camT=0;}}
- else if(X.view==='drive'&&X.drive){const D=X.drive,y=P.heightAt(p.site,D.x,D.z),cy=X.chase.yaw,d=chaseDist(D,cy,dt);const hf=.36+.16*Math.max(0,Math.min(1,(p.cc-4)/5));pos.set(D.x+Math.sin(cy)*d,y+d*hf+3.5,D.z+Math.cos(cy)*d);{const L=(P.GRID.n/2-.5)*P.GRID.cell,out=Math.abs(pos.x)>L+2||Math.abs(pos.z)>L+2;pos.y=Math.max(pos.y,P.heightAt(p.site,Math.max(-L,Math.min(L,pos.x)),Math.max(-L,Math.min(L,pos.z)))+(out?(p.site==='canyon'?9.5:3.5):0)+2.5);}/* the rendered ground rises past the grid edge */look.set(D.x-Math.sin(cy)*16,y+4,D.z-Math.cos(cy)*16);}
+ else if(X.view==='drive'&&X.drive){const D=X.drive,y=P.heightAt(p.site,D.x,D.z),cy=X.chase.yaw,d=chaseDist(D,cy,dt);const hf=.36+.16*Math.max(0,Math.min(1,(p.cc-4)/5))+(X.chase.lift||0);pos.set(D.x+Math.sin(cy)*d,y+d*hf+3.5,D.z+Math.cos(cy)*d);{const L=(P.GRID.n/2-.5)*P.GRID.cell,out=Math.abs(pos.x)>L+2||Math.abs(pos.z)>L+2;pos.y=Math.max(pos.y,P.heightAt(p.site,Math.max(-L,Math.min(L,pos.x)),Math.max(-L,Math.min(L,pos.z)))+(out?(p.site==='canyon'?9.5:3.5):0)+2.5);}/* the rendered ground rises past the grid edge */look.set(D.x-Math.sin(cy)*16,y+4,D.z-Math.cos(cy)*16);}
  else{const tilt=X.place||X.mode==='walls'?1.38:Math.min(c.tilt,1.2),dist=c.dist;pos.set(c.x+Math.sin(c.yaw)*Math.cos(tilt)*dist,Math.sin(tilt)*dist,c.z+Math.cos(c.yaw)*Math.cos(tilt)*dist);look.set(c.x,0,c.z);}
  // ease from the last pose after a view change (0.6 s; instant with reduced motion)
  if(X.camFrom&&X.camT<1){X.camT=reduced()?1:Math.min(1,X.camT+dt/.6);const e=X.camT<.5?2*X.camT*X.camT:1-Math.pow(-2*X.camT+2,2)/2;pos.lerpVectors(X.camFrom.p,pos,e);look.lerpVectors(X.camFrom.t,look,e);if(X.camT>=1)X.camFrom=null;}
  R.cam.position.copy(pos);R.cam.lookAt(look);X.camLook=(X.camLook||new T.Vector3()).copy(look);}
-function driveUi(){const st=X.stage;if(!X.driveBtn){const {button}=X.ctx;X.driveBtn=button('🚙 DRIVE',()=>setView('drive'),'cq-plot-drivebtn');X.driveBtn.setAttribute('aria-label','Drive your tank in your town');st.append(X.driveBtn);X.skip=button('SKIP ▸',()=>{if(X.tour){X.camFrom=camPose();X.camT=0;X.tour=null;}},'cq-plot-skip');st.append(X.skip);X.stickEl=document.createElement('div');X.stickEl.className='cq-plot-stick';X.stickEl.hidden=true;X.stickEl.append(document.createElement('i'));st.append(X.stickEl);X.exitEl=document.createElement('div');X.exitEl.className='cq-plot-exit';X.exitEl.hidden=true;st.append(X.exitEl);X.hintEl=document.createElement('div');X.hintEl.className='cq-plot-exit cq-plot-drivehint';X.hintEl.hidden=true;X.hintEl.textContent='DRAG ANYWHERE TO DRIVE · DRIVE ONTO THE GATE PAD TO LEAVE';st.append(X.hintEl);}
- const drive=X.view==='drive';X.d.classList.toggle('cq-plot-driving',drive);X.driveBtn.hidden=drive||!X.R||!!X.place;/* hidden while a blueprint is placed (the map is for placing then) */X.skip.hidden=!X.tour;
+function driveUi(){const st=X.stage;if(!X.driveBtn){const {button}=X.ctx;X.driveBtn=button('🚙 DRIVE',()=>setView('drive'),'cq-plot-drivebtn');X.driveBtn.setAttribute('aria-label','Drive your tank in your town');st.append(X.driveBtn);X.skip=button('SKIP ▸',()=>{if(X.tour){X.camFrom=camPose();X.camT=0;X.tour=null;}},'cq-plot-skip');st.append(X.skip);X.stickEl=document.createElement('div');X.stickEl.className='cq-stick cq-plot-drivestick';X.stickEl.textContent='DRIVE';X.stickEl.setAttribute('aria-label','Drag to drive');X.stickEl.hidden=true;X.stickEl.append(document.createElement('i'));st.append(X.stickEl);
+  // the same fixed DRIVE joystick as the world (js/conquest/app.js .cq-stick: same size, place, travel and feel; owner, Nov 11 + Nov 19)
+  {const se=X.stickEl,nub=se.firstElementChild;let id=null;const release=()=>{const old=id;id=null;if(X?.drive)X.drive.stick.x=X.drive.stick.z=0;nub.style.transform='';if(old!==null){try{if(se.hasPointerCapture(old))se.releasePointerCapture(old);}catch(_){}}};X.releaseStick=release;
+   const update=e=>{const r=se.getBoundingClientRect(),x=(e.clientX-r.x-r.width/2)/40,z=(e.clientY-r.y-r.height/2)/40,n=Math.max(1,Math.hypot(x,z));if(X?.drive){X.drive.stick.x=x/n;X.drive.stick.z=z/n;}nub.style.transform='translate('+x/n*32+'px,'+z/n*32+'px)';};
+   se.onpointerdown=e=>{e.preventDefault();e.stopPropagation();if(id!==null){if(id===e.pointerId)return;release();}id=e.pointerId;try{se.setPointerCapture(id);}catch(_){release();return;}update(e);};
+   se.onpointermove=e=>{if(id===e.pointerId){e.stopPropagation();update(e);}};se.onpointerup=se.onpointercancel=se.onlostpointercapture=e=>{if(e.pointerId===id)release();};}X.exitEl=document.createElement('div');X.exitEl.className='cq-plot-exit';X.exitEl.hidden=true;st.append(X.exitEl);X.hintEl=document.createElement('div');X.hintEl.className='cq-plot-exit cq-plot-drivehint';X.hintEl.hidden=true;X.hintEl.textContent=(root.matchMedia&&root.matchMedia('(hover:hover) and (pointer:fine) and (min-width:900px)').matches&&!document.documentElement.classList.contains('cq-touch')?'DRIVE WITH WASD OR THE ARROW KEYS':'DRIVE WITH THE STICK')+' · DRAG THE MAP TO LOOK AROUND · DRIVE ONTO THE GATE PAD TO LEAVE';st.append(X.hintEl);}
+ const drive=X.view==='drive';X.d.classList.toggle('cq-plot-driving',drive);{const show=drive&&!!X.drive&&!X.tour;if(X.stickEl.hidden===show){X.stickEl.hidden=!show;if(!show)X.releaseStick?.();}}X.driveBtn.hidden=drive||!X.R||!!X.place;/* hidden while a blueprint is placed (the map is for placing then) */X.skip.hidden=!X.tour;
  const D=X.drive,ex=drive&&D&&D.exit>0;X.exitEl.hidden=!ex;if(ex)X.exitEl.textContent='LEAVING TOWN · BACK TO THE WORLD';
  // the first drive (after the tour): how to drive and how to leave, once (review: the stick is invisible until touched)
  if(drive&&!X.tour&&!X.visit&&!X.hintShown){X.hintShown=true;let seen=false;try{seen=localStorage.getItem('lunar-cq-drivehint-v1')==='1';localStorage.setItem('lunar-cq-drivehint-v1','1');}catch(_){seen=true;}if(!seen){X.hintEl.hidden=false;setTimeout(()=>{if(X?.hintEl)X.hintEl.hidden=true;},7000);}}
@@ -627,19 +654,20 @@ function pasteAt(c){const p=plotOf();if(!X.clip||!p)return;const by=new Map();fo
 function input(){const el=X.stage,pts=new Map();let start=null,moved=0,pinch=0,mid=null;
  const drawing=()=>X.view!=='drive'&&X.mode==='walls'&&!X.pan&&!X.place,driving=()=>X.view==='drive'&&!!X.drive&&!X.tour;
  X.onKey=e=>{if(!X?.drive)return;if(e.target?.closest?.('input,textarea,select,[contenteditable]'))return;const k=String(e.key||'').toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){X.drive.keys[k]=e.type==='keydown'&&X.view==='drive';if(X.view==='drive')e.preventDefault();}};root.addEventListener?.('keydown',X.onKey);root.addEventListener?.('keyup',X.onKey);
- const stick=(e)=>{const D=X.drive,dx=e.clientX-start.x,dy=e.clientY-start.y,L=Math.hypot(dx,dy),k=Math.min(1,L/56)/(L||1);D.stick.x=dx*k;D.stick.z=dy*k;const se=X.stickEl;if(se){const r=X.stage.getBoundingClientRect();se.hidden=false;se.style.left=(start.x-r.left)+'px';se.style.top=(start.y-r.top)+'px';se.firstChild.style.transform='translate('+(D.stick.x*28)+'px,'+(D.stick.z*28)+'px)';}};
+ // drive view: a drag on the map orbits the chase camera, like the world (the fixed DRIVE joystick drives)
+ const orbit=e=>{const dx=e.clientX-start.lx,dy=e.clientY-(start.ly??e.clientY);start.lx=e.clientX;start.ly=e.clientY;if(X.chase){X.chase.yaw-=dx*.008;X.chase.lift=Math.max(-.2,Math.min(.7,(X.chase.lift||0)+dy*.004));}};
  el.addEventListener('pointerdown',e=>{if(e.target.closest?.('button'))return;   // ⟲ ⤢ ✥ sit on the map: tapping them never draws a wall cell
   el.setPointerCapture?.(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;
-  if(pts.size===1){start={x:e.clientX,y:e.clientY,cx:X.cam.x,cz:X.cam.z};if(drawing())drawStart(cellAt(e.clientX,e.clientY));}
+  if(pts.size===1){start={x:e.clientX,y:e.clientY,lx:e.clientX,cx:X.cam.x,cz:X.cam.z};if(drawing())drawStart(cellAt(e.clientX,e.clientY));}
   else if(pts.size===2){const [a,b]=[...pts.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y);mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};start=null;if(X.draw){X.draw=null;holo();}}});
  const panBy=(dx,dy,cx,cz)=>{const k=X.cam.dist/((el.clientHeight||600)*.9),cs=Math.cos(X.cam.yaw),sn=Math.sin(X.cam.yaw),lim=(P.townH(plotOf()?.cc||1)+6)*P.GRID.cell;X.cam.x=Math.max(-lim,Math.min(lim,cx-(dx*cs+dy*sn)*k));X.cam.z=Math.max(-lim,Math.min(lim,cz-(-dx*sn+dy*cs)*k));};
  el.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pts.size===2){const [a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y),m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};if(pinch){if(X.view==='drive'&&X.chase)X.chase.dist=Math.max(9,Math.min(40,X.chase.dist*pinch/d));else X.cam.dist=Math.max(45,Math.min(330,X.cam.dist*pinch/d));}if(mid)panBy(m.x-mid.x,m.y-mid.y,X.cam.x,X.cam.z);pinch=d;mid=m;return;}
   if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;moved=Math.max(moved,Math.hypot(dx,dy));
-  if(driving()){if(moved>6)stick(e);return;}
+  if(driving()){if(moved>6)orbit(e);else{start.lx=e.clientX;start.ly=e.clientY;}return;}
   if(drawing()){drawMove(cellAt(e.clientX,e.clientY));return;}
   if(moved>8)panBy(dx,dy,start.cx,start.cz);});
- const end=e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(X.drive){X.drive.stick.x=X.drive.stick.z=0;if(X.stickEl)X.stickEl.hidden=true;}if(pts.size===0){if(drawing()&&X.draw)drawEnd();else if(start&&moved<8&&(X.mode!=='walls'||X.view==='drive'))tap(e.clientX,e.clientY);start=null;pinch=0;mid=null;}else if(pts.size===1)mid=null;};
+ const end=e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(pts.size===0){if(drawing()&&X.draw)drawEnd();else if(start&&moved<8&&(X.mode!=='walls'||X.view==='drive'))tap(e.clientX,e.clientY);start=null;pinch=0;mid=null;}else if(pts.size===1)mid=null;};
  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);el.addEventListener('wheel',e=>{e.preventDefault();if(X.view==='drive'&&X.chase){X.chase.dist=Math.max(9,Math.min(40,X.chase.dist*(e.deltaY>0?1.1:.9)));return;}X.cam.dist=Math.max(45,Math.min(330,X.cam.dist*(e.deltaY>0?1.1:.9)));},{passive:false});
  const rot=X.ctx.button('⟲',()=>{X.cam.yaw=(X.cam.yaw+Math.PI/2)%(Math.PI*2);},'cq-plot-rot');rot.setAttribute('aria-label','Rotate view');X.stage.append(rot);
  // ⌖ FRAME TOWN: back to the default 3/4 view on the Command Center (replaces the old ⤢ toggle: the sheet drags now).
