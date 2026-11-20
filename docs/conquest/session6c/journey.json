@@ -1,9 +1,9 @@
 [
  {
-  "size": "320x568",
+  "size": "390x844",
   "input": "touch",
   "errors": [],
-  "hubFresh": "NO PILOTS YET",
+  "hubFresh": null,
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
   "rescueStrip": {
@@ -14,11 +14,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 RAVEN (Dario Achebe) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 MANTIS (Zane Achebe) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "RAVEN",
+     "cs": "MANTIS",
      "role": "wingman",
      "mil": true
     }
@@ -31,7 +31,9 @@
    },
    "next": "SIGNAL RECOVERY",
    "access": null,
-   "tags": [],
+   "tags": [
+    "WMANTIS"
+   ],
    "tagInDom": true
   },
   "hubCard": {
@@ -66,10 +68,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GTEMPEST",
-    "BSPARROW",
-    "LMANTIS",
-    "MFROST"
+    "GDAGGER",
+    "BVIPER",
+    "LGHOST",
+    "MGRANITE"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -85,10 +87,10 @@
     3,
     3
    ],
-   "tags": 3,
+   "tags": 4,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 90,
+   "calls": 88,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -96,7 +98,7 @@
    ],
    "commandBox": [
     16,
-    376,
+    652,
     219,
     46
    ]
@@ -107,7 +109,7 @@
    "k": 2,
    "o": "attack"
   },
-  "raidCleared": 4,
+  "raidCleared": 3,
   "raidAar": "YOUR PILOTS+2 XP to every pilot fielded+1 COMMAND CHIP \u00b7 1 held (your first win today)",
   "grantCard": "FIRST LAB GRANTPick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.+2 THERMAL CORESTHERMAL \u00b7 Keep firing: heat becomes damage.+2 BALLISTIC COILSBALLISTICS \u00b7 Precision: every hit counts.",
   "afterGrant": [
@@ -125,11 +127,11 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 116.6,
-   "p95": 166.6,
-   "worst": 199.9,
-   "calls": 81,
-   "tris": 291483,
+   "median": 133.3,
+   "p95": 199.9,
+   "worst": 233.4,
+   "calls": 73,
+   "tris": 235301,
    "programs": 15,
    "friends": 4,
    "views": 4,
@@ -143,29 +145,9 @@
    "low": "low"
   },
   "fielded": 9,
-  "perfBattalion": {
-   "median": 16.7,
-   "p95": 16.8,
-   "worst": 16.8,
-   "calls": 109,
-   "tris": 515209,
-   "programs": 15,
-   "friends": 9,
-   "views": 9,
-   "hostiles": 2,
-   "dist": [
-    10,
-    27,
-    59,
-    27,
-    27,
-    28,
-    37,
-    37,
-    14
-   ],
-   "low": "low"
-  },
-  "verdict": "PASS"
+  "crash": "Page.wait_for_function: Timeout 120000ms exceeded.",
+  "verdict": [
+   "crash: Page.wait_for_function: Timeout 120000ms exceeded."
+  ]
  }
 ]
