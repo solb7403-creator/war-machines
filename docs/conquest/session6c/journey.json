@@ -3,7 +3,7 @@
   "size": "390x844",
   "input": "touch",
   "errors": [],
-  "hubFresh": null,
+  "hubFresh": "NO PILOTS YET",
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
   "rescueStrip": {
@@ -14,11 +14,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 MANTIS (Zane Achebe) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 ARROW (Hugo Yilmaz) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "MANTIS",
+     "cs": "ARROW",
      "role": "wingman",
      "mil": true
     }
@@ -32,7 +32,7 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WMANTIS"
+    "WARROW"
    ],
    "tagInDom": true
   },
@@ -68,10 +68,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GDAGGER",
-    "BVIPER",
-    "LGHOST",
-    "MGRANITE"
+    "GBASTION",
+    "BDRIFT",
+    "LVIPER",
+    "MTEMPEST"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -90,7 +90,7 @@
    "tags": 4,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 88,
+   "calls": 83,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -109,7 +109,7 @@
    "k": 2,
    "o": "attack"
   },
-  "raidCleared": 3,
+  "raidCleared": 4,
   "raidAar": "YOUR PILOTS+2 XP to every pilot fielded+1 COMMAND CHIP \u00b7 1 held (your first win today)",
   "grantCard": "FIRST LAB GRANTPick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.+2 THERMAL CORESTHERMAL \u00b7 Keep firing: heat becomes damage.+2 BALLISTIC COILSBALLISTICS \u00b7 Precision: every hit counts.",
   "afterGrant": [
@@ -128,19 +128,19 @@
   ],
   "perfPlatoon": {
    "median": 133.3,
-   "p95": 199.9,
-   "worst": 233.4,
+   "p95": 183.3,
+   "worst": 200,
    "calls": 73,
-   "tris": 235301,
+   "tris": 210496,
    "programs": 15,
    "friends": 4,
    "views": 4,
    "hostiles": 2,
    "dist": [
-    10,
-    27,
-    59,
-    27
+    13,
+    26,
+    67,
+    31
    ],
    "low": "low"
   },
