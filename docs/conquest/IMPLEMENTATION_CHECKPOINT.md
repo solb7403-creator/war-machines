@@ -6083,28 +6083,24 @@ Searched this session (fan wikis, community guides and news; numbers from third 
 ## Checkpoint 44 — Session 5E-2d1: Conquest world rebuild (branch `claude/conquest-world-rebuild-mu3ktv`, from main `0e681aa`) — IN PROGRESS
 
 ### Resume here (kept current after every slice)
-- **Done and pushed:** slice 1 ROADMAP notes; the world-kit core (`js/conquest/slots.js`, `js/conquest/worldkit.js`, the
-  surface-detail solid shader in `js/conquest/style.js`), the viewer (`dev/tests/conquest-kit-viewer.py`) and capture tool
-  (`dev/tests/conquest-world-kinds-captures.py`); the see-through rule (world + town drive view), the town's fixed DRIVE joystick,
-  the four desktop 5D leftovers; the code-built models of all 133 slots (`js/conquest/kit/settler.js`, `military.js`, `nature.js`,
-  `town.js`), HIGH and LOW; **integration**: every world builder in `js/conquest/style.js` and every town model in
-  `js/conquest/townkit.js` now places slot models (nothing in the world or town is drawn from boxes any more); the slot swap in
-  the views (`view.js` `kitSync`, `plotview.js` `slotOf`); `dev/tests/conquest-slots.mjs` and `dev/tests/conquest-slots-browser.py`.
-- **In progress:** captures of every kind (after, HIGH 390x844 first), then critic round 1 against the Meshy town items.
-- **Unfinished performance step (Nov 20, committed as wip after a worker restart):** the colony's town core is split into one
-  mesh per 80 m ground cell (`Bld.cells()` in `js/conquest/style.js`), so the camera drops the cells it does not see. After the
-  edit `conquest-flagship-browser.py` (390, LOW: 123 draw calls, 220,771 triangles) and `conquest-slots-browser.py` passed;
-  `conquest-occluder.py` and `conquest-seethrough-town.py` last passed just BEFORE it. Still owed: the triangle and draw-call
-  count before/after at the colony (HIGH and LOW), a look at the colony captures for seams, and a re-run of those two tests.
-- **Next, in order:** (1) run `python3 dev/tests/conquest-slots-browser.py` and the browser tests the integration can touch
-  (`conquest-occluder.py`, `conquest-seethrough-town.py`, `conquest-session5c.py`, `conquest-session5d.py`, `conquest-hub-browser.py`,
-  `conquest-flagship-browser.py`, `conquest-plot-ui.py`), fix what they find; (2) before-captures with the NEW framing from a
-  main worktree (`git worktree add /tmp/main origin/main`, copy the capture tool in, `--tag before`); after-captures at 390x844,
-  390x700, 320x568 (touch) and 1366x768, 1920x1080 (`--mouse`), HIGH and LOW, plus `conquest-town-captures.py` and
-  `conquest-flagship-captures.py`; (3) three critic rounds (phone + desktop judged together, later rounds re-capture only what
-  changed); (4) the 5E-2a town-item recolour re-check against the Meshy originals; (5) the desktop pass at 1366x768 and
-  1920x1080; (6) the whole test list; (7) two fresh read-only reviewers; (8) release (`dev/bump.sh`, PR, CI, merge, deploy check,
-  ROADMAP row 5E-2d1 -> RELEASED).
+If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md first; it governs everything.
+- **Done and pushed** (do not redo): slice 1 ROADMAP notes (`c7fa6ea`); the world-kit core (`js/conquest/slots.js`,
+  `js/conquest/worldkit.js`, the surface-detail solid shader in `js/conquest/style.js`), the viewer
+  (`dev/tests/conquest-kit-viewer.py`) and the capture tools; the see-through rule (world and town drive view); the town's
+  fixed DRIVE joystick; the four desktop 5D leftovers; the code-built models of all 133 slots (`js/conquest/kit/`), HIGH and
+  LOW; integration into `js/conquest/style.js` and `js/conquest/townkit.js`; the slot swap and its tests
+  (`conquest-slots.mjs`, `conquest-slots-browser.py`); critic round 1 and its fixes (`aa280ca`); the holographic signs fix
+  (`2254650`); critic round 2 and its fixes (`93da4b2`, `e2a48d0`); the tank outline drawn only while something blocks it
+  (`f0461ff`).
+- **Unfinished (`3ba537c`, wip):** the colony's town core drawn by 80 m ground cell (`Bld.cells()` in `js/conquest/style.js`).
+  Still owed: the triangle and draw-call counts before and after at the colony, HIGH and LOW; a look at the colony captures
+  for seams between cells; a re-run of `conquest-occluder.py` and `conquest-seethrough-town.py`.
+- **Next, in order:** (1) finish that step; (2) critic round 3, the last one (a 4th only for an item the reviewer marks
+  clearly below its reference, never more than 4), with captures at all five sizes on HIGH and LOW (re-capture only what
+  changed since round 2, plus any size or quality not yet captured); (3) the 5E-2a town-item recolour re-check against the
+  Meshy originals (record whether rounds 1-2 already covered it); (4) the desktop pass at 1366x768 and 1920x1080; (5) the
+  whole test list; (6) two fresh read-only reviewers; (7) release (`dev/bump.sh`, PR, CI, merge, deploy check, ROADMAP row
+  5E-2d1 -> RELEASED).
 - **How to look at a model:** `python3 dev/tests/conquest-kit-viewer.py --slots settler-home,refuge-habitat --out /tmp/cq-kit`
   (`--params '{"level":3}'`, `--day 0` for the barren Moon, `--seeds 1,2`).
 - **How to capture the world:** `python3 dev/tests/conquest-world-kinds-captures.py --tag after --quality high --size 390x844`
