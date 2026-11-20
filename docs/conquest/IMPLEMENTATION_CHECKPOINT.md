@@ -6403,6 +6403,25 @@ Meshy model each pending asset load rebuilds the world kit; real-phone frame tim
 here). **Bytes added to the page load by this session: +420,920 raw (about +153.5 KB gzipped), +17% of the page's JS and
 CSS** (the four kit files 380 KB of it; `style.js` and `townkit.js` shrank). All six new scripts load with the page.
 
+**Reviewer 1 (looks), on the finished world's pictures** (every place before / after HIGH / after LOW on a phone, the same
+places on a computer, the town, the Command Base and the map at phone and computer sizes, the last round's model
+sheets): rebuilt to the Meshy bar PASS for the military world (close), the settler colony (at bar, "the best work in
+the set"), nature (close), wrecks / Parasite / props, and the town's code-built models (close); settlers a different
+people PASS; terraformed land PASS; LOW silhouettes PASS; the see-through rule PASS on what the pictures show; before
+against after PASS ("no place is worse; most are far better"); phone and computer equal PASS for the world HUD, FAIL on
+map details. **Four blockers, all fixed:** (1) "flat discs floating over the Command Base" are the base's yield meter
+(ten pips: how full the stores are; an earlier session's indicator): as 1.5 m balls they read as discs, now small
+lozenge pips; (2) at 320x568 the map's buttons were below the fold and the docked heat panel covered the end of the
+POWER pill: the buttons come straight after the map on a short phone and the heat panel is narrower under 360 px;
+(3) the computer map let the world HUD show beside it: it has a full-window backdrop; (4) the town ground on LOW was a
+blank gradient: stronger vertex mottling with one finer layer on LOW (no extra draw). Also from its notes: the cover
+wall on LOW is darker black-violet (it read lilac). **Its notes kept for the owner (final report):** the tank's outline
+behind thin things (a pylon, a lattice leg) is a ragged bracket: draw the whole silhouette once a third of the tank is
+hidden; the atmosphere veil still crosses the settler block; the map opens too far out and its labels collide; the
+objective beam is a wide slab at monitor size; the Command Base tower and wall are the plainest military pieces; steep
+banks smear the ground texture; the town's HIGH ground repeats its crater pattern on a visible grid; the town miniature
+on the pad is noise at phone size; the town drive opens with the tank behind a roof.
+
 ### Performance record (software renderer: the counts are exact, the frame times are relative only)
 - **The colony's town core by ground cell** (`3ba537c`, measured Nov 20 at 390x844, five camera spots in the colony, before =
   `f0461ff`, after = the cell split). Triangles drawn, before -> after. HIGH: 392,789 -> 362,134; 367,394 -> 311,956;

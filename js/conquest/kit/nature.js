@@ -506,7 +506,7 @@ WK.model('hive-mast',(b,o)=>{const {pal,tint,mat}=b.k,P=pal.par,hi=b.hi,rs=Math.
 // spike ridge and a vein wedge in each groove. The long axis is x when w >= d, else z.
 // o.sink (default 1.2) = how far the humps run below y = 0. HIGH <= 400 / LOW <= 100.
 WK.model('cover-wall',(b,o)=>{const {pal,tint,glow,mat}=b.k,P=pal.par,hi=b.hi,long=o.w>=o.d,L=long?o.w:o.d,T=long?o.d:o.w,h=o.h,sink=o.sink??1.2,hw=T/2,n=L>=14?4:3,sd=(o.seed|0)*7+Math.round(L*3+T*5),mid=hi?3:2,
-  C4=(hi?[0x0c0612,0x1a0f2a,0x2a1840,0x432a5a]:[0x1a0f2a,0x2a1840,0x3c2456,0x583a70]).map((c,i)=>mat(c,'chitin',.6,i?.1:.06)),vHot=glow(0xff4fe0,1.85),vDim=glow(0x9a1880,1.85),bone=mat(0x9484a2,'flat',0,.06),boneT=P.magDim;
+  C4=(hi?[0x0c0612,0x1a0f2a,0x2a1840,0x432a5a]:[0x140b20,0x21122f,0x301c44,0x48305e]).map((c,i)=>mat(c,'chitin',.6,i?.1:.06)),vHot=glow(0xff4fe0,1.85),vDim=glow(0x9a1880,1.85),bone=mat(0x9484a2,'flat',0,.06),boneT=P.magDim;
  b.at(0,0,0,long?0:Math.PI/2,()=>{
   // hump k runs X[k] .. X[k+1]: lengths, crest heights and crest lines all differ
   const wt=[],X=[-L/2];let sum=0;for(let k=0;k<n;k++){wt.push(1+.36*(hz(sd,k)-.5));sum+=wt[k];}for(let k=0;k<n;k++)X.push(k===n-1?L/2:X[k]+L*wt[k]/sum);

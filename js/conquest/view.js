@@ -100,7 +100,7 @@ class View {
  // ConquestCombat.baseYield, the same numbers the Worker settles. Shared sphere and cached basic materials (no new program).
  yieldMeterRender(s,ox,oz){const C=root.ConquestCombat,D=C.baseDefinition,base=s?.base,show=!!base?.tier&&!this.battle&&Math.hypot(D.x-this.p.x,D.z-this.p.z)<160;
  if(!this.yieldMeter){if(!show)return;const g=new this.T.Group();g.name='cq-yield-meter';g.userData={orbs:[],lit:this.effectMaterial(0xffc96b,false),dim:this.effectMaterial(0x41505c,false),full:this.effectMaterial(0xfff1b8,false),n:-1};
-  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,m=new this.T.Mesh(this.sphere,g.userData.dim);m.userData.noPick=true;m.scale.setScalar(.75);m.position.set(Math.sin(a)*6,0,Math.cos(a)*6);g.userData.orbs.push(m);g.add(m);}this.scene.add(g);this.yieldMeter=g;}
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,m=new this.T.Mesh(this.sphere,g.userData.dim);m.userData.noPick=true;m.scale.set(.42,.3,.42);m.position.set(Math.sin(a)*6,0,Math.cos(a)*6);   /* 5E-2d1 (reviewer 1): small lozenge pips; as 1.5 m balls they read as flat discs hanging over the base */g.userData.orbs.push(m);g.add(m);}this.scene.add(g);this.yieldMeter=g;}
  const g=this.yieldMeter;g.visible=show;if(!show)return;const y=C.baseYield?.(base,s.reputation,Date.now())||{fill:0},n=y.fill>=1?11:Math.floor(y.fill*10);
  g.position.set(D.x-ox,W.groundAt(D.x,D.z)+11+Math.sin((this.style?.U.uTime.value||0)*1.2)*.25,D.z-oz);g.rotation.y=(this.style?.U.uTime.value||0)*.15;
  if(n!==g.userData.n){g.userData.n=n;g.userData.orbs.forEach((m,i)=>{m.material=n>10?g.userData.full:i<n?g.userData.lit:g.userData.dim;});}this.yieldFill=y.fill;}
