@@ -477,7 +477,12 @@ function create(T,opts={}){
   seg(a,b,t,c,em=0){return this.add(G.box,MDc(a,b,t),c,em);}
   spike(a,b,r,c,em=0,geo){return this.add(geo||G.cone5,MD(a,b,r),c,em);}
   geometry(){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(this.P,3));g.setAttribute('normal',new T.Float32BufferAttribute(this.N,3));g.setAttribute('aCol',new T.Float32BufferAttribute(this.A,4));g.setIndex(this.I);g.computeBoundingSphere();return g;}
-  mesh(){return this.n?new T.Mesh(this.geometry(),MAT.solid):new T.Group();}}
+  mesh(){return this.n?new T.Mesh(this.geometry(),MAT.solid):new T.Group();}
+  // the same batch as several meshes, one per ground cell (a triangle goes to the cell its centre stands in), so the camera
+  // drops the cells it does not see; a big place built as one mesh is otherwise drawn whole whenever any corner of it shows
+  cells(size=80){const P=this.P,I=this.I,B=new Map();for(let t=0;t<I.length;t+=3){const a=I[t]*3,b=I[t+1]*3,c=I[t+2]*3,k=Math.floor((P[a]+P[b]+P[c])/3/size)+':'+Math.floor((P[a+2]+P[b+2]+P[c+2])/3/size);let L=B.get(k);if(!L)B.set(k,L=[]);L.push(t);}
+   const out=[];for(const L of B.values()){const map=new Map(),p=[],n=[],c=[],ix=[];for(const t of L)for(let j=0;j<3;j++){const v=I[t+j];let w=map.get(v);if(w===undefined){w=map.size;map.set(v,w);p.push(P[v*3],P[v*3+1],P[v*3+2]);n.push(this.N[v*3],this.N[v*3+1],this.N[v*3+2]);c.push(this.A[v*4],this.A[v*4+1],this.A[v*4+2],this.A[v*4+3]);}ix.push(w);}
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(p,3));g.setAttribute('normal',new T.Float32BufferAttribute(n,3));g.setAttribute('aCol',new T.Float32BufferAttribute(c,4));g.setIndex(ix);g.computeBoundingSphere();out.push(new T.Mesh(g,MAT.solid));}return out;}}
  class Fx{constructor(){this.P=[];this.U=[];this.A=[];this.B=[];this.I=[];this.n=0;}
   v(x,y,z,u,v,e,o,bx=0,by=0,bz=0){this.P.push(x,y,z);this.U.push(u,v);this.A.push(e[0],e[1],e[2],o);this.B.push(bx,by,bz);return this.n++;}
   q4(a,b,c,d){this.I.push(a,b,c,a,c,d);}
@@ -663,7 +668,9 @@ function create(T,opts={}){
   const PW=CO.power||[],wb=Kk.part({aoMin:1}),wire=Kk.mat(0x1c1a18,'flat');for(let i=0;i<PW.length;i++){const [x,z]=PW[i],y=ground(x,z);Kk.place('settler-pole',DT.farm,KM(x,y,z),{seed:i});
    const q=PW[i+1];if(q&&Math.hypot(q[0]-x,q[1]-z)<45){const yq=ground(q[0],q[1]);for(const o of [-1,1])wb.cable([x+o,y+8.7,z],[q[0]+o,yq+8.7,q[1]],.9,.03,wire,{n:high?5:3});}}
   Kk.emit(DT.farm,wb,new T.Matrix4());
-  const parts=[];for(const [k,D] of Object.entries(districts)){const m=D.m.mesh(),dm=D.d.mesh();m.name='cq-colony-'+k;dm.name='cq-colony-'+k+'-detail';m.userData.noPick=dm.userData.noPick=true;g.add(m,dm);parts.push({m,dm});}
+  // the town core is the colony's largest batch by far: it is drawn by ground cell (see Bld.cells); the others stay one mesh each
+  const parts=[];for(const [k,D] of Object.entries(districts)){if(k==='core'){for(const m of D.m.cells()){m.name='cq-colony-core';m.userData.noPick=true;g.add(m);}for(const dm of D.d.cells()){dm.name='cq-colony-core-detail';dm.userData.noPick=true;g.add(dm);parts.push({dm});}continue;}
+   const m=D.m.mesh(),dm=D.d.mesh();m.name='cq-colony-'+k;dm.name='cq-colony-'+k+'-detail';m.userData.noPick=dm.userData.noPick=true;g.add(m,dm);parts.push({m,dm});}
   const roadsM=RB.mesh(),fieldsM=FB.mesh();roadsM.userData.noPick=fieldsM.userData.noPick=true;g.add(roadsM,fieldsM);if(lampFx.n){const sm=fxMesh(lampFx.geometry());sm.name='cq-colony-smoke';g.add(sm);}
   kdone(g,...Object.values(TG),...Object.values(DT));
   // canals: creek-fed irrigation channels in the shared water material

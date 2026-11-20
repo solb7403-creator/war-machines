@@ -6091,6 +6091,11 @@ Searched this session (fan wikis, community guides and news; numbers from third 
   `js/conquest/townkit.js` now places slot models (nothing in the world or town is drawn from boxes any more); the slot swap in
   the views (`view.js` `kitSync`, `plotview.js` `slotOf`); `dev/tests/conquest-slots.mjs` and `dev/tests/conquest-slots-browser.py`.
 - **In progress:** captures of every kind (after, HIGH 390x844 first), then critic round 1 against the Meshy town items.
+- **Unfinished performance step (Nov 20, committed as wip after a worker restart):** the colony's town core is split into one
+  mesh per 80 m ground cell (`Bld.cells()` in `js/conquest/style.js`), so the camera drops the cells it does not see. After the
+  edit `conquest-flagship-browser.py` (390, LOW: 123 draw calls, 220,771 triangles) and `conquest-slots-browser.py` passed;
+  `conquest-occluder.py` and `conquest-seethrough-town.py` last passed just BEFORE it. Still owed: the triangle and draw-call
+  count before/after at the colony (HIGH and LOW), a look at the colony captures for seams, and a re-run of those two tests.
 - **Next, in order:** (1) run `python3 dev/tests/conquest-slots-browser.py` and the browser tests the integration can touch
   (`conquest-occluder.py`, `conquest-seethrough-town.py`, `conquest-session5c.py`, `conquest-session5d.py`, `conquest-hub-browser.py`,
   `conquest-flagship-browser.py`, `conquest-plot-ui.py`), fix what they find; (2) before-captures with the NEW framing from a

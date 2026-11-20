@@ -16,7 +16,7 @@
    "h": 104,
    "left": 16
   },
-  "drove": 33.0,
+  "drove": 23.7,
   "behind": {
    "n": 1,
    "ghost": 0,
@@ -42,7 +42,7 @@
    "k": 0.78
   },
   "drive": {
-   "calls": 58,
+   "calls": 59,
    "programs": 12
   }
  },
@@ -63,7 +63,7 @@
    "h": 104,
    "left": 16
   },
-  "drove": 32.3,
+  "drove": 22.4,
   "behind": {
    "n": 1,
    "ghost": 0,
@@ -89,7 +89,7 @@
    "k": 0.78
   },
   "drive": {
-   "calls": 58,
+   "calls": 59,
    "programs": 10
   }
  }
