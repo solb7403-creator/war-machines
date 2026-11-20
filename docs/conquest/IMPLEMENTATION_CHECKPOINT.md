@@ -6535,7 +6535,7 @@ on the pad is noise at phone size; the town drive opens with the tank behind a r
 **Slots ranked by what a Meshy model would add (for the owner's next credits):**
 1. `town-gate`, `town-wall`, `town-post`: the player's own town, seen close in the drive view and on the share card;
    the wall is the most repeated piece in every town.
-2. `base-tower`, `base-gate`, `base-wall`: the Command Base in the world; both reviewers marked the tower and wall.
+2. `base-tower`, `base-gate`, `base-wall`: the Command Base in the world; the review left its tower and wall as needing polish.
 3. `hive`, `hive-mast`, `raid-spire`: the enemy's organic structures, fought at constantly; organic shapes are where
    code-built models are weakest.
 4. `refuge-habitat`, `refuge-processor`: the first place a new player sees.
