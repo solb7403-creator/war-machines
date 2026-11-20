@@ -586,7 +586,8 @@
  .cq-world .cq-vital{max-width:520px}.cq-world .cq-vital-label{font-size:12px}.cq-world .cq-nav-title{font-size:13px}
  .cq-world .cq-net{font-size:11px;display:inline-block;padding:2px 7px;border-radius:4px;background:#0b1420b8}
  .cq-world #cq-base-access,.cq-world #cq-scan-access,.cq-world #cq-gather-access,.cq-world #cq-supply-access,.cq-world .cq-mission-access{font-size:13px}
- .cq-dialog.cq-map{max-width:min(1240px,calc(100vw - 48px));display:grid;grid-template-columns:minmax(0,1fr) 400px;column-gap:22px;align-content:start}
+ .cq-world:has(>.cq-dialog.cq-map)>:not(.cq-dialog):not(.cq-viewport){visibility:hidden}   /* the world HUD is put away while the map is open (it showed beside the map) */
+ .cq-dialog.cq-map{box-shadow:0 0 0 100vmax #050a12f5;max-width:min(1240px,calc(100vw - 48px));display:grid;grid-template-columns:minmax(0,1fr) 400px;column-gap:22px;align-content:start}
  .cq-dialog.cq-map>*:has(~canvas){grid-column:1/-1}.cq-dialog.cq-map>canvas{grid-column:1;grid-row:auto/span 40;width:min(100%,calc(min(100vh - 210px,880px)*.857));height:auto;margin:6px auto}.cq-dialog.cq-map>canvas~*{grid-column:2}
 }
 /* Small phones (critic round 3): the heat panel and the long prompts covered the player's tank. The heat panel docks on the
@@ -597,4 +598,7 @@
  .cq-world .cq-heat .cq-heat-label{font-size:9px;line-height:1;white-space:nowrap}.cq-world .cq-heat .cq-heat-track{flex:1;min-width:30px}
  .cq-map canvas{width:min(100%,calc(min(36vh,250px)*.857));height:auto}.cq-map h2{font-size:15px;white-space:nowrap}
 }
-@media(pointer:coarse) and (max-height:600px) and (orientation:portrait){.cq-map canvas{width:min(100%,190px);height:auto}}
+@media(pointer:coarse) and (max-height:600px) and (orientation:portrait){.cq-map canvas{width:min(100%,190px);height:auto}
+ /* the map's buttons (zoom, LOCATE SELF, CLOSE MAP) come straight after the map on a short phone: they were below the fold */
+ .cq-dialog.cq-map{display:flex;flex-direction:column}.cq-dialog.cq-map>h2{order:-4}.cq-dialog.cq-map>.cq-map-mission{order:-3}.cq-dialog.cq-map>canvas{order:-2}.cq-dialog.cq-map>.cq-map-controls{order:-1}}
+@media(pointer:coarse) and (max-width:360px) and (orientation:portrait){.cq-world .cq-heat{width:84px;gap:4px;padding:2px 5px}.cq-world .cq-heat .cq-heat-label{font-size:8px}}
