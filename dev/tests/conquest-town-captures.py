@@ -9,7 +9,7 @@ real Worker reducer on a disposable local DB, scenario placements only:
  4. (--kinds) the camera on one building of every type in the CC10 ridge town, build view and drive view
 Writes docs/conquest/session5b/*.png and captures.json (or --out)."""
 import argparse,asyncio,json,pathlib,shutil
-ap=argparse.ArgumentParser();ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default='');ap.add_argument('--quality',default='high,low');ap.add_argument('--only',default='gallery,raid,towns');ap.add_argument('--kinds',action='store_true');ap.add_argument('--sites',default='crater,delta,ridge,canyon,plateau,ice,ash');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--ratio',type=float,default=0)
+ap=argparse.ArgumentParser();ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default='');ap.add_argument('--quality',default='high,low');ap.add_argument('--only',default='gallery,raid,towns');ap.add_argument('--kinds',action='store_true');ap.add_argument('--kindset',default='');ap.add_argument('--sites',default='crater,delta,ridge,canyon,plateau,ice,ash');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--ratio',type=float,default=0)
 A=ap.parse_args();VW,VH=[int(v) for v in A.size.split('x')];TAG='390' if A.size=='390x844' else A.size
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
@@ -82,6 +82,7 @@ async def main():
      spots=await page.evaluate('''(()=>{const P=ConquestPlot,p=Conquest.view.authority.state.plot,out={},c=P.GRID.cell;for(const [id,b] of Object.entries(p.b)){if(out[b.t])continue;const s=P.sizeOf(b.t,b.r|0);out[b.t]=[P.cellX(b.i)+(s.w-1)*c/2,P.cellZ(b.j)+(s.d-1)*c/2,Math.max(s.w,s.d)*c];}
        const wk=Object.keys(p.w)[40];if(wk){const [i,j]=wk.split(',').map(Number);out['walls']=[P.cellX(i),P.cellZ(j),14];}return out;})()''')
      for t,(x,z,sz) in spots.items():
+      if A.kindset and t not in A.kindset.split(','):continue   # --kindset a,b,c: only these kinds (a re-capture of what changed)
       await cam(page,x,z+sz*.2,max(16,sz*2.3),.62,0);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'kind-{t}-{TAG}-{q}.png'),timeout=180000)
      await cam(page,0,10,95,.7,.6);await page.wait_for_timeout(1200);await page.screenshot(path=str(OUT/f'kind-town-centre-{TAG}-{q}.png'),timeout=180000)
      results['kinds-'+q]={'types':sorted(spots),'render':await page.evaluate('ConquestPlotView.state.info'),'pageErrors':errors};assert not errors,errors

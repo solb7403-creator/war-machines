@@ -883,8 +883,8 @@ function create(T,opts={}){
    // Session 5: the fortress front is the COMMAND GATE into the pilot's private base plot. Armoured pylons on the corner
    // towers' inner faces carry the lintel (render only, outside the drive lane), lit portal field and gate sign; tanks drive under it.
    put('base-gate',0,-18.6,{});
-   X.quadV(0,y+10.4,-19.95,9.6,1.3,0,AT[SIGN.COMMAND]||AT.ICON,E(0x22e6ff,1.7));if(!low)X.quadV(0,y+4.8,-18.6,24.6,9.4,0,AT.BLOB,E(0x22e6ff,.16));
-   if(!shell){put('relay-mast',10,12,{},0,.3);X.quadV(13.2,y+7,11.6,5,1.25,0,AT[SIGN['BASE '+['I','II','III','IV','V'][Math.min(5,tier)-1]]],E(0x22e6ff,1.6));}
+   X.sign(0,y+10.4,-19.95,9.6,1.3,AT[SIGN.COMMAND]||AT.ICON,E(0x22e6ff,1.7));   /* 5E-2d1: the gate's sign turns to the camera like the other free-standing signs (from inside the base it read mirrored) */if(!low)X.quadV(0,y+4.8,-18.6,24.6,9.4,0,AT.BLOB,E(0x22e6ff,.16));
+   if(!shell){put('relay-mast',10,12,{},0,.3);X.sign(13.2,y+7,11.6,5,1.25,AT[SIGN['BASE '+['I','II','III','IV','V'][Math.min(5,tier)-1]]],E(0x22e6ff,1.6));}
    if(opt.veteran)put('veteran-monument',-12,10,{},HT,.3);}
   if(tier>=2&&!shell){
    // Hangar (sim: x 1..17, z 1..17), its door facing the pad.
