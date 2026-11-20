@@ -12,7 +12,7 @@ KIT=sorted(p.name for p in (ROOT/'js/conquest/kit').glob('*.js'))
 if '--kit' in sys.argv:KIT=[k for k in KIT if k in sys.argv[sys.argv.index('--kit')+1].split(',')]   # only these kit files (others may be mid-edit)
 PAGE='''<!doctype html><meta charset=utf-8><body style="margin:0;background:#111"><canvas id=sheet></canvas>
 <script src="/js/vendor/three.lunar.min.js"></script><script src="/js/rules.js"></script><script src="/js/conquest/world.js"></script><script src="/js/conquest/combat.js"></script>
-<script src="/js/conquest/slots.js"></script><script src="/js/conquest/worldkit.js"></script>'''+''.join(f'<script src="/js/conquest/kit/{k}"></script>' for k in KIT)+'''<script src="/js/conquest/style.js"></script>
+<script src="/js/conquest/slots.js"></script><script src="/js/conquest/worldkit.js"></script>'''+''.join(f'<script src="/js/conquest/kit/{k}"></script>' for k in KIT)+'''<script>/* --kit: a kit file left out (it may be mid-edit) gets grey placeholder models so the style still builds */for(const id in ConquestSlots.items)if(!ConquestWorldKit.MODELS[id])ConquestWorldKit.model(id,b=>b.box(0,0,0,.3,.3,.3,b.k.mat(0x808080)));</script><script src="/js/conquest/style.js"></script>
 <script>
 const T=THREE,CELL=460;const R=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});R.setSize(CELL,CELL,false);R.setPixelRatio(1);
 window.shoot=function(id,o,day,seed){const sheet=document.getElementById('sheet'),x2=sheet.getContext('2d');sheet.width=CELL*4;sheet.height=CELL+26;x2.fillStyle='#14161a';x2.fillRect(0,0,sheet.width,sheet.height);const info={};

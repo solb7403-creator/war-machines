@@ -16,8 +16,8 @@ SHOTS=[
  ('refuge-habitat-close','[F.habitats[1].x,F.habitats[1].z]',60,14,.26,15),
  ('refuge-processors','[F.processors[1].x,F.processors[1].z]',270,48,.16,60),
  ('refuge-processor-base','[F.processors[1].x,F.processors[1].z]',255,23,.24,22),
- ('refuge-terminal','[F.terminal.x,F.terminal.z]',90,12,.32,15),
- ('refuge-solar','[F.solar[2].x,F.solar[2].z]',90,14,.36,20),
+ ('refuge-terminal','[F.terminal.x,F.terminal.z]',90,9,.8,24),   # steep ground all round: the game lifts the camera, so this one is framed from above
+ ('refuge-solar','[F.solar[2].x,F.solar[2].z]',270,12,.8,28),
  ('viaduct','[1020,1024]',90,34,.2,42),
  ('viaduct-deck','[1040,1024]',180,30,.3,20),
  ('command-base-site','[ConquestCombat.baseDefinition.x,ConquestCombat.baseDefinition.z]',270,34,.4,38),
@@ -35,17 +35,17 @@ SHOTS=[
  ('farm-silos','[919,1080]',90,15,.18,23),
  ('farm-greenhouse','[918,1164]',90,13,.3,19),
  ('farm-fields','[906,1119]',0,26,.4,32),
- ('frontier-wall','[1272,1146]',350,20,.26,27),
- ('frontier-defences','[1255,1166]',200,13,.3,18),
+ ('frontier-wall','[1272,1146]',350,12,.8,30),
+ ('frontier-defences','[1255,1166]',200,9,.8,24),
  ('frontier-gate','[1062,1066]',270,18,.26,25),
- ('frontier-watch','[1311,1094]',20,18,.18,25),
+ ('frontier-watch','[1311,1094]',20,11,.75,30),
  ('atmo-pylon','[1004,1122]',90,14,.18,22),
  ('dam','[801,1364]',90,30,.3,42),
  ('creek-bridge','[936.5,1197.4]',60,20,.3,24),
  ('ice-crater','[922,1179]',315,18,.34,25),
  ('pipeline','[975,1171]',90,8,.3,15),
  ('forest','[972,1216]',0,26,.24,28),
- ('wild-meadow','[990,1300]',45,10,.22,24),
+ ('wild-meadow','[990,1300]',45,8,.6,22),
  ('wreck-band','(Conquest.view.frontier&&Conquest.view.frontier.userData.wrecks&&Conquest.view.frontier.userData.wrecks[0])||[1250,1040]',90,9,.3,14),
  ('barren-rocks','[1300,900]',90,8,.3,18),
 ]
@@ -66,16 +66,21 @@ async def main(a):
   await page.evaluate('closeAll();save.welcomed=true;save.gfx='+json.dumps(a.quality)+';uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
   await page.wait_for_function('typeof Conquest!=="undefined"&&!!Conquest.view',timeout=120000)
   if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
-  await page.wait_for_function('Conquest.view.pending===0',timeout=240000)
+  await page.wait_for_function('Conquest.view.pending===0',timeout=900000)
   info={}
   for name,subj,deg,stand,pitch,dist in shots:
    # the tank stands on open ground beside the subject (never inside a solid: it would be pressed against it and thin it);
    # local raiders are stood down so the frame shows the place, not a fight
-   yaw=await page.evaluate('''([deg,stand,pitch,dist])=>{const v=Conquest.view,W=ConquestWorld,F=v.style.footprints,S=('''+subj+'''),a=deg*Math.PI/180,dx=Math.cos(a),dz=Math.sin(a);
+   yaw=await page.evaluate('''([deg,stand,pitch,dist,deck])=>{const v=Conquest.view,W=ConquestWorld,F=v.style.footprints,S=('''+subj+'''),a=deg*Math.PI/180,dx=Math.cos(a),dz=Math.sin(a);
     const free=(x,z)=>{for(let k=0;k<8;k++)if(W.solidAt(x+Math.cos(k*.785)*5,z+Math.sin(k*.785)*5))return false;return !W.solidAt(x,z)&&!W.waterAt(x,z);};
-    let x=S[0]+dx*stand,z=S[1]+dz*stand;if(!free(x,z)){search:for(let r=2;r<=22;r+=2)for(let k=0;k<16;k++){const p=x+Math.cos(k*.3927)*r,q=z+Math.sin(k*.3927)*r;if(free(p,q)){x=p;z=q;break search;}}}
-    const fx=S[0]-x,fz=S[1]-z,yaw=Math.atan2(-fx,-fz);v.jump(x,z);v.heading=Math.atan2(fx,fz);v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;
-    const E=v.encounter;if(E){for(const e of E.enemies||[]){e.hp=0;if(E.cleared)E.cleared[e.key]=true;}E.playerHp=E.playerMax;}return yaw;}''',[deg,stand,pitch,dist])
+    // the side to stand on: the asked one, or the nearest side where the ground does not rise behind the tank (the game lifts
+    // the camera over terrain between it and the hull, which would turn the shot into a top-down one)
+    const rise=(x,z)=>{const fx=S[0]-x,fz=S[1]-z,l=Math.hypot(fx,fz)||1,g0=W.groundAt(x,z),h=Math.cos(pitch)*dist;let worst=0;for(let i=1;i<=16;i++){const t=i/16,g=W.groundAt(x-fx/l*h*t,z-fz/l*h*t);worst=Math.max(worst,(g-g0)/t-Math.sin(pitch)*dist);}return worst;};
+    let x=0,z=0,best=1e9;for(const off of [0,25,-25,50,-50,80,-80,115,-115,150,-150,180]){const b=a+off*Math.PI/180,p=S[0]+Math.cos(b)*stand,q=S[1]+Math.sin(b)*stand;if(!free(p,q))continue;const sc=Math.max(0,rise(p,q))+Math.abs(off)*.004;if(sc<best){best=sc;x=p;z=q;}if(sc<.5)break;}
+    if(best>1e8){x=S[0]+dx*stand;z=S[1]+dz*stand;search:for(let r=2;r<=22;r+=2)for(let k=0;k<16;k++){const p=x+Math.cos(k*.3927)*r,q=z+Math.sin(k*.3927)*r;if(free(p,q)){x=p;z=q;break search;}}}
+    if(deck){x=S[0]+dx*stand;z=S[1]+dz*stand;}
+    const fx=S[0]-x,fz=S[1]-z,yaw=Math.atan2(-fx,-fz);v.jump(x,z);if(deck&&W.deckAt(x,z)!==null){v.p.surface='bridge';v.p.y=W.deckAt(x,z);}v.heading=Math.atan2(fx,fz);v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;
+    const E=v.encounter;if(E){for(const e of E.enemies||[]){e.hp=0;if(E.cleared)E.cleared[e.key]=true;}E.playerHp=E.playerMax;}return yaw;}''',[deg,stand,pitch,dist,name=='viaduct-deck'])
    await page.wait_for_timeout(400)
    try:await page.wait_for_function('Conquest.view.pending===0',timeout=180000)
    except Exception:pass

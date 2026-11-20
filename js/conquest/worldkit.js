@@ -15,7 +15,7 @@
 (function(root){
 'use strict';
 const TAU=Math.PI*2,clamp01=v=>v<0?0:v>1?1:v;
-const MODELS={};
+const MODELS={},MY3D=()=>typeof Meshy3D!=='undefined'?Meshy3D:root.Meshy3D;   // the Meshy loader is a top-level const in the page (not a window property)
 function model(id,build,o){MODELS[id]={build,o:o||{}};}
 // Surface codes ride in the vertex alpha below zero (0..2 stays "emission", as before): the solid shader paints the
 // material's detail on HIGH (panel seams, rust, planks, pores, corrugation...) with no texture from an artist and no new
@@ -162,21 +162,21 @@ function kit(S){if(S.worldKit)return S.worldKit;
  const tris=(id,o)=>build(id,o).tris();
  // one instanced draw of a slot (trees, rocks, deposits, animals, moving things): the code-built geometry on the style's solid
  // material, or the slot's Meshy model when the list names one and it has loaded (setAt then fits each instance into the box)
- function instanced(id,count,o){const sw=swapped(id),My=root.Meshy3D;
+ function instanced(id,count,o){const sw=swapped(id),My=MY3D();
   if(sw&&meshyReady(sw)){const set=My.slotSet(sw,Math.max(1,count),!hi);if(set){const sb=Object.assign(slotBox(id),o||{});set.mesh.count=count;set.mesh.userData.slot=id;set.mesh.userData.slotFit=set.fit(new T.Matrix4(),sb.w,sb.h+slotOver(id),sb.d);return set.mesh;}}
   if(sw)pendingSwap.add(id);const im=new T.InstancedMesh(geometry(id,o),S.MAT.solid,Math.max(1,count));im.count=count;im.userData.slot=id;return im;}
  const setAt=(im,i,m4)=>im.setMatrixAt(i,im.userData.slotFit?_m2.multiplyMatrices(m4,im.userData.slotFit):m4);
  // ---- Meshy replacement of a slot (owner, Nov 19): the listed item is fitted into the slot's box, standing on its ground ----
  const pendingSwap=new Set();
- function meshyReady(item){const My=root.Meshy3D;if(!My||!My.enabled||!My.slotAsset)return false;return !!My.slotAsset(item);}
+ function meshyReady(item){const My=MY3D();if(!My||!My.enabled||!My.slotAsset)return false;return !!My.slotAsset(item);}
  // instanced draws for every placement recorded in target.swaps (call once per batch group, add the result to the group)
- function swapMeshes(swaps,low){const My=root.Meshy3D,out=[];if(!My||!swaps)return out;for(const [id,L] of swaps){const item=swapped(id),set=item&&My.slotSet&&My.slotSet(item,L.length,low);if(!set)continue;
+ function swapMeshes(swaps,low){const My=MY3D(),out=[];if(!My||!swaps)return out;for(const [id,L] of swaps){const item=swapped(id),set=item&&My.slotSet&&My.slotSet(item,L.length,low);if(!set)continue;
     L.forEach((pl,i)=>set.mesh.setMatrixAt(i,_m2.multiplyMatrices(pl.m,set.fit(_m,pl.w,pl.h,pl.d))));
     set.mesh.count=L.length;set.mesh.instanceMatrix.needsUpdate=true;set.mesh.userData.slot=id;set.mesh.userData.noPick=true;out.push(set.mesh);}return out;}
  // The two families (owner, Nov 8): the MILITARY is cool gunmetal armour with pale ceramic plates, gold trim and cyan / white
  // lights (the owner's Meshy town items are the reference); SETTLERS are warm, painted, patched and hand-built with amber light.
  const pal={
-  mil:{hull:mat(0x414a55,'metal',.25),hull2:mat(0x2b3037,'metal',.35),dark:mat(0x1b1e23,'metal',.2),plate:mat(0xaab4bd,'metal',.3),plate2:mat(0x8996a2,'metal',.4),trim:mat(0x5d6672,'metal',.1),bare:mat(0x8a919a,'metal',.15),gold:mat(0xb8913f,'metal',0),
+  mil:{hull:mat(0x4a5562,'metal',.25),hull2:mat(0x353d49,'metal',.35),dark:mat(0x22262d,'metal',.2),plate:mat(0xaab4bd,'metal',.3),plate2:mat(0x8996a2,'metal',.4),trim:mat(0x66707d,'metal',.1),bare:mat(0x8a919a,'metal',.15),gold:mat(0xb8913f,'metal',0),
    conc:mat(0x5a5f66,'concrete',.3),glass:mat(0x0d1a24,'glass',.5),glassDark:mat(0x0a1016,'glass',0),cyan:glow(0x22e6ff,1),ice:glow(0xa8f8ff,1),white:glow(0xe8f6ff,1),red:glow(0xff3048,1),amber:glow(0xffb347,1),navy:mat(0x0d1729,'solar',0),hazard:mat(0xd9a521,'paint',.5),hazardD:mat(0x15171a,'paint',.3)},
   set:{paint:[0xb39a66,0x8f4f36,0x5f8a86,0xc9c2b0,0x7a6a52,0x9a5a3a,0x6f7f5a,0xb8a27a].map(h=>mat(h,'paint',.55,.1)),fresh:[0xc8563a,0x3f8f93,0xd9a441,0x5b8f4e,0x8a5a8a].map(h=>mat(h,'paint',.2,.08)),
    roof:mat(0x4a3e34,'scrap',.45),roofRust:mat(0x7a4326,'scrap',.8),scrap:mat(0x6d6a62,'scrap',.6),timber:mat(0x7a5634,'timber',.3,.12),timberD:mat(0x4f3622,'timber',.5,.12),comp:mat(0x8a8676,'paint',.4),conc:mat(0x7b776c,'concrete',.5),stone:mat(0x6a6456,'concrete',.7),

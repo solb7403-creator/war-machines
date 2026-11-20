@@ -68,6 +68,17 @@ function crates(b,x,y,z,s,n,light){const M=b.k.pal.mil,row=Math.min(n,2);for(let
   if(b.hi){qb(b,cx,cy+s*.42,z+s/2+.01,s*.86,s*.14,.03,M.gold,'kb');qb(b,cx+s*.28,cy+s*.7,z+s/2+.01,.12,.08,.03,light||M.cyan,'kb');}}}
 // a gas canister standing on its base
 function canister(b,x,y,z,r,h,m){const M=b.k.pal.mil,n=b.hi?8:6;b.cyl(x,y,z,r,h*.86,m||M.plate2,{n,bev:.05});if(b.hi){b.cyl(x,y+h*.86,z,r*.5,h*.1,M.hull2,{n:6});b.cyl(x,y+h*.5,z,r*1.04,h*.09,M.gold,{n,top:false});}}
+// a sturdy lattice (hair-thin struts break into dotted moire on a phone): four thick square legs, a ring beam a bay, ONE
+// diagonal a face a bay (zigzag) and, on HIGH, a pale gusset block at every joint. w0 / w1 = base / top width.
+function lattice(b,x,y,z,w0,w1,h,bays,m,o={}){const M=b.k.pal.mil,r=o.r||.17,C=[[-1,-1],[1,-1],[1,1],[-1,1]],gs=r*3.1,gm=o.gusset||M.plate2,leg=(t,sx,sz)=>{const w=(w0+(w1-w0)*t)/2;return [x+sx*w,y+h*t,z+sz*w];};
+ for(const [sx,sz] of C)b.tube(leg(0,sx,sz),leg(1,sx,sz),r*1.25,o.leg||m,{n:4});
+ for(let k=0;k<bays;k++){const t0=k/bays,t1=(k+1)/bays;for(let i=0;i<4;i++){const a=C[i],c=C[(i+1)%4],f=(k+i)%2,p=f?c:a,q=f?a:c;
+   b.tube(leg(t1,a[0],a[1]),leg(t1,c[0],c[1]),r,m,{n:b.hi?4:3});if(b.hi||i%2===0)b.tube(leg(t0,p[0],p[1]),leg(t1,q[0],q[1]),r*.9,m,{n:b.hi?4:3});
+   if(b.hi&&k<bays-1){const g=leg(t1,a[0],a[1]);qb(b,g[0],g[1]-gs*.45,g[2],gs,gs*.9,gs,gm,'b');}}}
+ return b;}
+// a ladder that survives distance: two stout rails (0.9 m apart along x at most) and a rung every 0.7 m
+function steps(b,a,c,w,m){const L=Math.hypot(c[0]-a[0],c[1]-a[1],c[2]-a[2]),n=Math.max(2,Math.round(L/.7));for(const s of [-1,1])b.tube([a[0]+s*w/2,a[1],a[2]],[c[0]+s*w/2,c[1],c[2]],.06,m,{n:4});
+ for(let k=1;k<n;k++){const t=k/n,p=[a[0]+(c[0]-a[0])*t,a[1]+(c[1]-a[1])*t,a[2]+(c[2]-a[2])*t];b.tube([p[0]-w/2,p[1],p[2]],[p[0]+w/2,p[1],p[2]],.045,m,{n:3});}return b;}
 
 // ------------------------------------------------------------------ refuge-processor ------------------------------------
 // THE landmark of the Refuge: an oxygen processor tower. Octagonal armoured plinth, a battered block with eight lit
@@ -127,10 +138,11 @@ WK.model('refuge-processor',(b,o)=>{const {pal,circ,glow}=b.k,M=pal.mil,hi=b.hi,
 // The overhead pipe bridge between two processor towers. o.w = length along x, centred on the origin, the pipe axis at y = 0.
 WK.model('refuge-pipe',(b,o)=>{const {pal,circ}=b.k,M=pal.mil,hi=b.hi,L=o.w||6,n=hi?8:6,c=(r,x)=>({p:circ(r,n),y:x});
  alongX(b,0,0,0,q=>{q.loft([c(1.1,-L/2),c(1.1,L/2)],M.plate2,{smooth:true,top:false});
-  for(const t of [.25,.5,.75]){const x=-L/2+L*t;if(hi){q.loft([c(1.1,x-.32),c(1.4,x-.26),c(1.4,x-.1)],M.hull2,{smooth:true,top:false});q.loft([c(1.33,x-.1),c(1.33,x+.1)],M.cyan,{smooth:true,top:false});q.loft([c(1.4,x+.1),c(1.4,x+.26),c(1.1,x+.32)],M.hull2,{smooth:true,top:false});}
-   else q.loft([c(1.1,x-.24),c(1.38,x),c(1.1,x+.24)],M.cyan,{smooth:true,top:false});}
+  if(hi)for(const t of [.25,.5,.75]){const x=-L/2+L*t;q.loft([c(1.1,x-.32),c(1.4,x-.26),c(1.4,x-.1)],M.hull2,{smooth:true,top:false});q.loft([c(1.33,x-.1),c(1.33,x+.1)],M.cyan,{smooth:true,top:false});q.loft([c(1.4,x+.1),c(1.4,x+.26),c(1.1,x+.32)],M.hull2,{smooth:true,top:false});}
+  // LOW: still a round six-sided pipe, with two dark collars and a slim cyan band in each
+  else for(const t of [1/3,2/3]){const x=-L/2+L*t;q.loft([c(1.1,x-.36),c(1.38,x-.28),c(1.38,x-.08),c(1.38,x+.08),c(1.38,x+.28),c(1.1,x+.36)],r=>r===2?M.cyan:M.hull2,{smooth:true,top:false});}
   if(hi)for(const s of [-1,1])q.loft([c(1.1,s*(L/2-.34)),c(1.3,s*(L/2-.26)),c(1.3,s*L/2)],M.hull,{smooth:true,top:false});});
- b.tube([-L/2,1.27,.28],[L/2,1.27,.28],.2,M.bare,{n:hi?5:3});
+ b.tube([-L/2,1.27,.28],[L/2,1.27,.28],.2,M.bare,{n:hi?5:4});
  if(hi)for(const t of [.25,.5,.75]){const x=-L/2+L*t;qb(b,x,1.02,.28,.2,.5,.56,M.hull2,'b');}
 },{aoH:.01,aoMin:.9});
 
@@ -149,7 +161,8 @@ WK.model('refuge-terminal',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi;
  if(hi)qb(b,0,3.06,.9,1.72,.1,.04,M.gold,'k');
  // the antenna crown: a mast with a dish and two whips
  b.tube([-.3,3.24,-.35],[-.3,4.7,-.35],.06,M.trim,{n:4});b.gem(-.3,4.84,-.35,.11,.16,.11,M.white);
- if(hi){b.at(.3,3.38,-.32,.5,q=>{q.cyl(0,0,0,.07,.24,M.trim,{n:5});q.at(0,.3,0,0,r=>r.cyl(0,0,0,.08,.2,M.plate,{n:8,r2:.36}),.7);});b.tube([-.58,3.24,-.5],[-.66,4.1,-.56],.025,M.bare,{n:3});b.tube([.58,3.24,-.5],[.64,3.9,-.56],.025,M.bare,{n:3});b.halo(0,2.3,.7,1.6,0xa8f8ff,.45);}
+ if(hi){b.at(.3,3.38,-.32,.5,q=>{q.cyl(0,0,0,.07,.24,M.trim,{n:5});q.at(0,.3,0,0,r=>r.cyl(0,0,0,.08,.2,M.plate,{n:8,r2:.36}),.7);});b.tube([-.58,3.24,-.5],[-.66,4.1,-.56],.025,M.bare,{n:3});b.tube([.58,3.24,-.5],[.64,3.9,-.56],.025,M.bare,{n:3});}
+ b.halo(0,2.3,.7,1.6,0xa8f8ff,hi?.45:.36);   // the lit screen is the terminal's focal point at every quality
  // six bollards with a cyan cap
  for(let k=0;k<6;k++){const a=Math.PI/6+k*Math.PI/3,x=Math.sin(a)*5.8,z=Math.cos(a)*5.8;
   if(hi){b.cyl(x,-.5,z,.34,.64,M.hull2,{n:6});b.cyl(x,.14,z,.2,.96,M.hull,{n:6,top:false});b.cyl(x,1.1,z,.25,.17,M.cyan,{n:6});b.cyl(x,1.27,z,.2,.1,M.hull2,{n:6});b.halo(x,1.2,z,.8,0x22e6ff,.55);}
@@ -163,81 +176,101 @@ WK.model('refuge-terminal',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi;
 // ------------------------------------------------------------------ refuge-solar ----------------------------------------
 // A military solar array: a framed panel of 3 x 2 modules tilted o.tilt (radians) about the x axis around its centre at
 // y = 2 (three.js sense, as the old array: a positive tilt lifts the -z edge), a cyan light on the -z edge, a dimmer one
-// on the +z edge, four legs to the ground (o.sink below it), braces, a torque tube and a junction box.
+// on the +z edge, a pale ceramic frame, four legs to the ground (o.sink below it), one stout brace a side, a torque tube and
+// a junction box. LOW keeps the frame, the six modules in a lighter cell blue and the cyan edge.
 WK.model('refuge-solar',(b,o)=>{const {pal,tint}=b.k,M=pal.mil,hi=b.hi,w=o.w||14,d=o.d||9,tilt=o.tilt??.3,sink=o.sink??.5,c=Math.cos(tilt),s=Math.sin(tilt),P=(lx,ly,lz)=>[lx,2+ly*c-lz*s,ly*s+lz*c];
- b.at(0,2,0,0,q=>{if(hi)q.bev(0,-.2,0,w+.3,.2,d+.3,M.trim,{ch:.06,bot:true});else qb(q,0,-.2,0,w+.3,.2,d+.3,M.trim);
-  const mw=(w-.1)/3,md=(d-.1)/2;if(hi)for(let i=0;i<3;i++)for(let j=0;j<2;j++)qb(q,(i-1)*mw,0,(j-.5)*md,mw-.16,.09,md-.16,M.navy,'b');else qb(q,0,0,0,w-.2,.07,d-.2,M.navy,'b');
-  qb(q,0,.02,-d/2-.02,w-.3,.12,.14,M.cyan,'b');qb(q,0,.02,d/2+.02,w-.3,.09,.1,tint(M.cyan,.5),'b');
+ b.at(0,2,0,0,q=>{if(hi)q.bev(0,-.2,0,w+.3,.2,d+.3,M.plate2,{ch:.06,bot:true});else qb(q,0,-.2,0,w+.3,.2,d+.3,M.plate2);
+  // LOW has no painted cell grid: six modules in a lighter cell blue with the pale frame showing between them
+  const mw=(w-.1)/3,md=(d-.1)/2,cell=hi?M.navy:b.k.mat(0x1c3252,'solar',0);for(let i=0;i<3;i++)for(let j=0;j<2;j++){if(hi)qb(q,(i-1)*mw,0,(j-.5)*md,mw-.16,.09,md-.16,cell,'b');
+   else{const x=(i-1)*mw,z=(j-.5)*md,hx=mw/2-.22,hz=md/2-.22;q.quad([x-hx,.03,z-hz],[x+hx,.03,z-hz],[x+hx,.03,z+hz],[x-hx,.03,z+hz],cell,[x,-9,z]);}}
+  qb(q,0,.02,-d/2-.02,w-.3,.12,hi?.14:.2,M.cyan,'b');qb(q,0,.02,d/2+.02,w-.3,.09,hi?.1:.14,tint(M.cyan,.5),'b');
   if(hi){q.tube([-w/2+.3,-.42,0],[w/2-.3,-.42,0],.16,M.hull2,{n:6,caps:true});for(const sx of [-1,0,1])qb(q,sx*(w/2-.6),-.42,0,.14,.24,d-1,M.hull2,'t');}},tilt);
  for(const sx of [-1,1])for(const sz of [-1,1]){const t=P(sx*(w/2-.6),-.2,sz*(d/2-.6));b.cyl(t[0],-sink,t[2],.14,t[1]+sink,M.trim,{n:hi?6:4,top:false});if(hi)qb(b,t[0],-sink,t[2],.6,sink+.14,.6,M.conc,'b');}
- if(hi){for(const sx of [-1,1]){const a=P(sx*(w/2-.6),-.2,-(d/2-.6)),e=P(sx*(w/2-.6),-.2,d/2-.6);b.tube([a[0],.2,a[2]],[e[0],e[1]-.1,e[2]],.05,M.bare,{n:3});b.tube([e[0],.2,e[2]],[a[0],a[1]-.1,a[2]],.05,M.bare,{n:3});}
-  const hz=P(0,-.2,(tilt>=0?-1:1)*(d/2-.6)),zb=hz[2];b.tube([-(w/2-.6),.25,zb],[w/2-.6,hz[1]-.15,zb],.05,M.bare,{n:3});b.tube([w/2-.6,.25,zb],[-(w/2-.6),hz[1]-.15,zb],.05,M.bare,{n:3});
+ if(hi){for(const sx of [-1,1]){const a=P(sx*(w/2-.6),-.2,-(d/2-.6)),e=P(sx*(w/2-.6),-.2,d/2-.6),lo=a[1]<e[1]?a:e,up=a[1]<e[1]?e:a;b.tube([lo[0],.2,lo[2]],[up[0],up[1]-.1,up[2]],.1,M.trim,{n:4});}
+  const hz=P(0,-.2,(tilt>=0?-1:1)*(d/2-.6)),zb=hz[2];b.tube([-(w/2-.6),.25,zb],[w/2-.6,hz[1]-.15,zb],.1,M.trim,{n:4});
   gearBox(b,w/2-1.5,0,zb,.9,1.1,.5,M.cyan);b.tube([w/2-1.5,1.1,zb],[w/2-1.5,hz[1]-.4,zb],.05,M.dark,{n:3});}
  else qb(b,w/2-1.5,0,P(0,0,(tilt>=0?-1:1)*(d/2-.6))[2],.9,1.1,.5,M.hull2,'b');
 });
 
 // ------------------------------------------------------------------ refuge-lamp -----------------------------------------
-// A 7.2 m light pylon: base block, slim mast with a cyan slit down its +z side, an arm reaching to z = +0.75, a white lamp.
+// A 7.2 m light pylon: base block, slim mast with a cyan slit down its +z side, an arm reaching to z = +0.75, a white lamp
+// (a lit lens block under the arm's spine: it shows from the side and from above, on LOW too).
 WK.model('refuge-lamp',(b,o)=>{const M=b.k.pal.mil,hi=b.hi;
  if(hi)b.loft([rc(b,.8,.8,-.3,.14),rc(b,.8,.8,.32,.14),rc(b,.46,.46,.52,.1)],M.hull2);else qb(b,0,-.3,0,.8,.8,.8,M.hull2,'b');
  b.cyl(0,.5,0,.15,6.5,M.trim,{n:hi?6:4,r2:.1,top:false});b.quad([-.04,.9,.16],[.04,.9,.16],[.04,6.4,.12],[-.04,6.4,.12],M.cyan,[0,3,0]);
- qb(b,0,6.94,.34,.22,.17,1,M.hull2);qb(b,0,6.82,.72,.74,.13,.44,M.hull2,'b');qb(b,0,6.78,.72,.62,.04,.34,M.white,'t');
+ qb(b,0,6.94,.34,.22,.17,1,M.hull2);qb(b,0,6.78,.7,.74,.16,.5,M.white,'');
  if(hi){b.quad([-.2,.9,.04],[-.2,.9,-.04],[-.14,6.4,-.04],[-.14,6.4,.04],M.cyan,[0,3,0]);b.quad([.2,.9,.04],[.2,.9,-.04],[.14,6.4,-.04],[.14,6.4,.04],M.cyan,[0,3,0]);
-  b.cyl(0,6.2,0,.19,.26,M.gold,{n:6});b.tube([0,6.3,.08],[0,6.94,.6],.045,M.trim,{n:3});b.tube([0,7.1,-.06],[0,7.38,-.06],.03,M.bare,{n:3});b.halo(0,6.76,.72,1.6,0xa8f8ff,.6);}
+  b.cyl(0,6.2,0,.19,.26,M.gold,{n:6});b.tube([0,6.3,.08],[0,6.94,.6],.045,M.trim,{n:3});b.tube([0,7.1,-.06],[0,7.38,-.06],.03,M.bare,{n:3});qb(b,0,6.94,.7,.5,.05,.3,M.hull2,'b');}
+ b.halo(0,6.76,.7,1.6,0xa8f8ff,.3);
 });
 
 // ------------------------------------------------------------------ relay-mast ------------------------------------------
-// A field relay (instanced across the Moon): footing, slim mast, two crossbars with insulators, a dish, a panel, a cyan
-// slit on the +z side and a white top light at y 9.3.
-WK.model('relay-mast',(b,o)=>{const M=b.k.pal.mil,hi=b.hi;
- if(hi)b.loft([rc(b,.9,.9,-.4,.16),rc(b,.9,.9,.34,.16),rc(b,.5,.5,.5,.1)],M.hull2);else qb(b,0,-.4,0,.9,.9,.9,M.hull2,'b');
- b.cyl(0,.5,0,.15,8.62,M.trim,{n:hi?6:4,r2:.08,top:false});
- for(const y of [3,6]){b.tube([-.7,y,0],[.7,y,0],.06,M.hull2,{n:hi?4:3,caps:hi});if(hi){b.cyl(0,y-.12,0,.2,.24,M.hull2,{n:6,top:false});for(const s of [-1,1])b.gem(s*.68,y+.15,0,.09,.17,.09,M.bare);}}
- b.at(.14,8,0,0,q=>{q.cyl(0,0,0,.1,.3,M.plate,{n:hi?8:6,r2:.52});if(hi)q.tube([0,.3,0],[0,.62,0],.03,M.bare,{n:3});},0,-1.05);
- b.at(-.16,4.5,0,0,q=>qb(q,-.4,0,0,.72,.05,.56,M.navy,hi?'':'lrfk'),0,.55);
- b.quad([-.035,1,.17],[.035,1,.17],[.035,8.4,.11],[-.035,8.4,.11],M.cyan,[0,5,0]);if(hi)b.quad([-.035,1,-.17],[.035,1,-.17],[.035,8.4,-.11],[-.035,8.4,-.11],M.cyan,[0,5,0]);
+// A field relay (instanced across the Moon): footing with four pale ceramic fins, a stout tapering mast (gunmetal below, a
+// pale ceramic sleeve above the lower crossbar), two crossbars with insulators, a dish, a panel, a cyan slit on the +z side
+// and a white top light at y 9.3.
+WK.model('relay-mast',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,n=hi?6:4,rM=y=>.23-.11*(y-.5)/8.62;
+ if(hi)b.loft([rc(b,.9,.9,-.4,.16),rc(b,.9,.9,.34,.16),rc(b,.56,.56,.5,.1)],M.hull2);else qb(b,0,-.4,0,.9,.9,.9,M.hull2,'b');
+ b.cyl(0,.5,0,rM(.5),2.7,M.hull,{n,r2:rM(3.2),top:false});b.cyl(0,3.2,0,rM(3.2)+.03,3,M.plate,{n,r2:rM(6.2)+.03,top:false});b.cyl(0,6.2,0,rM(6.2),2.92,hi?M.trim:M.plate,{n,r2:rM(9.12),top:false});
+ for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{if(hi)q.loft([rc(q,.16,.4,.3,0,0,.5),rc(q,.12,.1,2.3,0,0,rM(2.3)+.03)],M.plate,{top:false});else for(const e of [-1,1])q.tri([0,.3,.2],[0,.3,.74],[0,2.3,rM(2.3)],M.plate,[e,1,.4]);});
+ for(const y of [3,6]){b.tube([-.7,y,0],[.7,y,0],.075,M.hull2,{n:hi?4:3,caps:hi});if(hi){b.cyl(0,y-.14,0,rM(y)+.09,.28,M.hull2,{n:6,top:false});for(const s of [-1,1])b.gem(s*.68,y+.17,0,.1,.18,.1,M.bare);}}
+ b.at(.18,8,0,0,q=>{q.cyl(0,0,0,.1,.3,M.plate,{n:hi?8:6,r2:.52});if(hi)q.tube([0,.3,0],[0,.62,0],.03,M.bare,{n:3});},0,-1.05);
+ b.at(-.2,4.5,0,0,q=>qb(q,-.4,0,0,.72,.05,.56,M.navy,hi?'':'lrfk'),0,.55);
+ b.quad([-.04,1,rM(1)+.02],[.04,1,rM(1)+.02],[.04,8.4,rM(8.4)+.02],[-.04,8.4,rM(8.4)+.02],M.cyan,[0,5,0]);if(hi)b.quad([-.04,1,-rM(1)-.02],[.04,1,-rM(1)-.02],[.04,8.4,-rM(8.4)-.02],[-.04,8.4,-rM(8.4)-.02],M.cyan,[0,5,0]);
  b.gem(0,9.3,0,.2,.26,.2,M.white);
- if(hi){b.cyl(0,9.0,0,.13,.14,M.gold,{n:6,top:false});for(let k=0;k<3;k++){const a=k*TAU/3+.5;b.tube([Math.cos(a)*.42,.42,Math.sin(a)*.42],[0,2.3,0],.035,M.bare,{n:3});}}
+ if(hi)b.cyl(0,9.0,0,.16,.14,M.gold,{n:6,top:false});
 });
 
 // ------------------------------------------------------------------ viaduct-segment -------------------------------------
-// 4 m of the viaduct below and beside the drive surface (y = 0, drawn by the game): the girder slab (1.3 deep, o.d wide) with
-// ribs, the two curbs at z = +-9 (0.7 wide, 0.9 high) with a cyan line on top, a lane stud (o.stud = 0 leaves it out).
-// No end faces: segments chain. 60 in a row, so every triangle counts.
-WK.model('viaduct-segment',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.w||4,D=o.d>18.2&&o.d<18.5?18.2:(o.d||18.2),x0=-L/2,x1=L/2,zc=D/2-.1,Q=(y0,z0,y1,z1,m,ins)=>b.quad([x0,y0,z0],[x1,y0,z0],[x1,y1,z1],[x0,y1,z1],m,ins);
- for(const s of [-1,1]){const zo=s*(zc+.35),zi=s*(zc-.35);Q(-1.4,s*D/2,0,s*D/2,M.hull2,[0,-.7,0]);Q(0,zo,.9,zo,M.trim,[0,.4,s*zc]);Q(0,zi,.9,zi,M.trim,[0,.4,s*zc]);Q(.9,zi,.9,zo,M.hull,[0,0,s*zc]);Q(0,zo,0,s*D/2,M.hull2,[0,1,s*zc]);
-  if(hi){Q(.9,s*(zc-.16),.97,s*(zc-.16),M.cyan,[0,.9,s*zc]);Q(.9,s*(zc+.16),.97,s*(zc+.16),M.cyan,[0,.9,s*zc]);Q(.97,s*(zc-.16),.97,s*(zc+.16),M.cyan,[0,0,s*zc]);
-   Q(-1.4,s*(D/2-.6),-.5,s*(D/2-.6),M.hull2,[0,-.9,s*(D/2-.3)]);Q(-1.4,s*(D/2-.6),-1.4,s*D/2,M.dark,[0,0,s*zc]);
-   qb(b,0,.14,zo+s*.03,L-.5,.62,.06,M.plate2,s>0?'k':'f');b.quad([-.3,.36,zi-s*.02],[.3,.36,zi-s*.02],[.3,.52,zi-s*.02],[-.3,.52,zi-s*.02],M.ice,[0,.4,s*zc]);}
-  else Q(.93,s*(zc-.16),.93,s*(zc+.16),M.cyan,[0,0,s*zc]);}
- if(hi){Q(-.5,-D/2+.6,-.5,D/2-.6,M.dark,[0,0,0]);for(const z of [-4.4,0,4.4]){Q(-1.4,z-.35,-1.4,z+.35,M.dark,[0,0,z]);Q(-1.4,z-.35,-.5,z-.35,M.hull2,[0,-.9,z]);Q(-1.4,z+.35,-.5,z+.35,M.hull2,[0,-.9,z]);}
-  for(const s of [-1,1])b.quad([s*.25,-1.2,-D/2+.6],[s*.25,-1.2,D/2-.6],[s*.25,-.5,D/2-.6],[s*.25,-.5,-D/2+.6],M.hull2,[0,-.8,0]);b.quad([-.25,-1.2,-D/2+.6],[.25,-1.2,-D/2+.6],[.25,-1.2,D/2-.6],[-.25,-1.2,D/2-.6],M.dark,[0,0,0]);}
- else Q(-1.4,-D/2,-1.4,D/2,M.dark,[0,0,0]);
- if(o.stud!==0){if(hi)qb(b,0,0,0,2.4,.05,.24,M.ice,'brl');else b.quad([-1.2,.04,-.12],[1.2,.04,-.12],[1.2,.04,.12],[-1.2,.04,.12],M.ice,[0,-1,0]);}
+// 4 m of the viaduct below and beside the drive surface (y = 0, drawn by the game between the curbs), ONE structure: a deep
+// I-girder under each curb (the curb at z = +-9, 0.7 wide and 0.9 high, is its pale ceramic top flange with a cyan pad on
+// top; a dark recessed web with stiffener ribs; a pale bottom flange 1.4 below the deck), a cross-girder and plan braces
+// joining the two girders under the deck, a sub-deck plate just under the drive surface, a lane stud (o.stud = 0 leaves it
+// out). No end faces: segments chain. 60 in a row, so every triangle counts (at most 120 HIGH / 36 LOW).
+WK.model('viaduct-segment',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.w||4,D=o.d>18.2&&o.d<18.5?18.2:(o.d||18.2),x0=-L/2,x1=L/2,zc=D/2-.1,zg=zc-.5,lite=b.k.tint(M.plate,1.2,.02),
+  P=(xa,xb,y0,z0,y1,z1,m,ins)=>b.quad([xa,y0,z0],[xb,y0,z0],[xb,y1,z1],[xa,y1,z1],m,ins),Q=(y0,z0,y1,z1,m,ins)=>P(x0,x1,y0,z0,y1,z1,m,ins);
+ for(const s of [-1,1]){const zo=s*(zc+.35),zi=s*(zc-.35),zw=s*(zc+.04),zb=s*(zc+.3),c=[0,-.4,s*(zc-.1)];
+  // the curb = the girder's top flange (pale fascia and top, a cyan pad), the web, the pale bottom flange
+  if(hi){Q(-.18,zo,.76,zo,M.plate,c);Q(.76,zo,.9,zo-s*.14,lite,c);Q(.9,zi,.9,zo-s*.14,M.plate,c);}else{Q(-.18,zo,.9,zo,M.plate,c);Q(.9,zi,.9,zo,M.plate,c);}
+  Q(0,zi,.9,zi,M.trim,c);P(-L*.2,L*.2,.91,s*(zc-.2),.91,s*(zc+.08),M.cyan,[0,0,s*zc]);Q(-1.14,zw,-.18,zw,M.hull,c);Q(-1.14,zw,-1.14,zb,M.plate2,[0,-2,s*zc]);Q(-1.4,zb,-1.14,zb,M.plate2,c);
+  if(hi){Q(-.18,zw,-.18,zo,M.hull2,[0,.5,s*zc]);Q(-1.4,s*zg,-.5,s*zg,M.hull2,c);Q(-1.4,s*zg,-1.4,zb,M.dark,[0,0,s*zc]);
+   for(const x of [-L/4,L/4]){const zr=s*(zc+.27);P(x-.14,x+.14,-1.14,zr,-.18,zr,M.plate2,c);for(const e of [-1,1])b.quad([x+e*.14,-1.14,zw],[x+e*.14,-1.14,zr],[x+e*.14,-.18,zr],[x+e*.14,-.18,zw],M.hull,[x,-.7,s*zc]);}
+   b.quad([-.3,.36,zi-s*.02],[.3,.36,zi-s*.02],[.3,.52,zi-s*.02],[-.3,.52,zi-s*.02],M.ice,[0,.4,s*zc]);}}
+ // under the deck: the sub-deck plate (hidden by the drive surface in the game), the soffit, a cross-girder with a pale
+ // bottom flange at mid-span and two plan braces: the two girders are visibly one frame
+ Q(-.1,-zc+.35,-.1,zc-.35,M.hull,[0,-5,0]);
+ if(hi){Q(-.5,-zg,-.5,zg,M.dark,[0,0,0]);for(const e of [-1,1])b.quad([e*.24,-1.3,-zg],[e*.24,-1.3,zg],[e*.24,-.5,zg],[e*.24,-.5,-zg],M.hull2,[0,-.9,0]);
+  b.quad([-.32,-1.3,-zg],[.32,-1.3,-zg],[.32,-1.3,zg],[-.32,-1.3,zg],M.plate2,[0,0,0]);
+  for(const e of [-1,1])b.quad([x0,-.9,-e*zg],[x0+.5,-.9,-e*zg],[x1,-.9,e*zg],[x1-.5,-.9,e*zg],M.trim,[0,0,0]);}
+ else Q(-1.4,-zc-.3,-1.4,zc+.3,M.dark,[0,0,0]);
+ if(o.stud!==0)b.quad([-1.2,.04,-.12],[1.2,.04,-.12],[1.2,.04,.12],[-1.2,.04,.12],M.ice,[0,-1,0]);
 },{aoH:.01,aoMin:.86});
 
 // ------------------------------------------------------------------ viaduct-pier ----------------------------------------
-// A hex armoured column: footing, a shaft tapering 8% with two lit collars at 0.35 and 0.7 of the height, pale plates on
-// alternate faces between them, and a hammerhead bracket (long axis z, across the deck) under the deck. o.h = height from
-// the ground to the deck underside; o.sink = footing depth below y = 0.
-WK.model('viaduct-pier',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,h=o.h||24,sink=o.sink??1,hh=h-1.7,rA=y=>1.65-.13*Math.max(0,y-.5)/(hh-.5),X=(r,y)=>ngon(b,6,r,y),head=(hx,hz,y)=>({p:[[hx,0],[hx,hz],[-hx,hz],[-hx,0],[-hx,-hz],[hx,-hz]],y});
+// A hex armoured column: footing with six pale ceramic buttress fins, a shaft tapering 8% in three lifts (gunmetal, pale
+// ceramic with dark ribs, gunmetal with pale plates on alternate faces) between two collars at 0.35 and 0.7 of the height
+// (cyan pads on alternate faces), and a pale hammerhead bracket (long axis z, across the deck) under the deck.
+// o.h = height from the ground to the deck underside; o.sink = footing depth below y = 0.
+WK.model('viaduct-pier',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,h=o.h||24,sink=o.sink??1,hh=h-1.7,rA=y=>1.65-.13*Math.max(0,y-.5)/(hh-.5),X=(r,y)=>ngon(b,6,r,y),head=(hx,hz,y)=>({p:[[hx,0],[hx,hz],[-hx,hz],[-hx,0],[-hx,-hz],[hx,-hz]],y}),pad=(q,i)=>i%2?M.cyan:M.hull2;
  if(hi)b.loft([X(1.8,-sink),X(1.8,.36),X(1.68,.5)],M.hull2,{top:false});else b.loft([X(1.8,-sink),X(1.8,.5)],M.hull2,{top:false});
- let ya=.5;for(const f of [.35,.7]){const yc=h*f,r=rA(yc);b.loft([X(rA(ya),ya),X(rA(yc-.5),yc-.5)],(q,i)=>hi&&f>.5&&i%2?M.plate2:M.hull,{top:false});if(hi)for(const s of [-1,1])b.quad([s*(rA(yc-4)+.02),yc-4,-.12],[s*(rA(yc-4)+.02),yc-4,.12],[s*(rA(yc-1.2)+.02),yc-1.2,.12],[s*(rA(yc-1.2)+.02),yc-1.2,-.12],M.ice,[0,yc-2,0]);
-  if(hi){b.loft([X(r,yc-.5),X(r+.17,yc-.4),X(r+.17,yc-.17)],M.hull2,{top:false});b.loft([X(r+.21,yc-.17),X(r+.21,yc+.17)],M.cyan,{top:false});b.loft([X(r+.17,yc+.17),X(r+.17,yc+.4),X(r,yc+.5)],M.hull2,{top:false});}
-  else b.loft([X(r+.16,yc-.5),X(r+.16,yc-.17)],M.hull2,{top:false}).loft([X(r+.2,yc-.17),X(r+.2,yc+.17)],M.cyan,{top:false}).loft([X(r+.16,yc+.17),X(r+.16,yc+.5)],M.hull2,{top:false});ya=yc+.5;}
- b.loft([X(rA(ya),ya),X(rA(hh),hh)],(q,i)=>hi&&i%2===0?M.plate2:M.hull,{top:false});
- b.loft([X(rA(hh),hh),head(1.25,1.74,h-.42),head(1.25,1.74,h-.3)],M.hull2,{top:false});b.loft([head(1.36,1.8,h-.3),head(1.36,1.8,h)],M.trim,{top:true});
- if(hi){for(let k=0;k<6;k++){const a=k*Math.PI/3+Math.PI/6;rad(b,a,0,0,q=>q.loft([rc(q,.5,.7,.3,0,0,1.75),rc(q,.4,.1,3.2,0,0,rA(3.2)*.87+.02)],M.hull2,{top:false}));}
-  for(const s of [-1,1]){b.tube([0,hh-2.2,s*rA(hh-2.2)*.86],[0,h-.36,s*1.6],.13,M.trim,{n:4});qb(b,0,h-.24,s*1.81,.9,.16,.04,M.white,s>0?'k':'f');}
+ let ya=.5,lift=0;for(const f of [.35,.7]){const yc=h*f,r=rA(yc);b.loft([X(rA(ya),ya),X(rA(yc-.5),yc-.5)],lift?M.plate:M.hull,{top:false});
+  if(hi){b.loft([X(r,yc-.5),X(r+.17,yc-.4),X(r+.17,yc-.14)],M.hull2,{top:false});b.loft([X(r+.21,yc-.14),X(r+.21,yc+.14)],pad,{top:false});b.loft([X(r+.17,yc+.14),X(r+.17,yc+.4),X(r,yc+.5)],M.hull2,{top:false});
+   if(lift)for(let k=0;k<3;k++)rad(b,k*TAU/3+Math.PI/6,0,0,q=>qb(q,0,ya+.5,rA(ya)*.866+.02,.4,yc-ya-1.5,.2,M.hull2,'b'));}
+  else b.loft([X(r+.16,yc-.5),X(r+.16,yc-.14)],M.hull2,{top:false}).loft([X(r+.2,yc-.14),X(r+.2,yc+.14)],pad,{top:false}).loft([X(r+.16,yc+.14),X(r+.16,yc+.5)],M.hull2,{top:false});ya=yc+.5;lift++;}
+ b.loft([X(rA(ya),ya),X(rA(hh),hh)],(q,i)=>i%2===0?M.plate2:M.hull,{top:false});
+ b.loft([X(rA(hh),hh),head(1.25,1.74,h-.42),head(1.25,1.74,h-.3)],M.hull2,{top:false});b.loft([head(1.36,1.8,h-.3),head(1.36,1.8,h)],M.plate,{top:true,topMat:M.trim});
+ for(let k=0;k<6;k++){const a=k*Math.PI/3+Math.PI/6;rad(b,a,0,0,q=>q.loft([rc(q,.56,.84,.3,0,0,1.78),rc(q,.4,.12,h*.2,0,0,rA(h*.2)*.87+.03)],M.plate2,{top:false}));}
+ if(hi){for(const s of [-1,1]){b.tube([0,hh-2.2,s*rA(hh-2.2)*.86],[0,h-.36,s*1.6],.13,M.trim,{n:4});qb(b,0,h-.24,s*1.81,.9,.16,.04,M.white,s>0?'k':'f');}
   b.loft([X(rA(hh-.5)+.08,hh-.5),X(rA(hh)+.08,hh-.14)],M.gold,{top:false});}
 });
 
 // ------------------------------------------------------------------ viaduct-lamp ----------------------------------------
-// The deck-edge light post: the post stands at the origin, the lamp reaches toward +z, 4.1 m.
+// The deck-edge light post: the post stands at the origin, the lamp reaches toward +z, 4.1 m. The lamp is a lit lens block
+// under a small dark hood (it shows from the side and, around the hood, from above), on LOW too.
 WK.model('viaduct-lamp',(b,o)=>{const M=b.k.pal.mil,hi=b.hi;
  if(hi)qb(b,0,0,0,.36,.32,.36,M.hull2,'b');b.loft([rc(b,.18,.18,hi?.32:0),rc(b,.13,.13,3.96)],M.trim,{top:false});
- b.tube([0,3.9,-.04],[0,4.08,.66],.07,M.hull2,{n:hi?4:3});qb(b,0,3.98,.56,.5,.1,.36,M.hull2,'b');b.quad([-.2,3.975,.42],[.2,3.975,.42],[.2,3.975,.7],[-.2,3.975,.7],M.white,[0,5,.5]);
- if(hi){b.quad([-.03,.5,.1],[.03,.5,.1],[.03,3.6,.08],[-.03,3.6,.08],M.cyan,[0,2,0]);b.tube([0,3.3,.06],[0,3.98,.38],.035,M.trim,{n:3});b.gem(0,4.14,-.04,.07,.1,.07,M.gold);b.halo(0,3.9,.56,1.3,0xa8f8ff,.6);}
+ b.tube([0,3.9,-.04],[0,4.06,.5],.07,M.hull2,{n:hi?4:3});qb(b,0,3.9,.56,.5,.14,.4,M.white,'');qb(b,0,4.04,.54,.3,.08,.22,M.hull2,'b');
+ if(hi){b.quad([-.03,.5,.1],[.03,.5,.1],[.03,3.6,.08],[-.03,3.6,.08],M.cyan,[0,2,0]);b.tube([0,3.3,.06],[0,3.92,.34],.035,M.trim,{n:3});b.gem(0,4.14,-.04,.07,.1,.07,M.gold);}
+ b.halo(0,3.9,.56,1.3,0xa8f8ff,.3);
 });
 
 // ------------------------------------------------------------------ viaduct-gantry --------------------------------------
@@ -275,17 +308,26 @@ WK.model('base-pad',(b,o)=>{const {pal,mat,glow,tint}=b.k,M=pal.mil,hi=b.hi,w=o.
 },{aoH:.01,aoMin:.88});
 
 // ------------------------------------------------------------------ base-wall -------------------------------------------
-// The perimeter barrier: a berm, a battered armoured wall with a belt and pale plates, a lit line under the cap on both
-// faces, a walkway between parapets, and buttress ribs every ~4 m. o.d = run length along z; 6 thick; 5 high; symmetric.
-WK.model('base-wall',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.d||35,sink=o.sink??1,R=(w,y)=>rc(b,w,L,y),n=Math.max(1,Math.floor(L/4));
+// The perimeter barrier: a berm, a battered gunmetal wall, a shadowed recess, a pale ceramic shoulder band and a dark slot
+// under the cap on both faces; on top a walkway of pale cap plates between ceramic parapets, one cyan pad a bay on the
+// cap's edge; a dark buttress rib every ~4 m and a gold-crowned post at both ends. o.d = run length along z; 6 thick;
+// 5 high; symmetric.
+WK.model('base-wall',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.d||35,sink=o.sink??1,R=(w,y)=>rc(b,w,L,y),n=Math.max(1,Math.floor(L/4)),bay=L/n,len=bay-1.1;
  if(hi)b.loft([R(6,-sink),R(6,.25),R(5.2,1.2)],M.conc,{top:false});else b.loft([R(6,-sink),R(5.4,1.2)],M.conc,{top:false});
- b.loft([R(4.5,1.2),R(4.36,2.5)],M.hull,{top:false});if(hi)b.loft([R(4.36,2.5),R(4.58,2.58),R(4.58,2.86),R(4.3,2.94)],M.hull2,{top:false});else b.loft([R(4.5,2.5),R(4.5,2.94)],M.hull2,{top:false});
- b.loft([R(4.3,2.94),R(4.2,3.95)],M.plate,{top:false});b.loft([R(4.36,3.95),R(4.36,4.15)],M.cyan,{top:false});b.loft([R(4.24,4.15),R(4.8,4.38),R(4.8,4.62)],M.hull2,{top:true,topMat:M.hull});
- for(const s of [-1,1])qb(b,s*2.2,4.62,0,.4,.2,L,M.hull2,'b');
- for(let i=0;i<=n;i++){const t=-L/2+i*L/n+(i===0?.32:i===n?-.32:0);
-  if(hi){b.loft([rc(b,5.7,.64,.7,.1,0,t),rc(b,4.96,.52,4.3,.1,0,t)],M.hull2,{top:false});const tm=Math.max(-L/2+.66,Math.min(L/2-.66,t));for(const s of [-1,1]){qb(b,s*2.2,4.62,tm,.46,.38,1.3,M.hull,'b');qb(b,s*2.44,4.74,tm,.04,.14,.9,M.gold,'tb'+(s>0?'l':'r'));b.quad([s*2.63,3.05,t-.08],[s*2.63,3.05,t+.08],[s*2.56,3.75,t+.08],[s*2.56,3.75,t-.08],M.ice,[0,3.4,t]);}}
-  else qb(b,0,.7,t,5.3,3.6,.56,M.hull2,'tb');}
- if(hi)for(let i=0;i<n;i++){const t=-L/2+(i+.5)*L/n;qb(b,0,4.62,t,.9,.03,L/n-1.6,M.plate2,'b');qb(b,0,4.65,t,.24,.02,.7,M.ice,'b');for(const s of [-1,1]){qb(b,s*2.24,1.5,t,.08,.74,L/n-1.5,M.plate2,s>0?'l':'r');qb(b,s*2.3,1.72,t,.04,.3,1.2,M.dark,s>0?'l':'r');}}
+ b.loft([R(4.5,1.2),R(4.4,2.3),R(4.16,2.36),R(4.16,2.6),R(4.46,2.68),R(4.3,3.92),R(4.14,3.97),R(4.14,4.17),R(4.8,4.38),R(4.8,4.62)],r=>[M.hull,M.dark,M.dark,M.plate2,M.plate,M.dark,M.dark,M.hull2,M.hull2][r],{top:true,topMat:M.hull});
+ for(const s of [-1,1])qb(b,s*2.2,4.62,0,.4,.22,L,f=>f==='t'?M.plate:M.plate2,'b');
+ // every bay: a pale cap plate on the walkway, a cyan pad on the cap's edge, bevelled armour panels on both faces
+ for(let i=0;i<n;i++){const t=-L/2+(i+.5)*bay;
+  if(hi){qb(b,0,4.62,t,3.1,.06,len,M.plate,'b');qb(b,0,4.68,t,.3,.02,.8,M.ice,'b');}else b.quad([-1.55,4.66,t-len/2],[1.55,4.66,t-len/2],[1.55,4.66,t+len/2],[-1.55,4.66,t+len/2],M.plate,[0,0,t]);
+  for(const s of [-1,1]){b.quad([s*2.42,4.43,t-.55],[s*2.42,4.43,t+.55],[s*2.42,4.57,t+.55],[s*2.42,4.57,t-.55],M.cyan,[0,4.5,t]);
+   if(hi){b.at(s*2.2,2.76,t,s*Math.PI/2,q=>{q.bev(0,0,0,len-.3,1.1,.12,M.plate,{ch:.05});qb(q,0,.42,.07,1.5,.24,.03,M.dark,'kb');},-.065);
+    qb(b,s*2.24,1.42,t,.08,.72,len-.3,M.plate2,s>0?'l':'r');qb(b,s*2.3,1.62,t,.04,.3,1.3,M.dark,s>0?'l':'r');}}}
+ // a buttress rib between bays; a taller post with a gold crown band and a pale cap closes each end
+ for(let i=1;i<n;i++){const t=-L/2+i*bay;
+  if(hi){b.loft([rc(b,5.7,.7,.7,.1,0,t),rc(b,4.96,.56,4.3,.1,0,t)],M.hull2,{top:false});for(const s of [-1,1])qb(b,s*2.2,4.62,t,.5,.4,1.1,M.hull2,'b');}
+  else qb(b,0,.7,t,5.3,3.6,.6,M.hull2,'b');}
+ for(const e of [-1,1]){const t=e*(L/2-.47);b.bev(0,.6,t,5.3,4.3,1,M.hull2,{ch:.12});b.loft([rc(b,5.14,1,4.9,0,0,t),rc(b,5.14,1,5.04,0,0,t)],M.gold,{top:true,topMat:M.plate});
+  for(const s of [-1,1])qb(b,s*2.66,2.7,t,.04,1.5,.66,M.plate,s>0?'l':'r');if(hi)qb(b,0,5.04,t,.6,.04,.4,M.white,'b');}
 },{aoH:3,aoMin:.6});
 
 // ------------------------------------------------------------------ base-gate -------------------------------------------
@@ -355,12 +397,12 @@ WK.model('base-hangar',(b,o)=>{const {pal,glow,tint}=b.k,M=pal.mil,hi=b.hi,sink=
 
 // ------------------------------------------------------------------ base-reactor ----------------------------------------
 // The reactor on its octagonal plinth (r 7.6, lit strip): a ribbed drum with lit rings, radiator banks, pipe elbows, a gold
-// crown and the glowing core dome (12 high). o.tier: 3+ adds a third ring and crown teeth. o.plinth = 1: the plinth only
+// crown and the softly glowing core dome (12 high); the drum's shoulder under the crown is pale ceramic. o.tier: 3+ adds a third ring and crown teeth. o.plinth = 1: the plinth only
 // (the citadel model stands on it).
 WK.model('base-reactor',(b,o)=>{const {pal,glow,circ}=b.k,M=pal.mil,hi=b.hi,tier=o.tier||2,sink=o.sink??.6,O=(r,y)=>oct(b,r,y),teal=glow(0x2dffc4,1),n=hi?16:10,C=(r,y)=>({p:circ(r,n,0,0,r,Math.PI/n),y}),rD=y=>5.6-.75*(y-1.6)/7.8;
  b.loft([O(7.6,-sink),O(7.6,1.28)],M.hull2,{top:false});b.loft([O(7.75,1.28),O(7.75,1.48)],M.cyan,{top:false});b.loft([O(7.66,1.48),O(7.66,1.6),O(5.6,1.63)],M.hull2,{top:false});
  if(o.plinth){b.cap(O(5.6,1.63).p,1.63,M.hull2);return;}
- b.loft([C(5.86,1.6),C(5.86,2.2),C(rD(2.4),2.4)],M.hull2,{smooth:true,top:false});b.loft([C(rD(2.4),2.4),C(rD(8.9),8.9)],M.hull,{smooth:true,top:false});
+ b.loft([C(5.86,1.6),C(5.86,2.2),C(rD(2.4),2.4)],M.hull2,{smooth:true,top:false});b.loft([C(rD(2.4),2.4),C(rD(6.9),6.9),C(rD(8.9),8.9)],r=>r?M.plate:M.hull,{smooth:true,top:false});
  b.loft([C(rD(8.9),8.9),C(rD(8.9)+.2,9),C(rD(9.4)+.2,9.4)],M.hull2,{smooth:true,top:false});b.loft([C(4.85,9.4),C(4.85,9.62),C(4.5,9.86)],M.gold,{smooth:true,top:true,topMat:M.hull2});
  // ribs: buttress fins following the drum's taper
  const nr=hi?12:6;for(let k=0;k<nr;k++){const a=k*TAU/nr+(hi?TAU/24:0);rad(b,a,0,0,q=>{if(hi)q.loft([rc(q,.74,.9,1.6,.1,0,5.86+.2),rc(q,.62,.66,8.6,.1,0,rD(8.6)+.26),rc(q,.4,.3,9.5,.08,0,rD(9.5)+.06)],M.hull2);else q.loft([rc(q,.8,.9,1.6,0,0,6),rc(q,.6,.5,9.4,0,0,5.05)],M.hull2);});
@@ -372,8 +414,10 @@ WK.model('base-reactor',(b,o)=>{const {pal,glow,circ}=b.k,M=pal.mil,hi=b.hi,tier
   if(hi){const a2=a+.62,c=Math.cos(a2),s=Math.sin(a2);b.pipe([[c*5.7,2.9,s*5.7],[c*6.9,2.9,s*6.9],[c*6.9,1.6,s*6.9]],.3,M.bare,{n:6});const a3=a-.62,c3=Math.cos(a3),s3=Math.sin(a3);b.pipe([[c3*5.7,2.3,s3*5.7],[c3*6.7,2.3,s3*6.7],[c3*6.7,1.6,s3*6.7]],.22,M.trim,{n:5});}}
  // the crown and the core dome
  if(tier>=3&&hi)for(let k=0;k<8;k++){const a=k*Math.PI/4;rad(b,a,4.72,9.62,q=>q.loft([rc(q,.7,.34,0),rc(q,.3,.2,.62,0,0,-.1)],M.gold));}
- b.dome(0,9.86,0,4.3,1.95,4.3,glow(tier>=4?0xe4fff6:0xc8f4ea,tier>=4?.8:.66),{n:hi?14:8,rings:hi?4:2});
- if(hi){b.ring(0,9.9,0,4.4,M.gold,{thin:true});b.halo(0,11.2,0,3.2,0x2dffc4,.4);}b.cyl(0,11.72,0,.5,.22,teal,{n:6});
+ // the core dome: pale and softly lit, NOT blown out (the solid shader multiplies emission by 2.3: 0xdfeef2 clips to pure
+ // white from about 0.5 up), a shade darker toward its base so the form reads
+ {const dm=glow(0xdfeef2,.28);b.dome(0,9.86,0,4.3,1.95,4.3,r=>r?(r>1?dm:b.k.tint(dm,.9)):b.k.tint(dm,.78),{n:hi?14:8,rings:hi?4:2});}
+ if(hi){b.ring(0,9.9,0,4.4,M.gold,{thin:true});b.halo(0,11.2,0,2.2,0x2dffc4,.22);}b.cyl(0,11.72,0,.5,.22,teal,{n:6});
 },{aoH:3,aoMin:.58});
 
 // ------------------------------------------------------------------ base-tower ------------------------------------------
@@ -401,23 +445,26 @@ WK.model('base-tower',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,sink=o.sink
 },{aoH:3,aoMin:.6});
 
 // ------------------------------------------------------------------ base-module -----------------------------------------
-// A base module on the back wall line: a hex core whose height is its level (o.level 1-3: 2.3 / 3.4 / 4.5 m), one lit band a
-// level and a glowing cap in the function colour (o.color, hex). o.kind (optional: reactor hangar defense vault radar uplink)
-// picks the emblem on top.
-WK.model('base-module',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,lv=Math.max(1,Math.min(3,(o.level|0)||1)),h=1.2+lv*1.1,col=o.color||0x22e6ff,c=glow(col,1),c9=glow(col,.9),X=(r,y)=>ngon(b,6,r,y,Math.PI/6);
+// A base module on the back wall line: a hex core whose height is its level (o.level 1-3: 2.3 / 3.4 / 4.5 m) with six corner
+// buttress fins, a pale ceramic shoulder under a gold cornice, a hatch on each of the two front faces, one lit band a
+// level and a softly glowing cap in the function colour (o.color, hex). o.kind (optional: reactor hangar defense vault
+// radar uplink) picks the emblem on top.
+WK.model('base-module',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,lv=Math.max(1,Math.min(3,(o.level|0)||1)),h=1.2+lv*1.1,col=o.color||0x22e6ff,c=glow(col,.8),cap=glow(col,.5),c9=glow(col,.9),X=(r,y)=>ngon(b,6,r,y,Math.PI/6),ys=h-.95;
  if(hi)b.loft([X(1.9,-.4),X(1.9,.24),X(1.62,.4)],M.hull2,{top:false});else b.loft([X(1.9,-.4),X(1.7,.4)],M.hull2,{top:false});
- b.loft([X(1.5,.4),X(1.42,h)],M.hull,{top:false});for(let k=1;k<=lv;k++){const y=h*k/(lv+1)+.1;b.loft([X(1.57,y-.07),X(1.57,y+.07)],c9,{top:false});}
- b.loft([X(1.62,h),X(1.62,h+.12)],M.gold,{top:false});b.loft([X(1.6,h+.12),X(1.6,h+.34),X(1.25,h+.48)],(r)=>r?M.hull2:c,{top:true,topMat:M.hull2});
- if(hi)for(let k=0;k<6;k++){const a=k*Math.PI/3+Math.PI/6;rad(b,a,0,0,q=>q.loft([rc(q,.34,.5,.3,0,0,1.62),rc(q,.26,.24,h,0,0,1.5)],M.hull2,{top:false}));}
- const y=h+.48,kind=o.kind||'';
+ b.loft([X(1.5,.4),X(1.45,ys),X(1.56,ys+.08),X(1.5,h)],r=>r?M.plate:M.hull,{top:false});for(let k=1;k<=lv;k++){const y=.4+(ys-.4)*k/(lv+1);b.loft([X(1.53,y-.06),X(1.53,y+.06)],c9,{top:false});}
+ b.loft([X(1.62,h),X(1.62,h+.1)],M.gold,{top:false});b.loft([X(1.6,h+.1),X(1.6,h+.28),X(1.25,h+.46)],(r)=>r?M.hull2:cap,{top:true,topMat:M.hull2});
+ for(let k=0;k<6;k++){const a=k*Math.PI/3+Math.PI/6;rad(b,a,0,0,q=>hi?q.loft([rc(q,.42,.66,.3,0,0,1.58),rc(q,.32,.34,ys,0,0,1.5),rc(q,.24,.14,h,0,0,1.5)],M.hull2,{top:true}):q.loft([rc(q,.42,.66,.3,0,0,1.58),rc(q,.26,.2,h,0,0,1.5)],M.hull2,{top:false}));}
+ // the hatches: a pale frame, a dark leaf, a status pad in the function colour
+ for(const a of [Math.PI/3,Math.PI*2/3])rad(b,a,1.33,.44,q=>{const hh=Math.min(1.2,ys-.6);qb(q,0,0,.02,.62,hh,.04,M.dark,'kb');if(hi){qb(q,0,hh,.03,.86,.1,.08,M.plate2,'kb');for(const s of [-1,1])qb(q,s*.37,0,.03,.12,hh,.08,M.plate2,'kb');qb(q,0,hh*.62,.05,.2,.08,.03,c9,'kb');}});
+ const y=h+.46,kind=o.kind||'';
  if(kind==='reactor'){b.cyl(0,y,0,.5,.3,M.hull2,{n:6});b.ball(0,y+.75,0,.5,c,true);}
  else if(kind==='hangar'){b.at(0,y,0,0,q=>q.vault(0,0,0,1.5,.62,M.plate,{n:hi?6:4,ends:M.hull2}));}
  else if(kind==='defense'){b.bev(0,y,-.1,1,.5,1,M.hull2,{ch:.08});for(const s of [-1,1])b.tube([s*.24,y+.3,.3],[s*.24,y+.42,1.3],.09,M.trim,{n:5,caps:true});}
- else if(kind==='vault'){b.bev(0,y,0,1.2,.7,1,M.gold,{ch:.1});qb(b,0,y+.22,.51,.3,.26,.03,M.dark,'kb');}
+ else if(kind==='vault'){b.bev(0,y,0,1.2,.7,1,M.plate,{ch:.1});qb(b,0,y+.22,.51,.3,.26,.03,M.gold,'kb');}
  else if(kind==='radar'){b.cyl(0,y,0,.1,.5,M.trim,{n:5});b.at(0,y+.5,0,.6,q=>q.cyl(0,0,0,.12,.3,M.plate,{n:hi?8:6,r2:.7}),.8);}
  else if(kind==='uplink'){b.tube([0,y,0],[0,y+2.1,0],.06,M.trim,{n:4});for(const [yy,r] of [[.7,.34],[1.25,.24]])hoop(b,y+yy,r-.06,r,.06,6,c9,{});b.gem(0,y+2.2,0,.12,.16,.12,c);}
- else{b.cyl(0,y,0,.34,.36,M.hull2,{n:6});b.gem(0,y+.74,0,.3,.4,.3,c);}
- b.halo(0,h+.3,0,1.2,col,.45);
+ else{b.cyl(0,y,0,.34,.36,M.hull2,{n:6});b.gem(0,y+.7,0,.24,.34,.24,c);}
+ b.halo(0,h+.3,0,1.2,col,.22);
 });
 
 // ------------------------------------------------------------------ base-spire ------------------------------------------
@@ -445,145 +492,161 @@ WK.model('base-spire',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,sink=o.sink
 },{aoH:5,aoMin:.58});
 
 // ------------------------------------------------------------------ base-kiosk ------------------------------------------
-// The amber build terminal (2 x 1.5, 3.4 high, a whip to 4.5): a console with a slanted amber screen facing +z.
+// The build terminal (2 x 1.5, 3.4 high, a whip to 4.5): a console with a slanted AMBER screen facing +z (amber is the game's
+// "build here"); every other light on it is military cyan / white, the kick plates are pale ceramic.
 WK.model('base-kiosk',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi;
- b.bev(0,-.3,0,2.1,.62,1.6,M.hull2,{ch:.08});b.loft([rc(b,1.9,1.4,.32,hi?.1:0),rc(b,1.84,1.34,1.7,hi?.1:0),rc(b,1.8,1,3.3,hi?.1:0,0,-.16)],(r)=>r?M.plate2:M.hull,{top:true,topMat:M.hull2});
+ b.bev(0,-.3,0,2.1,.62,1.6,M.hull2,{ch:.08});b.loft([rc(b,1.9,1.4,.32,hi?.1:0),rc(b,1.84,1.34,1.7,hi?.1:0),rc(b,1.8,1,3.3,hi?.1:0,0,-.16)],(r)=>r?M.plate:M.hull,{top:true,topMat:M.hull2});
  b.at(0,2.5,.5,0,q=>{qb(q,0,-.62,0,1.66,1.24,.1,M.dark,'k');qb(q,0,-.5,.06,1.5,1,.03,glow(0xffb347,.95),'k');if(hi){for(let k=0;k<3;k++)qb(q,-.3,.2-k*.24,.08,.6,.06,.02,M.hazardD,'ktbrl');qb(q,.45,-.3,.08,.3,.3,.02,M.hazardD,'ktbrl');}},-.203);
- for(const s of [-1,1])qb(b,s*.93,.5,.55,.07,1.1,.2,M.amber,'b'+(s>0?'l':'r'));
- b.bev(0,3.3,-.16,2,.16,1.2,M.hull2,{ch:.05});qb(b,0,3.34,.45,1.9,.08,.03,M.gold,'kb');b.tube([-.7,3.46,-.5],[-.7,4.5,-.5],.035,M.trim,{n:3});b.gem(-.7,4.56,-.5,.08,.1,.08,M.amber);
- if(hi){b.at(0,1.5,.66,0,q=>{q.bev(0,0,.12,1.5,.14,.4,M.hull2,{ch:.04});for(let k=0;k<4;k++)qb(q,-.48+k*.32,.14,.12,.2,.02,.16,k===3?M.amber:M.trim,'b');},.24);
-  for(const s of [-1,1])hazard(b,s*.6,.34,.71,.5,.5,3);b.bev(.5,3.46,-.3,.5,.2,.4,M.trim,{ch:.04});b.halo(0,2.5,.7,1.1,0xffb347,.25);}
+ for(const s of [-1,1])qb(b,s*.93,.5,.55,.07,1.1,.2,M.cyan,'b'+(s>0?'l':'r'));
+ b.bev(0,3.3,-.16,2,.16,1.2,M.hull2,{ch:.05});qb(b,0,3.34,.45,1.9,.08,.03,M.gold,'kb');b.tube([-.7,3.46,-.5],[-.7,4.5,-.5],.035,M.trim,{n:3});b.gem(-.7,4.56,-.5,.08,.1,.08,M.white);
+ if(hi){b.at(0,1.5,.66,0,q=>{q.bev(0,0,.12,1.5,.14,.4,M.hull2,{ch:.04});for(let k=0;k<4;k++)qb(q,-.48+k*.32,.14,.12,.2,.02,.16,k===3?M.cyan:M.trim,'b');},.24);
+  for(const s of [-1,1])qb(b,s*.5,.4,.71,.7,.5,.03,M.plate,'kb');b.bev(.5,3.46,-.3,.5,.2,.4,M.trim,{ch:.04});b.halo(0,2.5,.7,1.1,0xffb347,.25);}
 });
 
 // ------------------------------------------------------------------ veteran-monument ------------------------------------
 // The field veteran's monument (3 x 3, 5.6 high): a stepped armoured plinth, a gold obelisk with a lit band and a white tip.
 WK.model('veteran-monument',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,X=(r,y)=>ngon(b,4,r,y,Math.PI/4);
  b.bev(0,0,0,3,.5,3,M.hull2,{ch:.1});b.bev(0,.5,0,2.2,.5,2.2,M.hull,{ch:.08});if(hi){b.box(0,.56,1.11,1.2,.34,.04,M.gold);for(const s of [-1,1])b.box(s*1.2,.5,1.2,.3,.3,.3,M.cyan);}
- b.loft([X(.95,1),X(.8,1.5),X(.62,1.56),X(.3,4.6),X(.02,5.4)],(r)=>r===1?M.cyan:M.gold,{top:false});b.gem(0,5.5,0,.14,.2,.14,M.white);b.halo(0,5.4,0,1.6,0xffd36b,.9);
+ b.loft([X(.95,1),X(.8,1.5),X(.62,1.56),X(.3,4.6),X(.02,5.4)],(r)=>r===1?M.cyan:M.gold,{top:false});b.gem(0,5.5,0,.14,.2,.14,M.white);b.halo(0,5.4,0,1.6,0xffd36b,.45);
 },{aoH:2,aoMin:.6});
 
 // ================================================================== the frontier wall ===================================
 // ------------------------------------------------------------------ frontier-wall ---------------------------------------
 // A run of the frontier wall the colonists hold. o.w = run length along x, o.d / o.h = the lot's depth and height (3 / 5):
 // the body is o.d thick, the walkway slab and buttresses reach o.d / 2 + 0.2, the parapet top is at o.h + 1; o.sink below
-// the ground. The OUTER face is +z: a crenellated parapet with firing slits, buttresses about every 6 m, plate cladding;
-// the inner face has pilasters and the walkway rail. End posts with hazard stripes close each run.
-WK.model('frontier-wall',(b,o)=>{const {pal,tint}=b.k,M=pal.mil,hi=b.hi,w=o.w||13,d=o.d||3,h=o.h||5,sink=o.sink??4,hd=d/2,R=(dd,y)=>rc(b,w,dd,y);
- b.loft([R(d,-sink),R(d,.9),R(d-.14,1)],M.conc,{top:false});b.loft([R(d-.14,1),R(d-.5,h-.82)],M.hull,{top:false});b.loft([R(d+.24,h-.82),R(d+.24,h-.62)],M.cyan,{top:false});b.loft([R(d+.4,h-.62),R(d+.4,h-.3)],M.hull2,{top:true,topMat:M.conc});
- // outer parapet with merlons and firing slits; inner kerb and rail
+// the ground. The OUTER face is +z: a crenellated parapet with pale-capped merlons and firing slits, a dark buttress every
+// bay (about 3.6 m), a pale ceramic shoulder band over the gunmetal foot with a shadowed recess between them, one cyan
+// pad a bay on the walkway slab's edge; the inner face has pilasters and the walkway rail. Gold-crowned end posts with
+// hazard stripes close each run.
+WK.model('frontier-wall',(b,o)=>{const {pal,tint}=b.k,M=pal.mil,hi=b.hi,w=o.w||13,d=o.d||3,h=o.h||5,sink=o.sink??4,hd=d/2,R=(dd,y)=>rc(b,w,dd,y),ys=1+(h-1.9)*.42,ph=h-ys-1.3,
+  x0=-w/2+1.1,nb=Math.max(1,Math.round((w-2.2)/3.6)),bw=(w-2.2)/nb;
+ b.loft([R(d,-sink),R(d,.9),R(d-.14,1),R(d-.3,ys),R(d-.56,ys+.05),R(d-.56,ys+.25),R(d-.26,ys+.32),R(d-.5,h-.98),R(d-.7,h-.94),R(d-.7,h-.66),R(d+.4,h-.62),R(d+.4,h-.3)],r=>[M.conc,M.conc,M.hull,M.dark,M.dark,M.plate2,M.plate,M.dark,M.dark,M.hull2,M.hull2][r],{top:true,topMat:M.plate2});
+ // outer parapet with pale-capped merlons and firing slits; inner kerb and rail
  qb(b,0,h-.3,hd-.05,w,.62,.5,M.hull,'b');const nm=Math.max(2,Math.round(w/2.2));
- for(let k=0;k<nm;k++){const x=-w/2+w*(k+.5)/nm;qb(b,x,h+.32,hd-.05,w/nm-.7,.62,.5,M.hull,'b');if(hi){qb(b,x,h+.94,hd-.05,w/nm-.62,.06,.5,M.plate2,'b');qb(b,x,h-.12,hd+.21,.16,.36,.02,M.dark,'kb');}}
- qb(b,0,h-.3,-hd-.02,w,.2,.3,M.hull2,'b');if(hi)b.detail(()=>b.rail([[-w/2+1,h-.1,-hd-.02],[w/2-1,h-.1,-hd-.02]],.85,M.bare,{step:2.2,r:.05}));
- // buttresses (outer) and pilasters (inner) about every 6 m, plate cladding between them
- const xs=[];for(let x=-w/2+3;x<w/2-1.2;x+=6)xs.push(x);
- for(const x of xs){b.loft([rc(b,1.3,.62,-sink,0,x,hd-.11),rc(b,1.2,.6,h*.5,0,x,hd-.1),rc(b,.9,.3,h-.84,0,x,hd-.1)],M.hull2,{top:false});b.loft([rc(b,.9,.4,-sink,0,x,-hd),rc(b,.8,.3,h-.84,0,x,-hd-.02)],M.hull2,{top:false});
+ for(let k=0;k<nm;k++){const x=-w/2+w*(k+.5)/nm;qb(b,x,h+.32,hd-.05,w/nm-.7,.68,.5,f=>f==='t'?M.plate:M.hull,'b');if(hi)qb(b,x,h-.14,hd+.21,.5,.3,.02,M.dark,'kb');}
+ qb(b,0,h-.3,-hd-.02,w,.2,.3,f=>f==='t'?M.plate:M.hull2,'b');if(hi)b.detail(()=>b.rail([[-w/2+1,h-.1,-hd-.02],[w/2-1,h-.1,-hd-.02]],.85,M.bare,{step:3.2,r:.07,mid:false}));
+ // a buttress (outer) and a pilaster (inner) between bays
+ for(let i=1;i<nb;i++){const x=x0+i*bw;b.loft([rc(b,1.3,.62,-sink,0,x,hd-.11),rc(b,1.2,.6,h*.5,0,x,hd-.1),rc(b,.9,.3,h-.84,0,x,hd-.1)],M.hull2,{top:false});b.loft([rc(b,.9,.4,-sink,0,x,-hd),rc(b,.8,.3,h-.84,0,x,-hd-.02)],M.hull2,{top:false});
   if(hi){qb(b,x,h*.5+.5,hd+.15,.5,.2,.08,M.hull2,'b');qb(b,x,h*.5+.46,hd+.15,.36,.04,.06,M.white,'t');}}
- if(hi){const ed=[-w/2+1.1,...xs,w/2-1.1];for(let i=0;i<ed.length-1;i++){const a=ed[i]+.75,c=ed[i+1]-.75;if(c-a<1.2)continue;b.at((a+c)/2,0,hd-.2,0,q=>q.bev(0,1.5,0,c-a,h-2.9,.12,M.plate2,{ch:.06}),-.055);}}
- // end posts: taller, striped, a lamp on top
- for(const s of [-1,1]){const x=s*(w/2-.55);b.bev(x,-sink,0,1.1,sink+h+.72,d+.4,M.hull2,{ch:.1});b.bev(x,h+.72,0,.8,.2,d,M.hull,{ch:.05});b.at(x,0,hd+.2,0,q=>hazard(q,0,1.6,.02,1,1.2,4));
-  if(hi){b.at(x,0,-hd-.2,Math.PI,q=>hazard(q,0,1.6,.02,1,1.2,4));qb(b,x,h+.92,0,.3,.08,.3,M.cyan,'b');qb(b,x,3.4,hd+.21,.16,1.2,.02,M.ice,'kb');}}
+ // every bay: a cyan pad on the slab's edge; bevelled ceramic armour on the shoulder with a dark slot, a plate on the foot
+ for(let i=0;i<nb;i++){const x=x0+(i+.5)*bw;b.quad([x-.55,h-.54,hd+.21],[x+.55,h-.54,hd+.21],[x+.55,h-.4,hd+.21],[x-.55,h-.4,hd+.21],M.cyan,[x,h-.5,0]);
+  if(hi){b.at(x,ys+.4,hd-.12,0,q=>{q.bev(0,0,0,bw-1.5,ph-.16,.14,M.plate,{ch:.06});qb(q,0,ph*.42,.08,Math.min(1.5,bw-2.2),.26,.03,M.dark,'kb');},-.12/ph);b.at(x,1.14,hd-.07,0,q=>q.bev(0,0,0,bw-1.7,ys-1.3,.1,M.plate2,{ch:.05}),-.06);}}
+ // end posts: taller, striped, a gold crown band under a pale cap, a cyan lamp on top
+ for(const s of [-1,1]){const x=s*(w/2-.52);b.bev(x,-sink,0,1.1,sink+h+.72,d+.4,M.hull2,{ch:.1});b.loft([rc(b,1.16,d+.46,h+.44,0,x),rc(b,1.16,d+.46,h+.58,0,x)],M.gold,{top:false});b.bev(x,h+.72,0,.86,.2,d+.1,M.plate,{ch:.05});
+  b.at(x,0,hd+.2,0,q=>{hazard(q,0,1.6,.02,1,1.2,4);q.quad([-.4,3.3,.02],[.4,3.3,.02],[.4,h-.2,.02],[-.4,h-.2,.02],M.plate,[0,3,-1]);});qb(b,x,h+.92,0,.3,.08,.3,M.cyan,'b');
+  if(hi){b.at(x,0,-hd-.2,Math.PI,q=>hazard(q,0,1.6,.02,1,1.2,4));qb(b,x,3.6,hd+.23,.16,h-4.2,.02,M.ice,'kb');}}
 },{aoH:3,aoMin:.58});
 
 // ------------------------------------------------------------------ frontier-watch --------------------------------------
-// A frontier watchtower on o.w x o.d (6 x 6), cabin top at o.h (12): four splayed armoured legs with cross braces, an
+// A frontier watchtower on o.w x o.d (6 x 6), cabin top at o.h (12): four splayed armoured legs with ONE stout diagonal a
+// face a tier, a ring beam and pale gusset blocks at mid height (thin X braces turn to moire on a phone), an
 // enclosed cabin with a lit window band, a hipped roof (0.3 overhang) with a searchlight (front, +z), an antenna with a red
 // tip (to o.h + 1.1) and cyan trim, a ladder up the back.
 WK.model('frontier-watch',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,w=o.w||6,d=o.d||6,h=o.h||12,sink=o.sink??1,fy=h*.66,R=(k,y,ch)=>rc(b,w*k,d*k,y,hi?ch:0);
  // legs and braces
  const L=(sx,sz,t)=>[sx*(w/2-.55-(w*.2-.55)*t*0+(-(w/2-.55)+w*.32)*t),fy*t,sz*(d/2-.55+(-(d/2-.55)+d*.32)*t)];
  for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]]){const a=L(sx,sz,0),c=L(sx,sz,1);b.bev(a[0],-sink,a[2],1.1,sink+.4,1.1,M.hull2,{ch:.1});b.loft([rc(b,.72,.72,.4,hi?.12:0,a[0],a[2]),rc(b,.5,.5,fy,hi?.1:0,c[0],c[2])],M.hull,{top:false});}
- const C=[[-1,-1],[1,-1],[1,1],[-1,1]];for(let i=0;i<4;i++){const p=C[i],q=C[(i+1)%4];for(const [t0,t1] of [[.08,.5],[.52,.94]]){b.tube(L(p[0],p[1],t0),L(q[0],q[1],t1),.085,M.trim,{n:hi?4:3});if(hi)b.tube(L(q[0],q[1],t0),L(p[0],p[1],t1),.085,M.trim,{n:4});}
-  b.tube(L(p[0],p[1],.51),L(q[0],q[1],.51),.1,M.hull2,{n:hi?4:3});}
+ const C=[[-1,-1],[1,-1],[1,1],[-1,1]];for(let i=0;i<4;i++){const p=C[i],q=C[(i+1)%4];b.tube(L(p[0],p[1],.07),L(q[0],q[1],.5),.17,M.trim,{n:hi?4:3});if(hi||i%2===0)b.tube(L(q[0],q[1],.52),L(p[0],p[1],.95),.17,M.trim,{n:hi?4:3});
+  b.tube(L(p[0],p[1],.51),L(q[0],q[1],.51),.2,M.hull2,{n:hi?4:3});if(hi){const g=L(p[0],p[1],.51);qb(b,g[0],g[1]-.34,g[2],.9,.68,.9,M.plate2,'b');}}
  // the cabin: floor, armoured lower wall, the window band, a pale upper band, cyan trim, the roof
  b.loft([R(.86,fy-.3,.5),R(1,fy,.6),R(1,fy+.24,.6)],M.hull2,{top:false});b.loft([R(.96,fy+.24,.7),R(.95,h*.8,.7)],M.hull,{top:false});
  b.loft([R(.93,h*.8,.7),R(.92,h*.89,.7)],hi?M.glassDark:M.ice,{top:false});b.loft([R(.95,h*.89,.7),R(.95,h*.94,.7)],M.plate,{top:false});b.loft([R(.97,h*.94,.7),R(.97,h*.955,.7)],M.cyan,{top:false});
- b.loft([R(1.1,h*.955,.8),R(1.1,h*.975,.8),R(.56,h+.08,.4)],(r)=>r?M.hull:M.hull2,{top:false});b.loft([R(.56,h+.08,.4),R(.56,h+.12,.4)],M.cyan,{top:false});b.loft([R(.52,h+.12,.4),R(.5,h+.16,.4)],M.plate2,{top:true,topMat:M.plate2});
+ b.loft([R(1.1,h*.955,.8),R(1.1,h*.975,.8),R(.56,h+.08,.4)],(r)=>r?M.plate2:M.hull2,{top:false});b.loft([R(.56,h+.08,.4),R(.56,h+.12,.4)],M.cyan,{top:false});b.loft([R(.52,h+.12,.4),R(.5,h+.16,.4)],M.plate2,{top:true,topMat:M.plate2});
  if(hi)for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{const ww=(k%2?d:w),z=(k%2?w:d)*.93/2+.02;for(const x of [-1,0,1])qb(q,x*ww*.22,h*.8+.08,z,ww*.19,h*.09-.16,.03,M.ice,'kb');qb(q,0,fy+.7,z+.1,ww*.5,h*.14-1.3,.1,M.plate2,'kb');});
  // roof kit: searchlight, antenna, an air unit, the hatch light
  b.at(w*.36,h-.12,d*.36,.5,q=>{q.cyl(0,-.1,0,.18,.34,M.trim,{n:6});q.at(0,.42,0,0,r=>{r.tube([0,0,-.3],[0,0,.34],.3,M.hull2,{n:hi?8:5,caps:true});r.tube([0,0,.34],[0,0,.38],.25,M.white,{n:hi?8:5,caps:true});},.3);});b.halo(w*.3+.3,h+.4,d*.3+.5,1.2,0xe8f6ff,.4);
  b.tube([-w*.26,h*.99,-d*.26],[-w*.26,h+1,-d*.26],.06,M.trim,{n:4});b.gem(-w*.26,h+1.02,-d*.26,.1,.1,.1,M.red);
  if(hi){airUnit(b,w*.06,h+.16,-d*.04,.55);qb(b,-w*.12,h+.16,d*.08,.9,.06,.9,M.hazard,'b');qb(b,-w*.12,h+.2,d*.08,.7,.03,.7,M.hull2,'b');b.tube([-w*.26,h+.5,-d*.26],[-w*.26+.6,h+.5,-d*.26],.03,M.bare,{n:3});b.halo(-w*.26,h+1.05,-d*.26,.8,0xff3048,.9);
-  b.detail(()=>{b.ladder([0,0,-d*.42],[0,fy-.3,-d*.3],M.bare,{w:.6});});qb(b,0,fy-.34,-d*.3,1.1,.06,1.1,M.gold,'t');qb(b,0,fy+.5,d*.48+.03,.9,.1,.04,M.cyan,'kb');}
+  b.detail(()=>steps(b,[0,0,-d*.42],[0,fy-.3,-d*.3],.7,M.bare));qb(b,0,fy-.34,-d*.3,1.1,.06,1.1,M.gold,'t');qb(b,0,fy+.5,d*.48+.03,.9,.1,.04,M.cyan,'kb');}
 },{aoH:4,aoMin:.6});
 
 // ------------------------------------------------------------------ frontier-gate ---------------------------------------
 // A frontier gate tower (pairs of them flank a road): a tapered armoured pylon (footprint 3.6, top at o.h = 9) with a lit
-// cap band, amber warning lights, and a barrier-arm housing on the front (+z) with its striped arm raised.
+// cyan cap band and two cyan cap lights, and a barrier-arm housing on the front (+z) with its striped arm raised: a small
+// red warning beacon on the arm's tip. No amber: that is the settlers' light.
 WK.model('frontier-gate',(b,o)=>{const {pal,mat}=b.k,M=pal.mil,hi=b.hi,h=o.h||9,sink=o.sink??1,R=(s,y,ch=.5)=>rc(b,s,s,y,hi?ch:0),red=mat(0xb8322a,'paint',.3,0);
  b.bev(0,-sink,0,3.6,sink+1.2,3.6,M.hull2,{ch:.2});
  b.loft([R(3,1.2),R(2.78,h*.44)],M.hull,{top:false});b.loft([R(2.9,h*.44,.5),R(2.9,h*.48,.5)],M.hull2,{top:false});b.loft([R(2.74,h*.48),R(2.44,h*.73)],M.plate,{top:false});
- b.loft([R(2.44,h*.73),R(2.9,h*.76),R(2.9,h*.9)],M.hull2,{top:false});b.loft([R(2.98,h*.9),R(2.98,h*.945)],M.cyan,{top:false});b.loft([R(2.9,h*.945),R(2.2,h)],M.hull,{top:true,topMat:M.hull2});
+ b.loft([R(2.44,h*.73),R(2.9,h*.76),R(2.9,h*.9)],M.hull2,{top:false});b.loft([R(2.98,h*.9),R(2.98,h*.9+.2)],M.cyan,{top:false});b.loft([R(2.9,h*.9+.2),R(2.2,h)],M.hull,{top:true,topMat:M.plate2});
  for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4;rad(b,a,0,0,q=>q.loft([rc(q,.6,.6,1.1,0,0,1.86),rc(q,.4,.3,h*.74,0,0,1.52)],M.hull2,{top:false}));}
- for(const s of [-1,1]){b.cyl(s*.7,h,0,.16,.14,M.hull2,{n:6});b.gem(s*.7,h+.26,0,.15,.14,.15,M.amber);b.halo(s*.7,h+.26,0,.8,0xffb347,.45);}
+ for(const s of [-1,1]){b.cyl(s*.7,h,0,.16,.14,M.hull2,{n:6});b.gem(s*.7,h+.26,0,.15,.14,.15,M.cyan);b.halo(s*.7,h+.26,0,.8,0x22e6ff,.3);}
  // faces: a lit vision slit, plate, hazard band
  for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{qb(q,0,h*.8,1.46,1.5,.34,.04,M.dark,'kb');qb(q,0,h*.8+.08,1.49,1.2,.14,.03,M.ice,'kb');if(hi&&k)q.at(0,0,1.44,0,p=>p.bev(0,1.7,0,1.7,2,.12,M.plate2,{ch:.06}),-.04);});
  // the barrier: housing, pivot, the raised arm with its tip light
  b.bev(0,1.2,1.92,1.8,1.3,.9,M.hull2,{ch:.1});qb(b,0,1.3,2.38,1.5,.3,.03,M.hazard,'kb');
- b.bev(.55,1.6,2.14,.5,.5,.5,M.trim,{ch:.08});for(let k=0;k<6;k++)qb(b,.55,2.1+k*.82,2.2,.2,.82,.2,k%2?M.plate:red,'tb');b.gem(.55,h*.78+.1,2.2,.12,.14,.12,M.amber);
- if(hi){hazard(b,0,1.26,2.385,1.5,.34,5);qb(b,-.5,2.5,2.0,.3,.2,.3,M.amber,'b');b.at(0,0,-1.5,Math.PI,q=>{q.bev(0,1.2,.02,1.1,2.1,.14,M.hull2,{ch:.06});qb(q,0,3.36,.1,.8,.1,.05,M.ice,'kb');});b.tube([-.9,h,-.6],[-.9,h+.4,-.6],.03,M.bare,{n:3});}
+ b.bev(.55,1.6,2.14,.5,.5,.5,M.trim,{ch:.08});for(let k=0;k<6;k++)qb(b,.55,2.1+k*.82,2.2,.2,.82,.2,k%2?M.plate:red,'tb');b.gem(.55,h*.78+.1,2.2,.13,.15,.13,M.red);b.halo(.55,h*.78+.1,2.2,.6,0xff3048,.5);
+ if(hi){hazard(b,0,1.26,2.385,1.5,.34,5);qb(b,-.5,2.5,2.0,.3,.2,.3,M.cyan,'b');b.at(0,0,-1.5,Math.PI,q=>{q.bev(0,1.2,.02,1.1,2.1,.14,M.hull2,{ch:.06});qb(q,0,3.36,.1,.8,.1,.05,M.ice,'kb');});b.tube([-.9,h,-.6],[-.9,h+.4,-.6],.03,M.bare,{n:3});}
 },{aoH:3,aoMin:.6});
 
 // ================================================================== the terraformers' works =============================
 // ------------------------------------------------------------------ atmo-pylon ------------------------------------------
-// An atmosphere pylon (15.2 m): hex plinth with a cyan strip, cooling fins, a slender mast, three emitter rings at
-// 5 / 9 / 12.6 m and a glowing crown at 14.4.
-WK.model('atmo-pylon',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,X=(r,y)=>ngon(b,6,r,y),em=glow(0x22e6ff,1.3),rM=y=>.42-.16*(y-.9)/12.7;
- b.loft([X(1.7,-.6),X(1.7,.5)],M.hull2,{top:false});b.loft([X(1.76,.5),X(1.76,.64)],M.cyan,{top:false});b.loft([X(1.7,.64),X(1.5,.74),X(.62,.96)],M.hull,{top:false});
- b.loft([X(.62,.9),X(.56,3.5),X(.42,3.7)],M.hull2,{top:false});b.loft([X(rM(3.7),3.7),X(rM(13.6),13.6)],M.plate2,{top:false});
- for(let k=0;k<6;k++){const a=k*Math.PI/3+Math.PI/6;rad(b,a,0,0,q=>{if(hi)q.loft([rc(q,.12,.8,.9,0,0,.95),rc(q,.1,.5,3.3,0,0,.78)],M.plate,{top:true});else qb(q,0,.9,.9,.12,2.4,.7,M.plate,'b');});}
+// An atmosphere pylon (15.2 m): hex plinth with cyan pads on alternate faces and six pale ceramic fins, a stout tapering
+// mast (gunmetal foot, pale ceramic above), three emitter rings at 5 / 9 / 12.6 m and a glowing crown at 14.4.
+WK.model('atmo-pylon',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,X=(r,y)=>ngon(b,6,r,y),em=glow(0x22e6ff,1.3),rM=y=>.58-.22*(y-.9)/12.7;
+ b.loft([X(1.7,-.6),X(1.7,.5)],M.hull2,{top:false});b.loft([X(1.76,.5),X(1.76,.64)],(q,i)=>i%2?M.cyan:M.hull2,{top:false});b.loft([X(1.7,.64),X(1.5,.74),X(.8,.96)],M.hull,{top:false});
+ b.loft([X(.8,.9),X(.72,3.5),X(rM(3.7),3.7)],M.hull2,{top:false});b.loft([X(rM(3.7),3.7),X(rM(13.6),13.6)],M.plate,{top:false});
+ for(let k=0;k<6;k++){const a=k*Math.PI/3+Math.PI/6;rad(b,a,0,0,q=>q.loft([rc(q,.26,1,.74,0,0,1.02),rc(q,.2,.5,3.7,0,0,.82)],M.plate,{top:true}));}
  for(const y of [5,9,12.6]){const R=1.1-y*.03,r=rM(y);if(hi)b.loft([X(r+.1,y-.3),X(r+.1,y+.3)],M.hull2,{top:false});
   if(hi)b.ring(0,y,0,R,em,{t:1.9});else hoop(b,y-.16,R-.1,R+.1,.32,8,em,{noBot:true,noIn:true});
-  for(let k=0;k<3;k++){const a=k*TAU/3+y;b.tube([Math.cos(a)*r,y-.2,Math.sin(a)*r],[Math.cos(a)*R,y,Math.sin(a)*R],.05,M.trim,{n:3});if(hi)b.gem(Math.cos(a)*(R+.08),y,Math.sin(a)*(R+.08),.1,.2,.1,M.gold,-a);}}
+  for(let k=0;k<3;k++){const a=k*TAU/3+y;b.tube([Math.cos(a)*r,y-.2,Math.sin(a)*r],[Math.cos(a)*R,y,Math.sin(a)*R],.08,M.trim,{n:3});if(hi)b.gem(Math.cos(a)*(R+.08),y,Math.sin(a)*(R+.08),.1,.2,.1,M.gold,-a);}}
  // the crown: a cup, gold claws, the glowing core
- b.loft([X(rM(13.6),13.6),X(.5,13.86),X(.5,14)],M.hull2,{top:true});b.ball(0,14.4,0,.55,glow(0xa8f8ff,1.8),!hi);b.halo(0,14.4,0,3.4,0x5cf2ff,.45);
- if(hi){for(let k=0;k<3;k++){const a=k*TAU/3+.5;b.tube([Math.cos(a)*.46,13.9,Math.sin(a)*.46],[Math.cos(a)*.62,14.7,Math.sin(a)*.62],.05,M.gold,{n:3});}
-  gearBox(b,0,.72,1.12,.9,.8,.5,M.cyan);b.detail(()=>{b.cable([.3,1.5,1.2],[.2,4.4,.36],-.25,.04,M.dark);b.cable([-.3,1.5,1.2],[-.2,8.6,.3],-.3,.03,M.dark);});}
+ b.loft([X(rM(13.6),13.6),X(.56,13.86),X(.56,14)],M.hull2,{top:true});b.ball(0,14.4,0,.55,glow(0xa8f8ff,1.8),!hi);b.halo(0,14.4,0,3.4,0x5cf2ff,.45);
+ if(hi){for(let k=0;k<3;k++){const a=k*TAU/3+.5;b.tube([Math.cos(a)*.5,13.9,Math.sin(a)*.5],[Math.cos(a)*.64,14.7,Math.sin(a)*.64],.06,M.gold,{n:3});}
+  gearBox(b,0,.72,1.12,.9,.8,.5,M.cyan);b.detail(()=>{b.cable([.3,1.5,1.2],[.2,4.4,.4],-.25,.06,M.dark);});}
 },{aoH:3,aoMin:.6});
 
 // ------------------------------------------------------------------ dam -------------------------------------------------
 // The terraformers' dam. o.w = length along x, o.h = base (y = 0) to crest, o.d = 4 (art within z +-2.5), o.sink below the
-// base. The reservoir is on -z (vertical face, the cyan crest light on that edge); the downstream face (+z) is battered,
-// with buttress piers every 10 m, two spillway gates beside the centre pier under hoist housings, the control hut on the
-// crest (it stands 3.4 m above o.h), rails, and an access stair in the last bay toward +x.
-WK.model('dam',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,N=pal.nat,hi=b.hi,W=o.w||66,H=o.h||9,sink=o.sink??2,hc=H-.5,zf=y=>1.7-.6*Math.max(0,Math.min(1,y/hc)),np=Math.max(1,Math.floor((W-8)/10)+1),px=i=>(i-(np-1)/2)*10;
- // body: two lifts of concrete with a ledge, the crest slab with the walkway
- const B=(y,z1)=>rc(b,W,z1+2,y,0,0,(z1-2)/2);b.loft([B(-sink,zf(-sink)),B(hc*.55,zf(hc*.55))],M.conc,{top:false});b.loft([B(hc*.55,zf(hc*.55)+.14),B(hc*.55+.3,zf(hc*.55)+.14)],M.hull2,{top:false});b.loft([B(hc*.55+.3,zf(hc*.55+.3)),B(hc,zf(hc))],M.conc,{top:false});
- b.loft([rc(b,W,3.9,hc,0,0,-.35),rc(b,W,3.9,H,0,0,-.35)],M.hull2,{top:true,topMat:M.conc});qb(b,0,H,-2.18,W-1.2,.16,.22,M.cyan,'b');
- if(hi)b.detail(()=>{b.rail([[-W/2+2.6,H,1.45],[W/2-2.6,H,1.45]],1,M.bare,{step:3.3,r:.055});b.rail([[-W/2+2.6,H,-1.9],[W/2-2.6,H,-1.9]],1,M.bare,{step:3.3,r:.055});});
- // buttress piers
- for(let i=0;i<np;i++){const x=px(i);b.loft([rc(b,1.8,1.1,-sink,hi?.12:0,x,1.95),rc(b,1.4,.8,hc,hi?.1:0,x,1.42),rc(b,1.4,.8,H+.3,hi?.1:0,x,1.42)],M.hull2,{top:true,topMat:M.hull});
-  if(hi){qb(b,x,H-1.1,1.83,.22,.6,.03,M.ice,'kb');qb(b,x,H+.3,1.42,.5,.1,.3,M.cyan,'b');}}
- // abutment blocks at both ends
- for(const s of [-1,1]){const x=s*(W/2-1.2);b.bev(x,-sink,-.1,2.4,H+sink+.5,4.6,M.hull,{ch:.16});b.bev(x,H+.5,-.1,1.9,.24,4,M.hull2,{ch:.08});qb(b,x,H*.5,2.21,.3,H*.36,.03,M.cyan,'kb');if(hi){b.at(x,0,2.2,0,q=>hazard(q,0,.6,.02,2,1,4));qb(b,x,H+.74,-.1,.5,.1,2.4,M.white,'b');}}
+// base. The reservoir is on -z (vertical face, the cyan crest light, a row of pads, on that edge); the downstream face (+z)
+// is battered: a concrete lower lift, a pale ceramic upper lift, dark buttress piers every 10 m with a slim rib between
+// them, two spillway gates beside the centre under hoist housings, pale cap plates along the crest, the control hut on the
+// crest (it stands 3.4 m above o.h), rails, gold-crowned abutments, and an access stair in the last bay toward +x.
+WK.model('dam',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,N=pal.nat,hi=b.hi,W=o.w||66,H=o.h||9,sink=o.sink??2,hc=H-.5,yl=hc*.55,zf=y=>1.7-.6*Math.max(0,Math.min(1,y/hc)),np=Math.max(1,Math.floor((W-8)/10)+1),px=i=>(i-(np-1)/2)*10,
+  g0=np%2?5:10,gates=np>=3?[[-g0,1],[g0,0]]:[],atGate=x=>gates.some(g=>Math.abs(x-g[0])<3.3),atStair=x=>np>=2&&x>px(np-1)-9.4&&x<px(np-1);
+ // body: a concrete lower lift, a dark ledge, the pale ceramic upper lift, the crest slab with the walkway
+ const B=(y,z1)=>rc(b,W,z1+2,y,0,0,(z1-2)/2);b.loft([B(-sink,zf(-sink)),B(yl,zf(yl))],M.conc,{top:false});b.loft([B(yl,zf(yl)+.14),B(yl+.3,zf(yl)+.14)],M.hull2,{top:false});b.loft([B(yl+.3,zf(yl+.3)),B(hc,zf(hc))],M.plate2,{top:false});
+ b.loft([rc(b,W,3.9,hc,0,0,-.35),rc(b,W,3.9,H,0,0,-.35)],M.hull2,{top:true,topMat:M.hull});qb(b,0,H,-2.18,W-1.2,.1,.22,M.hull2,'b');
+ if(hi)b.detail(()=>{b.rail([[-W/2+2.6,H,1.45],[W/2-2.6,H,1.45]],1,M.bare,{step:5,r:.08,mid:false});b.rail([[-W/2+2.6,H,-1.9],[W/2-2.6,H,-1.9]],1,M.bare,{step:5,r:.08,mid:false});});
+ // buttress piers with a pale cap; on both sides of each: a pale cap plate on the crest, a cyan pad on the reservoir
+ // edge, a bevelled ceramic panel on the upper lift (not over a gate or the stair)
+ for(let i=0;i<np;i++){const x=px(i);b.loft([rc(b,1.8,1.1,-sink,hi?.12:0,x,1.95),rc(b,1.4,.8,hc,hi?.1:0,x,1.42),rc(b,1.4,.8,H+.3,hi?.1:0,x,1.42)],M.hull2,{top:true,topMat:M.plate});
+  if(hi)qb(b,x,H-1.1,1.83,.22,.6,.03,M.ice,'kb');
+  for(const e of [-1,1]){const xc=x+e*2.5;if(Math.abs(xc)+2<W/2-2.4){if(hi)qb(b,xc,H,-.3,3.9,.06,2.8,M.plate,'b');else b.quad([xc-1.95,H+.04,-1.7],[xc+1.95,H+.04,-1.7],[xc+1.95,H+.04,1.1],[xc-1.95,H+.04,1.1],M.plate,[xc,0,0]);
+    qb(b,xc,H+.1,-2.18,2.2,.08,.2,M.cyan,hi?'b':'blr');
+    if(hi&&!atGate(xc)&&!atStair(xc))b.at(xc,yl+.55,zf(yl+.55)+.03,0,q=>q.bev(0,0,0,3.7,hc-yl-1.1,.16,M.plate,{ch:.08}),-.6/hc);}}}
+ // a slim rib half-way between piers on the upper lift
+ for(let i=0;i<np-1;i++){const x=px(i)+5;if(atGate(x)||atStair(x))continue;b.loft([rc(b,.8,.6,yl+.3,0,x,zf(yl+.3)+.2),rc(b,.7,.44,hc,0,x,zf(hc)+.14)],M.hull2,{top:false});}
+ // abutment blocks at both ends: a pale ceramic shoulder, a gold crown band, a pale cap
+ for(const s of [-1,1]){const x=s*(W/2-1.17);b.bev(x,-sink,-.1,2.4,H+sink+.5,4.6,M.hull,{ch:.16});b.loft([rc(b,2.46,4.66,H-1.5,0,x,-.1),rc(b,2.46,4.66,H+.12,0,x,-.1)],M.plate,{top:false});b.loft([rc(b,2.5,4.7,H+.24,0,x,-.1),rc(b,2.5,4.7,H+.42,0,x,-.1)],M.gold,{top:false});
+  b.bev(x,H+.5,-.1,1.9,.24,4,M.plate,{ch:.08});qb(b,x,H*.42,2.21,.3,H*.3,.03,M.cyan,'kb');if(hi){b.at(x,0,2.2,0,q=>hazard(q,0,.6,.02,2,1,4));qb(b,x,H+.74,-.1,.5,.1,2.4,M.white,'b');}}
  // spillway gates: a dark throat, the steel leaf, a chute down the face, the hoist housing on the crest
- const g0=np%2?5:10,gates=np>=3?[[-g0,1],[g0,0]]:[];
  for(const [gx,open] of gates){const gy=hc-3.5,gw=6;qb(b,gx,gy,zf(gy+1.7)+.03,gw,3.4,.06,M.dark,'kb');
   b.at(gx,0,0,0,q=>{const z0=zf(gy)+.1,lift=open?1.1:0;q.bev(0,gy+lift,z0,gw-.5,3-lift*.4,.2,M.plate2,{ch:.07});if(hi)for(let k=0;k<3;k++)qb(q,0,gy+lift+.5+k*.8,z0+.11,gw-.9,.14,.08,M.hull2,'kb');
    q.quad([-gw/2,gy,zf(gy)+.04],[gw/2,gy,zf(gy)+.04],[gw/2,-sink,zf(-sink)+.4],[-gw/2,-sink,zf(-sink)+.4],M.plate,[0,gy/2,-3]);for(const s of [-1,1])q.quad([s*gw/2,gy+.5,zf(gy)+.04],[s*gw/2,gy,zf(gy)+.44],[s*gw/2,-sink,zf(-sink)+.78],[s*gw/2,-sink,zf(-sink)+.4],M.hull2,[s*(gw/2-1),0,0]);
    if(open)q.quad([-gw/2+.4,gy+.9,zf(gy)+.12],[gw/2-.4,gy+.9,zf(gy)+.12],[gw/2-.4,-sink,zf(-sink)+.48],[-gw/2+.4,-sink,zf(-sink)+.48],N.ice,[0,gy/2,-3]);
-   for(const s of [-1,1]){q.bev(s*2.5,H,.2,.5,2.3,.6,M.hull,{ch:.08});if(hi)q.tube([s*1.5,gy+lift+2.8,z0],[s*1.5,H+2.2,.2],.07,M.bare,{n:4});}
-   q.bev(0,H+2.3,.2,5.9,.5,1,M.hull2,{ch:.1});if(hi)gearBox(q,0,H+2.8,.2,1.6,.8,.9,open?M.cyan:M.amber);else qb(q,0,H+2.8,.2,1.6,.8,.9,M.hull2,'b');qb(q,0,H+2.36,.72,5.2,.1,.04,M.cyan,'kb');});}
- // the control hut over the centre pier
+   for(const s of [-1,1]){q.bev(s*2.5,H,.2,.5,2.3,.6,M.hull,{ch:.08});if(hi)q.tube([s*1.5,gy+lift+2.8,z0],[s*1.5,H+2.2,.2],.09,M.bare,{n:4});}
+   q.bev(0,H+2.3,.2,5.9,.5,1,M.hull2,{ch:.1});if(hi)gearBox(q,0,H+2.8,.2,1.6,.8,.9,open?M.cyan:M.red);else qb(q,0,H+2.8,.2,1.6,.8,.9,M.hull2,'b');qb(q,0,H+2.36,.72,1.6,.1,.04,M.cyan,'kb');});}
+ // the control hut over the centre
  b.at(0,H,-.25,0,q=>{q.bev(0,0,0,3.4,1.2,2.6,M.hull,{ch:.1});q.bev(0,1.2,0,3.3,1.2,2.5,M.plate,{ch:.1});q.bev(0,2.4,0,3.8,.24,3,M.hull2,{ch:.08});for(const f of [1,-1])qb(q,0,1.36,f*1.26,2.5,.7,.03,M.ice,'tb'+(f>0?'k':'f'));
   q.tube([1.2,2.64,-.9],[1.2,3.9,-.9],.05,M.trim,{n:4});q.gem(1.2,3.96,-.9,.1,.1,.1,M.red);if(hi){airUnit(q,-.8,2.64,.2,.7);for(const f of [1,-1])for(const x of [-.62,.62])qb(q,x,1.36,f*1.28,.08,.7,.03,M.hull2,'tb'+(f>0?'k':'f'));qb(q,1.72,.1,0,.05,1.9,.9,glow(0x22e6ff,.7),'tbl');q.halo(1.2,3.96,-.9,.8,0xff3048,.8);}});
  // the access stair: two flights in the last bay toward +x
  if(np>=2){const xa=px(np-1)-1.3,xb=xa-(hi?6.4:6.4),rise=hc/2,st=hi?Math.max(4,Math.round(rise/.5)):0,P=(t,f)=>{const y=f?rise+rise*t:rise*t,x=f?xb+(xa-xb)*t:xa+(xb-xa)*t;return [x,y,zf(y)+.44];};
   for(const f of [0,1]){const a=P(0,f),c=P(1,f);for(const dz of [-.34,.34])b.quad([a[0],a[1]-.3,a[2]+dz],[c[0],c[1]-.3,c[2]+dz],[c[0],c[1],c[2]+dz],[a[0],a[1],a[2]+dz],M.hull2,[(a[0]+c[0])/2,(a[1]+c[1])/2-.15,(a[2]+c[2])/2]);
    for(let k=0;k<st;k++){const p=P((k+.5)/st,f);qb(b,p[0],p[1]-.06,p[2],Math.abs(xa-xb)/st,.08,.68,M.trim,'bfk');}
-   if(hi)b.detail(()=>b.tube([a[0],a[1]+.95,a[2]+.32],[c[0],c[1]+.95,c[2]+.32],.045,M.bare,{n:3}));else b.quad([a[0],a[1],a[2]-.34],[c[0],c[1],c[2]-.34],[c[0],c[1],c[2]+.34],[a[0],a[1],a[2]+.34],M.trim,[0,-9,0]);}
-  const m=P(1,0);qb(b,xb-.7,m[1]-.1,m[2],1.4,.1,.7,M.trim,'');const e=P(1,1);qb(b,xa+.5,e[1]-.1,e[2]-.1,1,.1,1,M.trim,'');if(hi)for(const p of [m,P(0,0)])b.tube([xb-1.3,-sink,p[2]+.26],[xb-1.3,m[1]-.1,m[2]+.26],.07,M.trim,{n:4});}
+   if(hi)b.detail(()=>b.tube([a[0],a[1]+.95,a[2]+.32],[c[0],c[1]+.95,c[2]+.32],.07,M.bare,{n:3}));else b.quad([a[0],a[1],a[2]-.34],[c[0],c[1],c[2]-.34],[c[0],c[1],c[2]+.34],[a[0],a[1],a[2]+.34],M.trim,[0,-9,0]);}
+  const m=P(1,0);qb(b,xb-.7,m[1]-.1,m[2],1.4,.1,.7,M.trim,'');const e=P(1,1);qb(b,xa+.5,e[1]-.1,e[2]-.1,1,.1,1,M.trim,'');if(hi)for(const p of [m,P(0,0)])b.tube([xb-1.3,-sink,p[2]+.26],[xb-1.3,m[1]-.1,m[2]+.26],.09,M.trim,{n:4});}
 },{aoH:5,aoMin:.6});
 
 // ------------------------------------------------------------------ creek-bridge ----------------------------------------
 // The creek road bridge. o.w = span along x, o.d = deck width (6.8), o.prof = n + 1 deck heights along the span from
 // x = -o.w / 2 to +o.w / 2 (relative to y = 0; default: a gentle 1.2 m arch). The deck's top surface is AT the profile,
-// 0.42 thick; side girders with kerbs, a braced rail with a cyan light line at z = +-o.d / 2, lamp pylons and abutments at
+// 0.42 thick; pale ceramic side girders with kerbs, a braced rail with a cyan light line at z = +-o.d / 2, lamp pylons and abutments at
 // both ends, two piers down to y = -3.
 WK.model('creek-bridge',(b,o)=>{const {pal}=b.k,M=pal.mil,hi=b.hi,W=o.w||18,D=o.d||6.8,hd=D/2,prof=Array.isArray(o.prof)&&o.prof.length>1?o.prof:Array.from({length:13},(_,i)=>+(1.2*Math.sin(i/12*Math.PI)).toFixed(3)),n=prof.length-1,X=i=>-W/2+W*i/n,
   Y=x=>{const t=Math.max(0,Math.min(n-1e-6,(x+W/2)/W*n)),i=Math.floor(t);return prof[i]+(prof[i+1]-prof[i])*(t-i);};
  for(let i=0;i<n;i++){const x0=X(i),x1=X(i+1),y0=prof[i],y1=prof[i+1],ym=(y0+y1)/2,Q=(a0,z0,a1,z1,m,ins)=>b.quad([x0,y0+a0,z0],[x1,y1+a0,z0],[x1,y1+a1,z1],[x0,y0+a1,z1],m,ins);
   Q(0,-hd,0,hd,M.hull2,[0,ym-9,0]);Q(-.42,-hd,-.42,hd,M.dark,[0,ym+9,0]);
-  for(const s of [-1,1]){const zo=s*(hd+.16),zi=s*(hd-.16),c=[(x0+x1)/2,ym-.4,s*hd];Q(-.95,zo,.16,zo,M.hull,c);Q(.16,zi,.16,zo,M.trim,c);Q(0,zi,.16,zi,M.trim,c);Q(-.95,zi,-.95,zo,M.dark,c);if(hi)Q(-.95,zi,-.42,zi,M.hull2,c);
+  for(const s of [-1,1]){const zo=s*(hd+.16),zi=s*(hd-.16),c=[(x0+x1)/2,ym-.4,s*hd];Q(-.95,zo,.16,zo,M.plate2,c);Q(.16,zi,.16,zo,M.plate,c);Q(0,zi,.16,zi,M.trim,c);Q(-.95,zi,-.95,zo,M.dark,c);if(hi)Q(-.95,zi,-.42,zi,M.hull2,c);
    // the rail: posts, the top chord, the cyan line, a diagonal
    const z=s*hd,skip=!hi&&i%2;if(!skip)qb(b,x0,y0+.16,z,.16,.94,.16,M.hull2,'tb');if(i===n-1)qb(b,x1,y1+.16,z,.16,.94,.16,M.hull2,'tb');
    b.tube([x0,y0+1.1,z],[x1,y1+1.1,z],.075,M.trim,{n:hi?4:3});b.tube([x0,y0+.66,z],[x1,y1+.66,z],.05,M.cyan,{n:3});
@@ -599,46 +662,50 @@ WK.model('creek-bridge',(b,o)=>{const {pal}=b.k,M=pal.mil,hi=b.hi,W=o.w||18,D=o.
 },{aoH:.01,aoMin:.85});
 
 // ------------------------------------------------------------------ ice-rig ---------------------------------------------
-// The ice-mining drill rig (5 x 5, 9.6 m): skids and a deck, a four-leg lattice derrick, the glowing drill string through a
-// rotary table, a travelling block, the crown block and winch, a motor housing with its stack, a mud tank, hoses.
+// The ice-mining drill rig (5 x 5, 9.6 m): skids and a pale deck, a four-leg lattice derrick (two bays of stout struts, one
+// diagonal a face, gusset blocks: thin lattices turn to moire on a phone), the glowing drill string through a rotary
+// table, a travelling block, the crown block and winch, a motor housing with its stack, a mud tank, hoses.
 WK.model('ice-rig',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,sink=o.sink??.5;
- for(const s of [-1,1])b.bev(0,-sink,s*1.95,4.7,sink+.32,.56,M.hull2,{ch:.1});for(const x of [-1.9,0,1.9])qb(b,x,.02,0,.4,.26,3.4,M.hull2,'b');qb(b,0,.28,0,3.9,.1,3.5,M.hull,'b');
- b.truss(0,.38,0,3.3,.95,7.8,M.trim,{step:1.95,r:.085});
- if(hi)for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]])qb(b,sx*1.65,.38,sz*1.65,.5,.16,.5,M.gold,'b');
+ for(const s of [-1,1])b.bev(0,-sink,s*1.95,4.7,sink+.32,.56,M.hull2,{ch:.1});for(const x of [-1.9,0,1.9])qb(b,x,.02,0,.4,.26,3.4,M.hull2,'b');qb(b,0,.28,0,3.9,.1,3.5,M.plate2,'b');
+ lattice(b,0,.38,0,3.3,.95,7.8,2,M.trim,{r:.17,leg:M.hull,gusset:M.plate});
+ for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]])qb(b,sx*1.65,.38,sz*1.65,.62,.2,.62,M.plate,'b');
  // the drill string, rotary table and travelling block
- b.tube([0,-sink,0],[0,5,0],.13,glow(0x22e6ff,1.2),{n:hi?6:4});b.tube([0,5.8,0],[0,8.2,0],.09,M.bare,{n:4});b.cyl(0,.38,0,.74,.34,M.hull2,{n:hi?10:6,bev:.06});
- b.bev(0,5,0,.86,.84,.7,M.hull2,{ch:.1});if(hi){b.cyl(0,.72,0,.4,.2,M.gold,{n:8});qb(b,0,5.3,.36,.5,.24,.03,M.hazard,'kb');for(const s of [-1,1])b.tube([s*.3,5.84,0],[s*.24,8.2,0],.03,M.dark,{n:3});b.halo(0,2.6,0,1.5,0x9ff6ff,.22);}
+ b.tube([0,-sink,0],[0,5,0],.15,glow(0x22e6ff,1),{n:hi?6:4});b.tube([0,5.8,0],[0,8.2,0],.11,M.bare,{n:4});b.cyl(0,.38,0,.74,.34,M.hull2,{n:hi?10:6,bev:.06});
+ b.bev(0,5,0,.9,.84,.74,M.plate2,{ch:.1});if(hi){b.cyl(0,.72,0,.4,.2,M.gold,{n:8});qb(b,0,5.3,.38,.5,.24,.03,M.hazard,'kb');b.halo(0,2.6,0,1.5,0x9ff6ff,.22);}
  // the crown block, the winch drum, the beacon
- b.bev(0,8.18,0,1.5,.5,1.5,M.hull2,{ch:.1});b.tube([-.5,8.95,0],[.5,8.95,0],.26,M.plate2,{n:hi?8:5,caps:true});for(const s of [-1,1])qb(b,s*.6,8.68,0,.12,.56,.6,M.hull,'b');
- b.tube([0,8.68,-.55],[0,9.5,-.55],.045,M.trim,{n:3});b.gem(0,9.5,-.55,.09,.1,.09,M.red);
+ b.bev(0,8.18,0,1.5,.5,1.5,M.hull2,{ch:.1});b.tube([-.5,8.95,0],[.5,8.95,0],.26,M.plate,{n:hi?8:5,caps:true});for(const s of [-1,1])qb(b,s*.6,8.68,0,.12,.56,.6,M.hull,'b');
+ b.tube([0,8.68,-.55],[0,9.5,-.55],.05,M.trim,{n:3});b.gem(0,9.5,-.55,.1,.1,.1,M.red);
  // the motor housing with its stack, the mud tank, hoses, work lights
- gearBox(b,-1.1,.38,-1.25,1.5,1.25,1,M.amber);b.cyl(-1.6,1.63,-1.4,.12,1.5,M.dark,{n:6});canister(b,1.25,.38,-1.2,.52,1.8,M.plate2);
- if(hi){b.cyl(-1.6,3.13,-1.4,.17,.1,M.bare,{n:6});b.cable([-.5,1.4,-.9],[0,.9,-.3],.3,.07,M.dark);b.cable([1.25,1.9,-.8],[.5,3.6,.1],-.5,.06,M.dark);b.cable([1.25,1.2,-.7],[.3,.8,-.2],.2,.06,M.dark);
+ gearBox(b,-1.1,.38,-1.25,1.5,1.25,1,M.cyan);b.cyl(-1.6,1.63,-1.4,.14,1.5,M.dark,{n:6});canister(b,1.25,.38,-1.2,.52,1.8,M.plate);
+ if(hi){b.cyl(-1.6,3.13,-1.4,.19,.1,M.bare,{n:6});b.cable([-.5,1.4,-.9],[0,.9,-.3],.3,.08,M.dark,{n:4});b.cable([1.25,1.9,-.8],[.5,3.6,.1],-.5,.08,M.dark,{n:4});
   for(const s of [-1,1]){qb(b,s*.9,5.9,.95,.4,.14,.26,M.hull2,'b');qb(b,s*.9,5.86,.98,.3,.04,.18,M.white,'t');}b.halo(0,5.8,1,1.1,0xe8f6ff,.28);
-  // the monkey board: a small platform with a rail half-way up
-  qb(b,0,4.02,1.25,1.9,.08,.9,M.hull,'');b.detail(()=>{b.rail([[-.95,4.1,.85],[-.95,4.1,1.7],[.95,4.1,1.7],[.95,4.1,.85]],.8,M.bare,{step:1,r:.035});b.ladder([1.2,.4,1.62],[.62,4.05,1.02],M.bare,{w:.5});});
+  // the monkey board at the mid ring: a platform with a solid ceramic parapet (no hairline rails)
+  qb(b,0,4.36,1.5,2.1,.1,.8,M.hull,'');for(const s of [-1,1])qb(b,s*1,4.46,1.5,.08,.5,.8,M.plate2,'b');qb(b,0,4.46,1.86,2.08,.5,.08,M.plate2,'b');
   hazard(b,0,.1,2.235,3.6,.2,9);}
 },{aoH:3,aoMin:.6});
 
 // ------------------------------------------------------------------ rail-pylon ------------------------------------------
-// A monorail pylon: footing, a tapering octagonal column with a lit collar, a flared head (the same from every side, so
-// it needs no heading). The column is o.h long in all (12.2): it starts o.sink (1) below y = 0, the head's top is at
-// y = o.h - o.sink.
-WK.model('rail-pylon',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,sink=o.sink??1,Y=(o.h||12.2)-sink,n=hi?8:6,X=(r,y)=>ngon(b,n,r,y,Math.PI/n),yc=Y*.56,rA=y=>.8-.2*y/(Y-1.5);
+// A monorail pylon: footing with four pale ceramic buttress fins, a tapering octagonal column (gunmetal below a collar with
+// cyan pads, pale ceramic above it), a flared head with a pale rim (the same from every side, so it needs no heading).
+// The column is o.h long in all (12.2): it starts o.sink (1) below y = 0, the head's top is at y = o.h - o.sink.
+WK.model('rail-pylon',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,sink=o.sink??1,Y=(o.h||12.2)-sink,n=hi?8:6,X=(r,y)=>ngon(b,n,r,y,Math.PI/n),yc=Y*.5,rA=y=>.8-.2*y/(Y-1.5);
  if(hi)b.loft([X(1.08,-sink),X(1.08,.36),X(.86,.52)],M.hull2,{top:false});else b.loft([X(1.08,-sink),X(.9,.52)],M.hull2,{top:false});
  b.loft([X(rA(.5),.5),X(rA(yc-.4),yc-.4)],M.hull,{top:false});if(hi){b.loft([X(rA(yc)+.02,yc-.4),X(rA(yc)+.14,yc-.3),X(rA(yc)+.14,yc-.14)],M.hull2,{top:false});b.loft([X(rA(yc)+.14,yc+.14),X(rA(yc)+.14,yc+.3),X(rA(yc)+.02,yc+.4)],M.hull2,{top:false});}
- b.loft([X(rA(yc)+.17,yc-.14),X(rA(yc)+.17,yc+.14)],M.cyan,{top:false});b.loft([X(rA(yc+.4),yc+(hi?.4:.14)),X(.6,Y-1.5)],hi?M.plate2:M.hull,{top:false});
- b.loft([X(.6,Y-1.5),X(1.04,Y-.4),X(1.08,Y-.34),X(1.08,Y)],M.hull2,{top:true,topMat:M.trim});
- if(hi)for(let k=0;k<4;k++){const a=k*Math.PI/2;rad(b,a,1,Y-.26,q=>qb(q,0,0,0,.4,.12,.03,M.white,'kb'));rad(b,a,0,0,q=>q.loft([rc(q,.3,.36,.3,0,0,.9),rc(q,.22,.1,2.6,0,0,rA(2.6)*.92)],M.hull2,{top:false}));}
+ b.loft([X(rA(yc)+.17,yc-.14),X(rA(yc)+.17,yc+.14)],(q,i)=>i%2?M.cyan:M.hull2,{top:false});b.loft([X(rA(yc+.4),yc+(hi?.4:.14)),X(.6,Y-1.5)],M.plate,{top:false});
+ b.loft([X(.6,Y-1.5),X(1.04,Y-.4),X(1.08,Y-.34),X(1.08,Y)],r=>r===2?M.plate2:M.hull2,{top:true,topMat:M.trim});
+ for(let k=0;k<4;k++){const a=k*Math.PI/2;rad(b,a,0,0,q=>q.loft([rc(q,.34,.56,.3,0,0,.96),rc(q,.24,.1,3.6,0,0,rA(3.6)*.92+.03)],M.plate,{top:false}));if(hi)rad(b,a,1,Y-.26,q=>qb(q,0,0,0,.4,.12,.03,M.white,'kb'));}
 },{aoH:3,aoMin:.62});
 
 // ------------------------------------------------------------------ rail-beam -------------------------------------------
-// One span of the monorail beam: o.w long along x, the guide rail's top at y = 0. A box girder with flanges, the guide
-// rail and a thin cyan line under the top flange on both sides. No end faces: spans chain.
-WK.model('rail-beam',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.w||8,x0=-L/2,x1=L/2,Q=(y0,z0,y1,z1,m,ins)=>b.quad([x0,y0,z0],[x1,y0,z0],[x1,y1,z1],[x0,y1,z1],m,ins);
- Q(0,-.17,0,.17,M.bare,[0,-1,0]);Q(-.14,-.55,-.14,.55,M.hull,[0,-1,0]);Q(-1.3,-.4,-1.3,.4,M.dark,[0,0,0]);
- for(const s of [-1,1]){Q(-.3,s*.55,-.14,s*.55,M.hull,[0,-.2,0]);Q(-.4,s*.5,-.3,s*.5,M.cyan,[0,-.3,0]);Q(-1.3,s*.4,-.4,s*.32,M.hull2,[0,-.8,0]);
-  if(hi){Q(-.14,s*.17,0,s*.17,M.bare,[0,-.1,0]);Q(-.4,s*.32,-.4,s*.5,M.dark,[0,0,s*.4]);for(const x of [-L/2+.25,0,L/2-.25])b.quad([x-.12,-1.24,s*.42],[x+.12,-1.24,s*.42],[x+.12,-.44,s*.42],[x-.12,-.44,s*.42],M.trim,[x,-.8,0]);}}
+// One span of the monorail beam: o.w long along x, the guide rail's top at y = 0. A box girder (0.9 wide, 1 deep) under a
+// pale ceramic top flange (1.36 wide: the train's skirts clear it), the guide rail on top, stiffener ribs, a pale bottom
+// lip and small cyan under-lights (pads under the flange and on the soffit). No end faces: spans chain. About 60 / 24.
+WK.model('rail-beam',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.w||8,x0=-L/2,x1=L/2,P=(xa,xb,y0,z0,y1,z1,m,ins)=>b.quad([xa,y0,z0],[xb,y0,z0],[xb,y1,z1],[xa,y1,z1],m,ins),Q=(y0,z0,y1,z1,m,ins)=>P(x0,x1,y0,z0,y1,z1,m,ins);
+ Q(0,-.17,0,.17,M.bare,[0,-1,0]);Q(-.14,-.68,-.14,.68,M.plate,[0,-1,0]);Q(-1.3,-.45,-1.3,.45,M.dark,[0,0,0]);
+ for(const s of [-1,1]){Q(-.36,s*.68,-.14,s*.68,M.plate,[0,-.2,0]);Q(-1.3,s*.45,-.36,s*.45,M.hull,[0,-.8,0]);Q(-.36,s*.45,-.36,s*.68,M.hull2,[0,0,s*.5]);
+  for(const x of hi?[-L/4,L/4]:[0])P(x-.5,x+.5,-.6,s*.462,-.44,s*.462,M.cyan,[0,-.5,0]);
+  if(hi){Q(-.14,s*.17,0,s*.17,M.bare,[0,-.1,0]);Q(-1.3,s*.53,-1.14,s*.53,M.plate2,[0,-1.2,0]);for(const x of [-L/2+.3,0,L/2-.3])P(x-.13,x+.13,-1.14,s*.51,-.36,s*.51,M.hull2,[x,-.8,0]);}}
+ if(hi)for(const x of [-L/4,L/4])P(x-.4,x+.4,-1.31,-.2,-1.31,.2,M.cyan,[0,0,0]);
 },{aoH:.01,aoMin:.9});
 
 // ------------------------------------------------------------------ rail-train ------------------------------------------

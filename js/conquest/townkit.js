@@ -33,6 +33,8 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
  // A building at the local origin, footprint centred, facing +z; every level visibly changes it. A turret: its pedestal.
  function building(type,l,theme){if(!root.ConquestWorldKit.MODELS['town-'+type])return new S.Bld();return kb('town-'+type,tpar(type,l,theme,P.BUILDINGS[type]?.turret?{part:'base'}:null));}
  // The rotating head of every turret type (and the radar dish): its own silhouette, so each role reads at a glance.
+ // where a head's pivot stands above its building's ground: the radar dish on its mast, a turret head on its low disc
+ const headY=(type,l)=>type==='radar'?3.3+Math.max(1,l|0)*.5:.86;
  function head(type,l){return type==='radar'?kb('town-radar-dish',{level:Math.max(1,l|0)}):root.ConquestWorldKit.MODELS['town-'+type]?kb('town-'+type,tpar(type,l,null,{part:'head'})):new S.Bld();}
  // One wall cell (4 m square) read as a fortification at every distance: the kit's town-wall per ore blend (heavier blends
  // stand taller), the corner post, the ruined cell. low = the far / LOW model (silhouette, coping light, one ore band).
@@ -63,7 +65,7 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
   b.add(G.octa,M(w/2,h-fh*.45,.08*scale,0,0,0,.28*scale,.28*scale,.06*scale),c2,1.6);return b;}
  function decor(list,x0,z0,W,D,light){const b=new S.Bld(),tg={main:b,det:b,fx:null},acc=LHEX[light],Kk=WKk();list.forEach((d,i)=>{const a=i/Math.max(1,list.length)*Math.PI*2,x=x0+Math.cos(a)*(W/2+3),z=z0+Math.sin(a)*(D/2+3);
   if(root.ConquestWorldKit.MODELS['decor-'+d])Kk.place('decor-'+d,tg,Kk.M(x,0,z,Math.PI/2-a),acc?{accent:acc}:{});});return b;}
- return {T,M,C,building,head,wallGeo,wallMini,post,postMini,rubble,home,person,rover,foe,lin,banner,decor};}
+ return {T,M,C,building,head,headY,wallGeo,wallMini,post,postMini,rubble,home,person,rover,foe,lin,banner,decor};}
 
 const KITS=new WeakMap();function kitFor(S){let k=KITS.get(S);if(!k){k=kit(S);KITS.set(S,k);}return k;}
 
@@ -159,7 +161,7 @@ function turrets(R,p,pl,theme,group){const {T,k}=R,M4=new T.Matrix4(),tur=new Ma
   if(my){const items=list.map(([id,b],n)=>{const x=P.cellX(b.i),z=P.cellZ(b.j),y=P.groundY(p.site,b.i,b.j);my.base.setMatrixAt(n,my.matrix(M4,x,y,z,0,0,false));my.hd.setMatrixAt(n,my.matrix(M4,x,y,z,0,0,false));return {id,t,x,y,z,n,spin:(b.i*7+b.j*3)%6};});
    my.base.instanceMatrix.needsUpdate=my.hd.instanceMatrix.needsUpdate=true;group.add(my.base,my.hd);tur.set(kk,{base:my.base,hd:my.hd,items,meshy:my});continue;}
   const tk2=kk+':'+(theme?.finish||'')+(theme?.light||''),bg=cached(R.tgeo,tk2+':b',()=>k.building(t,+l,theme).geometry()),hg=cached(R.tgeo,tk2+':h',()=>k.head(t,+l).geometry()),base=inst(R,bg,list.length),hd=inst(R,hg,list.length);
-  const items=list.map(([id,b],n)=>{const x=P.cellX(b.i),z=P.cellZ(b.j),y=P.groundY(p.site,b.i,b.j);M4.makeTranslation(x,y,z);base.setMatrixAt(n,M4);M4.makeTranslation(x,y+1.4+(+l)*.15,z);hd.setMatrixAt(n,M4);return {id,t,x,y:y+1.4+(+l)*.15,z,n,spin:(b.i*7+b.j*3)%6};});
+  const items=list.map(([id,b],n)=>{const x=P.cellX(b.i),z=P.cellZ(b.j),y=P.groundY(p.site,b.i,b.j);M4.makeTranslation(x,y,z);base.setMatrixAt(n,M4);M4.makeTranslation(x,y+k.headY(t,+l),z);hd.setMatrixAt(n,M4);return {id,t,x,y:y+k.headY(t,+l),z,n,spin:(b.i*7+b.j*3)%6};});
   base.instanceMatrix.needsUpdate=hd.instanceMatrix.needsUpdate=true;group.add(base,hd);tur.set(kk,{base,hd,items});}
  return tur;}
 function homes(R,p,pl,low,group){const {T,k}=R,M4=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_one=new T.Vector3(1,1,1),up=new T.Vector3(0,1,0),him=new Map(),hcell=new Map();
@@ -213,10 +215,10 @@ function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,R={T,S,k,wv:o
  yield;   // walls done
  let yc=0;
  for(const [id,b,lvl,building] of pl.builds){if(++yc%40===0)yield;const f=fp(b),y=hY(f.x,f.z);_q.setFromAxisAngle(up,-(b.r|0)*Math.PI/2);M4.compose(_v.set(f.x,y,f.z),_q,_one);NM.compose(_z,_q,_nv);mg.add(low&&b.t!=='cc'?cached(R.tgeo,'si:'+b.t+':'+Math.max(1,lvl),()=>standIn(S,k,b.t,lvl)):cached(R.tgeo,'d:'+b.t+':'+Math.max(1,lvl)+':'+(theme?.finish||'')+(theme?.light||''),()=>k.building(b.t,Math.max(1,lvl),theme).geometry()),M4,NM);nB++;
-  if(b.t==='radar'&&!low){M4.compose(_v.set(f.x,y+(3.3+lvl*.5)*bv,f.z),_q.setFromAxisAngle(up,.7),_one);NM.compose(_z,_q,_nv);mg.add(cached(R.tgeo,'dh:radar:'+Math.max(1,lvl),()=>k.head('radar',Math.max(1,lvl)).geometry()),M4,NM);}}
+  if(b.t==='radar'&&!low){M4.compose(_v.set(f.x,y+k.headY('radar',lvl)*bv,f.z),_q.setFromAxisAngle(up,.7),_one);NM.compose(_z,_q,_nv);mg.add(cached(R.tgeo,'dh:radar:'+Math.max(1,lvl),()=>k.head('radar',Math.max(1,lvl)).geometry()),M4,NM);}}
  yield;   // buildings done
  for(const [kk,list] of pl.turrets){const [t,l]=kk.split(':'),bg=low?cached(R.tgeo,'si:'+t,()=>standIn(S,k,t,1)):cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':b',()=>k.building(t,+l,theme).geometry()),hg=low?null:cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':h',()=>k.head(t,+l).geometry());
-  for(const [,b] of list){if(++yc%40===0)yield;const x=P.cellX(b.i),z=P.cellZ(b.j),y=gY2(b.i,b.j);_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6);M4.compose(_v.set(x,y,z),low?_q:_q.identity(),_one);NM.compose(_z,_q,_nv);mg.add(bg,M4,NM);if(hg){M4.compose(_v.set(x,y+(1.4+(+l)*.15)*bv,z),_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6),_one);NM.compose(_z,_q,_nv);mg.add(hg,M4,NM);}nT++;}}
+  for(const [,b] of list){if(++yc%40===0)yield;const x=P.cellX(b.i),z=P.cellZ(b.j),y=gY2(b.i,b.j);_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6);M4.compose(_v.set(x,y,z),low?_q:_q.identity(),_one);NM.compose(_z,_q,_nv);mg.add(bg,M4,NM);if(hg){M4.compose(_v.set(x,y+k.headY(t,+l)*bv,z),_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6),_one);NM.compose(_z,_q,_nv);mg.add(hg,M4,NM);}nT++;}}
  yield;   // turrets done
  for(const [kind,list] of pl.homes){const geo=low?cached(R.hgeo,'si:'+kind,()=>standIn(S,k,'home',kind.length)):cached(R.hgeo,kind+true,()=>k.home(kind,true));for(const hm of list){if(++yc%40===0)yield;const x=P.cellX(hm.i)+c/2,z=P.cellZ(hm.j)+c/2;M4.compose(_v.set(x,hY(x,z),z),_q.setFromAxisAngle(up,(hm.seed%4)*Math.PI/2),_one);NM.compose(_z,_q,_nv);mg.add(geo,M4,NM);nH++;}}
  const C0=ccCenter(p),cy=hY(C0.x,C0.z);

@@ -86,6 +86,17 @@ const profR=(P,t)=>{if(t<=P[0][0])return P[0][1];for(let k=1;k<P.length;k++)if(t
 // a cut boulder in one stone colour: lighter top facets, dark underside
 const stone=(b,x,y,z,rx,ry,rz,sd,m,o={})=>blob(b,x,y,z,rx,ry,rz,Object.assign({n:6,prof:ROCK3,seed:sd,m:shade(m,b.k.tint(m,1.38,.01),b.k.tint(m,.66)),cuts:3,jit:.16,yaw:sd*1.3},o));
 
+// Leaf masses (every bush and canopy here): a squashed dome whose vertices run from a dark skirt through the body colour to
+// a sunlit crown, so a plant reads light-on-top / dark-underneath at any size. M = [dark, body, light, crown]; P = rings
+// [height fraction, radius fraction, index into M]. triangles = 2n(rings - 1) + n (crown) + n (o.nadir: a dark underside)
+const LOBE3=[[.03,.72,0],[.36,1,1],[.74,.68,2]],LOBE2=[[.05,.84,0],[.58,.8,2]],MOUND3=[[0,.88,0],[.38,1,1],[.76,.56,2]],MOUND2=[[0,.9,0],[.55,.76,2]];
+const LEAF={olive:[0x2c3a16,0x64782e,0x9ca848,0xbcc05c],green:[0x1b2d14,0x3d5c28,0x6c8c3a,0x8ea64a],straw:[0x443e1e,0x868040,0xb4ac5e,0xccc67a]};
+const leafSet=(b,H,j=.07)=>H.map(h=>b.k.mat(h,'leaf',0,j));
+function lobe(b,x,y,z,rx,ry,rz,n,M,o={}){const P=o.prof||LOBE3,sd=o.seed||1,jit=o.jit??.14,yaw=o.yaw||0,lx=o.lx||0,lz=o.lz||0,R=[];
+ P.forEach(([t,rr,mi],k)=>{const ring=[];for(let i=0;i<n;i++){const a=yaw+(i+(k%2)*.5+(hz(sd,k*31+i)-.5)*.3)/n*TAU,f=rr*(1-jit*hz(sd,k*57+i+100))*(o.zig&&i%2?1-o.zig:1),tt=t+(k?(hz(sd,k*91+i+200)-.5)*.08:0);
+   ring.push([x+Math.cos(a)*f*rx+lx*tt,y+ry*tt,z+Math.sin(a)*f*rz+lz*tt,M[mi]]);}R.push(ring);});
+ return facets(b,R,M[1],{stag:true,apex:[x+lx,y+ry,z+lz,M[3]||M[2]],nadir:o.nadir?[x,y+ry*.16,z,M[0]]:null,nadirIns:[x,y+ry,z]});}
+
 // ------------------------------------------------------------------ rocks (unit shape) ---------------------------------
 // Envelope |x| <= 1, |z| <= 1, -0.45 <= y <= 1; widest near the bottom, flat base. A cut boulder with two smaller boulders
 // fused to it and chips at its foot. HIGH 118 / LOW 57 triangles.
@@ -107,12 +118,16 @@ WK.model('crystal-growth',(b,o)=>{const {mat,glow}=b.k,hi=b.hi,sd=o.seed|0,M=[ma
  S.slice(0,hi?7:5).forEach(([x,z,h,tx,tz,r,n],k)=>crystal(b,[x,.03+r*.6*Math.hypot(tx,tz)/h,z],[x+tx,h,z+tz],r,n,M,{rot:k*.9+.3,sq:.7+.2*hz(sd,k),sh:.74}));
 },{aoH:1,aoMin:.7});
 // fungus-growth: |x|,|z| <= .9, 0 <= y <= 1. Bulbous pods on stalks: dark body, violet-glowing gills under the bulb and a
-// glowing crown. HIGH 146 / LOW 60.
+// glowing crown. LOW: three pods, their caps still round (five sides). HIGH 146 / LOW 59.
 WK.model('fungus-growth',(b,o)=>{const {mat,glow,tint}=b.k,hi=b.hi,body=mat(0x4a3d5c,'dirt',0,.12),stalk=mat(0x5a5068,'dirt',0,.1),gill=glow(0xa07bff,.7),spot=glow(0xc3a6ff,.7),f0=flatOf(tint(body,.9));
  const P=[[0,0,1,.06,.03,5],[.48,.2,.72,.2,.06,5],[-.44,.3,.62,-.2,.1,4],[.15,-.5,.66,.05,-.2,4],[-.35,-.4,.44,-.16,-.14,4]];
  (hi?P:[P[0],P[1],P[3]]).forEach(([x,z,s,tx,tz,n],k)=>{const R=.34*s,top=[x+tx,s,z+tz],at=t=>[x+tx*t*t,s*t+.025*(1-t),z+tz*t*t];
-  if(hi&&k<4)sweep(b,[at(0),at(.52),at(.6),at(.84)],[.11*s,.08*s,R,R*.86],n,body,{rot:k,bandM:r=>r===0?stalk:r===1?gill:body,tipRingM:f0,tip:pt(top,spot)});
-  else sweep(b,[at(0),at(.56),at(.84)],[.1*s,R,R*.86],4,body,{rot:k,bandM:r=>r?body:stalk,tipRingM:hi?f0:gill,tip:pt(top,spot)});});
+  if(!hi){const ring=(t,rr)=>{const c=at(t),A=[];for(let i=0;i<5;i++){const a=i/5*TAU+k;A.push([c[0]+Math.cos(a)*rr,c[1],c[2]+Math.sin(a)*rr]);}return A;};
+   spike(b,at(0),at(.7),.1*s,stalk,3,k);
+   if(k<2)facets(b,[ring(.56,R*1.06),ring(.84,R*.84)],body,{apex:pt(top,spot),apexRingM:gill,nadir:at(.44),nadirM:gill});
+   else facets(b,[ring(.58,R*1.06)],flatOf(body),{apex:pt(top,spot),nadir:at(.44),nadirM:gill});}
+  else if(k<4)sweep(b,[at(0),at(.52),at(.6),at(.84)],[.11*s,.08*s,R,R*.86],n,body,{rot:k,bandM:r=>r===0?stalk:r===1?gill:body,tipRingM:f0,tip:pt(top,spot)});
+  else sweep(b,[at(0),at(.56),at(.84)],[.1*s,R,R*.86],4,body,{rot:k,bandM:r=>r?body:stalk,tipRingM:f0,tip:pt(top,spot)});});
 },{aoH:1,aoMin:.7});
 
 // ------------------------------------------------------------------ trees ----------------------------------------------
@@ -137,25 +152,31 @@ WK.model('tree-conifer',(b,o)=>{const {pal,tint,mix}=b.k,N=pal.nat,hi=b.hi,sd=o.
    for(const a of [.4,2.5,4.5]){const c=[-.42+Math.cos(a)*.24,.42,Math.sin(a)*.24],e=[-.42+Math.cos(a)*.62,-.08,Math.sin(a)*.62];leafTri(b,[c[0]-Math.sin(a)*.1,.1,c[2]+Math.cos(a)*.1],[c[0]+Math.sin(a)*.1,.1,c[2]-Math.cos(a)*.1],e,bark,null);T3(b,c,[c[0]-Math.sin(a)*.1,.1,c[2]+Math.cos(a)*.1],e,bark,[-.42,0,0]);T3(b,c,[c[0]+Math.sin(a)*.1,.1,c[2]-Math.cos(a)*.1],e,bark,[-.42,0,0]);}}
  },0,0,s);
 },{aoH:5,aoMin:.6});
-// tree-broadleaf (4.6 x 6.8 x 4.6): a gnarled broadleaf. A forked trunk, big faceted canopy masses in olive, dark green and
-// ochre with darker undersides. HIGH <= 300 / LOW <= 120.
-WK.model('tree-broadleaf',(b,o)=>{const {pal,tint}=b.k,N=pal.nat,hi=b.hi,sd=o.seed|0,s=Math.min(o.h/6.8,o.w/4.6,o.d/4.6),bark=shade(N.bark,tint(N.bark,1.25),tint(N.bark,.8));
- b.at(0,0,0,0,()=>{const F=[.12,2.35,0];
-  sweep(b,[[0,-.1,0],[-.12,1.15,.05],F],[.36,.28,.24],hi?6:4,bark);
-  const br=[[[.7,3.2,.25],[1.0,4.1,.42],.17,.1],[[-.55,3.3,-.25],[-.85,4.2,-.45],.16,.09],[[.2,3.3,-.6],[.25,3.9,-1.0],.12,.07],[[-.2,3.2,.55],[-.3,3.8,.95],.11,.07]];
-  br.slice(0,hi?4:2).forEach(([p1,p2,r1,r2],k)=>hi&&k<2?sweep(b,[F,p1,p2],[.2,r1,r2],4,bark):sweep(b,[F,p2],[.17,r2],3,bark));
-  if(hi)for(const a of [.9,3.0,5.0]){const cx=Math.cos(a),sz=Math.sin(a);T3(b,[cx*.2-sz*.12,.5,sz*.2+cx*.12],[cx*.2+sz*.12,.5,sz*.2-cx*.12],[cx*.75,-.08,sz*.75],N.bark,[0,-.5,0]);T3(b,[cx*.2-sz*.14,-.05,sz*.2+cx*.14],[cx*.2-sz*.12,.5,sz*.2+cx*.12],[cx*.75,-.08,sz*.75],N.bark,[cx*.3,0,sz*.3]);T3(b,[cx*.2+sz*.14,-.05,sz*.2-cx*.14],[cx*.2+sz*.12,.5,sz*.2-cx*.12],[cx*.75,-.08,sz*.75],N.bark,[cx*.3,0,sz*.3]);}
-  const C=[[0,4.45,0,1.4,2.1,1.35],[1.0,3.5,.4,1.2,1.6,1.1],[-1.1,3.6,-.45,1.2,1.5,1.15],[.3,3.2,-1.3,1.1,1.4,1.0],[-.4,3.1,1.3,1.1,1.4,1.0],[.95,4.3,-.7,.9,1.3,.9],[-.9,4.2,.8,.95,1.3,.9]],BR=[N.broad[0],N.broad[1],N.broad[2],b.k.mix(N.broad[3],N.broad[1],.5),N.broad[1],N.broad[2],N.broad[0]];
-  C.slice(0,hi?7:4).forEach(([x,y,z,rx,ry,rz],k)=>{const g=BR[(k+sd)%7],m=shade(g,tint(g,1.14),tint(g,.52));blob(b,x,y,z,rx,ry,rz,{n:hi?6:5,prof:[[.26,.84],[.66,.88]],seed:sd*9+k,m,nadir:true,nadirM:tint(g,.45),jit:.22,zig:.12,cuts:hi?2:0,lx:.15,yaw:k*1.3});});
+// tree-broadleaf (4.6 x 6.8 x 4.6): a gnarled broadleaf. A stout forked trunk under a wide canopy of squashed leaf lobes
+// (olive, dark green, one dry straw) that fills the box, every lobe sunlit on top and dark underneath. HIGH <= 300 / LOW <= 120.
+WK.model('tree-broadleaf',(b,o)=>{const {pal,tint}=b.k,N=pal.nat,hi=b.hi,sd=o.seed|0,s=Math.min(o.h/6.8,o.w/4.6,o.d/4.6),bark=shade(N.bark,tint(N.bark,1.5,.012),tint(N.bark,.75)),LS=[leafSet(b,LEAF.olive),leafSet(b,LEAF.green),leafSet(b,LEAF.straw)];
+ b.at(0,0,0,0,()=>{const F=[.1,2.55,0];
+  sweep(b,[[0,-.1,0],[-.14,1.25,.05],F],[.48,.36,.3],hi?6:4,bark);
+  const br=[[[.7,3.15,.35],[1.15,3.8,.7],.2,.13],[[-.6,3.25,.15],[-1.15,3.95,.3],.19,.12],[[.18,3.3,-.6],[.25,3.9,-1.15],.15,.1],[[-.2,3.1,.6],[-.35,3.5,1.15],.14,.09]];
+  br.slice(0,hi?4:2).forEach(([p1,p2,r1,r2],k)=>hi&&k<2?sweep(b,[F,p1,p2],[.24,r1,r2],4,bark):sweep(b,[F,p2],[.2,r2],3,bark));
+  if(hi)for(const a of [.9,3.0,5.0]){const cx=Math.cos(a),sz=Math.sin(a),e=[cx*.95,-.08,sz*.95];T3(b,[cx*.3-sz*.15,.62,sz*.3+cx*.15],[cx*.3+sz*.15,.62,sz*.3-cx*.15],e,N.bark,[0,-.5,0]);T3(b,[cx*.3-sz*.18,-.05,sz*.3+cx*.18],[cx*.3-sz*.15,.62,sz*.3+cx*.15],e,N.bark,[cx*.4,0,sz*.4]);T3(b,[cx*.3+sz*.18,-.05,sz*.3-cx*.18],[cx*.3+sz*.15,.62,sz*.3-cx*.15],e,N.bark,[cx*.4,0,sz*.4]);}
+  // the canopy [x, y, z, rx, ry, rz, colour, sides]: a big crown lobe over five that reach the edges of the box
+  const C=[[.1,4.7,0,1.7,1.95,1.6,0,7],[1.2,3.35,.7,1.05,1.5,1.05,1,6],[-1.2,3.45,.5,1.05,1.45,1.05,2,6],[.3,3.4,-1.2,1.2,1.5,1.0,1,6],[-.2,3.0,1.3,1.0,1.3,.9,0,6],[-1.1,3.9,-.9,.95,1.35,.95,0,5]];
+  C.slice(0,hi?6:4).forEach(([x,y,z,rx,ry,rz,c,n],k)=>lobe(b,x,y,z,rx,ry,rz,hi?n:k?5:6,LS[c===2?2:(c+sd)%2],{prof:hi?LOBE3:LOBE2,seed:sd*9+k+1,nadir:true,lx:.12,yaw:k*1.3}));
  },0,0,s);
 },{aoH:4.5,aoMin:.6});
-// tree-dead (3.8 x 7.2 x 3.8): a dead, burnt tree. A charred trunk snapped at the top, bare broken limbs. HIGH <= 120 / LOW <= 60.
-WK.model('tree-dead',(b,o)=>{const {pal,tint,mix,mat}=b.k,N=pal.nat,hi=b.hi,s=Math.min(o.h/7.2,o.w/3.8,o.d/3.8),ash=mix(N.burnt,mat(0x6a645c,'timber',.9),.6),char=shade(tint(N.burnt,1.6,.01),ash,tint(N.burnt,1.2));
- b.at(0,0,0,0,()=>{const T=[[0,-.1,0],[.1,1.6,.03],[-.06,3.4,-.04],[.14,5.0,.04],[.1,6.2,0]];
-  if(hi)sweep(b,T,[.42,.33,.27,.2,.12],5,char,{tip:[.26,7.15,.06]});else sweep(b,[T[0],T[2],T[4]],[.42,.27,.12],4,char,{tip:[.26,7.15,.06]});
-  const L=[[3.2,.4,1.7,1.0],[4.4,2.6,1.5,1.1],[5.3,4.4,1.2,.9],[2.4,5.5,1.4,.7],[5.9,1.3,.8,.7]];
-  L.slice(0,hi?5:4).forEach(([y,a,l,up],k)=>{const p=along(T,y),ca=Math.cos(a),sa=Math.sin(a),mid=[p[0]+ca*l*.55,y+up*.25,p[2]+sa*l*.55],end=[p[0]+ca*l,y+up,p[2]+sa*l],m=k%2?char:tint(N.burnt,1.3);
-   if(hi&&k<3)sweep(b,[p,mid,lerp3(mid,end,.8)],[.14,.1,.06],3,m,{tip:end});else sweep(b,[p,mid],[.13,.08],3,m,{tip:end});});
+// tree-dead (3.8 x 7.2 x 3.8): a dead tree. Charcoal-grey bark, ash-pale on its upper faces and up one flank, the top snapped
+// off in a pale splintered break, bare limbs, one of them a broken stub showing pale wood. HIGH <= 120 / LOW <= 60.
+WK.model('tree-dead',(b,o)=>{const {mat,mix}=b.k,hi=b.hi,s=Math.min(o.h/7.2,o.w/3.8,o.d/3.8),bark=mat(0x62605d,'timber',.25,.1),ash=mat(0xbdb7ab,'timber',.1,.08),dk=mat(0x33302e,'timber',.35,.08),wood=mat(0xdccba0,'flat',0,.05),woodD=mat(0xb09868,'flat',0,.05),char=shade(bark,ash,dk);
+ b.at(0,0,0,0,()=>{const T=[[0,-.1,0],[.12,1.6,.03],[-.08,3.4,-.04],[.14,5.0,.04],[.1,6.2,0]],vm=(k,i)=>{const t=k/(hi?4:2);return i<2?mix(bark,ash,.5+.5*t):mix(dk,bark,.3+.7*t);};
+  // the trunk: paler up one flank and toward the top; the snapped top is a cap of pale wood with one splinter left standing
+  sweep(b,hi?T:[T[0],T[2],T[4]],hi?[.5,.4,.33,.25,.2]:[.5,.33,.2],hi?5:4,bark,{vm,tip:[.14,6.56,.02,wood],tipRingM:woodD});
+  spike(b,[.02,6.0,.08],[.3,7.15,.06,ash],.1,bark);
+  const Lm=[[3.2,.4,1.7,1.0],[4.4,2.6,1.5,1.1],[5.3,4.4,1.2,.9],[2.4,5.5,1.4,.7],[5.9,1.3,.8,.7]];
+  Lm.slice(0,hi?5:4).forEach(([y,a,l,up],k)=>{const p=along(T,y),ca=Math.cos(a),sa=Math.sin(a),md=[p[0]+ca*l*.55,y+up*.25,p[2]+sa*l*.55],end=[p[0]+ca*l,y+up,p[2]+sa*l,ash];
+   if(k===3)sweep(b,[p,md],[.2,.15],3,char,{tip:[md[0]+ca*.1,md[1]+.06,md[2]+sa*.1,wood],tipRingM:woodD});          // the broken stub
+   else if(hi&&k<3)sweep(b,[p,md,lerp3(md,end,.8)],[.2,.14,.08],3,char,{tip:end});else sweep(b,[p,md],[.18,.11],3,char,{tip:end});});
+  if(hi)for(const a of [.6,2.7,4.7]){const cx=Math.cos(a),sz=Math.sin(a),e=[cx*.95,-.08,sz*.95];T3(b,[cx*.32-sz*.15,.6,sz*.32+cx*.15],[cx*.32+sz*.15,.6,sz*.32-cx*.15],e,bark,[0,-.5,0]);T3(b,[cx*.32-sz*.18,-.05,sz*.32+cx*.18],[cx*.32-sz*.15,.6,sz*.32+cx*.15],e,dk,[cx*.4,0,sz*.4]);T3(b,[cx*.32+sz*.18,-.05,sz*.32-cx*.18],[cx*.32+sz*.15,.6,sz*.32-cx*.15],e,dk,[cx*.4,0,sz*.4]);}
  },0,0,s);
 },{aoH:4,aoMin:.7});
 // tree-far (4.4 x 7.2 x 4.4): the distance stand-in for any tree: a trunk and two faceted canopy tiers. 56 triangles.
@@ -166,41 +187,43 @@ WK.model('tree-far',(b,o)=>{const {pal,tint,mix}=b.k,N=pal.nat,s=Math.min(o.h/7.
 },{aoH:5,aoMin:.6});
 
 // ------------------------------------------------------------------ frontier flora --------------------------------------
-// a two-sided blade from a point: root, a bent middle, a tip (grass 6 triangles; a fern frond 8)
-function blade(b,x,y,z,a,len,h,wd,m,o={}){const ca=Math.cos(a),sa=Math.sin(a),px=-sa*wd/2,pz=ca*wd/2,k=o.k??.5,kh=o.kh??.72,mu=o.under||m,tm=o.tipM||m,
-  a0=[x-px,y,z-pz],a1=[x+px,y,z+pz],m0=[x+ca*len*k-px*.75,y+h*kh,z+sa*len*k-pz*.75],m1=[x+ca*len*k+px*.75,y+h*kh,z+sa*len*k+pz*.75],t=[x+ca*len,y+h*(o.th??1),z+sa*len,tm];
- leafTri(b,a0,a1,m1,m,mu);leafTri(b,a0,m1,m0,m,mu);leafTri(b,m0,m1,t,m,mu);}
-function frond(b,x,y,z,a,len,h,wd,m,mu,tm){const ca=Math.cos(a),sa=Math.sin(a),px=-sa*wd/2,pz=ca*wd/2,at=(r,yy,w)=>[[x+ca*len*r-px*w,y+h*yy,z+sa*len*r-pz*w],[x+ca*len*r+px*w,y+h*yy,z+sa*len*r+pz*w]],
-  p0=[x+ca*.05,y,z+sa*.05],[b0,b1]=at(.36,.72,1),[c0,c1]=at(.72,.98,.8),t=[x+ca*len,y+h*.42,z+sa*len,tm];
- leafTri(b,p0,b0,b1,m,mu);leafTri(b,b0,b1,c1,m,mu);leafTri(b,b0,c1,c0,m,mu);leafTri(b,c0,c1,t,m,mu);}
-// scrub (1.7 x 1 x 1.7): hardy scrub. A low olive bush of three leaf masses leaning downwind with dry thorn twigs. HIGH <= 100 / LOW <= 60.
-WK.model('scrub',(b,o)=>{const {pal,tint,mat,mix}=b.k,N=pal.nat,hi=b.hi,sd=o.seed|0,s=Math.min(o.w/1.7,o.h,o.d/1.7),stem=mat(0x4a3826,'timber',.4),ol=tint(N.olive,.8),G=[ol,N.moss,mix(ol,N.leaf[1],.5)];
- b.at(0,0,0,0,()=>{for(let k=0;k<3;k++){const a=k/3*TAU+.4,r=.3+.06*k,g=G[k],m=shade(g,tint(g,1.18),tint(g,.55));
-   blob(b,Math.cos(a)*r+.04,-.03,Math.sin(a)*r*.9,.5,.62-.09*k,.46,{n:hi?5:4,prof:hi?[[0,.8],[.36,1],[.72,.56]]:[[0,.85],[.5,.9]],seed:sd*7+k,m,lx:.16,jit:.24,zig:.3,yaw:k});}
-  const tw=hi?[[.2,.85,.92],[1.9,.8,.8],[3.6,.82,.96],[5.3,.7,.84]]:[[.2,.85,.92],[3.6,.82,.96]];
-  for(const [a,l,h] of tw){const ca=Math.cos(a),sa=Math.sin(a);spike(b,[ca*.2,.25,sa*.2],[ca*l,h,sa*l],.04,stem);}
-  if(hi){gem8(b,.58,.6,.1,.11,.09,.1,tint(ol,1.15),.3,3);gem8(b,-.42,.56,.36,.1,.08,.1,N.moss,1,3);}
+// a two-sided grass blade with its own gradient, M = [dark root, body, sunlit tip]: 6 triangles (lite: 4)
+function blade(b,x,y,z,a,len,h,wd,M,lite){const ca=Math.cos(a),sa=Math.sin(a),px=-sa*wd/2,pz=ca*wd/2,a0=[x-px,y,z-pz,M[0]],a1=[x+px,y,z+pz,M[0]],
+  m0=[x+ca*len*.42-px*.8,y+h*.6,z+sa*len*.42-pz*.8,M[1]],m1=[x+ca*len*.42+px*.8,y+h*.6,z+sa*len*.42+pz*.8,M[1]],t=[x+ca*len,y+h,z+sa*len,M[2]];
+ if(lite){leafTri(b,a0,a1,m1,M[1]);leafTri(b,a0,m1,t,M[1]);}else{leafTri(b,a0,a1,m1,M[1]);leafTri(b,a0,m1,m0,M[1]);leafTri(b,m0,m1,t,M[1]);}}
+// an arching fern frond, M = [dark crown, body, light, sunlit tip]: 8 triangles
+function frond(b,x,y,z,a,len,h,wd,M){const ca=Math.cos(a),sa=Math.sin(a),px=-sa*wd/2,pz=ca*wd/2,at=(r,yy,w,m)=>[[x+ca*len*r-px*w,y+h*yy,z+sa*len*r-pz*w,m],[x+ca*len*r+px*w,y+h*yy,z+sa*len*r+pz*w,m]],
+  p0=[x+ca*.05,y,z+sa*.05,M[0]],[b0,b1]=at(.36,.72,1,M[1]),[c0,c1]=at(.7,.96,.7,M[2]),t=[x+ca*len,y+h*.6,z+sa*len,M[3]];
+ leafTri(b,p0,b0,b1,M[1]);leafTri(b,b0,b1,c1,M[1]);leafTri(b,b0,c1,c0,M[1]);leafTri(b,c0,c1,t,M[1]);}
+// scrub (1.7 x 1 x 1.7): hardy scrub. Three squashed leaf lobes (olive, dark green, dry straw) leaning downwind, dark at the
+// ground and sunlit on top, with dry thorn twigs. HIGH <= 100 / LOW <= 60.
+WK.model('scrub',(b,o)=>{const {mat}=b.k,hi=b.hi,sd=o.seed|0,s=Math.min(o.w/1.7,o.h,o.d/1.7),stem=mat(0x6a5236,'timber',.3),LS=[leafSet(b,LEAF.olive),leafSet(b,LEAF.green),leafSet(b,LEAF.straw)];
+ b.at(0,0,0,0,()=>{[[-.16,-.2,.64,.7,.58,1],[.3,.14,.52,.54,.48,0],[-.24,.36,.48,.44,.42,2]].forEach(([x,z,rx,ry,rz,c],k)=>lobe(b,x,-.03,z,rx,ry,rz,hi?6:5,LS[c===2?2:(c+sd)%2],{prof:hi?MOUND3:MOUND2,seed:sd*7+k+1,lx:.12,yaw:k*1.1+.3,zig:.14}));
+  for(const [a,l,h] of hi?[[.3,.8,.97],[2.4,.78,.86],[4.4,.74,.92]]:[[.3,.8,.97],[4.4,.74,.92]]){const ca=Math.cos(a),sa=Math.sin(a);spike(b,[ca*.25,.3,sa*.25],[ca*l,h,sa*l],.045,stem);}
  },0,0,s);
 },{aoH:.9,aoMin:.6});
-// flower-patch (.9 x .5 x .9): a low leaf mound with four small pale blooms (cream / straw, no glow). 50 triangles.
-WK.model('flower-patch',(b,o)=>{const {pal,tint,mat}=b.k,N=pal.nat,sd=o.seed|0,s=Math.min(o.w/.9,o.h/.5,o.d/.9),g=N.moss,cream=mat(0xd9cfba,'flat',0,.08),straw=mat(0xcdb770,'flat',0,.08),eye=mat(0xb08a3a,'flat');
- b.at(0,0,0,0,()=>{blob(b,0,-.02,0,.44,.28,.42,{n:6,prof:[[0,1],[.55,.8]],zig:.2,seed:sd+2,m:shade(g,tint(g,1.2),tint(g,.6)),jit:.2});
-  for(let k=0;k<4;k++){const a=k*1.6+.3,x=Math.cos(a)*.27,z=Math.sin(a)*.27,y=.2+.03*(k%2),R=[];for(let i=0;i<4;i++){const q=i/4*TAU+k;R.push([x+Math.cos(q)*.085,y+.17+.025*(i%2),z+Math.sin(q)*.085]);}
-   facets(b,[R],k%2?straw:cream,{nadir:[x*.8,y,z*.8],apex:[x,y+.15,z,eye],apexIns:[x,y-1,z]});}
+// flower-patch (.9 x .5 x .9): a dark leaf mound carrying three big bright blooms (cream and sun yellow, no glow) tilted
+// outward, and one leaf. 50 triangles.
+WK.model('flower-patch',(b,o)=>{const {mat}=b.k,sd=o.seed|0,s=Math.min(o.w/.9,o.h/.5,o.d/.9),G=leafSet(b,[0x16280f,0x35562a,0x5e8038,0x7a9a44]),PET=[mat(0xfff4d8,'flat',0,.03),mat(0xffd23c,'flat',0,.03),mat(0xfff4d8,'flat',0,.03)],EYE=[mat(0xe07a1c,'flat'),mat(0x9a4a14,'flat'),mat(0xe07a1c,'flat')];
+ b.at(0,0,0,0,()=>{lobe(b,0,-.02,0,.43,.27,.41,6,G,{prof:[[0,1,0],[.52,.72,1]],zig:.18,seed:sd+2,jit:.16});
+  for(let k=0;k<3;k++){const a=k*TAU/3+.5+sd,x=Math.cos(a)*.2,z=Math.sin(a)*.2,y=.3+.04*((k+sd)%3),R=[];for(let i=0;i<5;i++){const q=i/5*TAU+k;R.push([x+Math.cos(q)*.15,y+.03-.05*Math.cos(q-a),z+Math.sin(q)*.15,PET[k]]);}
+   facets(b,[R],PET[k],{apex:[x+Math.cos(a)*.03,y+.085,z+Math.sin(a)*.03,EYE[k]],nadir:[x*.7,y-.13,z*.7,G[1]]});}
+  leafTri(b,[-.3,.03,-.16,G[1]],[-.16,.03,-.32,G[1]],[-.42,.2,-.4,G[3]],G[2]);
  },0,0,s);
 },{aoH:.5,aoMin:.7});
-// fern (2 x 1 x 2): arching fronds from one crown. HIGH 48 / LOW 32.
-WK.model('fern',(b,o)=>{const {pal,tint,mat,mix}=b.k,N=pal.nat,hi=b.hi,sd=o.seed|0,s=Math.min(o.w/2,o.d/2),n=hi?6:4,G=[mat(0x4f7a30,'leaf',0,.2),mat(0x3f6a26,'leaf',0,.2)];
- for(let k=0;k<n;k++){const a=k/n*TAU+.3+.3*(hz(sd,k)-.5),g=G[k%2];frond(b,0,0,0,a,(.86+.14*hz(sd,k+9))*s,(.78+.2*hz(sd,k+20))*o.h,.38*s,g,tint(g,.6),mix(g,N.straw,.5));}
+// fern (2 x 1 x 2): broad arching fronds from one dark crown, lighter and yellower toward the tips. HIGH 48 / LOW 32.
+WK.model('fern',(b,o)=>{const hi=b.hi,sd=o.seed|0,s=Math.min(o.w/2,o.d/2),n=hi?6:4,G=[leafSet(b,[0x14240d,0x3f6a26,0x74a036,0xb2c058],.1),leafSet(b,[0x14240d,0x4b7830,0x86aa3e,0xc0c862],.1)];
+ for(let k=0;k<n;k++){const a=k/n*TAU+.3+.3*(hz(sd,k)-.5);frond(b,0,0,0,a,(.86+.14*hz(sd,k+9))*s,(.78+.2*hz(sd,k+20))*o.h,.52*s,G[k%2]);}
 },{aoH:.9,aoMin:.62});
 // crystal-sprout (.7 x 1.5 x .7): three thin teal crystal shards. 60 triangles.
 WK.model('crystal-sprout',(b,o)=>{const {mat,glow}=b.k,sx=o.w/.7,sy=o.h/1.5,M=[mat(0x1c5c56,'metal',.2),mat(0x18544e,'flat'),glow(0x4fe0c8,.9),glow(0xb8fff0,.9)];
  for(let k=0;k<3;k++){const a=k*2.1+.4,h=(.9+.3*k)*sy,x=Math.cos(a)*.13*sx,z=Math.sin(a)*.13*sx;crystal(b,[x,.03,z],[x+Math.cos(a)*.05*sx*(3-k),h,z+Math.sin(a)*.05*sx*(3-k)],.1*sx,4,M,{rot:k,sh:.7,lite:!b.hi});}
 },{aoH:1.5,aoMin:.75});
-// moss-cushion (2 x .2 x 1.6): a low moss cushion with two smaller lumps. HIGH 40 / LOW 18.
-WK.model('moss-cushion',(b,o)=>{const {pal,tint,mat,mix}=b.k,N=pal.nat,hi=b.hi,sd=o.seed|0,g=mat(0x3f5226,'leaf',0,.2),m=shade(g,tint(g,1.18),tint(g,.7)),w=o.w/2,d=o.d/1.6,h=o.h;
- blob(b,-.08*w,-.02,0,.9*w,h+.02,.76*d,{n:hi?8:6,prof:[[0,1],[.62,.66]],seed:sd+1,m,jit:.16,at:.98});
- if(hi){blob(b,.62*w,-.02,.38*d,.34*w,h*.8,.3*d,{n:4,prof:[[0,1],[.6,.6]],seed:sd+2,m:shade(mix(g,N.olive,.4),tint(g,1.25),g)});T3(b,[-.7*w,0,-.6*d],[-.42*w,0,-.74*d],[-.6*w,h*.55,-.56*d],m,[0,-1,0]);T3(b,[-.7*w,0,-.6*d],[-.6*w,h*.55,-.56*d],[-.5*w,0,-.4*d],m,[0,-1,0]);T3(b,[-.42*w,0,-.74*d],[-.6*w,h*.55,-.56*d],[-.5*w,0,-.4*d],m,[-.9*w,-1,-.9*d]);}
+// moss-cushion (2 x .2 x 1.6): a low moss cushion with two smaller lumps: a dark rim on the ground, a bright yellow-green
+// top (it has to read on olive ground from above). HIGH 40 / LOW 18.
+WK.model('moss-cushion',(b,o)=>{const hi=b.hi,sd=o.seed|0,w=o.w/2,d=o.d/1.6,h=o.h,M=leafSet(b,[0x16240e,0x4c6a26,0x86a03c,0xa8b650]),M2=leafSet(b,[0x16240e,0x567030,0x94a442,0xb6bc5a]),P=[[0,1,0],[.6,.66,2]];
+ lobe(b,-.08*w,-.02,0,.9*w,h+.02,.76*d,hi?8:6,M,{prof:P,seed:sd+1});
+ if(hi){lobe(b,.62*w,-.02,.38*d,.34*w,h*.85,.32*d,4,M2,{prof:P,seed:sd+2});lobe(b,-.62*w,-.02,-.54*d,.28*w,h*.62,.22*d,4,M2,{prof:[[0,1,0]],seed:sd+3});}
 },{aoH:.25,aoMin:.75});
 // burnt-stump (.6 x 1.2 x .6): a charred stump, its top split in two prongs, one magenta blight vein. HIGH <= 80 / LOW <= 40.
 WK.model('burnt-stump',(b,o)=>{const {pal,tint,mix,mat,glow}=b.k,N=pal.nat,hi=b.hi,r=Math.min(o.w,o.d)/.6,h=o.h/1.2,ash=mix(N.burnt,mat(0x6a645c,'timber',.9),.6),char=shade(tint(N.burnt,1.7,.01),ash,tint(N.burnt,1.2)),vein=glow(0xff2bd6,.9),n=hi?6:4;
@@ -213,23 +236,27 @@ WK.model('burnt-stump',(b,o)=>{const {pal,tint,mix,mat,glow}=b.k,N=pal.nat,hi=b.
   for(let k=0;k<3;k++){const p=V[k],q=V[k+1];for(const sg of [-1,1])T3(b,[p[0]+sg*wv[k],p[1],p[2]-.03*r],[q[0]+sg*wv[k+1],q[1],q[2]-.03*r],[q[0],q[1],q[2]+.035*r],vein,[0,p[1],0]),T3(b,[p[0]+sg*wv[k],p[1],p[2]-.03*r],[p[0],p[1],p[2]+.035*r],[q[0],q[1],q[2]+.035*r],vein,[0,p[1],0]);}}
  else T3(b,[-.04*r,.04,.25*r],[.05*r,.04,.25*r],[.03*r,.66*h,.2*r],vein,[0,.3,0]);
 },{aoH:1.1,aoMin:.7});
-// grass-tuft (.7 x .8 x .7): a clump of blades of varied height in olive, straw and dark green. HIGH 48 / LOW 24.
-WK.model('grass-tuft',(b,o)=>{const {pal,tint,mix}=b.k,N=pal.nat,hi=b.hi,sd=o.seed|0,r=Math.min(o.w,o.d)/.7,ol=tint(N.olive,.78),C=[ol,mix(N.straw,ol,.45),N.moss,N.leaf[2],ol,N.moss],n=hi?6:3;
- for(let k=0;k<n;k++){const a=k*TAU/n+.4+.5*(hz(sd,k)-.5),g=C[k],h=o.h*(.56+.11*((k*7)%5));blade(b,Math.cos(a)*.05*r,0,Math.sin(a)*.05*r,a,(.2+.035*(k%3))*r,h,.15*r,g,{under:tint(g,.7),tipM:mix(g,N.straw,.45),k:.42});
-  const a2=a+TAU/n/2;leafTri(b,[Math.cos(a2-.5)*.07*r,0,Math.sin(a2-.5)*.07*r],[Math.cos(a2+.5)*.07*r,0,Math.sin(a2+.5)*.07*r],[Math.cos(a2)*.3*r,o.h*.34,Math.sin(a2)*.3*r,mix(g,N.straw,.4)],C[(k+2)%6]);}
+// grass-tuft (.7 x .8 x .7): a clump of seven broad blades of varied height (six on LOW): a dark root, olive / green / dry
+// straw bodies, tips lighter and yellower. HIGH 48 / LOW 24.
+WK.model('grass-tuft',(b,o)=>{const {mat}=b.k,hi=b.hi,sd=o.seed|0,r=Math.min(o.w,o.d)/.7,root0=mat(0x14220c,'leaf',0,.06),n=hi?7:6,
+  G=[[0x4e7228,0xa8b44c],[0x66782e,0xcbc664],[0x8a8438,0xdfd27c]].map(([g,t])=>[root0,mat(g,'leaf',0,.08),mat(t,'leaf',0,.06)]);
+ for(let k=0;k<n;k++){const a=k*TAU/n+.4+.5*(hz(sd,k)-.5);blade(b,Math.cos(a)*.06*r,0,Math.sin(a)*.06*r,a,(.17+.04*(k%3))*r,o.h*(k?.52+.12*((k*7)%5):1),.2*r,G[k%3],!hi);}
+ if(hi)for(let k=0;k<3;k++){const a=k*TAU/3+1.3,g=G[(k+1)%3];leafTri(b,[Math.cos(a-.5)*.08*r,0,Math.sin(a-.5)*.08*r,g[0]],[Math.cos(a+.5)*.08*r,0,Math.sin(a+.5)*.08*r,g[0]],[Math.cos(a)*.33*r,o.h*.3,Math.sin(a)*.33*r,g[2]],g[1]);}
 },{aoH:.7,aoMin:.62});
-// bio-node (1.4 x 1.2 x 1.4): the harvestable bio-flora plant, READY: a tough bush crowned with five glowing magenta-pink
-// pods on stalks. bio-node-dim (1.2 x 1.1 x 1.2): the same bush regrowing: bare stalks, one dull bud. HIGH <= 200 / LOW <= 100.
-function bioNode(b,o,hot){const {pal,tint,mat,glow,mix}=b.k,N=pal.nat,hi=b.hi,sd=o.seed|0,r=Math.min(o.w,o.d)/1.4,h=o.h/1.2,stem=mat(0x4a3826,'timber',.4),pod=glow(0xff5fd2,1.6),podHot=glow(0xffb4ec,1.6),husk=mat(0x6a5a44,'leaf',0,.1),G=[tint(N.olive,.8),N.moss];
- sweep(b,[[0,-.04,0],[.03*r,.6*h,0]],[.13*r,.08*r],hi?4:3,stem);
- for(let k=0;k<4;k++){const a=k*TAU/4+.4,g=G[k%2];blob(b,Math.cos(a)*.34*r,.34*h,Math.sin(a)*.34*r,.42*r,.5*h,.4*r,{n:hi?5:4,prof:CROWN2,seed:sd*5+k,m:shade(g,tint(g,1.2),tint(g,.55)),nadir:true,nadirM:tint(g,.5),jit:.2,yaw:k});}
- const P=[[.5,.8,.98],[1.76,.52,.86],[3.02,.5,1.0],[4.28,.5,.88],[5.4,.52,.96]];
- P.forEach(([a,rr,y],k)=>{const x=Math.cos(a)*rr*r,z=Math.sin(a)*rr*r*.92,rx=rr>.7?0:1;if(k===0){/* the crown pod stands on top */}
-  const px=k?x:.04*r,pz=k?z:.02*r,py=(k?y:1.0)*h;
-  if(hi)sweep(b,[[px*.45,.62*h,pz*.45],[px,py-.15*h,pz]],[.035*r,.028*r],3,stem);
-  if(hot)gem8(b,px,py,pz,.135*r,(k?.17:.19)*h,.135*r,pod,k,hi?5:3,podHot);
-  else if(k===0)gem8(b,px,py-.05*h,pz,.1*r,.12*h,.1*r,husk,k,hi?5:3);
-  else if(hi){for(let i=0;i<3;i++){const q=i*TAU/3+k;T3(b,[px,py-.16*h,pz],[px+Math.cos(q)*.08*r,py-.04*h,pz+Math.sin(q)*.08*r],[px+Math.cos(q+1.2)*.08*r,py-.06*h,pz+Math.sin(q+1.2)*.08*r],husk,[px,py+1,pz]);}}});
+// bio-node (1.4 x 1.2 x 1.4): the harvestable bio-flora plant, READY: a low dark bush of three leaf lobes carrying five big
+// glowing magenta-pink pods on stalks (the pods are the first thing you see). bio-node-dim (1.2 x 1.1 x 1.2): the same bush
+// regrowing: bare stalks with empty husks, one dull bud. HIGH <= 200 / LOW <= 100.
+function bioNode(b,o,hot){const {mat,glow}=b.k,hi=b.hi,sd=o.seed|0,r=Math.min(o.w,o.d)/1.4,h=o.h/1.2,stem=mat(0x5a4630,'timber',.3),husk=mat(0x7a6650,'leaf',0,.1),
+  G=[leafSet(b,[0x12220d,0x2d4a20,0x52722d,0x6c8a38]),leafSet(b,[0x18260f,0x3c5222,0x667a30,0x828e3e])],POD=[glow(0xc8169a,1.7),glow(0xff3ec6,1.7),glow(0xffb4ee,1.7)],BUD=[mat(0x4a3040,'flat'),mat(0x8a5a78,'flat'),mat(0xb48aa4,'flat')];
+ // a pod: a fat bulb, deep magenta underneath, hot at the tip (two rings on HIGH)
+ const bulb=(x,y,z,R,ph,n,two,M,rot)=>{const ring=(yy,rr)=>{const A=[];for(let i=0;i<n;i++){const q=i/n*TAU+rot;A.push([x+Math.cos(q)*rr,y+ph*yy,z+Math.sin(q)*rr,M[1]]);}return A;};
+   facets(b,two?[ring(.3,R),ring(.64,R*.72)]:[ring(.36,R)],M[1],{apex:[x,y+ph,z,M[2]],nadir:[x,y,z,M[0]]});};
+ for(let k=0;k<3;k++){const a=k*TAU/3+.5;lobe(b,Math.cos(a)*.3*r,-.03,Math.sin(a)*.3*r,.4*r,(.5-.05*k)*h,.38*r,hi?6:5,G[k%2],{prof:MOUND2,seed:sd*5+k+1,yaw:k});}
+ [[0,0,.74],[.7,.47,.56],[2.2,.47,.66],[3.9,.47,.52],[5.2,.46,.7]].forEach(([a,rr,y],k)=>{const px=Math.cos(a)*rr*r+(k?0:.03*r),pz=Math.sin(a)*rr*r*.95,py=y*h,sc=k?.86:1,R=.2*r*sc,ph=.46*h*sc,foot=[px*.5,(k?.3:.2)*h,pz*.5];
+  if(hi)sweep(b,[foot,[px,py+.05*h,pz]],[.045*r,.032*r],3,stem);else spike(b,foot,[px,py+.12*h,pz],.05*r,stem);
+  if(hot)bulb(px,py,pz,R,ph,hi?(k?5:6):4,hi,POD,k);
+  else if(k===0)bulb(px,py,pz,R*.62,ph*.6,hi?5:4,hi,BUD,k);
+  else if(hi)for(let i=0;i<3;i++){const q=i*TAU/3+k;T3(b,[px,py-.02*h,pz],[px+Math.cos(q)*.09*r,py+.13*h,pz+Math.sin(q)*.09*r],[px+Math.cos(q+1.2)*.09*r,py+.11*h,pz+Math.sin(q+1.2)*.09*r],husk,[px,py+1,pz]);}});
 }
 WK.model('bio-node',(b,o)=>bioNode(b,o,true),{aoH:1,aoMin:.62});
 WK.model('bio-node-dim',(b,o)=>bioNode(b,o,false),{aoH:1,aoMin:.62});
@@ -240,8 +267,8 @@ WK.model('bio-node-dim',(b,o)=>bioNode(b,o,false),{aoH:1,aoMin:.62});
 function prism(b,x,z,r,h,n,rot,slant,taper,m,o={}){const R=[];for(const t of o.mid?[0,.5,1]:[0,1]){const ring=[];for(let i=0;i<n;i++){const a=rot+(i+.3*(hz(o.seed||1,i)-.5))/n*TAU,rr=r*(1-taper*t)*(t===.5?1.04:1);
    ring.push([x+Math.cos(a)*rr+(o.lx||0)*t,t===1?h*(1-slant*(.5+.5*Math.cos(a-rot-(o.sa||0)))):h*t-(t?0:.08),z+Math.sin(a)*rr*(o.rz||1)+(o.lz||0)*t]);}R.push(ring);}
  const c=cen(R[R.length-1]);return facets(b,R,m,{apex:[c[0],c[1]+.02,c[2]],apexM:o.topM});}
-WK.model('ice-block',(b,o)=>{const {pal,tint,glow}=b.k,N=pal.nat,sd=o.seed|0,sx=o.w/2.4,sz=o.d/2.4,h=o.h/3,ice=N.ice,core=glow(0xa8f8ff,.35),top=tint(ice,1.12,.02);let k=0;
- const m=ny=>(++k===3||k===4)?core:ny>.42?top:ny<-.2?tint(ice,.7):ice;
+WK.model('ice-block',(b,o)=>{const {pal,tint,glow}=b.k,N=pal.nat,sd=o.seed|0,sx=o.w/2.4,sz=o.d/2.4,h=o.h/3,ice=b.k.mat(0x4f9ac4,'glass',.45,.1),core=glow(0x7fe6ff,.55),top=tint(ice,1.5,.04);let k=0;
+ const m=ny=>(++k===3||k===4)?core:ny>.42?top:ny<-.2?tint(ice,.55):(k%2?ice:tint(ice,.8));
  prism(b,-.22*sx,-.12*sz,.86*Math.min(sx,sz),2.96*h,5,.3,.34,.2,m,{mid:true,seed:sd+1,lx:.12*sx,rz:.9,topM:top});
  prism(b,.66*sx,.42*sz,.48*Math.min(sx,sz),1.75*h,5,1.1,.3,.2,shade(tint(ice,.94),top,tint(ice,.7)),{seed:sd+2,lx:-.22*sx,lz:-.12*sz,topM:top,sa:2});
  prism(b,-.7*sx,.78*sz,.3*Math.min(sx,sz),.62*h,4,.5,.4,.25,shade(ice,top,tint(ice,.7)),{seed:sd+3,topM:top});
@@ -407,52 +434,71 @@ WK.model('hive',(b,o)=>{const {pal,tint,glow}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0,
    sweep(b,[add(c,nrm,r*.82*U),e],[r*.42*U,r*.3*U],6,shade(dark,tint(chit,1.2),dark),{rot:k,tip:pt(add(c,nrm,r*.9*U),vein),tipRingM:P.magDim,tipIns:add(p,nrm,9)});});}
 },{aoH:8,aoMin:.5});
 
-// hive-mast (4.2 x 20.4 x 4.2, all inside r 2.2): the hive's spire. A twisted, tapering chitin column whose six edges are
-// three glowing veins and three bone ribs, three claw buttresses gripping its foot, the glowing orb at 18.8 m held by four
-// claws. o.sink (default 1) = how far the foot runs below y = 0. HIGH <= 1500 / LOW <= 500.
-WK.model('hive-mast',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,rs=Math.min(o.w,o.d)/4.2,H=o.h/20.4,sink=o.sink??1,NK=hi?10:5,top=17.6*H,dark=P.chitinD,darkF=flatOf(dark),bone=tint(P.bone,1.6,.02),boneM=shade(bone,tint(P.bone,2.1,.03),tint(P.bone,1.0)),boneF=flatOf(bone);
- const axis=t=>[.2*rs*Math.sin(t*5.2)*t,-sink+(top+sink)*t,.16*rs*Math.sin(t*4.1+1)*t],rad=t=>(1.6-1.06*Math.pow(t,.8))*rs*(1+.1*Math.max(0,Math.sin(t*9.4-.7))),tw=4.2/NK;
- const ring=(k,i,f=1,up=0)=>{const t=k/NK,c=axis(t),a=tw*k+i*TAU/6,r=rad(t)*f;return [c[0]+Math.cos(a)*r,c[1]+up,c[2]+Math.sin(a)*r];};
- const R=[];for(let k=0;k<=NK;k++){const g=[];for(let i=0;i<6;i++)g.push(ring(k,i));R.push(g);}
- const ch=b.k.mat(0x2f1836,'chitin',.1);facets(b,R,ch,{bandM:r=>r%2?ch:tint(ch,.8)});
- for(let j=0;j<3;j++){const pts=[];for(let k=0;k<=NK;k++)pts.push(ring(k,2*j,1.03));sweep(b,pts,t=>(.2-.08*t)*rs,3,P.mag,{});
-  if(hi){const pb=[];for(let k=0;k<=NK;k++)pb.push(ring(k,2*j+1,1.02));sweep(b,pb,t=>(.24-.1*t)*rs,4,boneM,{sq:.7});}}
+// hive-mast (4.2 x 20.4 x 4.2, all inside r 2.2): the hive's spire. A twisted chitin column of thin shanks between four
+// swollen knuckles (each ringed with thorns), its six edges three glowing veins and three thick bone ribs, three claw
+// buttresses gripping its foot, and the glowing orb at 18.8 m in a flared cup, caged by five big claws of unequal height.
+// o.sink (default 1) = how far the foot runs below y = 0. HIGH <= 1500 / LOW <= 500.
+WK.model('hive-mast',(b,o)=>{const {pal,tint,mat}=b.k,P=pal.par,hi=b.hi,rs=Math.min(o.w,o.d)/4.2,H=o.h/20.4,sink=o.sink??1,top=17.5*H,dark=P.chitinD,bone=tint(P.bone,2.0,.03),boneM=shade(bone,tint(P.bone,2.7,.04),tint(P.bone,1.2)),boneF=flatOf(bone),
+  ch=mat(0x2f1836,'chitin',.1),chL=mat(0x54305f,'chitin',.1),chD=tint(ch,.7);
+ // the column's stations [t, radius, 1 = a knuckle's swollen edge]: a root flare, then shanks and knuckles, thinner upward
+ const ST=hi?[[0,1.7],[.07,1.42],[.15,1.05],[.2,1.5,1],[.26,1.55,1],[.31,1.0],[.39,.95],[.435,1.38,1],[.485,1.42,1],[.525,.9],[.6,.84],[.64,1.26,1],[.68,1.28,1],[.715,.8],[.79,.74],[.825,1.12,1],[.865,1.14,1],[.895,.7],[1,.72]]
+  :[[0,1.7],[.12,1.05],[.23,1.52,1],[.32,.98],[.46,1.4,1],[.54,.88],[.66,1.27,1],[.73,.78],[.845,1.13,1],[.9,.7],[1,.72]],NS=ST.length;
+ const axis=t=>{const e=Math.sin(Math.PI*t);return [.14*rs*Math.sin(t*5.2)*e,-sink+(top+sink)*t,.12*rs*Math.sin(t*4.1+1)*e];};
+ const E=(k,i,f=1,up=0)=>{const t=ST[k][0],c=axis(t),a=4.2*t+i*TAU/6,r=ST[k][1]*rs*f;return [c[0]+Math.cos(a)*r,c[1]+up,c[2]+Math.sin(a)*r];};
+ const R=[];for(let k=0;k<NS;k++){const g=[];for(let i=0;i<6;i++)g.push(E(k,i));R.push(g);}
+ facets(b,R,ch,{bandM:r=>ST[r][2]?(hi&&!ST[r+1][2]?ch:chL):chD});
+ for(let j=0;j<3;j++){const pts=[],pb=[];for(let k=0;k<NS;k++){pts.push(E(k,2*j,1.03));pb.push(E(k,2*j+1,1.02));}
+  sweep(b,pts,t=>(.22-.07*t)*rs,3,P.mag,{});
+  // the bone ribs: thick tubes on HIGH, raised straps on LOW
+  if(hi)sweep(b,pb,t=>(.34-.14*t)*rs,4,boneM,{sq:.7});
+  else for(let k=0;k<NS-1;k++){const a0=E(k,2*j+.76,1.07),a1=E(k,2*j+1.24,1.07),b0=E(k+1,2*j+.76,1.07),b1=E(k+1,2*j+1.24,1.07),ins=axis((ST[k][0]+ST[k+1][0])/2);T3(b,a0,a1,b1,boneM,ins);T3(b,a0,b1,b0,boneM,ins);}}
  // claw buttresses grip the foot
- [[.9,5.5],[2.9,4.2],[4.9,6.2]].forEach(([a,hh])=>{const c=Math.cos(a),sn=Math.sin(a);horn(b,[c*1.66*rs,-sink*.5,sn*1.66*rs],[c*2.06*rs,hh*H*.6,sn*2.06*rs],[c*1.3*rs,hh*H,sn*1.3*rs],.44*rs,4,boneM,{segs:hi?4:2,glow:P.magDim,ringM:boneF});});
- // the orb in its four claws
- const c1=axis(1);b.cyl(c1[0],top-.35*H,c1[2],.62*rs,.7*H,dark,{n:6,r2:.95*rs,top:true});b.ball(c1[0],18.8*H,c1[2],1.15*rs,P.magHot,!hi);
- for(let k=0;k<4;k++){const a=k*Math.PI/2+.4,c=Math.cos(a),sn=Math.sin(a);horn(b,[c1[0]+c*.7*rs,top-.1,c1[2]+sn*.7*rs],[c1[0]+c*2.25*rs,18.5*H,c1[2]+sn*2.25*rs],[c1[0]+c*.8*rs,Math.min(o.h-.04,20.34*H),c1[2]+sn*.8*rs],.3*rs,4,boneM,{segs:hi?4:2,glow:P.magDim,ringM:boneF});}
- if(hi){for(let k=2;k<NK;k+=2)for(const i of [1,3,5]){const p=ring(k,i,1.02),q=ring(k,i,1.28,.7*H);spike(b,p,q,.13*rs,dark,3);}
-  b.halo(c1[0],18.8*H,c1[2],5*rs,0xff2bd6,.4);}
+ [[.9,5.5],[2.9,4.2],[4.9,6.2]].forEach(([a,hh])=>{const c=Math.cos(a),sn=Math.sin(a);horn(b,[c*1.6*rs,-sink*.5,sn*1.6*rs],[c*1.94*rs,hh*H*.6,sn*1.94*rs],[c*1.2*rs,hh*H,sn*1.2*rs],.5*rs,4,boneM,{segs:hi?4:2,glow:P.magDim,ringM:boneF});});
+ // thorns ring the top of every knuckle (HIGH)
+ if(hi)for(let k=1;k<NS-1;k++)if(ST[k][2]&&!ST[k+1][2])for(const i of [1,3,5])spike(b,E(k,i,.92,-.25*H),E(k,i,Math.min(1.3,1.85/ST[k][1]),.85*H),.16*rs,dark,3);
+ // the orb in its cup, caged by five claws
+ const c1=axis(1);b.cyl(c1[0],top-.45*H,c1[2],.72*rs,1.15*H,dark,{n:6,r2:1.25*rs,top:true});b.ball(c1[0],18.8*H,c1[2],1.25*rs,P.magHot,!hi);
+ for(let k=0;k<5;k++){const a=k*TAU/5+.4,c=Math.cos(a),sn=Math.sin(a),sh=k%2;
+  horn(b,[c1[0]+c*1.0*rs,top+.2*H,c1[2]+sn*1.0*rs],[c1[0]+c*(sh?2.6:2.75)*rs,(sh?18.6:19.0)*H,c1[2]+sn*(sh?2.6:2.75)*rs],[c1[0]+c*(sh?1.05:.7)*rs,Math.min(o.h-.04,(sh?19.75:20.34)*H),c1[2]+sn*(sh?1.05:.7)*rs],.42*rs,4,boneM,{segs:hi?4:2,glow:P.magDim,ringM:boneF});
+  if(hi){const a2=a+TAU/10;spike(b,[c1[0]+Math.cos(a2)*1.0*rs,top+.45*H,c1[2]+Math.sin(a2)*1.0*rs],[c1[0]+Math.cos(a2)*1.8*rs,top+1.1*H,c1[2]+Math.sin(a2)*1.8*rs],.16*rs,dark,3);}}
+ if(hi)b.halo(c1[0],18.8*H,c1[2],5*rs,0xff2bd6,.4);
 },{aoH:8,aoMin:.5});
 
-// cover-wall (EXACT box o.w x o.h x o.d, default 18 x 5 x 3; art within the box +-.2): a Parasite-grown wall the player
-// fights around. Chitin plates between dark seams every ~3 m, a lighter ridge of overlapping scutes on top, a magenta line
-// under the top edge and one near the foot on both long faces. The long axis is x when w >= d, else z.
-// o.sink (default 1.2) = how far the plates run below y = 0. HIGH <= 400 / LOW <= 100.
-WK.model('cover-wall',(b,o)=>{const {pal,tint,glow}=b.k,P=pal.par,hi=b.hi,long=o.w>=o.d,L=long?o.w:o.d,T=long?o.d:o.w,h=o.h,sink=o.sink??1.2,n=Math.max(1,Math.floor(L/3)),seg=L/n,hw=T/2,rich=hi&&n<=9,
-  wall=b.k.mat(0x2c2833,'chitin',0),wallL=tint(wall,1.25,.01),top=tint(P.wallTop,1.3,.01),dark=P.chitinD,bone=tint(P.bone,1.7,.02),line=P.mag,foot=glow(0xff2bd6,1.6),yk=h*.46,yt=h-.55,x0=-L/2,ins=[0,h/2,0];
+// cover-wall (EXACT box o.w x o.h x o.d, default 18 x 5 x 3; art inside the box in plan): a Parasite-grown wall the player
+// fights around. Three or four bulging chitin humps of unequal length along the long axis, dark at the foot and paler toward
+// the crest (the tallest reaches o.h), a ridge of bone spikes on top (to o.h + .55) and a glowing magenta vein in every
+// groove between the humps. HIGH cuts the grooves as glowing clefts with bone fangs beside them; LOW keeps the humps, the
+// spike ridge and a vein wedge in each groove. The long axis is x when w >= d, else z.
+// o.sink (default 1.2) = how far the humps run below y = 0. HIGH <= 400 / LOW <= 100.
+WK.model('cover-wall',(b,o)=>{const {pal,tint,glow,mat}=b.k,P=pal.par,hi=b.hi,long=o.w>=o.d,L=long?o.w:o.d,T=long?o.d:o.w,h=o.h,sink=o.sink??1.2,hw=T/2,n=L>=14?4:3,sd=(o.seed|0)*7+Math.round(L*3+T*5),mid=hi?3:2,
+  C4=[mat(0x120816,'flat',0,.06),mat(0x341a3e,'flat',0,.1),mat(0x5a3769,'flat',0,.1),mat(0x80608f,'flat',0,.08)],vHot=glow(0xff4fe0,1.85),vDim=glow(0x9a1880,1.85),bone=mat(0x9484a2,'flat',0,.06),boneT=P.magDim;
  b.at(0,0,0,long?0:Math.PI/2,()=>{
-  for(const s of [-1,1]){const zf=s*hw,zi=s*(hw-.1);
-   if(rich)for(let k=0;k<n;k++){const a=x0+k*seg+.07,c=a+seg-.14,zb=zf+s*.07,m=k%2?wall:wallL;
-     b.quad([a,-sink,zf],[c,-sink,zf],[c,yk,zb],[a,yk,zb],m,ins).quad([a,yk,zb],[c,yk,zb],[c,yt,zi],[a,yt,zi],tint(m,1.1),ins);
-     for(const x of [a,c]){const xi=x===a?[a+.3,h/2,zf]:[c-.3,h/2,zf];b.quad([x,-sink,zf],[x,yk,zb],[x,yk,zi-s*.06],[x,-sink,zi-s*.06],dark,xi);T3(b,[x,yk,zb],[x,yt,zi],[x,yk,zi-s*.06],dark,xi);}}
-   else{b.quad([x0,-sink,zf],[-x0,-sink,zf],[-x0,yt,zi],[x0,yt,zi],wall,ins);for(let k=1;k<n&&k<12;k++){const x=x0+k*seg;b.quad([x-.07,-sink,zf+s*.02],[x+.07,-sink,zf+s*.02],[x+.07,yt,zi+s*.02],[x-.07,yt,zi+s*.02],dark,ins);}}
-   if(rich)b.quad([x0+.05,-sink,zi-s*.02],[-x0-.05,-sink,zi-s*.02],[-x0-.05,yt,zi-s*.02],[x0+.05,yt,zi-s*.02],dark,ins);
-   // the two glowing lines
-   b.quad([x0+.25,yt,zi+s*.03],[-x0-.25,yt,zi+s*.03],[-x0-.25,yt+.18,zi+s*.03],[x0+.25,yt+.18,zi+s*.03],line,ins);
-   b.quad([x0+.25,.46,zf+s*.09],[-x0-.25,.46,zf+s*.09],[-x0-.25,.6,zf+s*.11],[x0+.25,.6,zf+s*.11],foot,ins);
-   // a bone rib over every seam, ending in a nub above the ridge line
-   if(rich)for(let k=1;k<n;k++){const x=x0+k*seg,zr=zf+s*.19;T3(b,[x-.16,-sink,zf+s*.05],[x,-sink,zr],[x,yt+.1,zi+s*.17],bone,ins);T3(b,[x-.16,-sink,zf+s*.05],[x-.13,yt,zi+s*.04],[x,yt+.1,zi+s*.17],bone,ins);
-     T3(b,[x+.16,-sink,zf+s*.05],[x,-sink,zr],[x,yt+.1,zi+s*.17],tint(bone,.8),ins);T3(b,[x+.16,-sink,zf+s*.05],[x+.13,yt,zi+s*.04],[x,yt+.1,zi+s*.17],tint(bone,.8),ins);
-     T3(b,[x-.13,yt,zi+s*.04],[x,yt+.1,zi+s*.17],[x,h+.15,zi-s*.1],bone,ins);T3(b,[x+.13,yt,zi+s*.04],[x,yt+.1,zi+s*.17],[x,h+.15,zi-s*.1],tint(bone,.8),ins);T3(b,[x-.13,yt,zi+s*.04],[x+.13,yt,zi+s*.04],[x,h+.15,zi-s*.1],tint(bone,.6),[x,yt,zf+s*2]);}}
-  // the ends
-  for(const s of [-1,1]){const x=s*L/2;b.quad([x,-sink,-hw],[x,-sink,hw],[x,yt,hw-.1],[x,yt,-hw+.1],tint(wall,.9),ins);b.quad([x,yt,-hw+.1],[x,yt,hw-.1],[x,yt+.18,hw-.1],[x,yt+.18,-hw+.1],dark,ins);}
-  // the ridge: overlapping scutes, each rising toward +x
-  const yb=yt+.18,ze=hw-.02;if(hi){for(let k=0;k<n;k++){const a=x0+k*seg+(k?-.12:0),c=x0+(k+1)*seg,r0=[a+seg*.22,yb+.16,0],r1=[c-.04,h,(k%2?.12:-.12)*hw],m=k%2?top:tint(top,1.14);
-    b.quad([a,yb,ze],[c,yb,ze],r1,r0,m,ins).quad([a,yb,-ze],[c,yb,-ze],r1,r0,tint(m,.9),ins);T3(b,[c,yb,ze],[c,yb,-ze],r1,tint(m,.75),ins);T3(b,[a,yb,ze],[a,yb,-ze],r0,m,ins);}
-   b.quad([x0,yb,ze],[-x0,yb,ze],[-x0,yb,-ze],[x0,yb,-ze],dark,[0,h*2,0]);}
-  else{b.quad([x0,yb,ze],[-x0,yb,ze],[-x0,h,0],[x0,h,0],top,ins).quad([x0,yb,-ze],[-x0,yb,-ze],[-x0,h,0],[x0,h,0],tint(top,.9),ins);for(const s of [-1,1])T3(b,[s*L/2,yb,ze],[s*L/2,yb,-ze],[s*L/2,h,0],top,ins);}
+  // hump k runs X[k] .. X[k+1]: lengths, crest heights and crest lines all differ
+  const wt=[],X=[-L/2];let sum=0;for(let k=0;k<n;k++){wt.push(1+.36*(hz(sd,k)-.5));sum+=wt[k];}for(let k=0;k<n;k++)X.push(k===n-1?L/2:X[k]+L*wt[k]/sum);
+  const tall=sd%n,gw=hi?Math.min(.36,L/n*.09):0,EDGE=[.8,h*.78,.78],END=[.66,h*.6,.72],sc=Math.min(1.5,Math.max(1,T/3.2));
+  // one cross-section (an open line foot .. crest .. foot): half-width factor, crest height, foot factor, crest offset
+  const sec=(x,fw,yc,ff,zc,M)=>hi?[[x,-sink,-hw*ff,M[0]],[x,h*.3,-hw*fw,M[1]],[x,yc*.8,-hw*fw*.62+zc*.5,M[2]],[x,yc,zc,M[3]],[x,yc*.8,hw*fw*.62+zc*.5,M[2]],[x,h*.3,hw*fw,M[1]],[x,-sink,hw*ff,M[0]]]
+   :[[x,-sink,-hw*ff,M[0]],[x,yc*.66,-hw*fw*.84,M[2]],[x,yc,zc,M[3]],[x,yc*.66,hw*fw*.84,M[2]],[x,-sink,hw*ff,M[0]]];
+  const HS=[],S=[],FL=[];
+  for(let k=0;k<n;k++){const a=X[k]+(k?gw:0),c=X[k+1]-(k<n-1?gw:0),hk=k===tall?h:h*(.86+.12*hz(sd,k+10)),zc=hw*.3*(hz(sd,k+20)-.5),pk=.38+.24*hz(sd,k+30),f=k%2?1:.84,M=[C4[0],tint(C4[1],f),tint(C4[2],f),tint(C4[3],f)],e0=k?EDGE:END,e1=k<n-1?EDGE:END,
+    U=hi?[[0,...e0,0],[pk*.45,.95,e0[1]+(hk-e0[1])*.82,.84,zc*.7],[pk,1,hk,.86,zc],[pk+(1-pk)*.55,.95,e1[1]+(hk-e1[1])*.82,.84,zc*.7],[1,...e1,0]]:[[0,...e0,0],[pk,1,hk,.86,zc],[1,...e1,0]];
+   HS.push(U.map(([u,fw,yc,ff,z])=>({u,p:sec(a+(c-a)*u,fw,yc,ff,z,M)})));HS[k].forEach((q,i)=>{if(hi||!k||i)S.push(q);});
+   if(hi&&k<n-1){FL[k+1]=sec(X[k+1],.7,h*.68,.74,0,M);S.push({v:1,p:FL[k+1]});}}
+  // the skin; a groove's two walls glow, hottest along its floor
+  const glw=(Q,m)=>Q.map((p,i)=>[p[0],p[1],p[2],i&&i<Q.length-1?m:vDim]);
+  for(let i=1;i<S.length;i++){const g=S[i-1].v||S[i].v,A=g?glw(S[i-1].p,S[i-1].v?vHot:vDim):S[i-1].p,B=g?glw(S[i].p,S[i].v?vHot:vDim):S[i].p,ins=[(A[0][0]+B[0][0])/2,h*.2,0];
+   for(let j=0;j<A.length-1;j++){if((i+j)&1){T3(b,A[j],A[j+1],B[j+1],C4[1],ins);T3(b,A[j],B[j+1],B[j],C4[1],ins);}else{T3(b,A[j],A[j+1],B[j],C4[1],ins);T3(b,A[j+1],B[j+1],B[j],C4[1],ins);}}}
+  for(const Q of [S[0].p,S[S.length-1].p]){const c=[Q[0][0],Q[mid][1]*.45,0,Q[1][3]];for(let j=0;j<Q.length-1;j++)T3(b,Q[j],Q[j+1],c,C4[1],[0,h*.3,0]);}
+  // the ridge of spikes: dark at the root, bone-pale at the point, leaning one way
+  const crest=(k,u)=>{const Q=HS[k];let i=1;while(i<Q.length-1&&u>Q[i].u)i++;return lerp3(Q[i-1].p[mid],Q[i].p[mid],(u-Q[i-1].u)/(Q[i].u-Q[i-1].u));};
+  for(let k=0;k<n;k++){const pk=HS[k][hi?2:1].u,us=hi?[[pk*.5,.66],[pk,1],[pk+(1-pk)*.5,.74]]:k===n-1&&n>3?[[pk,1]]:[[pk*.8,.85],[pk+(1-pk)*.55,.6]];
+   us.forEach(([u,f],j)=>{const p=crest(k,u),len=(.95+.5*hz(sd,k*5+j+40))*f*sc,r=Math.min((hi?.36:.4)*sc*(.7+.3*f),hw*.34),x=Math.max(-L/2+r,Math.min(L/2-r,p[0]));
+    spike(b,[x,p[1]-.18,p[2]],[Math.min(L/2-.05,x+len*.28),Math.min(h+.55,p[1]+len),p[2]+hw*.16*(hz(sd,k*5+j+60)-.5),boneT],r,bone,hi?4:3,k+j);});}
+  for(let k=1;k<n;k++){
+   if(hi)for(const sg of [-1,1])for(const e of [-1,1])spike(b,[X[k]+e*(gw+.35),h*.42,sg*hw*.62],[X[k]+e*gw*.2,h*(.82+.06*((k+e)&1)),sg*(hw-.04),boneT],.22*sc,bone,3,k+e);   // fangs either side of the cleft
+   else{const G=HS[k][0].p,A=HS[k-1][1].p,C=HS[k][1].p;   // the vein wedge in the groove, on both faces
+    for(const [f,sh,sg] of [[0,1,-1],[4,3,1]]){const on=(Q,t)=>{const r=lerp3(lerp3(G[f],G[sh],.42),lerp3(Q[f],Q[sh],.42),t);return [r[0],r[1],r[2]+sg*.07,vDim];};
+     T3(b,on(A,.5/(G[0][0]-A[0][0])),on(C,.5/(C[0][0]-G[0][0])),[G[sh][0],G[sh][1]+.1,G[sh][2]+sg*.1,vHot],vHot,[G[0][0],h*.2,0]);}}}
  });
 },{aoH:4,aoMin:.55});
 
@@ -492,35 +538,41 @@ WK.model('loot-cache',(b,o)=>{const {pal,tint,glow}=b.k,M=pal.mil,hi=b.hi,r=Math
  },0,-.07,s);
 },{aoH:1.4,aoMin:.6});
 // wreck-cache (3 x 1.6 x 2.2): salvage from a destroyed machine: twisted hull plates leaning on a chassis chunk, a road wheel,
-// an amber-lit core showing between them. HIGH <= 400 / LOW <= 150.
-WK.model('wreck-cache',(b,o)=>{const {pal,tint,glow}=b.k,Wk=pal.wreck,hi=b.hi,s=Math.min(o.w/3,o.h/1.6,o.d/2.2),amber=glow(0xffb347,1.2),hot=glow(0xffd9a0,1.2);
+// an amber-lit core showing between them. LOW keeps the two big plates (in paler rust and hull tones that read without the
+// surface shader), the core and its light on the chassis. HIGH <= 400 / LOW <= 150.
+WK.model('wreck-cache',(b,o)=>{const {pal,tint,glow}=b.k,Wk=pal.wreck,hi=b.hi,s=Math.min(o.w/3,o.h/1.6,o.d/2.2),amber=glow(0xffb347,1.2),hot=glow(0xffd9a0,1.2),hull=hi?Wk.hull:tint(Wk.hull,1.9,.012),lit=(m,k)=>({c:m.c,a:k,j:0}),PL=hi?[Wk.hull,Wk.rust]:[lit(tint(Wk.hull,2.4,.01),.35),lit(tint(Wk.rust,1.5),.4)];   // LOW: the plates carry the core's light themselves
  b.at(0,0,0,0,q=>{
-  q.at(-.15,-.12,-.1,.3,c=>c.bev(0,0,0,1.5,.72,1.1,Wk.hull,{ch:.1}),.08,-.1);                       // the chassis chunk, sunk and tilted
-  gem8(q,.22,.74,.14,.26,.3,.26,amber,.4,hi?6:4,hot);q.at(-.2,.7,.05,.8,c=>{c.cyl(0,-.34,0,.2,.68,Wk.track,{n:6,bot:true});c.cyl(0,-.08,0,.225,.16,amber,{n:6,top:false});},0,1.25);                                               // the lit core
+  q.at(-.15,-.12,-.1,.3,c=>{c.bev(0,0,0,1.5,.72,1.1,hi?hull:tint(hull,.62),{ch:.1});if(!hi)c.quad([-.62,.725,-.42],[.62,.725,-.42],[.62,.725,.42],[-.62,.725,.42],tint(glow(0xffb347,.6),.45),[0,0,0]);},.08,-.1);   // the chassis chunk, sunk and tilted (LOW: the core's light on its deck)
+  gem8(q,.22,hi?.74:.8,.14,hi?.26:.33,hi?.3:.38,hi?.26:.33,amber,.4,hi?6:4,hot);q.at(-.2,.7,.05,.8,c=>{c.cyl(0,-.34,0,.2,.68,Wk.track,{n:6,bot:true});c.cyl(0,-.08,0,.225,.16,amber,{n:6,top:false});},0,1.25);                                               // the lit core
   const plates=[[.86,.12,.12,.5,1.2,.9,.12,-.95],[-.86,.1,.16,-.6,1.1,.8,-.2,.85],[.1,.16,.52,1.5,1.0,.7,-1.0,.1],[.3,.1,-.56,.2,1.4,.62,.95,.12],[-.5,.5,-.1,2.2,.9,.6,.3,.5]];
-  plates.slice(0,hi?5:3).forEach(([x,y,z,ry,w,d,rx,rz],k)=>q.at(x,y,z,ry,c=>{c.box(0,0,0,w,.07,d,k%2?Wk.rust:Wk.hull);if(hi&&k<3)c.box(w*.18,.07,0,.09,.06,d*.9,Wk.track);},rx,rz));
+  plates.slice(0,hi?5:3).forEach(([x,y,z,ry,w,d,rx,rz],k)=>q.at(x,y,z,ry,c=>{c.box(0,0,0,w,hi?.07:.1,d,PL[k%2]);if(hi&&k<3)c.box(w*.18,.07,0,.09,.06,d*.9,Wk.track);},rx,rz));
   q.at(-1.02,.3,-.5,.5,c=>c.cyl(0,-.11,0,.34,.22,Wk.track,{n:hi?8:6,bev:.04,bot:true}),.25,1.2);                // a road wheel on its side
   if(hi){q.tube([.5,.1,.45],[1.15,.9,.62],.05,Wk.wire,{n:4});q.tube([-.3,.5,.3],[-.9,1.2,.45],.045,Wk.rust,{n:4});q.cable([.2,.8,.1],[1.1,.15,-.5],.2,.025,Wk.wire);
    stone(q,1.2,-.05,-.75,.2,.24,.18,7,Wk.track,{n:4,prof:ROCK2,cuts:0});stone(q,-.5,-.05,.9,.16,.2,.15,9,Wk.rust,{n:4,prof:ROCK2,cuts:0});
    q.halo(.2,1.0,.12,1.4,0xffb347,.22);q.pool(.1,.06,.1,2,1.6,0xffb347,.14);}
  },0,0,s);
 },{aoH:1.4,aoMin:.6});
-// sector-flag (2.6 x 8 x 1): the sector's flag mast: a footed mast, a crossbar, a hanging banner panel that glows in the
-// owner's colour on both faces and a top light. o.owner: 'owned' (teal, default) | 'friendly' (cyan) | 'hostile' (magenta;
-// its banner hangs torn in three fangs). The banner faces +z and -z. HIGH <= 300 / LOW <= 100.
-WK.model('sector-flag',(b,o)=>{const {pal,glow,tint}=b.k,M=pal.mil,hi=b.hi,hostile=o.owner==='hostile',hex=hostile?0xff2bd6:o.owner==='friendly'?0x22e6ff:0x2dffc4,c=tint(glow(hex,.8),.24),cHot=glow(hex,1.2),h=o.h,bw=Math.min(o.w-.3,2.3),fr=Math.min(o.d,o.w)*.46;
- // the foot: a hex plinth with three fins
- b.cyl(0,-.1,0,fr,.4,M.hull2,{n:6,bev:.06,r2:fr*.86});if(hi)b.cyl(0,.3,0,fr*.5,.5,M.hull,{n:6,r2:fr*.3});
- if(hi)for(let k=0;k<3;k++){const a=k*TAU/3+Math.PI/2;b.at(Math.cos(a)*fr*.5,.3,Math.sin(a)*fr*.5,-a,q=>q.box(0,0,0,fr*.7,.42,.07,M.trim));}
- // the mast, its crossbar and the top light
- const yc=h-.95;b.tube([0,.7,0],[0,h-.45,0],.1,M.trim,{n:hi?6:4,r2:.07});b.tube([-bw/2-.08,yc,0],[bw/2+.08,yc,0],.07,M.hull2,{n:hi?5:4,caps:true});
- gem8(b,0,h-.24,0,.17,.22,.17,cHot,.3,hi?6:4);if(hi)b.cyl(0,h-.5,0,.13,.1,M.gold,{n:6});
- if(hi){b.box(0,yc-.1,0,.26,.2,.2,M.dark);b.halo(0,h-.2,0,1,hex,.4);}
- // the banner: a dark frame plate with a glowing field on both faces
- const bh=Math.min(3.1,h*.4),y1=yc-.12,y0=y1-bh,x=bw/2,P=hostile?[[-x,y1],[x,y1],[x,y0+.5],[x*.62,y0],[x*.3,y0+.62],[0,y0+.12],[-x*.3,y0+.62],[-x*.62,y0],[-x,y0+.5]]:[[-x,y1],[x,y1],[x,y0+.2],[0,y0+.75],[-x,y0+.2]];
+// sector-flag (2.6 x 8 x 1): the sector's flag mast: a heavy stepped foot (long under the banner) with four braces, a stout
+// mast, a crossbar with gold knobs, a horned gold finial holding the top light, and a broad banner that glows in the owner's
+// colour on both faces inside a bright rim. o.owner: 'owned' (teal, default) | 'friendly' (cyan) | 'hostile' (magenta; its
+// banner hangs torn in three fangs). The banner faces +z and -z; its centre is where the game draws the sector's sign.
+// HIGH <= 300 / LOW <= 100.
+WK.model('sector-flag',(b,o)=>{const {pal,glow,tint}=b.k,M=pal.mil,hi=b.hi,hostile=o.owner==='hostile',hex=hostile?0xff2bd6:o.owner==='friendly'?0x22e6ff:0x2dffc4,c=tint(glow(hex,.8),.26),cRim=tint(glow(hex,.8),.8),cHot=glow(hex,1.2),h=o.h,bw=Math.min(o.w-.24,3.2),fx=Math.min(o.w*.32,1.1),fz=o.d*.47;
+ // the foot: a long stepped plinth, a socket, four braces up to the mast
+ b.cyl(0,-.1,0,fx,.44,M.hull2,{n:6,bev:.07,rz:fz,r2:fx*.9});b.cyl(0,.34,0,fx*.6,.46,M.hull,{n:6,bev:.05,rz:fz*.68,r2:fx*.44});
+ if(hi){b.cyl(0,.8,0,.24,.5,M.dark,{n:6,r2:.18});
+  for(const [sx,sz] of [[1,0],[-1,0],[0,1],[0,-1]])b.tube([sx*fx*.78,.3,sz*fz*.74],[sx*.1,sx?1.9:1.5,sz*.1],.07,M.trim,{n:4});}
+ // the mast, its crossbar and the finial
+ const yc=h-.75;b.tube([0,.7,0],[0,h-.62,0],.13,M.trim,{n:hi?6:4,r2:.09});b.tube([-bw/2-.02,yc,0],[bw/2+.02,yc,0],.08,M.hull2,{n:hi?5:4,caps:hi});
+ gem8(b,0,h-.31,0,.2,.3,.2,cHot,.3,hi?6:4);
+ if(hi){b.cyl(0,h-.68,0,.16,.1,M.gold,{n:6});for(const sx of [-1,1]){spike(b,[sx*.13,h-.62,0],[sx*.34,h-.2,0],.06,M.gold);if(!hostile)gem8(b,sx*bw/2,yc,0,.09,.12,.09,M.gold,.3,4);}
+  b.box(0,yc-.12,0,.3,.24,.22,M.dark);b.halo(0,h-.3,0,1.1,hex,.4);}
+ // the banner: a dark plate, a bright rim and the glowing field on both faces
+ const bh=Math.min(3.5,h*.4+.3),y1=yc-.12,y0=y1-bh,x=bw/2,P=hostile?[[-x,y1],[x,y1],[x,y0+.5],[x*.62,y0],[x*.3,y0+.62],[0,y0+.12],[-x*.3,y0+.62],[-x*.62,y0],[-x,y0+.5]]:[[-x,y1],[x,y1],[x,y0+.2],[0,y0+.8],[-x,y0+.2]];
  const fan=(z,k,m,ins)=>{const cc=[0,(y1+y0)/2+.3,z];for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length];T3(b,[cc[0]+(p[0]-cc[0])*k,cc[1]+(p[1]-cc[1])*k,z],[cc[0]+(q[0]-cc[0])*k,cc[1]+(q[1]-cc[1])*k,z],cc,m,ins);}};
- fan(.035,1,M.dark,[0,y0,-9]);fan(-.035,1,M.dark,[0,y0,9]);fan(.06,.88,c,[0,y0,-9]);fan(-.06,.88,c,[0,y0,9]);
+ for(const sg of [1,-1]){const ins=[0,y0,-9*sg];fan(.035*sg,1,M.dark,ins);if(hi||!hostile)fan(.05*sg,.96,cRim,ins);fan(.065*sg,.86,c,ins);}
  if(hi){for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length];b.quad([p[0],p[1],-.035],[q[0],q[1],-.035],[q[0],q[1],.035],[p[0],p[1],.035],M.trim,[0,(y1+y0)/2,0]);}
-  for(const z of [.07,-.07])for(const [yy,ww,hh] of [[y1-.5,bw*.25,.1],[y1-.78,bw*.15,.08]])b.quad([-ww,yy,z],[ww,yy,z],[ww,yy+hh,z],[-ww,yy+hh,z],M.dark,[0,yy,0]);}
+  for(const z of [.075,-.075]){for(const [yy,ww,hh] of [[y1-.5,bw*.25,.1],[y1-.78,bw*.15,.08]])b.quad([-ww,yy,z],[ww,yy,z],[ww,yy+hh,z],[-ww,yy+hh,z],M.dark,[0,yy,0]);
+   if(!hostile)for(const sx of [-1,1])b.quad([sx*x*.74,y0+.52,z],[0,y0+1.12,z],[0,y0+1.34,z],[sx*x*.74,y0+.74,z],cRim,[0,y0,-z*99]);}}
 },{aoH:6,aoMin:.6});
 })(typeof globalThis!=='undefined'?globalThis:window);

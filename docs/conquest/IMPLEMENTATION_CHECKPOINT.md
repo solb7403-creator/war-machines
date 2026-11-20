@@ -6150,6 +6150,33 @@ rule each one became here:
 8. **A level-up must be visible** (Clash town halls). Rule: every town building changes shape with its level (taller stack,
    more tanks, a second column, gold at the top level).
 
+### Critic rounds (a fresh read-only art director each round; phone and desktop in the same round)
+**Round 1** (all 133 model sheets HIGH / game distance / LOW, the town and the world at 390x844, against the owner's Meshy
+town items and tanks). Verdict: settler buildings AT BAR (home, hall, shop, barn, block, silo: "the best work here"); military
+world CLOSE on hero pieces, CLEARLY BELOW on infrastructure ("navy slabs on a navy Moon"); nature CLEARLY BELOW (blob foliage,
+ground cover invisible); wrecks, Parasite, props CLOSE; town buildings, turrets and walls CLEARLY BELOW ("black boxes with
+yellow tape beside the Meshy items; turrets look like a different game"). The 25 ranked fixes and what was done:
+- 1-4 town value, turret pedestal, light, gold: the town armour is lifted to slate-blue gunmetal (`TP` `#48535f`, recesses only
+  go near-black); every turret stands on the Meshy turrets' low round disc with a few light pads, its head drawn 1.3x and
+  barrels in gunmetal with gold muzzle rings (head pivot 0.86 m, `townkit.headY`); lights are cyan-family at every level
+  (`#7fe9ff` / `#62f0e2` / `#a8f8ff`) as pads, and gold is trim only. **Design change:** the level-5 accent light is no
+  longer gold: gold light strips read as hazard tape; level 5 keeps its gold trim, crowns and collars.
+- 5-9: the composite wall is a slate armour cell with pale plates and a dim cyan coping; the town gate is two pylons and a
+  lintel over a recessed chevron door; the Command Center stand-in is never fewer than three tiers and always wears a gold
+  crown ring; the reactor dome is `#dfeef2` (not blown out); the hangar roof has pale ceramic plates and a gold door header.
+- 14-16, 23: no Parasite colours on the town (tesla orb white-cyan, laser cannon cyan-white, lab green-white like the
+  Meshy lab); the rocket pod's top plate is ceramic, not a lit slab.
+- 13, 22, 25 (town file): lattices twice as thick with half the braces (helium, uplink, crane); sandbags are sagging pillows
+  with dark seams in three staggered rows; barbed wire has a heavy leaning post and a pale coil; planters are lobed shrubs;
+  corner posts have a gold cap and pale plates; rubble shows pale armour shards.
+- 10-12, 17-21, 24 and the LOW notes: reworked in `settler.js` (people, livestock, towers, lamps, poles, fences, solar,
+  turbine, greenhouse, rover), `nature.js` (foliage, ground cover, cover wall, hive mast, flag, caches) and `military.js`
+  (walls, dam, piers, pylons, viaduct girder, rail beam, lattices, modules, LOW lights); the military palette is lifted one
+  step (`pal.mil` hull `#4a5562`).
+- Not changed, with the reason: the build kiosk keeps its amber screen (amber is "build here" in the HUD); the refinery keeps
+  its orange furnace glow (the owner's Meshy refinery has it); the atmosphere dome that overlaps one habitat block is the
+  world's own layout (collision and placement are not this session's to move).
+
 ### Design changes made in this session (each with its reason)
 - **The processor towers' pipe bridge is level** at the higher tower's 9.6 m (it used to slope up to 47 degrees between towers
   on different ground). Reason: a level pipe reads as engineering, and it keeps the 8 m drive clearance on both sides.

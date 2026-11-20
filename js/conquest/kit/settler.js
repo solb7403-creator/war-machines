@@ -55,20 +55,33 @@ function crate(b,x,y,z,s,m,ry=0){b.at(x,y,z,ry,q=>{bx(q,0,0,0,s,s*.85,s,m,b.k.ti
 function stringLights(b,a,c,n,sag=.25){if(!b.hi)return;const S=b.k.pal.set,g=b.k.glow;b.detail(()=>{b.cable(a,c,sag,.014,S.iron,{n:5});for(let k=0;k<n;k++){const t=(k+.5)/n;b.gem(a[0]+(c[0]-a[0])*t,a[1]+(c[1]-a[1])*t-sag*4*t*(1-t)-.07,a[2]+(c[2]-a[2])*t,.07,.09,.07,g(k%3===1?0xff7a4a:k%3?0xffd27a:0xffb347,1.3));}});}
 // cloth pennants on a line
 function bunting(b,a,c,n,seed,sag=.2){if(!b.hi)return;const S=b.k.pal.set;b.detail(()=>{b.cable(a,c,sag,.012,S.iron,{n:4});for(let k=0;k<n;k++){const t0=(k+.2)/n,t1=(k+.8)/n,tm=(t0+t1)/2,P=t=>[a[0]+(c[0]-a[0])*t,a[1]+(c[1]-a[1])*t-sag*4*t*(1-t),a[2]+(c[2]-a[2])*t],p0=P(t0),p1=P(t1),pm=P(tm);pm[1]-=.32;const m=pick(S.canvas,seed+k*2);b.tri(p0,p1,pm,m);b.tri(p1,p0,pm,m);}});}
-// a wheel lying on the z axis of the frame: tyre, a painted hub; side = the face that shows (1 = +z, -1 = -z, 0 = both)
-function wheel(b,x,y,z,r,t,hub,side=0){const S=b.k.pal.set,n=b.hi?8:6;b.tube([x,y,z-t/2],[x,y,z+t/2],r,S.tyre,{n});for(const s of side?[side]:[-1,1]){disc(b,x,y,z+s*t/2,r,S.tyre,n,s);if(b.hi&&hub)disc(b,x,y,z+s*(t/2+.025),r*.52,hub,6,s);}}
-// a ladder with safety hoops: a -> c (base to top), `side` = unit [x,z] the rungs run along, `out` = unit [x,z] the cage bulges toward
-function cageLadder(b,a,c,m,side,out,o={}){const w=o.w||.5,L=Math.hypot(c[0]-a[0],c[1]-a[1],c[2]-a[2]),n=Math.max(2,Math.round(L/(o.step||.6))),P=t=>[a[0]+(c[0]-a[0])*t,a[1]+(c[1]-a[1])*t,a[2]+(c[2]-a[2])*t];
- for(const s of [-1,1])b.tube([a[0]+side[0]*s*w/2,a[1],a[2]+side[1]*s*w/2],[c[0]+side[0]*s*w/2,c[1],c[2]+side[1]*s*w/2],.05,m,{n:4});
- if(!b.hi)return;for(let k=1;k<n;k++){const p=P(k/n);b.tube([p[0]-side[0]*w/2,p[1],p[2]-side[1]*w/2],[p[0]+side[0]*w/2,p[1],p[2]+side[1]*w/2],.03,m,{n:3});}
+// weathered cream timber for trim (barge boards, door frames, ribs): matt and clearly darker than a lamp, never emissive
+const creamT=b=>b.k.mat(0xab9a7a,'timber',.5,.1);
+// a faceted hull along the frame's x axis (bodies, necks, heads): stations [x, y, z, ry, rz] = centre, vertical and lateral
+// radius; n (even) flat facets a ring, facet n-1 the top one and n/2-1 the belly; m = a material or (segment, facet) =>
+// material (null leaves the facet out); o.c0 / o.c1 = the material that closes the first / last station
+function hull(b,st,n,m,o={}){const mf=typeof m==='function'?m:()=>m,R=st.map(s=>Array.from({length:n},(_,i)=>{const a=(i+.5)/n*TAU;return [s[0],s[1]+Math.cos(a)*s[3],s[2]+Math.sin(a)*(s[4]??s[3])];}));
+ for(let k=0;k<st.length-1;k++){const c=[(st[k][0]+st[k+1][0])/2,(st[k][1]+st[k+1][1])/2,(st[k][2]+st[k+1][2])/2];for(let i=0;i<n;i++){const j=(i+1)%n,mm=mf(k,i);if(mm)b.quad(R[k][i],R[k][j],R[k+1][j],R[k+1][i],mm,c);}}
+ const cap=(r,mm,ins)=>{for(let k=0;k<n/2-1;k++)b.quad(r[k],r[k+1],r[n-2-k],r[n-1-k],mm,ins);};
+ if(o.c0)cap(R[0],o.c0,st[1]);if(o.c1)cap(R[st.length-1],o.c1,st[st.length-2]);return b;}
+// a wheel lying on the z axis of the frame: an eight-sided tyre standing on a flat (the facet on the ground is never seen
+// and is not drawn), a painted hub; side = the face that shows (1 = +z, -1 = -z, 0 = both)
+function wheel(b,x,y,z,r,t,hub,side=0){const S=b.k.pal.set,c=[x,y,z],ring=(zz,rr,n)=>Array.from({length:n},(_,i)=>{const a=(i+.5)/n*TAU;return [x+Math.sin(a)*rr,y-Math.cos(a)*rr,zz];}),fill=(R,m)=>{for(let k=0;k<R.length/2-1;k++)b.quad(R[k],R[k+1],R[R.length-2-k],R[R.length-1-k],m,c);};
+ const A=ring(z-t/2,r,8),B=ring(z+t/2,r,8);for(let i=0;i<7;i++)b.quad(A[i],A[i+1],B[i+1],B[i],S.tyre,c);
+ for(const s of side?[side]:[-1,1]){fill(s>0?B:A,S.tyre);if(b.hi&&hub)fill(ring(z+s*(t/2+.025),r*.52,6),hub);}}
+// a ladder with safety hoops: a -> c (base to top), `side` = unit [x,z] the rungs run along, `out` = unit [x,z] the cage
+// bulges toward; o.k thickens every bar (a tall tower's ladder is seen from far away)
+function cageLadder(b,a,c,m,side,out,o={}){const w=o.w||.5,th=o.k||1,L=Math.hypot(c[0]-a[0],c[1]-a[1],c[2]-a[2]),n=Math.max(2,Math.round(L/(o.step||.6))),P=t=>[a[0]+(c[0]-a[0])*t,a[1]+(c[1]-a[1])*t,a[2]+(c[2]-a[2])*t];
+ for(const s of [-1,1])b.tube([a[0]+side[0]*s*w/2,a[1],a[2]+side[1]*s*w/2],[c[0]+side[0]*s*w/2,c[1],c[2]+side[1]*s*w/2],.05*th,m,{n:4});
+ if(!b.hi)return;for(let k=1;k<n;k++){const p=P(k/n);b.tube([p[0]-side[0]*w/2,p[1],p[2]-side[1]*w/2],[p[0]+side[0]*w/2,p[1],p[2]+side[1]*w/2],.03*th,m,{n:3});}
  if(o.cage===false)return;const cr=o.cr||.48,t0=Math.min(.9,2.4/L),nh=Math.max(2,Math.round(L*(1-t0)/(o.hoopStep||2.2))),ring=t=>{const p=P(t);return [-1,-.5,.5,1].map(u=>{const an=u*Math.PI/2,ox=Math.sin(an)*cr,oo=Math.cos(an)*cr*1.25;return [p[0]+side[0]*ox+out[0]*oo,p[1],p[2]+side[1]*ox+out[1]*oo];});};
- let prev=null;for(let k=0;k<=nh;k++){const R=ring(t0+(1-t0)*k/nh);for(let i=0;i<3;i++)b.tube(R[i],R[i+1],.025,m,{n:3});if(prev)for(const i of [1,2])b.tube(prev[i],R[i],.022,m,{n:3});prev=R;}}
+ let prev=null;for(let k=0;k<=nh;k++){const R=ring(t0+(1-t0)*k/nh);for(let i=0;i<3;i++)b.tube(R[i],R[i+1],.025*th,m,{n:3});if(prev)for(const i of [1,2])b.tube(prev[i],R[i],.022*th,m,{n:3});prev=R;}}
 // a farm cart parked with its shafts on the ground (the frame's +x is the cart's front)
 function cart(b,x,y,z,ry,seed,load=1){const S=b.k.pal.set;b.at(x,y,z,ry,q=>{if(q.hi){bx(q,0,.62,0,2.1,.14,1.15,S.timber);for(const s of [-1,1])bx(q,0,.76,s*.54,2.1,.36,.07,S.timberD);bx(q,-1.02,.76,0,.07,.36,1.1,S.timberD);}else bx(q,0,.62,0,2.1,.5,1.15,S.timberD,S.timber);
   for(const s of [-1,1]){wheel(q,-.15,.5,s*.72,.5,.14,S.rust,s);q.tube([1.05,.66,s*.4],[2.2,.08,s*.3],.045,S.timberD,{n:q.hi?4:3});}
   if(load===1){q.dome(-.1,.76,0,.9,.62,.5,b.k.pal.nat.straw,{n:6,rings:2});}else{crate(q,-.5,.76,.1,.6,S.timber,.2);crate(q,.25,.76,-.12,.52,pick(S.fresh,seed),-.3);if(q.hi)sack(q,.7,.76,.25,.28,S.canvas[0]);}});}
 // a small farm tractor (the frame's +x is its front): big rear wheels, a painted hood, an open cab frame, an exhaust stack
-function tractor(b,x,y,z,ry,seed){const S=b.k.pal.set,hi=b.hi,body=pick(S.fresh,seed),g=b.k.glow;b.at(x,y,z,ry,q=>{
+function tractor(b,x,y,z,ry,seed){const S=b.k.pal.set,hi=b.hi,body=pick([S.fresh[2],S.fresh[0],S.paint[6],S.fresh[2]],seed),g=b.k.glow;b.at(x,y,z,ry,q=>{
   for(const s of [-1,1]){wheel(q,-.55,.72,s*.82,.72,.42,S.white,s);wheel(q,1.05,.42,s*.66,.42,.26,S.white,s);}
   if(hi){q.bev(.55,.62,0,1.5,.62,.74,body,{ch:.07});q.bev(-.5,1.05,0,.6,.24,.62,S.timberD,{ch:.04});}else bx(q,.55,.62,0,1.5,.62,.74,body);bx(q,-.55,.55,0,1.1,.5,1.1,S.iron);   // hood, rear frame, seat
   if(hi)bx(q,1.31,.72,0,.05,.44,.62,S.iron);for(const s of [-1,1])plate3(q,[1.345,1.0,s*.2],.13,g(0xffd59a,1.2));
@@ -261,21 +274,21 @@ function archEnd(b,x,y,cz,r,rise,n,m,sx){for(let i=0;i<n;i++){const a0=i/n*Math.
 // a curved patch / painted mark on an upright cylinder between two angles (x = cos, z = sin)
 function arcBand(b,x,y,z,r,hh,a0,a1,m,n=3){for(let i=0;i<n;i++){const p=a0+(a1-a0)*i/n,q=a0+(a1-a0)*(i+1)/n;b.quad([x+Math.cos(p)*r,y,z+Math.sin(p)*r],[x+Math.cos(q)*r,y,z+Math.sin(q)*r],[x+Math.cos(q)*r,y+hh,z+Math.sin(q)*r],[x+Math.cos(p)*r,y+hh,z+Math.sin(p)*r],m,[x,y,z]);}}
 // a barn door leaf on a wall facing +z of the frame: planks with a cream frame and cross brace
-function barnLeaf(b,x,y,z,w,h,m){const S=b.k.pal.set,c=S.white,t=.16;if(b.hi)bx(b,x,y,z,w,h,.09,m);else plate(b,x,y,z+.05,w,h,m);const zz=z+.06;
+function barnLeaf(b,x,y,z,w,h,m){const S=b.k.pal.set,c=creamT(b),t=.2;if(b.hi)bx(b,x,y,z,w,h,.09,m);else plate(b,x,y,z+.05,w,h,m);const zz=z+.06;
  plate(b,x,y,zz,w,t,c);plate(b,x,y+h-t,zz,w,t,c);if(!b.hi)return;plate(b,x,y+h*.5-t/2,zz,w,t,c);for(const s of [-1,1])plate(b,x+s*(w/2-t/2),y,zz,t,h,c);
  for(const [ya,yb] of [[y+t,y+h*.5-t/2],[y+h*.5+t/2,y+h-t]])b.quad([x-w/2+t,ya,zz],[x-w/2+t+.2,ya,zz],[x+w/2-t,yb,zz],[x+w/2-t-.2,yb,zz],c,[x,y,zz-5]);}
 // The workshop barn: a barrel-vault roof of mismatched corrugated sheets along x on low painted walls, timber gable ends,
 // big sliding doors on the +x end (one half open on the dark workshop and its amber work light, a tractor nosing out), a
 // lean-to down the -z side, a ridge ventilator with a weather vane, the cart parked on the apron.
 WK.model('settler-barn',(b,o)=>{const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o.w,d=o.d,h=o.h,sd=o.seed|0,hi=b.hi,PI=Math.PI;
- const wall=pick([S.paint[1],S.paint[5],S.paint[2],S.paint[6]],sd),roofs=[S.roof,tint(S.roof,1.22),S.roofRust,S.scrap,tint(S.roof,.86),tint(pick(S.paint,sd+2),.8)],dark=mat(0x17120e,'flat'),doorM=pick([S.timber,S.paint[2],S.timber,S.paint[0]],sd);
+ const wall=pick([S.paint[1],S.paint[5],S.paint[2],S.paint[6]],sd),roofs=[S.roof,tint(S.roof,1.22),S.roofRust,S.scrap,tint(S.roof,.86),tint(pick(S.paint,sd+2),.8)],dark=mat(0x17120e,'flat'),trim=creamT(b),doorM=pick([S.timber,S.paint[2],S.timber,S.paint[0]],sd);
  const f0=.22,x0=-w/2+.55,x1=w/2-3.1,xc=(x0+x1)/2,L=x1-x0,zA=-d/2+2.35,zB=d/2-.8,cz=(zA+zB)/2,r=(zB-zA)/2,wh=h*.36,rise=h*.52,yv=wh+rise,n=hi?10:6,segs=hi?5:3,ro=r+.3;
  b.bev(0,-.5,0,w-.4,.72,d-.4,S.conc,{ch:.14});
  bx(b,xc,f0,cz,L+.14,.5,2*r+.14,S.stone);b.bev(xc,f0+.45,cz,L,wh-f0-.45,2*r,wall,{ch:.07});
  // the roof: five bays of sheets of every age, timber ribs, cream barge arches, a ridge cap
  tunnel(b,x0-.3,x1+.5,wh,cz,ro,rise,n,segs,(s,i)=>{const q=hash(sd*131+s*17+i*29);return q<.52?roofs[0]:q<.68?roofs[1]:q<.8?roofs[4]:q<.93||!hi?roofs[2]:q<.975?roofs[3]:roofs[5];});
  archEnd(b,x1,wh,cz,ro-.02,rise-.02,n,S.timber,1);archEnd(b,x0,wh,cz,ro-.02,rise-.02,n,S.timber,-1);
- archRib(b,x1+.5,wh,cz,ro,rise,n,.1,S.white,hi?4:3);if(hi){archRib(b,x0-.3,wh,cz,ro,rise,n,.1,S.white,4);for(let s=1;s<segs;s++)archRib(b,x0-.3+(L+.8)*s/segs,wh,cz,ro,rise,n,.075,S.timberD,3);}
+ archRib(b,x1+.5,wh,cz,ro,rise,n,.15,trim,hi?4:3);if(hi){archRib(b,x0-.3,wh,cz,ro,rise,n,.15,trim,4);for(let s=1;s<segs;s++)archRib(b,x0-.3+(L+.8)*s/segs,wh,cz,ro,rise,n,.075,S.timberD,3);}
  b.tube([x0-.35,yv+.03,cz],[x1+.55,yv+.03,cz],.12,S.rust,{n:4});if(hi)for(const s of [-1,1])b.tube([x0-.3,wh-.02,cz+s*ro],[x1+.5,wh-.02,cz+s*ro],.08,S.timberD,{n:3});
  // the ridge ventilator and its weather vane; a stovepipe
  const vh=h-yv,vx=xc+L*.08;bx(b,vx,yv-.3,cz,2.3,.3+vh*.4,1.15,wall);b.gable(vx,yv+vh*.4,cz,2.3,vh*.3,1.15,S.roofRust,{over:.22,gable:S.timber});
@@ -287,11 +300,11 @@ WK.model('settler-barn',(b,o)=>{const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o
  b.at(x1+.03,0,cz,PI/2,q=>{plate(q,-dw/4,f0,.02,dw/2,dh,dark);barnLeaf(q,dw/4,f0+.06,.05,dw/2-.05,dh-.08,doorM);barnLeaf(q,-dw*.82,f0+.06,.16,dw/2-.05,dh-.08,doorM);
   bx(q,-dw*.22,f0+dh+.02,.14,dw*1.72,.13,.2,S.iron);for(const s of [-1,1])bx(q,s*(dw/2+.09),f0,.03,.2,dh,.1,S.timberD);
   plate(q,-dw*.36,f0+dh-.75,.04,.3,.2,S.lamp);if(hi){plate(q,-dw*.12,f0+.2,.035,.5,1.5,mat(0x3a2a1c,'timber',.5));plate(q,-dw*.2,f0+1.9,.035,1.2,.09,mat(0x3a2a1c,'timber',.5));q.halo(-dw*.36,f0+dh-.7,.3,1.2,0xffb060,.4);}
-  const hy=f0+dh+.75,hw=.95,hh=Math.min(1.25,rise*.3);plate(q,0,hy-.08,.03,hw+.2,hh+.16,S.white);plate(q,0,hy,.05,hw,hh,S.timberD);
+  const hy=f0+dh+.75,hw=.95,hh=Math.min(1.25,rise*.3);plate(q,0,hy-.11,.03,hw+.28,hh+.22,trim);plate(q,0,hy,.05,hw,hh,S.timberD);
   if(hi){q.tube([0,hy+hh+.4,0],[0,hy+hh+.4,1.25],.07,S.timberD,{n:4});q.tube([0,hy+hh+.36,1.1],[0,hy+hh-.5,1.1],.018,S.iron,{n:3});bx(q,0,hy+hh-1.0,1.1,.5,.42,.36,b.k.pal.nat.straw);}});
  lantern(b,x1+.34,f0+dh-.1,cz+dw/2+.55,1.1);
  // the -x gable: a round lit window, a door, a patch
- b.at(x0-.03,0,cz,-PI/2,q=>{if(hi)disc(q,0,wh+rise*.45,.04,.62,S.white,10);disc(q,0,wh+rise*.45,.06,.5,S.warm,hi?10:6);dr(q,-r*.4,f0+.08,0,1.0,2.1,doorM);win(q,r*.42,f0+1.2,0,1.0,1.1,{bar:true});if(hi)patchP(q,r*.3,wh+.4,0,1.3,1.0,S.scrap);});
+ b.at(x0-.03,0,cz,-PI/2,q=>{if(hi)disc(q,0,wh+rise*.45,.04,.68,trim,10);disc(q,0,wh+rise*.45,.06,.5,S.warm,hi?10:6);dr(q,-r*.4,f0+.08,0,1.0,2.1,doorM);win(q,r*.42,f0+1.2,0,1.0,1.1,{bar:true});if(hi)patchP(q,r*.3,wh+.4,0,1.3,1.0,S.scrap);});
  // +z wall: lit windows, a ladder left against the eave, a barrel under the eave
  b.at(xc,0,zB,0,q=>{for(const u of [-.32,0,.32])win(q,u*L,f0+1.15,0,1.05,1.0,{bar:true,lit:u!==0||sd%2===0,glass:u<0?S.amber:S.warm});if(hi){patchP(q,L*.16,f0+.25,0,1.0,1.3,pick(S.paint,sd+4));patchP(q,-L*.44,f0+1.4,0,.7,1.1,S.scrap);}});
  if(hi)barrel(b,x0+.8,f0,zB+.42,.3,.9,S.tank);if(hi)b.ladder([xc+L*.18,f0,zB+.62],[xc+L*.18,wh+.5,zB+.2],S.timberD,{w:.5});
@@ -311,21 +324,29 @@ WK.model('settler-barn',(b,o)=>{const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o
 });
 
 // ------------------------------------------------------------------ settler-water-tower ---------------------------------
-// The colony's landmark: a patched, painted tank with iron hoops and a hand-painted colour band on a rusty lattice frame, a
+// The colony's landmark: a patched, painted tank with iron hoops and a hand-painted colour band on a heavy rusty frame (four
+// thick legs, a few girts and zigzag braces, a gusset plate at every joint: nothing thin enough to shimmer at a distance), a
 // conical scrap roof, a plank walkway round the tank, a caged ladder, the riser pipe down the middle to the valve house, a
 // half-way deck with a lantern, an aerial with the amber light on top.  o.h = total height (the tank starts at 0.72 h).
 function waterTower(b,o,c){const {pal,tint,mat,glow}=b.k,S=pal.set,w=Math.min(o.w,o.d),h=o.h,sd=o.seed|0,hi=b.hi,PI=Math.PI,f0=c?.3:.22;
- const tankC=pick([S.tank,S.paint[3],S.paint[0],S.paint[1]],sd),bandC=pick(S.fresh,sd+(sd%4===0?2:0)),k=c?.84:1;
- const yt=h*.72,yT=h*(c?.9:.9),rt=w*(c?.31:.385),rp=w*(c?.37:.47),w0=w*(c?.56:.74),w1=w*(c?.4:.5),yd=yt-.3,nT=hi?(c?10:14):8;
+ const tankC=pick([S.tank,S.paint[3],S.paint[0],S.paint[1]],sd),bandC=pick(S.fresh,sd+(sd%4===0?2:0));
+ const yt=h*.72,yT=h*.9,rt=w*(c?.31:.385),rp=w*(c?.37:.47),w0=w*(c?.56:.74),w1=w*(c?.4:.5),yd=yt-.3,nT=hi?(c?10:14):8;
  if(c)bx(b,0,0,0,o.w,.3,o.d,S.conc);else b.bev(0,-.5,0,o.w-.4,.72,o.d-.4,S.conc,{ch:.14});
- // lattice frame on four footings, struts to the walkway
- const C4=[[-1,-1],[1,-1],[1,1],[-1,1]],lg=(t,q)=>{const e=(w0+(w1-w0)*t)/2;return [q[0]*e,f0+(yd-f0)*t,q[1]*e];};
- if(c&&!hi){for(const q of C4)b.tube(lg(0,q),lg(1,q),.08,S.rust,{n:3});for(const t of [.5,1])for(let i=0;i<4;i++)b.tube(lg(t,C4[i]),lg(t,C4[(i+1)%4]),.06,S.rust,{n:3});}
- else b.truss(0,f0,0,w0,w1,yd-f0,S.rust,{step:(yd-f0)/(c?4:(hi?8:5)),r:c?.06:.09});
- for(const [sx,sz] of C4){if(!c)bx(b,sx*w0/2,f0,sz*w0/2,.8,.42,.8,S.conc);if(hi)b.tube([sx*w1/2,yd-(c?.9:1.9),sz*w1/2],[sx*rp*.66,yd,sz*rp*.66],c?.05:.07,S.rust,{n:3});}
- // the walkway and its rail
- b.cyl(0,yd,0,rp,.2,S.timber,{n:8,bot:true});const rpts=[];for(let i=0;i<=8;i++){const a=i/8*TAU;rpts.push([Math.cos(a)*(rp-.1),yd+.2,Math.sin(a)*(rp-.1)]);}
- if(hi&&!c)b.rail(rpts,.95,S.timberD,{step:9,r:.045});else if(c&&!hi)hoop(b,0,yd+.62,0,rp-.08,.1,S.timberD,8);else for(let i=0;i<8;i++){b.tube([rpts[i][0],yd+(c?.75:1.1),rpts[i][2]],[rpts[i+1][0],yd+(c?.75:1.1),rpts[i+1][2]],.04,S.timberD,{n:3});if(hi&&i%2===0)b.tube(rpts[i],[rpts[i][0],yd+.75,rpts[i][2]],.04,S.timberD,{n:3});}
+ // the frame: legs, a ring of girts and one brace a face on every level (the braces zigzag up the tower)
+ const C4=[[-1,-1],[1,-1],[1,1],[-1,1]],lg=(t,q)=>{const e=(w0+(w1-w0)*t)/2;return [q[0]*e,f0+(yd-f0)*t,q[1]*e];},L=c?2:(hi?4:3),rl=c?.13:.21,rg=c?.1:.16;
+ for(const q of C4)b.tube(lg(0,q),lg(1,q),rl,S.rust,{n:hi?5:3});
+ for(let k=0;k<L;k++)for(let i=0;i<4;i++){const a=C4[i],d=C4[(i+1)%4],up=(k+i)%2===0;b.tube(lg((k+1)/L,a),lg((k+1)/L,d),rg,S.rust,{n:hi?4:3});
+  if(hi||!c||k===0)b.tube(lg(k/L,up?a:d),lg((k+1)/L,up?d:a),rg*.85,S.rust,{n:hi?4:3});}
+ // gusset plates: a dark iron kite over every joint, on both faces that meet at the leg
+ if(hi){const g=c?.46:.74,off=rl+.02,T0=lg(1,C4[0]),B0=lg(0,C4[0]),ul=Math.hypot(T0[0]-B0[0],T0[1]-B0[1],T0[2]-B0[2]);
+  for(let k=0;k<=L;k++)for(let i=0;i<4;i++){const a=C4[i],d=C4[(i+1)%4],nx=(a[0]+d[0])/2*off,nz=(a[1]+d[1])/2*off;
+   for(const [p,q] of [[a,d],[d,a]]){const J=lg(k/L,p),T=lg(1,p),B=lg(0,p),u=[(T[0]-B[0])/ul,(T[1]-B[1])/ul,(T[2]-B[2])/ul],hx=(q[0]-p[0])/2,hz=(q[1]-p[1])/2,g0=k?g:0,g1=k<L?g:0;
+    b.quad([J[0]-u[0]*g0+nx,J[1]-u[1]*g0,J[2]-u[2]*g0+nz],[J[0]+hx*g*1.15+nx,J[1],J[2]+hz*g*1.15+nz],[J[0]+u[0]*g1+nx,J[1]+u[1]*g1,J[2]+u[2]*g1+nz],[J[0]-hx*rl+nx,J[1],J[2]-hz*rl+nz],S.iron,[0,J[1],0]);}}}
+ for(const [sx,sz] of C4){if(!c)bx(b,sx*w0/2,f0,sz*w0/2,1.0,.5,1.0,S.conc);if(hi)b.tube([sx*w1/2,yd-(c?.9:1.9),sz*w1/2],[sx*rp*.66,yd,sz*rp*.66],c?.09:.13,S.rust,{n:4});}
+ // the walkway and its rail (LOW: a plank parapet)
+ const dk=c?.2:.26;b.cyl(0,yd,0,rp,dk,S.timber,{n:8,bot:true});const rpts=[];for(let i=0;i<=8;i++){const a=i/8*TAU;rpts.push([Math.cos(a)*(rp-.1),yd+dk,Math.sin(a)*(rp-.1)]);}
+ if(!hi)hoop(b,0,yd+dk,0,rp-.08,c?.42:.6,S.timberD,8);else if(!c)b.rail(rpts,1.0,S.timberD,{step:9,r:.08,mid:false});
+ else for(let i=0;i<8;i++){b.tube(rpts[i],[rpts[i][0],yd+.8,rpts[i][2]],.07,S.timberD,{n:3});b.tube([rpts[i][0],yd+.78,rpts[i][2]],[rpts[i+1][0],yd+.78,rpts[i+1][2]],.06,S.timberD,{n:3});}
  // the tank: paint, hoops, the hand-painted band and mark, repair patches, a level gauge
  b.cyl(0,yt-.1,0,rt,yT-yt+.1,tankC,{n:nT,bev:c?.06:.12,bot:true});const th=yT-yt;
  hoop(b,0,yt+th*.66,0,rt+.03,th*.17,bandC,nT);
@@ -335,20 +356,20 @@ function waterTower(b,o,c){const {pal,tint,mat,glow}=b.k,S=pal.set,w=Math.min(o.
   const ga=.35;b.at(Math.cos(ga)*(rt+.06),0,Math.sin(ga)*(rt+.06),PI/2-ga,q=>{plate(q,0,yt+th*.12,0,c?.16:.26,th*.5,S.white);plate(q,0,yt+th*.36,.02,c?.24:.4,c?.06:.1,S.fresh[0]);});}
  // conical scrap roof, the aerial and the amber light
  const ry=h*.058;b.cyl(0,yT,0,rt*1.1,ry,S.roofRust,{n:nT,r2:c?.1:.16,bot:true,band:(r,i)=>i%4===1?S.roof:i%4===3?tint(S.roofRust,.8):S.roofRust});
- b.tube([0,yT+ry-.05,0],[0,h-(c?.14:.3),0],c?.035:.06,S.iron,{n:4});b.gem(0,h-(c?.13:.2),0,c?.1:.17,c?.12:.2,c?.1:.17,S.lamp);if(hi){b.halo(0,h-.2,0,c?.45:.6,0xffb060,.25);if(!c)for(const [y,l] of [[.5,.5],[.75,.34]])b.tube([-l,yT+ry+(h-yT-ry)*y,0],[l,yT+ry+(h-yT-ry)*y,0],.025,S.iron,{n:3});}
+ b.tube([0,yT+ry-.05,0],[0,h-(c?.14:.3),0],c?.05:.08,S.iron,{n:4});b.gem(0,h-(c?.13:.2),0,c?.12:.2,c?.13:.2,c?.12:.2,S.lamp);if(hi){b.halo(0,h-.2,0,c?.45:.6,0xffb060,.25);if(!c)for(const [y,l] of [[.5,.5],[.75,.34]])b.tube([-l,yT+ry+(h-yT-ry)*y,0],[l,yT+ry+(h-yT-ry)*y,0],.05,S.iron,{n:3});}
  // riser pipe and the valve house at its foot
  b.tube([0,f0,0],[0,yt,0],c?.11:.2,S.rust,{n:hi?6:c?3:4});if(hi)for(const t of [.3,.62])hoop(b,0,f0+(yt-f0)*t,0,c?.14:.25,.12,S.iron,6);
- if(c){if(hi)bx(b,0,f0,0,.9,.6,.9,S.scrap);}else{b.bev(0,f0,0,1.3,1.0,1.3,pick(S.paint,sd+2),{ch:.06});bx(b,0,f0+1.0,0,1.5,.08,1.5,S.roofRust);if(hi){b.at(0,0,.66,0,q=>{disc(q,.2,f0+.55,.03,.24,S.fresh[0],6);plate(q,-.35,f0+.2,.02,.36,.6,S.iron);});b.pipe([[.65,f0+.3,0],[1.5,f0+.3,0],[1.5,f0+.9,0]],.07,S.rust,{n:4});b.box(1.5,f0+.9,0,.14,.1,.3,S.iron);}}
+ if(c){if(hi)bx(b,0,f0,0,.9,.6,.9,S.scrap);}else{b.bev(0,f0,0,1.3,1.0,1.3,pick(S.paint,sd+2),{ch:.06});bx(b,0,f0+1.0,0,1.5,.08,1.5,S.roofRust);if(hi){b.at(0,0,.66,0,q=>{disc(q,.2,f0+.55,.03,.24,S.fresh[0],6);plate(q,-.35,f0+.2,.02,.36,.6,S.iron);});b.pipe([[.65,f0+.3,0],[1.5,f0+.3,0],[1.5,f0+.9,0]],.09,S.rust,{n:4});b.box(1.5,f0+.9,0,.18,.12,.34,S.iron);}}
  // ladders: caged up the frame, a plain one up the tank
- if(hi||!c)cageLadder(b,[0,f0,w0/2+.12],[0,yd,w1/2+.14],S.iron,[1,0],[0,1],{w:c?.4:.5,cr:c?.36:.48,step:c?.56:.6,hoopStep:c?2.3:2.2,cage:hi});
- if(hi)b.ladder([rt*.5,yd+.2,Math.sqrt(rt*rt*.75)+.1],[rt*.5,yT+.25,Math.sqrt(rt*rt*.75)+.1],S.iron,{w:c?.36:.46});
+ if(hi||!c)cageLadder(b,[0,f0,w0/2+rl+.1],[0,yd,w1/2+rl+.12],S.iron,[1,0],[0,1],{w:c?.44:.6,cr:c?.38:.46,step:c?.9:1.2,hoopStep:c?3.2:4.4,cage:hi,k:c?1.5:2});
+ if(hi){const lz=Math.sqrt(rt*rt*.75)+.14;cageLadder(b,[rt*.5,yd+dk,lz],[rt*.5,yT+.25,lz],S.iron,[1,0],[0,1],{w:c?.36:.5,step:c?.7:.9,cage:false,k:c?1.3:1.7});}
  if(c)return;
  // half-way deck: planks, a rail, a lantern and a crate; bunting and a name board lower down
- const tm=.5,ym=f0+(yd-f0)*tm,wm=w0+(w1-w0)*tm;bx(b,0,ym,0,wm+.36,.14,wm+.36,S.timber);
- if(hi){const e=wm/2+.1;b.rail([[e,ym+.14,e-.9],[e,ym+.14,-e],[-e,ym+.14,-e],[-e,ym+.14,e],[-.9,ym+.14,e]],.9,S.timberD,{step:9,r:.04});crate(b,-e+.5,ym+.14,-e+.5,.55,S.timber,.3);barrel(b,e-.45,ym+.14,-e+.45,.26,.7,S.rust);lantern(b,-e+.2,ym+1.75,e-.2,1);b.tube([-e+.2,ym+.14,e-.2],[-e+.2,ym+1.78,e-.2],.04,S.timberD,{n:3});
-  const yb=f0+3.6,wb=(w0+(w1-w0)*(3.6/(yd-f0)))/2+.02;bunting(b,[wb,yb,-wb],[wb,yb,wb],7,sd,.3);bunting(b,[-wb,yb,-wb],[wb,yb,-wb],7,sd+2,.3);
+ const tm=.5,ym=f0+(yd-f0)*tm,wm=w0+(w1-w0)*tm,yk=ym+.22;bx(b,0,ym,0,wm+.5,.22,wm+.5,S.timber);
+ if(hi){const e=wm/2+.14;b.rail([[e,yk,e-1.1],[e,yk,-e],[-e,yk,-e],[-e,yk,e],[-1.1,yk,e]],.95,S.timberD,{step:9,r:.07,mid:false});crate(b,-e+.6,yk,-e+.6,.6,S.timber,.3);barrel(b,e-.55,yk,-e+.55,.28,.75,S.rust);lantern(b,-e+.25,yk+1.75,e-.25,1);b.tube([-e+.25,yk,e-.25],[-e+.25,yk+1.78,e-.25],.07,S.timberD,{n:4});
+  const yb=f0+3.6,wb=(w0+(w1-w0)*(3.6/(yd-f0)))/2+rl+.04;bunting(b,[wb,yb,-wb],[wb,yb,wb],7,sd,.3);bunting(b,[-wb,yb,-wb],[wb,yb,-wb],7,sd+2,.3);
   b.at(-wb*.45,0,wb+.08,0,q=>{bx(q,0,yb-.5,0,1.5,.62,.07,bandC);plate(q,0,yb-.3,.05,1.1,.1,S.white);plate(q,-.2,yb-.12,.05,.6,.07,S.white);});
-  b.tube([-w0/2+.1,f0,-w0/2+.1],[-w1/2+.1,yd,-w1/2+.1],.05,S.tank,{n:3});b.pool(0,.26,2.2,1.3,.6,0xffa84a,.1);}
+  b.tube([-w0/2+.5,f0,-w0/2+.5],[-w1/2+.5,yd,-w1/2+.5],.09,S.scrap,{n:4});b.pool(0,.26,2.2,1.3,.6,0xffa84a,.1);}
 }
 WK.model('settler-water-tower',(b,o)=>waterTower(b,o,false));
 
@@ -361,7 +382,7 @@ function toolRack(b,x,y,z,ry){const S=b.k.pal.set;b.at(x,y,z,ry,q=>{for(const s 
 // The greenhouse: a glass tunnel along x over a stone kerb, ribs in whatever paint was left, two roof lights propped open,
 // one side rolled up over the raised beds, a door at the +x end, a water butt on the gutter, a tool rack, planters outside.
 function greenhouse(b,o,c){const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o.w,d=o.d,h=o.h,sd=o.seed|0,hi=b.hi,PI=Math.PI,f0=c?.3:.22;
- const glassM=mat(0x6fa7a0,'glass',.2),glassB=mat(0x8cc0b4,'glass',.3),glassLit=mat(0xe2c98a,'glass',.6),inside=mat(0x1e2e1a,'leaf',0,0);
+ const glassM=mat(0x8f9c8a,'glass',.15),glassB=mat(0xa9ae98,'glass',.25),tanP=mat(0xc49a52,'cloth',0,.08),ply=mat(0x94703f,'timber',.5,.1),trim=creamT(b),glassLit=mat(0xe2c98a,'glass',.6),inside=mat(0x1e2e1a,'leaf',0,0);
  const tx0=-w/2+(c?.45:.6),tx1=w/2-(c?1.0:1.5),xc=(tx0+tx1)/2,len=tx1-tx0,cz=c?-.45:-d*.05,r=c?d*.5-1.3:d/2-1.25,kw=c?.3:.42,yf=f0+kw,rise=h-yf-(c?.1:.16),n=hi?10:6,segs=c?(hi?3:2):(hi?6:3);
  if(c)bx(b,0,0,0,w,.3,d,S.conc);else b.bev(0,-.5,0,w-.4,.72,d-.4,S.conc,{ch:.14});
  bx(b,xc,f0,cz,len+.16,kw,2*r+.16,S.stone,S.soil);
@@ -370,17 +391,17 @@ function greenhouse(b,o,c){const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o.w,d=
   else{const ng=sz>0?12:6;for(let i=0;i<ng;i++)b.part().gem(tx0+.8+(len-1.6)*(i+.5)/ng,yf+.62+.1*(i%3),bz,.42,.36+.12*(i%2),.5,i%3?S.leaf:S.leafD,i*1.7);if(sz>0)for(let i=0;i<4;i++)b.gem(xc-len*.14+len*.09*i,yf+.98,bz+.25,.1,.1,.1,i%2?S.fresh[0]:S.fresh[2]);}}
  // the glass: mixed panes, a few lit warm from inside, the +z side rolled up over the middle bays
  const open=(s,i)=>i===0&&(c?s===(hi?1:0):hi?(s===2||s===3):s===1);
- tunnel(b,tx0,tx1,yf,cz,r,rise,n,segs,(s,i)=>{if(open(s,i))return null;const q=hash(sd*71+s*13+i*31);return q<.14&&hi?glassLit:q<.5?glassB:glassM;});
+ tunnel(b,tx0,tx1,yf,cz,r,rise,n,segs,(s,i)=>{if(open(s,i))return null;const q=hash(sd*71+s*13+i*31),pk=(s*5+i*3+sd)%11;return pk===0?tanP:pk===6?ply:q<.14&&hi?glassLit:q<.5?glassB:glassM;});
  archEnd(b,tx0,yf,cz,r,rise,n,glassM,-1);archEnd(b,tx1,yf,cz,r,rise,n,glassB,1);
  const ox0=tx0+len*(c?(hi?1/3:0):1/3),ox1=tx0+len*(c?(hi?2/3:.5):2/3),oy=yf+Math.sin(PI/n)*rise,oz=cz+Math.cos(PI/n)*r;b.tube([ox0,oy+.04,oz+.06],[ox1,oy+.04,oz+.06],c?.09:.13,S.canvas[0],{n:hi?5:3,caps:true});
  // ribs in mixed paints, the ridge pole and purlins
- const ribP=[S.white,S.paint[2],S.paint[1],S.white,S.paint[0],S.paint[5],S.fresh[1]];
+ const ribP=[trim,S.timber,S.paint[1],trim,S.paint[0],S.paint[5],S.timberD];
  for(let s=0;s<=segs;s++){if(hi)archRib(b,tx0+len*s/segs,yf,cz,r,rise,n,c?.06:.085,pick(ribP,sd+s),3);else archRibbon(b,tx0+len*s/segs,yf,cz,r,rise,n,c?.16:.22,pick(ribP,sd+s));}
- b.tube([tx0-.1,yf+rise+.03,cz],[tx1+.1,yf+rise+.03,cz],c?.06:.08,S.white,{n:4});
+ b.tube([tx0-.1,yf+rise+.03,cz],[tx1+.1,yf+rise+.03,cz],c?.07:.1,trim,{n:4});
  if(hi)for(const s of [-1,1]){const a=PI/2+s*PI*.3;b.tube([tx0,yf+Math.sin(a)*rise*1.01,cz+Math.cos(a)*r*1.01],[tx1,yf+Math.sin(a)*rise*1.01,cz+Math.cos(a)*r*1.01],.045,S.timberD,{n:3});}
  // two roof lights propped open
  for(const t of c?[.5]:[.27,.73]){const vx=tx0+len*t,a=PI*.5-PI/n*1.5,ya=yf+Math.sin(a)*rise,za=cz+Math.cos(a)*r,vw=c?.7:1.0,vl=c?.8:1.2,yv=Math.min(ya+.45,h-.06);
-  sheet(b,[vx-vw,ya+.06,za-.05],[vx+vw,ya+.06,za-.05],[vx+vw,yv,za+vl],[vx-vw,yv,za+vl],hi?glassLit:glassB,glassM);if(hi){b.tube([vx-vw,yv,za+vl],[vx+vw,yv,za+vl],.04,S.white,{n:3});b.tube([vx,yv,za+vl],[vx,yf+Math.sin(a-PI/n)*rise,cz+Math.cos(a-PI/n)*r],.03,S.timberD,{n:3});}}
+  sheet(b,[vx-vw,ya+.06,za-.05],[vx+vw,ya+.06,za-.05],[vx+vw,yv,za+vl],[vx-vw,yv,za+vl],hi?glassLit:glassB,glassM);if(hi){b.tube([vx-vw,yv,za+vl],[vx+vw,yv,za+vl],.05,trim,{n:3});b.tube([vx,yv,za+vl],[vx,yf+Math.sin(a-PI/n)*rise,cz+Math.cos(a-PI/n)*r],.03,S.timberD,{n:3});}}
  // the +x end: timber door frame, the door left open, the green dark inside, a lantern
  b.at(tx1+.03,0,cz,PI/2,q=>{const dw=c?.9:1.1,dh=Math.min(2.1,rise*.62);plate(q,0,yf,.02,dw,dh,inside);if(hi||!c){for(const s of [-1,1])bx(q,s*(dw/2+.07),f0,.04,.14,dh+kw,.12,S.timberD);bx(q,0,yf+dh,.04,dw+.4,.14,.12,S.timberD);}else plate(q,0,yf-.05,.01,dw+.3,dh+.2,S.timberD);
   if(hi){q.tube([0,yf+dh+.14,.04],[0,yf+rise-.05,.04],.05,S.timberD,{n:3});for(const s of [-1,1])q.tube([s*(dw/2+.14),yf+dh*.6,.04],[s*r*.82,yf+dh*.6,.04],.045,S.timberD,{n:3});}
@@ -391,7 +412,7 @@ function greenhouse(b,o,c){const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o.w,d=
  return {tx0,tx1,xc,len,cz,r,yf,rise,f0};}
 WK.model('settler-greenhouse',(b,o)=>{const S=b.k.pal.set,{tint,mat}=b.k,hi=b.hi,sd=o.seed|0,w=o.w,d=o.d,h=o.h,G=greenhouse(b,o,false),{tx0,tx1,xc,len,cz,r,yf,f0}=G,fz=cz+r+.8,PI=Math.PI;
  // the water butt on the gutter, at the door corner
- const wx=tx1+.62,wz=cz+r+.45;bx(b,wx,f0,wz,1.2,.24,1.2,S.stone);b.cyl(wx,f0+.24,wz,.56,1.45,S.tank,{n:hi?10:6,bev:.05,topMat:S.water});if(hi){hoop(b,wx,f0+.6,wz,.59,.08,S.iron,10);hoop(b,wx,f0+1.3,wz,.59,.08,S.iron,10);b.pipe([[tx1-.1,yf+.06,cz+r+.1],[wx-.1,yf+.5,cz+r+.1],[wx-.1,f0+1.75,wz-.1]],.06,S.rust,{n:4});b.tube([wx,f0+.5,wz+.56],[wx,f0+.5,wz+.74],.04,S.iron,{n:3});}
+ const wx=tx1+.62,wz=cz+r+.45;bx(b,wx,f0,wz,1.2,.24,1.2,S.stone);b.cyl(wx,f0+.24,wz,.56,1.45,pick([S.paint[0],S.paint[5],S.paint[7]],sd),{n:hi?10:6,bev:.05,topMat:S.water});if(hi){hoop(b,wx,f0+.6,wz,.59,.08,S.iron,10);hoop(b,wx,f0+1.3,wz,.59,.08,S.iron,10);b.pipe([[tx1-.1,yf+.06,cz+r+.1],[wx-.1,yf+.5,cz+r+.1],[wx-.1,f0+1.75,wz-.1]],.06,S.rust,{n:4});b.tube([wx,f0+.5,wz+.56],[wx,f0+.5,wz+.74],.04,S.iron,{n:3});}
  toolRack(b,tx1+.5,f0,cz-r*.72,PI/2);
  // planters along the front, either side of the rolled-up bays; a wheelbarrow, sacks and pots before them
  planter(b,tx0+len*.15,f0,fz,len*.24,.62,sd);planter(b,tx0+len*.86,f0,fz,len*.2,.62,sd+2);
@@ -429,44 +450,63 @@ WK.model('settler-silo',(b,o)=>{const {pal,tint,mat,glow}=b.k,S=pal.set,w=Math.m
 });
 
 // ------------------------------------------------------------------ settler-turbine / settler-rotor ---------------------
-// The wind pump mast: a patched, painted tube mast on a footing with stays and climbing rungs, the nacelle on top (its nose
-// points +z; the rotor is the separate slot settler-rotor placed at (0, o.h, 1.5)), a painted tail vane, an amber light.
+// The wind pump mast: a rust-streaked, patched tube mast in three ages of paint with a hand-painted band, on a footing with
+// four props under a work deck and four guy wires to anchor stones, climbing rungs, the nacelle on top (its nose points +z;
+// the rotor is the separate slot settler-rotor placed at (0, o.h, 1.5)), a painted tail vane, an amber light.
 WK.model('settler-turbine',(b,o)=>{const {pal,tint,mat,glow}=b.k,S=pal.set,w=Math.min(o.w,o.d),h=o.h,sd=o.seed|0,hi=b.hi,n=hi?8:6;
- const nac=pick(S.paint,sd+1),fin=pick(S.fresh,sd),y0=.25,yt=h-.62,H=yt-y0,cols=[S.white,pick(S.paint,sd+3),S.white],ts=[0,.4,.74,1],rad=t=>.56-.26*t;
+ const nac=pick([S.paint[5],S.paint[0],S.paint[6],S.paint[1]],sd),band=pick([S.fresh[0],S.fresh[2],S.canvas[4],S.paint[1]],sd),fin=pick([S.fresh[2],S.fresh[0],S.canvas[4],S.paint[2]],sd),cream=mat(0xb9ae94,'paint',.95,.1);
+ const y0=.25,yt=h-.62,H=yt-y0,cols=[mat(0x6a4a36,'scrap',.75),pick([S.comp,S.paint[7],S.paint[4]],sd),cream],ts=[0,.36,.7,1],rad=t=>.56-.26*t;
  b.bev(0,-.5,0,w-.5,.75,w-.5,S.conc,{ch:.12});
  for(let i=0;i<3;i++)b.cyl(0,y0+H*ts[i],0,rad(ts[i]),H*(ts[i+1]-ts[i]),cols[i],{n,r2:rad(ts[i+1]),top:i===2});
- if(hi){for(const i of [1,2])hoop(b,0,y0+H*ts[i]-.1,0,rad(ts[i])+.04,.2,S.iron,n);hoop(b,0,y0,0,.68,.3,S.iron,n,.6);arcBand(b,0,y0+H*.16,0,rad(.16)+.03,H*.09,.4,1.9,S.rust,2);arcBand(b,0,y0+H*.56,0,rad(.56)+.03,H*.07,3.2,4.6,S.scrap,2);}
- const e=w/2-.36,C4=[[-1,-1],[1,-1],[1,1],[-1,1]],leg=(t,c)=>{const q=e+(rad(.44)*.7-e)*t;return [c[0]*q,y0+H*.44*t,c[1]*q];};
- for(const c of C4)b.tube(leg(0,c),leg(1,c),hi?.07:.08,S.rust,{n:hi?4:3});
- for(const t of hi?[.3,.62]:[.45])for(let i=0;i<4;i++){b.tube(leg(t,C4[i]),leg(t,C4[(i+1)%4]),.045,S.rust,{n:3});if(hi)b.tube(leg(t-.3,C4[i]),leg(t,C4[(i+1)%4]),.035,S.rust,{n:3});}
- if(hi)cageLadder(b,[-rad(.44)-.12,y0+H*.44,0],[-rad(1)-.1,yt-.3,0],S.iron,[0,1],[-1,0],{w:.4,step:1.1,cage:false});if(hi)bx(b,0,y0+H*.44-.06,0,1.5,.08,1.5,S.timber);
+ // the painted band; iron collars at the joints, rust streaks running down from them, bolted patches
+ hoop(b,0,y0+H*.78,0,rad(.78)+.03,H*.075,band,n,rad(.855)+.03);
+ if(hi){for(const i of [1,2])hoop(b,0,y0+H*ts[i]-.12,0,rad(ts[i])+.05,.24,S.iron,n);hoop(b,0,y0,0,.7,.34,S.iron,n,.6);
+  for(const [t,a,l] of [[.7,.6,.1],[.7,3.9,.14],[.78,2.3,.09],[1,5.1,.12],[1,1.4,.07]])arcBand(b,0,y0+H*(t-l),0,rad(t-l)+.025,H*l,a,a+.5,S.rust,1);
+  arcBand(b,0,y0+H*.44,0,rad(.44)+.03,H*.08,.4,1.9,S.scrap,2);arcBand(b,0,y0+H*.56,0,rad(.56)+.03,H*.07,3.2,4.6,pick(S.paint,sd+5),2);}
+ // four props under the work deck, four guy wires from a collar to anchor stones at the corners
+ const yp=y0+H*.3,e=w/2-.4,ga=y0+H*.64,ax=w/2-.5;
+ for(const [sx,sz] of [[1,0],[0,1],[-1,0],[0,-1]])b.tube([sx*e,y0,sz*e],[sx*rad(.3)*.8,yp,sz*rad(.3)*.8],.11,S.rust,{n:hi?4:3});
+ bx(b,0,yp-.1,0,1.5,.14,1.5,S.timber);
+ for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]]){b.tube([sx*rad(.64)*.6,ga,sz*rad(.64)*.6],[sx*ax,y0+.2,sz*ax],.07,S.iron,{n:3});if(hi)bx(b,sx*ax,y0-.02,sz*ax,.44,.34,.44,S.stone);}
+ if(hi){hoop(b,0,ga-.12,0,rad(.64)+.05,.24,S.iron,n);cageLadder(b,[-rad(.3)-.14,yp+.04,0],[-rad(1)-.12,yt-.3,0],S.iron,[0,1],[-1,0],{w:.44,step:1.3,cage:false,k:1.6});}
  // the head: yaw bearing, nacelle with a patch, the nose collar, tail boom and vane, the light
  b.cyl(0,yt,0,.4,.22,S.iron,{n});b.bev(0,yt+.2,.12,.98,.95,2.0,nac,{ch:.1});b.tube([0,h,1.12],[0,h,1.3],.4,S.iron,{n,caps:true,r2:.32});
  if(hi){b.quad([-.3,yt+1.16,-.5],[.36,yt+1.16,-.5],[.36,yt+1.16,.5],[-.3,yt+1.16,.5],S.scrap,[0,0,0]);for(const s of [-1,1])b.at(s*.495,0,.12,s*Math.PI/2,q=>plate(q,0,yt+.42,0,.9,.4,s>0?S.rust:tint(nac,.7)));hoop(b,0,yt+.9,.12,.6,.06,S.iron,6);}
- b.tube([0,h+.1,-.86],[0,h+.3,-1.42],.06,S.iron,{n:4});sheet(b,[0,h-.3,-1.0],[0,h-.12,-1.47],[0,h+.95,-1.47],[0,h+.72,-1.0],fin,fin);if(hi)sheet(b,[.012,h+.16,-1.05],[.012,h+.2,-1.44],[.012,h+.42,-1.44],[.012,h+.38,-1.05],S.white,S.white);
- b.tube([0,yt+1.15,-.3],[0,yt+1.55,-.3],.035,S.iron,{n:3});b.gem(0,yt+1.62,-.3,.1,.12,.1,S.lamp);if(hi)b.halo(0,yt+1.62,-.3,.5,0xffb060,.25);
+ b.tube([0,h+.1,-.86],[0,h+.3,-1.42],.08,S.iron,{n:4});sheet(b,[0,h-.3,-1.0],[0,h-.12,-1.47],[0,h+.95,-1.47],[0,h+.72,-1.0],fin,fin);if(hi)sheet(b,[.012,h+.16,-1.05],[.012,h+.2,-1.44],[.012,h+.42,-1.44],[.012,h+.38,-1.05],tint(fin,.55),tint(fin,.55));
+ b.tube([0,yt+1.15,-.3],[0,yt+1.55,-.3],.05,S.iron,{n:3});b.gem(0,yt+1.62,-.3,.13,.16,.13,S.lamp);if(hi)b.halo(0,yt+1.62,-.3,.5,0xffb060,.25);
 });
 // The rotor: three hand-shaped blades in the XY plane about the origin (the game spins it about z), radius 9 by default
 // (o.r = radius). One blade is a later replacement in another paint; the tips are banded.
-WK.model('settler-rotor',(b,o)=>{const {pal,tint,rect}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,R=o.r||9,k=R/9,tip=pick(S.fresh,sd);
- for(let i=0;i<3;i++){const m=i===2?pick(S.paint,sd+2):S.white;b.at(0,o.lift||0,0,0,q=>{
+WK.model('settler-rotor',(b,o)=>{const {pal,tint,rect}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,R=o.r||9,k=R/9,tip=pick([S.fresh[2],S.fresh[0],S.canvas[4]],sd);
+ for(let i=0;i<3;i++){const m=i===2?pick([S.paint[0],S.paint[7],S.paint[5]],sd):S.paint[3];b.at(0,o.lift||0,0,0,q=>{
    if(hi)q.loft([{p:rect(.4*k,.2,0,0,.02),y:.4*k},{p:rect(.98*k,.15,0,.14*k,.02),y:1.5*k},{p:rect(.62*k,.1,0,.1*k,.02),y:5.6*k},{p:rect(.4*k,.07,0,.05*k,.02),y:8.1*k},{p:rect(.22*k,.05,0,.03*k,.02),y:R}],(r)=>r===3?tip:m);
    else q.loft([{p:rect(.9*k,.15,0,.12*k,.02),y:.6*k},{p:rect(.5*k,.09,0,.06*k,.02),y:7.6*k},{p:rect(.24*k,.05,0,.03*k,.02),y:R}],(r)=>r===1?tip:m,{top:false});},0,i*TAU/3);}
  if(hi){b.tube([0,0,-.3],[0,0,.6],.56*k,pick(S.fresh,sd+1),{n:8,r2:.14,caps:true});}else b.gem(0,0,.1,.55*k,.55*k,.5,pick(S.fresh,sd+1));
 });
 
 // ------------------------------------------------------------------ settler-solar ---------------------------------------
-// A farm solar rack: three salvaged panels (one a mismatched replacement, one half under a tarp) tilted toward +z on a rusty
-// frame, a junction box with an amber tell-tale, a battery crate.
-WK.model('settler-solar',(b,o)=>{const {pal,tint,mat,glow}=b.k,S=pal.set,M=pal.mil,w=o.w,d=o.d,h=o.h||2.4,sd=o.seed|0,hi=b.hi;
- const zf=d/2-.45,zb=-d/2+.5,yf=.55,ybk=Math.max(1.2,h-.3),run=zf-zb,tilt=Math.atan2(ybk-yf,run),pl=Math.hypot(run,ybk-yf)+.5,pw=(w-.5)/3,navy2=mat(0x1d3550,'solar',0),xs=[-w/2+.45,-w/6,w/6,w/2-.45];
- for(const x of xs){if(hi){bx(b,x,0,zb,.14,ybk-.08,.14,S.rust);bx(b,x,0,zf,.14,yf-.08,.14,S.rust);b.tube([x,.15,zf],[x,ybk-.4,zb],.04,S.rust,{n:3});}else{b.tube([x,0,zb],[x,ybk-.06,zb],.09,S.rust,{n:3});b.tube([x,0,zf],[x,yf-.06,zf],.09,S.rust,{n:3});}}
- for(const [z,y] of [[zb,ybk-.1],[zf,yf-.1]])b.tube([-w/2+.2,y,z],[w/2-.2,y,z],.07,S.rust,{n:hi?4:3});
- for(let i=0;i<3;i++){const px=-w/2+.25+pw*(i+.5),m=i===(sd%3)?navy2:M.navy;b.at(px,(yf+ybk)/2,(zf+zb)/2,0,q=>{bx(q,0,0,0,pw-.14,.09,pl,S.white,m);if(hi){q.quad([-pw/2+.07,.1,0-.02],[pw/2-.07,.1,-.02],[pw/2-.07,.1,.02],[-pw/2+.07,.1,.02],S.white,[0,-1,0]);}},tilt);}
- // a tarp tied over the corner of one panel, the junction box and its cable, the battery crate
- const tx=-w/2+.25+pw*(((sd+1)%3)+.5);b.at(tx,(yf+ybk)/2,(zf+zb)/2,0,q=>{q.quad([-pw/2,.13,-pl/2-.05],[pw*.2,.13,-pl/2-.05],[pw*.05,.13,-pl*.1],[-pw/2,.13,-pl*.2],pick(S.canvas,sd),[0,-1,0]);},tilt);
- b.bev(xs[3]-.05,ybk*.38,zb-.02,.5,.6,.3,S.scrap,{ch:.04});b.box(xs[3]-.05,ybk*.38+.42,zb+.14,.12,.08,.04,S.amber);
- if(hi){b.pipe([[xs[3]-.05,ybk*.38,zb],[xs[3]-.05,.08,zb],[xs[3]-.05,.08,zb+.9]],.04,S.iron,{n:3});crate(b,xs[0]+.6,0,zb+.1,.6,S.timber,.2);b.tube([xs[1]+.4,0,zf+.3],[xs[1]+.4,1.5,zf-.55],.035,S.timberD,{n:3});bx(b,xs[1]+.4,1.42,zf-.6,.5,.1,.12,S.timber);}
+// A farm solar rack: three salvaged panels of different makes tilted toward +z on timber A-frame trestles: a sound one, a
+// dull one in a rusty frame with a cracked corner, and a dead replacement that has slipped, half under a tied-down tarp. A junction
+// box with the amber tell-tale on the end trestle, a battery crate.
+WK.model('settler-solar',(b,o)=>{const {pal,tint,mat,glow}=b.k,S=pal.set,w=o.w,d=o.d,h=o.h||2.4,sd=o.seed|0,hi=b.hi,rn=hi?4:3;
+ const zf=d/2-.45,zb=-d/2+.5,yf=.55,ybk=Math.max(1.2,h-.3),run=zf-zb,tilt=Math.atan2(ybk-yf,run),pl=Math.hypot(run,ybk-yf)+.5,pw=(w-.5)/3,xs=[-w/2+.45,-w/6,w/6,w/2-.45];
+ const cells=[mat(hi?0x15202c:0x1e2b3a,'solar',0),mat(0x28323c,'metal',.5),mat(0x2b2724,'metal',.7)],frames=[S.timberD,S.rust,S.scrap],tarp=pick([S.canvas[3],S.canvas[0],S.canvas[4]],sd),ya=ybk-.1,za=zb+.1;
+ // the trestles: an A of two legs under the high edge (a plain back leg on the inner ones), a stub post under the low edge,
+ // the rafter between them; two purlins carry the panels
+ xs.forEach((x,i)=>{const end=i===0||i===3;b.tube([x,0,zb-.4],[x,ya,za],.1,S.timberD,{n:rn});if(end){b.tube([x,0,zb+.8],[x,ya,za],.1,S.timber,{n:rn});if(hi)b.tube([x,ya*.45,zb-.22],[x,ya*.45,zb+.5],.07,S.timberD,{n:4});}
+  b.tube([x,0,zf],[x,yf-.06,zf],.1,S.timberD,{n:rn});if(hi)b.tube([x,yf-.14,zf],[x,ya-.04,za],.08,S.timber,{n:4});});
+ for(const [z,y] of [[za,ya],[zf,yf-.1]])b.tube([-w/2+.2,y,z],[w/2-.2,y,z],.09,S.timber,{n:rn});
+ // the panels (v: 0 sound, 1 rusty frame and cracked, 2 the dull replacement)
+ for(let i=0;i<3;i++){const px=-w/2+.25+pw*(i+.5),v=(i+sd)%3,len=v===1?pl*.88:pl,zc=v===1?-(pl-len)/2:v===2?.16:0;
+  b.at(px,(yf+ybk)/2,(zf+zb)/2,v===2?.03:0,q=>{bx(q,0,0,zc,pw-.14,.09,len,frames[v],cells[v]);const bat=(x,z,wx,wz)=>q.quad([x-wx,.094,z-wz],[x+wx,.094,z-wz],[x+wx,.094,z+wz],[x-wx,.094,z+wz],frames[v],[0,-1,0]);
+   if(!hi)bat(0,zc,pw/2-.07,.05);else if(v){bat(0,zc,.045,len/2);for(const s of [-1,1])bat(0,zc+s*len/6,pw/2-.07,.045);}
+   if(v===1&&hi){const y=.1,z0=zc+len*.5;q.quad([-pw*.42,y,z0-.08],[-pw*.42,y,z0-len*.3],[-pw*.2,y,z0-len*.2],[-pw*.12,y,z0-.08],S.iron,[0,-1,0]);
+    q.tri([-pw*.2,y,z0-len*.2],[pw*.22,y,z0-len*.46],[-pw*.25,y,z0-len*.25],tint(cells[1],2.6,.05),[0,-1,0]);q.tri([-pw*.12,y,z0-.08],[pw*.3,y,z0-len*.16],[-pw*.15,y,z0-.2],tint(cells[1],2.6,.05),[0,-1,0]);}
+   if(v===2){const y=.13,z0=zc-pl/2-.05;q.quad([-pw/2-.05,y,z0],[pw*.24,y,z0],[pw*.1,y,zc-pl*.02],[-pw/2-.05,y,zc+pl*.14],tarp,[0,-1,0]);sheet(q,[-pw/2-.05,y,z0],[pw*.24,y,z0],[pw*.2,-.5,z0-.06],[-pw/2+.06,-.4,z0-.06],tarp);
+    if(hi){q.quad([-pw/2-.05,y,z0],[-pw/2-.05,y,zc+pl*.14],[-pw/2-.07,-.22,zc+pl*.08],[-pw/2-.07,-.3,z0+.1],tint(tarp,.8),[0,0,zc]);q.tube([pw*.1,y,zc-pl*.02],[pw*.3,-.05,zc+pl*.1],.03,S.iron,{n:3});}}},tilt);}
+ // the junction box on the end trestle, the amber tell-tale on top of it, the cable and the battery crate
+ const jx=xs[3]+.27,jy=ya*.5;bx(b,jx,jy,zb+.14,.34,.62,.5,S.scrap,S.roofRust);bx(b,jx,jy+.62,zb+.14,.2,.18,.2,S.amber);
+ if(hi){b.halo(jx,jy+.72,zb+.14,.45,0xffa84a,.25);b.pipe([[jx,jy,zb+.3],[jx,.1,zb+.3],[jx-1.1,.1,zb+.5]],.05,S.iron,{n:4});crate(b,jx-1.5,0,zb+.45,.7,S.timber,.2);barrel(b,xs[0]+.7,0,zb+.4,.26,.7,S.rust);}
 });
 
 // ------------------------------------------------------------------ settler-plaza ---------------------------------------
@@ -509,15 +549,15 @@ WK.model('settler-plaza',(b,o)=>{const {pal,tint,mat,glow,hash,rect,circ}=b.k,S=
 // A livestock pen: a hand-built post-and-rail fence round the rectangle, the gate swung open on the +z side, a water
 // trough, hay, a feed rack. (The animals are the separate slot "livestock".)
 WK.model('settler-pen',(b,o)=>{const {pal,tint,mat}=b.k,S=pal.set,N=pal.nat,w=o.w,d=o.d,sd=o.seed|0,hi=b.hi,PI=Math.PI,hx=w/2-.15,hz=d/2-.15,gx0=w*.08,gx1=gx0+2.6;
- const post=(x,z,hh=1.2,m=S.timberD)=>{if(hi){bx(b,x,0,z,.15,hh,.15,m);}else b.tube([x,0,z],[x,hh,z],.1,m,{n:4});};
- const run=(a,c,sag=0)=>{for(const y of [.52,1.0])b.tube([a[0],y,a[1]],[c[0],y-(y>.9?sag:0),c[1]],.055,y>.9?S.timber:tint(S.timber,.85),{n:hi?4:3});};
+ const post=(x,z,hh=1.2,m=S.timberD)=>{if(hi){bx(b,x,0,z,.2,hh,.2,m);}else b.tube([x,0,z],[x,hh,z],.13,m,{n:4});};
+ const run=(a,c,sag=0)=>{for(const y of [.52,1.0])b.tube([a[0],y,a[1]],[c[0],y-(y>.9?sag:0),c[1]],.085,y>.9?S.timber:tint(S.timber,.85),{n:hi?4:3});};
  const nx=hi?6:3,nz=hi?4:2;
  for(const z of [-hz,hz])for(let i=0;i<=nx;i++){const x=-hx+2*hx*i/nx;if(z>0&&x>gx0+.2&&x<gx1-.2)continue;post(x,z);}
  for(const x of [-hx,hx])for(let i=1;i<nz;i++)post(x,-hz+2*hz*i/nz);
  post(gx0,hz,1.38);post(gx1,hz,1.38);
  run([-hx,-hz],[hx,-hz]);run([-hx,-hz],[-hx,hz]);run([hx,-hz],[hx,hz],hi?.12:0);run([-hx,hz],[gx0,hz]);run([gx1,hz],[hx,hz]);
  // the gate, swung inward on its post
- b.at(gx1,0,hz,PI-.95,q=>{const gw=gx1-gx0-.1;if(hi){for(const y of [.3,.98])q.tube([.05,y,0],[gw,y,0],.05,S.timber,{n:4});for(const x of [.08,gw])q.tube([x,.24,0],[x,1.06,0],.05,S.timber,{n:4});q.tube([.08,.3,0],[gw,.98,0],.04,S.timberD,{n:3});q.tube([gw*.5,.3,0],[gw*.5,.98,0],.04,S.timber,{n:3});}
+ b.at(gx1,0,hz,PI-.95,q=>{const gw=gx1-gx0-.1;if(hi){for(const y of [.3,.98])q.tube([.05,y,0],[gw,y,0],.075,S.timber,{n:4});for(const x of [.08,gw])q.tube([x,.24,0],[x,1.06,0],.075,S.timber,{n:4});q.tube([.08,.3,0],[gw,.98,0],.06,S.timberD,{n:4});}
    else sheet(q,[.05,.3,0],[gw,.3,0],[gw,1.0,0],[.05,1.0,0],S.timber,S.timber);});
  // water trough, hay, the feed rack, a mended board, a lantern on the gate post
  const tx=-hx+1.1;bx(b,tx,.18,-hz*.2,.8,.42,2.6,S.scrap,S.water);
@@ -526,84 +566,108 @@ WK.model('settler-pen',(b,o)=>{const {pal,tint,mat}=b.k,S=pal.set,N=pal.nat,w=o.
  if(hi){for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]]){bx(b,tx+sx*.3,0,-hz*.2+sz*1.1,.1,.2,.1,S.timberD);b.tube([rx+sx*1.0,0,rz+sz*.5],[rx+sx*1.0,.58,rz+sz*.32],.05,S.timberD,{n:3});}
   b.dome(rx,1.02,rz,1.0,.3,.34,N.straw,{n:6,rings:2});bale(b,hx-1.3,.5,-hz+1.05,-.3);bale(b,hx-2.5,0,-hz+.9,-.1);roundBale(b,hx-1.1,0,-hz+2.6,.55,.9,.3);
   b.at(hx-w*.2,0,hz+.08,0,q=>plate(q,0,.38,0,1.5,.3,pick(S.paint,sd)));b.at(hx-w*.2,0,hz-.08,PI,q=>plate(q,0,.38,0,1.5,.3,pick(S.paint,sd)));
-  b.cyl(tx+.9,0,-hz*.2+1.7,.18,.3,S.rust,{n:6,r2:.22});b.box(gx0,1.38,hz,.2,.04,.2,S.iron);b.box(gx0,1.16,hz+.16,.16,.2,.16,S.lamp);b.halo(gx0,1.26,hz+.2,.5,0xffb060,.3);}
+  b.cyl(tx+.9,0,-hz*.2+1.7,.18,.3,S.rust,{n:6,r2:.22});b.box(gx0,1.38,hz,.2,.04,.2,S.iron);b.box(gx0,1.16,hz+.16,.16,.2,.16,S.lamp);b.halo(gx0,1.26,hz+.2,.5,0xffb060,.3);}else bx(b,gx0,1.12,hz+.17,.2,.24,.2,S.lamp);
 });
 
 // ------------------------------------------------------------------ settler-lamp / pole / fence -------------------------
-// A hand-built 6 m street lamp: a timber post in a stone footing, a braced bracket arm reaching 1.5 m toward +z, the amber
-// lamp box under its tip (at about y 5.7), the cable stapled down the post.
+// A hand-built 6 m street lamp: a thick timber post, a little out of true, in a stone footing with two props, a heavy
+// bracket beam on a knee brace reaching 1.5 m toward +z, the lantern under its tip (an iron hood, the amber lamp box at
+// about y 5.5, a drip plate), a faded cloth wrap or a notice on the post. LOW keeps the post, the beam and the lit lantern.
 WK.model('settler-lamp',(b,o)=>{const {pal,tint,rect}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,h=o.h>0&&o.h<12?Math.min(o.h,6.2)-.2:6;
- const m=sd%3===1?S.rust:S.timberD;
- if(hi)bx(b,0,0,0,.5,.3,.5,S.stone);b.loft([{p:rect(.24,.24),y:hi?.3:0},{p:rect(.16,.16),y:h}],m);
- b.tube([0,h-.12,-.12],[0,h-.02,1.5],.06,m,{n:hi?4:3,caps:hi});b.tube([0,h-1.25,.08],[0,h-.1,1.0],.045,m,{n:3});
- bx(b,0,h-.4,1.45,.32,.26,.32,S.lamp);if(hi){b.loft([{p:rect(.46,.46,0,0,1.45),y:h-.14},{p:rect(.14,.14,0,0,1.45),y:h-.02}],S.iron);bx(b,0,h-.46,1.45,.22,.06,.22,S.iron);b.halo(0,h-.3,1.45,.7,0xffd59a,.3);
-  if(sd%2)b.at(0,0,.11,0,q=>{plate(q,0,1.5,0,.34,.44,S.white);plate(q,0,1.62,.012,.24,.07,pick(S.fresh,sd));});else b.loft([{p:rect(.28,.28),y:1.2},{p:rect(.27,.27),y:1.5}],pick(S.canvas,sd),{top:false});}
+ const m=sd%3===1?S.timber:S.timberD,lean=((sd%3)-1)*.018,lz=1.45;
+ if(hi){b.loft([{p:rect(.6,.6),y:0},{p:rect(.46,.46),y:.46}],S.stone);for(const s of [-1,1])b.tube([s*.25,.4,0],[s*.04,1.35,0],.07,m,{n:4});}
+ b.at(0,0,0,0,q=>{q.loft([{p:rect(.32,.32),y:0},{p:rect(.23,.23),y:h}],m);
+  if(hi){bx(q,0,h-.14,.68,.17,.19,1.92,m);q.tube([0,h-1.55,.1],[0,h-.12,1.08],.08,m,{n:4});}else{q.tube([0,h-.05,-.2],[0,h-.05,1.64],.11,m,{n:3});q.tube([0,h-1.55,.1],[0,h-.12,1.08],.08,m,{n:3});}
+  // the lantern: hood, lit box, drip plate
+  q.loft([{p:rect(.52,.52,0,0,lz),y:h-.34},{p:rect(hi?.2:.06,hi?.2:.06,0,0,lz),y:h-.14}],S.iron,{top:hi});bx(q,0,h-.66,lz,.34,.32,.34,b.k.glow(0xffc070,1));
+  if(hi){bx(q,0,h-.72,lz,.42,.06,.42,S.iron);q.halo(0,h-.5,lz,.8,0xffd59a,.32);
+   if(sd%2)q.at(0,0,.165,0,r=>{plate(r,0,1.5,0,.3,.42,S.white);plate(r,0,1.64,.012,.2,.07,pick(S.fresh,sd));});else q.loft([{p:rect(.37,.37),y:1.25},{p:rect(.36,.36),y:1.62}],pick([S.canvas[0],S.canvas[3],S.canvas[4]],sd),{top:false});}},0,lean);
 });
-// A 9 m power pole: a timber pole, a braced crossarm along x (2.4 m) with insulators at x = +-1 (the game draws the wires
-// between (+-1, 8.7)), a transformer can on some seeds (or o.can = 1 / 0 to force it).
-WK.model('settler-pole',(b,o)=>{const {pal,tint,rect,mat}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,h=9,can=o.can!==undefined?!!o.can:sd%3===0,ins=mat(0xd5d0c2,'paint',.2);
- b.loft([{p:rect(.3,.3),y:0},{p:rect(.19,.19),y:h}],S.timberD);
- if(hi)bx(b,0,8.38,0,2.4,.14,.16,S.timber);else b.tube([-1.2,8.45,0],[1.2,8.45,0],.09,S.timber,{n:3});
- for(const s of [-1,1]){b.tube([s,8.5,0],[s,8.7,0],.07,ins,{n:hi?4:3,r2:.045});if(hi)b.tube([s*.95,8.4,.04],[0,7.7,.04],.03,S.iron,{n:3});}
- if(hi){b.tube([0,8.52,0],[0,8.74,0],.07,ins,{n:4,r2:.045});for(const y of [1.6,2.1,2.6])b.tube([-.2,y,0],[.2,y,0],.025,S.iron,{n:3});}
- if(can){b.cyl(.34,6.7,0,.24,.75,S.scrap,{n:hi?6:4,bev:.04});if(hi){b.tube([.2,7.1,0],[0,7.1,0],.04,S.iron,{n:3});b.tube([.34,7.45,0],[.9,8.5,0],.02,S.iron,{n:3});b.box(.34,6.9,.24,.1,.08,.03,S.amber);}}
+// A 9 m power pole: a thick round timber pole in a stone collar, a heavy braced crossarm along x (2.5 m) with stout
+// insulators at x = +-1 (the game draws the wires between (+-1, 8.7)), a scrap band and a side stay propping it, or a
+// transformer can with an amber tell-tale on some seeds (o.can = 1 / 0 forces it).
+WK.model('settler-pole',(b,o)=>{const {pal,tint,rect,circ,mat}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,h=9,can=o.can!==undefined?!!o.can:sd%3===0,ins=mat(0xcfc6b0,'paint',.2),pm=tint(S.timber,.8);
+ if(hi){b.loft([{p:circ(.21,6),y:0},{p:circ(.14,6),y:h}],pm);b.loft([{p:rect(.48,.48),y:0},{p:rect(.4,.4),y:.5}],S.stone);bx(b,0,8.3,0,2.5,.2,.2,S.timber);}
+ else{b.loft([{p:rect(.36,.36),y:0},{p:rect(.24,.24),y:h}],pm);if(can)b.tube([-1.25,8.4,0],[1.25,8.4,0],.13,S.timber,{n:3});else bx(b,0,8.3,0,2.5,.2,.2,S.timber);}
+ if(!can)b.tube([.98,0,0],[.1,4.4,0],.09,pm,{n:hi?4:3});
+ for(const s of [-1,1]){b.tube([s,8.5,0],[s,8.74,0],.115,ins,{n:hi?4:3,r2:.05});if(hi)b.tube([s*.9,8.32,.07],[0,7.5,.07],.06,S.timber,{n:3});}
+ if(hi&&!can){b.tube([0,8.96,0],[0,9.2,0],.12,ins,{n:4,r2:.05});hoop(b,0,2.0,0,.215,.5,sd%2?S.rust:pick(S.paint,sd),6,.2);b.at(0,0,.19,0,q=>plate(q,0,2.75,0,.26,.34,S.white));}
+ if(can){b.cyl(.42,6.5,0,.27,.85,S.scrap,{n:hi?6:4,topMat:S.roofRust});if(hi){b.tube([.12,7.0,0],[.3,7.0,0],.06,S.iron,{n:3});b.tube([.42,7.35,0],[.92,8.42,0],.04,S.iron,{n:3});b.at(.42,0,.275,0,q=>plate(q,0,6.72,0,.16,.12,S.amber));}}
 });
-// One span of field fence: a post at x = -o.w / 2 (1.2 m tall) and two rails to x = +o.w / 2 (spans chain end to end).
-WK.model('settler-fence',(b,o)=>{const {pal,tint,rect}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,L=o.w||4,x0=-L/2,x1=L/2,j=(sd%3-1)*.05;
- if(hi){b.loft([{p:rect(.15,.15,0,x0,0),y:0},{p:rect(.15,.15,0,x0,0),y:1.14},{p:rect(.07,.07,0,x0,0),y:1.2}],S.timberD);
-  b.at(x0,0,0,0,q=>{bx(q,L/2,.96+j,.09,L,.12,.045,S.timber);},0,0);bx(b,0,.46,.09,L,.12,.045,sd%4===1?pick(S.paint,sd):tint(S.timber,.85));if(sd%2)b.tube([x0+.08,.5,.1],[x0+L*.34,1.0,.1],.035,S.timberD,{n:3});}
- else{b.tube([x0,0,0],[x0,1.2,0],.1,S.timberD,{n:4});for(const y of [.5,1.0])b.tube([x0,y,.08],[x1,y,.08],.055,S.timber,{n:3});b.cap(rect(.14,.14,0,x0,0),1.2,S.timberD,true);}
+// One span of field fence: a thick, leaning post on a footing stone at x = -o.w / 2 (about 1.25 m tall) and two heavy
+// rails to x = +o.w / 2 (spans chain end to end), a stake propping the middle, a mended board or a brace by seed.
+WK.model('settler-fence',(b,o)=>{const {pal,tint,rect}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,L=o.w||4,x0=-L/2,x1=L/2,j=(sd%3-1)*.05,lean=((sd%5)-2)*.03;
+ if(!hi){b.loft([{p:rect(.22,.2,0,x0,0),y:0},{p:rect(.2,.18,0,x0,0),y:1.22}],S.timberD);for(const y of [.4,.9])b.tube([x0,y+.08,.115],[x1,y+.08,.115],.085,y>.5?S.timber:tint(S.timber,.85),{n:3});return;}
+ bx(b,x0,0,0,.4,.15,.3,S.stone);b.at(x0,0,0,0,q=>q.loft([{p:rect(.22,.2),y:0},{p:rect(.2,.18),y:1.16},{p:rect(.1,.09),y:1.27}],S.timberD),0,lean);
+ bx(b,0,.9+j,.115,L+.06,.16,.07,S.timber);bx(b,0,.4,.115,L+.06,.16,.07,sd%4===1?pick(S.paint,sd):tint(S.timber,.85));
+ b.at(L*.08,0,-.02,0,q=>q.loft([{p:rect(.15,.13),y:0},{p:rect(.13,.11),y:.78}],S.timberD),0,-lean*1.5);
+ if(sd%2){const bl=Math.hypot(L*.4,.6);b.at(x0+.08,.28,.17,0,q=>bx(q,bl/2,0,0,bl,.11,.04,S.timberD),0,Math.atan2(.6,L*.4));}else bx(b,L*.3,.3,.165,.2,.78,.04,pick(S.paint,sd+2));
 });
 
 // ------------------------------------------------------------------ rovers, people, livestock (instanced, moving) -------
-// The settlers' utility rover (the frame's +x is FORWARD): chunky tyres, a patched cab with glass, a plank cargo bed with a
-// tarped load, a roll bar with an amber light bar, warm headlights, a tail-light strip. c = the small town runabout.
-function rover(b,o,c){const {pal,tint,mat,glow}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,PI=Math.PI,body=pick(S.paint,sd+1),cabC=pick([S.white,S.paint[0],S.paint[3]],sd+1);
- for(const sx of [-1,1])for(const sz of [-1,1])wheel(b,sx*1.02,.47,sz*.74,.47,.36,S.white,sz);
- if(hi&&!c)b.bev(-.03,.46,0,3.1,.5,1.36,body,{ch:.08});else bx(b,-.03,.46,0,3.1,.5,1.36,body);
- if(hi||!c){if(hi&&!c)b.bev(1.2,.96,0,.66,.3,1.22,body,{ch:.07});else bx(b,1.2,.96,0,.66,.3,1.22,body);}
- if(hi)b.bev(.42,.96,0,.98,.95,1.4,cabC,{ch:.08});else bx(b,.42,.96,0,.98,.95,1.4,cabC);
- if(hi)bx(b,.4,1.91,0,1.16,.07,1.52,S.roofRust);
+// The settlers' utility rover (the frame's +x is FORWARD): a farm truck in faded settler paint (terracotta, ochre, olive or
+// cream by seed, never the military's teal): round chunky tyres under mudguards, a hood, a cab in a second paint with glass,
+// a plank cargo bed with a tarped load, a roll bar with an amber light bar, warm headlights, a tail-light strip. LOW keeps
+// the cab, the hood, the loaded bed and the four round wheels. c = the small town runabout.
+function rover(b,o,c){const {pal,tint,mat,glow}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,PI=Math.PI,full=hi&&!c;
+ const body=pick([S.paint[0],S.paint[1],S.paint[6],S.paint[3]],sd),cabC=pick([S.paint[6],S.paint[3],S.paint[0],S.paint[5]],sd),tarp=pick([S.canvas[0],S.canvas[3],S.canvas[4],S.canvas[0]],sd);
+ for(const sx of [-1,1])for(const sz of [-1,1]){wheel(b,sx*1.02,.47,sz*.74,.47,.36,S.white,sz);if(hi)bx(b,sx*1.02,.95,sz*.79,1.12,.07,.3,tint(body,.62));}
+ if(full)b.bev(-.03,.46,0,3.1,.5,1.36,body,{ch:.08});else bx(b,-.03,.46,0,3.1,.5,1.36,body);
+ if(hi||!c){if(full)b.bev(1.2,.96,0,.66,.3,1.22,body,{ch:.07});else bx(b,1.2,.96,0,.66,.3,1.22,body);}
+ if(hi){b.bev(.42,.96,0,.98,.95,1.4,cabC,{ch:.08});bx(b,.4,1.91,0,1.16,.07,1.52,S.roofRust);}else bx(b,.42,.96,0,.98,.98,1.4,cabC,S.roofRust);
  b.quad([.92,1.3,.58],[.92,1.3,-.58],[.92,1.8,-.58],[.92,1.8,.58],S.glass);
  if(hi||!c)for(const s of [-1,1])b.at(.42,0,s*.705,s>0?0:PI,q=>plate(q,0,1.34,0,.7,.44,S.glass));
- if(hi||!c)for(const s of [-1,1])plate3(b,[1.535,1.1,s*.42],.2,S.lamp);
+ for(const s of [-1,1])plate3(b,[hi||!c?1.535:1.525,hi||!c?1.1:.76,s*.42],.2,S.lamp);
  b.quad([-1.585,1.0,-.6],[-1.585,1.0,.6],[-1.585,1.13,.6],[-1.585,1.13,-.6],glow(0xff5a3a,1.1));
  // the bed: boards, the load under a tarp, a crate; the roll bar and its light
- if(hi){for(const s of [-1,1])bx(b,-.84,.96,s*.64,1.46,.3,.07,S.timber);bx(b,-1.55,.96,0,.07,.3,1.3,S.timberD);}
- if(hi)b.dome(-1.0,.96,0,.5,.52,.52,pick(S.canvas,sd),{n:6,rings:2});else if(!c)bx(b,-.95,.96,0,.9,.42,1.0,pick(S.canvas,sd));
- if(hi&&!c){crate(b,-.38,.96,.22,.46,S.timber,.2);bx(b,-.4,.96,-.36,.2,.36,.3,S.fresh[0]);bx(b,1.56,.5,0,.1,.2,1.44,S.iron);
-  b.at(.42,0,.708,0,q=>plate(q,-.02,.99,0,.8,.3,pick(S.paint,sd+4)));b.tube([-1.45,1.26,-.56],[-1.45,2.15,-.56],.02,S.iron,{n:3});b.tri([-1.45,2.15,-.56],[-1.45,1.95,-.56],[-1.75+.14,2.05,-.56],S.fresh[0]);b.tri([-1.45,1.95,-.56],[-1.45,2.15,-.56],[-1.61,2.05,-.56],S.fresh[0]);}
- if(hi&&!c){for(const s of [-1,1])b.tube([-.12,.96,s*.62],[-.12,2.12,s*.5],.05,S.iron,{n:4});b.tube([-.12,2.12,-.5],[-.12,2.12,.5],.05,S.iron,{n:4});}
- if(hi||!c)bx(b,hi&&!c?-.12:.4,hi?(c?1.98:2.1):1.91,0,.12,.1,.5,S.amber);
+ if(hi){for(const s of [-1,1])bx(b,-.84,.96,s*.64,1.46,.3,.07,S.timber);bx(b,-1.55,.96,0,.07,.3,1.3,S.timberD);b.dome(-1.0,.96,0,.5,.52,.52,tarp,{n:6,rings:2});}
+ else if(!c){bx(b,-.86,.96,0,1.44,.3,1.34,S.timberD,S.timber);bx(b,-.98,1.26,0,.94,.3,1.0,tarp);}
+ if(full){crate(b,-.38,.96,.22,.46,S.timber,.2);bx(b,-.4,.96,-.36,.2,.36,.3,S.fresh[0]);bx(b,1.56,.5,0,.1,.2,1.44,S.iron);plate3(b,[1.536,1.09,0],.3,S.iron);
+  b.at(.42,0,.708,0,q=>plate(q,-.02,.99,0,.8,.3,sd%2?S.rust:pick(S.paint,sd+5)));b.quad([1.0,1.265,-.5],[1.42,1.265,-.5],[1.42,1.265,-.05],[1.0,1.265,-.05],S.rust,[1.2,0,0]);
+  b.tube([-1.45,1.26,-.56],[-1.45,2.15,-.56],.03,S.iron,{n:3});b.tri([-1.45,2.15,-.56],[-1.45,1.95,-.56],[-1.75+.14,2.05,-.56],S.fresh[0]);b.tri([-1.45,1.95,-.56],[-1.45,2.15,-.56],[-1.61,2.05,-.56],S.fresh[0]);
+  for(const s of [-1,1])b.tube([-.12,.96,s*.62],[-.12,2.12,s*.5],.06,S.iron,{n:4});b.tube([-.12,2.12,-.5],[-.12,2.12,.5],.06,S.iron,{n:4});}
+ if(hi)bx(b,full?-.12:.4,c?1.98:2.1,0,.12,.1,.5,S.amber);else if(!c)b.gem(.4,2.0,0,.09,.09,.3,S.amber);
 }
 WK.model('settler-rover',(b,o)=>rover(b,o,false));
 WK.model('town-rover',(b,o)=>b.at(0,0,0,-Math.PI/2,q=>rover(q,o,true),0,0,.625));
-// A settler (faces +x of the frame, H tall): boots and trousers, a chunky jacket in muted cloth, a warm scarf, a head under
-// a brimmed hat or a hood (by seed), a satchel on the back.
-function person(b,o,H){const {pal,tint,mat,rect,circ}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi;
- const jacket=pick([mat(0x5f6650,'cloth',0,.06),mat(0x6e5843,'cloth',0,.06),mat(0x4c5d6a,'cloth',0,.06),mat(0x80705a,'cloth',0,.06)],sd),scarf=pick([S.fresh[0],S.fresh[2],S.canvas[4],S.fresh[1]],sd),trous=mat(0x3c3b35,'cloth',0,.05),boot=mat(0x221a15,'flat'),skin=pick([mat(0xc49a78,'flat'),mat(0x8a5a3c,'flat'),mat(0xe0b896,'flat')],sd+1),hat=sd%2?jacket:mat(0x8a6a44,'cloth',0,.05);
- b.at(0,0,0,0,q=>{
-  if(!hi){bx(q,0,0,0,.2,.82,.4,trous);bx(q,0,.8,0,.32,.64,.6,jacket);bx(q,.01,1.44,0,.24,.26,.24,skin);q.cap(rect(.46,.46),1.71,hat,true);return;}
-  for(const s of [-1,1])q.loft([{p:rect(.24,.17,0,.03,s*.11),y:0},{p:rect(.17,.17,0,0,s*.11),y:.24},{p:rect(.19,.21,0,0,s*.11),y:.84}],(r)=>r?trous:boot,{top:false});
-  q.loft([{p:rect(.3,.46),y:.78},{p:rect(.35,.5),y:1.12},{p:rect(.3,.56),y:1.42}],jacket);
-  q.loft([{p:rect(.31,.4),y:1.36},{p:rect(.29,.34),y:1.51}],scarf,{top:false});
-  bx(q,.01,1.45,0,.23,.23,.23,skin);
-  if(sd%2){bx(q,-.03,1.43,0,.26,.31,.29,hat);q.quad([.105,1.49,-.1],[.105,1.49,.1],[.105,1.67,.1],[.105,1.67,-.1],skin,[-1,1.6,0]);}
-  else{q.cap(circ(.31,6),1.655,hat,true);q.cap(circ(.31,6),1.65,tint(hat,.6),false);bx(q,0,1.655,0,.2,.095,.2,hat);}
-  for(const s of [-1,1])q.tube([0,1.38,s*.31],[.07,.84,s*.34],.065,jacket,{n:3});
-  bx(q,-.24,.92,0,.14,.36,.3,S.timber);},0,0,H/1.75);}
+// A settler (faces +x of the frame, H tall), chunky enough to read from 30 m: short thick legs under a long coat that widens
+// to the shoulders (its front left open on a shirt), a scarf yoke in a second colour, sleeves held a little off the body, a
+// pack with a bedroll on the back, a big head under a wide-brimmed hat (odd seeds) or a pointed hood (even seeds). LOW keeps
+// the two legs, the coat and yoke, the head and a cone of a hat.
+function person(b,o,H){const {mat,tint,rect,circ}=b.k,sd=o.seed|0,hi=b.hi,PI=Math.PI,cl=(h,j=.06)=>mat(h,'cloth',0,j),hood=sd%2===0;
+ const coat=pick([cl(0x6f7450),cl(0x8f4f36),cl(0xa98a55),cl(0x7a5a44)],sd),yoke=pick([cl(0xc9a04a),cl(0xcfc3a4),cl(0x9a4a32),cl(0xc9a04a)],sd),shirt=pick([cl(0xcfc3a4),cl(0xb39a66),cl(0xd8c8a0),cl(0xb8a27a)],sd),trous=cl(0x38302a,.04);
+ const skin=pick([mat(0xc49a78,'flat'),mat(0x8a5a3c,'flat'),mat(0xe0b896,'flat')],sd+1),hair=mat(0x2a1e16,'flat'),hat=pick([cl(0xb39a66),cl(0xc7a868),cl(0x7a5634),cl(0x8a6a44)],sd),pack=mat(0x6a4a2c,'timber',.4,.05),roll=cl(0xcfc3a4);
+ b.at(0,0,0,0,q=>{const hex=(rx,rz,y)=>({p:circ(rx,6,0,0,rz,PI/6),y});
+  if(!hi){for(const s of [-1,1])q.tube([.02,0,s*.15],[0,.6,s*.13],.17,trous,{n:3,r2:.14});
+   q.loft([{p:rect(.36,.54,0,-.02,0),y:.52},{p:rect(.56,.8,0,-.05,0),y:1.34}],(r,i)=>i===1?shirt:coat,{topMat:yoke});
+   if(hood){q.loft([{p:rect(.4,.42,0,.01,0),y:1.34},{p:rect(.42,.44,0,0,0),y:1.6},{p:rect(.05,.05,0,-.12,0),y:1.78}],(r,i)=>!r&&i===1?skin:yoke,{top:false});return;}
+   q.loft([{p:rect(.36,.36,0,.02,0),y:1.34},{p:rect(.36,.36,0,.02,0),y:1.62}],(r,i)=>i===3?hair:skin,{top:false});
+   q.loft([{p:circ(.43,6,.03,0,.4),y:1.57},{p:circ(.05,6,.02,0,.05),y:1.78}],hat,{top:false});return;}
+  for(const s of [-1,1]){q.tube([.03,0,s*.145],[0,.62,s*.12],.14,trous,{n:6,r2:.1});q.tube([0,1.25,s*.33],[.07,.68,s*.4],.095,tint(coat,.84),{n:6,r2:.08});}
+  q.loft([hex(.2,.27,.52),hex(.28,.38,1.26),hex(.14,.16,1.4)],(r,i)=>r?yoke:i===5?shirt:coat,{top:false});
+  bx(q,-.31,.8,0,.22,.48,.46,pack,roll);
+  if(hood){q.loft([{p:circ(.23,6,.01,0,.23),y:1.36},{p:circ(.245,6,0,0,.24),y:1.62},{p:circ(.05,6,-.13,0,.05),y:1.8}],(r,i)=>!r&&(i===0||i===5)?skin:yoke,{top:false});return;}
+  q.loft([{p:circ(.19,6,.02,0,.185),y:1.36},{p:circ(.2,6,.02,0,.195),y:1.64}],(r,i)=>i===2||i===3?hair:skin,{top:false});
+  q.at(.02,1.6,0,0,r=>{r.cap(circ(.43,8,.02,0,.4,PI/8),0,hat,true);r.loft([{p:circ(.22,6),y:0},{p:circ(.18,6),y:.15}],hat,{topMat:tint(hat,1.12)});},0,-.09);},0,0,H/1.75);}
 WK.model('settler-person',(b,o)=>person(b,o,1.75));
 WK.model('town-person',(b,o)=>b.at(0,0,0,-Math.PI/2,q=>person(q,o,1.5)));
-// Engineered livestock (the frame's +x is its front): a stocky barrel body with a dark back, a blunt head with short
-// horns, four legs with dark hooves, and the glowing teal gene band round the body.
-WK.model('livestock',(b,o)=>{const {pal,tint,mat,glow,rect}=b.k,S=pal.set,sd=o.seed|0,hi=b.hi,hide=pick([mat(0xb8a888,'flat',0,.08),mat(0x9a7f62,'flat',0,.08),mat(0xcfc6b2,'flat',0,.08)],sd),back=pick([mat(0x6a4a34,'flat'),mat(0x3e342c,'flat'),mat(0x8a6a4a,'flat')],sd),dark=mat(0x2e241c,'flat'),gene=glow(0x2dffc4,.7);
- if(!hi){b.box(-.08,.5,0,1.2,.68,.64,hide);bx(b,.72,.66,0,.44,.44,.38,back);for(const [x,z] of [[-.5,-.2],[.36,-.2],[.36,.2],[-.5,.2]])b.tube([x,0,z],[x,.52,z],.09,dark,{n:3});b.loft([{p:rect(1.24,.68,0,-.08,0),y:.82},{p:rect(1.24,.68,0,-.08,0),y:.94}],gene,{top:false});return;}
- b.loft([{p:rect(.92,.4,.1,-.08,0),y:.48},{p:rect(1.2,.64,.16,-.08,0),y:.66},{p:rect(1.22,.66,.16,-.08,0),y:1.04},{p:rect(1.0,.44,.12,-.1,0),y:1.2}],(r)=>r===2?back:hide,{bot:true,topMat:back});
- b.loft([{p:rect(1.25,.69,.16,-.08,0),y:.82},{p:rect(1.25,.69,.16,-.08,0),y:.93}],gene,{top:false});
- // head, muzzle, horns, legs with hooves, tail
- bx(b,.74,.72,0,.4,.42,.38,hide,back);bx(b,.98,.68,0,.2,.24,.28,dark);for(const s of [-1,1])b.tube([.7,1.12,s*.14],[.86,1.3,s*.27],.045,S.white,{n:3,r2:.012});
- for(const [x,z] of [[-.52,-.21],[.34,-.21],[.34,.21],[-.52,.21]])b.loft([{p:rect(.15,.15,0,x,z),y:0},{p:rect(.13,.13,0,x,z),y:.14},{p:rect(.17,.17,0,x,z),y:.6}],(r)=>r?hide:dark,{top:false});
- b.tube([-.68,1.02,0],[-.8,.5,0],.03,back,{n:3});
+// Engineered livestock (the frame's +x is its front): a stocky barrel body with a shoulder hump, a dark back and hide patches,
+// a thick neck carrying the head low, a dark muzzle, big pale horns, ears, four tapered legs with dark hooves, a tufted tail,
+// and the herd's small amber ear tags (the only light it carries). LOW keeps the body, the head, the horns and the four legs.
+WK.model('livestock',(b,o)=>{const {mat,glow,tint}=b.k,sd=o.seed|0,hi=b.hi,fl=(h,j=.08)=>mat(h,'flat',0,j);
+ const hide=pick([fl(0xb39a78),fl(0x8f6a4a),fl(0xc9bfa6)],sd),spot=pick([fl(0x5a3e2c),fl(0x3a2e26),fl(0x8a5a3a)],sd),back=tint(spot,.85),dark=fl(0x2a211a,0),horn=fl(0xd9cfb4,0),tag=glow(0xffa84a,1),spots=sd%2?'01 10 11 15 26':'00 05 11 16 21';
+ b.at(-.1,0,0,0,q=>{
+  const ear=s=>q.quad([.64,.85,s*.31],[.76,.85,s*.31],[.76,.71,s*.38],[.64,.71,s*.38],tag,[.7,.6,0]);
+  if(!hi){hull(q,[[-.78,.88,0,.32,.3],[.48,.95,0,.44,.36]],6,(k,i)=>i===5?back:i===0?spot:hide,{c0:hide,c1:hide});
+   hull(q,[[.36,.98,0,.3,.27],[1.0,.5,0,.19,.19]],4,hide,{c1:dark});
+   for(const [x,z] of [[-.52,-.2],[.3,-.2],[.3,.2],[-.52,.2]])q.tube([x,0,z],[x,.72,z],.1,tint(hide,.7),{n:3,r2:.16});
+   for(const s of [-1,1]){q.tube([.72,.9,s*.17],[.9,1.26,s*.46],.08,horn,{n:3,r2:.02});ear(s);}return;}
+  hull(q,[[-.8,.86,0,.22,.2],[-.5,.9,0,.4,.36],[.12,.96,0,.47,.4],[.5,.95,0,.36,.3]],8,(k,i)=>i===7?back:spots.includes(''+k+i)?spot:hide,{c0:hide,c1:hide});
+  hull(q,[[.36,.98,0,.3,.25],[.7,.83,0,.25,.23],[.9,.64,0,.23,.21],[1.03,.46,0,.17,.17]],6,(k,i)=>k===2?dark:k===1&&i===5?spot:hide,{c1:dark});
+  for(const s of [-1,1]){q.tube([.74,.94,s*.16],[.9,1.28,s*.46],.08,horn,{n:4,r2:.02});q.tube([.7,.88,s*.18],[.7,.84,s*.36],.065,hide,{n:3,r2:.03});ear(s);}
+  // legs: thick where they leave the body, thin shanks, dark hooves; the hind ones set back at the hock
+  for(const [x,z,dx] of [[.3,-.2,0],[.3,.2,0],[-.5,-.19,-.1],[-.5,.19,-.1]])q.loft([{p:b.k.rect(.17,.17,0,x+dx+.02,z),y:0},{p:b.k.rect(.12,.12,0,x+dx,z),y:.14},{p:b.k.rect(dx?.3:.24,.2,0,x,z),y:.76}],(r)=>r?hide:dark,{top:false});
+  q.tube([-.8,.98,0],[-.92,.52,0],.05,back,{n:3,r2:.035});q.gem(-.93,.44,0,.07,.12,.07,dark);});
 });
 
 // ------------------------------------------------------------------ the town's settler homes (7 x 7 m lots, instanced) --
@@ -658,7 +722,7 @@ WK.model('town-home-block',(b,o)=>{const {pal,tint,mat,glow}=b.k,S=pal.set,w=o.w
 WK.model('town-home-tower',(b,o)=>waterTower(b,o,true));
 // Town home: greenhouse — the compact cousin of settler-greenhouse, with its water butt and a planter by the door.
 WK.model('town-home-green',(b,o)=>{const S=b.k.pal.set,hi=b.hi,sd=o.seed|0,G=greenhouse(b,o,true),{tx1,xc,len,cz,r,f0}=G;
- barrel(b,tx1-.25,f0,cz+r+.5,.36,1.0,S.tank);if(hi){planter(b,xc-len*.3,f0,cz+r+.65,len*.3,.5,sd);planter(b,xc+len*.22,f0,cz+r+.95,len*.22,.5,sd+1);sack(b,xc-.2,f0,cz+r+.9,.28,S.canvas[0]);}else bx(b,xc-len*.3,f0,cz+r+.65,len*.3,.5,.5,S.timberD,S.leaf);
+ barrel(b,tx1-.25,f0,cz+r+.5,.36,1.0,S.paint[5]);if(hi){planter(b,xc-len*.3,f0,cz+r+.65,len*.3,.5,sd);planter(b,xc+len*.22,f0,cz+r+.95,len*.22,.5,sd+1);sack(b,xc-.2,f0,cz+r+.9,.28,S.canvas[0]);}else bx(b,xc-len*.3,f0,cz+r+.65,len*.3,.5,.5,S.timberD,S.leaf);
 });
 // Town home: market stall — the compact cousin of settler-shop: a small false-front store behind its counter and awning.
 WK.model('town-home-shop',(b,o)=>{const {pal,tint,mat,glow}=b.k,S=pal.set,w=o.w,d=o.d,h=o.h,sd=o.seed|0,hi=b.hi,PI=Math.PI,f0=.3;
