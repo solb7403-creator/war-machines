@@ -331,43 +331,52 @@ WK.model('base-wall',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.d||35,sink=o.sink??
 },{aoH:3,aoMin:.6});
 
 // ------------------------------------------------------------------ base-gate -------------------------------------------
-// The Command Gate: two armoured pylons (x = +-13.4) carrying the lintel (y 9.7 to 11.1) and its crest; tanks drive under
-// it. The opening stays clear: nothing inside |x| < 12.5 below y 9.5. The sign field on the lintel front (+z) is the
-// game's. o.flank = 0 leaves out the two flank bastions (6.4 x 6 at x = +-17, z = -1.1: the old front wall stubs beside
-// the gate, inside the side walls' solid), which reach x = +-20.2, beyond the 30 m slot box.
-WK.model('base-gate',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,sink=o.sink??1,flank=o.flank!==0;
- for(const s of [-1,1]){const cx=s*13.6,ins=[cx,5,0];
-  b.bev(s*13.7,-sink,0,2.3,sink+1.3,3,M.hull2,{ch:.16});
-  b.loft([rc(b,2,2.6,1.3,hi?.2:0,cx),rc(b,2,2.5,4.9,hi?.2:0,cx)],M.hull,{top:false});b.loft([rc(b,2.16,2.66,4.9,hi?.2:0,cx+s*.02),rc(b,2.16,2.66,5.3,hi?.2:0,cx+s*.02)],M.hull2,{top:false});
-  b.loft([rc(b,1.96,2.44,5.3,hi?.2:0,cx-s*.02),rc(b,1.9,2.3,8.7,hi?.2:0,cx-s*.05)],M.plate,{top:false});b.loft([rc(b,2.1,2.5,8.7,hi?.2:0,cx+s*.05),rc(b,2.1,2.5,8.95,hi?.2:0,cx+s*.05)],M.gold,{top:false});
-  b.bev(s*13.75,8.95,0,2.5,2.4,2.9,M.hull2,{ch:.18});b.bev(s*13.75,11.35,0,1.9,.3,2.2,M.hull,{ch:.1});
+// The Command Gate: two armoured towers (5 wide: x = +-12.6 to +-17.6, the full 12 tall, an amber lamp on each top)
+// carrying the lintel (a beam 1.5 deep, y 9.7 to 11.2) with the raised sign block at its centre; tanks drive under it. The
+// opening stays clear: nothing inside |x| < 12.5 below y 9.5. The sign block's dark front field (+z, at z = 1.33) is the
+// game's: it draws the holographic text 2 cm in front of it. o.flank = 0 leaves out the two flank bastions (the wall stubs
+// from the towers out to x = +-20.3 at z = -1.1, inside the side walls' solid).
+WK.model('base-gate',(b,o)=>{const {pal,glow,tint}=b.k,M=pal.mil,hi=b.hi,sink=o.sink??1,flank=o.flank!==0,amb=tint(glow(0xffb347,1),.5),ch=hi?.24:0,   // amb: half strength, so the lamps stay amber (a full glow tone-maps to yellow-white)
+  tw=(s,w,d,y)=>rc(b,w,d,y,ch,s*(12.6+w/2));   // a tower section: its inner face stays plumb on the drive lane's edge (x = 12.6)
+ for(const s of [-1,1]){const cx=s*15.05;
+  // the tower: a foot, the gunmetal shaft, a belt, the pale ceramic upper shaft, a gold band, the head, the crown, the lamp
+  b.bev(s*15.15,-sink,0,5.2,sink+1.3,3.2,M.hull2,{ch:.16});
+  b.loft([tw(s,5,3,1.3),tw(s,4.9,2.9,4.9)],M.hull,{top:false});b.loft([tw(s,5.04,3.04,4.9),tw(s,5.04,3.04,5.3)],M.hull2,{top:false});
+  b.loft([tw(s,4.84,2.84,5.3),tw(s,4.7,2.66,9)],M.plate,{top:false});b.loft([tw(s,4.86,2.84,9),tw(s,4.86,2.84,9.26)],M.gold,{top:false});
+  b.bev(s*15.1,9.26,0,5.2,2,3.1,M.hull2,{ch:.2});b.bev(s*15.2,11.26,0,4.2,.4,2.4,M.hull,{ch:.12});
+  if(hi){b.cyl(s*15.2,11.66,0,.72,.1,M.dark,{n:8});b.cyl(s*15.2,11.76,0,.52,.24,amb,{n:8,topMat:amb});b.halo(s*15.2,12.05,0,2.4,0xffb347,.7);b.halo(s*15,10.2,1.9,1.2,0xffb347,.5);
+   for(const t of [-1.5,1.5])qb(b,s*15.2+t,11.66,0,.18,.05,1.6,M.cyan,'b');}
+  else qb(b,s*15.2,11.66,0,.95,.34,.95,amb,'b');
   qb(b,s*12.58,.5,0,.04,9,1.3,M.dark,'tb'+(s>0?'r':'l'));qb(b,s*12.55,.7,0,.04,8.6,.5,M.cyan,'tb'+(s>0?'r':'l'));
-  // the front buttress foot, the outer buttress fin, the lamp mast on the head
-  b.loft([rc(b,1.7,1.6,-sink,hi?.14:0,cx+s*.05,2.05),rc(b,1.6,1.3,2,hi?.14:0,cx+s*.05,1.9),rc(b,1.3,.36,5.2,hi?.1:0,cx,1.44)],M.hull2);
-  b.at(cx+s*.05,.7,2.64,0,q=>{hazard(q,0,0,0,1.36,1,4);if(hi)qb(q,0,1.5,-.06,.24,1.9,.05,M.cyan,'kb');},-.1);
-  b.loft([rc(b,.8,1.2,-sink,0,s*14.6),rc(b,.5,1,6.6,0,s*14.72),rc(b,.2,.6,8.4,0,s*14.66)],M.hull2);
-  b.tube([s*14.3,11.65,0],[s*14.3,11.9,0],.06,M.trim,{n:4});b.gem(s*14.3,11.9,0,.12,.1,.12,M.red);
-  for(const f of [1,-1]){const z=f*1.3;   // front and back faces of the pylon
-   if(hi){b.at(cx,0,z,f>0?0:Math.PI,q=>{q.bev(0,5.6,.0,1.36,2.8,.16,M.plate2,{ch:.07});qb(q,0,6.2,.17,.2,1.6,.04,M.ice,'kb');if(f<0){hazard(q,0,1.5,.03,1.5,.9,4);qb(q,0,2.9,.02,.9,1.5,.08,M.dark,'kb');for(let k=0;k<4;k++)qb(q,0,3.05+k*.34,.1,.8,.06,.04,M.trim,'kb');}
-     q.bev(0,9.5,.14,1.3,.9,.2,M.hull,{ch:.06});qb(q,0,9.72,.26,.7,.3,.05,f>0?M.amber:M.white,'kb');});}
-   else{qb(b,cx,1.5,z+f*.02,1.5,.9,.04,M.hazard,'tb'+(f>0?'k':'f'));qb(b,cx,9.72,z+f*.16,.7,.3,.05,f>0?M.amber:M.white,'b'+(f>0?'k':'f'));}}
-  // flank bastion
-  if(flank){const bx=s*17,bz=-1.1;b.loft([rc(b,6.4,1.6,-sink,0,bx,bz),rc(b,6.3,1.5,3.2,0,bx,bz)],M.hull,{top:false});b.loft([rc(b,6.3,1.5,3.2,0,bx,bz),rc(b,6.24,1.44,5.6,0,bx,bz)],M.plate,{top:false});b.loft([rc(b,6.44,1.64,5.6,0,bx,bz),rc(b,6.44,1.64,5.86,0,bx,bz)],M.hull2,{top:false});
-   b.loft([rc(b,6.6,1.8,5.86,0,bx,bz),rc(b,6.6,1.8,6.1,0,bx,bz)],M.cyan,{top:false});b.loft([rc(b,6.5,1.7,6.1,0,bx,bz),rc(b,6.5,1.7,6.22,0,bx,bz)],M.hull2,{top:true});
-   if(hi){for(const t of [-2.2,0,2.2])qb(b,bx+t,6.22,bz,1.3,.3,1.7,M.hull,'b');for(const f of [1,-1]){qb(b,bx+s*.9,4.1,bz+f*.74,3.4,.36,.04,M.dark,'tb'+(f>0?'k':'f'));qb(b,bx+s*.9,4.22,bz+f*.77,3,.1,.03,M.ice,'tb'+(f>0?'k':'f'));qb(b,bx+s*.9,1.2,bz+f*.78,3.8,1.5,.08,M.hull2,'b'+(f>0?'k':'f'));}
-    b.at(bx+s*2.9,0,bz,0,q=>q.loft([rc(q,.6,2.2,-sink),rc(q,.5,1.9,5.5)],M.hull2,{top:false}));}}}
- // the lintel: an armoured beam with plate panels beside the sign field, floodlights and the lit line underneath
- b.bev(0,9.7,0,28.4,1.4,2.6,M.hull2,{ch:.2,bot:true});
- qb(b,0,9.6,-1.08,26.2,.1,.14,M.cyan,'t');
- for(const f of [1,-1]){qb(b,0,9.94,f*1.31,10.6,.94,.04,M.dark,'tb'+(f>0?'k':'f'));
-  for(const s of [-1,1]){if(hi)b.at(s*9.25,0,f*1.3,f>0?0:Math.PI,q=>{q.bev(0,9.96,0,6.6,.9,.14,M.plate,{ch:.06});for(let k=-1;k<=1;k++)qb(q,k*2.2*1,10.1,.15,.12,.62,.03,M.gold,'kb');});else qb(b,s*9.25,9.96,f*1.34,6.6,.9,.06,M.plate,'tb'+(f>0?'k':'f'));}}
+  // the front buttress foot with its hazard band and two cyan strips; the outer buttress fin when no bastion stands there
+  b.loft([rc(b,3.4,1.6,-sink,hi?.14:0,cx,2.05),rc(b,3.2,1.3,2,hi?.14:0,cx,1.9),rc(b,2.6,.36,5.2,hi?.1:0,cx,1.6)],M.hull2);
+  b.at(cx,.7,2.7,0,q=>hazard(q,0,0,0,2.8,1,hi?6:4),-.1);if(hi)b.at(cx,2.3,2.5,0,q=>{for(const t of [-.65,.65])qb(q,t,0,0,.2,2.3,.04,M.cyan,'kb');},-.236);
+  if(!flank)b.loft([rc(b,.8,1.2,-sink,0,s*17.7),rc(b,.5,1,6.6,0,s*17.6),rc(b,.2,.6,8.4,0,s*17.42)],M.hull2);
+  for(const f of [1,-1]){   // the front and back faces: corner pilasters, a ceramic panel with two light strips, the head's lamp bar
+   if(hi){for(const t of [-1,1])b.loft([rc(b,.5,.2,1.3,0,s*15.1+t*1.95,f*1.52),rc(b,.46,.2,9.1,0,s*14.95+t*1.85,f*1.37)],M.hull2,{top:false});
+    b.at(s*15,0,0,f>0?0:Math.PI,q=>{q.bev(0,5.65,1.37,2.7,2.9,.18,M.plate2,{ch:.07});for(const t of [-.7,.7])qb(q,t,6.15,1.47,.22,1.9,.04,M.ice,'kb');
+     if(f<0){hazard(q,0,1.5,1.52,3,.9,6);qb(q,0,2.8,1.47,1.8,1.6,.08,M.dark,'kb');for(let k=0;k<4;k++)qb(q,0,2.95+k*.36,1.53,1.6,.07,.04,M.trim,'kb');}
+     q.bev(f*s*.1,9.66,1.55,2.8,1.2,.2,M.hull,{ch:.07});qb(q,f*s*.1,10.02,1.66,1.7,.44,.05,f>0?amb:M.white,'kb');});}
+   else{if(f<0)qb(b,s*15.05,1.5,-1.52,3,.9,.04,M.hazard,'tbf');qb(b,s*15.1,10.02,f*1.57,1.7,.44,.05,f>0?amb:M.white,'b'+(f>0?'k':'f'));}}
+  // flank bastion: the wall stub from the tower's outer face to x = 20.3
+  if(flank){const bx=s*18.7,bz=-1.1;b.loft([rc(b,3,1.6,-sink,0,bx,bz),rc(b,2.9,1.5,3.2,0,bx,bz)],M.hull,{top:false});b.loft([rc(b,2.9,1.5,3.2,0,bx,bz),rc(b,2.84,1.44,5.6,0,bx,bz)],M.plate,{top:false});b.loft([rc(b,3.04,1.64,5.6,0,bx,bz),rc(b,3.04,1.64,5.86,0,bx,bz)],M.hull2,{top:false});
+   b.loft([rc(b,3.2,1.8,5.86,0,bx,bz),rc(b,3.2,1.8,6.1,0,bx,bz)],M.cyan,{top:false});b.loft([rc(b,3.1,1.7,6.1,0,bx,bz),rc(b,3.1,1.7,6.22,0,bx,bz)],M.hull2,{top:true});
+   if(hi){for(const t of [-.75,.75])qb(b,bx+t,6.22,bz,1,.3,1.7,M.hull,'b');for(const f of [1,-1]){qb(b,bx+s*.2,4.1,bz+f*.74,1.9,.36,.04,M.dark,'tb'+(f>0?'k':'f'));qb(b,bx+s*.2,4.22,bz+f*.77,1.6,.1,.03,M.ice,'tb'+(f>0?'k':'f'));qb(b,bx+s*.2,1.2,bz+f*.78,2.1,1.5,.08,M.hull2,'b'+(f>0?'k':'f'));}
+    b.at(bx+s*1.3,0,bz,0,q=>q.loft([rc(q,.6,2.2,-sink),rc(q,.5,1.9,5.5)],M.hull2,{top:false}));}}}
+ // the lintel: an armoured beam 1.5 deep from the sign block into both towers, plate panels on its faces, floodlights and
+ // the lit line underneath
+ for(const s of [-1,1])b.bev(s*9.3,9.7,0,8,1.5,2.3,M.hull2,{ch:.2,bot:true});
+ qb(b,0,9.6,-.8,25.1,.1,.14,M.cyan,'t');
+ for(const f of [1,-1])for(const s of [-1,1]){if(hi)b.at(s*9.2,0,f*1.15,f>0?0:Math.PI,q=>{q.bev(0,9.98,0,6.4,.94,.14,M.plate,{ch:.06});for(let k=-1;k<=1;k++)qb(q,k*2.1,10.14,.15,.12,.62,.03,M.gold,'kb');});else qb(b,s*9.2,9.98,f*1.19,6.4,.94,.06,M.plate,'tb'+(f>0?'k':'f'));}
  if(hi){for(let k=-5;k<=5;k++){if(!k)continue;qb(b,k*2.3,9.56,.5,.9,.14,.5,M.hull,'t');qb(b,k*2.3,9.53,.5,.66,.03,.3,M.white,'t');}
-  for(let k=-6;k<=6;k++)if(Math.abs(k)>2)qb(b,k*2.05,11.1,0,.5,.22,2.3,M.hull,'b');
-  b.detail(()=>{for(const f of [1,-1])for(const s of [-1,1])b.rail([[s*4.3,11.1,f*1.15],[s*12.3,11.1,f*1.15]],.8,M.bare,{step:2,r:.045});});}
- // the crest: stepped, gold-trimmed, a white light bar, twin masts
- b.bev(0,10.9,0,8,.62,2.8,M.hull,{ch:.12});b.bev(0,11.52,0,5.2,.3,2,M.plate,{ch:.08});qb(b,0,11.2,1.42,7.2,.12,.04,M.gold,'kb');qb(b,0,11.2,-1.42,7.2,.12,.04,M.gold,'fb');qb(b,0,11.82,0,3.4,.08,.3,M.white,'b');
- for(const s of [-1,1]){b.tube([s*3.3,11.52,0],[s*3.3,11.98,0],.05,M.trim,{n:4});if(hi){b.gem(s*3.3,11.9,0,.09,.09,.09,M.cyan);b.bev(s*5.2,11.1,0,1.2,.36,2.4,M.hull2,{ch:.08});}}
- if(hi){b.gem(0,11.2,1.46,.34,.3,.06,M.gold);b.halo(-13.6,9.9,1.6,1.2,0xffb347,.6);b.halo(13.6,9.9,1.6,1.2,0xffb347,.6);}
+  for(const s of [-1,1])for(let k=3;k<=6;k++)qb(b,s*k*2.05,11.2,0,.5,.2,2.05,M.hull,'b');
+  b.detail(()=>{for(const f of [1,-1])for(const s of [-1,1])b.rail([[s*5.7,11.2,f*.98],[s*12.4,11.2,f*.98]],.7,M.bare,{step:2.2,r:.05});});}
+ // the sign block: a plain raised block at the centre of the beam (dark fields front and back; the game draws the text on
+ // the front one), gold edge lines, a pale stepped cap with the white light bar, twin masts
+ b.bev(0,9.7,0,10.8,1.85,2.6,M.hull,{ch:.14,bot:true});b.bev(0,11.55,0,6.6,.26,2,M.plate,{ch:.08});qb(b,0,11.81,0,3.4,.08,.3,M.white,'b');
+ for(const f of [1,-1]){qb(b,0,9.76,f*1.31,10.2,1.34,.04,M.dark,'tb'+(f>0?'k':'f'));qb(b,0,11.2,f*1.32,10.2,.12,.04,M.gold,'b'+(f>0?'k':'f'));}
+ for(const s of [-1,1]){b.tube([s*4.6,11.55,0],[s*4.6,11.98,0],.06,M.trim,{n:4});if(hi)b.gem(s*4.6,11.9,0,.1,.1,.1,M.cyan);}
+ if(hi)b.gem(0,11.42,1.36,.3,.14,.05,M.gold);
 },{aoH:4,aoMin:.6});
 
 // ------------------------------------------------------------------ base-hangar -----------------------------------------
@@ -407,8 +416,13 @@ WK.model('base-reactor',(b,o)=>{const {pal,glow,circ}=b.k,M=pal.mil,hi=b.hi,tier
  // ribs: buttress fins following the drum's taper
  const nr=hi?12:6;for(let k=0;k<nr;k++){const a=k*TAU/nr+(hi?TAU/24:0);rad(b,a,0,0,q=>{if(hi)q.loft([rc(q,.74,.9,1.6,.1,0,5.86+.2),rc(q,.62,.66,8.6,.1,0,rD(8.6)+.26),rc(q,.4,.3,9.5,.08,0,rD(9.5)+.06)],M.hull2);else q.loft([rc(q,.8,.9,1.6,0,0,6),rc(q,.6,.5,9.4,0,0,5.05)],M.hull2);});
   if(k%(hi?3:2)===0){const am=a+TAU/nr/2,c=Math.cos(am),s=Math.sin(am),t=.14;b.quad([c*(rD(3.2)+.03)+s*t,3.2,s*(rD(3.2)+.03)-c*t],[c*(rD(3.2)+.03)-s*t,3.2,s*(rD(3.2)+.03)+c*t],[c*(rD(7.8)+.03)-s*t,7.8,s*(rD(7.8)+.03)+c*t],[c*(rD(7.8)+.03)+s*t,7.8,s*(rD(7.8)+.03)-c*t],M.white,[0,5,0]);}}
- // lit rings
- for(const y of tier>=3?[3.4,5.6,7.8]:[3.6,6.6]){const r=rD(y)+1.12;if(hi)b.ring(0,y,0,r,M.cyan,{t:.6,thin:tier>=3});else hoop(b,y-.12,r-.16,r+.16,.24,n,M.cyan,{noBot:true});}
+ // lit rings: slim cyan hoops (0x5fd8ff, dim enough to stay cyan: the dome is the only white mass) seated on the ribs'
+ // outer faces; between two rings a band of short vertical fins, two in every bay between the ribs (the Meshy reactor's ribs)
+ // (a full glow at 0.36 of the colour: the shader shows glow x 2.3, and anything brighter tone-maps to white)
+ {const ys=tier>=3?[3.4,5.6,7.8]:[3.6,6.6],rw=tier>=3?.3:.46,rh=tier>=3?.2:.28,lit=b.k.tint(glow(0x5fd8ff,1),.36),off=y=>(hi?.9:.84)-(hi?.32:.36)*(y-1.6)/7;
+  for(const y of ys){const r=rD(y)+off(y)+rw/2-.05;hoop(b,y-rh/2,r-rw/2,r+rw/2,rh,n,lit,{rot:Math.PI/n,noBot:!hi});}
+  if(hi)for(let i=0;i<ys.length-1;i++){const ya=ys[i]+rh/2+.2,yb=ys[i+1]-rh/2-.2,fm=i?M.hull2:M.trim;
+   for(let k=0;k<24;k++){const a=TAU/24+(k>>1)*TAU/12+(k%2?2:1)*TAU/36;rad(b,a,0,0,q=>q.loft([rc(q,.26,.6,ya,0,0,rD(ya)+.06),rc(q,.26,.6,yb-.26,0,0,rD(yb-.26)+.06),rc(q,.26,.06,yb,0,0,rD(yb)-.1)],fm,{top:false}));}}}
  // radiator banks and pipe elbows on the plinth
  for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4;rad(b,a,6.5,1.6,q=>{q.bev(0,0,0,2.9,.34,1.3,M.hull2,{ch:.06});const m=hi?7:3;for(let i=0;i<m;i++)qb(q,-1.2+2.4*i/(m-1),.34,0,hi?.16:.4,2.3,1.1,i%2?M.plate2:M.trim,'b');if(hi)qb(q,0,2.5,0,2.8,.14,.5,M.hull2,'b');});
   if(hi){const a2=a+.62,c=Math.cos(a2),s=Math.sin(a2);b.pipe([[c*5.7,2.9,s*5.7],[c*6.9,2.9,s*6.9],[c*6.9,1.6,s*6.9]],.3,M.bare,{n:6});const a3=a-.62,c3=Math.cos(a3),s3=Math.sin(a3);b.pipe([[c3*5.7,2.3,s3*5.7],[c3*6.7,2.3,s3*6.7],[c3*6.7,1.6,s3*6.7]],.22,M.trim,{n:5});}}
@@ -504,10 +518,16 @@ WK.model('base-kiosk',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi;
 });
 
 // ------------------------------------------------------------------ veteran-monument ------------------------------------
-// The field veteran's monument (3 x 3, 5.6 high): a stepped armoured plinth, a gold obelisk with a lit band and a white tip.
-WK.model('veteran-monument',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,X=(r,y)=>ngon(b,4,r,y,Math.PI/4);
- b.bev(0,0,0,3,.5,3,M.hull2,{ch:.1});b.bev(0,.5,0,2.2,.5,2.2,M.hull,{ch:.08});if(hi){b.box(0,.56,1.11,1.2,.34,.04,M.gold);for(const s of [-1,1])b.box(s*1.2,.5,1.2,.3,.3,.3,M.cyan);}
- b.loft([X(.95,1),X(.8,1.5),X(.62,1.56),X(.3,4.6),X(.02,5.4)],(r)=>r===1?M.cyan:M.gold,{top:false});b.gem(0,5.5,0,.14,.2,.14,M.white);b.halo(0,5.4,0,1.6,0xffd36b,.45);
+// The field veteran's monument (3 x 3, 5.7 high): a stepped armoured plinth with a gold edge, a dark stone obelisk with a lit
+// line at its foot and one gold inscription band at 40% of the height, a softly lit gold pyramid cap and a white tip. Gold is
+// only on the cap, the band and the plinth edge (a whole gold shaft went olive on its shaded faces under the Moon's light).
+WK.model('veteran-monument',(b,o)=>{const {pal,glow,mat}=b.k,M=pal.mil,hi=b.hi,X=(r,y)=>ngon(b,4,r,y,Math.PI/4),stone=mat(0x2a3346,'concrete',.25,0),gold=glow(0xc9a227,.18),cap=glow(0xc9a227,.3),rs=y=>.62-.32*(y-1.56)/3.04;   // the gold carries a little light of its own: it stays gold on shaded faces
+ b.bev(0,0,0,3,.5,3,M.hull2,{ch:.1});b.bev(0,.5,0,2.2,.5,2.2,M.hull,{ch:.08});
+ if(hi){b.loft([rc(b,2.24,2.24,.78),rc(b,2.24,2.24,.92)],gold,{top:false});b.box(0,.52,1.11,1.2,.22,.04,M.plate2);for(const s of [-1,1])b.box(s*1.25,.5,1.25,.2,.2,.2,M.cyan);}
+ // one loft: flared foot, the lit line, the shaft with the band (3 cm proud of the stone on HIGH), the cap (proud as well)
+ if(hi)b.loft([X(.95,1),X(.8,1.5),X(.62,1.56),X(rs(2.14),2.14),X(rs(2.14)+.05,2.17),X(rs(2.5)+.05,2.47),X(rs(2.5),2.5),X(.3,4.6),X(.345,4.63),X(.02,5.4)],r=>r===1?M.cyan:r>6?cap:r>2&&r<6?gold:stone,{top:false});
+ else b.loft([X(.95,1),X(.8,1.5),X(.62,1.56),X(rs(2.14),2.14),X(rs(2.5),2.5),X(.3,4.6),X(.02,5.4)],r=>r===1?M.cyan:r===5?cap:r===3?gold:stone,{top:false});
+ b.gem(0,5.5,0,.14,.2,.14,M.white);b.halo(0,5.4,0,1.6,0xffd36b,.45);
 },{aoH:2,aoMin:.6});
 
 // ================================================================== the frontier wall ===================================
@@ -606,7 +626,8 @@ WK.model('dam',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,N=pal.nat,hi=b.hi,W=o.w||6
  // body: a concrete lower lift, a dark ledge, the pale ceramic upper lift, the crest slab with the walkway
  const B=(y,z1)=>rc(b,W,z1+2,y,0,0,(z1-2)/2);b.loft([B(-sink,zf(-sink)),B(yl,zf(yl))],M.conc,{top:false});b.loft([B(yl,zf(yl)+.14),B(yl+.3,zf(yl)+.14)],M.hull2,{top:false});b.loft([B(yl+.3,zf(yl+.3)),B(hc,zf(hc))],M.plate2,{top:false});
  b.loft([rc(b,W,3.9,hc,0,0,-.35),rc(b,W,3.9,H,0,0,-.35)],M.hull2,{top:true,topMat:M.hull});qb(b,0,H,-2.18,W-1.2,.1,.22,M.hull2,'b');
- if(hi)b.detail(()=>{b.rail([[-W/2+2.6,H,1.45],[W/2-2.6,H,1.45]],1,M.bare,{step:5,r:.08,mid:false});b.rail([[-W/2+2.6,H,-1.9],[W/2-2.6,H,-1.9]],1,M.bare,{step:5,r:.08,mid:false});});
+ // the walkway rails: chunky two-bar rails on both edges of the crest
+ if(hi)b.detail(()=>{for(const z of [1.45,-1.9])b.rail([[-W/2+2.6,H,z],[W/2-2.6,H,z]],1.1,M.bare,{step:3.3,r:.11});});
  // buttress piers with a pale cap; on both sides of each: a pale cap plate on the crest, a cyan pad on the reservoir
  // edge, a bevelled ceramic panel on the upper lift (not over a gate or the stair)
  for(let i=0;i<np;i++){const x=px(i);b.loft([rc(b,1.8,1.1,-sink,hi?.12:0,x,1.95),rc(b,1.4,.8,hc,hi?.1:0,x,1.42),rc(b,1.4,.8,H+.3,hi?.1:0,x,1.42)],M.hull2,{top:true,topMat:M.plate});
@@ -616,6 +637,16 @@ WK.model('dam',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,N=pal.nat,hi=b.hi,W=o.w||6
     if(hi&&!atGate(xc)&&!atStair(xc))b.at(xc,yl+.55,zf(yl+.55)+.03,0,q=>q.bev(0,0,0,3.7,hc-yl-1.1,.16,M.plate,{ch:.08}),-.6/hc);}}}
  // a slim rib half-way between piers on the upper lift
  for(let i=0;i<np-1;i++){const x=px(i)+5;if(atGate(x)||atStair(x))continue;b.loft([rc(b,.8,.6,yl+.3,0,x,zf(yl+.3)+.2),rc(b,.7,.44,hc,0,x,zf(hc)+.14)],M.hull2,{top:false});}
+ // the reservoir face (-z; in the world the water stands 1.6 m under the crest): behind every pier a sloped buttress 60% of
+ // the crest height with a pilaster and a level light above it; two outflow pipe stubs, each under a cyan marker bar and a
+ // cyan gauge strip that runs up to the crest (the part that shows above the water)
+ {const yb=H*.6;for(let i=0;i<np;i++){const x=px(i);
+   b.loft(hi?[rc(b,3.4,.5,-sink,0,x,-2.23),rc(b,2.5,.5,yb*.4,0,x,-2.23),rc(b,1.2,.04,yb,0,x,-2)]:[rc(b,3.4,.5,-sink,0,x,-2.23),rc(b,1.2,.04,yb,0,x,-2)],M.hull2,{top:false});
+   qb(b,x,yb-.2,-2.08,.9,hc-yb+.2,.16,M.hull2,hi?'tbf':'tbflr');if(hi)qb(b,x,H-1.2,-2.17,.24,.5,.03,M.ice,'tbflr');}
+  const pr=Math.min(.75,H*.085),py=H*.3,pn=hi?8:6,my=py+pr*1.3+.2;
+  for(const x of np>=3?[5-px(np-1),px(np-1)-5]:np===2?[0]:[]){b.tube([x,py,-1.9],[x,py,-2.5],pr,M.plate2,{n:pn});b.tube([x,py,-2.1],[x,py,-2.46],pr*.78,M.dark,{n:pn,caps:true});
+   if(hi)b.tube([x,py,-1.95],[x,py,-2.16],pr*1.3,M.hull2,{n:pn,caps:true});
+   qb(b,x,my,-2.04,1.5,.2,.08,M.cyan,hi?'f':'ftblr');for(let y=my+.75,k=0;y<hc-.4;y+=.75,k++)qb(b,x,y,-2.03,k%2?.9:.5,.14,.06,M.cyan,'ftblr');}}
  // abutment blocks at both ends: a pale ceramic shoulder, a gold crown band, a pale cap
  for(const s of [-1,1]){const x=s*(W/2-1.17);b.bev(x,-sink,-.1,2.4,H+sink+.5,4.6,M.hull,{ch:.16});b.loft([rc(b,2.46,4.66,H-1.5,0,x,-.1),rc(b,2.46,4.66,H+.12,0,x,-.1)],M.plate,{top:false});b.loft([rc(b,2.5,4.7,H+.24,0,x,-.1),rc(b,2.5,4.7,H+.42,0,x,-.1)],M.gold,{top:false});
   b.bev(x,H+.5,-.1,1.9,.24,4,M.plate,{ch:.08});qb(b,x,H*.42,2.21,.3,H*.3,.03,M.cyan,'kb');if(hi){b.at(x,0,2.2,0,q=>hazard(q,0,.6,.02,2,1,4));qb(b,x,H+.74,-.1,.5,.1,2.4,M.white,'b');}}

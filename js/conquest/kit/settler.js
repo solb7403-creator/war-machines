@@ -652,19 +652,22 @@ function person(b,o,H){const {mat,tint,rect,circ}=b.k,sd=o.seed|0,hi=b.hi,PI=Mat
 WK.model('settler-person',(b,o)=>person(b,o,1.75));
 WK.model('town-person',(b,o)=>b.at(0,0,0,-Math.PI/2,q=>person(q,o,1.5)));
 // Engineered livestock (the frame's +x is its front): a stocky barrel body with a shoulder hump, a dark back and hide patches,
-// a thick neck carrying the head low, a dark muzzle, big pale horns, ears, four tapered legs with dark hooves, a tufted tail,
-// and the herd's small amber ear tags (the only light it carries). LOW keeps the body, the head, the horns and the four legs.
+// a cream belly patch, a thick neck carrying the head low, a cream muzzle with a dark nose, short pale horns curving up, ears,
+// four tapered legs with dark hooves, a tufted tail, and the herd's small amber ear tags (the only light it carries). LOW keeps
+// the body (rump and shoulder hump), the head, the horns and the four legs.
 WK.model('livestock',(b,o)=>{const {mat,glow,tint}=b.k,sd=o.seed|0,hi=b.hi,fl=(h,j=.08)=>mat(h,'flat',0,j);
- const hide=pick([fl(0xb39a78),fl(0x8f6a4a),fl(0xc9bfa6)],sd),spot=pick([fl(0x5a3e2c),fl(0x3a2e26),fl(0x8a5a3a)],sd),back=tint(spot,.85),dark=fl(0x2a211a,0),horn=fl(0xd9cfb4,0),tag=glow(0xffa84a,1),spots=sd%2?'01 10 11 15 26':'00 05 11 16 21';
+ const hide=pick([fl(0xb39a78),fl(0x8f6a4a),fl(0xc9bfa6)],sd),spot=pick([fl(0x5a3e2c),fl(0x3a2e26),fl(0x8a5a3a)],sd),back=tint(spot,.85),dark=fl(0x2a211a,0),horn=fl(0xd9cfb4,0),cream=fl(0xd8c7a0,0),tag=glow(0xffa84a,1),spots=sd%2?'01 10 11 15 26':'00 05 11 16 21';
  b.at(-.1,0,0,0,q=>{
   const ear=s=>q.quad([.64,.85,s*.31],[.76,.85,s*.31],[.76,.71,s*.38],[.64,.71,s*.38],tag,[.7,.6,0]);
-  if(!hi){hull(q,[[-.78,.88,0,.32,.3],[.48,.95,0,.44,.36]],6,(k,i)=>i===5?back:i===0?spot:hide,{c0:hide,c1:hide});
-   hull(q,[[.36,.98,0,.3,.27],[1.0,.5,0,.19,.19]],4,hide,{c1:dark});
+  // LOW: the back line in two steps (rump, shoulder hump, down into the neck: the body's open front end is inside the head)
+  if(!hi){hull(q,[[-.78,.88,0,.3,.3],[.18,.96,0,.46,.38],[.55,.86,0,.18,.15]],6,(k,i)=>i===5?back:i===2?cream:(k?i===4:i===0)?spot:hide,{c0:hide});
+   hull(q,[[.36,.98,0,.3,.27],[1.0,.5,0,.19,.19]],4,hide,{c1:cream});
    for(const [x,z] of [[-.52,-.2],[.3,-.2],[.3,.2],[-.52,.2]])q.tube([x,0,z],[x,.72,z],.1,tint(hide,.7),{n:3,r2:.16});
-   for(const s of [-1,1]){q.tube([.72,.9,s*.17],[.9,1.26,s*.46],.08,horn,{n:3,r2:.02});ear(s);}return;}
-  hull(q,[[-.8,.86,0,.22,.2],[-.5,.9,0,.4,.36],[.12,.96,0,.47,.4],[.5,.95,0,.36,.3]],8,(k,i)=>i===7?back:spots.includes(''+k+i)?spot:hide,{c0:hide,c1:hide});
-  hull(q,[[.36,.98,0,.3,.25],[.7,.83,0,.25,.23],[.9,.64,0,.23,.21],[1.03,.46,0,.17,.17]],6,(k,i)=>k===2?dark:k===1&&i===5?spot:hide,{c1:dark});
-  for(const s of [-1,1]){q.tube([.74,.94,s*.16],[.9,1.28,s*.46],.08,horn,{n:4,r2:.02});q.tube([.7,.88,s*.18],[.7,.84,s*.36],.065,hide,{n:3,r2:.03});ear(s);}
+   for(const s of [-1,1]){q.tube([.72,.9,s*.17],[.78,1.13,s*.33],.08,horn,{n:3,r2:.02});ear(s);}return;}
+  hull(q,[[-.8,.86,0,.22,.2],[-.5,.9,0,.4,.36],[.12,.96,0,.47,.4],[.5,.95,0,.36,.3]],8,(k,i)=>i===7?back:i===3||(k===1&&(i===2||i===4))?cream:spots.includes(''+k+i)?spot:hide,{c0:hide,c1:hide});
+  hull(q,[[.36,.98,0,.3,.25],[.7,.83,0,.25,.23],[.9,.64,0,.23,.21],[1.03,.46,0,.17,.17]],6,(k,i)=>k===2?cream:k===1&&i===5?spot:hide,{c1:dark});
+  // horns: short (0.29 m, 60% of the old straight spike) and curved: out of the skull sideways, then up
+  for(const s of [-1,1]){q.tube([.74,.94,s*.16],[.775,.99,s*.29],.075,horn,{n:4,r2:.055});q.tube([.775,.99,s*.29],[.79,1.13,s*.335],.055,horn,{n:4,r2:.015});q.tube([.7,.88,s*.18],[.7,.84,s*.36],.065,hide,{n:3,r2:.03});ear(s);}
   // legs: thick where they leave the body, thin shanks, dark hooves; the hind ones set back at the hock
   for(const [x,z,dx] of [[.3,-.2,0],[.3,.2,0],[-.5,-.19,-.1],[-.5,.19,-.1]])q.loft([{p:b.k.rect(.17,.17,0,x+dx+.02,z),y:0},{p:b.k.rect(.12,.12,0,x+dx,z),y:.14},{p:b.k.rect(dx?.3:.24,.2,0,x,z),y:.76}],(r)=>r?hide:dark,{top:false});
   q.tube([-.8,.98,0],[-.92,.52,0],.05,back,{n:3,r2:.035});q.gem(-.93,.44,0,.07,.12,.07,dark);});

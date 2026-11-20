@@ -40,7 +40,7 @@ function facets(b,R,m,o={}){const n=R[0].length,wrap=(A,vm)=>vm?A.map(p=>pt(p,vm
 // material by facet direction: lighter on top, darker underneath (the rule of every rock and leaf mass here)
 const shade=(m,top,low)=>ny=>ny>.42?top:ny<-.18?low:m;
 // Profiles [height fraction, radius fraction] of the lumps below (an apex closes the top at 1, a nadir the bottom at 0)
-const ROCK4=[[0,.9],[.2,1],[.6,.82],[.86,.46]],ROCK3=[[0,.9],[.28,1],[.72,.62]],ROCK2=[[0,1],[.5,.74]],ROCK1=[[0,1]],
+const ROCK4=[[0,.9],[.2,1],[.6,.82],[.86,.46]],ROCK3=[[0,.9],[.28,1],[.72,.62]],ROCK2=[[0,1],[.5,.74]],ROCK1=[[0,1]],PEBBLE=[[.16,1],[.8,.64]],
  CROWN3=[[.24,.72],[.56,1],[.84,.62]],CROWN2=[[.3,.9],[.72,.78]],CROWN1=[[.45,1]];
 // an irregular faceted lump inside the ellipsoid box (x ± rx, y .. y + ry, z ± rz): n sides, o.prof rings, jewel cut planes.
 // triangles = 2n(rings - 1) + n (apex) + n (nadir)
@@ -90,7 +90,10 @@ const stone=(b,x,y,z,rx,ry,rz,sd,m,o={})=>blob(b,x,y,z,rx,ry,rz,Object.assign({n
 // a sunlit crown, so a plant reads light-on-top / dark-underneath at any size. M = [dark, body, light, crown]; P = rings
 // [height fraction, radius fraction, index into M]. triangles = 2n(rings - 1) + n (crown) + n (o.nadir: a dark underside)
 const LOBE3=[[.03,.72,0],[.36,1,1],[.74,.68,2]],LOBE2=[[.05,.84,0],[.58,.8,2]],MOUND3=[[0,.88,0],[.38,1,1],[.76,.56,2]],MOUND2=[[0,.9,0],[.55,.76,2]];
-const LEAF={olive:[0x2c3a16,0x64782e,0x9ca848,0xbcc05c],green:[0x1b2d14,0x3d5c28,0x6c8c3a,0x8ea64a],straw:[0x443e1e,0x868040,0xb4ac5e,0xccc67a]};
+const LEAF={olive:[0x2c3a16,0x64782e,0x9ca848,0xbcc05c],green:[0x1b2d14,0x3d5c28,0x6c8c3a,0x8ea64a],straw:[0x443e1e,0x868040,0xb4ac5e,0xccc67a],
+ // ground cover (scrub): a dark green base under light tips, so it stands off the olive ground
+ // (paint values: under the day sun they land on screen as about #2f5a2a at the base and #a9c44a at the tips)
+ scrub:[0x3c8058,0x4a8a3a,0x84ba44,0xa0d85c],scrubD:[0x347450,0x3e7c3a,0x70aa40,0x92cc54],scrubY:[0x40784e,0x5c8a38,0x96b846,0xaed85e]};
 const leafSet=(b,H,j=.07)=>H.map(h=>b.k.mat(h,'leaf',0,j));
 function lobe(b,x,y,z,rx,ry,rz,n,M,o={}){const P=o.prof||LOBE3,sd=o.seed||1,jit=o.jit??.14,yaw=o.yaw||0,lx=o.lx||0,lz=o.lz||0,R=[];
  P.forEach(([t,rr,mi],k)=>{const ring=[];for(let i=0;i<n;i++){const a=yaw+(i+(k%2)*.5+(hz(sd,k*31+i)-.5)*.3)/n*TAU,f=rr*(1-jit*hz(sd,k*57+i+100))*(o.zig&&i%2?1-o.zig:1),tt=t+(k?(hz(sd,k*91+i+200)-.5)*.08:0);
@@ -99,13 +102,16 @@ function lobe(b,x,y,z,rx,ry,rz,n,M,o={}){const P=o.prof||LOBE3,sd=o.seed||1,jit=
 
 // ------------------------------------------------------------------ rocks (unit shape) ---------------------------------
 // Envelope |x| <= 1, |z| <= 1, -0.45 <= y <= 1; widest near the bottom, flat base. A cut boulder with two smaller boulders
-// fused to it and chips at its foot. HIGH 118 / LOW 57 triangles.
+// fused to it and three half-buried pebbles leaning on its foot (HIGH). HIGH 139 / LOW 57 triangles.
 function rock(b,o,mossy){const {pal,tint,mix}=b.k,N=pal.nat,hi=b.hi,sd=(o.seed|0)*13+(mossy?5:0),m=mossy?N.rockMoss:N.rock;
  const top=mossy?mix(tint(m,1.12),N.moss,hi?.3:.6):tint(m,1.42,.012),low=tint(m,.66),sh=shade(m,top,low),sh2=shade(tint(m,.9),tint(top,.94),low);
  blob(b,-.14,-.45,.02,.85,1.45,.9,{n:hi?7:6,prof:hi?ROCK4:ROCK3,seed:sd+1,m:sh,cuts:5,lx:.2,lz:-.08,ax:.1,az:-.1,jit:.14});
  blob(b,.57,-.45,.38,.41,1.02,.4,{n:hi?6:5,prof:hi?ROCK3:ROCK2,seed:sd+2,m:sh2,cuts:2,yaw:.6,jit:.16,lx:.02});
  blob(b,-.5,-.45,-.56,.44,.9,.4,{n:hi?5:4,prof:ROCK2,seed:sd+3,m:sh2,cuts:2,yaw:1.1,jit:.16});
- if(hi){blob(b,.7,-.45,-.56,.26,.62,.24,{n:4,prof:ROCK2,seed:sd+4,m:sh2,yaw:.3});blob(b,-.76,-.45,.58,.22,.56,.22,{n:4,prof:ROCK2,seed:sd+5,m:sh,yaw:.9});}}
+ // three half-buried pebbles leaning on the boulder's foot: low rounded lumps in the boulder's own stone (lifted a
+ // little, since the ground shade is deepest down here), never loose spikes
+ if(hi){const pm=shade(tint(m,1.3,.006),tint(top,1.22,.008),tint(m,.84));
+  [[.52,-.5,.24,.2,.2],[-.76,.44,.19,.17,.2],[-.02,.78,.18,.15,.17]].forEach(([x,z,rx,ht,rz],k)=>blob(b,x,-.3,z,rx,.3+ht,rz,{n:5,prof:PEBBLE,seed:sd+4+k,m:pm,cuts:1,jit:.12,yj:.06,yaw:k*1.7+.3,at:.94}));}}
 WK.model('rock',(b,o)=>rock(b,o,false),{aoH:1.1,aoMin:.6});
 WK.model('rock-moss',(b,o)=>rock(b,o,true),{aoH:1.1,aoMin:.6});
 
@@ -131,25 +137,34 @@ WK.model('fungus-growth',(b,o)=>{const {mat,glow,tint}=b.k,hi=b.hi,body=mat(0x4a
 },{aoH:1,aoMin:.7});
 
 // ------------------------------------------------------------------ trees ----------------------------------------------
-// one drooping conifer tier: a zigzag skirt blown downwind (+x), a dark underside. 4n triangles
-function tier(b,cx,y,cz,r,ht,droop,n,sd,top,rimM,under,wind){const rim=[],mid=[];
- for(let i=0;i<n;i++){const a=(i+.4*(hz(sd,i)-.5))/n*TAU+sd*1.7,ca=Math.cos(a),sa=Math.sin(a),st=1+wind*ca,rr=r*st*(i%2?1:.62)*(1-.1*hz(sd,i+40));
-  rim.push([cx+ca*rr+r*wind*.3,y-droop*(i%2?1:.3)*st,cz+sa*rr*.92,rimM]);mid.push([cx+ca*rr*.44+r*wind*.12,y+ht*.46,cz+sa*rr*.42]);}
- return facets(b,[rim,mid],top,{apex:[cx,y+ht,cz],nadir:[cx+r*wind*.2,y+ht*.12,cz],nadirM:under,nadirRingM:under,nadirIns:[cx,y+ht,cz]});}
+// Conifer foliage: a bluer, deeper green than the olive ground it stands on. [sunlit crown, body, deep skirt, underside]
+// (these are the paint values that land on screen as about #6fae3c / #2f7a3e / #17463a under the day sun; LOW has no leaf
+// shader to yellow them, so its set carries less blue)
+const NEEDLE=[0x74b04e,0x40906a,0x2c6660,0x1e4c4e],NEEDLE_LOW=[0x7ab248,0x46945a,0x2e6a50,0x204e40],needles=b=>(b.hi?NEEDLE:NEEDLE_LOW).map(h=>b.k.mat(h,'leaf',0,.12));
+// one conifer tier centred on (cx, cz): a ragged star skirt of n boughs (every second one long, its tip drooping, all a
+// touch longer downwind), light on the shoulder, deep green at the skirt, the underside in shadow. M = [apex, shoulder,
+// skirt, underside] (the apex of every tier but the top one hides under the tier above: give it the body colour);
+// sh = the short boughs' reach. 4n triangles (lite: 2n, a straight skirt)
+function tier(b,cx,y,cz,r,ht,droop,n,sd,M,lite,sh=.72){const rim=[],mid=[],rot=hz(sd,77)*TAU;
+ for(let i=0;i<n;i++){const a=(i+.3*(hz(sd,i)-.5))/n*TAU+rot,ca=Math.cos(a),sa=Math.sin(a),lg=i%2,rr=r*(lg?1:sh)*(1-.16*hz(sd,i+40))*(1+.07*ca);
+  rim.push([cx+ca*rr,y-droop*(lg?1:.3)*(.75+.5*hz(sd,i+60)),cz+sa*rr,M[2]]);mid.push([cx+ca*rr*.56,y+ht*.4,cz+sa*rr*.56,M[1]]);}
+ return facets(b,lite?[rim]:[rim,mid],M[1],{apex:[cx,y+ht,cz,M[0]],nadir:[cx,y+ht*.14,cz,M[3]],nadirM:M[3],nadirRingM:M[3],nadirIns:[cx,y+ht,cz]});}
 const along=(P,y)=>{for(let k=1;k<P.length;k++)if(y<=P[k][1]||k===P.length-1){const t=(y-P[k-1][1])/(P[k][1]-P[k-1][1]);return lerp3(P[k-1],P[k],t);}};
-// tree-conifer (4.6 x 7.6 x 4.6): a wind-bent frontier conifer. A leaning trunk, drooping tiers thrown downwind (+x), the
-// leader snapped off and hanging. HIGH <= 300 / LOW <= 120.
-WK.model('tree-conifer',(b,o)=>{const {pal,tint,mix}=b.k,N=pal.nat,hi=b.hi,sd=o.seed|0,s=Math.min(o.h/7.6,o.w/4.6,o.d/4.6);
- b.at(0,0,0,0,()=>{const T=[[-.42,-.1,0],[-.3,1.5,.02],[-.04,3.3,.06],[.36,5.2,.02],[.66,6.5,0]],rad=[.3,.24,.19,.13,.08],bark=N.bark,barkL=tint(bark,1.25);
+// tree-conifer (4.6 x 7.6 x 4.6): a frontier conifer. A near-straight trunk carrying four tiers centred on it, each three
+// quarters the width of the one below, their long boughs drooping at the tips; the leader snapped off and hanging
+// downwind (+x). Blue-green needles (NEEDLE) so the crown stands off the olive ground. HIGH <= 300 / LOW <= 120.
+WK.model('tree-conifer',(b,o)=>{const {pal,tint,mix}=b.k,N=pal.nat,hi=b.hi,sd=o.seed|0,s=Math.min(o.h/7.6,o.w/4.6,o.d/4.6),ND=needles(b);
+ b.at(0,0,0,0,()=>{const T=[[-.1,-.1,0],[.06,1.6,.03],[-.06,3.4,-.03],[.08,5.2,.02],[.12,6.5,0]],rad=[.32,.25,.19,.13,.08],bark=N.bark,barkL=tint(bark,1.25),bx=T[0][0];
   if(hi)sweep(b,T,rad,5,shade(bark,barkL,tint(bark,.8)));else sweep(b,[T[0],T[2],T[4]],[.3,.19,.08],4,bark);
-  const tiers=hi?[[1.75,1.85,1.75,.75,10],[3.15,1.55,1.65,.62,8],[4.5,1.2,1.5,.5,8],[5.7,.82,1.3,.36,6]]:[[2,1.8,2.3,.7,6],[3.9,1.4,2.0,.55,6],[5.5,.9,1.6,.36,6]];
-  tiers.forEach(([y,r,ht,dr,n],k)=>{const c=along(T,y+ht*.3),g=N.leaf[(k+sd)%3],top=tint(g,1.1),rim=mix(g,N.olive,.3),un=tint(g,.5);tier(b,c[0],y,c[2],r,ht,dr,n,sd*5+k,top,rim,un,.25);});
+  // [base y, radius, height, tip droop]: radius x .75 per tier, each tier within .25 of the trunk
+  [[1.95,1.9,2.05,.62],[3.4,1.425,1.8,.5],[4.6,1.07,1.6,.4],[5.6,.8,1.45,.3]].forEach(([y,r,ht,dr],k)=>{const c=along(T,y+ht*.3),f=.93+.16*hz(sd,k+60),sh=mix(ND[0],ND[1],hi?.45:.2);
+   tier(b,c[0]+(hz(sd,k+70)-.5)*.3,y,c[2]+(hz(sd,k+80)-.5)*.3,r,ht,dr,hi?(k<2?10:8):(k<2?8:6),sd*5+k,[k===3?ND[0]:hi?ND[1]:sh,sh,ND[2],ND[3]].map(m=>tint(m,f)),!hi);});
   // the snapped leader: a splinter left standing, the top hanging downwind
-  sweep(b,[T[4],[.74,7.1,.02]],[.08,.05],3,bark,{tip:[.8,7.56,.04]});
-  if(hi){sweep(b,[[.76,7.05,.02],[1.12,7.0,.1]],[.05,.04],3,bark,{tip:[1.5,6.6,.16]});
+  sweep(b,[T[4],[.2,7.1,.02]],[.08,.05],3,bark,{tip:[.26,7.56,.04]});
+  if(hi){sweep(b,[[.22,7.05,.02],[.58,7.0,.1]],[.05,.04],3,bark,{tip:[.96,6.6,.16]});
    // dead lower limbs and root flares
    for(const [y,a,l] of [[1.15,2.6,1.0],[1.5,4.3,.85],[.95,.5,.7]]){const p=along(T,y);sweep(b,[p,[p[0]+Math.cos(a)*l*.6,y+.12,p[2]+Math.sin(a)*l*.6]],[.07,.045],3,tint(bark,.8),{tip:[p[0]+Math.cos(a)*l,y-.08,p[2]+Math.sin(a)*l]});}
-   for(const a of [.4,2.5,4.5]){const c=[-.42+Math.cos(a)*.24,.42,Math.sin(a)*.24],e=[-.42+Math.cos(a)*.62,-.08,Math.sin(a)*.62];leafTri(b,[c[0]-Math.sin(a)*.1,.1,c[2]+Math.cos(a)*.1],[c[0]+Math.sin(a)*.1,.1,c[2]-Math.cos(a)*.1],e,bark,null);T3(b,c,[c[0]-Math.sin(a)*.1,.1,c[2]+Math.cos(a)*.1],e,bark,[-.42,0,0]);T3(b,c,[c[0]+Math.sin(a)*.1,.1,c[2]-Math.cos(a)*.1],e,bark,[-.42,0,0]);}}
+   for(const a of [.4,2.5,4.5]){const c=[bx+Math.cos(a)*.24,.42,Math.sin(a)*.24],e=[bx+Math.cos(a)*.62,-.08,Math.sin(a)*.62];leafTri(b,[c[0]-Math.sin(a)*.1,.1,c[2]+Math.cos(a)*.1],[c[0]+Math.sin(a)*.1,.1,c[2]-Math.cos(a)*.1],e,bark,null);T3(b,c,[c[0]-Math.sin(a)*.1,.1,c[2]+Math.cos(a)*.1],e,bark,[bx,0,0]);T3(b,c,[c[0]+Math.sin(a)*.1,.1,c[2]-Math.cos(a)*.1],e,bark,[bx,0,0]);}}
  },0,0,s);
 },{aoH:5,aoMin:.6});
 // tree-broadleaf (4.6 x 6.8 x 4.6): a gnarled broadleaf. A stout forked trunk under a wide canopy of squashed leaf lobes
@@ -179,10 +194,11 @@ WK.model('tree-dead',(b,o)=>{const {mat,mix}=b.k,hi=b.hi,s=Math.min(o.h/7.2,o.w/
   if(hi)for(const a of [.6,2.7,4.7]){const cx=Math.cos(a),sz=Math.sin(a),e=[cx*.95,-.08,sz*.95];T3(b,[cx*.32-sz*.15,.6,sz*.32+cx*.15],[cx*.32+sz*.15,.6,sz*.32-cx*.15],e,bark,[0,-.5,0]);T3(b,[cx*.32-sz*.18,-.05,sz*.32+cx*.18],[cx*.32-sz*.15,.6,sz*.32+cx*.15],e,dk,[cx*.4,0,sz*.4]);T3(b,[cx*.32+sz*.18,-.05,sz*.32-cx*.18],[cx*.32+sz*.15,.6,sz*.32-cx*.15],e,dk,[cx*.4,0,sz*.4]);}
  },0,0,s);
 },{aoH:4,aoMin:.7});
-// tree-far (4.4 x 7.2 x 4.4): the distance stand-in for any tree: a trunk and two faceted canopy tiers. 56 triangles.
-WK.model('tree-far',(b,o)=>{const {pal,tint,mix}=b.k,N=pal.nat,s=Math.min(o.h/7.2,o.w/4.4,o.d/4.4),g=N.leaf[1],g2=N.leaf[2];
- b.at(0,0,0,0,()=>{sweep(b,[[-.2,-.1,0],[.05,3.2,0]],[.3,.18],4,N.bark);
-  tier(b,.05,2.0,0,1.75,3.0,.5,6,3,tint(g,1.1),mix(g,N.olive,.4),tint(g,.5),.2);tier(b,.3,4.2,0,1.3,2.95,.4,6,8,tint(g2,1.15),mix(g2,N.olive,.4),tint(g2,.5),.2);
+// tree-far (4.4 x 7.2 x 4.4): the distance stand-in for any tree: a trunk and the conifer's four stepped tiers as plain
+// skirts, centred on the trunk, in the same blue-green needles (sunlit crown, deep skirt, dark underside). 56 triangles.
+WK.model('tree-far',(b,o)=>{const N=b.k.pal.nat,s=Math.min(o.h/7.2,o.w/4.4,o.d/4.4),ND=needles(b);
+ b.at(0,0,0,0,()=>{sweep(b,[[-.06,-.1,0],[.04,3.2,0]],[.3,.18],4,N.bark);
+  [[1.85,1.9,2.1,.55],[3.25,1.425,1.85,.45],[4.4,1.07,1.6,.36],[5.4,.8,1.75,.28]].forEach(([y,r,ht,dr],k)=>tier(b,.04+(k%2?.08:-.06),y,k%2?-.06:.05,r,ht,dr,6,3+k*5,ND,true,.8));
  },0,0,s);
 },{aoH:5,aoMin:.6});
 
@@ -195,20 +211,26 @@ function blade(b,x,y,z,a,len,h,wd,M,lite){const ca=Math.cos(a),sa=Math.sin(a),px
 function frond(b,x,y,z,a,len,h,wd,M){const ca=Math.cos(a),sa=Math.sin(a),px=-sa*wd/2,pz=ca*wd/2,at=(r,yy,w,m)=>[[x+ca*len*r-px*w,y+h*yy,z+sa*len*r-pz*w,m],[x+ca*len*r+px*w,y+h*yy,z+sa*len*r+pz*w,m]],
   p0=[x+ca*.05,y,z+sa*.05,M[0]],[b0,b1]=at(.36,.72,1,M[1]),[c0,c1]=at(.7,.96,.7,M[2]),t=[x+ca*len,y+h*.6,z+sa*len,M[3]];
  leafTri(b,p0,b0,b1,M[1]);leafTri(b,b0,b1,c1,M[1]);leafTri(b,b0,c1,c0,M[1]);leafTri(b,c0,c1,t,M[1]);}
-// scrub (1.7 x 1 x 1.7): hardy scrub. Three squashed leaf lobes (olive, dark green, dry straw) leaning downwind, dark at the
-// ground and sunlit on top, with dry thorn twigs. HIGH <= 100 / LOW <= 60.
-WK.model('scrub',(b,o)=>{const {mat}=b.k,hi=b.hi,sd=o.seed|0,s=Math.min(o.w/1.7,o.h,o.d/1.7),stem=mat(0x6a5236,'timber',.3),LS=[leafSet(b,LEAF.olive),leafSet(b,LEAF.green),leafSet(b,LEAF.straw)];
- b.at(0,0,0,0,()=>{[[-.16,-.2,.64,.7,.58,1],[.3,.14,.52,.54,.48,0],[-.24,.36,.48,.44,.42,2]].forEach(([x,z,rx,ry,rz,c],k)=>lobe(b,x,-.03,z,rx,ry,rz,hi?6:5,LS[c===2?2:(c+sd)%2],{prof:hi?MOUND3:MOUND2,seed:sd*7+k+1,lx:.12,yaw:k*1.1+.3,zig:.14}));
+// scrub (1.7 x 1 x 1.7): hardy scrub. Three squashed leaf lobes leaning downwind, each a dark green base (it outlines the
+// bush on olive ground) rising to light yellow-green tips, one of them drier, with dry thorn twigs. HIGH <= 100 / LOW <= 60.
+WK.model('scrub',(b,o)=>{const {mat}=b.k,hi=b.hi,sd=o.seed|0,s=Math.min(o.w/1.7,o.h,o.d/1.7),stem=mat(0x6a5236,'timber',.3),LS=[leafSet(b,LEAF.scrub),leafSet(b,LEAF.scrubD),leafSet(b,LEAF.scrubY)];
+ b.at(0,0,0,0,()=>{[[-.16,-.2,.64,.7,.58,1],[.28,.14,.52,.54,.48,0],[-.24,.36,.48,.44,.42,2]].forEach(([x,z,rx,ry,rz,c],k)=>lobe(b,x,-.03,z,rx,ry,rz,hi?6:5,LS[c===2?2:(c+sd)%2],{prof:hi?MOUND3:MOUND2,seed:sd*7+k+1,lx:.12,yaw:k*1.1+.3,zig:.26}));
   for(const [a,l,h] of hi?[[.3,.8,.97],[2.4,.78,.86],[4.4,.74,.92]]:[[.3,.8,.97],[4.4,.74,.92]]){const ca=Math.cos(a),sa=Math.sin(a);spike(b,[ca*.25,.3,sa*.25],[ca*l,h,sa*l],.045,stem);}
  },0,0,s);
 },{aoH:.9,aoMin:.6});
-// flower-patch (.9 x .5 x .9): a dark leaf mound carrying three big bright blooms (cream and sun yellow, no glow) tilted
-// outward, and one leaf. 50 triangles.
-WK.model('flower-patch',(b,o)=>{const {mat}=b.k,sd=o.seed|0,s=Math.min(o.w/.9,o.h/.5,o.d/.9),G=leafSet(b,[0x16280f,0x35562a,0x5e8038,0x7a9a44]),PET=[mat(0xfff4d8,'flat',0,.03),mat(0xffd23c,'flat',0,.03),mat(0xfff4d8,'flat',0,.03)],EYE=[mat(0xe07a1c,'flat'),mat(0x9a4a14,'flat'),mat(0xe07a1c,'flat')];
- b.at(0,0,0,0,()=>{lobe(b,0,-.02,0,.43,.27,.41,6,G,{prof:[[0,1,0],[.52,.72,1]],zig:.18,seed:sd+2,jit:.16});
-  for(let k=0;k<3;k++){const a=k*TAU/3+.5+sd,x=Math.cos(a)*.2,z=Math.sin(a)*.2,y=.3+.04*((k+sd)%3),R=[];for(let i=0;i<5;i++){const q=i/5*TAU+k;R.push([x+Math.cos(q)*.15,y+.03-.05*Math.cos(q-a),z+Math.sin(q)*.15,PET[k]]);}
-   facets(b,[R],PET[k],{apex:[x+Math.cos(a)*.03,y+.085,z+Math.sin(a)*.03,EYE[k]],nadir:[x*.7,y-.13,z*.7,G[1]]});}
-  leafTri(b,[-.3,.03,-.16,G[1]],[-.16,.03,-.32,G[1]],[-.42,.2,-.4,G[3]],G[2]);
+// flower-patch (.9 x .5 x .9): wild flowers. A low green leaf cushion; five thin stems of different heights, each topped
+// by a flat five-sided bloom tilted to the sky with a darker centre dot (two white, two yellow, one red; no glow), and
+// one leaf. 60 triangles.
+WK.model('flower-patch',(b,o)=>{const {mat}=b.k,sd=o.seed|0,s=Math.min(o.w/.9,o.h/.5,o.d/.9),G=leafSet(b,[0x2f6428,0x4a8a3c,0x66a048,0x7cb252]),stem=mat(0x4c8236,'flat',0,.05),
+  PET=[mat(0xf4efe0,'flat',0,.02),mat(0xf2b632,'flat',0,.02),mat(0xd8452f,'flat',0,.02)],EYE=[mat(0xc8861c,'flat'),mat(0x8c4412,'flat'),mat(0x4e1612,'flat')];
+ b.at(0,0,0,0,()=>{lobe(b,0,-.02,0,.43,.108,.41,6,G,{prof:[[0,1,0],[.52,.72,1]],zig:.18,seed:sd+2,jit:.16});
+  // [colour, distance from the centre, bloom height, bloom radius]: the tallest in the middle, four around it
+  [[1,.03,.47,.14],[0,.26,.36,.14],[2,.27,.28,.125],[0,.25,.21,.135],[1,.27,.41,.12]].forEach(([c,rr,y,R],k)=>{const a=k?(k-1)*TAU/4+.5+sd*1.9+.5*(hz(sd,k)-.5):sd,x=Math.cos(a)*rr,z=Math.sin(a)*rr,tx=-Math.cos(a)*.12*(k?1:.4),tz=-Math.sin(a)*.12*(k?1:.4),q0=k*1.3+sd,lo=[x,y-1,z],
+    P=(i,n,f,up)=>{const q=q0+i/n*TAU,dx=Math.cos(q)*R*f,dz=Math.sin(q)*R*f;return [x+dx,y+up+tx*dx+tz*dz,z+dz];};
+   spike(b,[x*.55,.05,z*.55],[x,y,z],.016,stem,3,k);
+   for(let i=1;i<4;i++)T3(b,P(0,5,1,0),P(i,5,1,0),P(i+1,5,1,0),PET[c],lo);          // the bloom: a flat pentagon leaning outward
+   T3(b,P(0,4,.36,.02),P(1,4,.36,.02),P(2,4,.36,.02),EYE[c],lo);T3(b,P(0,4,.36,.02),P(2,4,.36,.02),P(3,4,.36,.02),EYE[c],lo);});   // its centre dot
+  leafTri(b,[-.3,.03,-.16,G[1]],[-.16,.03,-.32,G[1]],[-.42,.16,-.4,G[3]],G[2]);
  },0,0,s);
 },{aoH:.5,aoMin:.7});
 // fern (2 x 1 x 2): broad arching fronds from one dark crown, lighter and yellower toward the tips. HIGH 48 / LOW 32.
@@ -236,10 +258,10 @@ WK.model('burnt-stump',(b,o)=>{const {pal,tint,mix,mat,glow}=b.k,N=pal.nat,hi=b.
   for(let k=0;k<3;k++){const p=V[k],q=V[k+1];for(const sg of [-1,1])T3(b,[p[0]+sg*wv[k],p[1],p[2]-.03*r],[q[0]+sg*wv[k+1],q[1],q[2]-.03*r],[q[0],q[1],q[2]+.035*r],vein,[0,p[1],0]),T3(b,[p[0]+sg*wv[k],p[1],p[2]-.03*r],[p[0],p[1],p[2]+.035*r],[q[0],q[1],q[2]+.035*r],vein,[0,p[1],0]);}}
  else T3(b,[-.04*r,.04,.25*r],[.05*r,.04,.25*r],[.03*r,.66*h,.2*r],vein,[0,.3,0]);
 },{aoH:1.1,aoMin:.7});
-// grass-tuft (.7 x .8 x .7): a clump of seven broad blades of varied height (six on LOW): a dark root, olive / green / dry
-// straw bodies, tips lighter and yellower. HIGH 48 / LOW 24.
-WK.model('grass-tuft',(b,o)=>{const {mat}=b.k,hi=b.hi,sd=o.seed|0,r=Math.min(o.w,o.d)/.7,root0=mat(0x14220c,'leaf',0,.06),n=hi?7:6,
-  G=[[0x4e7228,0xa8b44c],[0x66782e,0xcbc664],[0x8a8438,0xdfd27c]].map(([g,t])=>[root0,mat(g,'leaf',0,.08),mat(t,'leaf',0,.06)]);
+// grass-tuft (.7 x .8 x .7): a clump of seven broad blades of varied height (six on LOW): a dark green base, green
+// bodies, light yellow-green tips (one blade in three drier). HIGH 48 / LOW 24.
+WK.model('grass-tuft',(b,o)=>{const {mat}=b.k,hi=b.hi,sd=o.seed|0,r=Math.min(o.w,o.d)/.7,root0=mat(0x3f8a60,'leaf',0,.06),n=hi?7:6,   // paint values: on screen about #2f5a2a (base) and #a9c44a (tips)
+  G=[[0x4e9238,0xa0d85c],[0x5e9a3c,0xacdc62],[0x78983c,0xb8d868]].map(([g,t])=>[root0,mat(g,'leaf',0,.08),mat(t,'leaf',0,.06)]);
  for(let k=0;k<n;k++){const a=k*TAU/n+.4+.5*(hz(sd,k)-.5);blade(b,Math.cos(a)*.06*r,0,Math.sin(a)*.06*r,a,(.17+.04*(k%3))*r,o.h*(k?.52+.12*((k*7)%5):1),.2*r,G[k%3],!hi);}
  if(hi)for(let k=0;k<3;k++){const a=k*TAU/3+1.3,g=G[(k+1)%3];leafTri(b,[Math.cos(a-.5)*.08*r,0,Math.sin(a-.5)*.08*r,g[0]],[Math.cos(a+.5)*.08*r,0,Math.sin(a+.5)*.08*r,g[0]],[Math.cos(a)*.33*r,o.h*.3,Math.sin(a)*.33*r,g[2]],g[1]);}
 },{aoH:.7,aoMin:.62});
@@ -267,7 +289,7 @@ WK.model('bio-node-dim',(b,o)=>bioNode(b,o,false),{aoH:1,aoMin:.62});
 function prism(b,x,z,r,h,n,rot,slant,taper,m,o={}){const R=[];for(const t of o.mid?[0,.5,1]:[0,1]){const ring=[];for(let i=0;i<n;i++){const a=rot+(i+.3*(hz(o.seed||1,i)-.5))/n*TAU,rr=r*(1-taper*t)*(t===.5?1.04:1);
    ring.push([x+Math.cos(a)*rr+(o.lx||0)*t,t===1?h*(1-slant*(.5+.5*Math.cos(a-rot-(o.sa||0)))):h*t-(t?0:.08),z+Math.sin(a)*rr*(o.rz||1)+(o.lz||0)*t]);}R.push(ring);}
  const c=cen(R[R.length-1]);return facets(b,R,m,{apex:[c[0],c[1]+.02,c[2]],apexM:o.topM});}
-WK.model('ice-block',(b,o)=>{const {pal,tint,glow}=b.k,N=pal.nat,sd=o.seed|0,sx=o.w/2.4,sz=o.d/2.4,h=o.h/3,ice=b.k.mat(0x4f9ac4,'glass',.45,.1),core=glow(0x7fe6ff,.55),top=tint(ice,1.5,.04);let k=0;
+WK.model('ice-block',(b,o)=>{const {pal,tint,glow}=b.k,N=pal.nat,sd=o.seed|0,sx=o.w/2.4,sz=o.d/2.4,h=o.h/3,ice=b.hi?b.k.mat(0x4f9ac4,'glass',.45,.1):glow(0x7cbfe4,.36),core=glow(b.hi?0x7fe6ff:0xc4f0fc,.55),top=b.hi?tint(ice,1.5,.04):tint(ice,1.25,.03);let k=0;   // LOW has no glass shader (inner light, sky in the pane): a pale, faintly lit ice gives it the HIGH look
  const m=ny=>(++k===3||k===4)?core:ny>.42?top:ny<-.2?tint(ice,.55):(k%2?ice:tint(ice,.8));
  prism(b,-.22*sx,-.12*sz,.86*Math.min(sx,sz),2.96*h,5,.3,.34,.2,m,{mid:true,seed:sd+1,lx:.12*sx,rz:.9,topM:top});
  prism(b,.66*sx,.42*sz,.48*Math.min(sx,sz),1.75*h,5,1.1,.3,.2,shade(tint(ice,.94),top,tint(ice,.7)),{seed:sd+2,lx:-.22*sx,lz:-.12*sz,topM:top,sa:2});
@@ -340,25 +362,32 @@ WK.model('meteor',(b,o)=>{const {glow}=b.k,sd=o.seed|0,hot=glow(0xffe6b8,2),head
   if(k<=3)blob(b,x,y-r,z,r,2*r,r,{n:5,prof:CROWN2,seed:sd+k*3,m:c,nadir:true,jit:.2,yaw:k});else gem8(b,x,y,z,r,r,r,c,k,4);
   gem8(b,x+(k%2?1.15:.2),y-1.3+(k%3)*.5,(k%2?-.9:.95),.2,.26,.2,glow(0xffa860,1.6),k,3);}
 },{aoH:1,aoMin:1});
-// strike-crater (17.4 x 2.2 x 17.4): what a Meteor Strike leaves: a jagged molten ring (radius 7 at y .3), basalt rim rocks
-// thrown out to radius 7.5 with their inner faces still glowing, a blue-white core gem in a cradle of shards. HIGH <= 1300 / LOW <= 900.
-WK.model('strike-crater',(b,o)=>{const {glow,tint}=b.k,hi=b.hi,sd=o.seed|0,s=Math.min(o.w,o.d)/17.4,basalt=oreMat(b,'basalt'),basaltL=oreMat(b,'basaltL'),ring=glow(0xff7a3d,1.5),ringHot=glow(0xffb070,1.5),ringD=glow(0xc04a1a,1.5),ember=glow(0xa03a16,.45),core=glow(0xa8e4ff,2),coreHot=glow(0xe6f6ff,2);
+// strike-crater (17.4 x 2.2 x 17.4): what a Meteor Strike leaves: a scorched floor (radius 6.4) inside a raised rim of dark
+// upthrust wedges (6.4 .. 7.45, crest .5 high at radius 7), basalt rim rocks thrown out to radius 7.5, glowing cracks
+// running from the centre to the rim (the only orange left), a blue-white core gem in a cradle of shards.
+// HIGH <= 1300 / LOW <= 900.
+WK.model('strike-crater',(b,o)=>{const {glow,tint,mat}=b.k,hi=b.hi,sd=o.seed|0,s=Math.min(o.w,o.d)/17.4,basalt=oreMat(b,'basalt'),basaltL=oreMat(b,'basaltL'),scorch=mat(hi?0x302b28:0x282220,'rock',0,.2),scorchL=tint(scorch,1.2,.004),soot=mat(0x53483f,'dirt',0,.14),sootD=tint(soot,.7),   // paint values: on screen about #1c1714 (rim) and #241c16 (floor)
+  ring=glow(0xff7a3d,1.5),ringD=glow(0xc04a1a,1.5),core=glow(0xa8e4ff,2),coreHot=glow(0xe6f6ff,2),fy=r=>.08+.012*r;   // fy: the floor's height at radius r
  b.at(0,0,0,0,()=>{
-  // the molten ring: a jagged ridge, hottest on its crest
-  const N=hi?24:12,A=[],C=[],D=[];for(let i=0;i<N;i++){const a=i/N*TAU,ca=Math.cos(a),sa=Math.sin(a),j=hz(sd,i),j2=hz(sd,i+50);A.push([ca*(6.5-.2*j),.0,sa*(6.5-.2*j),ringD]);C.push([ca*(7+.25*(j2-.5)),.3+.16*(i%2?j:-j*.5),sa*(7+.25*(j2-.5)),ringHot]);D.push([ca*(7.45+.2*j),.0,sa*(7.45+.2*j),ringD]);}
-  facets(b,[A.concat([]),C],ring,{});facets(b,[C,D],ring,{});
-  // rim rocks thrown outward, the faces toward the strike still hot
-  const n=hi?10:6;for(let k=0;k<n;k++){const a=k/n*TAU+.15,ca=Math.cos(a),sa=Math.sin(a),r=1.18-.26*hz(sd,k+5),x=ca*7.5,z=sa*7.5,m=k%3?basalt:basaltL,top=tint(m,1.4,.01),low=tint(m,.66);
-   blob(b,x,-.3,z,r,r*(1.35+.5*hz(sd,k+9)),r*.86,{n:hi?8:6,prof:hi?ROCK4:ROCK3,seed:sd+30+k,cuts:3,jit:.16,yaw:a,lx:ca*.3,lz:sa*.3,m:(ny,p,q,t)=>{const fx=(p[0]+q[0]+t[0])/3-x,fz=(p[2]+q[2]+t[2])/3-z;return -(fx*ca+fz*sa)>r*.34&&ny<.5?ember:ny>.42?top:ny<-.18?low:m;}});
-   if(hi){const a2=a+TAU/n/2,r2=.42+.2*hz(sd,k+70);stone(b,Math.cos(a2)*(7.9+.5*hz(sd,k+80)),-.1,Math.sin(a2)*(7.9+.5*hz(sd,k+80)),r2,r2*1.3,r2,sd+50+k,basaltL,{n:5,prof:ROCK2,cuts:0});}}
-  // glowing cracks run from the core to the ring
-  for(let k=0;k<(hi?8:5);k++){const a=k/(hi?8:5)*TAU+.4,ca=Math.cos(a),sa=Math.sin(a),a1=a+.12*(hz(sd,k+90)-.5),p=[ca*1.6,.02,sa*1.6],e=[Math.cos(a1)*6.2,.02,Math.sin(a1)*6.2],md=[Math.cos(a+.06)*3.8,.2,Math.sin(a+.06)*3.8,ring];
-   T3(b,[p[0]-sa*.22,.02,p[2]+ca*.22],md,pt(e,ringD),ringD,[p[0],-2,p[2]]);T3(b,[p[0]+sa*.22,.02,p[2]-ca*.22],md,pt(e,ringD),ringD,[p[0],-2,p[2]]);}
+  // the scorched rim: a ring of dark wedges thrown up by the strike (every second crest a tooth), steep on the inside
+  const N=hi?32:12,A=[],C=[],D=[];for(let i=0;i<N;i++){const a=(i+.5*(hz(sd,i+20)-.5))/N*TAU,ca=Math.cos(a),sa=Math.sin(a),j=hz(sd,i),j2=hz(sd,i+50),rc=6.95+.3*(j2-.5)+(i%2?.12:-.14);A.push([ca*(6.4-.12*j),fy(6.4),sa*(6.4-.12*j)]);C.push([ca*rc,i%2?.5:.16+.1*j,sa*rc,i%2?scorchL:scorch]);D.push([ca*(7.45+.2*j),-.06,sa*(7.45+.2*j)]);}
+  const rimM=shade(scorch,scorchL,tint(scorch,.7)),up=(p,q,r,m)=>T3(b,p,q,r,m,[(p[0]+q[0]+r[0])/3,-9,(p[2]+q[2]+r[2])/3]);   // up: a triangle that faces the sky
+  for(const [P,Q] of [[A,C],[C,D]])for(let i=0;i<N;i++){const j=(i+1)%N;if(i&1){up(P[i],P[j],Q[j],rimM);up(P[i],Q[j],Q[i],rimM);}else{up(P[i],P[j],Q[i],rimM);up(P[j],Q[j],Q[i],rimM);}}
+  // the floor: a soot-dark disc, darkest at the point of impact and in the shadow under the rim
+  const fc=[0,fy(0),0,hi?sootD:soot],F=[],E=A.map(p=>pt(p,sootD));if(hi)for(let i=0;i<N;i++){const a=(i+.5)/N*TAU,rr=3.5+.9*(hz(sd,i+140)-.5);F.push([Math.cos(a)*rr,fy(rr)+.07*(hz(sd,i+170)-.5),Math.sin(a)*rr]);}
+  for(let i=0;i<N;i++){const j=(i+1)%N;if(hi){up(fc,F[i],F[j],soot);up(F[i],E[j],F[j],soot);up(E[i],E[j],F[i],soot);}else up(fc,E[i],E[j],soot);}
+  // rim rocks thrown outward
+  const n=hi?10:6;for(let k=0;k<n;k++){const a=k/n*TAU+.15,ca=Math.cos(a),sa=Math.sin(a),r=1.18-.26*hz(sd,k+5),x=ca*7.5,z=sa*7.5,m=k%3?basalt:basaltL;
+   blob(b,x,-.3,z,r,r*(1.35+.5*hz(sd,k+9)),r*.86,{n:hi?8:6,prof:hi?ROCK4:ROCK3,seed:sd+30+k,cuts:3,jit:.16,yaw:a,lx:ca*.3,lz:sa*.3,m:shade(m,tint(m,1.4,.01),tint(m,.66))});
+   if(hi){const a2=a+TAU/n/2,r2=.42+.2*hz(sd,k+70),rs=Math.min(7.9+.5*hz(sd,k+80),8.6-r2);stone(b,Math.cos(a2)*rs,-.1,Math.sin(a2)*rs,r2,r2*1.3,r2,sd+50+k,basaltL,{n:5,prof:ROCK2,cuts:0});}}
+  // glowing cracks run across the floor from the core to the rim
+  for(let k=0;k<(hi?8:5);k++){const a=k/(hi?8:5)*TAU+.4,ca=Math.cos(a),sa=Math.sin(a),a1=a+.12*(hz(sd,k+90)-.5),y0=fy(1.6)+.03,p=[ca*1.6,y0,sa*1.6],e=[Math.cos(a1)*6.25,fy(6.25)+.04,Math.sin(a1)*6.25],md=[Math.cos(a+.06)*3.8,fy(3.8)+.22,Math.sin(a+.06)*3.8,ring];
+   T3(b,[p[0]-sa*.26,y0,p[2]+ca*.26],md,pt(e,ringD),ringD,[p[0],-2,p[2]]);T3(b,[p[0]+sa*.26,y0,p[2]-ca*.26],md,pt(e,ringD),ringD,[p[0],-2,p[2]]);}
   // the core: a blue-white gem in a cradle of thrown shards
   const R1=[],R2=[];for(let i=0;i<6;i++){const a=i/6*TAU;R1.push([Math.cos(a)*.7*(i%2?1:.86),1.05,Math.sin(a)*.7*(i%2?1:.86)]);R2.push([Math.cos(a+.5)*.42,1.6,Math.sin(a+.5)*.42,coreHot]);}
   if(hi)facets(b,[R1,R2],core,{apex:pt([.04,2.02,0],coreHot),nadir:[0,.22,0]});else facets(b,[R1],core,{apex:pt([.04,2.02,0],coreHot),nadir:[0,.22,0]});
-  for(let k=0;k<(hi?5:3);k++){const a=k/(hi?5:3)*TAU+.3,ca=Math.cos(a),sa=Math.sin(a);sweep(b,[[ca*1.25,-.1,sa*1.25],[ca*1.0,.5,sa*1.0]],[.4,.26],4,shade(basaltL,tint(basaltL,1.4),basalt),{rot:k,tip:[ca*.95,1.0+.2*(k%2),sa*.95]});}
-  if(hi)for(let k=0;k<6;k++){const a=k*1.05+.7,rr=3+2.2*hz(sd,k+110);stone(b,Math.cos(a)*rr,-.06,Math.sin(a)*rr,.3,.36,.28,sd+120+k,basalt,{n:4,prof:ROCK2,cuts:0,m:ny=>ny>.3?ember:basalt});}
+  for(let k=0;k<(hi?5:3);k++){const a=k/(hi?5:3)*TAU+.3,ca=Math.cos(a),sa=Math.sin(a);sweep(b,[[ca*1.25,-.1,sa*1.25],[ca*1.0,.5,sa*1.0]],[.4,.26],hi?4:3,shade(basaltL,tint(basaltL,1.4),basalt),{rot:k,tip:[ca*.95,1.0+.2*(k%2),sa*.95]});}
+  if(hi)for(let k=0;k<6;k++){const a=k*1.05+.7,rr=3+2.2*hz(sd,k+110);stone(b,Math.cos(a)*rr,-.06,Math.sin(a)*rr,.3,.36,.28,sd+120+k,scorch,{n:4,prof:ROCK2,cuts:0});}
  },0,0,s);
 },{aoH:1.6,aoMin:.7});
 
@@ -370,12 +399,13 @@ WK.model('bird',(b,o)=>{const {mat,tint}=b.k,w=o.w/2.2,d=o.d/.6,body=mat(0x2a2a3
  leafTri(b,[0,.02,-.1*d],[-.11*w,.03,-.3*d],[.11*w,.03,-.3*d],body);
  for(const sg of [-1,1]){const rf=[sg*.08*w,.04,.13*d],rb=[sg*.08*w,.04,-.08*d],ef=[sg*.56*w,.19,.1*d],eb=[sg*.56*w,.19,-.13*d],tp=[sg*1.1*w,.07,-.2*d,tipM];leafTri(b,rf,rb,eb,wing);leafTri(b,rf,eb,ef,wing);leafTri(b,ef,eb,tp,wing);}
 },{aoH:.01,aoMin:1});
-// hopper (.6 x .7 x .7): a small hopping creature facing +z, its tail light held up behind (-z). <= 60.
-WK.model('hopper',(b,o)=>{const {mat,tint,glow}=b.k,sd=o.seed|0,w=o.w/.6,h=o.h/.7,d=o.d/.7,fur=mat(0x8a7a5a,'flat',0,.1),furD=tint(fur,.7),lamp=glow(0x7dff8a,.9);
- blob(b,0,.1*h,-.02*d,.2*w,.34*h,.25*d,{n:5,prof:CROWN2,seed:sd+1,m:shade(fur,tint(fur,1.2),furD),nadir:true,jit:.12});
+// hopper (.6 x .7 x .7): a small hopping creature facing +z: tan fur over a pale belly, a short tail ending in a pale tuft
+// that sits on the rump (-z). <= 60.
+WK.model('hopper',(b,o)=>{const {mat,tint}=b.k,sd=o.seed|0,w=o.w/.6,h=o.h/.7,d=o.d/.7,fur=mat(0x8a7a5a,'flat',0,.1),furD=tint(fur,.7),belly=mat(0xd9c39a,'flat',0,.05),tuft=mat(0xefe6cc,'flat',0,.04);
+ blob(b,0,.1*h,-.02*d,.2*w,.34*h,.25*d,{n:5,prof:CROWN2,seed:sd+1,m:shade(fur,tint(fur,1.2),furD),nadir:true,jit:.12,vm:k=>k?null:belly,nadirV:belly,nadirM:belly});
  gem8(b,0,.42*h,.2*d,.1*w,.09*h,.11*d,tint(fur,1.1),.4,4);
  for(const sg of [-1,1]){spike(b,[sg*.05*w,.47*h,.17*d],[sg*.1*w,.68*h,.08*d],.035*w,furD);spike(b,[sg*.15*w,.26*h,-.06*d],[sg*.19*w,0,.12*d],.07*w,furD);}
- spike(b,[0,.3*h,-.2*d],[0,.6*h,-.28*d],.04*w,furD);gem8(b,0,.61*h,-.28*d,.06*w,.07*h,.06*d,lamp,.3,4);
+ spike(b,[0,.24*h,-.16*d],[0,.37*h,-.28*d],.05*w,furD);gem8(b,0,.335*h,-.25*d,.042*w,.045*h,.042*d,tuft,.3,4);
 },{aoH:.6,aoMin:.7});
 
 // ------------------------------------------------------------------ PARASITE --------------------------------------------
