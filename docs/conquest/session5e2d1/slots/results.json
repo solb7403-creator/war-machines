@@ -41,7 +41,7 @@
   ],
   "farm": 1845,
   "programs": 12,
-  "rebuilds": 4
+  "rebuilds": 3
  },
  "back": {
   "slots": [],
@@ -328,7 +328,7 @@
    }
   ],
   "farm": 4401,
-  "programs": 14,
+  "programs": 12,
   "rebuilds": 9
  },
  "end": {
