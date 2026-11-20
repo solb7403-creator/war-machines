@@ -90,7 +90,7 @@ root.ConquestSlots={version:1,items:{
  'flower-patch':S('nature','Flower patch',[.9,.5,.9],'none'),
  'fern':S('nature','Fern',[2,1,2],'none'),
  'crystal-sprout':S('nature','Crystal sprout',[.7,1.5,.7],'none'),
- 'moss-cushion':S('nature','Moss cushion',[2,.2,1.6],'none'),
+ 'moss-cushion':S('nature','Moss cushion',[2,.35,1.6],'none'),
  'burnt-stump':S('nature','Burnt stump',[.6,1.2,.6],'none'),
  'grass-tuft':S('nature','Grass clump',[.7,.8,.7],'none'),
  'bio-node':S('nature','Bio-flora node (ready)',[1.4,1.2,1.4],'none'),

@@ -17,7 +17,7 @@ SHOTS=[
  ('refuge-processors','[F.processors[1].x,F.processors[1].z]',270,48,.16,60),
  ('refuge-processor-base','[F.processors[1].x,F.processors[1].z]',255,23,.24,22),
  ('refuge-terminal','[F.terminal.x,F.terminal.z]',90,9,.8,24),   # steep ground all round: the game lifts the camera, so this one is framed from above
- ('refuge-solar','[F.solar[2].x,F.solar[2].z]',270,12,.8,28),
+ ('refuge-solar','[F.solar[2].x,F.solar[2].z]',270,17,.6,30),
  ('viaduct','[1020,1024]',90,34,.2,42),
  ('viaduct-deck','[1040,1024]',180,30,.3,20),
  ('command-base-site','[ConquestCombat.baseDefinition.x,ConquestCombat.baseDefinition.z]',270,34,.4,38),
@@ -33,12 +33,12 @@ SHOTS=[
  ('colony-plaza','[1012,1096]',90,16,.5,28),
  ('colony-monorail','[1100,1100]',90,18,.08,30),
  ('farm-silos','[919,1080]',90,15,.18,23),
- ('farm-greenhouse','[918,1164]',90,13,.3,19),
+ ('farm-greenhouse','[918,1164]',180,14,.3,20),   # not from +z: the ice rig stands there
  ('farm-fields','[906,1119]',0,26,.4,32),
- ('frontier-wall','[1272,1146]',350,12,.8,30),
- ('frontier-defences','[1255,1166]',200,9,.8,24),
+ ('frontier-wall','[1255,1166]',200,14,.5,26),   # the wall climbs a steep rim: framed along it from the colony side
+ ('frontier-defences','[1272,1146]',170,16,.45,28),
  ('frontier-gate','[1062,1066]',270,18,.26,25),
- ('frontier-watch','[1311,1094]',20,11,.75,30),
+ ('frontier-watch','[1311,1094]',200,18,.4,30),
  ('atmo-pylon','[1004,1122]',90,14,.18,22),
  ('dam','[801,1364]',90,30,.3,42),
  ('creek-bridge','[936.5,1197.4]',60,20,.3,24),

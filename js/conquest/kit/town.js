@@ -679,12 +679,14 @@ WK.model('sandbags',(b,o)=>{const {pal,tint,rect,hash}=b.k,Wk=pal.wreck,hi=b.hi,
  for(let k=0;k<n;k++)bag(-w/2+bl*(k+.5),0,.06,bl-.05,.7,k);for(let k=0;k<n-1;k++)bag(-w/2+bl*(k+1),.3,-.02,bl-.05,.64,k+7);
  bag(-w/2+bl*1.5,.6,-.06,bl-.1,.58,sd+3);if(hi)tuft(b,-w*.3,0,.5,.9,Wk.moss,sd);
 });
-// barbed-wire (o.w along x): one span: a leaning post at x = -w/2, three strands to x = +w/2, a coil of wire
-WK.model('barbed-wire',(b,o)=>{const {pal,hash}=b.k,Wk=pal.wreck,hi=b.hi,w=o.w||3,x0=-w/2,x1=w/2,lean=.16;
- const steel=b.k.mat(0x8a8f96,'metal',.7);b.tube([x0-.02,0,.02],[x0+lean,1.46,-.04],.1,Wk.post,{n:hi?5:3});if(hi)b.tube([x0+.5,0,.3],[x0+lean*.7,1,-.02],.05,Wk.post,{n:3});
- for(const [y,s] of [[.45,.05],[.85,.09],[1.25,.06]]){const xa=x0+lean*y/1.42;b.tube([xa,y,0],[x1+lean*y/1.42,y,0],.035,Wk.wire,{n:3});}
- // the coil: a loose helix along the foot of the span
- const n=hi?12:4;let p0=null;for(let i=0;i<=n;i++){const t=i/n,a=t*TAU*(hi?3:1),q=[x0+.3+(w-.6)*t,.36+Math.sin(a)*.3,.36+Math.cos(a)*.3];if(p0)b.tube(p0,q,.03,steel,{n:3});p0=q;}
+// barbed-wire (o.w along x): one span: a leaning steel picket with a rust cap at x = -w/2, three pale strands to x = +w/2
+// and a concertina coil of three loops along its foot (two on LOW). Pale steel on purpose: black wire on a navy post
+// vanished on the barren Moon (critic round 3).
+WK.model('barbed-wire',(b,o)=>{const {pal,mat}=b.k,hi=b.hi,w=o.w||3,x0=-w/2,x1=w/2,lean=.16,post=mat(0x5d6878,'metal',.5),cap=mat(0x7a3b22,'scrap',.9),wire=mat(0x9aa6b6,'metal',.3),coil=mat(0xb4bec9,'metal',.2);
+ b.tube([x0-.02,0,.02],[x0+lean,1.46,-.04],.1,post,{n:hi?5:3});b.tube([x0+lean*.93,1.36,-.036],[x0+lean*1.02,1.5,-.042],.13,cap,{n:hi?5:3,caps:true});if(hi)b.tube([x0+.5,0,.3],[x0+lean*.7,1,-.02],.05,post,{n:3});
+ for(const y of [.45,.85,1.25]){const xa=x0+lean*y/1.42;b.tube([xa,y,0],[x1+lean*y/1.42,y,0],hi?.03:.04,wire,{n:3});}
+ // the concertina: round loops (eight steps a loop on HIGH), leaning along the span
+ const loops=hi?3:2,per=hi?8:5,n=loops*per;let p0=null;for(let i=0;i<=n;i++){const t=i/n,a=t*TAU*loops,q=[x0+.35+(w-.7)*t,.5+Math.sin(a)*.44,.3+Math.cos(a)*.44];if(p0)b.tube(p0,q,hi?.032:.045,coil,{n:3});p0=q;}
 });
 // pipeline (o.w along x, the pipe axis at y = 1.0): a rusted span, a flange collar at x = -w/2 and a cradle there that
 // runs down to y = -o.sink (default 0.6) for slopes

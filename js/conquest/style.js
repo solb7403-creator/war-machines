@@ -40,26 +40,33 @@ const PYLONS=[[1121,1160.5],[1143,1160.5],[1121,1185.5],[1143,1185.5],[1099,1160
 const HASH=`float h12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
 vec2 h22(vec2 p){vec3 p3=fract(vec3(p.xyx)*vec3(.1031,.1030,.0973));p3+=dot(p3,p3.yzx+33.33);return fract((p3.xx+p3.yz)*p3.zy);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);return mix(mix(h12(i),h12(i+vec2(1,0)),u.x),mix(h12(i+vec2(0,1)),h12(i+vec2(1,1)),u.x),u.y);}`;
-const WATER_VS=`attribute vec2 aFlow;varying vec2 vF;varying vec3 vWP;
+const WATER_VS=`attribute vec3 aFlow;varying vec3 vF;varying vec3 vWP;
 #include <common>
 #include <fog_pars_vertex>
 void main(){vF=aFlow;vec4 wp=modelMatrix*vec4(position,1.);vWP=wp.xyz;vec4 mvPosition=viewMatrix*wp;gl_Position=projectionMatrix*mvPosition;
 #include <fog_vertex>
 }`;
-// Cheap opaque water (one draw for creek, reservoir and crater pool): flow streaks along aFlow.x (metres downstream; 0 =
-// still water), bank foam by aFlow.y (-1..1 across / radius), a fresnel sky tint and HIGH-only glints. No reflections.
-const WATER_FS=`uniform float uTime,uHigh;uniform vec3 uRimCol;varying vec2 vF;varying vec3 vWP;
+// Cheap opaque water (one draw for creek, reservoir and crater pool; a second for the canals). aFlow = (metres downstream,
+// 0 = still water; across -1..1, where 1 is the shoreline; metres from the middle to that shoreline). Teal, deep in the
+// middle and pale in the shallows, short curved ripple strokes that drift with the flow, a pale foam edge and a wet-soil
+// bank line. It was near-black with long white streaks and read as an asphalt road (critic round 3). No reflections.
+const WATER_FS=`uniform float uTime,uHigh;uniform vec3 uRimCol;varying vec3 vF;varying vec3 vWP;
 #include <common>
 #include <fog_pars_fragment>
-void main(){float t=uTime,f=vF.x,ac=vF.y,still=1.-step(.001,abs(f));
- float r1=mix(sin(f*.9-t*2.2+ac*1.7),sin(vWP.x*.35+vWP.z*.12+t*.6),still)*.5+.5,r2=mix(sin(f*2.3-t*3.1-ac*2.9+vWP.x*.1),sin(vWP.z*.41-vWP.x*.2-t*.8),still)*.5+.5;
- // Frontier water: dark slate blue (#3C5568) with the dusty sky reflected, a little white water, muddy banks
- float edge=smoothstep(.55,1.,abs(ac));vec3 col=mix(vec3(.03,.06,.09),vec3(.045,.091,.136),.5+.5*r1);
- vec3 V=normalize(cameraPosition-vWP);float fres=pow(1.-clamp(V.y,0.,1.),2.4);col=mix(col,vec3(.3,.24,.2),fres*.55);
- col+=vec3(.08,.1,.12)*smoothstep(.72,1.,r1)*(.2-still*.1);
- col+=vec3(1.,.8,.6)*pow(max(0.,r1*r2),9.)*(.25+.45*uHigh)*(1.-still*.4);
- col=mix(col,vec3(.55,.58,.6),smoothstep(.8,.95,abs(ac))*smoothstep(.75,1.,r2)*.35*(1.-still));
- col=mix(col,vec3(.12,.09,.06),smoothstep(.88,1.,abs(ac))*.75);
+float wh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+// one ripple stroke a cell, each with its own place, angle, length and bend (spread = how far the angle strays from the flow)
+float ripple(vec2 p,float seed,float spread){vec2 c=floor(p),q=fract(p)-.5;float h=wh(c+seed),a=(h-.5)*spread,len=.17+.2*wh(c+seed+3.1),bend=(wh(c+seed+7.7)-.5)*2.6;
+ q-=(vec2(wh(c+seed+1.3),wh(c+seed+5.9))-.5)*.34;float cs=cos(a),sn=sin(a);vec2 r=vec2(q.x*cs+q.y*sn,q.y*cs-q.x*sn);
+ return step(.3,h)*(1.-smoothstep(.022,.06,abs(r.y-bend*r.x*r.x)))*(1.-smoothstep(len*.6,len,abs(r.x)));}
+void main(){float t=uTime,f=vF.x,ac=abs(vF.y),still=1.-step(.001,abs(f)),m=(1.-ac)*vF.z,bk=m/clamp(vF.z/3.,.35,1.);   // m = metres in from the shoreline (bk: the bank bands are narrower on a narrow canal)
+ float shal=1.-smoothstep(0.,min(vF.z*.75,3.4),m);vec3 col=mix(vec3(.122,.373,.478),vec3(.247,.639,.71),shal*.85);
+ col=mix(vec3(.165,.435,.525),col,.35+.65*uHigh);
+ col*=.95+.07*sin(vWP.x*.21+vWP.z*.13+t*.5)*sin(vWP.z*.17-vWP.x*.09-t*.37);   // a slow swell: big water is never one flat colour
+ vec3 V=normalize(cameraPosition-vWP);col=mix(col,vec3(.7,.8,.8),pow(1.-clamp(V.y,0.,1.),3.)*.28);
+ vec2 p=mix(vec2((f-t*1.4)*.42,vF.y*vF.z*.8),(vWP.xz+vec2(t*.2,t*.09))*.5,still);float sp=mix(1.3,6.283,still);
+ float rp=ripple(p,0.,sp)+uHigh*ripple(p*1.7+17.3,31.,sp)*.7;col=mix(col,vec3(.749,.914,.937),min(rp,1.)*(.24+.14*uHigh)*smoothstep(.5,1.4,bk));
+ float lap=.5+.5*sin(t*1.1+vWP.x*.9+vWP.z*.7);col=mix(col,vec3(.788,.839,.753),(1.-smoothstep(.75,1.25+.3*lap,bk))*.6);   // foam edge
+ col=mix(col,vec3(.227,.184,.133),1.-smoothstep(.45,.75,bk));   // wet-soil bank line
  gl_FragColor=vec4(col,1.);
 #include <fog_fragment>
 }`;
@@ -85,10 +92,11 @@ float hexEdge(vec2 p){const vec2 r=vec2(1.,1.7320508);vec2 h=r*.5;vec2 a=mod(p,r
 // uniform control flow (no implicit-derivative fetches inside per-pixel branches).
 void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float massif=smoothstep(.0,.06,c.b-c.r);bool hi=uHigh>.5;
  float lod=clamp(1.-vD/320.,0.,1.),lod2=clamp(1.-vD/1500.,0.,1.);
- vec4 d1=texture2D(uDetail,vW*(1./96.));float h1=d1.r-.5;vec2 grad=(d1.gb-.5)*.9;float rim=max(h1,0.)*1.6,bowl=max(-h1,0.)*1.5,tone=.7+.42*d1.a,na=d1.a,va=d1.a,vb=.5,st=.5;
+ vec4 d1=texture2D(uDetail,vW*(1./96.));float h1=d1.r-.5;vec2 grad=(d1.gb-.5)*.9;float rim=max(h1,0.)*1.6,bowl=max(-h1,0.)*1.5,tone=.7+.42*d1.a,na=d1.a,va=d1.a,vb=.5,st=.5,st2=.5;
  if(hi){vec4 d2=texture2D(uDetail,vec2(vW.y,-vW.x)*(1./29.)+.31),d3=texture2D(uDetail,vW*(1./8.7)+.67);float h2=(d2.r-.5)*lod2,h3=(d3.r-.5)*lod;
   grad+=vec2(-(d2.b-.5),d2.g-.5)*1.25*lod2+(d3.gb-.5)*1.4*lod;rim+=max(h2,0.)*1.8+max(h3,0.)*1.6;bowl+=max(-h2,0.)*1.3+max(-h3,0.)*1.2;tone+=.24*(d2.a-.5)+.16*(d3.a-.5)*lod;na=d2.a*.62+d1.a*.38;
-  va=texture2D(uDetail,vW*(1./73.)+.13).a;vb=texture2D(uDetail,vW*(1./24.)+.71).a;st=texture2D(uDetail,vec2(vY*.032,(vW.x+vW.y)*.0018)).a;}
+  va=texture2D(uDetail,vW*(1./73.)+.13).a;vb=texture2D(uDetail,vW*(1./24.)+.71).a;st=texture2D(uDetail,vec2(vY*.032,(vW.x+vW.y)*.0018)).a;st2=texture2D(uDetail,vec2(vY*.21,(vW.x+vW.y)*.004)).a;}
+ else{vec4 d2=texture2D(uDetail,vec2(vW.y,-vW.x)*(1./19.)+.31);float h2=(d2.r-.5)*lod;grad+=vec2(-(d2.b-.5),d2.g-.5)*1.3*lod;rim+=max(h2,0.)*1.7;bowl+=max(-h2,0.)*1.25;tone+=.2*(d2.a-.5)*lod;}   // LOW (5E-2d1): one layer of small craters near the camera (the barren Moon was flat navy up close: critic round 3)
  // Rugged frontier (owner art direction): the colonists clawed this ground out of the Moon. Grass grows in clumps of olive,
  // dry straw and dark green; bare dirt, gravel and grey regolith (its craters) show through; steep ground is rock with strata
  // and moss on top; shell craters with scorched earth and mud, and tank ruts, scar it. Grit grows with distance from the core.
@@ -106,14 +114,19 @@ void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float 
  vec3 dryG=mix(vec3(.13,.11,.06),vec3(.2,.17,.08),n1);
  vec3 grass=mix(dryG,clump*(.8+.4*gg),.45+.55*cs*lod);
  vec3 dirt=mix(vec3(.11,.085,.062),vec3(.155,.12,.085),gg),regoG=vec3(.254,.242,.216)*(.6+.55*tone)*(1.-.3*min(bowl,1.))*(1.+.4*min(rim,1.));
- float grav=step(.55,h12(floor(vW*3.1)))*lod*.5;dirt=mix(dirt,vec3(.22,.21,.19)*(.7+.5*h12(floor(vW*3.1)+2.)),grav);
+ // gravel (5E-2d1): round stones of two sizes on two grids turned against each other (it was one square a cell, which read as pixels close up)
+ vec2 gp=vW*2.3,gc=floor(gp);float gr=.16+.3*h12(gc+5.);vec2 go=(vec2(h12(gc+2.),h12(gc+7.))-.5)*(1.-2.*gr);float gA=step(.66,h12(gc))*(1.-smoothstep(gr*.7,gr,length(fract(gp)-.5-go)));
+ vec2 gq=vec2(vW.x*.8+vW.y*.6,vW.y*.8-vW.x*.6)*4.9,gd=floor(gq);float gs=.14+.3*h12(gd+3.);vec2 gt=(vec2(h12(gd+8.),h12(gd+1.))-.5)*(1.-2.*gs);float gB=step(.6,h12(gd+4.))*(1.-smoothstep(gs*.7,gs,length(fract(gq)-.5-gt)));
+ float grav=max(gA,gB)*lod*.5;dirt=mix(dirt,vec3(.22,.21,.19)*(.62+.6*h12((gA>gB?gc:gd)+2.)),grav);
+ dirt*=.8+.4*(hi?vb:n1);   // bare soil is mottled
  vec3 bare=mix(dirt,regoG,regoP);
  vec3 rock=mix(vec3(.16,.145,.12),vec3(.24,.22,.19),st)*(.7+.4*tone);rock=mix(rock,vec3(.07,.1,.04),smoothstep(.7,.95,N.y)*.6);
  vec3 veg=mix(bare,grass,gm*(1.-.3*grit));veg=mix(veg,rock,smoothstep(.35,.62,steep));
+ if(hi)veg*=mix(1.,.66+.62*st2,smoothstep(.1,.28,1.-vN.y)*lod);   // a bank cut into a slope shows its layers (a bare bank was one flat brown: critic round 3)
  if(terra<.25)veg=mix(rego,veg,smoothstep(.06,.25,terra));
  // scars: shell craters (scorched black centre, mud ring) and tank-track ruts, denser toward the frontier
  {vec2 sc=floor(vW/16.),so=(vec2(h12(sc+3.),h12(sc+9.))-.5)*9.;float sh=h12(sc+21.);if(sh<.12+.3*grit){float r=length(vW-(sc+.5)*16.-so),R=2.2+3.2*h12(sc+31.);
-   veg=mix(veg,vec3(.06,.045,.035),(1.-smoothstep(R*.75,R*1.25,r))*.9);veg=mix(veg,vec3(.018,.016,.014),1.-smoothstep(R*.15,R*.6,r));}
+   veg=mix(veg,vec3(.06,.045,.035),(1.-smoothstep(R*.75,R*1.25,r))*.9);veg=mix(veg,vec3(.04,.032,.025),1.-smoothstep(R*.15,R*.6,r));}
   vec2 rc=floor(vW/34.);float rh=h12(rc+41.);if(rh<.18+.35*grit){float a=h12(rc+43.)*3.1416;vec2 dn=vec2(-sin(a),cos(a));float dd=abs(dot(vW-(rc+.5)*34.,dn)),along=abs(dot(vW-(rc+.5)*34.,vec2(cos(a),sin(a))));
    float rut=(1.-smoothstep(.15,.45,abs(dd-1.2)))*(1.-smoothstep(12.,17.,along));veg=mix(veg,vec3(.07,.05,.035),rut*.85);}}
  rego=mix(rego,veg,zv);
@@ -123,7 +136,7 @@ void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float 
  float blight=vSite.w;
  if(blight>0.){float vein=1.-smoothstep(0.,.08,abs(va*2.-1.));if(hi)vein+=(1.-smoothstep(0.,.06,abs(vb*2.-1.)))*.5;
   rego=mix(rego,rego*vec3(.75,.45,.85),blight);em+=vec3(1.,.08,.62)*vein*blight*.5*(.7+.3*sin(uTime*2.3-dot(vW,vec2(.05))));}
- float at=vAtm,ndl=max(dot(N,normalize(mix(uSunDir,uDaySunW,at))),0.)*(1.-.88*texture2D(uShadowMap,(vW-uAtmoBox.xy)*uAtmoBox.zw).r*at);vec3 light=mix(uSunCol,uDaySun,at)*ndl+mix(mix(uAmbDn,uDayAmbDn,at),mix(uAmbUp,uDayAmbUp,at),N.y*.5+.5)+uRimCol*max(dot(N,uRimDir),0.)*.7*(1.-at);
+ float at=vAtm,ndl=max(dot(N,normalize(mix(uSunDir,uDaySunW,at))),0.)*(1.-.88*texture2D(uShadowMap,(vW-uAtmoBox.xy)*uAtmoBox.zw).r*at);vec3 light=mix(uSunCol,uDaySun,at)*ndl+mix(mix(uAmbDn,uDayAmbDn,at),mix(uAmbUp,uDayAmbUp,at),N.y*.5+.5)+uRimCol*max(dot(N,uRimDir),0.)*.7*(1.-at);light+=uDaySun*at*.13*(1.-ndl);   // daylight bounce (5E-2d1): terraformed ground turned away from the low sun, or under a shadow, is lit off the sky, never near-black
  vec3 col=rego*light+em+uRimCol*min(rim,1.)*.03;if(hi)col+=(h12(gl_FragCoord.xy)-.5)/255.;gl_FragColor=vec4(col,1.);
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
@@ -157,7 +170,7 @@ void main(){
 // soil, solar cells. LOW keeps the flat vertex colour. No texture from an artist, no extra shader program.
 // uPress: the footprint (centre x/z, half size, rotation) of the one building the tank is pressed against; its pixels are
 // thinned to a see-through screen (owner, Nov 17 + Nov 19: nothing else is ever see-through).
-const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV,uDaySun,uDayAmbUp,uDayAmbDn,uDaySunV,uOutlineCol;uniform float uTime,uGlow,uHigh,uFlash,uOutline,uPressK;uniform vec2 uOrigin,uPressR;uniform vec4 uPress;uniform sampler2D uDetail;
+const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV,uDaySun,uDayAmbUp,uDayAmbDn,uDaySunV,uOutlineCol;uniform float uTime,uGlow,uHigh,uFlash,uOutline,uPressK,uPressY;uniform vec2 uOrigin,uPressR;uniform vec4 uPress;uniform sampler2D uDetail;
 varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;varying float vShd;varying vec3 vNW;
 #include <common>
 #include <fog_pars_fragment>
@@ -167,9 +180,9 @@ void main(){
  if(uOutline>0.){gl_FragColor=vec4(uOutlineCol,1.);
 #include <colorspace_fragment>
   return;}
- if(uPress.z>0.&&uPressK>0.){vec2 q=vWP.xz+uOrigin-uPress.xy;q=vec2(q.x*uPressR.x+q.y*uPressR.y,q.y*uPressR.x-q.x*uPressR.y);if(abs(q.x)<uPress.z&&abs(q.y)<uPress.w&&by2(.5*gl_FragCoord.xy)*.25+by2(gl_FragCoord.xy)<uPressK)discard;}
+ if(uPress.z>0.&&uPressK>0.&&vWP.y>uPressY){vec2 q=vWP.xz+uOrigin-uPress.xy;q=vec2(q.x*uPressR.x+q.y*uPressR.y,q.y*uPressR.x-q.x*uPressR.y);if(abs(q.x)<uPress.z&&abs(q.y)<uPress.w&&by2(.5*gl_FragCoord.xy)*.25+by2(gl_FragCoord.xy)<uPressK)discard;}
  vec3 N=normalize(vN),L=uSunV,R=uRimV,UP=uUpV; // view-space light directions, set once per frame
- float at=vAtm;L=normalize(mix(L,uDaySunV,at));vec3 base=vCol.rgb;float a=vCol.a,spec=.16,shin=56.,wrap=0.,glassK=0.;vec3 emit=vec3(0.);
+ float at=vAtm;L=normalize(mix(L,uDaySunV,at));vec3 base=vCol.rgb;float a=vCol.a,spec=.16,shin=56.,wrap=0.,glassK=0.,frK=1.;vec3 emit=vec3(0.);
  if(a<0.&&uHigh>.5){float sc=-a*10.+.02,code=floor(sc),wear=fract(sc)/.9;vec3 an=abs(vNW);vec3 wp=vec3(vWP.x+uOrigin.x,vWP.y,vWP.z+uOrigin.y);
   bool top=an.y>.6;vec2 uv=top?wp.xz:(an.x>an.z?vec2(wp.z,wp.y):vec2(wp.x,wp.y));
   vec4 tA=texture2D(uDetail,uv*.047+vec2(.31,.17)),tB=texture2D(uDetail,uv*.23+vec2(.7,.13));float nA=tA.a,nB=tB.a,m=nA*.62+nB*.38;vec2 bump=vec2(0.);
@@ -184,7 +197,7 @@ void main(){
    float gr=sin(al*11.+hb*40.+sin(pv*2.1+al*.7)*2.4)*.5+.5;base*=(.5+.5*gap)*(.78+.4*hb)*(.9+.14*gr)*(1.-.5*jt)*(.9+.2*nB);base*=1.-.3*wear*smoothstep(.5,.85,nA);spec=.02;}
   else if(code<4.5){   // concrete / stone slab: mottling, pores, form lines, leak stains, a hairline crack
    float pore=smoothstep(.7,.78,nB),crack=1.-smoothstep(.0,.012,abs(nA-.47)),form=1.-smoothstep(.0,.03,abs(fract(uv.y/1.5)-.5)-.47);
-   base*=(.84+.3*nA)*(1.-.22*pore)*(1.-.4*crack*step(.4,nB))*(1.-.12*(top?0.:form));base*=1.-(.12+.3*wear)*smoothstep(.5,.8,tA.r);bump=vec2(nB-.5,nA-.5)*.35;spec=.03;}
+   base*=(.84+.3*nA)*(1.-.22*pore)*(1.-.4*crack*step(.4,nB))*(1.-.12*(top?0.:form));base*=1.-(.12+.3*wear)*smoothstep(.5,.8,tA.r);bump=vec2(nB-.5,nA-.5)*.35;spec=.03;frK=.18;}
   else if(code<5.5){   // glass: panes with mullions, sky in the pane; wear = how brightly it is lit from inside
    vec2 pu=uv/vec2(1.1,1.4),fp=fract(pu);float ed=min(min(fp.x,1.-fp.x)*1.1,min(fp.y,1.-fp.y)*1.4),mul=1.-smoothstep(.02,.05,ed);
    base*=(.8+.3*sh1(floor(pu)+3.))*(1.-.6*mul);emit=vCol.rgb*wear*(1.-mul)*(.7+.6*sh1(floor(pu)+11.));glassK=1.-mul;spec=.9;shin=90.;}
@@ -201,14 +214,20 @@ void main(){
    float ms=wear*smoothstep(.15,.6,vNW.y)*smoothstep(.38,.6,nB);base=mix(base,vec3(.075,.105,.04)*(.7+.6*nA),ms);bump=(tA.gb-.5)*1.1;spec=.05;}
   else if(code<11.5){  // soil, sandbags, gravel
    base*=(.74+.5*nB)*(.9+.2*nA);bump=(tB.gb-.5)*.8;spec=0.;}
-  else{                // solar cells: a cell grid under glass
-   vec2 fp=fract(uv/vec2(.62,.62));float ed=min(min(fp.x,1.-fp.x),min(fp.y,1.-fp.y)),ln=1.-smoothstep(.02,.06,ed);base=mix(base*(.85+.3*nB),vec3(.2,.32,.46),ln*.7);spec=.8;shin=70.;glassK=.5;}
+  else if(code<12.5){  // solar cells: a cell grid under glass
+   vec2 fp=fract(uv/vec2(.62,.62));float ed=min(min(fp.x,1.-fp.x),min(fp.y,1.-fp.y)),ln=1.-smoothstep(.02,.06,ed);base=mix(base*(.85+.3*nB),vec3(.07,.145,.35),ln*.75);spec=.4;shin=70.;glassK=.14;}
+  else if(code<13.5){  // bark: upright grooves that wander, a tone per ridge; wear = cracks (it was timber boards, which read as brick on a trunk)
+   float g=(top?uv.x+uv.y:uv.x)*3.3+sin(uv.y*1.1+nA*5.)*.55,f=fract(g),gv=smoothstep(0.,.2,f)*(1.-smoothstep(.8,1.,f));
+   base*=(.4+.6*gv)*(.8+.4*sh1(vec2(floor(g),5.)))*(.88+.24*nB);base*=1.-.55*wear*(1.-smoothstep(0.,.022,abs(nB-.5)));bump=vec2(gv-.5,0.)*.5;spec=.02;}
+  else{                // ice: pale fractures on two slants, frost on the upward faces, the sky in the face; wear = light from inside
+   float c1=1.-smoothstep(0.,.045,abs(fract((uv.x*.8+uv.y*.6)*.62+nB*1.1)-.5)),c2=1.-smoothstep(0.,.035,abs(fract((uv.y*.85-uv.x*.5)*.4+nA*2.2+.3)-.5));
+   base*=.86+.28*nA;base=mix(base,vec3(.3,.58,.72),max(c1,c2*.8)*.85);base=mix(base,vec3(.72,.86,.92),smoothstep(.45,.8,vNW.y)*(.35+.4*nB));emit=vCol.rgb*wear*.55;glassK=.7;spec=.9;shin=90.;}
   if(bump.x!=0.||bump.y!=0.){vec3 bw=top?vec3(bump.x,0.,bump.y):(an.x>an.z?vec3(0.,bump.y,bump.x):vec3(bump.x,bump.y,0.));N=normalize(N-mat3(viewMatrix)*bw);}
  }
  float ndl=max(dot(N,L),0.);ndl=mix(ndl,ndl*.5+.5,wrap);vec3 sunC=mix(uSunCol,uDaySun,at),aU=mix(uAmbUp,uDayAmbUp,at),aD=mix(uAmbDn,uDayAmbDn,at);
  vec3 lit=base*(sunC*ndl*(1.-.8*vShd)+mix(aD,aU,dot(N,UP)*.5+.5));float rl=max(dot(N,R),0.)*(1.-.7*at);lit+=base*vRim*rl*.5;
  lit+=base*uDaySun*at*(.16+.1*max(-dot(N,L),0.))*(1.-ndl);   // daylight bounce (5E-2d1): a wall turned away from the low sun is lit off the ground, never black
- if(uHigh>.5){vec3 V=normalize(vV);float fr=pow(1.-max(dot(N,V),0.),3.);lit+=mix(vRim,vec3(.55,.7,.9),at)*fr*(.25+.75*rl)*(.45-.3*at);vec3 H=normalize(L+V);lit+=sunC*pow(max(dot(N,H),0.),shin)*spec*(1.-.7*vShd);
+ if(uHigh>.5){vec3 V=normalize(vV);float fr=pow(1.-max(dot(N,V),0.),3.);lit+=mix(vRim,vec3(.55,.7,.9),at)*fr*frK*(.25+.75*rl)*(.45-.3*at);vec3 H=normalize(L+V);lit+=sunC*pow(max(dot(N,H),0.),shin)*spec*(1.-.7*vShd);
   if(glassK>0.)lit+=mix(vec3(.02,.05,.09),vec3(.32,.42,.55),at)*glassK*(.25+.75*fr);lit+=emit*uGlow*.55;}
  float em=clamp(a>1.?a-1.:a,0.,1.);float pulse=a>1.?.5+.5*sin(uTime*3.+dot(vWP,vec3(.37,.61,.23))):1.;
  vec3 col=mix(lit,base*uGlow*(.45+.55*pulse),em);col=mix(col,vec3(1.,.62,.36)*1.35,uFlash*.6);gl_FragColor=vec4(col,1.);   // uFlash: the 80 ms hit flash (Session 6)
@@ -365,7 +384,7 @@ function create(T,opts={}){
  const sunDir=V3(-.55,.5,.67).normalize(),rimDir=V3(.62,.32,-.72).normalize(),daySunDir=V3(-.7,.26,.66).normalize();   // inside the zones: a low frontier sun (~15 deg)
  const U={uTime:{value:0},uSunDir:{value:sunDir},uSunCol:{value:lin(0xe4ecff).multiplyScalar(2.9/Math.PI)},uRimDir:{value:rimDir},uRimCol:{value:lin(0x52c6ff).multiplyScalar(1.15/Math.PI)},
   uAmbUp:{value:lin(0x3a5a9c).multiplyScalar(1.5/Math.PI)},uAmbDn:{value:lin(0x16131f).multiplyScalar(1.5/Math.PI)},uSite:{value:Array.from({length:8},()=>new T.Vector4(0,0,0,0))},
-  uOrigin:{value:new T.Vector2()},uOutline:{value:0},uOutlineCol:{value:new T.Color(0x7ff2ff)},uPress:{value:new T.Vector4(0,0,-1,-1)},uPressR:{value:new T.Vector2(1,0)},uPressK:{value:0},uGlow:{value:2.3},uHigh:{value:high?1:0},uSunV:{value:sunDir.clone()},uRimV:{value:rimDir.clone()},uUpV:{value:V3(0,1,0)},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
+  uOrigin:{value:new T.Vector2()},uOutline:{value:0},uOutlineCol:{value:new T.Color(0x7ff2ff)},uPress:{value:new T.Vector4(0,0,-1,-1)},uPressR:{value:new T.Vector2(1,0)},uPressK:{value:0},uPressY:{value:-1e5},uGlow:{value:2.3},uHigh:{value:high?1:0},uSunV:{value:sunDir.clone()},uRimV:{value:rimDir.clone()},uUpV:{value:V3(0,1,0)},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
   fogColor:{value:new T.Color(0x06070f)},fogNear:{value:900},fogFar:{value:2600},fogDensity:{value:.00025}};
  // Terraformed zones (owner art direction): a breathable daytime world under the atmosphere dome. The atmosphere map holds
  // each spot's zone factor (ConquestWorld.terraformAt), sampled per vertex: terrain, buildings and hulls inside a zone get warm
@@ -460,7 +479,8 @@ function create(T,opts={}){
    clear(){for(const set of sets.values())drop(set);sets.clear();},dispose(){this.clear();g.parent?.remove(g);}};};
  // The one footprint the tank is pressed against: {x, z, hw, hd, r} in the solid shader's world frame (render x/z + uOrigin),
  // k = 0..1 how far its pixels are thinned (eased by the caller). null / k = 0: nothing is see-through.
- S.press=(fp,k)=>{if(fp&&k>0){U.uPress.value.set(fp.x,fp.z,fp.hw,fp.hd);U.uPressR.value.set(Math.cos(fp.r||0),Math.sin(fp.r||0));U.uPressK.value=Math.min(.78,k*.78);}else{U.uPress.value.set(0,0,-1,-1);U.uPressK.value=0;}};
+ // fp.y (optional) = the ground under the tank: what stands lower than 0.9 m above it (grass, scrub, a kerb) stays solid
+ S.press=(fp,k)=>{U.uPressY.value=fp&&Number.isFinite(fp.y)?fp.y+.9:-1e5;if(fp&&k>0){U.uPress.value.set(fp.x,fp.z,fp.hw,fp.hd);U.uPressR.value.set(Math.cos(fp.r||0),Math.sin(fp.r||0));U.uPressK.value=Math.min(.78,k*.78);}else{U.uPress.value.set(0,0,-1,-1);U.uPressK.value=0;}};
  const keep=g=>{g.userData.hfShared=true;S.shared.push(g);return g;};
  for(const g of Object.values(G))if(g&&g.isBufferGeometry)keep(g);
 
@@ -517,13 +537,13 @@ function create(T,opts={}){
  // ---------- instanced prop geometry (unit space): the kit's rock, mossy rock, crystal and fungus growths, relay mast ----------
  const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o);return keep(X.geometry());};
  const KG=(id,o)=>KW().geometry(id,o||{});
- const P={crystal:KG('crystal-growth'),fungus:KG('fungus-growth'),rock:KG('rock'),rockMoss:KG('rock-moss'),relay:KG('relay-mast'),bill:billGeo(AT.BLOB,[1,1,1])};
+ const P={crystal:KG('crystal-growth'),fungus:KG('fungus-growth'),rock:KG('rock'),rockMoss:KG('rock-moss'),relay:KG('relay-mast'),bill:billGeo(AT.BLOB,[1,1,1]),billBio:billGeo(AT.BLOB,[.62,.12,.46])};
  S.P=P;
 
  // ---------- The terraformed south (Phase 2): engineered flora, forests, water, atmosphere pylons, dam, bridge, crater ----------
  // Presentation only. Every position comes from ConquestWorld (terraZone, flora, forestTrees, water, pylons, floraNodes);
  // nothing here is collision. Drive-through plants stay <= 1.5 m; only forest stands (the cover canopy) grow tall.
- MAT.water=mk(WATER_VS,WATER_FS,{},{side:T.DoubleSide});const waterWarmGeo=keep(new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute([0,0,0,1,0,0,0,0,1],3)).setAttribute('aFlow',new T.Float32BufferAttribute([0,0,1,0,0,1],2)));
+ MAT.water=mk(WATER_VS,WATER_FS,{},{side:T.DoubleSide});const waterWarmGeo=keep(new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute([0,0,0,1,0,0,0,0,1],3)).setAttribute('aFlow',new T.Float32BufferAttribute([0,0,1,1,0,1,0,1,1],3)));
  // Flora (the kit's nature models): hardy scrub, flower patch, fern, crystal sprout, moss cushion, burnt stump, wind-bent
  // conifer, broadleaf, dead tree and their shared far LOD, the bio-flora node, the grass clump. A few dozen triangles each:
  // they are instanced by the hundred.
@@ -546,10 +566,10 @@ function create(T,opts={}){
   inst('moss-cushion',lichen,p=>M(p.x-ox,p.y-.02,p.z-oz,0,p.variant*40,0,.8+.9*p.size,1,.8+.9*p.size));
   if(stumps.length)inst('burnt-stump',stumps,p=>M(p.x-ox,p.y-.05,p.z-oz,0,p.variant*40,0,1,.8+.4*p.size,1));
   // dense clump field (noise-driven: ~45% grass cover in the wild, sparser toward the frontier); ferns by water; rare crystals
-  const ferns=[],crys=[],flowers=[],step=high?4.8:7;let cells=0;for(let gx=0;gx<128;gx+=step)for(let gz=0;gz<128;gz+=step){if(++cells%24===0)yield;const h=hash3(cx*977+Math.round(gx*3),cz*613+Math.round(gz*3),11),x=ox+gx+(h-.5)*step,z=oz+gz+(((h*7.31)%1)-.5)*step;
-   const tf=Wd.terraformAt(x,z);if(tf<.06)continue;const cover=.5+.5*Math.sin(x*.045+Math.sin(z*.03)*2)*Math.cos(z*.05),dc=Math.hypot(x-1130,z-1125);if(((h*13.7)%1)>cover*(dc<220?.85:.6))continue;
+  const ferns=[],crys=[],flowers=[],step=high?4.6:7;let cells=0;for(let gx=0;gx<128;gx+=step)for(let gz=0;gz<128;gz+=step){if(++cells%24===0)yield;const h=hash3(cx*977+Math.round(gx*3),cz*613+Math.round(gz*3),11),x=ox+gx+(h-.5)*step,z=oz+gz+(((h*7.31)%1)-.5)*step;
+   const tf=Wd.terraformAt(x,z);if(tf<.06)continue;const cover=.5+.5*Math.sin(x*.045+Math.sin(z*.03)*2)*Math.cos(z*.05),dc=Math.hypot(x-1130,z-1125);if(((h*13.7)%1)>(.2+.8*cover)*(dc<220?.8:.68))continue;
    if(Wd.waterAt(x,z)||Wd.solidAt(x,z)||Wd.deckAt(x,z)!==null||Wd.clearedAt(x,z)||Wd.forestAt(x,z)?.core)continue;const y=Wd.groundAt(x,z),r=(h*29.3)%1;
-   if(r<.03)crys.push({x,z,y,a:h*40});else if(Wd.creekNearest&&Wd.creekNearest(x,z).d<14&&r<.5)ferns.push({x,z,y,a:h*40,s:.8+.6*((h*3.7)%1)});else if(dc<170&&r<.08)flowers.push({x,z,y,a:h*40});else tufts.push({x,z,y,s:.7+.8*((h*5.3)%1),a:h*40});}
+   if(r<.03)crys.push({x,z,y,a:h*40});else if(Wd.creekNearest&&Wd.creekNearest(x,z).d<14&&r<.5)ferns.push({x,z,y,a:h*40,s:.8+.6*((h*3.7)%1)});else if(r<(dc<170?.08:cover>.6?.07:.015))flowers.push({x,z,y,a:h*40});else tufts.push({x,z,y,s:.7+.8*((h*5.3)%1),a:h*40});}
   inst('grass-tuft',tufts,p=>M(p.x-ox,p.y-.03,p.z-oz,0,p.a,0,p.s,p.s*(.8+.5*((p.a*.37)%1)),p.s));if(tufts.length)g.userData.tufts=g.children[g.children.length-1];
   inst('fern',ferns,p=>M(p.x-ox,p.y-.03,p.z-oz,0,p.a,0,p.s,p.s,p.s));if(high){inst('crystal-sprout',crys,p=>M(p.x-ox,p.y-.05,p.z-oz,0,p.a,0,1,1,1));inst('flower-patch',flowers,p=>M(p.x-ox,p.y-.03,p.z-oz,0,p.a,0,1,1,1));}
   return g;}
@@ -569,12 +589,14 @@ function create(T,opts={}){
    lod.near=draw('tree-conifer',con);lod.near2=draw(si===0||si===4?'tree-dead':'tree-broadleaf',broad);lod.far=draw('tree-far',trees);lod.far.visible=false;return lod;});
   // water: creek ribbon + reservoir + crater pool, one merged geometry and one draw
   const Pw=[],Fw=[],Iw=[];const quad=(a,b,c,d)=>Iw.push(a,b,c,a,c,d);
+  // the shoreline: metres from the middle of the water to where the ground rises through the surface (the shader draws the bank there)
+  const shore=(x,z,dx,dz,h,y)=>{for(let d=.6;d<h;d+=.3)if(Wd.groundAt(x+dx*d,z+dz*d)>=y)return d;return h;};
   {const c=Wa.creek,pts=[];for(let i=1;i<c.length;i++){const [ax,az]=c[i-1],[bx,bz]=c[i],l=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.ceil(l/2));for(let k=i===1?0:1;k<=n;k++){const u=k/n;pts.push([ax+(bx-ax)*u,az+(bz-az)*u]);}}
    let run=0;pts.forEach(([x,z],i)=>{const [px,pz]=pts[Math.max(0,i-1)],[nx,nz]=pts[Math.min(pts.length-1,i+1)],tx=nx-px,tz=nz-pz,l=Math.hypot(tx,tz)||1,ux=-tz/l,uz=tx/l,y=Wd.waterTopAt(x,z);if(i)run+=Math.hypot(x-px,z-pz);
-    const k=Pw.length/3;for(const s of [-1,1]){const h=Wa.half+.25;Pw.push(x+ux*h*s,y,z+uz*h*s);Fw.push(run+.001,s);}if(i)quad(k-2,k-1,k+1,k);});}
-  const disc=(x,z,rx,rz,y,clipZ=Infinity)=>{const k=Pw.length/3,n=high?48:28;Pw.push(x,y,z);Fw.push(0,0);for(let i=0;i<=n;i++){const a=i/n*TAU;Pw.push(x+Math.cos(a)*rx,y,Math.min(clipZ,z+Math.sin(a)*rz));Fw.push(0,1);}for(let i=1;i<=n;i++)Iw.push(k,k+i+1,k+i);};
+    const k=Pw.length/3;for(const s of [-1,1]){const h=Wa.half+.25,v=shore(x,z,ux*s,uz*s,h,y);Pw.push(x+ux*h*s,y,z+uz*h*s);Fw.push(run+.001,s*h/v,v);}if(i)quad(k-2,k-1,k+1,k);});}
+  const disc=(x,z,rx,rz,y,clipZ=Infinity)=>{const k=Pw.length/3,n=high?48:28;Pw.push(x,y,z);Fw.push(0,0,(rx+rz)/2);for(let i=0;i<=n;i++){const a=i/n*TAU,c=Math.cos(a),sn=Math.sin(a),R=Math.hypot(c*rx,sn*rz),v=shore(x,z,c*rx/R,sn*rz/R,R,y);Pw.push(x+c*rx,y,Math.min(clipZ,z+sn*rz));Fw.push(0,R/v,v);}for(let i=1;i<=n;i++)Iw.push(k,k+i+1,k+i);};
   disc(Wa.lake.x,Wa.lake.z,Wa.lake.rx+1,Wa.lake.rz+1,Wa.lake.surface,Wa.dam.z-Wa.dam.depth/2);disc(Wa.crater.x,Wa.crater.z,Wa.crater.pool+.6,Wa.crater.pool+.6,Wd.waterTopAt(Wa.crater.x,Wa.crater.z));
-  {const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(Pw,3));geo.setAttribute('aFlow',new T.Float32BufferAttribute(Fw,2));geo.setIndex(Iw);geo.computeBoundingSphere();const m=new T.Mesh(geo,MAT.water);m.userData.noPick=true;m.name='cq-water';g.add(m);}
+  {const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(Pw,3));geo.setAttribute('aFlow',new T.Float32BufferAttribute(Fw,3));geo.setIndex(Iw);geo.computeBoundingSphere();const m=new T.Mesh(geo,MAT.water);m.userData.noPick=true;m.name='cq-water';g.add(m);}
   // atmosphere pylons (the kit's atmo-pylon); dome pylons carry a low atmosphere shell
   for(const p of Wd.pylons){const y=ground(p.x,p.z);Kk.place('atmo-pylon',tk,KM(p.x,y,p.z),{});if(p.dome)domes.push([p.x,y,p.z]);}
   // the terraformers' dam across the reservoir outlet (the reservoir is on its -z side), with the spillway glow on the water
@@ -600,7 +622,8 @@ function create(T,opts={}){
   let lastH,nextH=0;g.userData.update=(harvest,now)=>{if(harvest===lastH&&now<nextH)return;lastH=harvest;nextH=now+500;   // re-key only on new state or twice a second
    const ready=Wd.floraNodes.filter(n=>!(harvest?.[n.id]>now)),k=ready.map(n=>n.id).join();if(k===key)return;key=k;for(const c of [...nodes.children]){nodes.remove(c);if(c.isInstancedMesh)c.dispose();}
    const dim=Wd.floraNodes.filter(n=>!ready.includes(n)),put=(id,list)=>{if(!list.length)return;const im=kinst(id,list,n=>M(n.x,ground(n.x,n.z)-.05,n.z,0,(n.x*.37)%TAU,0,1.25,1.25,1.25));im.userData.noPick=true;nodes.add(im);};
-   put('bio-node',ready);put('bio-node-dim',dim);if(high&&ready.length){const im=new T.InstancedMesh(P.bill,MAT.fx,ready.length);ready.forEach((n,i)=>im.setMatrixAt(i,M(n.x,ground(n.x,n.z)+1.6,n.z,0,0,0,2.2,2.2,2)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.renderOrder=2;im.userData.noPick=true;nodes.add(im);}};
+   put('bio-node',ready);put('bio-node-dim',dim);if(high&&ready.length){const im=new T.InstancedMesh(P.billBio,MAT.fx,ready.length);ready.forEach((n,i)=>im.setMatrixAt(i,M(n.x,ground(n.x,n.z)+1.1,n.z,0,0,0,1.9,1.9,1.9)));   // the pods' own pink, no wider than the plant (a big white glow bleached the pods to white-green: critic round 3)
+   im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.renderOrder=2;im.userData.noPick=true;nodes.add(im);}};
   g.userData.update(null,0);return g;};
 
  // ---------- Phase 3: mineral deposits and the Meteor Strike (docs/economy/RESOURCE_ECONOMY.md §5) ----------
@@ -674,8 +697,8 @@ function create(T,opts={}){
   const roadsM=RB.mesh(),fieldsM=FB.mesh();roadsM.userData.noPick=fieldsM.userData.noPick=true;g.add(roadsM,fieldsM);if(lampFx.n){const sm=fxMesh(lampFx.geometry());sm.name='cq-colony-smoke';g.add(sm);}
   kdone(g,...Object.values(TG),...Object.values(DT));
   // canals: creek-fed irrigation channels in the shared water material
-  if(CO.canals?.length){const Pw=[],Fw=[],Iw=[];for(const [a,b] of CO.canals){const L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.ceil(L/3),nx=-(b[1]-a[1])/L,nz=(b[0]-a[0])/L;for(let k=0;k<=n;k++){const x=a[0]+(b[0]-a[0])*k/n,z=a[1]+(b[1]-a[1])*k/n,y=ground(x,z)+.15,i0=Pw.length/3;for(const o of [-1,1]){Pw.push(x+nx*o*1.1,y,z+nz*o*1.1);Fw.push(k*3+.001,o);}if(k)Iw.push(i0-2,i0-1,i0+1,i0-2,i0+1,i0);}}
-   const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(Pw,3));geo.setAttribute('aFlow',new T.Float32BufferAttribute(Fw,2));geo.setIndex(Iw);geo.computeBoundingSphere();const cm=new T.Mesh(geo,MAT.water);cm.userData.noPick=true;g.add(cm);}
+  if(CO.canals?.length){const Pw=[],Fw=[],Iw=[];for(const [a,b] of CO.canals){const L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.ceil(L/3),nx=-(b[1]-a[1])/L,nz=(b[0]-a[0])/L;for(let k=0;k<=n;k++){const x=a[0]+(b[0]-a[0])*k/n,z=a[1]+(b[1]-a[1])*k/n,y=ground(x,z)+.15,i0=Pw.length/3;for(const o of [-1,1]){Pw.push(x+nx*o*1.1,y,z+nz*o*1.1);Fw.push(L*k/n+.001,o,1.1);}if(k)Iw.push(i0-2,i0-1,i0+1,i0-2,i0+1,i0);}}
+   const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(Pw,3));geo.setAttribute('aFlow',new T.Float32BufferAttribute(Fw,3));geo.setIndex(Iw);geo.computeBoundingSphere();const cm=new T.Mesh(geo,MAT.water);cm.userData.noPick=true;g.add(cm);}
   // moving life: rovers on the roads, settlers on their daily routines, the monorail train, turbine rotors (presentation only).
   // Each kind is the kit's model; two looks of rover, three of settler and two of livestock share the crowd.
   const dyn=(id,n,o)=>{if(!n)return null;const im=Kk.instanced(id,n,o);im.userData.noPick=true;im.frustumCulled=false;g.add(im);return im;};
@@ -781,7 +804,7 @@ function create(T,opts={}){
  function habitat(tk,X,h,idx){const {x,z}=h,g=ground(x,z),gmin=ringMin(x,z,8.4),ap=7.45*Math.cos(Math.PI/6);
   KW().place('refuge-habitat',tk,KM(x,g,z),{sink:r2(g-gmin+1.6)});
   X.quadV(x,g+6.65,z+ap+1.25,3.4,.85,0,AT['S'+idx],E(0x22e6ff,1.5));
-  X.decal(x,z,11.5,11.5,0,AT.BLOB,[0,0,0],.62,low?6:9,.12);X.decal(x,z,10.6,10.6,0,AT.RING,E(0x22e6ff,.3),0,low?8:12,.16);X.decal(x,z+10.2,3.6,3.6,0,AT.BLOB,E(0x22e6ff,.32),0,4,.2);}
+  X.decal(x,z,11.5,11.5,0,AT.BLOB,[0,0,0],.62,low?6:9,.12);X.decal(x,z,9.8,9.8,0,AT.RING,E(0x6fd6e0,.11),0,low?8:12,.16);X.decal(x,z+9.9,2.4,2.4,0,AT.BLOB,E(0x6fd6e0,.14),0,4,.2);}   // 1.5 m past the plinth, pale and faint: a wide saturated ring read as liquid flooding the grass (critic round 3)
  // The tower's portal faces -z (a half turn), under its holographic sign.
  function processor(tk,X,p,i,all){const {x,z}=p,g=ground(x,z),gmin=ringMin(x,z,12.6),H=p.artHeight,rAt=y=>6.9-1.6*(y-13)/(H-13);
   KW().place('refuge-processor',tk,KM(x,g,z,Math.PI),{h:H,sink:r2(g-gmin+1.6)});
@@ -789,9 +812,9 @@ function create(T,opts={}){
   if(i<all.length-1){const q=all[i+1],g2=ground(q.x,q.z),ax=x+12.4,bx=q.x-12.4,ay=Math.max(g,g2)+9.6,by=ay,L=Math.hypot(bx-ax,by-ay,q.z-z);// Overhead pipe bridge, level at the higher tower's 9.6 m (8+ m clearance): the 6 m gap between the solid r12 towers stays drivable.
    KW().place('refuge-pipe',tk,M((ax+bx)/2,(ay+by)/2,(z+q.z)/2,0,Math.atan2(-(q.z-z),bx-ax),Math.asin((by-ay)/L)),{w:r2(L)});}
   X.quadV(x,g+11.5,z-13.4,3.6,.95,Math.PI,AT['S'+(10+i)],E(0x22e6ff,1.5));
-  X.decal(x,z,16,16,0,AT.BLOB,[0,0,0],.5,low?6:9,.12);X.decal(x,z,18,18,0,AT.BLOB,E(0x22e6ff,.28),0,low?6:9,.16);}
+  X.decal(x,z,16,16,0,AT.BLOB,[0,0,0],.5,low?6:9,.12);X.decal(x,z,16,16,0,AT.BLOB,E(0x6fd6e0,.13),0,low?6:9,.16);}
  function terminal(tk,X,t){const {x,z}=t,g=ground(x,z);
-  X.decal(x,z,6.4,6.4,0,AT.HEX,E(0x22e6ff,1.15),0,low?8:12,.14);X.decal(x,z,12.65,12.65,0,AT.DASH,E(0x2dffc4,.6),0,low?12:18,.18);X.decal(x,z,8,8,0,AT.BLOB,E(0x22e6ff,.3),0,8,.1);
+  X.decal(x,z,6.4,6.4,0,AT.HEX,E(0x22e6ff,.2),0,low?8:12,.14);X.decal(x,z,12.65,12.65,0,AT.DASH,E(0x22e6ff,.14),0,low?12:18,.18);X.decal(x,z,8,8,0,AT.BLOB,E(0x22e6ff,.07),0,8,.1);   // dimmed (5E-2d1): in daylight the pad was a saturated cyan slab that swamped the terminal
   KW().place('refuge-terminal',tk,KM(x,g,z),{});
   X.band(x,z,g+3.3,1.05,.7,6.5,E(0x2dffc4,.45),[0,0,0],14);X.quadV(x,g+7.3,z,3.4,3.4,0,AT.ICON,E(0x2dffc4,1.4));X.quadV(x,g+7.3,z,3.4,3.4,Math.PI/2,AT.ICON,E(0x2dffc4,.9));
   X.quadV(x,g+5.05,z+.3,3.8,.95,0,AT[SIGN.SUPPLY],E(0x22e6ff,1.6));}
@@ -800,7 +823,7 @@ function create(T,opts={}){
  // Light pylons stand on a habitat plinth inside its solid r7.8 (never a 7 m mast in a drive lane); arm + light pool face the lane.
  const pylonAt=([px,pz])=>{const h=F.habitats.reduce((a,b)=>Math.hypot(b.x-px,b.z-pz)<Math.hypot(a.x-px,a.z-pz)?b:a),d=Math.hypot(px-h.x,pz-h.z),ux=(px-h.x)/d,uz=(pz-h.z)/d;return [h.x+ux*7.35,h.z+uz*7.35,Math.atan2(ux,uz)];};
  S.pylons=()=>PYLONS.slice(0,low?6:10).map(pylonAt);
- function pylon(tk,X,px,pz,a){const g=ground(px,pz);KW().place('refuge-lamp',tk,KM(px,g,pz,a),{});X.decal(px+Math.sin(a)*3.2,pz+Math.cos(a)*3.2,5.5,5.5,a,AT.BLOB,E(0x22e6ff,.3),0,low?4:6,.15);}
+ function pylon(tk,X,px,pz,a){const g=ground(px,pz);KW().place('refuge-lamp',tk,KM(px,g,pz,a),{});X.decal(px+Math.sin(a)*2.6,pz+Math.cos(a)*2.6,3.4,3.4,a,AT.BLOB,E(0x6fd6e0,.13),0,low?4:6,.15);}   // a small pale pool under the lamp (5E-2d1): the 11 m saturated cyan pool read as liquid flooding the grass in daylight
  S.refuge=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);F.habitats.forEach((h,i)=>habitat(tk,X,h,i));F.processors.forEach((p,i,a)=>processor(tk,X,p,i,a));terminal(tk,X,F.terminal);
   F.solar.forEach(p=>solar(tk,X,p));for(const [x,z,a] of S.pylons())pylon(tk,X,x,z,a);const g=kdone(pair(Sb,X),tk);g.name='cq-style-refuge';g.userData.site={x:1150,z:1150,range:1600};return g;};
 
@@ -811,6 +834,7 @@ function create(T,opts={}){
   for(let x=900;x<=1140;x+=4){const y=deck(x);for(const [z,c] of [[zA,K.dark2],[zB,K.dark2]]){P2.push(x,y,z);N2.push(0,1,0);A2.push(...col(c));}if(x<1140){const i=n;I2.push(i,i+1,i+2,i+2,i+1,i+3);}n+=2;}
   const deckGeo=new T.BufferGeometry();deckGeo.setAttribute('position',new T.Float32BufferAttribute(P2,3));deckGeo.setAttribute('normal',new T.Float32BufferAttribute(N2,3));deckGeo.setAttribute('aCol',new T.Float32BufferAttribute(A2,4));deckGeo.setIndex(I2);deckGeo.computeVertexNormals();
   Sb.add(deckGeo,new T.Matrix4(),null,0,null,(v)=>[K.dark2.r*(1+.05*Math.sin(v.x*.8)),K.dark2.g,K.dark2.b*(1.04),aDeck]);deckGeo.dispose();
+  {const jb=Kk.part({aoH:.01,aoMin:1}),jm=Kk.mat(0x18202e,'flat',0,0);for(let x=904;x<1140;x+=24){const y=deck(x)+.03;jb.quad([x-.11,y,zA+.5],[x+.11,y,zA+.5],[x+.11,y,zB-.5],[x-.11,y,zB-.5],jm,[x,y-9,1024]);}Kk.emit(tk,jb,new T.Matrix4());}   // expansion joints
   for(let x=900;x<1140;x+=4){const a=deck(x),b=deck(x+4),L=Math.hypot(4,b-a),rz=Math.atan2(b-a,4),mid=(a+b)/2;
    Kk.place('viaduct-segment',tk,M(x+2,mid,1024,0,0,rz),{w:r2(L+.02),stud:((x-900)/4)%2===0?1:0});}
   // Piers on the authoritative pier positions (solid in the sim within 1.5 m below the deck): hex columns with lit collars.

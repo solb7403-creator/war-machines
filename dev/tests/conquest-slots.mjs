@@ -25,11 +25,13 @@ for(const t of ['cc','refinery','storage','reactor','shield','lab'])assert.equal
 for(const id of Object.keys(WK.MODELS))assert.ok(SL.items[id],'model "'+id+'" is in the list');
 assert.throws(()=>WK.swap('no-such-slot','town-cc'),/unknown slot/,'an unknown slot cannot be swapped');
 // ---- every model, HIGH and LOW ----
+// the lowest vertex alpha a model may carry = the last surface code at full wear (the list grew by bark and ice in critic round 3)
+const AMIN=-(Math.max(...Object.values(WK.SURF))+.9)/10-1e-6;assert.ok(AMIN>-1.6&&AMIN<=-1.3,'surface codes stay a short list: '+AMIN);
 const stats={};let total={high:0,low:0};
 for(const low of [false,true]){const S=CS.create(T,{low}),K=WK.kit(S),q=low?'low':'high';assert.equal(K.hi,!low,q+' kit quality follows the style');
  for(const id of ids){const s=SL.items[id],b=K.build(id,{});const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];let n=0;
   for(const B of [b.buf.main,b.buf.det]){assert.equal(B.P.length,B.n*3);assert.equal(B.A.length,B.n*4);for(let i=0;i<B.n;i++){for(let k=0;k<3;k++){const v=B.P[i*3+k];assert.ok(Number.isFinite(v)&&Number.isFinite(B.N[i*3+k]),q+' '+id+' finite');if(v<lo[k])lo[k]=v;if(v>hi[k])hi[k]=v;}
-    const a=B.A[i*4+3];assert.ok(a<=2&&a>=-1.3,q+' '+id+' vertex alpha in the emission / surface range: '+a);for(let k=0;k<3;k++)assert.ok(B.A[i*4+k]>=0&&B.A[i*4+k]<8,q+' '+id+' colour');}
+    const a=B.A[i*4+3];assert.ok(a<=2&&a>=AMIN,q+' '+id+' vertex alpha in the emission / surface range: '+a);for(let k=0;k<3;k++)assert.ok(B.A[i*4+k]>=0&&B.A[i*4+k]<8,q+' '+id+' colour');}
    for(const ix of B.I)assert.ok(ix>=0&&ix<B.n,q+' '+id+' index');n+=B.I.length/3;}
   assert.ok(n>=2,q+' '+id+' draws something');
   // inside the slot box: the footprint with a small margin (eaves, cables, spike tips), never taller than the box (+ a mast tip)

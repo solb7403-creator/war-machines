@@ -48,6 +48,12 @@
       "fe": 2,
       "il": 1
     },
+    "loot": {
+      "it": {
+        "shield": 1,
+        "scanner": 1
+      }
+    },
     "cp": 160,
     "alloy": 15,
     "biomass": 10,
@@ -58,8 +64,7 @@
     "chain": {
       "links": 3,
       "bonus": 0,
-      "chance": 0.30000000000000004,
-      "item": "scanner"
+      "chance": 0.30000000000000004
     }
   },
   "hp": 1612.8116000000005,

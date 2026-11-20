@@ -31,14 +31,14 @@ WK.model('refuge-habitat',(b,o)=>{const {pal,tint,circ,glow}=b.k,M=pal.mil,hi=b.
  // six corner buttresses (the Meshy reactor's ribs): dark fins with a light slit on every other one
  for(let k=0;k<6;k++){const a=k*Math.PI/3;b.at(Math.cos(a)*7.5,0,Math.sin(a)*7.5,-a,q=>{if(hi)q.loft([{p:b.k.rect(1.1,.62,.1),y:f0},{p:b.k.rect(1.0,.56,.1),y:5.5},{p:b.k.rect(.5,.4,.08),y:6.5}],M.hull2,{top:true});else q.box(0,f0,0,1,5.4,.56,M.hull2);if(k%2===0)q.box(.56,1.2,0,.04,4,.14,M.cyan);});}
  // window faces: a recessed lit band up high, a bolted armour panel below, a vent
- for(const k of [1,2,4,5]){onFace(k,7.3*C6,q=>{q.box(0,3.95,.03,5.2,1.15,.1,M.dark);q.box(0,4.14,.07,4.5,.7,.08,M.ice);if(hi){for(let j=-2;j<=2;j++)q.box(j*.9,4.1,.1,.07,.78,.1,M.dark);q.box(0,3.86,.14,5.4,.09,.22,M.trim);}});
+ for(const k of [1,2,4,5]){onFace(k,7.3*C6,q=>{q.box(0,3.95,.03,5.2,1.15,.1,M.dark);q.box(0,4.14,.07,4.5,.7,.08,M.ice);if(hi){for(let j=-2;j<=2;j++)q.box(j*.9,4.1,.1,.07,.78,.1,M.dark);q.box(0,3.86,.14,5.4,.09,.22,M.trim);}else for(const j of [-1.5,-.5,.5,1.5])qb(q,j*.9,4.12,.1,.12,.74,.04,M.glassDark,'kblrt');});
   onFace(k,7.56*C6,q=>{if(hi){q.bev(0,1,.02,4.4,1.7,.14,M.plate2,{ch:.06});for(const sx of [-1,1])for(const sy of [0,1])q.box(sx*1.95,1.12+sy*1.34,.16,.1,.1,.04,M.bare);q.box(1.2,1.4,.17,1.3,.7,.04,M.dark);for(let j=0;j<4;j++)q.box(1.2,1.5+j*.15,.19,1.2,.04,.04,M.trim);}else q.box(0,1,.02,4.4,1.7,.1,M.plate2);});}
  // the airlock: frame, glowing door, header light, canopy, ramp with lit edges
  onFace(0,7.56*C6,q=>{q.bev(0,f0,.25,3.3,3.5,.6,M.hull2,{ch:.1});q.box(0,f0+.1,.56,2.2,2.9,.08,glow(0x22e6ff,.82));q.box(0,f0+3.1,.6,2.7,.13,.1,M.ice);
-  if(hi){q.box(0,f0+.1,.6,.1,2.9,.08,M.dark);for(const sx of [-1,1]){q.box(sx*1.28,f0+.1,.6,.16,3,.12,M.gold);q.box(sx*1.75,f0+1.5,.5,.12,.5,.12,M.amber);}q.at(0,f0+3.7,.9,0,r=>r.bev(0,0,0,4,.22,1.5,M.trim,{ch:.06}),-.12);}
+  if(!hi)qb(q,0,f0+.1,.59,.12,2.9,.04,M.glassDark,'kblrt');if(hi){q.box(0,f0+.1,.6,.1,2.9,.08,M.dark);for(const sx of [-1,1]){q.box(sx*1.28,f0+.1,.6,.16,3,.12,M.gold);q.box(sx*1.75,f0+1.5,.5,.12,.5,.12,M.amber);}q.at(0,f0+3.7,.9,0,r=>r.bev(0,0,0,4,.22,1.5,M.trim,{ch:.06}),-.12);}
   else q.box(0,f0+3.7,.9,4,.2,1.4,M.trim);
   q.quad([-2.2,f0,.5],[2.2,f0,.5],[2.2,-.05,2.25],[-2.2,-.05,2.25],M.hull2,[0,-3,1]);q.quad([-2.2,-sink,2.25],[2.2,-sink,2.25],[2.2,-.05,2.25],[-2.2,-.05,2.25],M.conc,[0,0,0]);for(const sx of [-1,1]){q.quad([sx*2.2,-sink,.5],[sx*2.2,-sink,2.25],[sx*2.2,-.05,2.25],[sx*2.2,f0,.5],M.conc,[0,0,1.4]);if(hi)q.tube([sx*2.1,f0+.03,.55],[sx*2.1,-.02,2.2],.05,M.cyan,{n:3});}
-  if(!hi)q.box(0,-.04,2.2,4.4,.07,.07,M.cyan);q.pool(0,.14,3.2,2.6,2.2,0x22e6ff,.3);});
+  if(!hi)q.box(0,-.04,2.2,4.4,.07,.07,M.cyan);q.pool(0,.14,2.9,1.8,1.4,0x6fd6e0,.16);});
  // the back face: plant gear, two tanks and a riser pipe to the roof
  onFace(3,7.56*C6,q=>{gearBox(q,-1.1,f0,.62,2.3,1.9,1.1,M.amber);if(hi){for(const sx of [.9,1.9]){q.cyl(sx,f0,.55,.42,2.3,M.plate2,{n:8,bev:.08});q.ring(sx,f0+1.2,.55,.43,M.gold,{thin:true});}q.pipe([[1.4,f0+2.3,.55],[1.4,f0+3,.3],[1.4,5.2,.12]],.11,M.bare);q.pipe([[-2,f0+1.9,.5],[-2,3.1,.2],[-2,5.2,.12]],.09,M.trim);}});
  // roof kit: air handlers, a hatch, the beacon mast
@@ -98,9 +98,11 @@ WK.model('refuge-processor',(b,o)=>{const {pal,circ,glow}=b.k,M=pal.mil,hi=b.hi,
   rad(b,a,0,0,q=>{q.loft([rc(q,w,d0,2.6,hi?.16:0,0,ap(2.6)+d0/2-.2),rc(q,w*.86,d1,11,hi?.12:0,0,ap(11)+d1/2-.2),rc(q,w*.5,.4,12.1,hi?.1:0,0,ap(12.1)+.05)],M.hull2);
    const za=ap(front?7.6:3.1)+(front?1.1:d0-.26),zb=ap(10.7)+d1-.14;q.quad([-.26,front?7.6:3.1,za+.06],[.26,front?7.6:3.1,za+.06],[.26,10.7,zb+.06],[-.26,10.7,zb+.06],M.cyan,[0,6,0]);
    if(front){q.bev(0,2.6,ap(2.6)+1.25,3.9,4.5,1.4,M.hull,{ch:.14});q.box(0,2.72,ap(2.6)+1.97,2.4,3.5,.06,glow(0x22e6ff,.82));q.box(0,6.36,ap(2.6)+1.98,3,.14,.08,M.ice);
-    if(hi){q.box(0,2.72,ap(2.6)+2,.1,3.5,.06,M.dark);for(const s of [-1,1]){q.box(s*1.42,2.72,ap(2.6)+1.98,.18,3.6,.1,M.gold);hazard(q,s*1.72,2.7,ap(2.6)+1.97,.36,1.1,3);}}}
+    if(hi){q.box(0,2.72,ap(2.6)+2,.1,3.5,.06,M.dark);for(const s of [-1,1]){q.box(s*1.42,2.72,ap(2.6)+1.98,.18,3.6,.1,M.gold);hazard(q,s*1.72,2.7,ap(2.6)+1.97,.36,1.1,3);}}
+    else{qb(q,0,2.72,ap(2.6)+2,.14,3.5,.04,M.glassDark,'kblrt');for(const s of [-1,1])qb(q,s*1.42,2.72,ap(2.6)+1.98,.22,3.6,.06,M.gold,'kb');}}
    else if(hi){q.bev(0,2.6,ap(2.6)+d0-.1,2,.9,.5,M.hull,{ch:.08});q.box(0,3.5,ap(3.5)+d0-.2,1.1,.3,.2,M.gold);}});
   // tanks on the deck between the buttresses, a plate panel on each face flank
+  if(!hi&&k%2===0){const av=a+Math.PI/8;b.cyl(Math.cos(av)*11.35,2.62,Math.sin(av)*11.35,.82,2.5,M.plate,{n:6,topMat:M.plate2});}
   if(hi){const av=a+Math.PI/8;canister(b,Math.cos(av)*11.35,2.62,Math.sin(av)*11.35,.78,2.7,k%2?M.plate2:M.plate);
    for(const s of [-1,1])rad(b,a,0,0,q=>q.at(s*2.35,0,ap(4.6)+.02,0,p=>p.bev(0,3.5,0,2,3.6,.16,M.plate2,{ch:.07}),-.19));}}
  if(hi)b.detail(()=>{const pts=[];for(let k=0;k<=8;k++){const a=k*Math.PI/4+Math.PI/8;pts.push([Math.cos(a)*12.35,2.6,Math.sin(a)*12.35]);}b.rail(pts,1.1,M.bare,{step:2.4,r:.06});});
@@ -181,7 +183,7 @@ WK.model('refuge-terminal',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi;
 WK.model('refuge-solar',(b,o)=>{const {pal,tint}=b.k,M=pal.mil,hi=b.hi,w=o.w||14,d=o.d||9,tilt=o.tilt??.3,sink=o.sink??.5,c=Math.cos(tilt),s=Math.sin(tilt),P=(lx,ly,lz)=>[lx,2+ly*c-lz*s,ly*s+lz*c];
  b.at(0,2,0,0,q=>{if(hi)q.bev(0,-.2,0,w+.3,.2,d+.3,M.plate2,{ch:.06,bot:true});else qb(q,0,-.2,0,w+.3,.2,d+.3,M.plate2);
   // LOW has no painted cell grid: six modules in a lighter cell blue with the pale frame showing between them
-  const mw=(w-.1)/3,md=(d-.1)/2,cell=hi?M.navy:b.k.mat(0x1c3252,'solar',0);for(let i=0;i<3;i++)for(let j=0;j<2;j++){if(hi)qb(q,(i-1)*mw,0,(j-.5)*md,mw-.16,.09,md-.16,cell,'b');
+  const mw=(w-.1)/3,md=(d-.1)/2,cell=hi?b.k.mat(0x15264d,'solar',0):b.k.mat(0x1c3252,'solar',0);for(let i=0;i<3;i++)for(let j=0;j<2;j++){if(hi)qb(q,(i-1)*mw,0,(j-.5)*md,mw-.16,.09,md-.16,cell,'b');
    else{const x=(i-1)*mw,z=(j-.5)*md,hx=mw/2-.22,hz=md/2-.22;q.quad([x-hx,.03,z-hz],[x+hx,.03,z-hz],[x+hx,.03,z+hz],[x-hx,.03,z+hz],cell,[x,-9,z]);}}
   qb(q,0,.02,-d/2-.02,w-.3,.12,hi?.14:.2,M.cyan,'b');qb(q,0,.02,d/2+.02,w-.3,.09,hi?.1:.14,tint(M.cyan,.5),'b');
   if(hi){q.tube([-w/2+.3,-.42,0],[w/2-.3,-.42,0],.16,M.hull2,{n:6,caps:true});for(const sx of [-1,0,1])qb(q,sx*(w/2-.6),-.42,0,.14,.24,d-1,M.hull2,'t');}},tilt);
@@ -241,7 +243,7 @@ WK.model('viaduct-segment',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.w||4,D=o.d>18
  if(hi){Q(-.5,-zg,-.5,zg,M.dark,[0,0,0]);for(const e of [-1,1])b.quad([e*.24,-1.3,-zg],[e*.24,-1.3,zg],[e*.24,-.5,zg],[e*.24,-.5,-zg],M.hull2,[0,-.9,0]);
   b.quad([-.32,-1.3,-zg],[.32,-1.3,-zg],[.32,-1.3,zg],[-.32,-1.3,zg],M.plate2,[0,0,0]);
   for(const e of [-1,1])b.quad([x0,-.9,-e*zg],[x0+.5,-.9,-e*zg],[x1,-.9,e*zg],[x1-.5,-.9,e*zg],M.trim,[0,0,0]);}
- else Q(-1.4,-zc-.3,-1.4,zc+.3,M.dark,[0,0,0]);
+ else Q(-1.4,-zc-.3,-1.4,zc+.3,M.hull,[0,0,0]);   // LOW: a gunmetal soffit (a near-black one was a black band across the screen from below)
  if(o.stud!==0)b.quad([-1.2,.04,-.12],[1.2,.04,-.12],[1.2,.04,.12],[-1.2,.04,.12],M.ice,[0,-1,0]);
 },{aoH:.01,aoMin:.86});
 
@@ -305,6 +307,9 @@ WK.model('base-pad',(b,o)=>{const {pal,mat,glow,tint}=b.k,M=pal.mil,hi=b.hi,w=o.
   for(const sx of [-1,1])for(const sz of [-1,1])for(let i=0;i<2;i++)for(let j=0;j<2;j++){if(i+j===0)continue;const cx=sx*(8.4+i*4.1),cz=sz*(7+j*3.7);b.quad([cx-1.8,T+.012,cz-1.6],[cx+1.8,T+.012,cz-1.6],[cx+1.8,T+.012,cz+1.6],[cx-1.8,T+.012,cz+1.6],(i+j)%2?M.hull:M.trim,[0,-9,0]);}
   for(const sx of [-1,1])for(let k=0;k<5;k++){const z=6.2+k*(d/2-8.4)/4;flat(sx*5.2-.16,z-.3,sx*5.2+.16,z+.3,M.ice,T+.015);}
   for(let k=0;k<6;k++){const a=k*Math.PI/3;rad(b,a,3.72,T+.13,q=>qb(q,0,0,0,.5,.04,.2,M.gold,'b'));}}
+ // LOW: the markings that tell a pad from a slab stay as flat quads: the hex outline round the dais and the hazard corners
+ if(!hi){for(let k=0;k<6;k++){const a0=k/6*TAU,a1=(k+1)/6*TAU;b.quad([Math.cos(a0)*6.9,T+.012,Math.sin(a0)*6.9],[Math.cos(a0)*7.35,T+.012,Math.sin(a0)*7.35],[Math.cos(a1)*7.35,T+.012,Math.sin(a1)*7.35],[Math.cos(a1)*6.9,T+.012,Math.sin(a1)*6.9],M.plate2,[0,-9,0]);}
+  for(const sx of [-1,1])for(const sz of [-1,1]){const cx=sx*(w/2-4.2),cz=sz*(d/2-4.2);for(let k=0;k<3;k++)flat(cx-1.5+k,cz-1.5,cx-.5+k,cz+1.5,k%2?M.hazardD:M.hazard);}}
 },{aoH:.01,aoMin:.88});
 
 // ------------------------------------------------------------------ base-wall -------------------------------------------
@@ -448,6 +453,8 @@ WK.model('base-tower',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,sink=o.sink
  // faces: a sign plaque on the front, firing slits, plates
  for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{qb(q,0,4.1,2.84,2.4,.3,.05,M.dark,'kb');qb(q,0,4.2,2.87,2,.09,.03,M.ice,'kb');if(hi){q.at(0,0,2.9,0,p=>p.bev(0,2.3,0,3.2,1.3,.14,M.plate2,{ch:.06}),-.045);if(k===0)qb(q,0,7.04,2.74,3.9,1.14,.05,M.dark,'kb');else q.at(0,0,2.74,0,p=>p.bev(0,6.3,0,2.6,1.7,.12,M.plate2,{ch:.06}),-.028);}});
  for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{for(const x of hi?[-2.1,0,2.1]:[0])qb(q,x,9.7,2.94,hi?1.3:4.6,.42,.5,M.hull,'b');});
+ // dark rib strips on the pale band, either side of the face panel (the Meshy items' ribbed armour)
+ if(hi){const rib=b.k.mat(0x1b2436,'metal',.2,0);for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>q.at(0,5.8,2.775,0,p=>{for(const x of [-2.08,-1.72,1.72,2.08])qb(p,x,0,.04,.15,2.72,.1,rib,'kb');},-.028));}
  // the turret
  b.cyl(0,9.7,0,2.1,.3,M.dark,{n:hi?12:8});b.loft([rc(b,3.9,4.1,10,hi?.5:0),rc(b,3.9,4.1,10.5,hi?.5:0),rc(b,3,3.1,11.5,hi?.4:0,0,-.3)],M.hull,{top:true,topMat:M.plate});
  b.bev(0,10.22,2.02,2.7,1.02,.7,M.hull2,{ch:.12});
@@ -518,15 +525,22 @@ WK.model('base-kiosk',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi;
 });
 
 // ------------------------------------------------------------------ veteran-monument ------------------------------------
-// The field veteran's monument (3 x 3, 5.7 high): a stepped armoured plinth with a gold edge, a dark stone obelisk with a lit
-// line at its foot and one gold inscription band at 40% of the height, a softly lit gold pyramid cap and a white tip. Gold is
-// only on the cap, the band and the plinth edge (a whole gold shaft went olive on its shaded faces under the Moon's light).
-WK.model('veteran-monument',(b,o)=>{const {pal,glow,mat}=b.k,M=pal.mil,hi=b.hi,X=(r,y)=>ngon(b,4,r,y,Math.PI/4),stone=mat(0x2a3346,'concrete',.25,0),gold=glow(0xc9a227,.18),cap=glow(0xc9a227,.3),rs=y=>.62-.32*(y-1.56)/3.04;   // the gold carries a little light of its own: it stays gold on shaded faces
- b.bev(0,0,0,3,.5,3,M.hull2,{ch:.1});b.bev(0,.5,0,2.2,.5,2.2,M.hull,{ch:.08});
- if(hi){b.loft([rc(b,2.24,2.24,.78),rc(b,2.24,2.24,.92)],gold,{top:false});b.box(0,.52,1.11,1.2,.22,.04,M.plate2);for(const s of [-1,1])b.box(s*1.25,.5,1.25,.2,.2,.2,M.cyan);}
+// The field veteran's monument (3 x 3, 5.7 high): a three-tier armoured plinth with a gold edge, a gold plaque on its front and
+// a lit bollard on each corner; a dark stone obelisk with a lit line at its foot, one gold inscription band at 40% of the
+// height and a thin cyan channel up each face; a softly lit gold pyramid cap and a white tip. Gold is only on the cap, the
+// band, the plaque and the plinth edge (a whole gold shaft went olive on its shaded faces under the Moon's light).
+WK.model('veteran-monument',(b,o)=>{const {pal,glow,mat,tint}=b.k,M=pal.mil,hi=b.hi,X=(r,y)=>ngon(b,4,r,y,Math.PI/4),stone=mat(0x2a3346,'concrete',.25,0),gold=glow(0xc9a227,.18),cap=glow(0xc9a227,.3),plaque=glow(0xc9a84a,.22),ink=mat(0x3a2c10,'flat',0,0),rs=y=>.62-.32*(y-1.56)/3.04,C45=Math.SQRT1_2;   // the gold carries a little light of its own: it stays gold on shaded faces
+ // a three-tier plinth, a bollard with a gold cap and a cyan light on each corner of the first tier
+ b.bev(0,0,0,3,.5,3,M.hull2,{ch:.1});b.bev(0,.5,0,2.2,.5,2.2,M.hull,{ch:.08});b.bev(0,1,0,1.62,.2,1.62,M.hull2,{ch:.06});
+ for(const sx of [-1,1])for(const sz of [-1,1]){const x=sx*1.2,z=sz*1.2;if(hi){b.cyl(x,.5,z,.13,.4,M.hull2,{n:6,bev:.03});b.cyl(x,.9,z,.16,.06,gold,{n:6});b.box(x,.96,z,.12,.1,.12,M.cyan);}else{b.box(x,.5,z,.26,.42,.26,M.hull2);b.box(x,.92,z,.16,.12,.16,M.cyan);}}
+ if(hi)b.loft([rc(b,2.24,2.24,.78),rc(b,2.24,2.24,.92)],gold,{top:false});
+ // the gold plaque on the front of the second tier (three inscription lines on HIGH)
+ qb(b,0,.57,1.12,1.34,hi?.2:.3,.05,plaque,'kb');if(hi)for(let i=0;i<3;i++)qb(b,(i-1)*.02,.6+i*.055,1.15,1.1-i*.2,.022,.01,ink,'kblrt');
  // one loft: flared foot, the lit line, the shaft with the band (3 cm proud of the stone on HIGH), the cap (proud as well)
- if(hi)b.loft([X(.95,1),X(.8,1.5),X(.62,1.56),X(rs(2.14),2.14),X(rs(2.14)+.05,2.17),X(rs(2.5)+.05,2.47),X(rs(2.5),2.5),X(.3,4.6),X(.345,4.63),X(.02,5.4)],r=>r===1?M.cyan:r>6?cap:r>2&&r<6?gold:stone,{top:false});
- else b.loft([X(.95,1),X(.8,1.5),X(.62,1.56),X(rs(2.14),2.14),X(rs(2.5),2.5),X(.3,4.6),X(.02,5.4)],r=>r===1?M.cyan:r===5?cap:r===3?gold:stone,{top:false});
+ if(hi)b.loft([X(.95,1.2),X(.8,1.5),X(.62,1.56),X(rs(2.14),2.14),X(rs(2.14)+.05,2.17),X(rs(2.5)+.05,2.47),X(rs(2.5),2.5),X(.3,4.6),X(.345,4.63),X(.02,5.4)],r=>r===1?M.cyan:r>6?cap:r>2&&r<6?gold:stone,{top:false});
+ else b.loft([X(.95,1.2),X(.8,1.5),X(.62,1.56),X(rs(2.14),2.14),X(rs(2.5),2.5),X(.3,4.6),X(.02,5.4)],r=>r===1?M.cyan:r===5?cap:r===3?gold:stone,{top:false});
+ // a lit cyan channel up the middle of each face of the shaft, above the band
+ {const ch=tint(M.cyan,.8),ya=2.62,yb=4.4,za=rs(ya)*C45+.012,zb=rs(yb)*C45+.012,hw=hi?.035:.05;for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>q.quad([-hw,ya,za],[hw,ya,za],[hw,yb,zb],[-hw,yb,zb],ch,[0,3.5,0]));}
  b.gem(0,5.5,0,.14,.2,.14,M.white);b.halo(0,5.4,0,1.6,0xffd36b,.45);
 },{aoH:2,aoMin:.6});
 
@@ -572,6 +586,7 @@ WK.model('frontier-watch',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,w=o.w||
  b.loft([R(.86,fy-.3,.5),R(1,fy,.6),R(1,fy+.24,.6)],M.hull2,{top:false});b.loft([R(.96,fy+.24,.7),R(.95,h*.8,.7)],M.hull,{top:false});
  b.loft([R(.93,h*.8,.7),R(.92,h*.89,.7)],hi?M.glassDark:M.ice,{top:false});b.loft([R(.95,h*.89,.7),R(.95,h*.94,.7)],M.plate,{top:false});b.loft([R(.97,h*.94,.7),R(.97,h*.955,.7)],M.cyan,{top:false});
  b.loft([R(1.1,h*.955,.8),R(1.1,h*.975,.8),R(.56,h+.08,.4)],(r)=>r?M.plate2:M.hull2,{top:false});b.loft([R(.56,h+.08,.4),R(.56,h+.12,.4)],M.cyan,{top:false});b.loft([R(.52,h+.12,.4),R(.5,h+.16,.4)],M.plate2,{top:true,topMat:M.plate2});
+ if(!hi)for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{const ww=(k%2?d:w),z=(k%2?w:d)*.93/2+.03;for(const x of [-1.5,-.5,.5,1.5])qb(q,x*ww*.2,h*.8,z,ww*.045,h*.09,.03,M.glassDark,'kblrt');});
  if(hi)for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{const ww=(k%2?d:w),z=(k%2?w:d)*.93/2+.02;for(const x of [-1,0,1])qb(q,x*ww*.22,h*.8+.08,z,ww*.19,h*.09-.16,.03,M.ice,'kb');qb(q,0,fy+.7,z+.1,ww*.5,h*.14-1.3,.1,M.plate2,'kb');});
  // roof kit: searchlight, antenna, an air unit, the hatch light
  b.at(w*.36,h-.12,d*.36,.5,q=>{q.cyl(0,-.1,0,.18,.34,M.trim,{n:6});q.at(0,.42,0,0,r=>{r.tube([0,0,-.3],[0,0,.34],.3,M.hull2,{n:hi?8:5,caps:true});r.tube([0,0,.34],[0,0,.38],.25,M.white,{n:hi?8:5,caps:true});},.3);});b.halo(w*.3+.3,h+.4,d*.3+.5,1.2,0xe8f6ff,.4);
@@ -587,11 +602,12 @@ WK.model('frontier-watch',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,w=o.w||
 WK.model('frontier-gate',(b,o)=>{const {pal,mat}=b.k,M=pal.mil,hi=b.hi,h=o.h||9,sink=o.sink??1,R=(s,y,ch=.5)=>rc(b,s,s,y,hi?ch:0),red=mat(0xb8322a,'paint',.3,0);
  b.bev(0,-sink,0,3.6,sink+1.2,3.6,M.hull2,{ch:.2});
  b.loft([R(3,1.2),R(2.78,h*.44)],M.hull,{top:false});b.loft([R(2.9,h*.44,.5),R(2.9,h*.48,.5)],M.hull2,{top:false});b.loft([R(2.74,h*.48),R(2.44,h*.73)],M.plate,{top:false});
- b.loft([R(2.44,h*.73),R(2.9,h*.76),R(2.9,h*.9)],M.hull2,{top:false});b.loft([R(2.98,h*.9),R(2.98,h*.9+.2)],M.cyan,{top:false});b.loft([R(2.9,h*.9+.2),R(2.2,h)],M.hull,{top:true,topMat:M.plate2});
+ b.loft([R(2.44,h*.73),R(2.9,h*.76),R(2.9,h*.9-.16)],M.hull2,{top:false});b.loft([R(2.96,h*.9-.16),R(2.96,h*.9)],M.gold,{top:false});b.loft([R(2.98,h*.9),R(2.98,h*.9+.2)],M.cyan,{top:false});b.loft([R(2.9,h*.9+.2),R(2.2,h)],M.hull,{top:true,topMat:M.plate2});
  for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4;rad(b,a,0,0,q=>q.loft([rc(q,.6,.6,1.1,0,0,1.86),rc(q,.4,.3,h*.74,0,0,1.52)],M.hull2,{top:false}));}
  for(const s of [-1,1]){b.cyl(s*.7,h,0,.16,.14,M.hull2,{n:6});b.gem(s*.7,h+.26,0,.15,.14,.15,M.cyan);b.halo(s*.7,h+.26,0,.8,0x22e6ff,.3);}
  // faces: a lit vision slit, plate, hazard band
  for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{qb(q,0,h*.8,1.46,1.5,.34,.04,M.dark,'kb');qb(q,0,h*.8+.08,1.49,1.2,.14,.03,M.ice,'kb');if(hi&&k)q.at(0,0,1.44,0,p=>p.bev(0,1.7,0,1.7,2,.12,M.plate2,{ch:.06}),-.04);});
+ if(hi){const rib=mat(0x1b2436,'metal',.2,0),y0=h*.49,y1=h*.72,sl=(1.37-1.22)/(h*.25);for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>q.at(0,y0,1.365,0,p=>{for(const x of [-.72,-.24,.24,.72])qb(p,x,0,.03,.15,y1-y0,.09,rib,'kb');},-sl));}
  // the barrier: housing, pivot, the raised arm with its tip light
  b.bev(0,1.2,1.92,1.8,1.3,.9,M.hull2,{ch:.1});qb(b,0,1.3,2.38,1.5,.3,.03,M.hazard,'kb');
  b.bev(.55,1.6,2.14,.5,.5,.5,M.trim,{ch:.08});for(let k=0;k<6;k++)qb(b,.55,2.1+k*.82,2.2,.2,.82,.2,k%2?M.plate:red,'tb');b.gem(.55,h*.78+.1,2.2,.13,.15,.13,M.red);b.halo(.55,h*.78+.1,2.2,.6,0xff3048,.5);
@@ -730,13 +746,19 @@ WK.model('rail-pylon',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,sink=o.sink??1,Y=(o.h|
 // ------------------------------------------------------------------ rail-beam -------------------------------------------
 // One span of the monorail beam: o.w long along x, the guide rail's top at y = 0. A box girder (0.9 wide, 1 deep) under a
 // pale ceramic top flange (1.36 wide: the train's skirts clear it), the guide rail on top, stiffener ribs, a pale bottom
-// lip and small cyan under-lights (pads under the flange and on the soffit). No end faces: spans chain. About 60 / 24.
+// lip and small cyan under-lights (pads under the flange and on the soffit); on HIGH a deep rib under mid-span, a dark
+// conduit down each side and a pale bracket under each end. No end faces: spans chain. About 190 / 24.
 WK.model('rail-beam',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.w||8,x0=-L/2,x1=L/2,P=(xa,xb,y0,z0,y1,z1,m,ins)=>b.quad([xa,y0,z0],[xb,y0,z0],[xb,y1,z1],[xa,y1,z1],m,ins),Q=(y0,z0,y1,z1,m,ins)=>P(x0,x1,y0,z0,y1,z1,m,ins);
- Q(0,-.17,0,.17,M.bare,[0,-1,0]);Q(-.14,-.68,-.14,.68,M.plate,[0,-1,0]);Q(-1.3,-.45,-1.3,.45,M.dark,[0,0,0]);
+ Q(0,-.17,0,.17,M.bare,[0,-1,0]);Q(-.14,-.68,-.14,.68,M.plate,[0,-1,0]);Q(-1.3,-.45,-1.3,.45,hi?M.dark:M.hull,[0,0,0]);
  for(const s of [-1,1]){Q(-.36,s*.68,-.14,s*.68,M.plate,[0,-.2,0]);Q(-1.3,s*.45,-.36,s*.45,M.hull,[0,-.8,0]);Q(-.36,s*.45,-.36,s*.68,M.hull2,[0,0,s*.5]);
   for(const x of hi?[-L/4,L/4]:[0])P(x-.5,x+.5,-.6,s*.462,-.44,s*.462,M.cyan,[0,-.5,0]);
   if(hi){Q(-.14,s*.17,0,s*.17,M.bare,[0,-.1,0]);Q(-1.3,s*.53,-1.14,s*.53,M.plate2,[0,-1.2,0]);for(const x of [-L/2+.3,0,L/2-.3])P(x-.13,x+.13,-1.14,s*.51,-.36,s*.51,M.hull2,[x,-.8,0]);}}
- if(hi)for(const x of [-L/4,L/4])P(x-.4,x+.4,-1.31,-.2,-1.31,.2,M.cyan,[0,0,0]);
+ if(hi){for(const x of [-L/4,L/4])P(x-.4,x+.4,-1.31,-.2,-1.31,.2,M.cyan,[0,0,0]);
+  // close up it was a plain box (critic round 3): a deep rib under mid-span, a dark conduit with clips down each side and a
+  // pale bracket block under each end, where the span sits on its pylon head
+  const rib=b.k.mat(0x3a4352,'metal',.3,0),duct=b.k.mat(0x20283a,'metal',.2,0);qb(b,0,-1.6,0,.3,.3,.98,rib,'t');
+  for(const s of [-1,1]){b.tube([x0,-.92,s*.5],[x1,-.92,s*.5],.075,duct,{n:4});for(const x of [-L*.375,-L*.125,L*.125,L*.375])qb(b,x,-1.02,s*.5,.12,.2,.2,M.plate2,'');}
+  for(const e of [-1,1])qb(b,e*(L/2-.3),-1.58,0,.6,.28,1.24,M.plate2,'t');}
 },{aoH:.01,aoMin:.9});
 
 // ------------------------------------------------------------------ rail-train ------------------------------------------

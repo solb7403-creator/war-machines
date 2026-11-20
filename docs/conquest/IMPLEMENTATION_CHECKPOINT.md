@@ -6094,16 +6094,18 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md fi
   (`f0461ff`).
 - **Done (Nov 20): the colony's town core drawn by 80 m ground cell** (`Bld.cells()` in `js/conquest/style.js`; record and
   numbers under "Performance record" below; `conquest-occluder.py` and `conquest-seethrough-town.py` re-run after it: PASS).
+- **Done (Nov 20): critic round 3, critic 1 of 3 (the world on a phone) and its fixes** (record under "Critic rounds";
+  the lead's own findings from the first look at the captures went in with it). Checked on model sheets and in the real
+  renderer at 390x844 HIGH and LOW before the commit.
 - **In progress (Nov 20):** the round-3 capture farm (world kinds, town, flagship at 390x844, 390x700, 320x568, 1366x768,
-  1920x1080, HIGH and LOW; phone runs `--dpr 2 --ratio 2`, computer runs `--mouse --dpr 1 --ratio 1`; the capture tools now
-  stream a place drawn small and draw only the shot at `--ratio`, about 8x faster on the software renderer). Critic round 3
-  runs as three read-only critics: phone world (started), computer + small phones + flagship, town + the 5E-2a recolour check.
-- **Found by the lead in the round-3 captures, fixed in a side worktree, NOT yet in the branch** (apply after the farm, then
-  run the node tests): the bare-ground gravel was one square a cell and read as pixels close up (now round stones of two
-  sizes, `TERRAIN_FS`); terraformed ground turned away from the low sun went near-black (a small sky fill, the same idea as
-  the walls' daylight bounce); the wild ground cover was sparse (HIGH step 4.8 m -> 4 m, wild cover floor raised, wild
-  flowers in the thick patches); the frontier wall / defences / watch, greenhouse, solar and meadow shots are reframed so
-  the subject is in the picture (`conquest-world-kinds-captures.py` SHOTS).
+  1920x1080, HIGH and LOW; phone runs `--dpr 2 --ratio 2`, computer runs `--mouse --dpr 1 --ratio 1`). It was started
+  before the critic-1 fixes, so: 390x844 and 1366x768 world shots (HIGH and LOW) and 320x568 / 390x700 HIGH show the world
+  BEFORE those fixes and are re-captured after critics 2 and 3; jobs that start after this commit show the fixed world.
+  Jobs that failed on a slow first frame and wait for a re-run with the fixed tools: town 390x844 (towns), world
+  1920x1080 HIGH, flagship touch HIGH and mouse HIGH, town 1920x1080.
+- **Still to run in round 3:** critic 2 (computer 1366x768 and 1920x1080, small phones 320x568 and 390x700, the flagship) and
+  critic 3 (the town and the 5E-2a recolour check), each as soon as its captures exist; then their fixes, then the
+  re-capture of what changed.
 - **To re-run on an idle machine:** `conquest-town.mjs` and `fair-arcade.mjs` failed a wall-clock limit while the capture farm
   had every core busy; no limit is changed.
 - **Next, in order:** (2) critic round 3, the last one (a 4th only for an item the reviewer marks
@@ -6214,6 +6216,64 @@ town-wall, town-rocket and town-rubble still CLEARLY BELOW. The 25 ranked fixes 
 - Not changed, with the reason: 25 viaduct-segment (the deck is the road surface, drawn by the terrain; the guard rails
   are already continuous in the game, see the viaduct-deck capture); 11 refuge-processor was judged from a far-away sheet:
   checked close up before any change (see the result below).
+
+**Round 3, critic 1 of 3: the world on a phone** (a fresh art director; all 36 world shots at 390x844 HIGH and LOW in the real
+renderer, the military / settler / nature / wreck sheets, the Meshy references). Verdict: settler AT BAR; Parasite AT BAR
+("hive, mast and spire are the best things in the set"); military CLOSE (one consistent language, strong silhouettes;
+still boxier than the Meshy bar); nature CLOSE with **water CLEARLY BELOW** ("near-black navy with white streaks,
+indistinguishable from the dashed asphalt roads"); wrecks and props CLOSE. The 20 ranked fixes and what was done:
+- 1 (the only CLEARLY BELOW): **water** is a new shader (`WATER_FS`): teal, deep in the middle (#1f5f7a) and pale in the
+  shallows (#3fa3b5), short curved ripple strokes that drift with the flow (one stroke a cell, each with its own place,
+  angle, length and bend), a pale foam edge and a wet-soil bank line. The bank is drawn at the real shoreline: the flow
+  attribute now carries the metres from the middle of the water to where the ground rises through the surface
+  (`shore()` in `terraWorld`), so the line sits on the bank and not under it. Creek, reservoir, crater pool and canals.
+- 2: the greenhouse (and the town's greenhouse home) on LOW has pale blue-white panes, rust rib bands and amber patch
+  panels (LOW has no glass shader; it read as a khaki tent).
+- 3: the viaduct deck no longer goes electric blue: concrete is matte, so it takes 18% of the edge sheen (a flat deck seen
+  at a low angle picked up the friendly-site cyan rim light). A dark expansion joint every 24 m, between the lamp pools.
+- 4: solar cells are a deeper blue (#15264d), the grid lines a mid blue, and the sky sheen on them is capped (they washed
+  out to pale lavender in daylight). 5: tree bark is a new surface look ("bark": upright grooves that wander, a tone a
+  ridge, cracks) on every trunk; the dead tree is dry brown (timber boards read as brick on a trunk). 6: ice is a new
+  surface look ("ice": pale fractures on two slants, frost on the upward faces); the glass look drew window panes on it.
+- 7: the cover wall is the hive's glossy black-violet chitin with glowing veins (it was matte lilac). 8: barbed wire is
+  pale steel on a grey picket with a rust cap, with a round three-loop concertina coil (black on navy vanished).
+- 9: the bio-flora glow is the pods' own pink and no wider than the plant (a big white glow bleached the pods).
+  10: the cyan "flood" round the habitats was three things, all cut back: the light pool under each Refuge lamp pylon
+  (an 11 m saturated pool; now a 6.8 m pale one), the habitat's ground ring (now 1.5 m past the plinth, pale and faint)
+  and the door glow. The processors' ground glow and the supply terminal's pad decals are dimmed the same way (the
+  terminal's pad was a saturated cyan slab in daylight; its hex outline stays).
+- 11, 19: on LOW the habitat and the watchtower keep four dark mullions on each window band, the habitat door and the
+  processor's blast door keep their centre line, the processor keeps its gold door frame and four of its deck tanks.
+- 12: the monorail beam has a deep rib under mid-span, a dark conduit with clips down each side and a pale bracket under
+  each end (HIGH). 13: the plaza's lamps on LOW stand on posts. 14: the moss cushion is three overlapping domes up to
+  0.35 m (slot box height 0.2 -> 0.35). 15: the base pad on LOW keeps its hex outline and hazard corners.
+- 16: flowers are five separate cupped petals tilted 20 degrees, with two leaf blades; ferns have a dark midrib (HIGH).
+  17: settlers wear rust, teal or mustard coats (the three seeds in the colony), with darker sleeves held off the body,
+  a cuff and a bare hand. 18: the veteran monument has a three-tier plinth, a lit bollard on each corner, a gold plaque
+  and a cyan channel up each face. 20: dark rib strips on the pale band of the base tower and the frontier gate, a gold
+  ring under the gate's cap light.
+- Bugs the critic listed, and what was done: **dotted squares on ground cover beside the tank** (the "pressed against"
+  screen was applied to everything inside the pressed object's footprint): what stands lower than 0.9 m above the ground
+  under the tank now stays solid (`uPressY`). **A black band across the top of the screen on LOW** under the monorail and
+  the viaduct: their LOW soffits are gunmetal, not near-black. **The barren Moon was flat navy up close on LOW** (LOW drew
+  only the 96 m crater layer): LOW now draws one more layer of small craters near the camera (one more texture read).
+  **A bare bank was one flat brown** (the crater rim the frontier wall climbs): bare soil is mottled, and on HIGH a bank
+  cut into a slope shows its layers (one more texture read on HIGH); the "lime polygon" beside it is a scrub bush right
+  at the lens of a camera lying on that slope. Shell craters on the grass have a dark mud centre, not a pure black one.
+  The tall dotted shape beside the settler block is the atmosphere pylon the capture parks the tank against: the rule
+  working, not a fault. The objective guide beam through the BUILD SITE lettering and the raid flag is the guide effect
+  (an effect, not a model: left as it is; a thinner beam is a PROPOSAL for the final report). Square gravel, near-black ground turned from the sun and
+  the sparse wild cover: the lead's fixes from the first look at the captures (see below). Not changed, with the reason:
+  the atmosphere dome that crosses one settler block (the world's own layout); the two power wires over the terminal (they
+  are the colony's power line, seen from straight above in that capture).
+- **Found by the lead in the round-3 captures and fixed with this round:** the bare-ground gravel was one square a cell
+  and read as pixels close up (round stones of two sizes now, `TERRAIN_FS`); terraformed ground turned away from the low
+  sun went near-black (a small sky fill, the same idea as the walls' daylight bounce); the wild ground cover was sparse
+  (HIGH step 4.8 m -> 4.6 m, a higher cover floor, wild flowers in the thick patches; the densest ground chunk is 27,481
+  triangles, was 24,387, cap 30,000).
+- **A test changed, and why:** `conquest-slots.mjs` checked every vertex alpha against a fixed floor of -1.3 (the last
+  surface code). Two surface looks were added (bark, ice), so the floor is now read from the surface-code list itself
+  (`ConquestWorldKit.SURF`); an alpha below the last code still fails. Nothing skipped or loosened.
 
 ### Performance record (software renderer: the counts are exact, the frame times are relative only)
 - **The colony's town core by ground cell** (`3ba537c`, measured Nov 20 at 390x844, five camera spots in the colony, before =

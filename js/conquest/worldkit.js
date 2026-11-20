@@ -20,7 +20,7 @@ function model(id,build,o){MODELS[id]={build,o:o||{}};}
 // Surface codes ride in the vertex alpha below zero (0..2 stays "emission", as before): the solid shader paints the
 // material's detail on HIGH (panel seams, rust, planks, pores, corrugation...) with no texture from an artist and no new
 // shader program. alpha = -(code + 0.9 * wear) / 10.
-const SURF={flat:0,metal:1,paint:2,timber:3,concrete:4,glass:5,scrap:6,cloth:7,chitin:8,leaf:9,rock:10,dirt:11,solar:12};
+const SURF={flat:0,metal:1,paint:2,timber:3,concrete:4,glass:5,scrap:6,cloth:7,chitin:8,leaf:9,rock:10,dirt:11,solar:12,bark:13,ice:14};
 const surfA=(code,wear=0)=>code?-(code+.9*clamp01(wear))/10:0;
 function hash(n){let h=Math.imul(n|0,374761393)^0x5bd1e995;h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;}
 function rng(seed){let s=(seed|0)||7403;return ()=>(s=(Math.imul(s,1664525)+1013904223)|0,(s>>>0)/4294967296);}
@@ -182,7 +182,7 @@ function kit(S){if(S.worldKit)return S.worldKit;
    roof:mat(0x4a3e34,'scrap',.45),roofRust:mat(0x7a4326,'scrap',.8),scrap:mat(0x6d6a62,'scrap',.6),timber:mat(0x7a5634,'timber',.3,.12),timberD:mat(0x4f3622,'timber',.5,.12),comp:mat(0x8a8676,'paint',.4),conc:mat(0x7b776c,'concrete',.5),stone:mat(0x6a6456,'concrete',.7),
    canvas:[0xd8c8a0,0x8a4a5a,0x4a6a8a,0xc9a04a,0xb8553a].map(h=>mat(h,'cloth',0,.06)),rust:mat(0x7a3e24,'scrap',.9),iron:mat(0x34302c,'metal',.6),glass:mat(0x1a2a30,'glass',.2),warm:glow(0xffc47a,.8),amber:glow(0xffa84a,1.1),lamp:glow(0xffd59a,1.5),
    leaf:mat(0x4c7a34,'leaf',0,.2),leafD:mat(0x35582a,'leaf',0,.2),soil:mat(0x4a3a28,'dirt',0),water:mat(0x2a6a8a,'glass',.4),tank:mat(0x5f8a86,'paint',.6),white:mat(0xd5d0c2,'paint',.5),tyre:mat(0x15181c,'flat',0)},
-  nat:{rock:mat(0x4a4d55,'rock',0,.1),rockD:mat(0x2e3036,'rock',0,.1),rockMoss:mat(0x6a6458,'rock',.8,.1),bark:mat(0x3e3024,'timber',.6,.1),burnt:mat(0x1c1814,'timber',.9),leaf:[0x2a4220,0x33502a,0x3d5a2c].map(h=>mat(h,'leaf',0,.25)),broad:[0x4b5a2c,0x3a4a24,0x5e6630,0x6b5a2a].map(h=>mat(h,'leaf',0,.25)),
+  nat:{rock:mat(0x4a4d55,'rock',0,.1),rockD:mat(0x2e3036,'rock',0,.1),rockMoss:mat(0x6a6458,'rock',.8,.1),bark:mat(0x3e3024,'bark',.6,.1),burnt:mat(0x1c1814,'bark',.9),leaf:[0x2a4220,0x33502a,0x3d5a2c].map(h=>mat(h,'leaf',0,.25)),broad:[0x4b5a2c,0x3a4a24,0x5e6630,0x6b5a2a].map(h=>mat(h,'leaf',0,.25)),
    straw:mat(0xa89a5b,'leaf',0,.2),olive:mat(0x6b7a3a,'leaf',0,.2),ice:mat(0xa8dcf0,'glass',.25),soil:mat(0x4a3a28,'dirt',0),moss:mat(0x3e5a2e,'leaf',0,.2)},
   par:{chitin:mat(0x2b1531,'chitin',.6),chitinD:mat(0x150a19,'chitin',.3),bone:mat(0x4a3550,'chitin',.1),wall:mat(0x2c2833,'chitin',.2),wallTop:mat(0x4a4352,'metal',.4),mag:glow(0xff2bd6,1.85),magHot:glow(0xff7ae8,1.95),magDim:glow(0xff2bd6,1)},
   wreck:{hull:mat(0x3a3530,'scrap',.7),rust:mat(0x6a3f26,'scrap',.95),track:mat(0x1e1c1a,'metal',.8),moss:mat(0x3e5a2e,'leaf',0,.2),bag:mat(0x8f8064,'dirt',0,.15),wire:mat(0x2a2a2a,'metal',.9),post:mat(0x4a4038,'timber',.8),mud:mat(0x2a2018,'dirt',0)}};

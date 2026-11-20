@@ -382,7 +382,9 @@ function toolRack(b,x,y,z,ry){const S=b.k.pal.set;b.at(x,y,z,ry,q=>{for(const s 
 // The greenhouse: a glass tunnel along x over a stone kerb, ribs in whatever paint was left, two roof lights propped open,
 // one side rolled up over the raised beds, a door at the +x end, a water butt on the gutter, a tool rack, planters outside.
 function greenhouse(b,o,c){const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o.w,d=o.d,h=o.h,sd=o.seed|0,hi=b.hi,PI=Math.PI,f0=c?.3:.22;
- const glassM=mat(0x8f9c8a,'glass',.15),glassB=mat(0xa9ae98,'glass',.25),tanP=mat(0xc49a52,'cloth',0,.08),ply=mat(0x94703f,'timber',.5,.1),trim=creamT(b),glassLit=mat(0xe2c98a,'glass',.6),inside=mat(0x1e2e1a,'leaf',0,0);
+ // LOW has no glass shader (no sky in the pane): its panes are painted the pale blue-white the HIGH glass shows on screen, with
+ // rust rib bands and amber patch panels, so the big white glasshouse block stays (it read as a khaki tent: critic round 3)
+ const glassM=hi?mat(0x8f9c8a,'glass',.15):mat(0xcfe0e2,'glass',.15,.03),glassB=hi?mat(0xa9ae98,'glass',.25):mat(0xb7ced4,'glass',.25,.03),tanP=hi?mat(0xc49a52,'cloth',0,.08):mat(0xd59a3a,'cloth',0,.05),ply=mat(0x94703f,'timber',.5,.1),trim=creamT(b),ribLow=mat(0x8a3b22,'scrap',.6,.04),glassLit=mat(0xe2c98a,'glass',.6),inside=mat(0x1e2e1a,'leaf',0,0);
  const tx0=-w/2+(c?.45:.6),tx1=w/2-(c?1.0:1.5),xc=(tx0+tx1)/2,len=tx1-tx0,cz=c?-.45:-d*.05,r=c?d*.5-1.3:d/2-1.25,kw=c?.3:.42,yf=f0+kw,rise=h-yf-(c?.1:.16),n=hi?10:6,segs=c?(hi?3:2):(hi?6:3);
  if(c)bx(b,0,0,0,w,.3,d,S.conc);else b.bev(0,-.5,0,w-.4,.72,d-.4,S.conc,{ch:.14});
  bx(b,xc,f0,cz,len+.16,kw,2*r+.16,S.stone,S.soil);
@@ -396,7 +398,7 @@ function greenhouse(b,o,c){const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o.w,d=
  const ox0=tx0+len*(c?(hi?1/3:0):1/3),ox1=tx0+len*(c?(hi?2/3:.5):2/3),oy=yf+Math.sin(PI/n)*rise,oz=cz+Math.cos(PI/n)*r;b.tube([ox0,oy+.04,oz+.06],[ox1,oy+.04,oz+.06],c?.09:.13,S.canvas[0],{n:hi?5:3,caps:true});
  // ribs in mixed paints, the ridge pole and purlins
  const ribP=[trim,S.timber,S.paint[1],trim,S.paint[0],S.paint[5],S.timberD];
- for(let s=0;s<=segs;s++){if(hi)archRib(b,tx0+len*s/segs,yf,cz,r,rise,n,c?.06:.085,pick(ribP,sd+s),3);else archRibbon(b,tx0+len*s/segs,yf,cz,r,rise,n,c?.16:.22,pick(ribP,sd+s));}
+ for(let s=0;s<=segs;s++){if(hi)archRib(b,tx0+len*s/segs,yf,cz,r,rise,n,c?.06:.085,pick(ribP,sd+s),3);else archRibbon(b,tx0+len*s/segs,yf,cz,r,rise,n,c?.2:.28,ribLow);}
  b.tube([tx0-.1,yf+rise+.03,cz],[tx1+.1,yf+rise+.03,cz],c?.07:.1,trim,{n:4});
  if(hi)for(const s of [-1,1]){const a=PI/2+s*PI*.3;b.tube([tx0,yf+Math.sin(a)*rise*1.01,cz+Math.cos(a)*r*1.01],[tx1,yf+Math.sin(a)*rise*1.01,cz+Math.cos(a)*r*1.01],.045,S.timberD,{n:3});}
  // two roof lights propped open
@@ -513,7 +515,7 @@ WK.model('settler-solar',(b,o)=>{const {pal,tint,mat,glow}=b.k,S=pal.set,w=o.w,d
 // The market square, drivable (nothing above 0.9 m): rings of worn paving of different stone round a low well, a painted
 // sun of setts at its foot, four paths to the roads, flower beds in stone kerbs, low benches and amber kerb lamps.
 WK.model('settler-plaza',(b,o)=>{const {pal,tint,mat,glow,hash,rect,circ}=b.k,S=pal.set,w=o.w,d=o.d,sd=o.seed|0,hi=b.hi,R=Math.min(w,d)/2,u=R/10,PI=Math.PI;
- const tones=[S.stone,S.conc,tint(S.stone,1.22),tint(S.conc,.82),mat(0x857b66,'concrete',.6),tint(S.stone,.84)],acc=[mat(0x5f8a86,'concrete',.7),mat(0x9a5a3a,'concrete',.7),mat(0xb39a66,'concrete',.6)],pt=(r,a,y)=>[Math.cos(a)*r,y,Math.sin(a)*r];
+ const tones=[S.stone,S.conc,tint(S.stone,1.22),tint(S.conc,.82),mat(0x857b66,'concrete',.6),tint(S.stone,.84)],acc=[mat(0x5f8a86,'concrete',.7),mat(0x9a5a3a,'concrete',.7),mat(0xb39a66,'concrete',.6)],lampPost=mat(0x5a2e1c,'timber',.4,.03),lampHead=glow(0xf4e3b0,1.2),pt=(r,a,y)=>[Math.cos(a)*r,y,Math.sin(a)*r];
  const seg=(r0,r1,a0,a1,y,m)=>b.quad(pt(r0,a0,y),pt(r0,a1,y),pt(r1,a1,y),pt(r1,a0,y),m,[0,-9,0]);
  // the slab of dark setts with a chamfered kerb
  b.loft(hi?[{p:rect(w-.2,d-.2,R*.27),y:-.4},{p:rect(w-.2,d-.2,R*.27),y:.05},{p:rect(w-.5,d-.5,R*.27-.1),y:.11}]:[{p:rect(w-.2,d-.2,R*.27),y:-.4},{p:rect(w-.2,d-.2,R*.27),y:.11}],tint(S.stone,.72),{topMat:tint(S.stone,.78)});
@@ -537,7 +539,7 @@ WK.model('settler-plaza',(b,o)=>{const {pal,tint,mat,glow,hash,rect,circ}=b.k,S=
   b.loft([{p:poly,y:.1},{p:poly,y:.42}],k%2?S.stone:tint(S.conc,.9),{topMat:S.soil});
   const np=hi?7:2;for(let i=0;i<np;i++){const t=(i+.5)/np,aa=a-.25+.5*t,rr=(6.2+.35*((i%2)*2-1))*u,p=pt(rr,aa,.5);b.part().gem(p[0],p[1],p[2],.5*u,.26,.42*u,i%2?S.leaf:S.leafD,i+k);if(hi&&i%2===0)b.gem(p[0]+.12,.74,p[2]-.1,.13,.12,.13,pick(S.fresh,k+i));}
   b.at(Math.cos(a)*4.4*u,0,Math.sin(a)*4.4*u,PI/2-a,q=>{if(hi)bx(q,0,.12,0,2.0*u,.3,.5,S.stone);bx(q,0,hi?.42:.12,0,2.2*u,hi?.07:.37,.62,S.timber);});
-  for(const da of [-.42,.42]){const p=pt(9.03*u,a+da,0);if(hi){bx(b,p[0],.28,p[2],.3,.26,.3,S.stone);bx(b,p[0],.54,p[2],.22,.13,.22,S.lamp);bx(b,p[0],.67,p[2],.3,.05,.3,S.iron);if(da>0)b.halo(p[0],.62,p[2],.6,0xffb060,.3);}else b.gem(p[0],.5,p[2],.2,.24,.2,S.lamp);}
+  for(const da of [-.42,.42]){const p=pt(9.03*u,a+da,0);if(hi){bx(b,p[0],.28,p[2],.3,.26,.3,S.stone);bx(b,p[0],.54,p[2],.22,.13,.22,S.lamp);bx(b,p[0],.67,p[2],.3,.05,.3,S.iron);if(da>0)b.halo(p[0],.62,p[2],.6,0xffb060,.3);}else{bx(b,p[0],.1,p[2],.26,.42,.26,lampPost);bx(b,p[0],.52,p[2],.34,.2,.34,lampHead);}}
   // the corners of the square: a planted tub
   const cxy=(R-1.75*u)*.985;if(hi){b.at(Math.cos(a)*cxy*Math.SQRT2*.86,0,Math.sin(a)*cxy*Math.SQRT2*.86,PI/4,q=>{bx(q,0,.1,0,1.3*u,.36,1.3*u,S.timberD,S.soil);q.gem(0,.6,0,.5*u,.28,.5*u,S.leafD,k);q.gem(.2,.66,.15,.2,.2,.2,pick(S.fresh,k+2));});}}
  // somebody's things: a chalked hopscotch, a produce crate left by a bench
@@ -631,19 +633,20 @@ function rover(b,o,c){const {pal,tint,mat,glow}=b.k,S=pal.set,sd=o.seed|0,hi=b.h
 WK.model('settler-rover',(b,o)=>rover(b,o,false));
 WK.model('town-rover',(b,o)=>b.at(0,0,0,-Math.PI/2,q=>rover(q,o,true),0,0,.625));
 // A settler (faces +x of the frame, H tall), chunky enough to read from 30 m: short thick legs under a long coat that widens
-// to the shoulders (its front left open on a shirt), a scarf yoke in a second colour, sleeves held a little off the body, a
+// to the shoulders (its front left open on a shirt; rust, teal, mustard or olive by seed), a scarf yoke in a second colour,
+// darker sleeves held ten degrees off the body with a cuff and a bare hand, a
 // pack with a bedroll on the back, a big head under a wide-brimmed hat (odd seeds) or a pointed hood (even seeds). LOW keeps
 // the two legs, the coat and yoke, the head and a cone of a hat.
 function person(b,o,H){const {mat,tint,rect,circ}=b.k,sd=o.seed|0,hi=b.hi,PI=Math.PI,cl=(h,j=.06)=>mat(h,'cloth',0,j),hood=sd%2===0;
- const coat=pick([cl(0x6f7450),cl(0x8f4f36),cl(0xa98a55),cl(0x7a5a44)],sd),yoke=pick([cl(0xc9a04a),cl(0xcfc3a4),cl(0x9a4a32),cl(0xc9a04a)],sd),shirt=pick([cl(0xcfc3a4),cl(0xb39a66),cl(0xd8c8a0),cl(0xb8a27a)],sd),trous=cl(0x38302a,.04);
+ const coat=pick([cl(0x6f7450),cl(0x9a4630),cl(0x2f7f7a),cl(0xc9962e)],sd),yoke=pick([cl(0xc9a04a),cl(0xcfc3a4),cl(0x9a4a32),cl(0x3f6f6a)],sd),shirt=pick([cl(0xcfc3a4),cl(0xb39a66),cl(0xd8c8a0),cl(0xb8a27a)],sd),trous=cl(0x38302a,.04);
  const skin=pick([mat(0xc49a78,'flat'),mat(0x8a5a3c,'flat'),mat(0xe0b896,'flat')],sd+1),hair=mat(0x2a1e16,'flat'),hat=pick([cl(0xb39a66),cl(0xc7a868),cl(0x7a5634),cl(0x8a6a44)],sd),pack=mat(0x6a4a2c,'timber',.4,.05),roll=cl(0xcfc3a4);
  b.at(0,0,0,0,q=>{const hex=(rx,rz,y)=>({p:circ(rx,6,0,0,rz,PI/6),y});
   if(!hi){for(const s of [-1,1])q.tube([.02,0,s*.15],[0,.6,s*.13],.17,trous,{n:3,r2:.14});
-   q.loft([{p:rect(.36,.54,0,-.02,0),y:.52},{p:rect(.56,.8,0,-.05,0),y:1.34}],(r,i)=>i===1?shirt:coat,{topMat:yoke});
+   q.loft([{p:rect(.36,.54,0,-.02,0),y:.52},{p:rect(.56,.8,0,-.05,0),y:1.34}],(r,i)=>i===1?shirt:coat,{topMat:yoke});for(const s of [-1,1])q.tube([0,1.26,s*.4],[.1,.66,s*.56],.11,tint(coat,.72),{n:3,r2:.09});
    if(hood){q.loft([{p:rect(.4,.42,0,.01,0),y:1.34},{p:rect(.42,.44,0,0,0),y:1.6},{p:rect(.05,.05,0,-.12,0),y:1.78}],(r,i)=>!r&&i===1?skin:yoke,{top:false});return;}
    q.loft([{p:rect(.36,.36,0,.02,0),y:1.34},{p:rect(.36,.36,0,.02,0),y:1.62}],(r,i)=>i===3?hair:skin,{top:false});
    q.loft([{p:circ(.43,6,.03,0,.4),y:1.57},{p:circ(.05,6,.02,0,.05),y:1.78}],hat,{top:false});return;}
-  for(const s of [-1,1]){q.tube([.03,0,s*.145],[0,.62,s*.12],.14,trous,{n:6,r2:.1});q.tube([0,1.25,s*.33],[.07,.68,s*.4],.095,tint(coat,.84),{n:6,r2:.08});}
+  for(const s of [-1,1]){q.tube([.03,0,s*.145],[0,.62,s*.12],.14,trous,{n:6,r2:.1});q.tube([0,1.27,s*.34],[.1,.72,s*.5],.1,tint(coat,.74),{n:6,r2:.085});q.tube([.1,.72,s*.5],[.11,.66,s*.515],.095,yoke,{n:6});q.tube([.11,.66,s*.515],[.125,.55,s*.53],.07,skin,{n:5,r2:.05,caps:true});}
   q.loft([hex(.2,.27,.52),hex(.28,.38,1.26),hex(.14,.16,1.4)],(r,i)=>r?yoke:i===5?shirt:coat,{top:false});
   bx(q,-.31,.8,0,.22,.48,.46,pack,roll);
   if(hood){q.loft([{p:circ(.23,6,.01,0,.23),y:1.36},{p:circ(.245,6,0,0,.24),y:1.62},{p:circ(.05,6,-.13,0,.05),y:1.8}],(r,i)=>!r&&(i===0||i===5)?skin:yoke,{top:false});return;}
