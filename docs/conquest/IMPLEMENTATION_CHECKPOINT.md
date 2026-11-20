@@ -6108,9 +6108,17 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md fi
   the computer tab strip. NOT yet seen in the game: the helper's rebuilt town models (sheets only) and the Meshy colour
   fix for storage / lab / tesla (the first two tries did not reach the items: the look table was keyed by a field the
   loaded item does not carry; now keyed by the item id; a re-capture was running at this commit).
-- **Running (Nov 20, 12:30 UTC): critic round 3, critic 2 of 3** (computer 1366x768 and 1920x1080, small phones, the Command
-  Base flagship captures); its pages are in this session's scratchpad `crit3c/`. After its fixes: re-capture everything
-  that changed in round 3 at the five sizes (the farm's captures predate the fixes), then the test list.
+- **Done (Nov 20): critic round 3, critic 2 of 3 (computer, small phones, the Command Base)** and its fixes (record under
+  "Critic rounds"); seen in the real client at 1366x768, 1920x1080, 320x568 and 390x700 (the Command Base and the map).
+  **Critic round 3 is complete (three critics). No item is left that a critic marked clearly below and that was not
+  either fixed or recorded with its reason, so there is no round 4.** The Meshy colour fix and the helper's town models
+  are confirmed in the game (storage lighter gunmetal, lab mint, tesla ice white; radar dish, siege, laser cannon, walls).
+- **Open from round 3 (small):** at 320x568 the map's CLOSE MAP button is still below the fold (scroll reaches it) and the
+  docked heat panel touches the end of a long POWER pill.
+- **Next, in order:** (a) the final capture set of the finished world at the five sizes, HIGH and LOW (world kinds, town,
+  flagship; the earlier farm's pictures predate round 3; "before" pictures of main exist for 390x844 HIGH / LOW and
+  1366x768 HIGH in the earlier scratchpad `cap/before`); (b) the whole test list (node list, then the browser tests named
+  in the brief) on an idle machine; (c) two fresh read-only reviewers; (d) release.
 - **The account's usage limit was hit once (about 12:00 UTC) and reset at 12:20:** work in small committed slices.
 - **To re-run on an idle machine:** `conquest-town.mjs` and `fair-arcade.mjs` failed a wall-clock limit while the capture farm
   had every core busy; no limit is changed.
@@ -6338,6 +6346,38 @@ night scene; the ground outside the paved core a blank gradient; six of seven si
   has not had since the base moved into the town): it now takes a fixture town, shows the Command Base from above and
   from beside its wall and gate, and opens the map, at 390x844, 320x568, 390x700, 430x932 (touch) and 1366x768,
   1920x1080 (mouse). `conquest-town-captures.py` gained `--kindset a,b,c` (re-capture chosen kinds only).
+
+**Round 3, critic 2 of 3: the world on a computer and on small phones, and the Command Base** (a fresh art director; the
+36 world shots at 1366x768 HIGH and LOW, 1920x1080 LOW and the first 13 at HIGH, 320x568 and 390x700 HIGH and LOW; the
+Command Base from above and beside and the map at six sizes). Verdict: **the computer as a whole CLEARLY BELOW** ("the 3D
+holds up, but the screen is a phone interface pasted onto a monitor": touch joystick and touch buttons drawn on every
+computer capture, 7 to 9 px text, the hull bar a hairline across the whole window, the map a 648 px phone column); the
+3D on HIGH AT BAR for buildings; small phones CLOSE at 390x700 and CLEARLY BELOW at 320x568 (panels cover the tank); the
+Command Base wall, gate and towers CLOSE, **the town model on its pad CLEARLY BELOW** ("confetti"). What was done:
+- 1-2 (CLEARLY BELOW): on a keyboard-and-mouse computer (`hover: hover`, `pointer: fine`, 900 px and wider) the touch
+  joystick is not drawn (WASD drives; the town's drive view too), the four actions are a centred bar of square slots
+  in the order FIRE, DASH, SHIELD, SUPER with their keys on them (SPACE, SHIFT, F, R), the heat bar sits over that bar,
+  the top buttons, tracker, hull label, base line and prompts use 11 to 13 px text, the "practice" line has a dark
+  backing and the hull bar is at most 520 px wide (`css/conquest.css`).
+- 3 (CLEARLY BELOW): the region map on a computer is two columns (the map up to 880 px tall on the left, lists and
+  buttons in a 400 px column on the right) inside the window.
+- 6-7 (CLEARLY BELOW, small phones): under 720 px of height on a touch phone the heat panel docks on the POWER row at the
+  right (it covered the tank), a base / scan / gather / supply prompt is one short line (150 px, ellipsis) and the map
+  leaves room for its buttons (CLOSE MAP was below the fold).
+- 5 (CLEARLY BELOW): the gate's COMMAND sign read mirrored from inside the base: it and the BASE tier sign turn to the
+  camera (already in the town batch). 11, 17: the atmosphere veil thins out within 46 m of the camera (beside it, it
+  washed out a third of the screen and drew hard blue planes over the colony shop). 20: the monorail's soffit is
+  gunmetal on HIGH too. 4 (LOW): the town model's LOW homes are no longer pink and red (muted settler paints).
+- Not changed, with the reason: 4 the town model on the pad as "nine to thirteen hero pieces" (it is the pilot's actual
+  town in miniature, an owner-approved 5C feature: changing what it shows is a design decision; PROPOSAL in the final
+  report); 9 base tower / wall / pad polish beyond round 3's rib strips (POLISH; the pad is the town's board); 10 the
+  320 px top stack order (POLISH; a HUD re-layout, not a looks fix); 12 the overhead camera at the frontier wall (the
+  capture stands the tank on a 40 degree rim, where the game lifts the camera over the ground behind it); 13-14 blocky
+  ground rings and wide objective beams at monitor size (effects drawn from the shared 1024 px mask atlas; PROPOSAL: a
+  larger atlas); 15 map zoom and label spacing; 18 the outline bracket where a building hides the tank (the outline is
+  the tank's own silhouette; at the capture's distance it is a few pixels); 19 scorch blots (already softened in this
+  round); the sky's flat beige on wide screens (POLISH; PROPOSAL). Capture faults, not game faults: the tank parked
+  inside the ice drill, HIGH and LOW halves standing in different places on four shots.
 
 ### Performance record (software renderer: the counts are exact, the frame times are relative only)
 - **The colony's town core by ground cell** (`3ba537c`, measured Nov 20 at 390x844, five camera spots in the colony, before =

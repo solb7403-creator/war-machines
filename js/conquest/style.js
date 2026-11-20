@@ -255,6 +255,7 @@ void main(){vec4 t=texture2D(uMap,vUv);
  // angles; raw additive output (alpha 0 under premultiplied blending), no fog, tone mapping or colour conversion, as authored.
  if(vCol.a<0.){vec3 V=normalize(cameraPosition-vWP);float y=vUv.y,base=exp(-y*3.)*.9+exp(-y*.8)*.4+exp(-y*60.)*1.5,band=.5+.5*sin(vUv.x*.21+y*9.-uTime*1.3),sh=.6+.4*sin(vUv.x*.9-uTime*2.1+y*14.);
   float hx=uHigh>.5?(1.-smoothstep(0.,.04,hexL(vec2(vUv.x*.25,y*14.))))*.18:0.;float graz=1.-abs(V.y)*.5;float a=(base*(.55+.45*band)*sh+hx*exp(-y*2.))*graz*mix(1.,.14,uAtmo)*smoothstep(1.,.55,y);
+  a*=.12+.88*smoothstep(8.,46.,distance(cameraPosition,vWP));   // 5E-2d1: the veil thins out close to the camera (beside it, it washed out a third of the screen: critic round 3)
   gl_FragColor=vec4(mix(vec3(.35,.7,1.),vec3(.75,.9,1.),band)*a*.42,0.);return;}
  vec3 e=vCol.rgb*t.r*uFade;float o=vCol.a*t.g*uFade;
 #ifdef USE_FOG

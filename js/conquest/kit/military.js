@@ -749,7 +749,7 @@ WK.model('rail-pylon',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,sink=o.sink??1,Y=(o.h|
 // lip and small cyan under-lights (pads under the flange and on the soffit); on HIGH a deep rib under mid-span, a dark
 // conduit down each side and a pale bracket under each end. No end faces: spans chain. About 190 / 24.
 WK.model('rail-beam',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.w||8,x0=-L/2,x1=L/2,P=(xa,xb,y0,z0,y1,z1,m,ins)=>b.quad([xa,y0,z0],[xb,y0,z0],[xb,y1,z1],[xa,y1,z1],m,ins),Q=(y0,z0,y1,z1,m,ins)=>P(x0,x1,y0,z0,y1,z1,m,ins);
- Q(0,-.17,0,.17,M.bare,[0,-1,0]);Q(-.14,-.68,-.14,.68,M.plate,[0,-1,0]);Q(-1.3,-.45,-1.3,.45,hi?M.dark:M.hull,[0,0,0]);
+ Q(0,-.17,0,.17,M.bare,[0,-1,0]);Q(-.14,-.68,-.14,.68,M.plate,[0,-1,0]);Q(-1.3,-.45,-1.3,.45,M.hull,[0,0,0]);   // a gunmetal soffit on HIGH too: near-black, it was a black band across the sky from below
  for(const s of [-1,1]){Q(-.36,s*.68,-.14,s*.68,M.plate,[0,-.2,0]);Q(-1.3,s*.45,-.36,s*.45,M.hull,[0,-.8,0]);Q(-.36,s*.45,-.36,s*.68,M.hull2,[0,0,s*.5]);
   for(const x of hi?[-L/4,L/4]:[0])P(x-.5,x+.5,-.6,s*.462,-.44,s*.462,M.cyan,[0,-.5,0]);
   if(hi){Q(-.14,s*.17,0,s*.17,M.bare,[0,-.1,0]);Q(-1.3,s*.53,-1.14,s*.53,M.plate2,[0,-1.2,0]);for(const x of [-L/2+.3,0,L/2-.3])P(x-.13,x+.13,-1.14,s*.51,-.36,s*.51,M.hull2,[x,-.8,0]);}}
