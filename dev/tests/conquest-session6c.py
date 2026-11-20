@@ -189,7 +189,8 @@ async def steps(browser,base,ready,w,h,R):
  R['perfPlatoon']=await page.evaluate(FRAMES)
  fl=await page.request.post(base+'/fixture-field',data={'scale':'battalion'});R['fielded']=(await fl.json()).get('fielded')
  await page.evaluate('Conquest.view.authority.connect()')   # a unit fielded on the server mid-fight (test helper) reaches the phone with the next sync
- await page.wait_for_function('(Conquest.view?.battle?.friends||[]).length>=9&&(Conquest.view.friendViews?.size||0)>=9',timeout=90000);await page.wait_for_timeout(3000)
+ await page.wait_for_function('(Conquest.view?.battle?.friends||[]).length>=9&&(Conquest.view.friendViews?.size||0)>=9',timeout=300000);   # 5E-2d1: 90 s -> 300 s. A harness wait (the fielded units reach the client and their nine 3D views are built), not a rule: on the software renderer a frame of the rebuilt world takes a third longer (133 ms against 100 ms at 390x844) and nine views did not finish in 90 s
+ await page.wait_for_timeout(3000)
  R['perfBattalion']=await page.evaluate(FRAMES)
  await shot('battalion-low')
  await close_ctx(ctx)
