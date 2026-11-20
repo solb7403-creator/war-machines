@@ -6080,9 +6080,12 @@ Searched this session (fan wikis, community guides and news; numbers from third 
   "pay-to-win mech battler"). Lesson: the owner's "never sold: pilots, ranks, Role Core levels" is right; we sell looks (liveries)
   and time (RECRUIT finish), never power through pilots.
 
-## Checkpoint 44 — Session 5E-2d1: Conquest world rebuild (branch `claude/conquest-world-rebuild-mu3ktv`, from main `0e681aa`) — IN PROGRESS
+## Checkpoint 44 — Session 5E-2d1: Conquest world rebuild (branch `claude/conquest-world-rebuild-mu3ktv`, from main `0e681aa`) — RELEASED Nov 20, 2026 (PR #146, merge `b4a54c6`, build `20261120175159`)
 
 ### Resume here (kept current after every slice)
+- **SESSION 5E-2d1 IS RELEASED** (Nov 20, 2026: PR #146, merge `b4a54c6`, build `20261120175159`; "Release record (Nov 20, 2026)"
+  at the end of this checkpoint). Nothing below is left to do; the open items for later sessions are listed in that record.
+  Next on the roadmap: 5E-2d2.
 If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md first; it governs everything.
 - **Done and pushed** (do not redo): slice 1 ROADMAP notes (`c7fa6ea`); the world-kit core (`js/conquest/slots.js`,
   `js/conquest/worldkit.js`, the surface-detail solid shader in `js/conquest/style.js`), the viewer
@@ -6130,7 +6133,7 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md fi
 - **Release:** see "Release" at the end of this checkpoint.
 - **Nov 20, release CI:** PR #146's first run failed `transmission (chromium / webkit)` on the relay fight's draw-call
   budget (97 against 80). Fixed in code, test unchanged; see "Draw calls in the relay fight" under "Performance record".
-  After the fix is green: merge, verify the deploy, then the ROADMAP row and the release record (docs-only follow-up).
+  Done: green, merged, deployed (see the release record).
 - **The account's usage limit was hit once (about 12:00 UTC) and reset at 12:20:** work in small committed slices.
 - **To re-run on an idle machine:** `conquest-town.mjs` and `fair-arcade.mjs` failed a wall-clock limit while the capture farm
   had every core busy; no limit is changed.
@@ -6489,3 +6492,56 @@ on the pad is noise at phone size; the town drive opens with the tank behind a r
   does not keep a floating glow where the old chimney was.
 - **The capture tool stands the tank on open ground beside each subject** (the old framing parked it inside buildings, which
   the new see-through rule rightly treats as "pressed against").
+
+### Release record (Nov 20, 2026)
+- PR #146 merged 19:10 UTC as `b4a54c6` (merge commit; head `f373e48`), all 11 checks green on the head: owner-rules,
+  conquest, guardrails, transmission chromium + webkit, signup-browsers chromium / webkit / firefox, website, balance, verify.
+  Release pre-approved in the owner's brief.
+- CI needed one fix, in the game code (no test changed): the first run (head `2611607`) failed `transmission (chromium)` and
+  `transmission (webkit)` on the relay fight's draw-call budget, 97 against 80. Root cause, fix and numbers: "Draw calls in
+  the relay fight" under "Performance record" (`f373e48`; 97 -> 76 at 320x568, 71 at 390x844).
+- Local runs on the final code before the merge (chromium, software renderer), all PASS: conquest-living-war (`--quality high`:
+  76 and 70 draw calls; and `--fallback`), conquest-flagship-browser (390; 320 siege, no defense), conquest-occluder,
+  conquest-seethrough-town, conquest-slots-browser, conquest-transmission, conquest-session-032, conquest-session-033,
+  conquest-session6-feel, conquest-session6c (five sizes), perf; node: conquest-style, conquest-slots.
+- Not run locally at any point in this session (CI only, green there): conquest-session6-loot, conquest-earned-browser,
+  conquest-earned-end-to-end, conquest-preview, conquest-airdrop-browser, conquest-terraform-captures,
+  conquest-minerals-browser, conquest-base-builder, conquest-find-base, conquest-super-fx. WebKit and Firefox ran in CI only.
+- Worker: `Deploy Stars server (Cloudflare)` run 44799693475 SUCCESS on `b4a54c6` (deployed 19:15 UTC, version id
+  `e17d2791-9da5-4c7a-85c8-e907cc7340bf`): `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`, live
+  `version.json` = `{"v":"20261120175159"}` = repo (19:15 UTC).
+- GitHub Pages: `pages build and deployment` run 44799690172 SUCCESS on `b4a54c6` (19:12 UTC). This cloud container cannot
+  reach github.io or workers.dev (network policy), so the live values come from the deploy job's own checks.
+- The build stamp `20261120175159` was made before the draw-call fix and kept: nothing was deployed between the two, so no
+  player's cache holds that stamp with older files.
+- No live players: no migration code. Revert plan if broken: revert `b4a54c6` on main (both deploys follow main). Not needed.
+- This record and ROADMAP row 5E-2d1 went to main in a second, docs-only PR from the same branch (restarted from main).
+
+**Open items for later sessions (none blocks this release):**
+1. **LOW is heavier in the colony.** In the 6C raid scene LOW draws 285,055 triangles against 197,849 on main (+44%); a
+   software-renderer frame there takes 133 ms against 100 ms. PROPOSAL: trim the colony's LOW models and moving life.
+2. **No physical phone was measured.** Every number is from a software renderer; the owner judges the frame rate on his iPhone.
+3. **Page load:** +420,920 bytes raw, about +153.5 KB gzipped (+17% of the page's JS and CSS).
+4. **The relay fight sits 4 draw calls under its budget of 80** at 320x568. The camera now keeps its distance at buildings
+   (owner's rule), so it sees more than main's did; a later session that adds draws to a fight should batch the per-enemy
+   ground glows and the shots (two draws each today).
+5. Reviewer notes kept for the owner: the outline bracket behind thin objects; the atmosphere veil across one settler block;
+   map zoom and labels; the objective beam's width at monitor size; Command Base tower and wall polish; texture smear on
+   steep banks; crater repetition on the town's HIGH ground; the town miniature on the pad is noise at phone size
+   (PROPOSAL: hero pieces only); the town drive view's opening heading; minor HUD items at 320x568.
+6. PROPOSALS: a larger mask atlas; sky grading.
+7. Ten browser tests were never run in this container (list above); they pass in CI.
+
+**Slots ranked by what a Meshy model would add (for the owner's next credits):**
+1. `town-gate`, `town-wall`, `town-post`: the player's own town, seen close in the drive view and on the share card;
+   the wall is the most repeated piece in every town.
+2. `base-tower`, `base-gate`, `base-wall`: the Command Base in the world; both reviewers marked the tower and wall.
+3. `hive`, `hive-mast`, `raid-spire`: the enemy's organic structures, fought at constantly; organic shapes are where
+   code-built models are weakest.
+4. `refuge-habitat`, `refuge-processor`: the first place a new player sees.
+5. `settler-home`, `settler-hall`, `settler-shop`, `settler-block`: one model each covers many placements in the colony.
+6. `town-home-dome`, `town-home-block`, `town-home-tower`, `town-home-green`, `town-home-shop`: the town's own houses.
+7. `tank-wreck`, `crane-wreck`, `drill-wreck`: frontier dressing the tank drives right past.
+Not worth credits: rocks, grass, ferns, ore, fences, lamps, pipes, poles (small, simple, code-built reads fine); trees,
+people and livestock (many instances each: a Meshy model there costs triangles on LOW, the open item above); the viaduct,
+rail and dam (long repeating hard-surface pieces, which code builds well).
