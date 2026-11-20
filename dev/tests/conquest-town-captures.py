@@ -24,7 +24,7 @@ async def main():
    if exe:opts['executable_path']=exe
    browser=await pw.chromium.launch(**opts)
    async def session(quality,fixture):
-    ctx=await browser.new_context(viewport={'width':VW,'height':VH},device_scale_factor=A.dpr,has_touch=not A.mouse,is_mobile=not A.mouse,reduced_motion='reduce');page=await ctx.new_page()
+    ctx=await browser.new_context(viewport={'width':VW,'height':VH},device_scale_factor=A.dpr,has_touch=not A.mouse,is_mobile=not A.mouse,reduced_motion='reduce');page=await ctx.new_page();page.set_default_timeout(240000)   # the software renderer at a phone's real resolution can take seconds a frame: a click waits it out
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     await page.add_init_script('window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='+json.dumps(quality)+';window.Telegram={WebApp:{initData:'+json.dumps(ready['initData'])+',initDataUnsafe:{user:{id:8301,first_name:"BrowserPilot"}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){},selectionChanged(){}}}};try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
     async def route(r):

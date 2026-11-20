@@ -68,11 +68,13 @@ async def main(a):
   if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
   await page.wait_for_function('Conquest.view.pending===0',timeout=900000)
   # --ratio: draw at a phone's real resolution (the software renderer otherwise holds the view at .75x, which reads as pixelated)
-  if a.ratio:await page.evaluate('r=>{const v=Conquest.view;v.res=null;v.renderer.setPixelRatio(r);}',a.ratio)
+  # while a place streams in, the view is drawn small (the software renderer is slow and streaming advances a step a frame); the shot itself is drawn at --ratio
+  ratio=lambda r:page.evaluate('r=>{const v=Conquest.view;v.res=null;v.renderer.setPixelRatio(r);}',r)
   info={}
   for name,subj,deg,stand,pitch,dist in shots:
    # the tank stands on open ground beside the subject (never inside a solid: it would be pressed against it and thin it);
    # local raiders are stood down so the frame shows the place, not a fight
+   if a.ratio:await ratio(.3)
    yaw=await page.evaluate('''([deg,stand,pitch,dist,deck])=>{const v=Conquest.view,W=ConquestWorld,F=v.style.footprints,S=('''+subj+'''),a=deg*Math.PI/180,dx=Math.cos(a),dz=Math.sin(a);
     const free=(x,z)=>{for(let k=0;k<8;k++)if(W.solidAt(x+Math.cos(k*.785)*5,z+Math.sin(k*.785)*5))return false;return !W.solidAt(x,z)&&!W.waterAt(x,z);};
     // the side to stand on: the asked one, or the nearest side where the ground does not rise behind the tank (the game lifts
@@ -84,10 +86,11 @@ async def main(a):
     const fx=S[0]-x,fz=S[1]-z,yaw=Math.atan2(-fx,-fz);v.jump(x,z);if(deck&&W.deckAt(x,z)!==null){v.p.surface='bridge';v.p.y=W.deckAt(x,z);}v.heading=Math.atan2(fx,fz);v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;
     const E=v.encounter;if(E){for(const e of E.enemies||[]){e.hp=0;if(E.cleared)E.cleared[e.key]=true;}E.playerHp=E.playerMax;}return yaw;}''',[deg,stand,pitch,dist,name=='viaduct-deck'])
    await page.wait_for_timeout(400)
-   try:await page.wait_for_function('Conquest.view.pending===0',timeout=180000)
-   except Exception:pass
+   try:await page.wait_for_function('Conquest.view.pending===0',timeout=600000)
+   except Exception:print('WARNING still streaming at the shot:',name,flush=True)
+   if a.ratio:await ratio(a.ratio)
    await page.evaluate('([yaw,pitch,dist])=>{const v=Conquest.view;v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;if(v.style&&v.style.atmo)v.style.atmo(v.p,10);}',[yaw,pitch,dist])   # the sky eases toward the place the tank stands in: a capture jumps, so it is settled at once
-   await page.wait_for_timeout(a.settle)
+   await page.wait_for_timeout(a.settle);await page.evaluate('()=>new Promise(r=>{let n=0;const f=()=>++n<3?requestAnimationFrame(f):r();requestAnimationFrame(f);})')   # three frames at the shot's resolution
    if a.clean:await page.add_style_tag(content='.cq-hud,.cq-top,.cq-toast,.cq-guide,.cq-ticker,#cq-ui,.cq-ui{visibility:hidden!important}') if not info else None
    await page.screenshot(path=str(out/f'{a.tag}-{name}-{a.size}-{a.quality}.png'),timeout=180000)
    info[name]=await page.evaluate('(()=>{const v=Conquest.view,i=v.renderer.info;return {calls:i.render.calls,tris:i.render.triangles,programs:i.programs?.length};})()')
