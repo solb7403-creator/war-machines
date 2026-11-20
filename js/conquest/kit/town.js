@@ -13,8 +13,9 @@ const WK=root.ConquestWorldKit,TAU=Math.PI*2,HP=Math.PI/2;
 // ------------------------------------------------------------------ shared town parts ----------------------------------
 // the town palette for one building: armour by the player's finish, accent light by level (or the player's theme)
 function TP(b,o,maxL=5){const {mat,glow,tint,pal}=b.k,M=pal.mil,L=Math.max(1,Math.min(maxL,(o.level|0)||1)),fh=o.finish==='sand'?0x8f7c62:o.finish==='graphite'?0x3a424e:0x48535f,
-  ah=o.accent!=null?o.accent:(L>=5?0xa8f8ff:L>=3?0x62f0e2:0x7fe9ff),arm=mat(fh,'metal',.3,.04);
- return {L,M,ah,arm,arm2:tint(arm,.78),rib:tint(arm,1.34,.014),lite:tint(arm,1.7,.03),gun:tint(arm,.9,.004),dark:M.dark,black:mat(0x14181d,'metal',.1,0),gold:M.gold,goldG:glow(0xffd36b,.6),apron:mat(0x7d848d,'concrete',.3),
+  ah=o.accent!=null?o.accent:(L>=5?0xa8f8ff:L>=3?0x62f0e2:0x7fe9ff),arm=mat(fh,'metal',.3,.04),sand=o.finish==='sand';
+ // gm / gm2 / top: the navy-charcoal gunmetal of the owner's Meshy turrets (#232b38 / #2b3442) and its lighter top plates (#36404e)
+ return {L,M,ah,arm,gm:mat(sand?0x4c4234:0x232b38,'metal',.25,.03),gm2:mat(sand?0x5a4f3f:0x2b3442,'metal',.3,.03),top:mat(sand?0x6e6250:0x36404e,'metal',.2,.03),arm2:tint(arm,.78),rib:tint(arm,1.34,.014),lite:tint(arm,1.7,.03),gun:tint(arm,.9,.004),dark:M.dark,black:mat(0x14181d,'metal',.1,0),gold:M.gold,goldG:glow(0xffd36b,.6),apron:mat(0x7d848d,'concrete',.3),
   acc:glow(ah,1),accS:glow(ah,.7),white:M.white,ice:M.ice,amber:M.amber,fire:glow(0xff8a3d,1.5),trim:L>=5?M.gold:tint(arm,1.5,.02)};}
 // a light pad / window / warhead tip: the shader multiplies a glow by 2.3 and tone-maps it, which bleaches a pale cyan to
 // white; the deepened colour (each channel to the power pw) at a part glow (k < 1) comes out on screen as the hex itself
@@ -31,15 +32,34 @@ function fin(b,x,y,w,h,dp,m,o={}){const z=o.z||0,sh=Math.min(o.sh??.5,h*.6),x0=x
 // a flat light strip / panel on the +z plane of the current frame
 // a band around a rectangular body (four faces, no top): eave trims, light lines
 const band=(b,x,y,z,w,h,d,m)=>b.loft([{p:b.k.rect(w,d,0,x,z),y},{p:b.k.rect(w,d,0,x,z),y:y+h}],m,{top:false});
+const strip0=(b,x,y,z,w,d,m)=>b.quad([x-w/2,y,z-d/2],[x+w/2,y,z-d/2],[x+w/2,y,z+d/2],[x-w/2,y,z+d/2],m,[x,y-1,z]);   // a flat mark lying on a deck
 const strip=(b,x,y,z,w,h,m)=>b.quad([x-w/2,y,z],[x+w/2,y,z],[x+w/2,y+h,z],[x-w/2,y+h,z],m,[x,y,z-1]);
 // run fn in n frames around a circle, +z pointing outward
 function around(b,cx,cz,r,n,rot,fn){for(let i=0;i<n;i++){const a=i/n*TAU+rot;b.at(cx+Math.cos(a)*r,0,cz+Math.sin(a)*r,-a+HP,q=>fn(q,i,a));}}
 // a band around an upright round body (a collar, a light ring): cheap replacement for a torus
 function hoop(b,x,y,z,r,hh,t,m,n,rot=0,simple){const C=b.k.circ,R=b.hi&&!simple?[{p:C(r,n,x,z,r,rot),y},{p:C(r+t,n,x,z,r+t,rot),y:y+hh*.25},{p:C(r+t,n,x,z,r+t,rot),y:y+hh*.75},{p:C(r,n,x,z,r,rot),y:y+hh}]:[{p:C(r+t,n,x,z,r+t,rot),y},{p:C(r+t,n,x,z,r+t,rot),y:y+hh}];return b.loft(R,m,{top:false,smooth:true});}
-// the apron every town building stands on: a thin concrete slab, the accent light line on its front edge; vital = gold corner marks
+// the inside of a bin: the walls between two rings (A above, B below), facing inward and up (a loft's faces look outward)
+function inLoft(b,A,B,m){const n=A.p.length;let cx=0,cz=0;for(const q of A.p){cx+=q[0];cz+=q[1];}cx/=n;cz/=n;
+ for(let i=0;i<n;i++){const j=(i+1)%n,a=A.p[i],c=A.p[j],d=B.p[j],e=B.p[i],mx=(a[0]+c[0])/2,mz=(a[1]+c[1])/2;b.quad([a[0],A.y,a[1]],[c[0],A.y,c[1]],[d[0],B.y,d[1]],[e[0],B.y,e[1]],m,[cx+(mx-cx)*3,(A.y+B.y)/2,cz+(mz-cz)*3]);}return b;}
+// compacted regolith under a turret disc (so it does not read as an island on the ground): an irregular 12-sided flat patch,
+// half extents hx / hz, at y = 0.03, with a slightly darker rim ring that feathers down to the ground (LOW: the patch
+// alone). Drawn without the builder's ground shading: it is ground, not a part standing on it.
+function groundApron(b,hx,hz,seed=1,ch=1.15){const {mat,tint,hash}=b.k,g=mat(0x6a5f58,'dirt',.2,0),rim=tint(g,.84),t=.3,P=[],ao=b.aoMin,h=k=>hash(seed*31+k);
+ [[1,1],[-1,1],[-1,-1],[1,-1]].forEach(([sx,sz],q)=>{const c1=ch*(.62+.5*h(q*3)),c2=ch*(.62+.5*h(q*3+1)),ins=.14*h(q*3+2),off=(h(q*5+7)-.5)*.5,A=[sx*hx,sz*(hz-c1)],C=[sx*(hx-c2),sz*hz];
+  if(q%2)P.push([off,sz*(hz-ins)],C,A);else P.push([sx*(hx-ins),off],A,C);});
+ b.aoMin=1;try{if(!b.hi)b.cap(P,.03,g,true);else{const I=P.map(v=>[v[0]*(hx-t)/hx,v[1]*(hz-t)/hz]);b.cap(I,.03,g,true);for(let i=0;i<12;i++){const j=(i+1)%12;b.quad([P[i][0],.012,P[i][1]],[P[j][0],.012,P[j][1]],[I[j][0],.03,I[j][1]],[I[i][0],.03,I[i][1]],rim,[0,-9,0]);}}}finally{b.aoMin=ao;}return b;}
+// a pad bollard / light post: an octagonal tapered gunmetal post on a base collar, one gold band, a lit slit (pale cyan
+// #cfefff unless o.lit) under a chamfered cap: about 120 triangles (o.lite, where a model carries several: 88, a plainer
+// collar and cap). LOW: a plain tapered post and its lit cap.
+function bollard(b,p,x,y,z,h=1,o={}){const r=o.r||.17,lit=o.lit||pad(b,0xcfefff,.5),n=b.hi?8:5,C=(k,t)=>({p:b.k.circ(r*k,n,x,z,r*k,Math.PI/n),y:y+h*t});
+ if(!b.hi){b.loft([C(1.2,0),C(.78,.8)],p.gm,{top:false});b.loft([C(.95,.8),C(.95,1)],lit,{topMat:p.gm2});return b;}
+ b.loft(o.lite?[C(1.75,0),C(1.1,.13),C(.78,.8)]:[C(1.75,0),C(1.75,.07),C(1.1,.15),C(.78,.8)],(k)=>k<(o.lite?1:2)?p.gm2:p.gm,{top:false});b.loft([C(1.02,.5),C(.98,.57)],p.gold,{top:false});
+ b.loft([C(.8,.8),C(.8,.87)],lit,{top:false});b.loft(o.lite?[C(1.08,.87),C(.62,1)]:[C(1.08,.87),C(1.08,.92),C(.62,1)],p.gm2,{topMat:p.top,bot:!o.lite});return b;}
+// the apron every town building stands on: a thin concrete slab, the accent light line on its front edge; vital = a gold
+// corner mark with a bollard on it at the two back corners
 function apron(b,o,p,vital){const w=o.w-.4,d=o.d-.4;ab(b,0,0,0,w,.3,d,p.apron,.07);for(const sx of [-1,0,1])cb(b,sx*(w/2-1.2),.3,d/2-.3,sx?1:1.4,.05,.12,p.accS);
  if(b.hi)for(const sx of [-1,1]){cb(b,sx*(w/2-.3),.3,d/2-1.1,.1,.05,1.2,p.accS);}
- if(vital)for(const sx of [-1,1])cb(b,sx*(w/2-.5),.3,-d/2+.5,.6,.08,.6,b.k.glow(0xffd36b,1.2));}
+ if(vital)for(const sx of [-1,1]){const x=sx*(w/2-.5),z=-d/2+.5;strip0(b,x,.32,z,.6,.6,b.k.glow(0xffd36b,1.2));bollard(b,p,x,.3,z,.95,{lite:1});}}
 // an armoured sliding door on the +z plane of the current frame: frame, dark slatted leaf, a light band over it
 function gateDoor(b,p,x,y,w,h,light,o={}){const fd=o.fd||.22;ab(b,x,y,0+fd/2,w+.6,h+.45,fd,p.arm2,.08);strip(b,x,y,fd+.02,w,h,p.black);strip(b,x,y+h+.1,fd+.03,w*.94,o.lh||.2,light);
  if(b.hi){const n=o.slats??Math.max(2,Math.round(h/.7));for(let k=1;k<n;k++)cb(b,x,y+h*k/n-.03,fd+.03,w,.06,.05,p.rib);if(o.split!==false)cb(b,x,y,fd+.03,.1,h,.06,p.rib);}return b;}
@@ -53,7 +73,8 @@ function vessel(b,p,x,y,z,r,h,m,o={}){const n=o.n||(b.hi?10:6);b.cyl(x,y,z,r,h,m
  if(b.hi||o.keep){const k=o.hoops??2;for(let i=1;i<=k;i++)hoop(b,x,y+h*i/(k+1)-.07,z,r,.14,.05,o.hoop||p.rib,n);}return b;}
 
 // ------------------------------------------------------------------ town-foundry (3x3) ---------------------------------
-// Smelter: a ribbed, vaulted furnace hall, a tall stack with a glowing orange rim, a pour channel into a glowing crucible,
+// Smelter: a ribbed, vaulted furnace hall, a tall stack with a glowing orange rim, a pour channel into the crucible (the
+// melt glows deep orange at the wall and yellow-white in the middle, with a warm glow on the apron under it),
 // ingot stacks on the apron, a heavy door under an amber band. Level: taller stack and hall, more ingots, a second stack,
 // a roof blower, gold trim at 5.
 WK.model('town-foundry',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,rect,circ,mat,tint}=b.k,hi=b.hi,hw=o.w/2,hd=o.d/2;apron(b,o,p);
@@ -70,16 +91,19 @@ WK.model('town-foundry',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,rect,circ,mat,tint
   ab(q,cx,2.1,.2,1.5,1.1,.4,p.arm2,.08);strip(q,cx,2.3,.43,1,.55,p.fire);});
  b.at(0,0,bz-bd/2,Math.PI,q=>{const n=hi?6:3;for(let k=0;k<n;k++)fin(q,-(bw/2-.3)+(bw-.6)*k/(n-1),y0+.6,.42,bh-.75,.3,p.arm2,{front:p.rib});});
  for(const s of [-1,1])b.at(s*bw/2,0,bz,s*HP,q=>{const n=hi?4:2;for(let k=0;k<n;k++)fin(q,-(bd/2-.5)+(bd-1)*k/(n-1),y0+.6,.42,bh-.75,.3,p.arm2,{front:p.rib});if(hi)strip(q,0,y0+bh*.55,.03,bd*.5,.12,p.accS);});
- b.at(cx,2.34,zf+.4,0,q=>{cb(q,0,-.22,.75,.8,.22,1.5,p.arm2);q.quad([-.14,.02,0],[.14,.02,0],[.14,.02,1.5],[-.14,.02,1.5],p.fire,[0,-1,0]);for(const s of [-1,1])cb(q,s*.33,0,.75,.14,.14,1.5,p.rib);},.2);
+ const melt=[pad(b,0xff7a1a,.6,1.5),pad(b,0xff9a2c,.8,1.5),b.k.glow(0xffb347,1.7)];   // the melt: #ff7a1a at the edge to #ffb347 in the middle
+ b.at(cx,2.34,zf+.4,0,q=>{cb(q,0,-.22,.75,.8,.22,1.5,p.arm2);q.quad([-.2,.02,0],[.2,.02,0],[.2,.02,1.5],[-.2,.02,1.5],melt[0],[0,-1,0]);q.quad([-.08,.03,0],[.08,.03,0],[.08,.03,1.5],[-.08,.03,1.5],melt[2],[0,-1,0]);for(const s of [-1,1])cb(q,s*.33,0,.75,.14,.14,1.5,p.rib);},.2);
  // the crucible on its cradle
  const iron=mat(0x3b2f2a,'metal',.7),cn=hi?10:6;
- b.loft([{p:circ(.8,cn,cx,cz),y:.85},{p:circ(1.22,cn,cx,cz),y:1.35},{p:circ(1.28,cn,cx,cz),y:1.95}],iron,{smooth:true,top:true,topMat:glow(0xff8a3d,1.55),bot:true});
- b.loft([{p:circ(1.34,cn,cx,cz),y:1.84},{p:circ(1.34,cn,cx,cz),y:2.06},{p:circ(.82,cn,cx,cz),y:2.06}],p.arm2,{top:false});
+ b.loft([{p:circ(.8,cn,cx,cz),y:.85},{p:circ(1.22,cn,cx,cz),y:1.35},{p:circ(1.28,cn,cx,cz),y:1.95}],iron,{smooth:true,top:false,bot:true});
+ b.loft([{p:circ(1.34,cn,cx,cz),y:1.84},{p:circ(1.34,cn,cx,cz),y:2.06},{p:circ(1.0,cn,cx,cz),y:2.06}],p.arm2,{top:false});
+ // inside the lip: the dark wall, then the melt in three rings, deep orange at the wall to yellow-white in the middle
+ b.at(cx,0,cz,0,q=>{bowl(q,[[1.0,2.06],[.96,1.86],[.66,1.9],[.3,1.93]],cn,(r)=>r?melt[r-1]:iron,true);q.cap(circ(.3,cn),1.93,melt[2],true);});
  for(const s of [-1,1]){if(hi){cb(b,cx+s*1.38,.3,cz,.3,1.5,.9,p.arm2);b.tube([cx+s*1.22,1.5,cz],[cx+s*1.6,1.5,cz],.16,p.rib,{n:6,caps:true});}
   // the gantry over the crucible: posts, beam, hoist
   b.tube([cx+s*1.72,.3,cz+.75],[cx+s*1.72,3.5,cz+.75],.11,p.rib,{n:hi?5:3});if(hi)b.tube([cx+s*1.72,2.6,cz+.75],[cx+s*1.1,3.5,cz+.75],.07,p.rib,{n:3});}
  cb(b,cx,3.5,cz+.75,3.9,.26,.34,p.arm);if(hi){cb(b,cx+.4,3.2,cz+.75,.5,.3,.5,M.hazard);b.tube([cx+.4,2.5,cz+.75],[cx+.4,3.2,cz+.75],.03,M.bare,{n:3});cb(b,cx+.4,2.36,cz+.75,.2,.16,.2,p.arm2);}
- if(hi){b.tube([cx,2.05,zf+1.85],[cx,1.98,cz-.6],.09,p.fire,{n:4});b.halo(cx,2.3,cz,2.2,0xff8a3d,.22);b.pool(cx,.34,cz,2,2,0xff8a3d,.16);}
+ if(hi){b.tube([cx,2.05,zf+1.85],[cx,1.94,cz-.5],.1,melt[2],{n:4});b.halo(cx,2.3,cz,2.2,0xff8a3d,.22);}b.pool(cx,.34,cz,1.9,1.9,0xff8a2a,.2);
  // the stack: taller with every level, a glowing rim
  const stack=(sx,sz,r,top,hot)=>{const n=hi?10:6;b.cyl(sx,ry-.1,sz,r*1.32,rh+.5,p.arm,{n:hi?8:6,bev:.1});b.cyl(sx,ry+rh+.3,sz,r,top-ry-rh-.3,p.arm2,{n,r2:r*.78,top:false});
   const nh=hi?3:1;for(let k=1;k<=nh;k++){const t=k/(nh+1),yy=ry+rh+.3+(top-ry-rh-.3)*t,rk=r+(r*.78-r)*t;hoop(b,sx,yy,sz,rk,.2,.07,k===nh&&L>=5?p.gold:p.rib,n);}
@@ -106,7 +130,8 @@ WK.model('town-biodome',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,circ,mat,tint,pal}
  b.loft([hex(R,.3),hex(R,1.0),hex(R-.3,yb),hex(rd-.1,yb)],(r)=>r?p.arm2:p.arm,{top:false});b.loft([hex(R+.05,.62),hex(R+.05,.76)],p.accS,{top:false});
  if(L>=5)b.loft([hex(R+.04,.98),hex(R+.04,1.1)],p.gold,{top:false});
  // the dome: flat glass facets; the lower band is tinted by the foliage inside
- const gl=[mat(0x5f93b8,'glass',.1),mat(0x78aed0,'glass',.16)],gr=[mat(0x2f7a3c,'glass',.16),mat(0x245a30,'glass',.1),mat(0x4a9448,'glass',.2)],rings=[];
+ // LOW has no glass shader: its panes are painted pale glass (#9fd0c8), and the foliage green (#3f9a55) shows in the lower panels only
+ const gl=hi?[mat(0x5f93b8,'glass',.1),mat(0x78aed0,'glass',.16)]:[mat(0x9fd0c8,'glass',.1,.02),mat(0x8fc3bd,'glass',.16,.02)],gr=hi?[mat(0x2f7a3c,'glass',.16),mat(0x245a30,'glass',.1),mat(0x4a9448,'glass',.2)]:[mat(0x3f9a55,'glass',.16,.02),mat(0x378a4c,'glass',.1,.02),mat(0x3f9a55,'glass',.2,.02)],rings=[];
  for(let i=0;i<=lat;i++){const t=i/lat*HP*.9,c=Math.cos(t),s=Math.sin(t);rings.push({p:circ(rd*c,n,0,0,rd*c,Math.PI/n),y:yb+dh*s/Math.sin(HP*.9)*.94});}
  b.loft(rings,(r,i)=>r===0?(hi&&i%5===3?gl[0]:gr[(i*7)%3]):(r===1&&hi&&i%3!==1?gr[(i+1)%3]:gl[(i+r)%2]),{top:true,topMat:p.arm2});
  // rib arches from the six corners to the crown, corner piers with a light slit
@@ -127,8 +152,9 @@ WK.model('town-biodome',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,circ,mat,tint,pal}
 });
 
 // ------------------------------------------------------------------ town-hangar (4x3) ----------------------------------
-// A wide vehicle hangar: armoured walls under a ribbed arch roof, the big dark door with a lit header in the arched front,
-// parked machines on the apron (one more per level, up to four), roof lights, a control cab and a mast at higher levels.
+// A wide vehicle hangar: armoured walls under a ribbed arch roof, the big sectional door (segment lines, an amber sill
+// stripe) with a lit header in the arched front, parked machines on the apron (one more per level, up to four), framed
+// skylights along the ridge, a control cab and a mast at higher levels.
 WK.model('town-hangar',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,rect,mat}=b.k,hi=b.hi,hw=o.w/2,hd=o.d/2;apron(b,o,p);
  const bw=o.w-1.5,bd=o.d*.55,bz=-hd+.7+bd/2,zf=bz+bd/2,y0=.3,wh=2.7+.14*L,ry=y0+wh,rh=2.1+.14*L,vn=hi?8:4;
  ab(b,0,y0,bz,bw+.4,.5,bd+.4,p.arm2,.12);ab(b,0,y0+.5,bz,bw,wh-.5,bd,p.arm,.1);
@@ -137,12 +163,14 @@ WK.model('town-hangar',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,rect,mat}=b.k,hi=b.
  band(b,0,ry-.18,bz,bw+.24,.18,bd+.24,p.trim);
  // the door wall: frame, slatted leaf, lit header, corner buttresses; side fins
  const dw=bw*.66,dh=wh+rh*.28;
- b.at(0,0,zf,0,q=>{gateDoor(q,p,0,y0,dw,dh,p.acc,{lh:.14,fd:.26});strip(q,0,y0+dh+.3,.3,dw*.98,.16,p.gold);for(const s of [-1,1]){fin(q,s*(bw/2-.35),y0+.5,.6,wh-.5,.42,p.arm2,{front:p.rib});if(hi){fin(q,s*(dw/2+1),y0+.5,.42,wh-.3,.3,p.arm2,{front:p.rib});strip(q,s*(bw/2-.35),y0+1,.44,.14,wh*.4,p.accS);}}
+ b.at(0,0,zf,0,q=>{gateDoor(q,p,0,y0,dw,dh,p.acc,{lh:.14,fd:.26,slats:1,split:false});strip(q,0,y0+dh+.3,.3,dw*.98,.16,p.gold);
+  // the sectional leaf: segment lines (#2c3440) every 0.6 m and a joint between its five panels, the amber sill stripe
+  {const seg=b.k.mat(0x2c3440,'metal',.2,0),ns=hi?Math.max(3,Math.round(dh/.6)):3;for(let k=1;k<ns;k++)strip(q,0,y0+dh*k/ns-.05,.29,dw,hi?.09:.12,seg);if(hi)for(let k=1;k<5;k++)strip(q,-dw/2+dw*k/5,y0+.2,.295,.07,dh-.2,seg);strip(q,0,y0+.02,.3,dw,.17,pad(b,0xe8b93a,.42,1.5));}for(const s of [-1,1]){fin(q,s*(bw/2-.35),y0+.5,.6,wh-.5,.42,p.arm2,{front:p.rib});if(hi){fin(q,s*(dw/2+1),y0+.5,.42,wh-.3,.3,p.arm2,{front:p.rib});strip(q,s*(bw/2-.35),y0+1,.44,.14,wh*.4,p.accS);}}
   if(hi){for(const s of [-1,1])for(let k=0;k<3;k++)strip(q,s*(dw/2+.18),y0+.2+k*.5,.3,.2,.25,k%2?M.hazardD:M.hazard);strip(q,0,ry+rh*.55,.06,1.6,.3,p.white);}});
  for(const s of [-1,1])b.at(s*bw/2,0,bz,s*HP,q=>{const n=hi?5:2;for(let k=0;k<n;k++)fin(q,-(bd/2-.4)+(bd-.8)*k/(n-1),y0+.5,.42,wh-.6,.28,p.arm2,{front:p.rib});});
  if(hi)b.at(0,0,bz-bd/2,Math.PI,q=>{for(let k=0;k<7;k++)fin(q,-(bw/2-.4)+(bw-.8)*k/6,y0+.5,.42,wh-.6,.28,p.arm2,{front:p.rib});});
- // roof lights along the ridge (one per level), the control cab and the mast
- for(let k=0;k<L;k++){const z=bz-(bd/2-.8)+(bd-1.6)*(L>1?k/(L-1):.5);cb(b,0,ry+rh+.1,z,.5,.16,.5,p.white);}
+ // skylights along the ridge (one per level), the control cab and the mast
+ {const sky=pad(b,0x9fb4c8,.4,2);for(let k=0;k<L;k++){const z=bz-(bd/2-.8)+(bd-1.6)*(L>1?k/(L-1):.5);if(hi){cb(b,0,ry+rh+.02,z,1.1,.16,.76,p.gm2);strip0(b,0,ry+rh+.19,z,.86,.52,sky);}else cb(b,0,ry+rh+.04,z,1,.12,.66,sky);}}   // skylights (#9fb4c8) in dark frames
  if(L>=3){const x=bw*.3,yy=ry+rh*.7,ch=6.84-yy;ab(b,x,yy,bz+bd*.2,2.4,ch,2,p.arm,.1);b.at(x,yy,bz+bd*.2+1,0,q=>strip(q,0,ch*.4,.02,2,ch*.36,M.ice));cb(b,x,yy+ch,bz+bd*.2,2.6,.12,2.2,p.arm2);}
  if(L>=4){const x=-bw*.32,yy=ry+rh*.7;b.cyl(x,yy,bz,.34,.6,p.arm2,{n:6});const mt=6.74-yy;b.tube([x,yy+.6,bz],[x,yy+mt,bz],.08,M.trim,{n:5});cb(b,x,yy+mt,bz,.22,.22,.22,M.red);if(hi){b.tube([x-.6,yy+mt*.7,bz],[x+.6,yy+mt*.7,bz],.04,M.bare,{n:3});b.halo(x,yy+mt+.1,bz,.6,0xff3048,1);}}
  // parked machines, guns outward
@@ -178,7 +206,7 @@ WK.model('town-helium',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow}=b.k,hi=b.hi,hw=o.w
 // ------------------------------------------------------------------ town-radar (2x2) + town-radar-dish ------------------
 // Radar station base: an armoured block plinth (60% of the pad wide, 1 m high) and the mast (r 0.58, height 3 + 0.5 * level) whose top carries
 // the separately turning dish ('town-radar-dish', placed with its origin at y = 0.3 + 3 + 0.5 * level). Two cable drums,
-// an equipment box and a status light at every level.
+// an equipment box and a status-light bollard at every level.
 function reel(b,p,x,y,z,r,ry){b.at(x,y,z,ry,q=>{const M=p.M;if(!b.hi){q.tube([-.42,r,0],[.42,r,0],r,p.rib,{n:6,caps:true});for(const s of [-1,1])cb(q,s*.5,0,0,.1,r+.08,.9,p.arm2);return;}   // LOW: one drum between its stands
   for(const s of [-1,1]){q.tube([s*.34,r,0],[s*.42,r,0],r,p.rib,{n:8,caps:true});cb(q,s*.5,0,0,.1,r+.08,.9,p.arm2);}q.tube([-.34,r,0],[.34,r,0],r*.66,M.dark,{n:8});q.tube([-.56,r,0],[.56,r,0],.09,p.gold,{n:5,caps:true});});}
 WK.model('town-radar',(b,o)=>{const p=TP(b,o),{L,M}=p,{rect,glow}=b.k,hi=b.hi,hw=o.w/2,hd=o.d/2,y0=.3,mt=y0+3+.5*L,n=hi?10:6,bw=Math.min(o.w,o.d)*.6,hb=bw/2;apron(b,o,p);
@@ -194,7 +222,7 @@ WK.model('town-radar',(b,o)=>{const p=TP(b,o),{L,M}=p,{rect,glow}=b.k,hi=b.hi,hw
  {const x=hw-1.25,z=-hd+1.2;ab(b,x,y0,z,1.5,1.5,1,p.arm,.08);b.at(x,0,z+.5,0,q=>{strip(q,-.2,y0+.5,.03,.8,.6,p.black);strip(q,.48,y0+1.15,.03,.16,.12,M.amber);if(hi)for(let k=0;k<3;k++)cb(q,-.2,y0+.6+k*.17,.03,.7,.05,.04,p.rib);});
   if(hi)b.pipe([[x-.75,y0+.3,z],[hb*.5,y0+.3,z],[hb*.5,y0+.3,-hb+.2]],.07,M.bare);
   if(L>=2){ab(b,x-.2,y0+1.5,z,.9,.45,.7,p.arm2,.06);b.tube([x+.45,y0+1.5,z-.2],[x+.45,y0+2.7,z-.2],.035,M.bare,{n:3});}}
- const sx=hw-1.1,sz=hd-1.1;b.cyl(sx,y0,sz,.22,.3,p.arm2,{n:6});b.tube([sx,y0+.3,sz],[sx,y0+1.7,sz],.08,p.rib,{n:5});cb(b,sx,y0+1.7,sz,.3,.3,.3,glow(p.ah,1.3));if(hi)b.halo(sx,y0+1.85,sz,.6,p.ah,.4);
+ const sx=hw-1.1,sz=hd-1.1;bollard(b,p,sx,y0,sz,1.9,{r:.15,lit:pad(b,p.ah,.6)});if(hi)b.halo(sx,y0+1.6,sz,.6,p.ah,.4);
  if(L>=4)for(const s of [-1,1]){const x=s*(hw-.7),z=s>0?-.2:1.3;b.tube([x,y0,z],[x,y0+2.6,z],.05,M.trim,{n:4});cb(b,x,y0+2.6,z,.14,.14,.14,M.red);cb(b,x,y0,z,.4,.2,.4,p.arm2);}
  if(L>=5)b.loft([{p:rect(bw+.05,bw+.05,bw*.19),y:y0+.66},{p:rect(bw+.05,bw+.05,bw*.19),y:y0+.78}],p.gold,{top:false});
 });
@@ -202,13 +230,15 @@ WK.model('town-radar',(b,o)=>{const p=TP(b,o),{L,M}=p,{rect,glow}=b.k,hi=b.hi,hw
 function bowl(b,prof,n,m,up){const ref=[0,up?-80:80,0];for(let r=0;r<prof.length-1;r++){const [r0,y0]=prof[r],[r1,y1]=prof[r+1];for(let i=0;i<n;i++){const a0=i/n*TAU,a1=(i+1)/n*TAU,c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
    b.quad([c0*r0,y0,s0*r0],[c1*r0,y0,s1*r0],[c1*r1,y1,s1*r1],[c0*r1,y1,s0*r1],typeof m==='function'?m(r,i):m,ref);}}return b;}
 // The dish head only: origin at its pivot (the mast top), it looks toward +z and 36 degrees up; the game turns it about y.
-WK.model('town-radar-dish',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow}=b.k,hi=b.hi,R=1.6+.25*L,n=hi?12:8,dp=R*.26;
+WK.model('town-radar-dish',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,mat}=b.k,hi=b.hi,R=1.6+.25*L,n=hi?12:8,dp=R*.26,steel=b.k.tint(mat(0x8793a3,'paint',.1,.02),.66),dk=mat(0x2a323e,'paint',.1,0),fy0=r=>.07+(dp-.02)*r*r/(R*R);
  // the turning yoke
  b.cyl(0,0,0,.6,.22,p.arm2,{n:hi?8:6,top:false});ab(b,0,.22,-.1,.9,.6,.8,p.arm,.08);if(hi)for(const s of [-1,1])cb(b,s*.52,.2,0,.14,.75,.5,p.rib);
  b.at(0,.78,.05,0,q=>{
-  // back shell with a hub and four spines, the pale reflector inside, a gold (or trim) rim
-  bowl(q,[[.34,-.16],[.42,0],[R*.62,dp*.36],[R,dp]],n,(r)=>r===2?p.arm:p.arm2,false);bowl(q,[[R,dp],[R,dp+.1],[R-.14,dp+.1]],n,(r)=>L>=5?p.gold:p.rib,true);q.cap(b.k.circ(.34,n),-.16,p.arm2,false);
-  bowl(q,[[.02,.07],[R*.5,dp*.3+.04],[R-.14,dp+.06]],n,(r,i)=>r?(i%2?M.plate:M.plate2):M.plate2,true);
+  // back shell with a hub and four spines; inside, the steel blue-grey reflector (#8793a3) with a dark inner ring, a dark
+  // seam and a dark rib on every facet joint (HIGH); a narrow gold (or trim) rim
+  bowl(q,[[.34,-.16],[.42,0],[R*.62,dp*.36],[R,dp]],n,(r)=>r===2?p.arm:p.arm2,false);bowl(q,[[R,dp],[R,dp+.05],[R-.07,dp+.05]],n,(r)=>L>=5?p.gold:p.rib,true);q.cap(b.k.circ(.34,n),-.16,p.arm2,false);
+  bowl(q,(hi?[.02,.2,.3,.62,.66]:[.02,.2,.3]).map(t=>[t<.1?t:R*t,fy0(t<.1?t:R*t)]).concat([[R-.07,fy0(R-.07)]]),n,(r)=>r%2?dk:steel,true);
+  if(hi)for(let k=0;k<n;k++){const a=k/n*TAU,c=Math.cos(a),sn=Math.sin(a),r0=R*.32,r1=R-.09,w=.035;q.quad([c*r0+sn*w,fy0(r0)+.012,sn*r0-c*w],[c*r0-sn*w,fy0(r0)+.012,sn*r0+c*w],[c*r1-sn*w,fy0(r1)+.012,sn*r1+c*w],[c*r1+sn*w,fy0(r1)+.012,sn*r1-c*w],dk,[0,-80,0]);}
   if(hi){for(let k=0;k<8;k++){const a=k*HP/2+HP/4,c=Math.cos(a),s=Math.sin(a);q.tube([c*.45,-.04,s*.45],[c*R*.96,dp-.04,s*R*.96],.07,p.rib,{n:3});}cb(q,0,-.5,-.5,.7,.4,.5,p.arm2);for(const s of [-1,1])q.tube([s*.3,-.5,.1],[s*.5,dp*.2,R*.5],.05,M.bare,{n:3});}
   // the feed: three struts to the horn, the accent light at its mouth
   const fy=R*.62;for(let k=0;k<3;k++){const a=k*TAU/3+HP,c=Math.cos(a),s=Math.sin(a);q.tube([c*R*.8,dp*.7,s*R*.8],[c*.12,fy,s*.12],.045,M.trim,{n:3});}
@@ -270,41 +300,53 @@ WK.model('town-trophy',(b,o)=>{const p=TP(b,o),{L,M}=p,{rect,glow,tint}=b.k,hi=b
 });
 
 // ------------------------------------------------------------------ town-gate (1x1) ------------------------------------
-// The town gate block: an armoured gatehouse (3.8 x 3.6 x 3.8) with corner piers, an amber-lit door panel on +z and a
-// cyan-lit roof edge.
-WK.model('town-gate',(b,o)=>{const p=TP(b,o),{M}=p,{rect,glow}=b.k,hi=b.hi,W=3.8,H=3.6,pw=1.15,dz=W/2-.7;
- ab(b,0,0,0,W,.3,W,p.arm2,.08);
- // two battered pylons with pale shoulder plates, a cyan slit, a gold cap and a beacon
- for(const sx of [-1,1]){const x=sx*(W/2-pw/2);
-  b.loft([{p:rect(pw,W,hi?.14:0,x,0),y:.3},{p:rect(pw-.12,W-.24,hi?.14:0,x,0),y:H-.55},{p:rect(pw-.4,W-.8,hi?.1:0,x,0),y:H-.1}],(r)=>r?p.arm2:p.arm,{topMat:p.arm2});
-  cb(b,x,H-.1,0,.46,.14,.46,p.gold);cb(b,x,H+.04,0,.2,.22,.2,p.acc);
-  for(const sz of [-1,1])b.at(x,0,sz*(W/2-.02),sz>0?0:Math.PI,q=>{strip(q,0,H*.5,.03,pw*.56,H*.3,M.plate2);strip(q,0,.7,.03,.12,H*.34,p.acc);if(hi)strip(q,0,H*.84,.03,pw*.5,.1,p.gold);});
-  if(hi)b.at(x+sx*(pw/2-.02),0,0,sx*HP,q=>{strip(q,0,H*.46,.03,W*.4,H*.3,M.plate2);strip(q,0,1,.03,W*.5,.08,p.accS);});}
- // the lintel with its gold header, and the recessed door: dark leaf, chevrons, a light line (both faces)
- ab(b,0,H-1.2,0,W-pw*2+.3,.8,W-.9,p.arm,.08);
- for(const sz of [-1,1])b.at(0,0,sz*dz,sz>0?0:Math.PI,q=>{strip(q,0,.3,0,W-pw*2+.1,H-1.5,p.black);strip(q,0,H-1.06,.26,W-pw*2,.16,p.gold);strip(q,0,H-1.34,.03,W-pw*2-.2,.08,p.acc);
-   const n=hi?4:2;for(let k=0;k<n;k++){const y=.55+k*(H-2.2)/n,w=(W-pw*2-.3)/2;q.quad([-w,y,.03],[0,y+.34,.03],[0,y+.56,.03],[-w,y+.22,.03],k%2?p.rib:p.arm,[0,y,-1]);q.quad([w,y,.03],[0,y+.34,.03],[0,y+.56,.03],[w,y+.22,.03],k%2?p.rib:p.arm,[0,y,-1]);}});
- if(hi){b.halo(0,H+.2,0,.7,p.ah,.3);b.pool(0,.05,W/2+.8,1.3,.7,p.ah,.14);}
+// The town gate (3.8 x 3.8 m in plan, 4 m to the pylon tops; it is drawn shut: the rules open it, not the model): two
+// gunmetal pylons with chamfered corners and chamfered tops, a gold cap band and a small hooded beacon on each, standing a
+// metre over the lintel between them; under the lintel, on both faces, the recessed door: hazard-amber slats (#e8b93a) on a
+// dark leaf (#1b222c) under a cyan header strip. LOW keeps the two pylons, the door, the amber slat block, the header strip
+// and the gold bands.
+WK.model('town-gate',(b,o)=>{const p=TP(b,o),{rect,mat}=b.k,hi=b.hi,W=3.8,H=4,pw=1.05,dw=W-pw*2,dz=W/2-.62,lz=W/2-.5,ly=2.95,dh=ly-.9,amb=pad(b,0xe8b93a,.42,1.5),leaf=mat(0x1b222c,'paint',.3,0),cy=pad(b,0x8fe6ff,.5),ch=hi?.16:0;
+ ab(b,0,0,0,W,.22,W,p.gm2,.07);
+ for(const sx of [-1,1]){const x=sx*(W/2-pw/2),R=(dw2,dd,y,c=ch)=>({p:rect(pw-dw2,W-dd,c,x,0),y});
+  // the pylon: a foot collar, the shaft, the gold cap band, the chamfered top with its top plate
+  b.loft(hi?[R(0,0,.22),R(0,0,.5),R(.1,.1,.6),R(.1,.1,H-.5),R(.5,.9,H-.12,.1)]:[R(0,0,.22),R(.1,.1,H-.5),R(.5,.9,H-.12)],(r)=>hi&&r===0?p.gm2:r===(hi?3:1)?p.gm2:p.gm,{topMat:p.top});
+  b.loft([R(.04,.04,H-.78,hi?.19:0),R(.04,.04,H-.6,hi?.19:0)],p.gold,{top:false});
+  if(!hi)continue;
+  // the hooded beacon: a collar, the lit drum (the accent colour), a dark hood
+  {const C=(r,y)=>({p:b.k.circ(r,6,x,0,r,0),y}),y=H-.12;b.loft([C(.2,y),C(.2,y+.08)],p.gm2,{top:false});b.loft([C(.13,y+.08),C(.13,y+.22)],pad(b,p.ah,.6),{top:false});b.loft([C(.23,y+.22),C(.23,y+.26),C(.08,y+.38)],p.gm,{topMat:p.gold,bot:true});b.halo(x,y+.2,0,.55,p.ah,.3);}
+  // armour: a top plate, a cyan slit and a buttress foot on the two faces; a long plate and a light line on the outer side
+  for(const sz of [-1,1])b.at(x,0,sz*(W/2-.05),sz>0?0:Math.PI,q=>{strip(q,0,1.75,.02,pw*.62,1.3,p.top);strip(q,0,.75,.02,.1,.8,cy);fin(q,0,.22,pw*.5,.42,.1,p.gm2,{front:p.top,sh:.2});});
+  b.at(x+sx*(pw/2-.05),0,0,sx*HP,q=>{strip(q,0,1.75,.02,W*.46,1.3,p.top);strip(q,0,1.2,.03,W*.5,.07,cy);for(const s of [-1,1])fin(q,s*W*.3,.22,.34,.5,.1,p.gm2,{front:p.top,sh:.2});});}
+ // the lintel between the pylons (a metre under their tops), and the recessed door on both faces
+ ab(b,0,ly-.75,0,dw+.2,.75,lz*2,p.gm2,.08);
+ for(const sz of [-1,1])b.at(0,0,sz*dz,sz>0?0:Math.PI,q=>{strip(q,0,.22,0,dw+.1,dh+.1,leaf);strip(q,0,ly-.52,lz-dz+.02,dw-.16,.17,cy);
+   if(!hi){strip(q,0,.5,.02,dw-.1,1.3,amb);for(const y of [.86,1.3])strip(q,0,y,.03,dw-.1,.17,leaf);return;}   // LOW: the amber slat block, two dark gaps
+   for(let k=0;k<5;k++)cb(q,0,.42+k*.33,.03,dw-.14,.17,.06,amb);cb(q,0,.3,.04,.09,dh-.1,.08,p.gm);   // the slats, the leaf joint
+   for(const s of [-1,1]){cb(q,s*(dw/2-.02),.22,.06,.12,dh,.12,p.gm2);strip0(q,s*dw*.25,.235,lz-dz+.35,dw*.3,.22,amb);}   // guide rails, sill marks on the plinth
+   strip(q,0,ly-.2,lz-dz+.02,dw*.5,.06,p.gold);});
+ if(hi)b.pool(0,.05,W/2+.8,1.3,.7,p.ah,.14);
 });
 
 // ================================================== turrets (1x1 and 2x1 cells) =======================================
-// Every turret is one slot: an armoured hex pedestal with a drum and an accent ring (o.part = 'base') and the turning head
+// Every turret is one slot: a round dark pedestal disc on a patch of compacted ground (o.part = 'base') and the turning head
 // (o.part = 'head': origin at its pivot, the weapon toward +z). With no o.part the whole turret is drawn, the head at
 // y = 1.4 + 0.15 * level. Each head has its own silhouette so its role reads at a glance; o.big = the 2-cell pedestal.
 const TURRET_Y=.86,HEAD_S=1.3;   // the head's pivot above the ground; the head is drawn 1.3x (chunky, like the Meshy turrets)
-// a fat light lozenge lying on the sloped rim of an n-sided disc (vertices at rot + k * TAU / n): centred on angle a0, half
-// span da, between the bevel's lower ring (ra, ya) and upper ring (rb, yb), covering the fraction u0..u1 of the slope. It is
-// cut at the disc's corners so every piece lies flat on its facet; HIGH tapers the two ends, LOW keeps flat quads.
-function lozenge(b,n,rot,a0,da,ra,ya,rb,yb,u0,u1,m){const st=TAU/n,cn=Math.cos(Math.PI/n),f=a=>{let t=(a-rot)%st;if(t<0)t+=st;return cn/Math.cos(t-st/2);},cuts=[a0-da];
+// a small light lying on the sloped rim of an n-sided disc (vertices at rot + k * TAU / n): centred on angle a0, half span
+// da, between the bevel's lower ring (ra, ya) and upper ring (rb, yb), covering the fraction u0..u1 of the slope. It is cut
+// at the disc's corners so every piece lies flat on its facet (a light centred on a facet is one quad).
+function rimLight(b,n,rot,a0,da,ra,ya,rb,yb,u0,u1,m){const st=TAU/n,cn=Math.cos(Math.PI/n),f=a=>{let t=(a-rot)%st;if(t<0)t+=st;return cn/Math.cos(t-st/2);},cuts=[a0-da];
  for(let k=Math.ceil((a0-da-rot)/st-1e-6);rot+k*st<a0+da-1e-4;k++){const v=rot+k*st;if(v>a0-da+1e-4)cuts.push(v);}cuts.push(a0+da);
- const um=(u0+u1)/2,hw=(u1-u0)/2,P=(a,u)=>{const r=(ra+(rb-ra)*u)*f(a)+.014;return [Math.cos(a)*r,ya+(yb-ya)*u+.014,Math.sin(a)*r];},w=i=>b.hi&&(i===0||i===cuts.length-1)?hw*.42:hw;
- for(let i=0;i<cuts.length-1;i++){const a=cuts[i],c=cuts[i+1];b.quad(P(a,um-w(i)),P(c,um-w(i+1)),P(c,um+w(i+1)),P(a,um+w(i)),m,[0,-3,0]);}return b;}
-function turretBase(b,p,big){const {circ,tint}=b.k,hi=b.hi,L=p.L,r0=big?1.95:1.7,r1=big?1.2:1.02,nd=big?6:4,n=hi?(big?18:16):8,rot=Math.PI/n,C=(r,y)=>({p:circ(r,n,0,0,r,rot),y}),rim=tint(p.arm,1.22,.012),bvl=tint(p.arm,1.55,.024);
- // the pedestal of the owner's Meshy turrets: a low wide disc, a lighter rim with a broad bevel that carries fat light
- // lozenges (four, or six on the 2-cell disc), a stepped collar
- b.loft([C(r0,0),C(r0,.1),C(r0-.34,.33),C(r0*.74,.36),C(r0*.74,.46),C(r1,.5),C(r1,.74)],(r)=>r===0?rim:r===1?bvl:r===3?p.arm2:p.arm,{topMat:p.arm,smooth:false});
- for(let k=0;k<nd;k++)lozenge(b,n,rot,k*TAU/nd+(big?0:Math.PI/4),TAU*.06,r0,.1,r0-.34,.33,.16,.84,pad(b,p.ah,.5));
- if(hi){hoop(b,0,.5,0,r1,.1,.05,p.rib,n,rot,1);for(let k=0;k<nd;k++){const a=k*TAU/nd+(big?Math.PI/6:0);b.at(Math.cos(a)*(r0*.74+.02),.36,Math.sin(a)*(r0*.74+.02),-a+HP,q=>cb(q,0,0,0,.34,.1,.2,p.rib));}}
+ const P=(a,u)=>{const r=(ra+(rb-ra)*u)*f(a)+.014;return [Math.cos(a)*r,ya+(yb-ya)*u+.014,Math.sin(a)*r];};
+ for(let i=0;i<cuts.length-1;i++){const a=cuts[i],c=cuts[i+1];b.quad(P(a,u0),P(c,u0),P(c,u1),P(a,u1),m,[0,-3,0]);}return b;}
+function turretBase(b,p,big){const {circ,tint}=b.k,hi=b.hi,L=p.L,r0=big?1.95:1.7,r1=big?1.2:1.02,nd=big?6:4,n=hi&&!big?16:12,rot=big?Math.PI/n:Math.PI/4-Math.PI/n,C=(r,y)=>({p:circ(r,n,0,0,r,rot),y}),rim=tint(p.top,1.16,.006);
+ // the compacted ground the disc stands on: the cell and the slot's margin (0.55 m) around it
+ groundApron(b,big?4.59:2.55,2.55,big?5:2);
+ // the pedestal of the owner's Meshy turrets: a low, wide, round dark disc (16 sides; 12 on the 2-cell disc and on LOW) with a
+ // lighter rim, small cyan lights on the rim's bevel (four, or six on the 2-cell disc; each sits on one facet), a stepped collar
+ b.loft(hi?[C(r0,0),C(r0,.1),C(r0-.34,.33),C(r0*.74,.36),C(r0*.74,.46),C(r1,.5),C(r1,.74)]:[C(r0,0),C(r0,.1),C(r0-.34,.33),C(r1,.5),C(r1,.74)],(r)=>r===0?rim:r===1?p.top:r%2?p.gm2:p.gm,{topMat:p.gm,smooth:false});
+ for(let k=0;k<nd;k++)rimLight(b,n,rot,k*TAU/nd+(big?0:Math.PI/4),TAU*.021,r0,.1,r0-.34,.33,.2,.8,pad(b,0x8fe6ff,.55));
+ if(hi){hoop(b,0,.5,0,r1,.1,.05,p.top,n,rot,1);for(let k=0;k<nd;k++){const a=k*TAU/nd+(big?Math.PI/6:0);b.at(Math.cos(a)*(r0*.74+.02),.36,Math.sin(a)*(r0*.74+.02),-a+HP,q=>cb(q,0,0,0,.34,.1,.2,p.top));}}
  for(let k=1;k<L;k++){const a=HP+(k-(L)/2)*.3,rs=(r0*.74+r1)/2;cb(b,Math.cos(a)*rs,.47,Math.sin(a)*rs,.16,.08,.16,p.gold,-a+HP);}}   // one gold stud a level, at the front
 const barrel=(b,x,y,z0,z1,r,m,n)=>b.tube([x,y,z0],[x,y,z1],r,m,{n,caps:true});
 const HEAD={
@@ -317,16 +359,18 @@ const HEAD={
   if(hi){ab(b,-.2,.45,-.3,.74,.14,.74,p.arm2,.05);cb(b,.44,.45,.28,.22,.2,.3,p.rib);strip(b,.44,.5,.435,.14,.1,p.ice);
    for(const s of [-1,1]){ab(b,s*.8,-.3,-.1,.12,.55,1.2,p.lite,.04);b.tube([s*.84,0,-.1],[s*.93,0,-.1],.3,p.arm2,{n:8,caps:true});}b.tube([-.5,.45,-.6],[-.5,.78,-.6],.02,M.bare,{n:3});}},
  // twin heavy machine guns: fat perforated jackets, a round drum magazine on each side of the head
- mg(b,p){const hi=b.hi,M=p.M,L=p.L,n=hi?6:4,z1=.5+1.9+L*.15,dn=hi?8:5;ab(b,0,-.38,-.1,1.15,.76,1.25,p.arm,.12);
+ mg(b,p){const hi=b.hi,M=p.M,L=p.L,n=hi?6:4,z1=.5+1.9+L*.15,dn=8;ab(b,0,-.38,-.1,1.15,.76,1.25,p.arm,.12);
   for(const sx of [-.29,.29]){barrel(b,sx,.02,.5,z1,.1,p.gun,n);b.tube([sx,.02,.55],[sx,.02,1.5],.17,p.rib,{n});b.tube([sx,.02,z1-.05],[sx,.02,z1+.22],.155,p.arm2,{n,caps:hi});}
-  // a round drum magazine on each side of the head (the Meshy gun's two "ears"), a yellow band round each
-  for(const s of [-1,1]){b.tube([s*.57,0,-.1],[s*.95,0,-.1],.4,p.arm2,{n:dn,caps:true});b.tube([s*.68,0,-.1],[s*.84,0,-.1],.425,M.hazard,{n:dn});
-   if(hi)b.tube([s*.95,0,-.1],[s*.985,0,-.1],.25,p.acc,{n:dn});}
+  // a round drum magazine on each side of the head (the Meshy gun's two "ears") with a lit face; HIGH: a yellow band round each
+  for(const s of [-1,1]){b.tube([s*.57,0,-.1],[s*.95,0,-.1],.4,p.arm2,{n:dn,caps:true});if(hi)b.tube([s*.68,0,-.1],[s*.84,0,-.1],.425,M.hazard,{n:dn});
+   b.tube([s*.95,0,-.1],[s*.985,0,-.1],hi?.25:.18,hi?p.acc:p.accS,{n:hi?dn:6,caps:!hi});}
   if(hi){cb(b,0,.38,-.25,.6,.12,.5,p.arm2);strip(b,0,-.1,.53,.5,.1,p.acc);b.tube([.45,.3,.3],[.29,.12,.5],.05,M.bare,{n:3});b.tube([-.45,.3,.3],[-.29,.12,.5],.05,M.bare,{n:3});}},
- // a beam emitter: a faceted ball housing, a ringed lens barrel and the glowing cyan lens
- laser(b,p){const hi=b.hi,M=p.M,n=hi?10:6;if(hi)b.ball(0,.2,0,.74,p.arm,false);else{b.cyl(0,-.3,0,.74,.34,p.arm,{n:6,top:false});b.dome(0,.04,0,.74,.9,.74,p.arm,{n:6,rings:2});}b.tube([0,.2,.3],[0,.2,1.75],.27,p.lite,{n,caps:true});
-  b.tube([0,.2,1.7],[0,.2,1.86],.33,p.arm2,{n,caps:true});b.at(0,0,1.87,0,q=>strip(q,0,.04,0,.32,.32,b.k.glow(0x22e6ff,2)));
-  if(hi){for(const z of [.75,1.1,1.45])b.at(0,.2,z,0,q=>q.ring(0,0,0,.3,M.cyan,{thin:true}),HP);for(const s of [-1,1])for(let k=0;k<3;k++)cb(b,s*.72,-.1+k*.2,-.2,.14,.07,.7,p.rib);cb(b,0,.9,-.1,.3,.12,.5,p.gold);b.halo(0,.2,1.95,.7,0x22e6ff,.5);}},
+ // a beam emitter (the owner's Meshy laser): a chamfered box housing, a short fat lens barrel on its face and the glowing
+ // cyan lens; one cooling ring, side ribs and a light line on HIGH
+ laser(b,p){const hi=b.hi,M=p.M,n=hi?10:6,zl=1.42,lens=b.k.glow(0x22e6ff,2);ab(b,0,-.4,-.15,1.3,1.2,1.5,p.arm,.16);
+  b.tube([0,.2,.55],[0,.2,zl],.42,p.arm2,{n,caps:true});b.tube([0,.2,zl-.14],[0,.2,zl+.04],.48,p.gun,{n,caps:true});b.at(0,.2,zl+.05,0,q=>q.cap(b.k.circ(.34,n),0,lens,true),HP);
+  if(hi){b.at(0,.2,.95,0,q=>q.ring(0,0,0,.45,M.cyan,{thin:true}),HP);for(const s of [-1,1]){for(let k=0;k<3;k++)cb(b,s*.66,-.2+k*.26,-.2,.1,.09,.9,p.rib);b.at(s*.655,0,-.15,s*HP,q=>strip(q,0,.56,.006,1,.06,p.acc));}
+   ab(b,-.2,.8,-.35,.6,.12,.7,p.arm2,.04);cb(b,.34,.8,-.1,.26,.1,.4,p.gold);b.at(0,0,-.9,Math.PI,q=>strip(q,0,.1,.006,.8,.1,p.acc));b.halo(0,.2,zl+.14,.7,0x22e6ff,.5);}},
  // a twin rocket pod (the owner's Meshy pod): two chamfered launch boxes side by side on a central yoke, pitched up 15
  // degrees; four recessed round tubes in each face with the gold-orange warhead tips showing; blast vents at the back
  rocket(b,p){const hi=b.hi,M=p.M,n=hi?6:5,tip=pad(b,0xf0a640,.48,1.5),pw=.8,px=.57,pl=1.5,zf=pl/2;
@@ -358,11 +402,16 @@ const HEAD={
   ab(b,0,-.3,.05,.9,.6,.8,p.arm,.1);barrel(b,0,.05,.4,1.5,.2,p.gun,n);b.tube([0,.05,1.4],[0,.05,1.85],.22,p.arm2,{n,r2:.34});
   b.at(0,0,1.86,0,q=>strip(q,0,-.09,0,.28,.28,b.k.glow(0xff8a3d,2)));
   if(hi){b.tube([.3,.5,-.5],[.2,.3,.3],.04,M.bare,{n:3});b.tube([-.3,.5,-.5],[-.2,.3,.3],.04,M.bare,{n:3});cb(b,0,.3,.1,.5,.1,.5,M.hazard);for(const z of [.7,1])b.at(0,.05,z,0,q=>q.ring(0,0,0,.23,p.rib,{thin:true}),HP);b.halo(0,.05,2,.8,0xff8a3d,.6);}},
- // a siege gun: a long heavy barrel with recoil cylinders in a deep armoured cradle
- siege(b,p){const hi=b.hi,M=p.M,L=p.L,n=hi?10:6,z1=.8+3.2+L*.3;ab(b,0,-.5,-.25,1.95,1.2,2.2,p.arm,.18);ab(b,0,-.35,.9,1.1,.9,.4,p.arm2,.12);
-  barrel(b,0,.15,1,z1,.3,p.gun,n);b.tube([0,.15,1.2],[0,.15,2.6],.38,p.rib,{n});b.tube([0,.15,z1-.5],[0,.15,z1],.42,p.arm2,{n,caps:true});b.tube([0,.15,z1-.62],[0,.15,z1-.5],.34,p.gold,{n});
-  for(const sx of [-.7,.7])b.tube([sx,-.05,.4],[sx,-.05,1.8],.12,M.plate2,{n:hi?6:4,caps:true});b.at(0,0,-1.36,Math.PI,q=>strip(q,0,.2,.02,1.2,.12,p.acc));
-  if(hi){ab(b,-.4,.7,-.5,.8,.16,.8,p.arm2,.05);cb(b,.6,.7,.2,.3,.26,.4,p.rib);strip(b,.6,.78,.405,.2,.12,p.ice);for(const s of [-1,1])ab(b,s*1.02,-.3,-.25,.12,.8,1.6,p.lite,.04);for(const z of [3,3.4])b.at(0,.15,z,0,q=>q.ring(0,0,0,.33,p.gold,{thin:true}),HP);}},
+ // a siege gun: a low sloped gunmetal hull (#232b38) under lighter top plates (#36404e), a long heavy barrel in a fat recoil
+ // sleeve with a slotted muzzle brake and gold barrel bands, a recoil cylinder each side
+ siege(b,p){const hi=b.hi,L=p.L,n=hi?10:6,z1=.8+3.2+L*.3,R=(w,d,y,cz,c)=>({p:b.k.rect(w,d,hi?c:0,0,cz),y}),gunM=b.k.tint(p.top,1.12,.004);
+  b.loft([R(1.95,2.2,-.5,-.25,.2),R(1.95,2.2,.2,-.25,.2),R(1.5,1.72,.7,-.4,.16)],(r)=>r?p.gm2:p.gm,{topMat:p.top});ab(b,0,-.35,.9,1.1,.9,.4,p.gm2,.12);
+  barrel(b,0,.15,1,z1-.3,.28,p.gm2,n);b.tube([0,.15,1.15],[0,.15,2.35],.4,gunM,{n});b.tube([0,.15,2.35],[0,.15,2.55],.46,p.gm2,{n,caps:true});b.tube([0,.15,z1-.98],[0,.15,z1-.86],.34,p.gold,{n});
+  // the muzzle brake: a wide chamfered block with two blast slots a side, the bore dark
+  ab(b,0,-.17,z1-.4,.86,.64,.8,p.gm2,.1);b.at(0,.15,z1+.012,0,q=>q.cap(b.k.circ(.2,n),0,p.black,true),HP);
+  for(const sx of [-.7,.7])b.tube([sx,-.05,.4],[sx,-.05,1.8],.12,gunM,{n:hi?6:4,caps:true});b.at(0,0,-1.36,Math.PI,q=>strip(q,0,.02,.02,1.2,.12,p.acc));
+  if(hi){for(const s of [-1,1]){b.at(s*.435,0,z1-.4,s*HP,q=>{for(const z of [-.17,.17])strip(q,z,.02,.006,.16,.26,p.black);});ab(b,s*1.02,-.3,-.25,.12,.5,1.6,p.top,.04);}
+   ab(b,-.34,.7,-.6,.66,.14,.8,p.top,.05);cb(b,.5,.7,-.1,.3,.24,.4,p.gm2);strip(b,.5,.77,.105,.2,.12,p.ice);b.tube([0,.15,2.55],[0,.15,2.63],.36,p.gold,{n});for(const z of [3,3.4])b.at(0,.15,z,0,q=>q.ring(0,0,0,.31,p.gold,{thin:true}),HP);}},
  // a lightning coil: an insulated column wound with fat pale rings under a crackling orb, a gold-capped pylon each side
  tesla(b,p){const hi=b.hi,M=p.M,L=p.L,n=hi?10:6,k3=3+Math.min(2,L>>1),vio=b.k.glow(0xe6fbff,1.9),coil=pad(b,0xcfe9ff,.52,2);b.cyl(0,-.2,0,.62,.3,p.arm2,{n,bev:.06});b.cyl(0,.1,0,.34,1.9,M.plate2,{n,r2:.2});
   // the coil: fat pale rings (2.5x the old tube) shrinking up the column
@@ -371,13 +420,20 @@ const HEAD={
   for(const s of [-1,1]){const x=s*.78,h=1.53;if(hi)b.loft([{p:b.k.rect(.36,.6,.08,x,0),y:-.2},{p:b.k.rect(.3,.5,.07,x,0),y:h-.2}],p.arm,{top:false});else cb(b,x,-.2,0,.32,h,.54,p.arm);cb(b,x,h-.2,0,.4,.2,.62,p.gold);
    if(hi){b.at(x+s*.16,0,0,s*HP,q=>strip(q,0,.1,.012,.14,h-.6,p.accS));cb(b,s*.5,-.2,0,.3,.26,.4,p.arm2);}}
   b.ball(0,2.25,0,.42,vio,!hi);if(hi){for(let k=0;k<3;k++){const a=k*TAU/3;b.tube([Math.cos(a)*.5,-.1,Math.sin(a)*.5],[Math.cos(a)*.16,1.95,Math.sin(a)*.16],.035,M.bare,{n:3});}b.ring(0,2.25,0,.56,p.arm2,{thin:true,rx:.5});}b.halo(0,2.25,0,1.2,0x7fe9ff,.5);},
- // a heavy beam cannon: a wide focusing dish round a cyan ring and a white-hot core
- lasercannon(b,p){const hi=b.hi,M=p.M,n=hi?12:6,C=b.k.circ,mag=b.k.glow(0x7fe9ff,1.6),ring=pad(b,0x7fe9ff,.6),R=(r,z)=>({p:C(r,n),y:z});ab(b,0,-.5,-.35,1.55,1,1.65,p.arm,.14);
-  b.at(0,.1,.45,0,q=>{q.loft([R(.34,0),R(.5,.2),R(.92,.62),R(.98,.72)],M.plate,{smooth:true,top:false});bowl(q,[[.42,.45],[.64,.57],[.8,.66],[.97,.725]],n,(r)=>r===1?ring:r?M.plate:M.plate2,true);q.cap(C(.42,n),.45,b.k.glow(0xf2fdff,2),true);},HP);   // the bowl's inside faces the target: pale reflector, the cyan focusing ring, the white-hot core
-  if(hi){for(const s of [-1,1]){ab(b,s*.84,-.3,-.35,.14,.7,1.3,p.lite,.04);b.tube([s*.5,.5,-.8],[s*.5,.5,.5],.07,M.bare,{n:4});}cb(b,0,.5,-.6,.8,.16,.7,p.arm2);strip(b,0,.56,-.245,.5,.06,mag);b.halo(0,.1,1.3,1,0x7fe9ff,.45);}},
- // a railgun: two long rails over a capacitor bank, a cyan arc between them
+ // a heavy beam cannon: a dark focusing dish (#2a323e, 16 sides; 12 on LOW) carried by two yoke arms from the gunmetal body;
+ // inside the dish one concentric cyan ring (#8fe6ff) and a bright core only at its centre
+ lasercannon(b,p){const hi=b.hi,n=hi?16:12,C=b.k.circ,dish=b.k.mat(0x2a323e,'metal',.25,.03),bowlM=b.k.mat(0x2a323e,'paint',.05,.02),ring=pad(b,0x8fe6ff,.62),R=(r,z)=>({p:C(r,n),y:z}),dy=.5,dz=.5;
+  b.loft([{p:b.k.rect(1.5,1.6,hi?.16:0,0,-.35),y:-.5},{p:b.k.rect(1.5,1.6,hi?.16:0,0,-.35),y:.42},{p:b.k.rect(1.2,1.25,hi?.14:0,0,-.42),y:.72}],(r)=>r?p.gm2:p.gm,{topMat:p.top});
+  // the dish looks at the target: the dark back shell, a lighter lip, the cyan ring, a dark hub and the core
+  b.at(0,dy,dz,0,q=>{q.loft(hi?[R(.3,0),R(.44,.16),R(.74,.5),R(.8,.6)]:[R(.3,0),R(.74,.5),R(.8,.6)],dish,{smooth:true,top:false});
+   bowl(q,hi?[[.13,.26],[.3,.34],[.44,.42],[.56,.48],[.74,.57],[.8,.605]]:[[.13,.26],[.44,.42],[.56,.48],[.8,.605]],n,(r)=>r===(hi?2:1)?ring:hi&&r===4?p.top:hi&&r===0?p.black:bowlM,true);q.cap(C(.13,n),.26,b.k.glow(0xeafcff,1.9),true);},HP);
+  // the yoke: an arm each side from the body's shoulders out to the dish's trunnions
+  for(const s of [-1,1]){ab(b,s*.87,dy-.2,.2,.24,.4,1.5,p.gm2,.06);if(hi){b.tube([s*.66,dy,dz+.36],[s*1.03,dy,dz+.36],.14,p.top,{n:8,caps:true});b.tube([s*1.03,dy,dz+.36],[s*1.06,dy,dz+.36],.09,p.gold,{n:6,caps:true});}}
+  b.at(0,0,-1.16,Math.PI,q=>strip(q,0,.05,.02,1,.1,p.acc));
+  if(hi){ab(b,0,.72,-.5,.7,.12,.6,p.top,.04);strip(b,0,.76,-.195,.44,.05,ring);b.halo(0,dy,dz+.75,.9,0x8fe6ff,.42);}},
+ // a railgun: two long rails over a capacitor bank (a dark lid with one cyan strip), a cyan arc between them
  railgun(b,p){const hi=b.hi,M=p.M,L=p.L,len=3.8+L*.25,zc=-.5+len/2;ab(b,0,-.45,-.6,1.45,.9,1.65,p.arm,.14);
-  for(const sx of [-.28,.28])ab(b,sx,.04,zc,.15,.34,len,p.gun,.04);b.box(0,.17,zc,.07,.07,len-.3,b.k.glow(0x22e6ff,1.8));cb(b,0,.5,-.6,1,.12,1.2,p.accS);
+  for(const sx of [-.28,.28])ab(b,sx,.04,zc,.15,.34,len,p.gun,.04);b.box(0,.17,zc,.07,.07,len-.3,b.k.glow(0x22e6ff,1.8));cb(b,0,.5,-.6,1,.12,1.2,p.arm2);strip0(b,0,.632,-.6,.2,1.04,pad(b,0x8fe6ff,.55));
   if(hi){for(let k=0;k<4;k++){const z=.5+k*(len-1.2)/3;ab(b,0,-.04,z,.82,.46,.16,p.rib,.04);}for(const s of [-1,1])for(let k=0;k<3;k++)b.cyl(s*.5,.45,-1.1+k*.42,.15,.3,M.plate2,{n:6,topMat:M.cyan});b.tube([.6,.3,-.9],[.6,.9,-.9],.02,M.bare,{n:3});b.halo(0,.2,zc+len/2,.8,0x22e6ff,.5);}}};
 function turret(type){return (b,o)=>{const p=TP(b,o),big=(o.w||4)>5,part=o.part;if(part!=='head')turretBase(b,p,big);if(part!=='base')b.at(0,part==='head'?0:TURRET_Y,0,0,q=>HEAD[type](q,p),0,0,HEAD_S);};}
 for(const t of Object.keys(HEAD))WK.model('town-'+t,turret(t));
@@ -390,9 +446,9 @@ const octR=(b,r,y,cx=0,cz=0)=>({p:b.k.circ(r,8,cx,cz,r,Math.PI/8),y});
 // town-cc (4x4): the hero. A stepped octagonal command tower whose bottom tier spans about 80% of the pad and whose beacon
 // stands about 12 m up (13.5 m at level 10): one more tier per level (never fewer than three), two cyan windows a face on
 // every tier (the Meshy CC's), the entrance on the front, a windowed core drum under a gold crown ring, a roof cone, mast
-// and beacon; corner pylons from level 5, a gold ring and a gold beacon from 9. Gold corner marks on the apron.
+// and beacon; corner pylons from level 5, a gold ring and a gold beacon from 9. A bollard on a gold mark at each apron corner.
 WK.model('town-cc',(b,o)=>{const p=TP(b,o,10),{L,M}=p,{glow,circ,mat}=b.k,hi=b.hi,hw=o.w/2,hd=o.d/2,y0=.3,C8=Math.cos(Math.PI/8),S8=Math.sin(Math.PI/8),win=pad(b,0x7fe9ff,.48),crown=mat(0xc9a227,'metal',0,0);apron(b,o,p);
- for(const sx of [-1,1])for(const sz of [-1,1]){const x=sx*(hw-.75),z=sz*(hd-.75),g=glow(0xffd36b,1.3);if(hi)cb(b,x,.3,z,.7,.08,.7,g);else b.quad([x-.35,.32,z-.35],[x+.35,.32,z-.35],[x+.35,.32,z+.35],[x-.35,.32,z+.35],g,[x,0,z]);}
+ for(const sx of [-1,1])for(const sz of [-1,1]){const x=sx*(hw-.75),z=sz*(hd-.75);strip0(b,x,.32,z,.7,.7,glow(0xffd36b,1.3));bollard(b,p,x,.3,z,1.05,{lite:1});}
  const hm=Math.min(hw,hd),nt=Math.max(3,L),ht=5.6+.1*L,r0=hm*(.86+.005*L),r1=r0*.6,rd=r0*.46,th=ht/nt;let y=y0;
  for(let k=0;k<nt;k++){const r=r0+(r1-r0)*(nt>1?k/(nt-1):0),m=k%2?p.arm2:p.arm,fw=2*r*S8;
   b.loft(hi?[octR(b,r,y),octR(b,r-.1,y+th-.18),octR(b,r-.3,y+th)]:[octR(b,r,y),octR(b,r-.2,y+th)],m,{topMat:p.arm2});
@@ -421,8 +477,8 @@ WK.model('town-cc',(b,o)=>{const p=TP(b,o,10),{L,M}=p,{glow,circ,mat}=b.k,hi=b.h
   b.pipe([[x,y0+1.7,z],[x,y0+2.35,z],[x,y0+2.35,z-1.1]],.15,p.arm2);hoop(b,x,y0+1.86,z,.15,.2,.07,crown,6,0,1);}
 });
 
-// town-refinery (3x4): the group covers about 80% of the pad. A ribbed process block carrying the big gold-rimmed ore
-// hopper (the pale ore heaped inside), two domed tanks beside it (the tall one with the orange furnace glow at its foot),
+// town-refinery (3x4): the group covers about 80% of the pad. A ribbed process block carrying the big ore hopper (a dark
+// bin, a thin gold rim, a small amber heap of ore at its bottom), two domed tanks beside it (the tall one with the orange furnace glow at its foot),
 // a bent pipe with gold collars from each tank over to the hopper, a chimney at the rear corner 1.4x the block's height,
 // the conveyor climbing to the hopper. Level: taller tanks and chimney, a front stack, a third column, a roof unit, a gold
 // column at 5.
@@ -431,11 +487,11 @@ WK.model('town-refinery',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,circ,rect}=b.k,hi
  ab(b,bx,y0,bz,bw+.4,.5,bd+.4,p.arm2,.12);ab(b,bx,y0+.5,bz,bw,bh-.5,bd,p.arm,.12);band(b,bx,ry-.2,bz,bw+.2,.2,bd+.2,p.trim);
  for(const s of [-1,1])b.at(bx+s*bw/2,0,bz,s*HP,q=>{const k=hi?5:2;for(let i=0;i<k;i++)fin(q,-(bd/2-.5)+(bd-1)*i/(k-1),y0+.5,.44,bh-.6,.28,p.arm2,{front:p.rib});});
  b.at(bx,0,zf,0,q=>{for(const s of [-1,1])fin(q,s*(bw/2-.3),y0+.5,.44,bh-.6,.28,p.arm2,{front:p.rib});const dx=-bw*.27;if(hi)ab(q,dx,y0+.9,.1,1.9,2.1,.2,p.arm2,.06);strip(q,dx,y0+1.1,.22,1.3,1.5,p.black);strip(q,dx,y0+2.72,.22,1.3,.12,M.amber);});
- // the hopper: an inverted funnel, the gold rim round its mouth, the ore heaped inside
- const hy=ry,hh=2,hx=bw*.78,hz=bd*.56,ht=hy+hh,ore=pad(b,0xe8c860,.44,1.5),HR=(w,d,y,dx=0)=>({p:rect(w,d,0,bx+dx,bz),y});
- b.loft([HR(hx*.5,hz*.5,hy),HR(hx,hz,ht)],p.arm,{top:false});
- b.loft([HR(hx+.2,hz+.2,ht-.24),HR(hx+.2,hz+.2,ht+.14),HR(hx-.3,hz-.3,ht+.14),HR(hx-.46,hz-.46,ht-.3)],(r)=>r===2?p.arm2:gold,{top:false});
- b.loft([HR(hx-.46,hz-.46,ht-.3),HR(hx*.42,hz*.42,ht-.02,.25)],ore,{topMat:ore});
+ // the hopper: an inverted funnel, a dark bin with a thin gold rim round its mouth and a small amber heap of ore at its bottom
+ const hy=ry,hh=2,hx=bw*.78,hz=bd*.56,ht=hy+hh,ore=pad(b,0xe8b93a,.42,1.5),HR=(w,d,y,dx=0)=>({p:rect(w,d,0,bx+dx,bz),y});
+ b.loft([HR(hx*.5,hz*.5,hy),HR(hx,hz,ht)],p.arm2,{top:false});
+ b.loft([HR(hx+.12,hz+.12,ht-.12),HR(hx+.12,hz+.12,ht+.06),HR(hx-.14,hz-.14,ht+.06)],gold,{top:false});inLoft(b,HR(hx-.14,hz-.14,ht+.06),HR(hx*.62,hz*.62,ht-.8),p.black);
+ b.loft([HR(hx*.62,hz*.62,ht-.8),HR(hx*.2,hz*.2,ht-.52,.2)],ore,{topMat:ore});
  if(hi)for(const s of [-1,1]){b.at(bx,0,bz+s*hz*.38,0,q=>{fin(q,-hx*.3,hy,.3,hh*.8,.3,p.arm2,{front:p.rib,z:s>0?hz*.02:-hz*.02-.3,sh:.1});});}
  // the conveyor from the front apron up to the hopper, amber-lit
  {const a=[bx,y0+.5,hd-1.3],c=[bx,ht+.5,bz+bd*.2],len=Math.hypot(c[1]-a[1],c[2]-a[2]),pit=Math.atan2(c[1]-a[1],a[2]-c[2]);
@@ -499,71 +555,89 @@ WK.model('town-reactor',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,circ}=b.k,hi=b.hi,
  if(L>=3)for(const s of [-1,1]){const x=s*(hw-1.5),z=-hd+1.5,h=3.1+.45*L;vessel(b,p,x,y0,z,.9,h,p.arm,{hoop:L>=5?p.gold:p.rib,n:hi?10:6,dh:.5});b.loft([{p:circ(.95,hi?10:6,x,z),y:y0+h-.2},{p:circ(.95,hi?10:6,x,z),y:y0+h-.06}],p.acc,{top:false,smooth:true});}
 });
 
-// town-shield (2x2): a hex pedestal, a tapered core wound with coil rings, the glowing orb; four pylons with gold caps.
+// town-shield (2x2): a hex pedestal, a tapered core wound with coil rings (LOW: three flat cyan rings), the glowing orb;
+// four pylons with gold caps.
 WK.model('town-shield',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,circ}=b.k,hi=b.hi,hw=o.w/2,hd=o.d/2,y0=.3,n=hi?10:6,H6=(r,y)=>({p:circ(r,6,0,0,r,0),y});apron(b,o,p);
  const R=Math.min(hw,hd)*.8,ch=2.8+.58*L,yb=y0+1.4,top=yb+ch,cr=1.2,cr2=.62;   // the hex pedestal spans 80% of the pad
  b.loft([H6(R,y0),H6(R,y0+.5),H6(R*.78,y0+.9),H6(R*.6,yb)],(r)=>r===1?p.arm2:p.arm,{topMat:p.arm2});b.loft([H6(R+.04,y0+.28),H6(R+.04,y0+.4)],p.accS,{top:false});
  // the core and its coil rings (one more per level), the orb
- b.cyl(0,yb,0,cr,ch,p.arm2,{n,r2:cr2});const nr=3+L;for(let k=0;k<nr;k++){const t=(k+.6)/(nr+.4),r=cr+(cr2-cr)*t+.42;if(hi)b.ring(0,yb+ch*t,0,r,glow(0xa8f8ff,1.1),{thin:nr>6});else if(k%2===0)b.loft([{p:circ(r,6),y:yb+ch*t-.08},{p:circ(r,6),y:yb+ch*t+.08}],glow(0xa8f8ff,1.1),{top:false});}
+ b.cyl(0,yb,0,cr,ch,p.arm2,{n,r2:cr2});const nr=3+L;for(let k=0;k<nr;k++){const t=(k+.6)/(nr+.4),r=cr+(cr2-cr)*t+.42;if(hi)b.ring(0,yb+ch*t,0,r,glow(0xa8f8ff,1.1),{thin:nr>6});}
+ if(!hi)for(const t of [.2,.5,.8]){const r=cr+(cr2-cr)*t+.5,y=yb+ch*t;for(let i=0;i<8;i++){const a=i/8*TAU,c=(i+1)/8*TAU,P=(an,rr)=>[Math.cos(an)*rr,y,Math.sin(an)*rr];b.quad(P(a,r-.13),P(c,r-.13),P(c,r+.13),P(a,r+.13),pad(b,0x8fe6ff,.62),[0,y-9,0]);}}   // LOW: three flat cyan rings
  b.cyl(0,top,0,.74,.24,L>=5?p.gold:p.arm,{n:hi?8:6});b.ball(0,top+.86,0,.72,glow(0xdff8ff,1.1),!hi);if(hi)b.halo(0,top+.86,0,1.8,0x9fe8ff,.35);
  // four pylons with gold caps and a light slit
  for(let k=0;k<4;k++){const a=k*HP+HP/2,x=Math.cos(a)*R*.72,z=Math.sin(a)*R*.72,h=1.9+ch*.42;b.at(x,0,z,-a+HP,q=>{if(hi)q.loft([{p:b.k.rect(.86,.86,.14),y:y0+.6},{p:b.k.rect(.68,.68,.1),y:y0+h}],p.arm,{top:false});else cb(q,0,y0+.6,0,.76,h-.6,.76,p.arm);cb(q,0,y0+h,0,.88,.34,.88,M.gold);strip(q,0,y0+1.2,.42,.16,h-1.6,p.acc);});}
 });
 
-// town-lab (3x3, a vital): a dark ribbed dome on an octagonal drum, the violet glow at the dome's foot, in the door and
-// in the skylight lantern (taller with the level), a gold cap and a small dish.
-WK.model('town-lab',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,circ}=b.k,hi=b.hi,hw=o.w/2,hd=o.d/2,y0=.3,n=hi?16:8,vio=glow(0x8dffc8,.8),C8=Math.cos(Math.PI/8);apron(b,o,p,true);
+// town-lab (3x3, a vital): a dark ribbed dome on an octagonal drum, a mint green light ring at the dome's foot (#7dffb8),
+// the same light in the skylight lantern (taller with the level) and in a line over the dark door, a gold cap and a small
+// dish; dark sample tanks with mint rings and caps (#35d07a) beside the porch.
+WK.model('town-lab',(b,o)=>{const p=TP(b,o),{L,M}=p,{glow,circ}=b.k,hi=b.hi,hw=o.w/2,hd=o.d/2,y0=.3,n=hi?16:8,mint=pad(b,0x7dffb8,.46,2),mintD=pad(b,0x35d07a,.5,1.5),C8=Math.cos(Math.PI/8);apron(b,o,p,true);
  const R=Math.min(hw,hd)*.78,dhh=2,yd=y0+.3+dhh,rd=R*.9,domeH=2.7;
  b.loft([octR(b,R+.25,y0),octR(b,R+.25,y0+.3),octR(b,R,y0+.3),octR(b,R,yd-.2),octR(b,R-.25,yd)],(r)=>r<2?p.arm2:p.arm,{topMat:p.arm2});
  around(b,0,0,R-.06,8,Math.PI/8,q=>fin(q,0,y0+.3,.7,dhh,.36,p.arm2,{front:p.rib,sh:.5}));
- if(hi)around(b,0,0,R*C8,8,0,(q,i)=>{if(i!==2){strip(q,0,y0+.9,.02,R*.42,.9,p.arm2);for(const s of [-1,1])strip(q,s*R*.12,y0+1.2,.04,R*.14,.3,i%2?vio:p.black);}});
- // the violet ring, the dome and its ribs
- b.loft([{p:circ(rd+.12,n),y:yd-.02},{p:circ(rd+.12,n),y:yd+.2}],vio,{top:false,smooth:true});b.dome(0,yd+.1,0,rd,domeH,rd,p.arm2,{n,rings:hi?4:2,cut:.86});
+ if(hi)around(b,0,0,R*C8,8,0,(q,i)=>{if(i!==2){strip(q,0,y0+.9,.02,R*.42,.9,p.arm2);for(const s of [-1,1])strip(q,s*R*.12,y0+1.2,.04,R*.14,.3,i%2?mint:p.black);}});
+ // the mint ring, the dome and its ribs
+ b.loft([{p:circ(rd+.12,n),y:yd-.02},{p:circ(rd+.12,n),y:yd+.2}],mint,{top:false,smooth:true});b.dome(0,yd+.1,0,rd,domeH,rd,p.arm2,{n,rings:hi?4:2,cut:.86});
  if(hi)for(let k=0;k<16;k++){const a=k/16*TAU;let q0=null;for(let i=0;i<=3;i++){const t=i/3*HP*.84,r=(rd+.05)*Math.cos(t),q1=[Math.cos(a)*r,yd+.1+domeH*Math.sin(t)+.03,Math.sin(a)*r];if(q0)b.tube(q0,q1,.1,p.rib,{n:3});q0=q1;}}
  // the skylight lantern (taller with the level), gold cap, dish
- const ly=yd+.1+domeH*Math.sin(HP*.86)-.1,lh=.3+.2*L,lr=rd*Math.cos(HP*.86)+.25;b.cyl(0,ly,0,lr,.2,p.arm,{n:hi?10:6});b.cyl(0,ly+.2,0,lr*.82,lh,vio,{n:hi?10:6,top:false});b.cyl(0,ly+.2+lh,0,lr,.2,M.gold,{n:hi?10:6,r2:lr*.5});
- if(hi){b.halo(0,ly+.4,0,2.2,0xa07bff,.3);bowlDish(b,p,rd*.55,yd+domeH*.62,-rd*.5,.6);}
- // the entrance: an armoured porch with the violet door
- b.at(0,0,R*C8-.2,0,q=>{ab(q,0,y0,.5,2.8,2.3,1.2,p.arm,.1);strip(q,0,y0+.1,1.11,1.5,1.7,vio);strip(q,0,y0+1.95,1.11,2,.1,M.white);if(hi){cb(q,0,y0+.1,1.11,.1,1.7,.05,p.dark);for(const s of [-1,1])fin(q,s*1.2,y0,.3,2.4,.2,p.arm2,{front:p.rib,z:1.1});}});
- // level kit: sample tanks beside the porch
- for(let k=0;k<Math.min(4,L-1);k++){const s=k%2?1:-1,x=s*(hw-1.2),z=hd-1.3-(k>>1)*1.5;vessel(b,p,x,y0,z,.5,1.5,M.plate,{hoop:p.gold,hoops:1,n:hi?8:5,cap:glow(0xa07bff,.5)});}
+ const ly=yd+.1+domeH*Math.sin(HP*.86)-.1,lh=.3+.2*L,lr=rd*Math.cos(HP*.86)+.25;b.cyl(0,ly,0,lr,.2,p.arm,{n:hi?10:6});b.cyl(0,ly+.2,0,lr*.82,lh,mint,{n:hi?10:6,top:false});b.cyl(0,ly+.2+lh,0,lr,.2,M.gold,{n:hi?10:6,r2:lr*.5});
+ if(hi){b.halo(0,ly+.4,0,2.2,0x7dffb8,.3);bowlDish(b,p,rd*.55,yd+domeH*.62,-rd*.5,.6);}
+ // the entrance: an armoured porch, the dark door under a mint light line
+ b.at(0,0,R*C8-.2,0,q=>{ab(q,0,y0,.5,2.8,2.3,1.2,p.arm,.1);strip(q,0,y0+.1,1.11,1.5,1.7,p.black);strip(q,0,y0+1.95,1.11,2,.12,mint);if(hi){cb(q,0,y0+.1,1.11,.1,1.7,.05,p.arm2);strip(q,.5,y0+.9,1.115,.12,.2,mintD);for(const s of [-1,1])fin(q,s*1.2,y0,.3,2.4,.2,p.arm2,{front:p.rib,z:1.1});}});
+ // level kit: dark sample tanks beside the porch, a mint ring and a mint cap on each
+ for(let k=0;k<Math.min(4,L-1);k++){const s=k%2?1:-1,x=s*(hw-1.2),z=hd-1.3-(k>>1)*1.5;vessel(b,p,x,y0,z,.5,1.5,p.arm2,{hoop:mint,hoops:1,keep:1,n:hi?8:5,cap:mintD});}
 });
 
 // ================================================== walls: the cell per ore blend, corner post, rubble =============
-// ore looks, index 0 = composite: [body colour, accent colour, accent glow, surface]
-const ORE=[[0x8a8676,0x5c5a50,0,'concrete'],[0x7a4a2c,0xb7a28a,.15,'metal'],[0x23262c,0x5fa8ff,.55,'metal'],[0x55657e,0x22e6ff,1,'metal'],[0x3a2420,0xff7a3d,1.1,'concrete'],[0xbab2e8,0xf6f0ff,1.5,'glass'],[0x10141f,0x9fe8ff,2.2,'metal']];
+// ore looks, index 0 = composite: [body colour, accent colour, accent glow, surface, wear]. The tiers follow the owner's
+// wall reference, one material each: concrete (composite), rusted concrete (Ferrite), steel plate (Ilmenite), dark stone
+// (Armalcolite), obsidian with gold flecks (Tranquillityite), pale glass (Selenite Glass), ruby (Moonheart).
+const ORE=[[0x8a8f92,0x7fe9ff,0,'concrete',.3],[0x8a8f92,0xa0522d,0,'concrete',.85],[0x4a4f58,0x5fa8ff,.55,'metal',.3],[0x1e2638,0x22e6ff,1,'rock',0],[0x15131c,0xc9a227,.6,'rock',0],[0xcfe6f0,0xffffff,1.5,'glass',.2],[0xb3122e,0xe0304a,1.6,'rock',0]];
 // town-wall: ONE wall cell, 4.02 x 4.02 m in plan, instanced up to 2,000 times. o.ore 0..6, o.lvl 1..3, o.h = height
 // (the merlon tops stand at o.h + 0.22, as the old coping did). A fortification: a sloped plinth (the bottom 20%), the body
-// (colour x 0.72) with ONE dark recessed panel a face, a thin lit strip under the deck in the ore's accent (cyan on
-// composite), and four corner merlons (30% of the width, 15% of the height). The section is the same on all four sides and
+// in the tier's material, a thin lit strip under the deck in the tier's light (cyan on concrete, rust-amber on rusted
+// concrete, gold on obsidian, white on glass, red on ruby), a walkway 25% darker than before between four corner merlons
+// (30% of the width, 15% of the height) whose tops carry a lighter rim, so stacked rings do not read as paving from above.
+// What a face carries (HIGH) says the material: concrete a recessed bay; rusted concrete the bay, rust straps (one per
+// blend level), rust streaks under the deck and bolt heads; steel its plate seams and blue bars; dark stone its block
+// joints, a cyan seam and cyan bars; obsidian a faceted panel and gold flecks (more with the level) under a gold needle
+// crest; glass a pane with white edge highlights; ruby an emissive core. The section is the same on all four sides and
 // every part that overhangs the cell does so by the same amount, so cells tile along x and z: a row reads as one
 // crenellated wall, its merlons 1.2 m wide with 0.6 m (across a joint) and 1.0 m (mid-cell) crenels between them.
-WK.model('town-wall',(b,o)=>{const {mat,glow,tint,rect}=b.k,hi=b.hi,ore=Math.max(0,Math.min(6,o.ore|0)),lvl=Math.max(1,Math.min(3,(o.lvl|0)||1)),h=o.h||4,W=4.02,[bc,ac,g,sf]=ore?ORE[ore]:[0x5f6d88,0x5c5a50,0,'metal'],R=(w,y)=>({p:rect(w,w),y});
- const body=tint(mat(bc,sf,ore===1?.9:ore===5?.25:ore===4?.7:.3,0),.72),foot=tint(body,.8),acc=g>0?glow(ac,Math.min(2,g*(.55+.25*lvl))):mat(ac,'concrete',.3,0),cap=o.mini?(ore?glow(ac,Math.max(.14,g*.18)):pad(b,0x7fe9ff,.16)):ore?glow(ac,Math.min(2,Math.max(.55,g*.8))):pad(b,0x7fe9ff,.45),
-  cope=ore>=5?tint(mat(ac,sf,.2,0),.5):tint(body,.78),mer=ore>=5?cope:tint(body,1.14,.006),yt=h+.22,mh=h*.15,yd=yt-mh,ys=yd-h*.05,yp=h*.2,mw=W*.3,mc=W/2-mw/2-.3,z=W/2,
-  deck=(w,y,m)=>b.quad([-w/2,y,-w/2],[w/2,y,-w/2],[w/2,y,w/2],[-w/2,y,w/2],m,[0,y-1,0]),F=(fn)=>{for(let k=0;k<4;k++)b.at(0,0,0,k*HP,fn);};
+WK.model('town-wall',(b,o)=>{const {mat,glow,tint,rect,hash}=b.k,hi=b.hi,ore=Math.max(0,Math.min(6,o.ore|0)),lvl=Math.max(1,Math.min(3,(o.lvl|0)||1)),h=o.h||4,W=4.02,[bc,ac,g,sf,wr]=ORE[ore],R=(w,y)=>({p:rect(w,w),y});
+ // the tier's light: a part glow that keeps its colour on screen (cyan, rust-amber, gold), or the accent glow
+ const lit=(k,kg)=>ore===0?pad(b,ac,k):ore===1?pad(b,0xe0935a,k*.9,1.5):ore===4?pad(b,ac,k*1.1,1.5):glow(ac,Math.min(2,kg));
+ const body=tint(mat(bc,sf,wr,0),ore===5?.84:.9),foot=tint(body,.8),acc=ore===1?tint(mat(ac,'concrete',.9,0),.8):lit(.45,g*(.55+.25*lvl)),cap=o.mini?lit(.16,Math.max(.14,g*.18)):lit(.45,Math.max(.55,g*.8)),
+  cope=tint(body,.58),mer=tint(body,1.14,.006),rimM=ore===5?tint(body,1.22):tint(body,1.55,.02),yt=h+.22,mh=h*.15,yd=yt-mh,ys=yd-h*.05,yp=h*.2,mw=W*.3,mc=W/2-mw/2-.3,z=W/2,
+  deck=(w,y,m)=>b.quad([-w/2,y,-w/2],[w/2,y,-w/2],[w/2,y,w/2],[-w/2,y,w/2],m,[0,y-1,0]),F=(fn)=>{for(let k=0;k<4;k++)b.at(0,0,0,k*HP,fn);},
+  merlon=(x,zz)=>{band(b,x,yd,zz,mw,mh,mw,mer);strip0(b,x,yt,zz,mw,mw,rimM);if(hi)strip0(b,x,yt+.012,zz,mw-.3,mw-.3,mer);};   // a merlon: its top is the lighter rim (HIGH: round a darker inset)
  if(!hi){   // LOW: the plinth, the body, the lit strip, the deck and two merlons on a diagonal (so two show on every side)
   b.loft(o.mini?[R(W+.3,0),R(W,ys),R(W,yd)]:[R(W+.34,0),R(W,yp),R(W,ys),R(W,yd)],(r)=>r===(o.mini?1:2)?cap:r||o.mini?body:foot,{top:false});deck(W,yd,cope);
-  for(const s of [-1,1])cb(b,s*mc,yd,-s*mc,mw,mh,mw,mer);return;}
+  for(const s of [-1,1])merlon(s*mc,-s*mc);return;}
  b.loft([R(W+.34,0),R(W,yp),R(W,ys),R(W,yd)],(r)=>r===2?cap:r?body:foot,{top:false});deck(W,yd,cope);
- for(const sx of [-1,1])for(const sz of [-1,1])cb(b,sx*mc,yd,sz*mc,mw,mh,mw,mer);
- // the recessed panel: a dark bay between the cell's two piers, its lit sill
- const pw=W*.6,py=h*.3,ph=h*.4,pan=ore===6?glow(ac,.16+.06*lvl):tint(body,ore===5?.42:.3),zp=z+.02,zq=z+.04;
- if(!ore){F(q=>{strip(q,0,py,zp,pw,ph,pan);strip(q,0,py,zq,pw,h*.028,tint(body,1.6,.012));});return;}   // composite armour
- F(q=>{
-  if(ore===2){const c=ph*.3;for(const t of [0,1])q.quad([-pw/2+c,py+ph*t,zp],[pw/2-c,py+ph*t,zp],[pw/2,py+ph/2,zp],[-pw/2,py+ph/2,zp],pan,[0,py,0]);}   // Ilmenite: a faceted dark panel
-  else strip(q,0,py,zp,pw,ph,pan);
-  for(let k=0;k<lvl;k++)strip(q,0,py+ph*(.5+.22*(k-(lvl-1)/2))-ph*.04,zq,pw*(ore===2?.56:.74),ph*.08,acc);   // the ore bars, one per blend level
-  if(ore===1)strip(q,0,py-h*.03,zq,pw+.3,h*.03,mat(ac,'metal',.6,0));                                        // Ferrite: a pale riveted sill
-  else if(ore===3)strip(q,-(pw/2+(W-pw)/4),yp+.08,zp,.1,ys-yp-.16,glow(ac,.9));});                                       // Armalcolite: the cyan seam down one pier
- if(ore===4){const m=glow(ac,1.3),n=lvl,P=[[0,0],[1.05,0],[-1.05,0]];for(let k=0;k<n;k++)b.at(P[k][0],yd,P[k][1],k*1.3,q=>q.loft([{p:b.k.circ(.13,3),y:0},{p:b.k.circ(.015,3),y:.5+.14*lvl+.1*(k%2)}],m,{top:false}),.14+.05*(k%2));}   // Tranquillityite: the needle crest
+ for(const sx of [-1,1])for(const sz of [-1,1])merlon(sx*mc,sz*mc);
+ const pw=W*.6,py=h*.3,ph=h*.4,zp=z+.02,zq=z+.04,line=ore===3?tint(body,3,.02):tint(body,.45),yb=ys-yp;
+ F(q=>{const bar=w=>{for(let k=0;k<lvl;k++)strip(q,0,py+ph*(.5+.22*(k-(lvl-1)/2))-ph*.04,zq,w,ph*.08,acc);};   // the bars, one per blend level
+  if(ore<2){strip(q,0,py,zp,pw,ph,tint(body,.55));                                                             // concrete: a recessed bay between the cell's two piers
+   if(!ore){strip(q,0,py,zq,pw,h*.028,tint(body,1.3,.01));return;}                                             // composite: its pale sill
+   bar(pw*.74);for(const [x,l,w] of [[-W*.37,.36,.13],[W*.33,.24,.1]])q.quad([x-w,ys,zq],[x+w,ys,zq],[x+w*.4,ys-h*l,zq],[x-w*.3,ys-h*l,zq],acc,[x,ys,0]);   // Ferrite: rust straps, rust streaks down the piers
+   for(const s of [-1,1])strip(q,s*(pw/2+.2),py+.1,zq+.006,.17,.17,mat(0x3a3f47,'metal',.4,0));}                                                            // and a bolt head each side
+  else if(ore===2){const ym=yp+yb*.68;strip(q,0,ym-.03,zp,W-.1,.06,line);strip(q,0,ym,zp,.06,ys-ym,line);for(const s of [-1,1])strip(q,s*W*.26,yp,zp,.06,ym-yp-.03,line);bar(pw*.56);}   // Ilmenite: steel plates, their seams
+  else if(ore===3){for(const t of [.36,.7])strip(q,0,yp+yb*t-.025,zp,W-.1,.05,line);strip(q,W*.2,yp,zp,.05,yb*.36-.025,line);strip(q,-W*.14,yp+yb*.7+.025,zp,.05,yb*.3-.025,line);   // Armalcolite: dark stone blocks, pale joints
+   bar(pw*.5);strip(q,-(pw/2+(W-pw)/4),yp+.08,zq,.1,yb-.16,glow(ac,.9));}                                                                                                             // and the cyan seam down one pier
+  else if(ore===4){const c=ph*.3,fc=tint(body,1.9,.01);for(const t of [0,1])q.quad([-pw/2+c,py+ph*t,zp],[pw/2-c,py+ph*t,zp],[pw/2,py+ph/2,zp],[-pw/2,py+ph/2,zp],t?fc:tint(fc,.7),[0,py,0]);   // Tranquillityite: obsidian, a faceted panel
+   for(let k=0;k<2+lvl;k++){const x=(hash(k*7+3)-.5)*W*.84,y=yp+.2+(yb-.5)*hash(k*13+5),s=.13+.1*hash(k*5+1);q.quad([x-s,y,zq],[x+s*.3,y-s*.6,zq],[x+s,y+s*.2,zq],[x-s*.2,y+s*.7,zq],acc,[x,y,0]);}}   // gold flecks, one more per blend level
+  else if(ore===5){strip(q,0,py,zp,pw,ph,tint(body,.72));strip(q,0,py+ph-.05,zq,pw,.05,acc);strip(q,-pw/2,py,zq,.05,ph,acc);strip(q,-W/2+.06,yp,zp,.06,yb,acc);bar(pw*.5);}   // Selenite Glass: a pane, white edge highlights
+  else{strip(q,0,py,zp,pw,ph,glow(ac,.2+.07*lvl));strip(q,0,py+ph*.2,zq,pw*.42,ph*.6,glow(0xff5a6e,.7+.2*lvl));}});                                              // Moonheart: ruby, the emissive core in every face
+ if(ore===4){const n=lvl,P=[[0,0],[1.05,0],[-1.05,0]];for(let k=0;k<n;k++)b.at(P[k][0],yd,P[k][1],k*1.3,q=>q.loft([{p:b.k.circ(.13,3),y:0},{p:b.k.circ(.015,3),y:.5+.14*lvl+.1*(k%2)}],pad(b,ac,.7,1.5),{top:false}),.14+.05*(k%2));}   // Tranquillityite: the gold needle crest
  else if(ore===5){const w=glow(0xffffff,1.9);b.quad([-W*.42,yd+.03,-.12],[W*.42,yd+.03,-.12],[W*.42,yd+.03,.12],[-W*.42,yd+.03,.12],w,[0,-1,0]);}   // Selenite Glass: the glint line
- else if(ore===6)deck(.92,yd+.03,glow(ac,Math.min(2,g*1.2*.9)));                                             // Moonheart: the deep-glow core slab
+ else if(ore===6)deck(.92,yd+.03,glow(ac,1.7));                                                                                                       // Moonheart: the deep-glow core slab
 });
-// town-post: the corner post (1.9 x 5.5 x 1.9) that stands on a wall cell: a taller armoured pier with a cyan top light.
+// town-post: the corner post (1.9 x 5.5 x 1.9) that stands on a wall cell: a taller armoured pier; its top light is a cyan
+// slit under a chamfered cap (LOW: a lit block).
 WK.model('town-post',(b,o)=>{const {mat,glow,rect,pal}=b.k,M=pal.mil,hi=b.hi,d=mat(0x434d5a,'metal',.25,0),d2=mat(0x52606e,'metal',.25,0),R=(w,y)=>({p:rect(w,w),y}),cy=glow(0x7fe9ff,1.5);
  if(!hi){b.loft([R(1.8,0),R(1.45,4.7)],d,{top:false});b.loft([R(1.76,4.7),R(1.76,5.14)],M.gold,{top:false});b.quad([-.88,5.14,-.88],[.88,5.14,-.88],[.88,5.14,.88],[-.88,5.14,.88],d2,[0,0,0]);cb(b,0,5.14,0,.5,.32,.5,cy);return;}
- b.loft([R(1.9,0),R(1.9,.55),R(1.5,.8),R(1.42,4.66),R(1.78,4.86),R(1.78,5.14),R(1.3,5.2)],(r)=>r===0||r>=3?d2:d);cb(b,0,5.2,0,.9,.1,.9,M.gold);cb(b,0,5.3,0,.46,.26,.46,cy);for(let k=0;k<4;k++)b.at(0,0,0,k*HP,q=>strip(q,0,2.2,.74,.8,1.5,M.plate2));
+ b.loft([R(1.9,0),R(1.9,.55),R(1.5,.8),R(1.42,4.66),R(1.78,4.86),R(1.78,5.14),R(1.3,5.2)],(r)=>r===0||r>=3?d2:d);cb(b,0,5.2,0,.9,.1,.9,M.gold);b.loft([R(.5,5.3),R(.5,5.4)],cy,{top:false});b.loft([R(.74,5.4),R(.74,5.45),R(.4,5.56)],d,{topMat:d2,bot:true});for(let k=0;k<4;k++)b.at(0,0,0,k*HP,q=>strip(q,0,2.2,.74,.8,1.5,M.plate2));
  for(let k=0;k<4;k++)b.at(0,0,0,k*HP,q=>{strip(q,0,1.1,.75,.1,3.3,glow(0x22e6ff,.7));q.quad([-.3,4.9,.9],[.3,4.9,.9],[.3,5.08,.9],[-.3,5.08,.9],M.gold,[0,5,0]);});
 });
 // town-rubble: a ruined wall cell (4 x 1.4 x 4): no tidy base, a scorched patch with a broken edge, the snapped pillar stub
@@ -594,13 +668,17 @@ WK.model('town-rubble',(b,o)=>{const {mat,tint,hash}=b.k,hi=b.hi,d=mat(0x4a5565,
 });
 
 // ================================================== decorations (small set pieces at the origin) ====================
-const decoP=(b,o)=>{const {mat,glow,tint,pal}=b.k,M=pal.mil,arm=mat(0x343a43,'metal',.3,.04),ah=o.accent!=null?o.accent:0x22e6ff;return {M,arm,arm2:tint(arm,.7),rib:tint(arm,1.32,.012),ah,acc:glow(ah,1),gold:M.gold};};
-// decor-lamps: a 3.4 m town lamp; o.accent = light colour
-WK.model('decor-lamps',(b,o)=>{const p=decoP(b,o),{glow}=b.k,hi=b.hi;
- if(hi)b.loft([{p:b.k.rect(.56,.56,.12),y:0},{p:b.k.rect(.56,.56,.12),y:.2},{p:b.k.rect(.3,.3,.08),y:.42}],p.arm2);else cb(b,0,0,0,.5,.3,.5,p.arm2);
- b.tube([0,.3,0],[0,2.86,0],.075,p.rib,{n:hi?6:4});if(hi){hoop(b,0,1.1,0,.075,.14,.04,p.gold,6,0,1);b.cyl(0,2.8,0,.2,.12,p.arm2,{n:6,r2:.14});}
- cb(b,0,2.92,0,.34,.32,.34,glow(p.ah,1.7));if(hi){for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]])b.tube([sx*.17,2.9,sz*.17],[sx*.17,3.26,sz*.17],.025,p.arm2,{n:3});}
- b.loft([{p:b.k.rect(.58,.58),y:3.24},{p:b.k.rect(.2,.2),y:3.4}],p.arm,{topMat:p.gold});b.halo(0,3.05,0,.8,p.ah,.4);b.pool(0,.05,0,1.6,1.6,p.ah,.14);
+const decoP=(b,o)=>{const {mat,glow,tint,pal}=b.k,M=pal.mil,arm=mat(0x343a43,'metal',.3,.04),ah=o.accent!=null?o.accent:0x22e6ff;return {M,arm,arm2:tint(arm,.7),rib:tint(arm,1.32,.012),ah,acc:glow(ah,1),gold:M.gold,gm:mat(0x232b38,'metal',.25,.03),gm2:mat(0x2b3442,'metal',.3,.03)};};
+// decor-lamps: a 3.3 m town lamp: an octagonal tapered gunmetal post on a base collar, one gold band, and a hooded lamp
+// head (a lit lantern drum under a chamfered hood whose underside glows); o.accent = light colour. LOW: a plain tapered
+// post, the lit drum and the hood.
+WK.model('decor-lamps',(b,o)=>{const p=decoP(b,o),hi=b.hi,n=hi?8:5,lit=pad(b,p.ah,.62),C=(r,y)=>({p:b.k.circ(r,n,0,0,r,Math.PI/n),y});
+ if(hi){b.loft([C(.27,0),C(.27,.1),C(.15,.22),C(.075,2.8)],(k)=>k<2?p.gm2:p.gm,{top:false});b.loft([C(.115,1.1),C(.11,1.24)],p.gold,{top:false});b.loft([C(.075,2.8),C(.13,2.86)],p.gm2,{top:false});}
+ else b.loft([C(.2,0),C(.08,2.86)],p.gm,{top:false});
+ b.loft([C(.13,2.86),C(.13,3.04)],lit,{top:false});
+ // the hood: its glowing underside, the chamfered shell, a gold finial
+ if(hi)b.cap(C(.27,0).p,3.04,b.k.glow(p.ah,1.5),false);
+ b.loft(hi?[C(.28,3.04),C(.28,3.1),C(.1,3.27)]:[C(.28,3.04),C(.1,3.27)],p.gm2,{topMat:hi?p.gold:p.gm2,bot:!hi});b.halo(0,2.95,0,.8,p.ah,.4);b.pool(0,.05,0,1.6,1.6,p.ah,.14);
 });
 // decor-crates: three armoured supply crates (two on LOW)
 WK.model('decor-crates',(b,o)=>{const p=decoP(b,o),{M}=p,hi=b.hi,crate=(x,y,z,w,h,d,m,ry,lid)=>b.at(x,y,z,ry,q=>{cb(q,0,0,0,w,h,d,m);if(hi){band(q,0,h*.68,0,w+.05,h*.12,d+.05,lid);for(const s of [-1,1])band(q,s*w*.3,0,0,.1,h+.02,d+.06,p.arm2);strip(q,0,h*.3,d/2+.02,w*.22,h*.1,p.acc);}});
