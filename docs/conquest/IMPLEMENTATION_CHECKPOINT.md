@@ -6285,6 +6285,11 @@ indistinguishable from the dashed asphalt roads"); wrecks and props CLOSE. The 2
   sun went near-black (a small sky fill, the same idea as the walls' daylight bounce); the wild ground cover was sparse
   (HIGH step 4.8 m -> 4.6 m, a higher cover floor, wild flowers in the thick patches; the densest ground chunk is 27,481
   triangles, was 24,387, cap 30,000).
+- **A second test changed, and why:** `conquest-occluder.py` counted pixels of the outline's colour round the tank and
+  wanted fewer than 40 of them in open country. On the darker terraformed soil of round 3 the tank's own cyan ground
+  ring falls inside that colour window (274 pixels, none of them outline). The test now counts only what the outline
+  pass adds: the frame with the outline group drawn minus the same frame without it (25 in the open, 317 behind the
+  blocker). Same limits, a cleaner measure; nothing skipped or loosened.
 - **A test changed, and why:** `conquest-slots.mjs` checked every vertex alpha against a fixed floor of -1.3 (the last
   surface code). Two surface looks were added (bark, ice), so the floor is now read from the surface-code list itself
   (`ConquestWorldKit.SURF`); an alpha below the last code still fails. Nothing skipped or loosened.

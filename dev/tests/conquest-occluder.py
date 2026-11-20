@@ -11,9 +11,14 @@ from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 OUT=ROOT/'docs/conquest/occluder';OUT.mkdir(parents=True,exist_ok=True)
 # the outline's pixels around the tank (its exact colour, written without tone mapping), read straight after a render
-COUNT="""()=>{const v=Conquest.view,T=v.T,cv=v.renderer.domElement;v.renderer.render(v.scene,v.camera);const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const x=c.getContext('2d');x.drawImage(cv,0,0);
- const p=new T.Vector3(v.vehicle.position.x,v.vehicle.position.y+1.5,v.vehicle.position.z).project(v.camera),px=Math.round((p.x+1)/2*cv.width),py=Math.round((1-p.y)/2*cv.height),R=Math.round(cv.height*.11),d=x.getImageData(Math.max(0,px-R),Math.max(0,py-R),2*R,2*R).data;let n=0;
- for(let i=0;i<d.length;i+=4)if(Math.abs(d[i]-143)<12&&Math.abs(d[i+1]-246)<12&&Math.abs(d[i+2]-255)<10)n++;return n;}"""
+COUNT="""()=>{const v=Conquest.view,T=v.T,cv=v.renderer.domElement,g=v.outline&&v.outline.group;
+ // Session 5E-2d1: only what the outline pass ADDS is counted (the frame with the outline group drawn, minus the same frame
+ // without it). The tank's own cyan ground ring falls inside the colour window on dark terraformed soil, and was counted as
+ // "outline in the open" once round 3 changed the ground there.
+ const shot=()=>{v.renderer.render(v.scene,v.camera);const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const x=c.getContext('2d');x.drawImage(cv,0,0);
+  const p=new T.Vector3(v.vehicle.position.x,v.vehicle.position.y+1.5,v.vehicle.position.z).project(v.camera),px=Math.round((p.x+1)/2*cv.width),py=Math.round((1-p.y)/2*cv.height),R=Math.round(cv.height*.11),d=x.getImageData(Math.max(0,px-R),Math.max(0,py-R),2*R,2*R).data;let n=0;
+  for(let i=0;i<d.length;i+=4)if(Math.abs(d[i]-143)<12&&Math.abs(d[i+1]-246)<12&&Math.abs(d[i+2]-255)<10)n++;return n;};
+ const on=shot();let off=0;if(g){const was=g.visible;g.visible=false;off=shot();g.visible=was;v.renderer.render(v.scene,v.camera);}return Math.max(0,on-off);}"""
 async def main(engine):
  async with async_playwright() as p:
   opts={'headless':True}
