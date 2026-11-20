@@ -6384,6 +6384,25 @@ Command Base wall, gate and towers CLOSE, **the town model on its pad CLEARLY BE
   round); the sky's flat beige on wide screens (POLISH; PROPOSAL). Capture faults, not game faults: the tank parked
   inside the ice drill, HIGH and LOW halves standing in different places on four shots.
 
+### Reviewers (two fresh, independent, read-only)
+**Reviewer 2 (performance and budgets, controls, regressions), at `5f88039`:** budgets PASS on the code and node tests (no
+new shader program or material: the water shader was rewritten in place, bark / ice are branches of the solid shader,
+`uPressY` and `uGlowBase` are uniforms; occluder 14 programs, town drive view 59 calls and 12 programs); economy, points
+and payments PASS (no diff in `js/rules.js`, `worker/`); footprints, collision and placement PASS (world equivalence:
+15,360 points, 0 differences); the see-through rule PASS (only the player's and allied tanks are outlined, the camera
+does not move); tests changed PASS (nothing deleted or loosened); outside Conquest PASS (`uGlowBase` is 0 for tanks and
+weapons; `meshy.mjs` 1,802 checks); slot swap PASS; no migration code PASS. **Controls FAIL, one blocker, fixed:** the
+round-3 map rules set only the map canvas's height, so the map was drawn stretched on every computer and squashed on
+small phones (329 x 558 at 1366x768; taps still landed). Now the width drives and the height follows (seen in a capture).
+Its notes, also fixed: the docked heat panel is portrait only (in landscape that corner holds the item button); the
+heat bar sits 8 px lower on a computer (the super timing bar's note touched it); the town's first-drive hint says "WASD
+OR THE ARROW KEYS" on a computer; a finger on the screen brings the joystick back on a device taken for a computer (a
+touch laptop, a tablet with a mouse); the one-line ellipsis on prompts is withdrawn (it cut "UNDER FIRE · CLEAR ENEMIES,
+THEN GATHER"). Noted, not changed: `pressFootprint` repeats Refuge coordinates from `world.js`; once a world slot lists a
+Meshy model each pending asset load rebuilds the world kit; real-phone frame times are unmeasured (software renderer
+here). **Bytes added to the page load by this session: +420,920 raw (about +153.5 KB gzipped), +17% of the page's JS and
+CSS** (the four kit files 380 KB of it; `style.js` and `townkit.js` shrank). All six new scripts load with the page.
+
 ### Performance record (software renderer: the counts are exact, the frame times are relative only)
 - **The colony's town core by ground cell** (`3ba537c`, measured Nov 20 at 390x844, five camera spots in the colony, before =
   `f0461ff`, after = the cell split). Triangles drawn, before -> after. HIGH: 392,789 -> 362,134; 367,394 -> 311,956;
