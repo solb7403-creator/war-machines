@@ -190,7 +190,7 @@ const Meshy3D=(()=>{
   int par=int(mPart(b+4).x+.5);if(par>0)meshyScrew((par-1)*${ROW},pos,nrm);
  }
  `;
- const FS_HEAD=`uniform sampler2D uMask;uniform vec3 uPaintA;uniform vec3 uPaintB;uniform vec4 uPaintP;uniform vec4 uTrim;uniform vec4 uGlowTint;uniform float uGlowGain;uniform float uFlash;uniform vec3 uGhost;varying float vMeshyGlow;
+ const FS_HEAD=`uniform sampler2D uMask;uniform vec3 uPaintA;uniform vec3 uPaintB;uniform vec4 uPaintP;uniform vec4 uTrim;uniform vec4 uGlowTint;uniform float uGlowGain;uniform float uGlowBase;uniform float uFlash;uniform vec3 uGhost;varying float vMeshyGlow;
  `;
  // A renderer with a tight shader-program budget registers as the host (Conquest: the world and the town share one renderer
  // and 16 programs). Its studio map is prefiltered once by a generator that is disposed straight away, so three never builds
@@ -225,7 +225,7 @@ const Meshy3D=(()=>{
    let f=FS_HEAD+shader.fragmentShader;
    if(maps.mask){
     // paint: the base map is the factory look; armour texels are re-tinted by (pilot paint / factory paint), chips, trim and tracks keep their own colour
-    f=f.replace('#include <map_fragment>','#include <map_fragment>\nvec3 meshyK=texture2D(uMask,vMapUv).rgb;vec3 meshyBase=diffuseColor.rgb;diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*mix(uPaintA,uPaintB,meshyK.b),meshyK.r);');
+    f=f.replace('#include <map_fragment>','#include <map_fragment>\nvec3 meshyK=texture2D(uMask,vMapUv).rgb;vec3 meshyBase=diffuseColor.rgb;diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*mix(uPaintA,uPaintB,meshyK.b),meshyK.r);diffuseColor.rgb=mix(diffuseColor.rgb,uGlowTint.rgb*(.4+.9*dot(meshyBase,vec3(.3333))),uGlowTint.a*uGlowBase*meshyK.g);');   // uGlowBase (town items only): a glow tint also recolours the lit part's own paint, so it holds in daylight
     if(high)f=f.replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor=mix(metalnessFactor,max(metalnessFactor,uPaintP.y),meshyK.r);roughnessFactor=mix(roughnessFactor,clamp(roughnessFactor*uPaintP.z,.08,1.),meshyK.r);float meshyT=uTrim.a*(1.-meshyK.r)*(1.-meshyK.g)*smoothstep(.86,.97,metalnessFactor);diffuseColor.rgb=mix(diffuseColor.rgb,uTrim.rgb*(.35+1.3*dot(meshyBase,vec3(.3333))),meshyT);');
     f=f.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=mix(meshyBase,uGlowTint.rgb*(.4+.9*dot(meshyBase,vec3(.3333))),uGlowTint.a)*meshyK.g*min(vMeshyGlow,1.7)*uGlowGain+vec3(uFlash)+uGhost;');
    }
@@ -239,7 +239,7 @@ const Meshy3D=(()=>{
  function paintUniforms(asset,P,lunar){
   const L=asset.info.look||{},stock=!P||!P.hull||P.hull==='#2c3a49',fa=lin(L.paintA||'#808890'),fb=lin(L.paintB||L.paintA||'#808890');
   const U={uParts:{value:asset.partTex||null},uCh:{value:new Float32Array(NCH)},uMask:{value:asset.maps.mask||null},uPaintA:{value:new THREE.Vector3(1,1,1)},uPaintB:{value:new THREE.Vector3(1,1,1)},
-   uPaintP:{value:new THREE.Vector4(1,0,1,0)},uTrim:{value:new THREE.Vector4(0,0,0,0)},uGlowTint:{value:new THREE.Vector4(0,0,0,0)},uGlowGain:{value:1.25},uGlowAnim:{value:new THREE.Vector2(1,0)},uFlash:{value:0},uGhost:{value:new THREE.Vector3(0,0,0)}};
+   uPaintP:{value:new THREE.Vector4(1,0,1,0)},uTrim:{value:new THREE.Vector4(0,0,0,0)},uGlowTint:{value:new THREE.Vector4(0,0,0,0)},uGlowGain:{value:1.25},uGlowBase:{value:0},uGlowAnim:{value:new THREE.Vector2(1,0)},uFlash:{value:0},uGhost:{value:new THREE.Vector3(0,0,0)}};
   U.uCh.value[CH.one]=1;U.uCh.value[CH.pulse]=.75;
   // stock look and paints (owner, Nov 11; references docs/art/references/tanks/v2/): energy lines on chassis AND weapons only
   // faintly lit in the reference colour, held still. The full bright, breathing energy glow is Lunar Skin's alone. The
@@ -378,7 +378,7 @@ const Meshy3D=(()=>{
  }
  // ---- Conquest town: buildings are one mesh, turrets an instanced fixed base plus an instanced head ----
  // Pipeline space faces +X; the town kit faces +Z, so town models are turned a quarter once here.
- const TOWN_YAW=-Math.PI/2,townLive=new Set();
+ const TOWN_YAW=-Math.PI/2,townLive=new Set(),TOWN_LOOK={lift:[1.24,1.2,1.1],storage:{lift:[1.7,1.64,1.5],gain:2.6,glow:'#e6f6ff',mix:.8},lab:{glow:'#62f0a4',mix:.9},tesla:{glow:'#dff6ff',mix:.85}};
  const townScale=(type,l)=>type==='cc'?.78+.0245*(Math.max(1,l)-1):.82+.045*(Math.min(5,Math.max(1,l))-1);
  const townAsset=(type,item)=>enabled&&detail!=='none'?request(item||'town-'+type,'light'):null;
  const townStamp=types=>enabled?types.map(t=>peek('town-'+t,'light')?1:0).join(''):'';
@@ -387,6 +387,13 @@ const Meshy3D=(()=>{
  function townMaterial(asset,theme,low){
   const key=(low?'l':'h')+'|'+(theme&&theme.finish||'')+'|'+(theme&&theme.light||'');asset.townMats=asset.townMats||new Map();let m=asset.townMats.get(key);if(m)return m;
   const U=paintUniforms(asset,null,false),L=asset.info.look||{};
+  // Session 5E-2d1 (critic round 3: the colour re-check of the owner's town items against his references): in the town
+  // the armour read near-black navy where the references are gunmetal, so the stock finish is lifted a step and warmed a
+  // little (armour panels only: the paint mask); the Storage Depot was one dark block with no accent (lifted further, its
+  // light strips brighter); the Science Lab's identity is green (its ring and tubes glowed the Command Center's cyan) and the
+  // Tesla Coil's orb is ice white (it glowed lilac, the only purple in the town). A chosen town theme still overrides both.
+  const TL=TOWN_LOOK[String(asset.id||'').replace(/^town-/,'')]||{},lf=TL.lift||TOWN_LOOK.lift;U.uPaintA.value.set(lf[0],lf[1],lf[2]);U.uPaintB.value.set(lf[0],lf[1],lf[2]);if(TL.gain)U.uGlowGain.value=TL.gain;
+  if(TL.glow){const c=lin(TL.glow);U.uGlowTint.value.set(c.r,c.g,c.b,TL.mix||.85);U.uGlowBase.value=1;}
   if(theme&&THEME_FINISH[theme.finish]){const c=lin(THEME_FINISH[theme.finish]);U.uPaintA.value=ratio(c,lin(L.paintA||'#808890'));U.uPaintB.value=ratio(c.clone().multiplyScalar(.8),lin(L.paintB||L.paintA||'#808890'));}
   if(theme&&THEME_LIGHT[theme.light]){const c=lin(THEME_LIGHT[theme.light]);U.uGlowTint.value.set(c.r,c.g,c.b,1);}
   m=makeMaterial(asset,low?'low':'high',U);m.userData.meshyOwned=false;m.userData.town=true;asset.townMats.set(key,m);townLive.add(U);return m;

@@ -6103,9 +6103,15 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md fi
   BEFORE those fixes and are re-captured after critics 2 and 3; jobs that start after this commit show the fixed world.
   Jobs that failed on a slow first frame and wait for a re-run with the fixed tools: town 390x844 (towns), world
   1920x1080 HIGH, flagship touch HIGH and mouse HIGH, town 1920x1080.
-- **Still to run in round 3:** critic 2 (computer 1366x768 and 1920x1080, small phones 320x568 and 390x700, the flagship) and
-  critic 3 (the town and the 5E-2a recolour check), each as soon as its captures exist; then their fixes, then the
-  re-capture of what changed.
+- **Done (Nov 20): critic round 3, critic 3 of 3 (the town and the colour re-check)** and its fixes (record under "Critic
+  rounds"). Checked: tests, model sheets, and in the real renderer the sky fix, the ground, the lamps, the site colours and
+  the computer tab strip. NOT yet seen in the game: the helper's rebuilt town models (sheets only) and the Meshy colour
+  fix for storage / lab / tesla (the first two tries did not reach the items: the look table was keyed by a field the
+  loaded item does not carry; now keyed by the item id; a re-capture was running at this commit).
+- **Running (Nov 20, 12:30 UTC): critic round 3, critic 2 of 3** (computer 1366x768 and 1920x1080, small phones, the Command
+  Base flagship captures); its pages are in this session's scratchpad `crit3c/`. After its fixes: re-capture everything
+  that changed in round 3 at the five sizes (the farm's captures predate the fixes), then the test list.
+- **The account's usage limit was hit once (about 12:00 UTC) and reset at 12:20:** work in small committed slices.
 - **To re-run on an idle machine:** `conquest-town.mjs` and `fair-arcade.mjs` failed a wall-clock limit while the capture farm
   had every core busy; no limit is changed.
 - **Next, in order:** (2) critic round 3, the last one (a 4th only for an item the reviewer marks
@@ -6274,6 +6280,64 @@ indistinguishable from the dashed asphalt roads"); wrecks and props CLOSE. The 2
 - **A test changed, and why:** `conquest-slots.mjs` checked every vertex alpha against a fixed floor of -1.3 (the last
   surface code). Two surface looks were added (bark, ice), so the floor is now read from the surface-code list itself
   (`ConquestWorldKit.SURF`); an alpha below the last code still fails. Nothing skipped or loosened.
+
+**Round 3, critic 3 of 3: the town, and the colour re-check of the owner's twelve Meshy town items** (a fresh art director;
+36 town pages: whole CC10 towns on the seven sites at 390x844, every building, turret, wall, home and decoration kind close
+up at 1366x768 HIGH and LOW, 390x700 and 320x568, the turret gallery and wall blends, the town model sheets, the owner's
+references). Verdict: town buildings CLOSE (biodome, helium, foundry, trophy hall "hold up beside the Meshy CC and reactor";
+the gate CLEARLY BELOW); turrets CLOSE; walls and posts CLOSE; homes and decorations CLOSE (homes at bar; yard lamps and
+pad bollards "the crudest props in the town"); **the town as a whole scene CLEARLY BELOW** (computer HIGH a washed-out blue
+night scene; the ground outside the paved core a blank gradient; six of seven sites alike). What was done:
+- 1 (CLEARLY BELOW, and a real fault): **the town on computer HIGH was a blue night scene.** The town is a guest of the
+  world's sky and took whatever the sky had eased to when it was opened; opened in the first seconds of a session it kept
+  the half-eased night light for good. The town stands at the Command Base, so it now takes that place's sky at once
+  (`plotview.js scene3d`). Seen in the re-capture: computer HIGH is the same warm day as the phone.
+- 2 (CLEARLY BELOW): **the ground** carries the soil surface on HIGH (mottled and grained; it was one flat gradient), every
+  dust road has two wheel ruts, a worn patrol track runs just inside the town edge, and loose stones lie in a few open
+  cells (under 0.3 m; HIGH). Turret bases and homes stand on a compacted apron (in their models: no extra draw).
+- 4 (CLEARLY BELOW): **yard and street lamps** are the kit's town lamp (a square stick with a cube cap before); the pad
+  bollards are rebuilt in the models. 3 (CLEARLY BELOW): **the gate** is rebuilt (see the model list below).
+- 5: the seven sites are pushed apart in ground colour (ash dark cool grey, canyon red rock, ice pale blue, plateau sand,
+  ridge grey, crater neutral, delta green).
+- 20 (computer): the town's tab strip is capped at 780 px and centred with 12 px labels on a keyboard-and-mouse computer
+  (it was the phone sheet stretched across the window: five 270 px tabs with 9 px labels).
+- Models (7 turret bases, 8 laser cannon, 9 siege, 10 radar dish, 11 foundry pour, 12 the LOW stand-ins of the Meshy
+  items, 13-14 wall tiers, 15 hangar door, 16 home slabs, 17 biodome LOW): see "Town models, round 3" below.
+- **The colour re-check (5E-2a's town items against the owner's references):** nine of twelve MATCH or are CLOSE; the
+  common gap was armour reading near-black navy where the references are gunmetal. Three READ WORSE: the Storage Depot
+  (one dark block with no accent), the Science Lab (its green identity lost: it glowed the Command Center's cyan) and the
+  Tesla Coil (lilac, the only purple in the town). Fixed in the town's material, not in the owner's files
+  (`meshy3d.js TOWN_LOOK`): the stock town finish is lifted a step and warmed a little (armour panels only), the Storage
+  Depot further with brighter, whiter light strips, the lab's lit parts are mint green and the tesla's orb and coil are
+  ice white. The lit parts' colour sits in their paint as well as their glow, so the town's glow tint now recolours both
+  (`uGlowBase`, town items only: tanks and weapons are untouched). A chosen town theme still overrides it.
+- Not changed, with the reason: 6 the drive view's opening camera (the owner's rule: the camera does not move to avoid
+  buildings; the tank shows through as an outline); 18 raid effects (effects, not models; the six frames are a drill at
+  rest); 19 the town card's subtitle fading at the bottom of the PEEK sheet (the owner's own PEEK design, 5C); the sheet's
+  drag handle on a computer (it is how the sheet is resized with a mouse too); jagged texture edges on the Meshy refinery
+  and lab (the owner's models, as delivered).
+- **Town models, round 3** (`kit/town.js`, the town homes in `kit/settler.js`; checked on model sheets, HIGH and LOW; in-game
+  re-capture pending): the gate is two chamfered gunmetal pylons with a gold cap band and hooded beacons over a recessed
+  door of amber slats under a cyan header (676 / 96 triangles; the slot box is 4 m, so 4.0 m and not the critic's 1.3x);
+  one shared bollard (octagonal tapered post, collar, gold band, cyan slit under a chamfered cap) on the vital pads, the
+  Command Center corners and the radar; the town lamp has a hooded head with a glowing underside; the turret pedestal is a
+  16-sided dark disc with a lighter rim and four or six small cyan lights; a compacted-regolith apron under every turret
+  and home, and the homes' slab sides are a regolith berm; the laser cannon is a dark 16-sided dish with one cyan ring, a
+  bright core and two yoke arms (the old dish cut 0.28 m into its own pedestal: fixed); the siege gun is navy-charcoal
+  with a recoil sleeve and a slotted muzzle brake; the radar dish is steel blue-grey with dark ribs and a half-width gold
+  rim; the foundry's melt and pour are graded and lit with a warm ground glow; the hangar door has segment lines, an
+  amber sill and skylights on the ridge; the LOW stand-ins of the Meshy items follow their HIGH look (refinery bin,
+  mint lab, dark railgun lid with a cyan strip, three shield rings, a box laser with a lens, MG drums, pale biodome
+  glass); the seven wall tiers read as their materials (concrete, rusted concrete with straps and bolts, steel with
+  plate seams, dark stone with a cyan seam, obsidian with gold flecks, pale glass with white edges, ruby with a lit
+  core), the walkway is 25% darker and the merlons carry a lighter rim (shape, size and LOW / mini silhouettes
+  unchanged). The 2D map, the thumbnail and the blend buttons use the same families (`ORE_LOOK`).
+- Also fixed with this batch: the Command Base gate's COMMAND sign and the BASE tier sign turn to the camera like the
+  other free-standing signs (from inside the base the gate sign read mirrored: seen in the new flagship captures).
+- **The flagship capture tool was dead** (`conquest-flagship-captures.py` clicked "CONSTRUCT BASE I", a terminal the game
+  has not had since the base moved into the town): it now takes a fixture town, shows the Command Base from above and
+  from beside its wall and gate, and opens the map, at 390x844, 320x568, 390x700, 430x932 (touch) and 1366x768,
+  1920x1080 (mouse). `conquest-town-captures.py` gained `--kindset a,b,c` (re-capture chosen kinds only).
 
 ### Performance record (software renderer: the counts are exact, the frame times are relative only)
 - **The colony's town core by ground cell** (`3ba537c`, measured Nov 20 at 390x844, five camera spots in the colony, before =

@@ -331,7 +331,7 @@ WK.model('settler-barn',(b,o)=>{const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o
 function waterTower(b,o,c){const {pal,tint,mat,glow}=b.k,S=pal.set,w=Math.min(o.w,o.d),h=o.h,sd=o.seed|0,hi=b.hi,PI=Math.PI,f0=c?.3:.22;
  const tankC=pick([S.tank,S.paint[3],S.paint[0],S.paint[1]],sd),bandC=pick(S.fresh,sd+(sd%4===0?2:0));
  const yt=h*.72,yT=h*.9,rt=w*(c?.31:.385),rp=w*(c?.37:.47),w0=w*(c?.56:.74),w1=w*(c?.4:.5),yd=yt-.3,nT=hi?(c?10:14):8;
- if(c)bx(b,0,0,0,o.w,.3,o.d,S.conc);else b.bev(0,-.5,0,o.w-.4,.72,o.d-.4,S.conc,{ch:.14});
+ if(c)homeGround(b,o.w,o.d,sd,S.conc);else b.bev(0,-.5,0,o.w-.4,.72,o.d-.4,S.conc,{ch:.14});
  // the frame: legs, a ring of girts and one brace a face on every level (the braces zigzag up the tower)
  const C4=[[-1,-1],[1,-1],[1,1],[-1,1]],lg=(t,q)=>{const e=(w0+(w1-w0)*t)/2;return [q[0]*e,f0+(yd-f0)*t,q[1]*e];},L=c?2:(hi?4:3),rl=c?.13:.21,rg=c?.1:.16;
  for(const q of C4)b.tube(lg(0,q),lg(1,q),rl,S.rust,{n:hi?5:3});
@@ -386,7 +386,7 @@ function greenhouse(b,o,c){const {pal,tint,mat,glow,hash}=b.k,S=pal.set,w=o.w,d=
  // rust rib bands and amber patch panels, so the big white glasshouse block stays (it read as a khaki tent: critic round 3)
  const glassM=hi?mat(0x8f9c8a,'glass',.15):mat(0xcfe0e2,'glass',.15,.03),glassB=hi?mat(0xa9ae98,'glass',.25):mat(0xb7ced4,'glass',.25,.03),tanP=hi?mat(0xc49a52,'cloth',0,.08):mat(0xd59a3a,'cloth',0,.05),ply=mat(0x94703f,'timber',.5,.1),trim=creamT(b),ribLow=mat(0x8a3b22,'scrap',.6,.04),glassLit=mat(0xe2c98a,'glass',.6),inside=mat(0x1e2e1a,'leaf',0,0);
  const tx0=-w/2+(c?.45:.6),tx1=w/2-(c?1.0:1.5),xc=(tx0+tx1)/2,len=tx1-tx0,cz=c?-.45:-d*.05,r=c?d*.5-1.3:d/2-1.25,kw=c?.3:.42,yf=f0+kw,rise=h-yf-(c?.1:.16),n=hi?10:6,segs=c?(hi?3:2):(hi?6:3);
- if(c)bx(b,0,0,0,w,.3,d,S.conc);else b.bev(0,-.5,0,w-.4,.72,d-.4,S.conc,{ch:.14});
+ if(c)homeGround(b,w,d,sd,S.conc);else b.bev(0,-.5,0,w-.4,.72,d-.4,S.conc,{ch:.14});
  bx(b,xc,f0,cz,len+.16,kw,2*r+.16,S.stone,S.soil);
  // raised beds and their greens (seen through the rolled-up side and the door)
  for(const sz of [-1,1]){const bz=cz+sz*r*.5;if(!hi){bx(b,xc,yf,bz,len-.9,.6,r*.5,S.timberD,sz>0?S.leaf:S.leafD);continue;}bx(b,xc,yf,bz,len-.9,.36,r*.56,S.timberD,S.soil);if(c)bx(b,xc,yf+.36,bz,len-1.3,.34,r*.36,sz>0?S.leaf:S.leafD);
@@ -677,12 +677,22 @@ WK.model('livestock',(b,o)=>{const {mat,glow,tint}=b.k,sd=o.seed|0,hi=b.hi,fl=(h
 });
 
 // ------------------------------------------------------------------ the town's settler homes (7 x 7 m lots, instanced) --
+// What a town home stands on: a patch of compacted regolith (an irregular 12-sided flat polygon at y = 0.03 with a slightly
+// darker rim ring, reaching 0.55 m past the slab: the slot's margin), a regolith berm banked against the slab's sides
+// (the same ground, about 10% darker than the patch) and the slab's concrete top. Ground, so it is drawn without the
+// builder's ground shading; the homes no longer stand on the bare Moon as islands on a dark-skirted slab.
+function homeGround(b,w,d,sd,conc){const {mat,tint,hash,rect}=b.k,g=mat(0x6a5f58,'dirt',.2,0),rim=tint(g,.84),hx=w/2+.55,hz=d/2+.55,t=.2,P=[],ao=b.aoMin,h=k=>hash((sd|0)*31+k+9);
+ [[1,1],[-1,1],[-1,-1],[1,-1]].forEach(([sx,sz],q)=>{const c1=.6*(.62+.38*h(q*3)),c2=.6*(.62+.38*h(q*3+1)),ins=.12*h(q*3+2),off=(h(q*5+7)-.5)*w*.3,A=[sx*hx,sz*(hz-c1)],C=[sx*(hx-c2),sz*hz];
+  if(q%2)P.push([off,sz*(hz-ins)],C,A);else P.push([sx*(hx-ins),off],A,C);});
+ b.aoMin=1;try{if(!b.hi)b.cap(P,.03,g,true);else{const I=P.map(v=>[v[0]*(hx-t)/hx,v[1]*(hz-t)/hz]);b.cap(I,.03,g,true);for(let i=0;i<12;i++){const j=(i+1)%12;b.quad([P[i][0],.012,P[i][1]],[P[j][0],.012,P[j][1]],[I[j][0],.03,I[j][1]],[I[i][0],.03,I[i][1]],rim,[0,-9,0]);}}
+  b.loft([{p:rect(w+.5,d+.5),y:.03},{p:rect(w,d),y:.3}],tint(g,.9),{top:false});}finally{b.aoMin=ao;}
+ b.cap(rect(w,d),.3,conc,true);}
 // a small tank on a crate stand (the compact roof / yard tank of the town homes)
 function miniTank(b,x,y,z,r,h,m){const S=b.k.pal.set,n=b.hi?8:6;bx(b,x,y,z,r*1.5,h*.34,r*1.5,S.timberD);b.cyl(x,y+h*.34,z,r,h*.5,m,{n});b.cyl(x,y+h*.84,z,r*1.06,h*.16,S.roofRust,{n,r2:.06});if(b.hi)hoop(b,x,y+h*.52,z,r*1.03,.07,S.iron,n);}
 // Town home: dome — the compact cousin of settler-home: a patched prefab dome on a drum, a bolted-on cabin, a porch.
 WK.model('town-home-dome',(b,o)=>{const {pal,tint,mat,glow,circ}=b.k,S=pal.set,w=o.w,d=o.d,h=o.h,sd=o.seed|0,hi=b.hi,PI=Math.PI,f0=.3;
  const wall=pick(S.paint,sd),domeC=pick(S.paint,sd+2),patch=pick(S.paint,sd+5),accent=pick(S.fresh,sd),r=Math.min(w,d)*.31,cz=-d*.1,hc=f0+(h-f0)*.36,dh=(h-f0)*.44,n=8,flip=sd%2?-1:1,ringAt=(rr,y)=>({p:circ(rr,n,0,cz,rr,PI/8),y});
- bx(b,0,0,0,w,.3,d,S.conc);
+ homeGround(b,w,d,sd,S.conc);
  if(hi)b.loft([ringAt(r*1.03,f0),ringAt(r*1.03,f0+.25)],S.iron,{top:false});b.loft([ringAt(r,f0),ringAt(r,hc)],(rr,i)=>i%3===1?patch:wall,{top:false});b.loft([ringAt(r*1.06,hc),ringAt(r*1.06,hc+.18)],S.timberD,{top:false});
  const L=hi?3:2,rings=[];for(let i=0;i<=L;i++){const t=i/L*PI/2*.92,c=Math.cos(t),s=Math.sin(t);rings.push(ringAt(r*1.02*c,hc+.18+dh*s));}
  b.loft(rings,(rr,i)=>(i+rr)%5===0?patch:(i%2?domeC:tint(domeC,.9)),{top:true,topMat:S.iron});
@@ -707,7 +717,7 @@ WK.model('town-home-block',(b,o)=>{const {pal,tint,mat,glow}=b.k,S=pal.set,w=o.w
  const cA=pick(S.paint,sd+5),cB=pick(S.paint,sd+2),accent=pick(S.fresh,sd),mur=[pick(S.fresh,sd+1),pick(S.fresh,sd+2),pick(S.fresh,sd+3)],y1=f0+(h-f0)*.42,yt=f0+(h-f0)*.8;
  const A={x0:-w*.4,x1:w*.33,z0:-d/2+.45,z1:d*.17},B={x0:-w*.39,x1:w*.14,z0:-d/2+.55,z1:d*.17-.85};
  const mod=(M,ya,yb,m,rim)=>{const cx=(M.x0+M.x1)/2,cz=(M.z0+M.z1)/2,mw=M.x1-M.x0,md=M.z1-M.z0;if(hi)module(b,cx,ya,cz,mw,yb-ya,md,m,rim);else{bx(b,cx,ya,cz,mw,yb-ya-.12,md,m);bx(b,cx,yb-.12,cz,mw+.16,.12,md+.16,rim);}};
- bx(b,0,0,0,w,.3,d,S.conc);mod(A,f0,y1,cA,S.roof);mod(B,y1,yt,cB,S.roofRust);
+ homeGround(b,w,d,sd,S.conc);mod(A,f0,y1,cA,S.roof);mod(B,y1,yt,cB,S.roofRust);
  b.at(0,0,A.z1,0,q=>{dr(q,A.x1-1.1,f0+.2,0,.9,1.85,tint(accent,.85));win(q,A.x0+1.5,f0+.95,0,1.1,.95,{bar:true,shut:hi?pick(S.fresh,sd+2):0});});
  b.at(0,0,B.z1,0,q=>{const gx=B.x1-.85;plate(q,gx,y1+.14,.03,.95,1.85,S.timberD);plate(q,gx,y1+.2,.05,.8,1.7,S.warm);win(q,B.x0+1.25,y1+.85,0,1.2,.95,{bar:true,glass:S.amber});awning(q,B.x0+1.25,y1+2.3,.04,1.7,.65,.36,hi?4:2,pick(S.canvas,sd+1),S.canvas[0],{val:.2});});
  b.at(A.x0,0,0,-PI/2,q=>{const u0=A.z0+.2,u1=A.z1-.2,band=(ya,yb,th,m,z)=>q.quad([u0,ya,z],[u0,ya-th,z],[u1,yb-th,z],[u1,yb,z],m,[0,0,-9]);band(f0+1.0,y1-.3,.7,mur[0],.03);band(f0+1.75,y1+.2,.65,mur[1],.035);});
@@ -734,7 +744,7 @@ WK.model('town-home-green',(b,o)=>{const S=b.k.pal.set,hi=b.hi,sd=o.seed|0,G=gre
 WK.model('town-home-shop',(b,o)=>{const {pal,tint,mat,glow}=b.k,S=pal.set,w=o.w,d=o.d,h=o.h,sd=o.seed|0,hi=b.hi,PI=Math.PI,f0=.3;
  const wall=pick(S.paint,sd+2),accent=pick(S.fresh,sd),c0=pick([S.canvas[1],S.canvas[2],S.canvas[4],S.canvas[3]],sd),c1=S.canvas[0],dark=mat(0x1d1712,'flat');
  const bz0=-d/2+.4,bz1=-d*.09,bzc=(bz0+bz1)/2,bw=w-1.0,H=h-f0,yw=f0+H*.5,yf=f0+H*.66;
- bx(b,0,0,0,w,.3,d,S.conc);
+ homeGround(b,w,d,sd,S.conc);
  if(hi)b.bev(0,f0,bzc,bw,yw-f0,bz1-bz0,wall,{ch:.07});else bx(b,0,f0,bzc,bw,yw-f0,bz1-bz0,wall);
  for(let i=0;i<2;i++){const x0=-bw/2-.15+(bw+.3)*i/2,x1=x0+(bw+.3)/2;b.quad([x0,yf-.05,bz1],[x1,yf-.05,bz1],[x1,yw,bz0-.15],[x0,yw,bz0-.15],i?S.roofRust:S.roof,[0,0,bzc]);}
  if(hi)for(const s of [-1,1])b.tri([s*bw/2,yw,bz0],[s*bw/2,yw,bz1],[s*bw/2,yf-.07,bz1],wall,[0,yw,bzc]);
