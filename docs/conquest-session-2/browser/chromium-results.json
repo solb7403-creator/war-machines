@@ -5,8 +5,8 @@
   "cases": [
     {
       "operation": "raid-intercept-1",
-      "secondsWall": 47.073385007999605,
-      "physicalHullClicks": 17,
+      "secondsWall": 30.850555955003074,
+      "physicalHullClicks": 12,
       "settlement": {
         "kind": "first-clear",
         "reputation": 60,
@@ -16,24 +16,23 @@
         "helium": 3,
         "ptsRaw": 900,
         "mn": {
-          "il": 2,
-          "ar": 1
+          "il": 2
         },
         "shards": 1,
         "eliteBlueprint": false,
         "rareChance": 0.035,
         "loot": {
           "it": {
-            "repair": 1
+            "shield": 1
           }
         }
       },
       "kills": 7,
-      "hp": 2330.5587272507505,
+      "hp": 2684.8006497051656,
       "position": {
-        "x": 907.7589921793872,
-        "z": 928.1222864868848,
-        "y": -0.006167541274212184,
+        "x": 906.7108137703315,
+        "z": 931.3963659744857,
+        "y": -0.005480620510930665,
         "surface": "ground"
       },
       "raidProgress": {
@@ -58,12 +57,12 @@
         "raid-site-intercept-1": {
           "owner": "humanity",
           "status": "secured",
-          "capturedAt": 1795181546551,
-          "defenseAt": 1795182746551,
+          "capturedAt": 1795186079440,
+          "defenseAt": 1795187279440,
           "awaitingReinforcements": false
         },
         "refuge": {
-          "defenseAt": 1795183273872,
+          "defenseAt": 1795187831558,
           "owner": "humanity",
           "status": "secured"
         },
@@ -74,31 +73,31 @@
         "western": {
           "owner": "humanity",
           "status": "secured",
-          "capturedAt": 1795181546551,
-          "defenseAt": 1795182746551,
+          "capturedAt": 1795186079440,
+          "defenseAt": 1795187279440,
           "awaitingReinforcements": false
         }
       },
       "performance": {
-        "samples": 286,
+        "samples": 283,
         "pixelRatio": 0.75,
-        "percentBelow50fps": 99.65034965034965,
-        "percentBelow40fps": 99.65034965034965,
-        "percentBelow30fps": 99.65034965034965,
+        "percentBelow50fps": 99.64664310954063,
+        "percentBelow40fps": 99.64664310954063,
+        "percentBelow30fps": 99.64664310954063,
         "simulationMs": 0,
-        "renderSubmissionMs": 2.899999998509884,
-        "heapBytes": 120541720,
+        "renderSubmissionMs": 3.699999999254942,
+        "heapBytes": 105007053,
         "textures": 27,
-        "frameMedian": 155.30000000074506,
-        "frameP95": 233.5,
-        "worstFrame": 388.5,
-        "hitches": 282,
-        "drawCalls": 65,
-        "maxDrawCalls": 76,
+        "frameMedian": 105.10000000149012,
+        "frameP95": 142,
+        "worstFrame": 271.69999999925494,
+        "hitches": 184,
+        "drawCalls": 68,
+        "maxDrawCalls": 75,
         "programs": 14,
         "materialPrograms": 14,
-        "triangles": 146417,
-        "geometries": 109,
+        "triangles": 146693,
+        "geometries": 111,
         "chunks": 25,
         "enemies": 14,
         "projectiles": 0,
@@ -111,8 +110,8 @@
     },
     {
       "operation": "raid-sabotage-1",
-      "secondsWall": 49.453401761998975,
-      "physicalHullClicks": 8,
+      "secondsWall": 43.95869330000278,
+      "physicalHullClicks": 6,
       "settlement": {
         "kind": "first-clear",
         "reputation": 65,
@@ -122,8 +121,7 @@
         "helium": 3,
         "ptsRaw": 900,
         "mn": {
-          "il": 2,
-          "ar": 1
+          "il": 2
         },
         "chain": {
           "links": 1,
@@ -140,11 +138,11 @@
         }
       },
       "kills": 7,
-      "hp": 1347.2144243821622,
+      "hp": 1511.2578490328576,
       "position": {
-        "x": 914.8839583236141,
-        "z": 932.9065291044518,
-        "y": -0.015555066631531582,
+        "x": 912.7738330824156,
+        "z": 933.6600375749047,
+        "y": -0.011935297305449762,
         "surface": "ground"
       },
       "raidProgress": {
@@ -168,20 +166,20 @@
         },
         "raid-site-intercept-1": {
           "awaitingReinforcements": false,
-          "capturedAt": 1795181546551,
-          "defenseAt": 1795182746551,
+          "capturedAt": 1795186079440,
+          "defenseAt": 1795187279440,
           "owner": "humanity",
           "status": "secured"
         },
         "raid-site-sabotage-1": {
           "owner": "humanity",
           "status": "secured",
-          "capturedAt": 1795181602956,
-          "defenseAt": 1795182802956,
+          "capturedAt": 1795186129546,
+          "defenseAt": 1795187329546,
           "awaitingReinforcements": false
         },
         "refuge": {
-          "defenseAt": 1795183273872,
+          "defenseAt": 1795187831558,
           "owner": "humanity",
           "status": "secured"
         },
@@ -191,32 +189,249 @@
         },
         "western": {
           "awaitingReinforcements": false,
-          "capturedAt": 1795181546551,
-          "defenseAt": 1795182802956,
+          "capturedAt": 1795186079440,
+          "defenseAt": 1795187329546,
           "owner": "humanity",
           "status": "secured"
         }
       },
       "performance": {
-        "samples": 395,
+        "samples": 424,
         "pixelRatio": 0.75,
-        "percentBelow50fps": 99.74683544303798,
-        "percentBelow40fps": 99.74683544303798,
-        "percentBelow30fps": 99.74683544303798,
-        "simulationMs": 0.20000000298023224,
-        "renderSubmissionMs": 1.6000000014901161,
-        "heapBytes": 120415208,
+        "percentBelow50fps": 99.76415094339623,
+        "percentBelow40fps": 99.76415094339623,
+        "percentBelow30fps": 99.76415094339623,
+        "simulationMs": 0.19999999925494194,
+        "renderSubmissionMs": 2.199999999254942,
+        "heapBytes": 108605016,
         "textures": 27,
-        "frameMedian": 118.60000000149012,
-        "frameP95": 180.5,
-        "worstFrame": 230.70000000298023,
-        "hitches": 312,
-        "drawCalls": 83,
-        "maxDrawCalls": 85,
+        "frameMedian": 99.60000000149012,
+        "frameP95": 132,
+        "worstFrame": 402.0999999977648,
+        "hitches": 208,
+        "drawCalls": 82,
+        "maxDrawCalls": 94,
         "programs": 14,
         "materialPrograms": 14,
-        "triangles": 189293,
-        "geometries": 113,
+        "triangles": 192993,
+        "geometries": 111,
+        "chunks": 25,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "softwareGL": true,
+        "styleQuality": "low",
+        "styleShading": "low",
+        "physicalDeviceVerified": false
+      }
+    },
+    {
+      "operation": "raid-battery-1",
+      "secondsWall": 84.67355874200075,
+      "physicalHullClicks": 13,
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 120,
+        "cp": 310,
+        "alloy": 18,
+        "biomass": 14,
+        "helium": 3,
+        "ptsRaw": 900,
+        "mn": {
+          "il": 2,
+          "ar": 1
+        },
+        "chain": {
+          "links": 2,
+          "bonus": 0,
+          "chance": 0.2
+        },
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035,
+        "loot": {
+          "it": {
+            "repair": 1
+          }
+        }
+      },
+      "kills": 10,
+      "hp": 742.7277644898662,
+      "position": {
+        "x": 939.8865513352717,
+        "z": 920.5769048658437,
+        "y": -0.2359223263873096,
+        "surface": "ground"
+      },
+      "raidProgress": {
+        "blueprint": false,
+        "clears": 3,
+        "eliteBlueprint": false,
+        "shards": 3
+      },
+      "territory": {
+        "ash": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "helium": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "oxygen": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "raid-site-battery-1": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1795186394384,
+          "defenseAt": 1795187594384,
+          "awaitingReinforcements": false
+        },
+        "raid-site-intercept-1": {
+          "awaitingReinforcements": false,
+          "capturedAt": 1795186079440,
+          "defenseAt": 1795187279440,
+          "owner": "humanity",
+          "status": "secured"
+        },
+        "raid-site-sabotage-1": {
+          "awaitingReinforcements": false,
+          "capturedAt": 1795186129546,
+          "defenseAt": 1795187329546,
+          "owner": "humanity",
+          "status": "secured"
+        },
+        "refuge": {
+          "defenseAt": 1795187831558,
+          "owner": "humanity",
+          "status": "secured"
+        },
+        "ridge": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "western": {
+          "awaitingReinforcements": false,
+          "capturedAt": 1795186079440,
+          "defenseAt": 1795187594384,
+          "owner": "humanity",
+          "status": "secured"
+        }
+      },
+      "performance": {
+        "samples": 600,
+        "pixelRatio": 0.75,
+        "percentBelow50fps": 100,
+        "percentBelow40fps": 100,
+        "percentBelow30fps": 100,
+        "simulationMs": 0.09999999776482582,
+        "renderSubmissionMs": 17,
+        "heapBytes": 112025403,
+        "textures": 27,
+        "frameMedian": 114.30000000074506,
+        "frameP95": 157,
+        "worstFrame": 336.1000000014901,
+        "hitches": 550,
+        "drawCalls": 91,
+        "maxDrawCalls": 109,
+        "programs": 15,
+        "materialPrograms": 15,
+        "triangles": 230005,
+        "geometries": 160,
+        "chunks": 25,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "softwareGL": true,
+        "styleQuality": "low",
+        "styleShading": "low",
+        "physicalDeviceVerified": false
+      }
+    },
+    {
+      "operation": "base-defense",
+      "secondsWall": 12.827795697998226,
+      "physicalHullClicks": 6,
+      "settlement": {
+        "kind": "defense",
+        "outcome": "victory",
+        "at": 1795186441409,
+        "ptsRaw": 708.75,
+        "mn": {
+          "fe": 2,
+          "il": 1
+        },
+        "cp": 160,
+        "alloy": 15,
+        "biomass": 10,
+        "helium": 2,
+        "reputation": 60,
+        "stolen": 0,
+        "damage": 0
+      },
+      "kills": 6,
+      "hp": 2855.1623999999993,
+      "position": {
+        "x": 1080.576067767387,
+        "z": 1138.1089811763318,
+        "y": -1.6369133058354184,
+        "surface": "ground"
+      },
+      "raidProgress": {
+        "blueprint": false,
+        "clears": 0,
+        "eliteBlueprint": false,
+        "shards": 0
+      },
+      "territory": {
+        "ash": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "helium": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "oxygen": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "refuge": {
+          "defenseAt": 1795188214225,
+          "owner": "humanity",
+          "status": "secured"
+        },
+        "ridge": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "western": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        }
+      },
+      "performance": {
+        "samples": 68,
+        "pixelRatio": 0.75,
+        "percentBelow50fps": 98.52941176470588,
+        "percentBelow40fps": 98.52941176470588,
+        "percentBelow30fps": 98.52941176470588,
+        "simulationMs": 0.20000000298023224,
+        "renderSubmissionMs": 2.100000001490116,
+        "heapBytes": 81625662,
+        "textures": 19,
+        "frameMedian": 175.39999999850988,
+        "frameP95": 248.80000000074506,
+        "worstFrame": 364.30000000074506,
+        "hitches": 67,
+        "drawCalls": 122,
+        "maxDrawCalls": 123,
+        "programs": 13,
+        "materialPrograms": 13,
+        "triangles": 222983,
+        "geometries": 115,
         "chunks": 25,
         "enemies": 14,
         "projectiles": 0,
@@ -228,16 +443,2017 @@
       }
     }
   ],
-  "errors": [
-    "('raid-battery-1', {'state': 'defeat', 'hp': 0, 'maxHp': 2958, 'target': {'x': 907.9134171618255, 'z': 932.6193976625565}, 'selected': None, 'pick': None, 'live': 0, 'canHit': False, 'enemy': None, 'p': {'x': 901.8024809356638, 'z': 923.1868206646659, 'yaw': -0.8}, 'hazard': None, 'charge': 260.5572725648156, 'scans': 0, 'stage': 0, 'work': 0, 'time': 71.89542858625825, 'kills': 8, 'shots': 123, 'operation': 'raid-battery-1', 'serverTime': 71.89542858625825})"
-  ],
+  "errors": [],
   "refugeRepairs": [
     {
       "before": "raid-battery-1",
       "hull": [
-        1347.2144243821622,
+        1511.2578490328576,
         2958
       ]
+    }
+  ],
+  "retention": {
+    "reload": true,
+    "owned": {
+      "armor-brass": {
+        "at": 1795186129546,
+        "milestone": "Earn 100 Conquest reputation",
+        "source": "earned"
+      },
+      "fire-ionwake": {
+        "at": 1795186394384,
+        "milestone": "Complete three eligible raids",
+        "source": "earned"
+      },
+      "fire-sunlance": {
+        "at": 1795186079440,
+        "milestone": "Complete one eligible raid",
+        "source": "earned"
+      }
+    },
+    "shards": 3,
+    "exactlyOnceCp": 1964
+  },
+  "defense": {
+    "config": "turret",
+    "damage": 0,
+    "wins": 1,
+    "alertAt": 0,
+    "nextAt": 1795187641409,
+    "active": false,
+    "report": {
+      "outcome": "victory",
+      "at": 1795186441409,
+      "ptsRaw": 708.75,
+      "mn": {
+        "fe": 2,
+        "il": 1
+      },
+      "cp": 160,
+      "alloy": 15,
+      "biomass": 10,
+      "helium": 2,
+      "reputation": 60,
+      "stolen": 0,
+      "damage": 0
+    }
+  },
+  "requests": [
+    {
+      "path": "/api/sync",
+      "status": 200,
+      "bytes": 2092
+    },
+    {
+      "path": "/api/conquest/session",
+      "status": 200,
+      "bytes": 21495
+    },
+    {
+      "path": "/api/conquest/session",
+      "status": 200,
+      "bytes": 20504
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 23356
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 23341
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 23234
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 23337
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 23319
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 23243
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 23274
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 37343
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37366
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37945
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37740
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38280
+    },
+    {
+      "path": "/api/conquest/an",
+      "status": 200,
+      "bytes": 11
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38866
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38337
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38390
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38317
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38229
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38831
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39069
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39995
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39446
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39157
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 40231
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 40328
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39876
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39705
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39629
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 40790
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42130
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41605
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41138
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41061
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 40892
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41098
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41137
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41112
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41965
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41873
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 26462
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 26776
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 26815
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 26795
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 26766
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 27062
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 27042
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 26825
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 40679
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 40875
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 40988
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41830
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42236
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41694
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42146
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42877
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42776
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41818
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41560
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41559
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41780
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41918
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41742
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41893
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42090
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42678
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42392
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42116
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42145
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42135
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42136
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42116
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42125
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41794
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 41975
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42324
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42323
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42445
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42185
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42170
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 42195
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 43370
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 44202
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 45211
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 43692
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 43296
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 43272
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 43131
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 43100
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 43097
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 43829
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 43737
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 27951
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 28089
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 28022
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 28195
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 28183
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 29180
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 29032
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 29338
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 28961
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 29925
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 30796
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 30457
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 30289
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 29928
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 30078
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 30620
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32609
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32197
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32372
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32211
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 31693
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 31588
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32524
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32776
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32210
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32121
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32726
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32715
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32075
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 31352
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 30953
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 31246
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 31296
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 31310
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 31255
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 31583
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32266
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32581
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 32815
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 33797
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34093
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 33197
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 33457
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34111
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34112
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 33446
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35077
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35927
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35912
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35274
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34933
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34907
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34560
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34171
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34266
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34252
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34252
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34260
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34266
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34219
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34194
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34193
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34225
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34236
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34230
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34211
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34177
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34174
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34186
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34201
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34205
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34151
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34155
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34159
+    },
+    {
+      "path": "/api/conquest/session",
+      "status": 200,
+      "bytes": 35192
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35145
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35093
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35114
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35110
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35112
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35107
+    },
+    {
+      "path": "/api/conquest/session",
+      "status": 200,
+      "bytes": 35116
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35107
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35107
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35106
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35106
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35113
+    },
+    {
+      "path": "/api/conquest/session",
+      "status": 200,
+      "bytes": 35122
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 35017
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35039
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35042
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35042
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35044
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35038
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35034
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35013
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35025
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35039
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35053
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35030
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35048
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35056
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35045
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35054
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35079
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35057
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35067
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35139
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35121
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35121
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35130
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35104
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35131
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35109
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35090
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35111
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35180
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35233
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35548
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36210
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36501
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37435
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36807
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37167
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37554
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37584
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37263
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37838
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36678
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36344
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37559
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37884
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38936
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38952
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38934
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37628
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36340
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35673
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35290
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35289
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35327
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35661
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35494
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36368
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37639
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36670
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37104
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35655
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36334
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37003
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38123
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38868
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39728
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38274
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38393
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37327
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37377
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37354
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36767
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37048
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37383
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37351
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39033
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38685
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37983
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36955
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36338
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36306
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36304
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36620
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36895
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36571
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36564
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36365
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36662
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36535
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 52864
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 52953
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53113
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53505
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53390
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54497
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53958
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53829
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53977
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53719
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53540
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53716
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54048
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53712
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53549
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53924
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54352
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54299
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54482
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54238
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53789
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54552
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54739
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54181
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54113
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53626
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54147
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53945
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54393
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54989
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55172
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54367
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54283
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54342
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54601
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54642
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54270
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54007
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54184
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54160
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54069
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53936
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53924
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 53938
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55279
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 56097
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55759
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 56204
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 56058
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55803
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55794
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55906
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55223
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55190
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55686
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55142
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54795
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54763
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54634
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54445
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54442
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54450
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54459
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54524
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54909
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55141
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55056
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 54858
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 57203
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 56344
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 56807
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 57437
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 57833
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 57078
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 57670
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 56573
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 57122
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 56782
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 56446
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 56597
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55877
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 55786
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 35660
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36453
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36660
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36401
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 36386
+    },
+    {
+      "path": "/api/sync",
+      "status": 200,
+      "bytes": 2158
+    },
+    {
+      "path": "/api/conquest/session",
+      "status": 200,
+      "bytes": 35696
+    },
+    {
+      "path": "/api/conquest/session",
+      "status": 200,
+      "bytes": 35696
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36457
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36625
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36843
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36834
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36840
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37268
+    },
+    {
+      "path": "/api/sync",
+      "status": 200,
+      "bytes": 2170
+    },
+    {
+      "path": "/api/conquest/session",
+      "status": 200,
+      "bytes": 18892
+    },
+    {
+      "path": "/api/conquest/session",
+      "status": 200,
+      "bytes": 18024
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 20594
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 20617
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 20611
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 20618
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 20614
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 20601
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 20535
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 20530
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 21166
+    },
+    {
+      "path": "/api/conquest/action",
+      "status": 200,
+      "bytes": 34385
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34291
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 34377
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 36323
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35567
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 35777
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 37414
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38205
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38512
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 38622
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39594
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39580
+    },
+    {
+      "path": "/api/conquest/input",
+      "status": 200,
+      "bytes": 39494
     }
   ]
 }
