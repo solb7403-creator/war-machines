@@ -14,11 +14,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 JACKAL (Isla Grieve) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 QUILL (Quinn Jansen) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "JACKAL",
+     "cs": "QUILL",
      "role": "wingman",
      "mil": true
     }
@@ -32,7 +32,7 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WJACKAL"
+    "WQUILL"
    ],
    "tagInDom": true
   },
@@ -68,9 +68,160 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GSPARROW",
-    "BHAMMER",
+    "GBASTION",
+    "BBLITZ",
     "LCOBALT",
+    "MMOTH"
+   ],
+   "label": "PLATOON",
+   "presets": 3,
+   "force_chip": true,
+   "warn": null
+  },
+  "fight": {
+   "friends": 4,
+   "views": 4,
+   "meshes": [
+    3,
+    3,
+    3,
+    3
+   ],
+   "tags": 4,
+   "tagsDom": 4,
+   "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
+   "calls": 80,
+   "programs": 16,
+   "targets": 9,
+   "slot": [
+    "#cq-command-access"
+   ],
+   "commandBox": [
+    16,
+    652,
+    219,
+    46
+   ]
+  },
+  "tap": 5,
+  "wheelOpen": true,
+  "wheelOrder": {
+   "k": 2,
+   "o": "attack"
+  },
+  "raidCleared": 4,
+  "raidAar": "YOUR PILOTS+2 XP to every pilot fielded+1 COMMAND CHIP \u00b7 1 held (your first win today)",
+  "grantCard": "FIRST LAB GRANTPick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.+2 THERMAL CORESTHERMAL \u00b7 Keep firing: heat becomes damage.+2 BALLISTIC COILSBALLISTICS \u00b7 Precision: every hit counts.",
+  "afterGrant": [
+   "2THERMAL CORES",
+   "0BALLISTIC COILS",
+   "0DRIVE SERVOS",
+   "0FIELD CAPACITORS"
+  ],
+  "roleCores": [
+   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
+   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
+  ],
+  "perfPlatoon": {
+   "median": 150,
+   "p95": 216.7,
+   "worst": 366.7,
+   "calls": 84,
+   "tris": 334945,
+   "programs": 15,
+   "friends": 4,
+   "views": 4,
+   "hostiles": 2,
+   "dist": [
+    10,
+    26,
+    64,
+    33
+   ],
+   "low": "low"
+  },
+  "fielded": 9,
+  "crash": "Page.wait_for_function: Timeout 300000ms exceeded.",
+  "verdict": [
+   "crash: Page.wait_for_function: Timeout 300000ms exceeded."
+  ]
+ },
+ {
+  "size": "390x700",
+  "input": "touch",
+  "errors": [],
+  "hubFresh": null,
+  "nextChip": "RESCUE THE DOWNED PILOT",
+  "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
+  "rescueStrip": {
+   "enemies": [
+    "\u25cf2\u00d7 INTERCEPTOR"
+   ],
+   "hint": "2 interceptors guard the wreck. Clear them, then hold beside it for 4 seconds.",
+   "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
+  },
+  "rescueCleared": 2,
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 THISTLE (Olu Ekwueme) flies with you now",
+  "wing": {
+   "friends": [
+    {
+     "cs": "THISTLE",
+     "role": "wingman",
+     "mil": true
+    }
+   ],
+   "views": 1,
+   "state": {
+    "w": 1,
+    "done": true,
+    "roster": 1
+   },
+   "next": "SIGNAL RECOVERY",
+   "access": null,
+   "tags": [
+    "WTHISTLE"
+   ],
+   "tagInDom": true
+  },
+  "hubCard": {
+   "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
+   "card": "BATTALION4 PILOTS \u00b7 FIELD 4FORCE247COMMAND CHIP 0/1 TODAY \u00b7 0 HELDOPEN HANGAR",
+   "force": true
+  },
+  "hangar": {
+   "cards": 4,
+   "toggles": [
+    "IN FORCE #1 \u00b7 AUTO",
+    "IN FORCE #2 \u00b7 AUTO",
+    "IN FORCE #3 \u00b7 AUTO",
+    "IN FORCE #4 \u00b7 AUTO"
+   ],
+   "arm": true,
+   "presets": 3,
+   "forms": [
+    "LINE",
+    "WEDGE",
+    "ESCORT"
+   ]
+  },
+  "hangarCloseVisible": true,
+  "openWorld": {
+   "targets": 11,
+   "slot": [
+    "#cq-command-access"
+   ]
+  },
+  "raidStrip": {
+   "enemies": 5,
+   "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
+   "force": [
+    "GRIPTIDE",
+    "BWARDEN",
+    "LEMBER",
     "MVESPER"
    ],
    "label": "PLATOON",
@@ -90,158 +241,7 @@
    "tags": 4,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 83,
-   "programs": 16,
-   "targets": 9,
-   "slot": [
-    "#cq-command-access"
-   ],
-   "commandBox": [
-    16,
-    652,
-    219,
-    46
-   ]
-  },
-  "tap": 5,
-  "wheelOpen": true,
-  "wheelOrder": {
-   "k": 2,
-   "o": "attack"
-  },
-  "raidCleared": 3,
-  "raidAar": "YOUR PILOTS+2 XP to every pilot fielded+1 COMMAND CHIP \u00b7 1 held (your first win today)",
-  "grantCard": "FIRST LAB GRANTPick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.+2 THERMAL CORESTHERMAL \u00b7 Keep firing: heat becomes damage.+2 BALLISTIC COILSBALLISTICS \u00b7 Precision: every hit counts.",
-  "afterGrant": [
-   "2THERMAL CORES",
-   "0BALLISTIC COILS",
-   "0DRIVE SERVOS",
-   "0FIELD CAPACITORS"
-  ],
-  "roleCores": [
-   "G GUARDIAN CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
-   "B BREACHER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
-   "L LANCER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
-   "M MENDER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
-   "C CORRODER CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m",
-   "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
-  ],
-  "perfPlatoon": {
-   "median": 133.3,
-   "p95": 183.3,
-   "worst": 216.6,
-   "calls": 77,
-   "tris": 285055,
-   "programs": 15,
-   "friends": 4,
-   "views": 4,
-   "hostiles": 2,
-   "dist": [
-    10,
-    27,
-    59,
-    27
-   ],
-   "low": "low"
-  },
-  "fielded": 9,
-  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
-  "verdict": [
-   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
-  ]
- },
- {
-  "size": "390x700",
-  "input": "touch",
-  "errors": [],
-  "hubFresh": "NO PILOTS YET",
-  "nextChip": "RESCUE THE DOWNED PILOT",
-  "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
-  "rescueStrip": {
-   "enemies": [
-    "\u25cf2\u00d7 INTERCEPTOR"
-   ],
-   "hint": "2 interceptors guard the wreck. Clear them, then hold beside it for 4 seconds.",
-   "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
-  },
-  "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 FALCON (Tomas Quade) flies with you now",
-  "wing": {
-   "friends": [
-    {
-     "cs": "FALCON",
-     "role": "wingman",
-     "mil": true
-    }
-   ],
-   "views": 1,
-   "state": {
-    "w": 1,
-    "done": true,
-    "roster": 1
-   },
-   "next": "SIGNAL RECOVERY",
-   "access": null,
-   "tags": [
-    "WFALCON"
-   ],
-   "tagInDom": true
-  },
-  "hubCard": {
-   "chipDay": "COMMAND CHIP 0/1 TODAY \u00b7 0 HELD",
-   "card": "BATTALION4 PILOTS \u00b7 FIELD 4FORCE247COMMAND CHIP 0/1 TODAY \u00b7 0 HELDOPEN HANGAR",
-   "force": true
-  },
-  "hangar": {
-   "cards": 4,
-   "toggles": [
-    "IN FORCE #1 \u00b7 AUTO",
-    "IN FORCE #2 \u00b7 AUTO",
-    "IN FORCE #3 \u00b7 AUTO",
-    "IN FORCE #4 \u00b7 AUTO"
-   ],
-   "arm": true,
-   "presets": 3,
-   "forms": [
-    "LINE",
-    "WEDGE",
-    "ESCORT"
-   ]
-  },
-  "hangarCloseVisible": true,
-  "openWorld": {
-   "targets": 11,
-   "slot": [
-    "#cq-command-access"
-   ]
-  },
-  "raidStrip": {
-   "enemies": 5,
-   "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
-   "force": [
-    "GSHALE",
-    "BRAVEN",
-    "LCROW",
-    "MRELIC"
-   ],
-   "label": "PLATOON",
-   "presets": 3,
-   "force_chip": true,
-   "warn": null
-  },
-  "fight": {
-   "friends": 4,
-   "views": 4,
-   "meshes": [
-    3,
-    3,
-    3,
-    3
-   ],
-   "tags": 4,
-   "tagsDom": 4,
-   "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 85,
+   "calls": 84,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -278,34 +278,34 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 133.3,
-   "p95": 183.3,
-   "worst": 283.4,
-   "calls": 90,
-   "tris": 335262,
+   "median": 149.9,
+   "p95": 216.6,
+   "worst": 250,
+   "calls": 88,
+   "tris": 341337,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 5,
+   "hostiles": 2,
    "dist": [
-    18,
-    39,
-    76,
-    47
+    10,
+    26,
+    64,
+    33
    ],
    "low": "low"
   },
   "fielded": 9,
-  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
+  "crash": "Page.wait_for_function: Timeout 300000ms exceeded.",
   "verdict": [
-   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
+   "crash: Page.wait_for_function: Timeout 300000ms exceeded."
   ]
  },
  {
   "size": "320x568",
   "input": "touch",
   "errors": [],
-  "hubFresh": null,
+  "hubFresh": "NO PILOTS YET",
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
   "rescueStrip": {
@@ -316,11 +316,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 ZEPHYR (Bo Orlov) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 CINDER (Bo Orlov) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "ZEPHYR",
+     "cs": "CINDER",
      "role": "wingman",
      "mil": true
     }
@@ -368,10 +368,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GJACKAL",
-    "BQUILL",
-    "LJUNO",
-    "MCROW"
+    "GCOMET",
+    "BJACKAL",
+    "LRAVEN",
+    "MFROST"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -390,7 +390,7 @@
    "tags": 3,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 88,
+   "calls": 80,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -427,53 +427,35 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 133.3,
-   "p95": 166.7,
-   "worst": 183.4,
-   "calls": 85,
-   "tris": 316400,
+   "median": 149.9,
+   "p95": 216.6,
+   "worst": 266.7,
+   "calls": 86,
+   "tris": 291608,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 2,
+   "hostiles": 5,
    "dist": [
-    30,
-    13,
-    78,
-    44
+    29,
+    22,
+    88,
+    55
    ],
    "low": "low"
   },
   "fielded": 9,
-  "perfBattalion": {
-   "median": 16.7,
-   "p95": 16.7,
-   "worst": 16.8,
-   "calls": 99,
-   "tris": 366293,
-   "programs": 15,
-   "friends": 9,
-   "views": 9,
-   "hostiles": 2,
-   "dist": [
-    23,
-    12,
-    66,
-    31,
-    19,
-    16,
-    37,
-    37,
-    23
-   ],
-   "low": "low"
-  },
-  "verdict": "PASS"
+  "crash": "Page.wait_for_function: Timeout 300000ms exceeded.",
+  "verdict": [
+   "crash: Page.wait_for_function: Timeout 300000ms exceeded."
+  ]
  },
  {
   "size": "1366x768",
   "input": "mouse+keyboard",
-  "errors": [],
+  "errors": [
+   "console:Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
   "hubFresh": "NO PILOTS YET",
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
@@ -485,11 +467,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 JACKAL (Olu Okafor) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 THISTLE (Yuki Zielinski) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "JACKAL",
+     "cs": "THISTLE",
      "role": "wingman",
      "mil": true
     }
@@ -503,7 +485,7 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WJACKAL"
+    "WTHISTLE"
    ],
    "tagInDom": true
   },
@@ -539,10 +521,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GRAVEN",
+    "GZEPHYR",
     "BJACKAL",
-    "LMANTIS",
-    "MNOMAD"
+    "LNOMAD",
+    "MUMBRA"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -561,7 +543,7 @@
    "tags": 4,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGV REGROUP \u00b7 HOLD V ORDERS",
-   "calls": 127,
+   "calls": 131,
    "programs": 16,
    "targets": 8,
    "slot": [
@@ -585,7 +567,7 @@
    "k": 2,
    "o": "attack"
   },
-  "raidCleared": 4,
+  "raidCleared": 3,
   "raidAar": "YOUR PILOTS+2 XP to every pilot fielded+1 COMMAND CHIP \u00b7 1 held (your first win today)",
   "grantCard": "FIRST LAB GRANTPick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.+2 THERMAL CORESTHERMAL \u00b7 Keep firing: heat becomes damage.+2 BALLISTIC COILSBALLISTICS \u00b7 Precision: every hit counts.",
   "afterGrant": [
@@ -603,35 +585,33 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 299.9,
-   "p95": 383.3,
-   "worst": 416.7,
-   "calls": 173,
-   "tris": 506013,
+   "median": 16.8,
+   "p95": 400,
+   "worst": 466.7,
+   "calls": 154,
+   "tris": 429383,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 3,
+   "hostiles": 2,
    "dist": [
-    9,
     17,
-    76,
-    31
+    26,
+    52,
+    27
    ],
    "low": "low"
   },
   "fielded": 9,
-  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
+  "crash": "Page.wait_for_function: Timeout 300000ms exceeded.",
   "verdict": [
-   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
+   "crash: Page.wait_for_function: Timeout 300000ms exceeded."
   ]
  },
  {
   "size": "1920x1080",
   "input": "mouse+keyboard",
-  "errors": [
-   "console:Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
-  ],
+  "errors": [],
   "hubFresh": "NO PILOTS YET",
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
@@ -643,7 +623,7 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 RELIC (Kenji Duarte) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 RELIC (Priya Ekwueme) flies with you now",
   "wing": {
    "friends": [
     {
@@ -697,10 +677,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GLANCE",
-    "BMOTH",
-    "LFLINT",
-    "MORBIT"
+    "GDRIFT",
+    "BNOMAD",
+    "LBLITZ",
+    "MCROW"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -719,7 +699,7 @@
    "tags": 4,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGV REGROUP \u00b7 HOLD V ORDERS",
-   "calls": 139,
+   "calls": 135,
    "programs": 16,
    "targets": 8,
    "slot": [
@@ -733,7 +713,7 @@
    ]
   },
   "tap": 5,
-  "wheelOpen": true,
+  "wheelOpen": false,
   "wheelOrder": {
    "k": 3,
    "o": "hold",
@@ -761,27 +741,27 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 16.7,
-   "p95": 566.6,
-   "worst": 666.6,
-   "calls": 148,
-   "tris": 354675,
+   "median": 466.6,
+   "p95": 633.2,
+   "worst": 683.3,
+   "calls": 156,
+   "tris": 429775,
    "programs": 15,
    "friends": 4,
    "views": 4,
    "hostiles": 2,
    "dist": [
-    13,
-    26,
-    67,
-    31
+    10,
+    31,
+    62,
+    22
    ],
    "low": "low"
   },
   "fielded": 9,
-  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
+  "crash": "Page.wait_for_function: Timeout 300000ms exceeded.",
   "verdict": [
-   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
+   "crash: Page.wait_for_function: Timeout 300000ms exceeded."
   ]
  }
 ]
