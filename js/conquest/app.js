@@ -1,5 +1,8 @@
 (function(root){
 'use strict';
+// A finger on the screen brings the touch joystick back on a device the stylesheet takes for a keyboard-and-mouse computer
+// (css/conquest.css hides it there: a touch laptop, or a tablet with a mouse, still needs it). Session 5E-2d1.
+try{root.addEventListener&&root.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&root.document)root.document.documentElement.classList.add('cq-touch');},{capture:true,passive:true});}catch(_){}
 let transmissionCleanup=null;
 const W=root.ConquestWorld;let panel=null,view=null,loading=0,lastFocus=null,background=[];let dev=new URLSearchParams(location.search).get('conquestDev')==='1',mapOpen=false,diag=false;let showroomVisible=null,lastTick=null;
 function button(label,fn,cls=''){const b=document.createElement('button');b.textContent=label;b.className=cls;b.onclick=fn;return b;}
