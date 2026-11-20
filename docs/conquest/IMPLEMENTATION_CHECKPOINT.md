@@ -6092,10 +6092,13 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md fi
   (`conquest-slots.mjs`, `conquest-slots-browser.py`); critic round 1 and its fixes (`aa280ca`); the holographic signs fix
   (`2254650`); critic round 2 and its fixes (`93da4b2`, `e2a48d0`); the tank outline drawn only while something blocks it
   (`f0461ff`).
-- **Unfinished (`3ba537c`, wip):** the colony's town core drawn by 80 m ground cell (`Bld.cells()` in `js/conquest/style.js`).
-  Still owed: the triangle and draw-call counts before and after at the colony, HIGH and LOW; a look at the colony captures
-  for seams between cells; a re-run of `conquest-occluder.py` and `conquest-seethrough-town.py`.
-- **Next, in order:** (1) finish that step; (2) critic round 3, the last one (a 4th only for an item the reviewer marks
+- **Done (Nov 20): the colony's town core drawn by 80 m ground cell** (`Bld.cells()` in `js/conquest/style.js`; record and
+  numbers under "Performance record" below; `conquest-occluder.py` and `conquest-seethrough-town.py` re-run after it: PASS).
+- **In progress:** the round-3 capture farm (world kinds, town, flagship at 390x844, 390x700, 320x568, 1366x768, 1920x1080,
+  HIGH and LOW; output in the session scratchpad `cap/`, the tools are `dev/tests/conquest-world-kinds-captures.py`,
+  `conquest-town-captures.py --kinds`, `conquest-flagship-captures.py`; phone runs use `--dpr 2 --ratio 2`, desktop runs
+  `--mouse --dpr 1 --ratio 1`), then the seam look at the colony captures and critic round 3.
+- **Next, in order:** (2) critic round 3, the last one (a 4th only for an item the reviewer marks
   clearly below its reference, never more than 4), with captures at all five sizes on HIGH and LOW (re-capture only what
   changed since round 2, plus any size or quality not yet captured); (3) the 5E-2a town-item recolour re-check against the
   Meshy originals (record whether rounds 1-2 already covered it); (4) the desktop pass at 1366x768 and 1920x1080; (5) the
@@ -6203,6 +6206,14 @@ town-wall, town-rocket and town-rubble still CLEARLY BELOW. The 25 ranked fixes 
 - Not changed, with the reason: 25 viaduct-segment (the deck is the road surface, drawn by the terrain; the guard rails
   are already continuous in the game, see the viaduct-deck capture); 11 refuge-processor was judged from a far-away sheet:
   checked close up before any change (see the result below).
+
+### Performance record (software renderer: the counts are exact, the frame times are relative only)
+- **The colony's town core by ground cell** (`3ba537c`, measured Nov 20 at 390x844, five camera spots in the colony, before =
+  `f0461ff`, after = the cell split). Triangles drawn, before -> after. HIGH: 392,789 -> 362,134; 367,394 -> 311,956;
+  434,550 -> 391,732; 404,815 -> 347,634; 404,335 -> 334,757 (8% to 17% fewer). LOW: 160,667 -> 152,639; 187,280 -> 173,476;
+  196,322 -> 184,572; 179,718 -> 164,874; 175,245 -> 159,861 (5% to 9% fewer). Draw calls: HIGH 66-88 -> 70-96 (4 to 8 more),
+  LOW 61-70 -> 64-77 (3 to 7 more). Shader programs unchanged (13-14 of 16). A triangle goes to exactly one cell and keeps its
+  own vertices, normals and colours, so there is nothing to seam; the look at the colony captures is recorded with round 3.
 
 ### Design changes made in this session (each with its reason)
 - **The processor towers' pipe bridge is level** at the higher tower's 9.6 m (it used to slope up to 47 degrees between towers
