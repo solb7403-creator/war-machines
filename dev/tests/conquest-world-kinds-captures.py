@@ -66,10 +66,11 @@ async def main(a):
   await page.evaluate('closeAll();save.welcomed=true;save.gfx='+json.dumps(a.quality)+';uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
   await page.wait_for_function('typeof Conquest!=="undefined"&&!!Conquest.view',timeout=120000)
   if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
-  await page.wait_for_function('Conquest.view.pending===0',timeout=900000)
-  # --ratio: draw at a phone's real resolution (the software renderer otherwise holds the view at .75x, which reads as pixelated)
   # while a place streams in, the view is drawn small (the software renderer is slow and streaming advances a step a frame); the shot itself is drawn at --ratio
   ratio=lambda r:page.evaluate('r=>{const v=Conquest.view;v.res=null;v.renderer.setPixelRatio(r);}',r)
+  if a.ratio:await ratio(.3)
+  await page.wait_for_function('Conquest.view.pending===0',timeout=900000)
+  # --ratio: draw at a phone's real resolution (the software renderer otherwise holds the view at .75x, which reads as pixelated)
   info={}
   for name,subj,deg,stand,pitch,dist in shots:
    # the tank stands on open ground beside the subject (never inside a solid: it would be pressed against it and thin it);

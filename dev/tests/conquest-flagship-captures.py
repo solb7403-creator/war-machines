@@ -13,7 +13,7 @@ async def main():
  ready=json.loads(await server.stdout.readline());evidence=[]
  try:
   async with async_playwright() as p:
-   browser=await p.chromium.launch(executable_path=shutil.which('chromium') or ('/opt/pw-browsers/chromium' if pathlib.Path('/opt/pw-browsers/chromium').exists() else None),args=['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader']);page=await browser.new_page(viewport={'width':W0,'height':H0},is_mobile=not A.mouse,has_touch=not A.mouse,reduced_motion='reduce');errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+   browser=await p.chromium.launch(executable_path=shutil.which('chromium') or ('/opt/pw-browsers/chromium' if pathlib.Path('/opt/pw-browsers/chromium').exists() else None),args=['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader']);page=await browser.new_page(viewport={'width':W0,'height':H0},is_mobile=not A.mouse,has_touch=not A.mouse,reduced_motion='reduce');page.set_default_timeout(240000);errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    await page.request.post('http://127.0.0.1:8791/fixture',data={'position':[1080,1160],'baseFunds':True})
    await page.goto(ready['url']);await page.wait_for_function('typeof Conquest!=="undefined"');await page.evaluate('closeAll();save.welcomed=true;uiDirty();save.gfx='+json.dumps(A.quality));await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
    if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()

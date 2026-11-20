@@ -45,7 +45,7 @@ async def main():
     await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
     await page.request.post(base+'/fixture',data=fixture)
     await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
-    await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=90000)
+    await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=900000)
     if A.ratio:await page.evaluate('r=>{const v=Conquest.view;v.res=null;v.renderer.setPixelRatio(r);}',A.ratio)
     await page.locator('#cq-base-access').click();await page.wait_for_selector('.cq-plot-tabs');await page.wait_for_timeout(1500)
     return ctx,page,errors
