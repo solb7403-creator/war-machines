@@ -185,12 +185,14 @@ async def steps(browser,base,ready,w,h,R):
  if await page.locator('.cq-site-operations').count():await press(page.locator('.cq-site-operations button',has_text='BRIEF').first)
  start=page.get_by_role('button',name='START MISSION');await start.scroll_into_view_if_needed();await press(start)
  await page.wait_for_function('!!Conquest.view?.battle',timeout=30000);await page.wait_for_timeout(2500)
- FRAMES='''()=>new Promise(done=>{const iv=[];let last=performance.now(),n=0;const f=t=>{iv.push(t-last);last=t;if(++n<240)requestAnimationFrame(f);else{const x=iv.slice(20).sort((a,b)=>a-b),q=p=>+x[Math.min(x.length-1,Math.floor(x.length*p))].toFixed(1),v=Conquest.view;done({median:q(.5),p95:q(.95),worst:+x.at(-1).toFixed(1),calls:v.renderer.info?.render?.calls,tris:v.renderer.info?.render?.triangles,programs:v.renderer.info?.programs?.length,friends:(v.battle?.friends||[]).length,views:v.friendViews?v.friendViews.size:0,hostiles:(v.battle?.enemies||[]).filter(e=>e.hp>0&&Math.hypot(e.x-v.p.x,e.z-v.p.z)<120).length,dist:(v.battle?.friends||[]).map(f=>Math.round(Math.hypot(f.x-v.p.x,f.z-v.p.z))),low:gfxMode()});}};requestAnimationFrame(f);})'''
+ # 5E-2d1: the sample is 240 frames or 16 s, whichever comes first (at least 60 frames). On the software renderer a frame of the
+ # rebuilt world takes about a third longer; 240 frames outlasted the raid (the Platoon won it), and units fielded after a
+ # victory are not drawn, so the Battalion step never saw its nine views. The checks below are unchanged.
+ FRAMES='''()=>new Promise(done=>{const iv=[];let last=performance.now(),n=0;const t00=last;const f=t=>{iv.push(t-last);last=t;if(++n<240&&!(n>=60&&performance.now()-t00>16000))requestAnimationFrame(f);else{const x=iv.slice(20).sort((a,b)=>a-b),q=p=>+x[Math.min(x.length-1,Math.floor(x.length*p))].toFixed(1),v=Conquest.view;done({median:q(.5),p95:q(.95),worst:+x.at(-1).toFixed(1),calls:v.renderer.info?.render?.calls,tris:v.renderer.info?.render?.triangles,programs:v.renderer.info?.programs?.length,friends:(v.battle?.friends||[]).length,views:v.friendViews?v.friendViews.size:0,hostiles:(v.battle?.enemies||[]).filter(e=>e.hp>0&&Math.hypot(e.x-v.p.x,e.z-v.p.z)<120).length,dist:(v.battle?.friends||[]).map(f=>Math.round(Math.hypot(f.x-v.p.x,f.z-v.p.z))),low:gfxMode()});}};requestAnimationFrame(f);})'''
  R['perfPlatoon']=await page.evaluate(FRAMES)
  fl=await page.request.post(base+'/fixture-field',data={'scale':'battalion'});R['fielded']=(await fl.json()).get('fielded')
  await page.evaluate('Conquest.view.authority.connect()')   # a unit fielded on the server mid-fight (test helper) reaches the phone with the next sync
- await page.wait_for_function('(Conquest.view?.battle?.friends||[]).length>=9&&(Conquest.view.friendViews?.size||0)>=9',timeout=300000);   # 5E-2d1: 90 s -> 300 s. A harness wait (the fielded units reach the client and their nine 3D views are built), not a rule: on the software renderer a frame of the rebuilt world takes a third longer (133 ms against 100 ms at 390x844) and nine views did not finish in 90 s
- await page.wait_for_timeout(3000)
+ await page.wait_for_function('(Conquest.view?.battle?.friends||[]).length>=9&&(Conquest.view.friendViews?.size||0)>=9',timeout=90000);await page.wait_for_timeout(3000)
  R['perfBattalion']=await page.evaluate(FRAMES)
  await shot('battalion-low')
  await close_ctx(ctx)
