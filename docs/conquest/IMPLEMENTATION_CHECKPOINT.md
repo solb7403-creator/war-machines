@@ -6128,6 +6128,9 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md fi
   HIGH, beside the `before-*` set). The 320x568, 390x700 and 1920x1080 world sets were captured before round 3's fixes
   (scratch only, used by the critics); the Command Base and map were captured after the fixes at all six sizes.
 - **Release:** see "Release" at the end of this checkpoint.
+- **Nov 20, release CI:** PR #146's first run failed `transmission (chromium / webkit)` on the relay fight's draw-call
+  budget (97 against 80). Fixed in code, test unchanged; see "Draw calls in the relay fight" under "Performance record".
+  After the fix is green: merge, verify the deploy, then the ROADMAP row and the release record (docs-only follow-up).
 - **The account's usage limit was hit once (about 12:00 UTC) and reset at 12:20:** work in small committed slices.
 - **To re-run on an idle machine:** `conquest-town.mjs` and `fair-arcade.mjs` failed a wall-clock limit while the capture farm
   had every core busy; no limit is changed.
@@ -6451,6 +6454,25 @@ on the pad is noise at phone size; the town drive opens with the tank behind a r
   196,322 -> 184,572; 179,718 -> 164,874; 175,245 -> 159,861 (5% to 9% fewer). Draw calls: HIGH 66-88 -> 70-96 (4 to 8 more),
   LOW 61-70 -> 64-77 (3 to 7 more). Shader programs unchanged (13-14 of 16). A triangle goes to exactly one cell and keeps its
   own vertices, normals and colours, so there is nothing to seam; the look at the colony captures is recorded with round 3.
+
+- **Draw calls in the relay fight (release CI, Nov 20).** The first CI run on PR #146 failed one check in both browsers:
+  `conquest-living-war.py --quality high` allows 80 draw calls in the relay fight at 320x568 and measured 97 (main: 70 in the
+  same scene). Not run locally before the PR (it is not in the brief's list; it runs only in CI's `transmission` jobs).
+  The budget stays 80; the test is unchanged. Where the 27 came from, measured draw by draw against main: the camera no
+  longer pulls in front of the relay (owner's rule), so it sees four enemies, two cover walls and five far ground chunks
+  where main saw two, none and one; the tank outline (probe + six twins, on here because the relay hides part of the tank);
+  and ten colony draws that were never on screen. Fixed in the code, nothing visible removed:
+  - the colony's moving life (rovers, settlers, livestock, birds, hoppers, rotors, the train) had view culling switched off
+    and was drawn from anywhere within 700 m. Each set now keeps a bounding sphere around where its instances stand this
+    frame and is hidden with the rest of the moving life beyond 700 m (ten draws when the colony is off screen);
+  - `S.tight` (`js/conquest/style.js`, called by `view.js` around the world's render): the renderer tests one sphere per
+    mesh, so a ring wall, a road net or a scatter of instances was drawn while wholly off screen. Large solid and glow /
+    decal meshes are now tested by their box, small instanced sets instance by instance, against the view; what is wholly
+    outside is skipped for that one render (boxes grown by 3 m, plus the widest camera-facing quad for glows);
+  - `S.markersSync`: every hostile's marker is one instanced draw per state (was one draw per hostile);
+  - the two 3.5 cm light strips on the player's deck are left out of the outline twins (inside the hull's outline).
+  Result at 320x568, same scene: 97-98 -> 76-77 draw calls (chromium, software renderer); 390x844: 71. In the colony at
+  390x844 (tank on the plaza road): 61. Programs unchanged (14).
 
 ### Design changes made in this session (each with its reason)
 - **The processor towers' pipe bridge is level** at the higher tower's 9.6 m (it used to slope up to 47 degrees between towers

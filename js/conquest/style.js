@@ -441,6 +441,26 @@ function create(T,opts={}){
  // with its own, always-off press uniforms. S.own(root) moves a vehicle's solid meshes onto it.
  MAT.own=mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail},uPress:{value:new T.Vector4(0,0,-1,-1)},uPressK:{value:0}});
  S.own=rt=>{rt?.traverse?.(o=>{if(o.isMesh&&o.material===MAT.solid)o.material=MAT.own;});return rt;};
+ // Tighter view culling for the world's frame. The renderer tests one bounding sphere per mesh, and a ring wall, a road net or
+ // a scatter of instances has a sphere far wider than itself, so it was drawn while wholly off screen. S.tight(scene, camera)
+ // tests every large solid mesh by its box, and every small instanced set instance by instance, against the left, right,
+ // bottom, top and near planes; the ones wholly outside are skipped for this one render, and the function it returns puts
+ // them back. Call it once the scene's world matrices are current (view.js updates them just before). It can only skip what is off screen: the solid material (no vertex motion) with boxes grown by 3 m, and the
+ // glow / decal material with boxes grown by 3 m plus its widest camera-facing quad (the only thing its vertex shader moves).
+ {let list=[],age=0;const VP=new T.Matrix4(),Mx=new T.Matrix4(),Mi=new T.Matrix4(),off=[],undo=()=>{for(const o of off)o.layers.mask=o.userData.tightMask;off.length=0;};
+  const pad=g=>{let p=g.userData.tightPad;if(p===undefined){p=3;const B=g.attributes.aBill;if(B){let m=0;for(let i=0;i<B.count;i++)m=Math.max(m,Math.hypot(B.getX(i),B.getY(i)));p+=m*1.7;}g.userData.tightPad=p;}return p;};
+  const outside=(bb,W,p)=>{const e=Mx.multiplyMatrices(VP,W).elements;let l=0,r=0,b=0,t=0,n=0;
+   for(let i=0;i<8;i++){const x=i&1?bb.max.x+p:bb.min.x-p,y=i&2?bb.max.y+p:bb.min.y-p,z=i&4?bb.max.z+p:bb.min.z-p,cx=e[0]*x+e[4]*y+e[8]*z+e[12],cy=e[1]*x+e[5]*y+e[9]*z+e[13],cz=e[2]*x+e[6]*y+e[10]*z+e[14],cw=e[3]*x+e[7]*y+e[11]*z+e[15];
+    if(cx<-cw)l++;if(cx>cw)r++;if(cy<-cw)b++;if(cy>cw)t++;if(cz<-cw)n++;}
+   return l===8||r===8||b===8||t===8||n===8;};
+  S.tight=(scene,cam)=>{if(!scene||!cam)return null;
+   if(!(age++%30)){list=[];scene.traverse(o=>{if(!o.isMesh||!o.frustumCulled||(o.material!==MAT.solid&&o.material!==MAT.fx)||!o.geometry?.attributes?.position)return;const g=o.geometry;if(!g.boundingSphere)g.computeBoundingSphere();
+     if(o.isInstancedMesh?o.count<=96:g.boundingSphere.radius>20){if(!g.boundingBox)g.computeBoundingBox();list.push(o);}});}
+   cam.updateMatrixWorld();VP.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);
+   for(const o of list){if(!o.visible||!o.layers.mask||!o.parent)continue;const bb=o.geometry.boundingBox;if(!bb)continue;let out=true;const p=pad(o.geometry);
+    if(o.isInstancedMesh){for(let i=0;i<o.count&&out;i++){o.getMatrixAt(i,Mi);out=outside(bb,Mi.premultiply(o.matrixWorld),p);}}else out=outside(bb,o.matrixWorld,p);
+    if(out){o.userData.tightMask=o.layers.mask;o.layers.mask=0;off.push(o);}}
+   return undo;};}
  // Twins of a tank's solid meshes, kept in their own group (nothing is ever added to a vehicle): sync(list, px) each frame with
  // list = [{root, ally}] and px = the outline width in drawing-buffer pixels.
  // The twins draw the whole tank twice more, so they are only drawn while something stands in front of it. Each frame one
@@ -702,7 +722,9 @@ function create(T,opts={}){
    const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(Pw,3));geo.setAttribute('aFlow',new T.Float32BufferAttribute(Fw,3));geo.setIndex(Iw);geo.computeBoundingSphere();const cm=new T.Mesh(geo,MAT.water);cm.userData.noPick=true;g.add(cm);}
   // moving life: rovers on the roads, settlers on their daily routines, the monorail train, turbine rotors (presentation only).
   // Each kind is the kit's model; two looks of rover, three of settler and two of livestock share the crowd.
-  const dyn=(id,n,o)=>{if(!n)return null;const im=Kk.instanced(id,n,o);im.userData.noPick=true;im.frustumCulled=false;g.add(im);return im;};
+  // Each moving kind keeps a bounding sphere around where its instances stand now (refreshed after they move, below), so the
+  // renderer skips the ones the camera cannot see: ten draws saved whenever the colony's life is off screen.
+  const DYN=[],dyn=(id,n,o)=>{if(!n)return null;const im=Kk.instanced(id,n,o);im.userData.noPick=true;DYN.push(im);g.add(im);return im;};
   const nR=high?10:5,rovA=dyn('settler-rover',Math.ceil(nR/2),{seed:1}),rovB=dyn('settler-rover',Math.floor(nR/2),{seed:4}),rovOf=i=>i%2?[rovB,(i-1)/2]:[rovA,i/2];
   const nC=high?14:0,crew=nC?[0,1,2].map(k=>dyn('settler-person',Math.ceil((nC-k)/3),{seed:k+1})):null;
   // Terraform life (Phase 4): engineered livestock grazing in the pens (gene-band glow), birds circling over the green zones,
@@ -713,14 +735,14 @@ function create(T,opts={}){
   // Settler daily routines (UTC clock): home overnight, fields and workshops in the morning, the market square at midday,
   // back to work, the square in the evening, then home. Each settler walks between their own anchors.
   const ROUT=[[0,'home'],[6.5,'work'],[11,'plaza'],[13,'work'],[18,'plaza'],[20.5,'home']],anchor=(i,k)=>{const L2=k==='home'?homes[i%Math.max(1,homes.length)]:k==='work'?works[(i*3+1)%Math.max(1,works.length)]:plaza;if(!L2)return [plaza.x,plaza.z];const off=k==='plaza'?8+(i%5)*2:Math.max(L2.w||6,L2.d||6)*.5+2;return [L2.x+Math.cos(i*2.4)*off,L2.z+Math.sin(i*2.4)*off];};
-  const train=RL.length>1?kinst('rail-train',[0],()=>new T.Matrix4()):null;if(train){train.userData.noPick=true;train.frustumCulled=false;g.add(train);}
+  const train=RL.length>1?kinst('rail-train',[0],()=>new T.Matrix4()):null;if(train){train.userData.noPick=true;g.add(train);}
   const rot=rotors.length?dyn('settler-rotor',rotors.length):null;
   const paths=CO.roads.filter(r=>r.w>=8).map(r=>r.pts),plaza=CO.lots.find(l=>l.k==='pad')||{x:1120,z:1110};
   const segs=new Map(),along=(pts,t)=>{let c=segs.get(pts);if(!c){const seg=[];let L=0;for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(l);L+=l;}segs.set(pts,c={seg,L});}const {seg,L}=c;let d=((t%(2*L))+2*L)%(2*L),back=d>L;if(back)d=2*L-d;for(let i=0;i<seg.length;i++){if(d<=seg[i]){const f=d/seg[i],a=pts[i],b=pts[i+1];return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,Math.atan2(b[1]-a[1],b[0]-a[0])+(back?Math.PI:0)];}d-=seg[i];}return [pts[0][0],pts[0][1],0];};
   const _m=new T.Matrix4(),_m2=new T.Matrix4(),_m3=new T.Matrix4(),MI=(x,y,z,ry)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return _m2.compose(_p.set(x,y,z),_q,_s.set(1,1,1));},railLen=RL.length>1?RL.reduce((n,p,i)=>i?n+Math.hypot(p[0]-RL[i-1][0],p[1]-RL[i-1][1]):0,0):0;
   const upd=L=>{for(const im of L)if(im)im.instanceMatrix.needsUpdate=true;};
   g.userData.update=(now,cam)=>{const t=now/1000;
-   if(cam&&Math.hypot(cam.position.x-g.position.x-1130,cam.position.z-g.position.z-1125)>(high?700:500)){for(const p of parts)p.dm.visible=false;return;}   // the colony's moving life is out of view
+   if(cam&&Math.hypot(cam.position.x-g.position.x-1130,cam.position.z-g.position.z-1125)>(high?700:500)){for(const p of parts)p.dm.visible=false;for(const im of DYN)im.visible=false;if(train)train.visible=false;return;}   // the colony's moving life is out of view
    for(let i=0;i<nR;i++){const P=paths[i%paths.length],[x,z,a]=along(P,t*(6+i%3)+i*57),o=2.2,[im,j]=rovOf(i);Kk.setAt(im,j,MI(x-Math.sin(a)*o,ground(x,z),z+Math.cos(a)*o,-a));}upd([rovA,rovB]);
    if(crew){const hr=(now/3600000)%24;for(let i=0;i<nC;i++){const hh2=(hr+i*.37)%24;let k=ROUT.length-1;while(k>0&&ROUT[k][0]>hh2)k--;const from=anchor(i,ROUT[(k+ROUT.length-1)%ROUT.length][1]),to=anchor(i,ROUT[k][1]),walk=Math.min(1,(hh2-ROUT[k][0])/.4);
      let x=from[0]+(to[0]-from[0])*walk,z=from[1]+(to[1]-from[1])*walk;const head=walk<1?Math.atan2(to[1]-from[1],to[0]-from[0]):i*2.4+t*.2;if(walk>=1){x+=Math.cos(t*.3+i)*1.2;z+=Math.sin(t*.3+i)*1.2;}Kk.setAt(crew[i%3],Math.floor(i/3),MI(x,ground(x,z),z,-head));}upd(crew);}
@@ -728,7 +750,8 @@ function create(T,opts={}){
    for(let i=0;i<nBd;i++){const f2=flocks[i%Math.max(1,flocks.length)]||plaza,r=40+(i%6)*6,a=t*(.12+.01*(i%3))+i*.35,x=f2.x+Math.cos(a)*r,z=f2.z+Math.sin(a)*r;_m.makeRotationY(-a-Math.PI/2);_m.setPosition(x,ground(x,z)+32+(i%4)*3+Math.sin(t*2+i)*.6,z);_m3.makeRotationZ(Math.sin(t*9+i)*.4);_m.multiply(_m3);Kk.setAt(birds,i,_m);}birds.instanceMatrix.needsUpdate=true;
    if(hops){for(let i=0;i<nH;i++){const fl=floraL[i%Math.max(1,floraL.length)]||plaza,a=t*.4+i,x=fl.x+Math.cos(a)*4,z=fl.z+Math.sin(a*1.3)*4,hopY=Math.abs(Math.sin(t*4+i))*.6;Kk.setAt(hops,i,MI(x,ground(x,z)+hopY,z,-a));}hops.instanceMatrix.needsUpdate=true;}
    if(railLen&&train){const [x,z,a]=along(RL,t*14);train.position.set(x,railH(x,z),z);train.rotation.set(0,-a,0);}
-   if(rot){rotors.forEach(([x,ry,z,yy,r],i)=>{Kk.setAt(rot,i,_m.makeRotationY(-r).premultiply(_m2.makeTranslation(x,yy,z)).multiply(_m3.makeRotationZ(t*1.6+i)));});rot.instanceMatrix.needsUpdate=true;}   // the rotor turns about its own axis (the nacelle's nose, +z)
+   if(rot){rotors.forEach(([x,ry,z,yy,r],i)=>{Kk.setAt(rot,i,_m.makeRotationY(-r).premultiply(_m2.makeTranslation(x,yy,z)).multiply(_m3.makeRotationZ(t*1.6+i)));});rot.instanceMatrix.needsUpdate=true;}
+   for(const im of DYN){im.visible=true;if(im.computeBoundingSphere)im.computeBoundingSphere();}if(train)train.visible=true;   // the rotor turns about its own axis (the nacelle's nose, +z)
    if(cam){const cx=cam.position.x-g.position.x,cz=cam.position.z-g.position.z,far=high?260:160;for(const p of parts){const bs=p.dm.geometry?.boundingSphere;if(bs)p.dm.visible=Math.hypot(cx-bs.center.x,cz-bs.center.z)-bs.radius<far;}}};
   g.userData.update(0,null);return g;};
  // ---------- frontier dressing (owner art direction): the war-torn edge the colonists hold ----------
@@ -924,6 +947,16 @@ function create(T,opts={}){
    for(let i=0;i<na;i++)for(let j=0;j<n;j++)arr[i*n+j]=A[get[j]](i);for(let i=0;i<nb;i++)for(let j=0;j<n;j++)arr[(na+i)*n+j]=B[get[j]](i);g.setAttribute(k,new T.BufferAttribute(arr,n));}
   const ia=a.index?Array.from(a.index.array):Array.from({length:na},(_,i)=>i),ib=b.index?Array.from(b.index.array,i=>i+na):Array.from({length:nb},(_,i)=>i+na);g.setIndex(ia.concat(ib));g.computeBoundingSphere();return g;};
  const PATTERN={shield:[K.cyan,0x48d8ff],ambush:[K.amber,0xffb347],artillery:[K.red,0xff5a3c],carrier:[K.teal,0x2dffc4],plasma:[K.violet,0xb07bff],command:[K.magHot,0xff7ae8]};
+ // One instanced draw for every hostile marker in a state (was one draw per hostile: four or five in a small fight, fifteen in
+ // a full one). S.markersSync(scene, groups) runs right before the world's frame, after the scene's matrices are current:
+ // each shown marker's own two meshes keep saying which state is on (view.js sets .visible) but are never drawn themselves.
+ const markGeo=[null,null];
+ S.markersSync=(scene,groups)=>{if(!scene||!groups)return;let P=scene.userData.cqMarkers;
+  if(!P){for(let k=0;k<2;k++)if(!markGeo[k]){const b=new Bld();b.add(G.octa,k?M(0,0,0,0,0,0,.44,.6,.44):M(0,0,0,0,0,0,.36,.5,.36),k?K.amber:K.mag,1);markGeo[k]=keep(b.geometry());}
+   P=scene.userData.cqMarkers=markGeo.map(g=>{const im=new T.InstancedMesh(g,MAT.solid,48);im.count=0;im.visible=false;im.userData.noPick=true;im.userData.noOutline=true;im.name='cq-markers';scene.add(im);return im;});}
+  const n=[0,0];for(const g of groups.values?groups.values():groups){const mk=g?.userData?.marker,st=mk?.userData?.states;if(!st)continue;st[0].layers.mask=st[1].layers.mask=0;if(!g.visible||!g.parent||!mk.visible)continue;
+   const k=st[1].visible?1:0;if(n[k]<48)P[k].setMatrixAt(n[k]++,mk.matrixWorld);}
+  for(let k=0;k<2;k++){const im=P[k];im.count=n[k];im.visible=n[k]>0;if(n[k]){im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();}}};
  const markers=()=>{const g=new T.Group(),a=new Bld(),b=new Bld();a.add(G.octa,M(0,0,0,0,0,0,.36,.5,.36),K.mag,1);b.add(G.octa,M(0,0,0,0,0,0,.44,.6,.44),K.amber,1);const n=a.mesh(),t=b.mesh();t.visible=false;n.userData.noPick=t.userData.noPick=true;g.add(n,t);g.userData.states=[n,t];return g;};
  // Hull: cached per silhouette by the view (merged body/gun geometry with vertex colours) -> painted + dressed once.
  S.parasiteHull=(cached,e)=>{if(cached.style)return cached.style;const body=paint(cached.body),gun=paint(cached.gun),p=body.attributes.position;let x0=1e9,x1=-1e9,y1=-1e9,zw=0;
@@ -965,7 +998,7 @@ function create(T,opts={}){
   const walk=o=>{if(o===gun)return;if(o.isMesh){const m=new T.Matrix4().multiplyMatrices(inv,o.matrixWorld),a=o.geometry.attributes.position;for(let i=0;i<a.count;i+=2){_v.fromBufferAttribute(a,i).applyMatrix4(m);pts.push(_v.x,_v.y,_v.z);}}for(const c of o.children)walk(c);};
   for(const c of body.children)walk(c);if(!pts.length)return vehicle;let zT=0;for(let i=2;i<pts.length;i+=3)zT=Math.max(zT,Math.abs(pts[i]));
   let yT=-1e9,x0=1e9,x1=-1e9,ax0=1e9,ax1=-1e9;for(let i=0;i<pts.length;i+=3){ax0=Math.min(ax0,pts[i]);ax1=Math.max(ax1,pts[i]);if(Math.abs(pts[i+2])>zT-.12){yT=Math.max(yT,pts[i+1]);x0=Math.min(x0,pts[i]);x1=Math.max(x1,pts[i]);}}
-  if(o.strips!==false){const D=new Bld();for(const s of [-1,1])D.box((x0+x1)/2,yT+.018,s*(zT-.05),(x1-x0)*.86,.035,.06,K.cyan,1);const strips=D.mesh();strips.name='cq-style-dress';body.add(strips);}
+  if(o.strips!==false){const D=new Bld();for(const s of [-1,1])D.box((x0+x1)/2,yT+.018,s*(zT-.05),(x1-x0)*.86,.035,.06,K.cyan,1);const strips=D.mesh();strips.name='cq-style-dress';strips.userData.noOutline=true;/* two 3.5 cm light strips on the deck, inside the hull's outline: no twin (two draws saved) */body.add(strips);}
   const X=new Fx(),hl=(ax1-ax0)/2,cz=(ax0+ax1)/2;X.flat(0,.03,cz,zT*1.5,hl*1.25,AT.BLOB,[0,0,0],.78);X.flat(0,.04,cz,zT*2.1,hl*1.55,AT.RING,E(o.ring??0x22e6ff,o.ringA??.6),0);X.flat(0,.045,cz,zT*1.7,hl*1.3,AT.BLOB,E(o.ring??0x22e6ff,o.blobA??.25),0);
   if(o.lamp!==false)X.flat(0,.05,cz+hl+2.4,1.9,2.6,AT.BLOB,E(0xa8f8ff,.22),0);const glow=X.mesh();glow.name='cq-style-dress';vehicle.add(glow);return vehicle;};
 
