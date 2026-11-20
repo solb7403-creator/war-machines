@@ -6115,10 +6115,19 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md fi
   are confirmed in the game (storage lighter gunmetal, lab mint, tesla ice white; radar dish, siege, laser cannon, walls).
 - **Open from round 3 (small):** at 320x568 the map's CLOSE MAP button is still below the fold (scroll reaches it) and the
   docked heat panel touches the end of a long POWER pill.
-- **Next, in order:** (a) the final capture set of the finished world at the five sizes, HIGH and LOW (world kinds, town,
-  flagship; the earlier farm's pictures predate round 3; "before" pictures of main exist for 390x844 HIGH / LOW and
-  1366x768 HIGH in the earlier scratchpad `cap/before`); (b) the whole test list (node list, then the browser tests named
-  in the brief) on an idle machine; (c) two fresh read-only reviewers; (d) release.
+- **Done (Nov 20): two reviewers** (record under "Reviewers"): every blocker fixed and seen in a capture.
+- **Done (Nov 20): the whole test list at the release candidate.** Node: all 133 tests named in the CI workflows pass.
+  Browser (Chromium, software renderer, each passing when run on a quiet machine): conquest-slots-browser, conquest-occluder,
+  conquest-seethrough-town, conquest-session5c (town drive and build views: 67 draw calls, 11-12 programs on HIGH, 10 on
+  LOW), conquest-session5d, conquest-session6b, conquest-session6c (five sizes), conquest-onboarding, conquest-hub-browser,
+  conquest-flagship-browser (390 and 320), conquest-assets-browser, conquest-plot-ui, weather-browser, perf, weather-perf,
+  conquest-desktop-keys. Failures on the way and what they were: flagship 390 and desktop keys failed once on a loaded
+  machine and pass alone; four tests could not start (they look for Chromium at `/usr/bin/chromium`, missing in this
+  container until linked); occluder, 5C and 6C needed the harness changes recorded under "Critic rounds".
+- **Final pictures:** `docs/conquest/session5e2d1/kinds/after-*` (the finished world at 390x844 HIGH and LOW and 1366x768
+  HIGH, beside the `before-*` set). The 320x568, 390x700 and 1920x1080 world sets were captured before round 3's fixes
+  (scratch only, used by the critics); the Command Base and map were captured after the fixes at all six sizes.
+- **Release:** see "Release" at the end of this checkpoint.
 - **The account's usage limit was hit once (about 12:00 UTC) and reset at 12:20:** work in small committed slices.
 - **To re-run on an idle machine:** `conquest-town.mjs` and `fair-arcade.mjs` failed a wall-clock limit while the capture farm
   had every core busy; no limit is changed.
