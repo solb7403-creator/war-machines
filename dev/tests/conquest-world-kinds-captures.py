@@ -89,7 +89,7 @@ async def main(a):
    await page.evaluate('([yaw,pitch,dist])=>{const v=Conquest.view;v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;if(v.style&&v.style.atmo)v.style.atmo(v.p,10);}',[yaw,pitch,dist])   # the sky eases toward the place the tank stands in: a capture jumps, so it is settled at once
    await page.wait_for_timeout(a.settle)
    if a.clean:await page.add_style_tag(content='.cq-hud,.cq-top,.cq-toast,.cq-guide,.cq-ticker,#cq-ui,.cq-ui{visibility:hidden!important}') if not info else None
-   await page.screenshot(path=str(out/f'{a.tag}-{name}-{a.size}-{a.quality}.png'))
+   await page.screenshot(path=str(out/f'{a.tag}-{name}-{a.size}-{a.quality}.png'),timeout=180000)
    info[name]=await page.evaluate('(()=>{const v=Conquest.view,i=v.renderer.info;return {calls:i.render.calls,tris:i.render.triangles,programs:i.programs?.length};})()')
    print(name,info[name],flush=True)
   (out/f'{a.tag}-{a.size}-{a.quality}.json').write_text(json.dumps({'errors':errors,'shots':info},indent=1))

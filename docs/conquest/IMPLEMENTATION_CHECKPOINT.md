@@ -6177,6 +6177,32 @@ yellow tape beside the Meshy items; turrets look like a different game"). The 25
   its orange furnace glow (the owner's Meshy refinery has it); the atmosphere dome that overlaps one habitat block is the
   world's own layout (collision and placement are not this session's to move).
 
+**Round 2** (a fresh art director; all 133 model sheets re-rendered after round 1, then the world and the town in the real
+renderer at a phone's true resolution). Verdict on the models: settler AT BAR; wrecks, Parasite, caches and props AT BAR
+("hive, hive-mast and raid-spire are the best pieces in the set"); military CLOSE (hero pieces AT BAR, some infrastructure
+under-built); nature CLOSE (was CLEARLY BELOW; conifer and scrub foliage sat at the ground's own olive and vanished at game
+distance); town buildings CLOSE (was CLEARLY BELOW; bodies filled only 35-55% of their pads); turrets and decor CLOSE, with
+town-wall, town-rocket and town-rubble still CLEARLY BELOW. The 25 ranked fixes and what was done:
+- 1-4, 6-10, 22, 23 (town): the wall cell gets a flared plinth, two merlons, one recessed dark panel a face and a thin cyan
+  coping; the Command Center stand-in fills 80% of its pad, stands about 12 m, wears a gold crown ring and discrete cyan
+  windows; the rocket pod is two pitched four-tube pods on a yoke (the Meshy pod's shape); the refinery stand-in gets its
+  second tank, pipes with gold collars, a chimney and an ore-filled hopper; every turret disc carries four (six on the 8 m
+  discs) fat cyan lozenges on a lighter rim; the cannon barrel is 1.8x thicker with a mantlet and muzzle collar, the twin MG
+  has drum magazines; missile tips are red-orange with a white band; LOW laser, mortar, laser cannon and flame keep their
+  identity; radar, shield, uplink and reactor bodies fill 75-80% of their pads; rubble is broken slabs, a pillar stub and
+  rebar; the tesla coil is thicker with two gold-capped pylons; the trophy hall roof is navy panels with gold hips.
+- 5, 12-14, 16, 20, 21 (nature): conifer and far-tree foliage moved to a deeper blue-green with dark tier undersides, scrub
+  and grass get light tips over a dark base; the flower patch is stems with flat petal discs on a low mound; the hopper's tuft
+  is attached and it has a pale belly; conifer tiers are centred on the trunk; rocks sit among half-buried pebbles instead of
+  stray spikes; LOW ice uses the HIGH palette; the strike crater has a raised scorched rim and a dark bowl.
+- 15, 17-19, 24 (military, livestock): the reactor's rings are thin and cyan with fins between them; the base gate has full
+  5 m towers, a deeper beam with a sign block and amber lamps (the drive-through span is unchanged); the veteran monument is
+  dark stone with gold only on the cap, one band and the plinth edge; the dam's back has buttresses, a walkway rail and two
+  outflow stubs; livestock horns are shorter and curved with a cream muzzle and belly.
+- Not changed, with the reason: 25 viaduct-segment (the deck is the road surface, drawn by the terrain; the guard rails
+  are already continuous in the game, see the viaduct-deck capture); 11 refuge-processor was judged from a far-away sheet:
+  checked close up before any change (see the result below).
+
 ### Design changes made in this session (each with its reason)
 - **The processor towers' pipe bridge is level** at the higher tower's 9.6 m (it used to slope up to 47 degrees between towers
   on different ground). Reason: a level pipe reads as engineering, and it keeps the 8 m drive clearance on both sides.

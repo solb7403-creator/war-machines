@@ -2,7 +2,7 @@
  "engine": "chromium",
  "status": "PASS",
  "programs": 14,
- "outlinePixelsOpen": 18,
+ "outlinePixelsOpen": 25,
  "outlinePixelsBehind": 317,
  "cameraOpen": 45.306166904823606,
  "cameraBehind": 45.306166904823606,

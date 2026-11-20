@@ -55,21 +55,21 @@ async def main():
    for q in ([x for x in A.quality.split(',') if x] if 'gallery' in ONLY else []):
     ctx,page,errors=await session(q,{'position':gate,'baseFunds':True,'plotGallery':True})
     await page.evaluate('(()=>{ConquestPlotView.setView("build");const X=ConquestPlotView.state;X.snapOf.home="peek";X.camT=1;X.camFrom=null;ConquestPlotView.render();})()');await page.wait_for_timeout(700)   # 5C: build view, sheet at PEEK (big map)
-    await cam(page,-4,-30,58,.55,3.14159);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'turrets-11-{TAG}-{q}.png'))
-    await cam(page,0,38,40,.6,0);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'wall-blends-{TAG}-{q}.png'))
+    await cam(page,-4,-30,58,.55,3.14159);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'turrets-11-{TAG}-{q}.png'),timeout=180000)
+    await cam(page,0,38,40,.6,0);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'wall-blends-{TAG}-{q}.png'),timeout=180000)
     if q=='high' and 'raid' in ONLY:
      await page.locator('.cq-plot-tabs button',has_text='DEFEND').click();await page.locator('button',has_text='START DEFENSE DRILL').click();await page.wait_for_function('ConquestPlotView.state?.drill',timeout=60000)
      ms=await page.evaluate('ConquestPlotView.state.drillMs');await cam(page,0,-34,70,.9);await page.evaluate('(()=>{const D=ConquestPlotView.state.drill,e=D.r.events.find(x=>x.k==="shot");if(e){D.t=Math.max(0,e.t-1);}})()')
      shots=[]
      for k in range(24):
       await page.wait_for_timeout(500);shots.append(await page.evaluate('ConquestPlotView.state.drill?ConquestPlotView.state.drill.shots.map(s=>s.ty):[]'))
-      if k%4==3:await page.screenshot(path=str(OUT/f'raid-effects-{k//4}-{TAG}.png'))
+      if k%4==3:await page.screenshot(path=str(OUT/f'raid-effects-{k//4}-{TAG}.png'),timeout=180000)
      results['raid']={'drillMs':ms,'effectsSeen':sorted(set(t for s in shots for t in s))}
     results['gallery-'+q]={'render':await page.evaluate('ConquestPlotView.state.info'),'pageErrors':errors};assert not errors,errors
     await ctx.close()
    for site in ([x for x in A.sites.split(',') if x] if 'towns' in ONLY else []):
     ctx,page,errors=await session('high',{'position':gate,'baseFunds':True,'plotFull':site});await cam(page,0,6,300,.95);await page.wait_for_timeout(2000)
-    info=await page.evaluate('ConquestPlotView.state.info');await page.screenshot(path=str(OUT/f'town-cc10-{site}-{TAG}-high.png'))
+    info=await page.evaluate('ConquestPlotView.state.info');await page.screenshot(path=str(OUT/f'town-cc10-{site}-{TAG}-high.png'),timeout=180000)
     results['town-'+site]={'render':info,'pageErrors':errors};assert info['programs']<=16 and not errors,results['town-'+site]
     await ctx.close()
    # ---- 4 (5E-2d1): one building of every type, close up, in the CC10 ridge town: the build view, then the drive view ----
@@ -80,8 +80,8 @@ async def main():
      spots=await page.evaluate('''(()=>{const P=ConquestPlot,p=Conquest.view.authority.state.plot,out={},c=P.GRID.cell;for(const [id,b] of Object.entries(p.b)){if(out[b.t])continue;const s=P.sizeOf(b.t,b.r|0);out[b.t]=[P.cellX(b.i)+(s.w-1)*c/2,P.cellZ(b.j)+(s.d-1)*c/2,Math.max(s.w,s.d)*c];}
        const wk=Object.keys(p.w)[40];if(wk){const [i,j]=wk.split(',').map(Number);out['walls']=[P.cellX(i),P.cellZ(j),14];}return out;})()''')
      for t,(x,z,sz) in spots.items():
-      await cam(page,x,z+sz*.2,max(16,sz*2.3),.62,0);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'kind-{t}-{TAG}-{q}.png'))
-     await cam(page,0,10,95,.7,.6);await page.wait_for_timeout(1200);await page.screenshot(path=str(OUT/f'kind-town-centre-{TAG}-{q}.png'))
+      await cam(page,x,z+sz*.2,max(16,sz*2.3),.62,0);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'kind-{t}-{TAG}-{q}.png'),timeout=180000)
+     await cam(page,0,10,95,.7,.6);await page.wait_for_timeout(1200);await page.screenshot(path=str(OUT/f'kind-town-centre-{TAG}-{q}.png'),timeout=180000)
      results['kinds-'+q]={'types':sorted(spots),'render':await page.evaluate('ConquestPlotView.state.info'),'pageErrors':errors};assert not errors,errors
      await ctx.close()
    await browser.close()
