@@ -3,7 +3,7 @@
   "size": "390x844",
   "input": "touch",
   "errors": [],
-  "hubFresh": null,
+  "hubFresh": "NO PILOTS YET",
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
   "rescueStrip": {
@@ -14,11 +14,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 MAGPIE (Tomas Achebe) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 JACKAL (Isla Grieve) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "MAGPIE",
+     "cs": "JACKAL",
      "role": "wingman",
      "mil": true
     }
@@ -32,7 +32,7 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WMAGPIE"
+    "WJACKAL"
    ],
    "tagInDom": true
   },
@@ -68,10 +68,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GARROW",
-    "BBANSHEE",
-    "LDUSK",
-    "MMANTIS"
+    "GSPARROW",
+    "BHAMMER",
+    "LCOBALT",
+    "MVESPER"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -90,7 +90,7 @@
    "tags": 4,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 80,
+   "calls": 83,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -104,7 +104,7 @@
    ]
   },
   "tap": 5,
-  "wheelOpen": false,
+  "wheelOpen": true,
   "wheelOrder": {
    "k": 2,
    "o": "attack"
@@ -127,20 +127,20 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 266.6,
-   "p95": 400.1,
-   "worst": 466.6,
-   "calls": 88,
-   "tris": 360052,
+   "median": 133.3,
+   "p95": 183.3,
+   "worst": 216.6,
+   "calls": 77,
+   "tris": 285055,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 3,
+   "hostiles": 2,
    "dist": [
-    9,
-    17,
-    76,
-    31
+    10,
+    27,
+    59,
+    27
    ],
    "low": "low"
   },
@@ -154,7 +154,7 @@
   "size": "390x700",
   "input": "touch",
   "errors": [],
-  "hubFresh": null,
+  "hubFresh": "NO PILOTS YET",
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
   "rescueStrip": {
@@ -165,11 +165,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 ZEPHYR (Mina Petrov) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 FALCON (Tomas Quade) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "ZEPHYR",
+     "cs": "FALCON",
      "role": "wingman",
      "mil": true
     }
@@ -183,7 +183,7 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WZEPHYR"
+    "WFALCON"
    ],
    "tagInDom": true
   },
@@ -219,10 +219,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GVIPER",
-    "BZEPHYR",
-    "LSABRE",
-    "MHALO"
+    "GSHALE",
+    "BRAVEN",
+    "LCROW",
+    "MRELIC"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -241,7 +241,7 @@
    "tags": 4,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 77,
+   "calls": 85,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -255,7 +255,7 @@
    ]
   },
   "tap": 5,
-  "wheelOpen": false,
+  "wheelOpen": true,
   "wheelOrder": {
    "k": 2,
    "o": "attack"
@@ -278,20 +278,20 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 266.7,
-   "p95": 433.2,
-   "worst": 550,
-   "calls": 89,
-   "tris": 316844,
+   "median": 133.3,
+   "p95": 183.3,
+   "worst": 283.4,
+   "calls": 90,
+   "tris": 335262,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 3,
+   "hostiles": 5,
    "dist": [
-    9,
-    17,
+    18,
+    39,
     76,
-    31
+    47
    ],
    "low": "low"
   },
@@ -305,7 +305,7 @@
   "size": "320x568",
   "input": "touch",
   "errors": [],
-  "hubFresh": "NO PILOTS YET",
+  "hubFresh": null,
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
   "rescueStrip": {
@@ -316,11 +316,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 IRIS (Sela Lindqvist) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 ZEPHYR (Bo Orlov) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "IRIS",
+     "cs": "ZEPHYR",
      "role": "wingman",
      "mil": true
     }
@@ -368,10 +368,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GPIKE",
-    "BKESTREL",
-    "LRAVEN",
-    "MNOMAD"
+    "GJACKAL",
+    "BQUILL",
+    "LJUNO",
+    "MCROW"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -390,7 +390,7 @@
    "tags": 3,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGTAP REGROUP \u00b7 HOLD ORDERS",
-   "calls": 84,
+   "calls": 88,
    "programs": 16,
    "targets": 9,
    "slot": [
@@ -409,7 +409,7 @@
    "k": 2,
    "o": "attack"
   },
-  "raidCleared": 3,
+  "raidCleared": 4,
   "raidAar": "YOUR PILOTS+2 XP to every pilot fielded+1 COMMAND CHIP \u00b7 1 held (your first win today)",
   "grantCard": "FIRST LAB GRANTPick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.+2 THERMAL CORESTHERMAL \u00b7 Keep firing: heat becomes damage.+2 BALLISTIC COILSBALLISTICS \u00b7 Precision: every hit counts.",
   "afterGrant": [
@@ -427,36 +427,53 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 16.7,
-   "p95": 366.6,
-   "worst": 449.9,
-   "calls": 77,
-   "tris": 241645,
+   "median": 133.3,
+   "p95": 166.7,
+   "worst": 183.4,
+   "calls": 85,
+   "tris": 316400,
    "programs": 15,
    "friends": 4,
    "views": 4,
    "hostiles": 2,
    "dist": [
-    9,
-    25,
-    59,
-    25
+    30,
+    13,
+    78,
+    44
    ],
    "low": "low"
   },
   "fielded": 9,
-  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
-  "verdict": [
-   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
-  ]
+  "perfBattalion": {
+   "median": 16.7,
+   "p95": 16.7,
+   "worst": 16.8,
+   "calls": 99,
+   "tris": 366293,
+   "programs": 15,
+   "friends": 9,
+   "views": 9,
+   "hostiles": 2,
+   "dist": [
+    23,
+    12,
+    66,
+    31,
+    19,
+    16,
+    37,
+    37,
+    23
+   ],
+   "low": "low"
+  },
+  "verdict": "PASS"
  },
  {
   "size": "1366x768",
   "input": "mouse+keyboard",
-  "errors": [
-   "console:Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
-   "console:Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
-  ],
+  "errors": [],
   "hubFresh": "NO PILOTS YET",
   "nextChip": "RESCUE THE DOWNED PILOT",
   "rescueAccess": "ACT \u00b7 RESCUE THE DOWNED PILOT",
@@ -468,11 +485,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 VESPER (Quinn Novak) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 JACKAL (Olu Okafor) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "VESPER",
+     "cs": "JACKAL",
      "role": "wingman",
      "mil": true
     }
@@ -486,7 +503,7 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WVESPER"
+    "WJACKAL"
    ],
    "tagInDom": true
   },
@@ -522,10 +539,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GFLINT",
-    "BCINDER",
-    "LSPARROW",
-    "MMANTIS"
+    "GRAVEN",
+    "BJACKAL",
+    "LMANTIS",
+    "MNOMAD"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -544,7 +561,7 @@
    "tags": 4,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGV REGROUP \u00b7 HOLD V ORDERS",
-   "calls": 129,
+   "calls": 127,
    "programs": 16,
    "targets": 8,
    "slot": [
@@ -558,7 +575,7 @@
    ]
   },
   "tap": 5,
-  "wheelOpen": false,
+  "wheelOpen": true,
   "wheelOrder": {
    "k": 3,
    "o": "hold",
@@ -586,20 +603,20 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 616.6,
-   "p95": 950,
-   "worst": 1166.6,
-   "calls": 156,
-   "tris": 429757,
+   "median": 299.9,
+   "p95": 383.3,
+   "worst": 416.7,
+   "calls": 173,
+   "tris": 506013,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 2,
+   "hostiles": 3,
    "dist": [
-    10,
-    31,
-    62,
-    22
+    9,
+    17,
+    76,
+    31
    ],
    "low": "low"
   },
@@ -626,11 +643,11 @@
    "force": "WINGSolo: rescue the downed pilot to fly with a wingman."
   },
   "rescueCleared": 2,
-  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 BLITZ (Priya Grieve) flies with you now",
+  "rescueAar": "YOUR PILOTSWINGMAN JOINED \u00b7 RELIC (Kenji Duarte) flies with you now",
   "wing": {
    "friends": [
     {
-     "cs": "BLITZ",
+     "cs": "RELIC",
      "role": "wingman",
      "mil": true
     }
@@ -644,7 +661,7 @@
    "next": "SIGNAL RECOVERY",
    "access": null,
    "tags": [
-    "WBLITZ"
+    "WRELIC"
    ],
    "tagInDom": true
   },
@@ -680,10 +697,10 @@
    "enemies": 5,
    "hint": "5 interceptors, 2 fire coordinators, a saboteur and 2 drones. Bring Frostline and a Lancer.",
    "force": [
-    "GPIKE",
-    "BONYX",
-    "LWARDEN",
-    "MRIPTIDE"
+    "GLANCE",
+    "BMOTH",
+    "LFLINT",
+    "MORBIT"
    ],
    "label": "PLATOON",
    "presets": 3,
@@ -702,7 +719,7 @@
    "tags": 4,
    "tagsDom": 4,
    "command": "COMMAND \u00b7 FOLLOWINGV REGROUP \u00b7 HOLD V ORDERS",
-   "calls": 136,
+   "calls": 139,
    "programs": 16,
    "targets": 8,
    "slot": [
@@ -716,7 +733,7 @@
    ]
   },
   "tap": 5,
-  "wheelOpen": false,
+  "wheelOpen": true,
   "wheelOrder": {
    "k": 3,
    "o": "hold",
@@ -726,7 +743,7 @@
    "k": 2,
    "o": "attack"
   },
-  "raidCleared": 4,
+  "raidCleared": 3,
   "raidAar": "YOUR PILOTS+2 XP to every pilot fielded+1 COMMAND CHIP \u00b7 1 held (your first win today)",
   "grantCard": "FIRST LAB GRANTPick a track to start today: 2 research parts of that kind, once. Your first mod costs 2.+2 THERMAL CORESTHERMAL \u00b7 Keep firing: heat becomes damage.+2 BALLISTIC COILSBALLISTICS \u00b7 Precision: every hit counts.",
   "afterGrant": [
@@ -744,50 +761,27 @@
    "F FROSTLINE CORE I / V | RESEARCH CORE II \u00b7 2 CHIPS \u00b7 8h\u00a000m"
   ],
   "perfPlatoon": {
-   "median": 1333.3,
-   "p95": 1749.8,
-   "worst": 2066.6,
-   "calls": 166,
-   "tris": 382051,
+   "median": 16.7,
+   "p95": 566.6,
+   "worst": 666.6,
+   "calls": 148,
+   "tris": 354675,
    "programs": 15,
    "friends": 4,
    "views": 4,
-   "hostiles": 5,
+   "hostiles": 2,
    "dist": [
-    31,
-    10,
-    50,
-    58
+    13,
+    26,
+    67,
+    31
    ],
    "low": "low"
   },
   "fielded": 9,
-  "perfBattalion": {
-   "median": 1333.2,
-   "p95": 1733.2,
-   "worst": 1933.2,
-   "calls": 191,
-   "tris": 605581,
-   "programs": 15,
-   "friends": 9,
-   "views": 9,
-   "hostiles": 5,
-   "dist": [
-    29,
-    12,
-    58,
-    58,
-    32,
-    33,
-    32,
-    35,
-    19
-   ],
-   "low": "low"
-  },
+  "crash": "Page.wait_for_function: Timeout 90000ms exceeded.",
   "verdict": [
-   "hold opens the wheel",
-   "no page errors: [\"console:Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED\"]"
+   "crash: Page.wait_for_function: Timeout 90000ms exceeded."
   ]
  }
 ]
