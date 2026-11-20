@@ -5,8 +5,8 @@
   "cases": [
     {
       "operation": "raid-siege-1",
-      "secondsWall": 50.135736125999756,
-      "physicalHullClicks": 9,
+      "secondsWall": 77.68103638899993,
+      "physicalHullClicks": 10,
       "settlement": {
         "kind": "first-clear",
         "reputation": 80,
@@ -16,8 +16,7 @@
         "helium": 3,
         "ptsRaw": 900,
         "mn": {
-          "il": 2,
-          "ar": 1
+          "il": 2
         },
         "shards": 1,
         "eliteBlueprint": false,
@@ -25,33 +24,29 @@
         "loot": {
           "it": {
             "repair": 1
-          },
-          "fr": {
-            "r": 1
           }
         }
       },
-      "kills": 6,
-      "hp": 2025.2678596940996,
+      "kills": 9,
+      "hp": 1936.1468546363512,
       "position": {
-        "x": 909.4953115345988,
-        "z": 945.7379359054092,
-        "y": -0.007926349439966576,
+        "x": 911.8179896935408,
+        "z": 950.6876665127289,
+        "y": -0.01041298357872006,
         "surface": "ground"
       },
       "raidProgress": {
-        "shards": 1,
-        "clears": 1,
         "blueprint": false,
-        "eliteBlueprint": false
+        "clears": 1,
+        "eliteBlueprint": false,
+        "shards": 1
       },
       "territory": {
-        "refuge": {
-          "owner": "humanity",
-          "status": "secured",
-          "defenseAt": 1794829069498
-        },
         "ash": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "helium": {
           "owner": "parasites",
           "status": "active-parasites"
         },
@@ -59,51 +54,52 @@
           "owner": "parasites",
           "status": "active-parasites"
         },
-        "western": {
+        "raid-site-siege-1": {
           "owner": "humanity",
           "status": "secured",
-          "capturedAt": 1794827336068,
-          "defenseAt": 1794828536068,
+          "capturedAt": 1795181969302,
+          "defenseAt": 1795183169302,
           "awaitingReinforcements": false
         },
-        "helium": {
-          "owner": "parasites",
-          "status": "active-parasites"
+        "refuge": {
+          "defenseAt": 1795183671836,
+          "owner": "humanity",
+          "status": "secured"
         },
         "ridge": {
           "owner": "parasites",
           "status": "active-parasites"
         },
-        "raid-site-siege-1": {
+        "western": {
           "owner": "humanity",
           "status": "secured",
-          "capturedAt": 1794827336068,
-          "defenseAt": 1794828536068,
+          "capturedAt": 1795181969302,
+          "defenseAt": 1795183169302,
           "awaitingReinforcements": false
         }
       },
       "performance": {
         "samples": 600,
         "pixelRatio": 0.75,
-        "percentBelow50fps": 94.83333333333333,
-        "percentBelow40fps": 94.66666666666667,
-        "percentBelow30fps": 94.33333333333333,
+        "percentBelow50fps": 100,
+        "percentBelow40fps": 100,
+        "percentBelow30fps": 100,
         "simulationMs": 0,
-        "renderSubmissionMs": 5.7000000001862645,
-        "heapBytes": 104992018,
+        "renderSubmissionMs": 1.300000000745058,
+        "heapBytes": 105461321,
         "textures": 27,
-        "frameMedian": 63.89999999990687,
-        "frameP95": 115.3000000002794,
-        "worstFrame": 176.20000000018626,
-        "hitches": 56,
-        "drawCalls": 58,
-        "maxDrawCalls": 60,
+        "frameMedian": 96.19999999925494,
+        "frameP95": 150.5,
+        "worstFrame": 258.69999999925494,
+        "hitches": 269,
+        "drawCalls": 60,
+        "maxDrawCalls": 74,
         "programs": 14,
         "materialPrograms": 14,
-        "triangles": 160552,
-        "geometries": 102,
+        "triangles": 158014,
+        "geometries": 109,
         "chunks": 25,
-        "enemies": 14,
+        "enemies": 13,
         "projectiles": 0,
         "autoLow": false,
         "softwareGL": true,
@@ -113,364 +109,5 @@
       }
     }
   ],
-  "errors": [],
-  "retention": {
-    "reload": true,
-    "owned": {
-      "fire-sunlance": {
-        "at": 1794827336068,
-        "source": "earned",
-        "milestone": "Complete one eligible raid"
-      }
-    },
-    "shards": 1,
-    "exactlyOnceCp": 1240
-  },
-  "requests": [
-    {
-      "path": "/api/sync",
-      "status": 200,
-      "bytes": 2009
-    },
-    {
-      "path": "/api/conquest/session",
-      "status": 200,
-      "bytes": 20606
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 22412
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 22408
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 22398
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 22569
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 22911
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 23733
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 23046
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 23028
-    },
-    {
-      "path": "/api/conquest/action",
-      "status": 200,
-      "bytes": 36066
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 36012
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 36563
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 36618
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 36407
-    },
-    {
-      "path": "/api/conquest/an",
-      "status": 200,
-      "bytes": 11
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 36560
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 36769
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37965
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38158
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37564
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37748
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37466
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37543
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37936
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37987
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37868
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38007
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38433
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38587
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38210
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38400
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37890
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38046
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38048
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37772
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 37939
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38531
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38469
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38268
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 38128
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 40107
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 40966
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 40261
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39899
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39338
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39306
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39505
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39503
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39456
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39319
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39283
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39322
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39318
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39297
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39332
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39496
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39440
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 39499
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 40433
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 40351
-    },
-    {
-      "path": "/api/conquest/action",
-      "status": 200,
-      "bytes": 25311
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 25881
-    },
-    {
-      "path": "/api/conquest/action",
-      "status": 200,
-      "bytes": 25866
-    },
-    {
-      "path": "/api/sync",
-      "status": 200,
-      "bytes": 2063
-    },
-    {
-      "path": "/api/conquest/session",
-      "status": 200,
-      "bytes": 25261
-    },
-    {
-      "path": "/api/conquest/session",
-      "status": 200,
-      "bytes": 25261
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 26089
-    },
-    {
-      "path": "/api/conquest/input",
-      "status": 200,
-      "bytes": 26246
-    }
-  ]
+  "errors": []
 }
