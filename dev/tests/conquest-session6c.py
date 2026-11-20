@@ -25,7 +25,7 @@ async def open_page(browser,base,ready,w,h,R):
  phone=w<800
  ctx=await browser.new_context(viewport={'width':w,'height':h},has_touch=phone,is_mobile=phone,device_scale_factor=1,reduced_motion='reduce')
  page=await ctx.new_page();errors=R.setdefault('errors',[]);page.on('pageerror',lambda e:errors.append(str(e)[:300]))
- page.on('console',lambda m:errors.append('console:'+m.text[:300]) if m.type=='error' and 'ERR_FAILED' not in m.text and '409' not in m.text and '429' not in m.text else None)
+ page.on('console',lambda m:errors.append('console:'+m.text[:300]) if m.type=='error' and 'ERR_FAILED' not in m.text and 'ERR_TUNNEL_CONNECTION_FAILED' not in m.text and '409' not in m.text and '429' not in m.text else None)   # outside requests are blocked in tests: this machine's proxy reports them as ERR_TUNNEL_CONNECTION_FAILED
  await page.add_init_script('''window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'Browser'}},ready(){},expand(){},onEvent(){},offEvent(){},HapticFeedback:{impactOccurred(){},notificationOccurred(){},selectionChanged(){}},MainButton:{hide(){}},BackButton:{hide(){},show(){},onClick(){},offClick(){}},platform:'''+json.dumps('ios' if phone else 'tdesktop')+''',version:'7.0',colorScheme:'dark',themeParams:{},isExpanded:true,viewportHeight:'''+str(h)+''',viewportStableHeight:'''+str(h)+''',isVersionAtLeast:()=>true}};''')
  async def route(r):
   u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
@@ -143,7 +143,10 @@ async def steps(browser,base,ready,w,h,R):
  else:
   await page.keyboard.down('KeyV');await page.wait_for_timeout(80);await page.keyboard.up('KeyV');await page.wait_for_timeout(500)
   R['tap']=await page.evaluate('ConquestCommand.state?.last?.k??null')
-  await page.keyboard.down('KeyV');await page.wait_for_timeout(450);R['wheelOpen']=await page.evaluate('ConquestCommand.isOpen()');await shot('wheel')
+  await page.keyboard.down('KeyV');await page.wait_for_timeout(450)
+  try:await page.wait_for_function('ConquestCommand.isOpen()',timeout=3000)   # 5E-2d1: the hold is read once a frame; at 1366x768 on the software renderer a frame is 300 ms, so 450 ms could pass with no frame yet
+  except Exception:pass
+  R['wheelOpen']=await page.evaluate('ConquestCommand.isOpen()');await shot('wheel')
   await page.keyboard.press('Digit3');await page.keyboard.up('KeyV');await page.wait_for_timeout(700)
   R['wheelOrder']=await page.evaluate('({k:ConquestCommand.state?.last?.k??null,o:Conquest.view.battle?.squad?.o,items:JSON.stringify(Conquest.view.authority?.state?.inv?.it||{})})')
   # a real mouse on the wheel: hold V, point at ATTACK, let go of V

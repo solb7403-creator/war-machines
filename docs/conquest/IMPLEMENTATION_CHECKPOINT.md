@@ -6285,6 +6285,19 @@ indistinguishable from the dashed asphalt roads"); wrecks and props CLOSE. The 2
   sun went near-black (a small sky fill, the same idea as the walls' daylight bounce); the wild ground cover was sparse
   (HIGH step 4.8 m -> 4.6 m, a higher cover floor, wild flowers in the thick patches; the densest ground chunk is 27,481
   triangles, was 24,387, cap 30,000).
+- **Two more tests changed their harness, not their checks, and why** (both failed only on this machine's software renderer,
+  where a frame of the rebuilt world takes about a third longer: 133 ms against 100 ms at 390x844 in the 6C raid).
+  `conquest-session5c.py` read the base pad's town model 1.2 s after leaving the town; the model is rebuilt in idle
+  slices (a few frames on a phone, seconds here), so the test now waits for it (up to 45 s) before the same check.
+  `conquest-session6c.py` sampled 240 frames of the Platoon before fielding the Battalion; here 240 frames outlasted
+  the raid (the Platoon won it) and units fielded after a victory are not drawn, so the nine views never appeared: the
+  sample is now 240 frames or 16 s, whichever comes first (at least 60 frames). Found with a diagnostic copy of the test:
+  nine friends alive, four views, raid state "victory", and all nine views built at once when the allies' draw was
+  called by hand. Two smaller harness fixes in the same test: the keyboard hold that opens the command wheel is read
+  once a frame, and at 1366x768 a frame takes 300 ms here, so the test waits up to 3 s for the wheel after its 450 ms
+  hold; and this machine's proxy reports a blocked outside request as `ERR_TUNNEL_CONNECTION_FAILED`, which the test
+  now ignores exactly as it already ignored `ERR_FAILED`. **What it says about the game: in that raid scene LOW draws 285,055 triangles against 197,849 on
+  main (+44%, the rebuilt colony), HIGH more; real-phone frame time is unmeasured.**
 - **A second test changed, and why:** `conquest-occluder.py` counted pixels of the outline's colour round the tank and
   wanted fewer than 40 of them in open country. On the darker terraformed soil of round 3 the tank's own cyan ground
   ring falls inside that colour window (274 pixels, none of them outline). The test now counts only what the outline
