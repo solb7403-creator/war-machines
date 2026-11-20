@@ -6094,10 +6094,18 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D1_BRIEF.md fi
   (`f0461ff`).
 - **Done (Nov 20): the colony's town core drawn by 80 m ground cell** (`Bld.cells()` in `js/conquest/style.js`; record and
   numbers under "Performance record" below; `conquest-occluder.py` and `conquest-seethrough-town.py` re-run after it: PASS).
-- **In progress:** the round-3 capture farm (world kinds, town, flagship at 390x844, 390x700, 320x568, 1366x768, 1920x1080,
-  HIGH and LOW; output in the session scratchpad `cap/`, the tools are `dev/tests/conquest-world-kinds-captures.py`,
-  `conquest-town-captures.py --kinds`, `conquest-flagship-captures.py`; phone runs use `--dpr 2 --ratio 2`, desktop runs
-  `--mouse --dpr 1 --ratio 1`), then the seam look at the colony captures and critic round 3.
+- **In progress (Nov 20):** the round-3 capture farm (world kinds, town, flagship at 390x844, 390x700, 320x568, 1366x768,
+  1920x1080, HIGH and LOW; phone runs `--dpr 2 --ratio 2`, computer runs `--mouse --dpr 1 --ratio 1`; the capture tools now
+  stream a place drawn small and draw only the shot at `--ratio`, about 8x faster on the software renderer). Critic round 3
+  runs as three read-only critics: phone world (started), computer + small phones + flagship, town + the 5E-2a recolour check.
+- **Found by the lead in the round-3 captures, fixed in a side worktree, NOT yet in the branch** (apply after the farm, then
+  run the node tests): the bare-ground gravel was one square a cell and read as pixels close up (now round stones of two
+  sizes, `TERRAIN_FS`); terraformed ground turned away from the low sun went near-black (a small sky fill, the same idea as
+  the walls' daylight bounce); the wild ground cover was sparse (HIGH step 4.8 m -> 4 m, wild cover floor raised, wild
+  flowers in the thick patches); the frontier wall / defences / watch, greenhouse, solar and meadow shots are reframed so
+  the subject is in the picture (`conquest-world-kinds-captures.py` SHOTS).
+- **To re-run on an idle machine:** `conquest-town.mjs` and `fair-arcade.mjs` failed a wall-clock limit while the capture farm
+  had every core busy; no limit is changed.
 - **Next, in order:** (2) critic round 3, the last one (a 4th only for an item the reviewer marks
   clearly below its reference, never more than 4), with captures at all five sizes on HIGH and LOW (re-capture only what
   changed since round 2, plus any size or quality not yet captured); (3) the 5E-2a town-item recolour re-check against the
