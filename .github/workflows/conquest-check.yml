@@ -77,6 +77,7 @@ jobs:
           node dev/tests/conquest-style.mjs
           # Session 5E-2d1: the one model list of the code-built world (every slot code-built on HIGH and LOW inside its box, swap to a model and back)
           node dev/tests/conquest-slots.mjs
+          node dev/tests/conquest-dropship.mjs
           node dev/tests/conquest-flagship-ui.mjs
           node dev/tests/conquest-canvas-contract.mjs
           node dev/tests/wtest/conquest-war.mjs

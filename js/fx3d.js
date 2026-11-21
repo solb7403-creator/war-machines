@@ -51,7 +51,7 @@ const MATS={
  moonheart:{n:18,sh:[2,2,0,3],c:['#ff2e4a','#b3122e','#ff6a7e','#7a0a1e'],v:5.4,sp:'#ff8a9a',dust:'#5a0e1c',crack:'#ff5a70',g:'#ff2e4a',em:.8,burst:1},  // cracks and bursts with crimson glow
  crate:{n:9,sh:[1,1,3],c:['#8a6a3a','#6b4f2a','#a8844a'],v:3.8,sp:null,dust:'#7a6444',crack:'#1a120a'},
  rock:{n:10,sh:[0,0,2],c:['#6f6a66','#56514e','#8a8580'],v:3.2,sp:null,dust:'#77726e',crack:'#161413'},
- chitin:{n:13,sh:[2,1,3,0],c:['#2b1531','#4a2352','#150a19','#7a2b86'],v:5,sp:'#ff7ae8',dust:'#2a1230',crack:'#ff2bd6',g:'#ff2bd6',em:.3}};   // Parasite hulls: split carapace, magenta ichor glow
+ parasite:{n:13,sh:[1,1,3,0],c:['#3d3c40','#6e3b22','#9aa3ab','#c9a23f','#242327'],v:5,sp:'#ff7a5c',dust:'#2a2224',crack:'#ff2030',rivet:'#c9a23f'}};   // Parasite machines (owner, Nov 21: stolen human steel): plundered plates and gold rivets fly off; the red burst is killBurst
 // chunk templates (unit size, a few triangles each): block, plate, shard, sliver. Built once as flat position/normal arrays.
 const TPL=(()=>{
  const out=[],tri=(P,N,a,b,c)=>{const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;for(const p of [a,b,c]){P.push(p[0],p[1],p[2]);N.push(nx,ny,nz);}};
@@ -841,6 +841,11 @@ function create(T,host){
   if(M.glass&&!many)for(let i=0;i<Math.round(14*amt());i++){const a=rnd()*TAU,sp=3+rnd()*5;part(1,x,y+h*.5,z,Math.cos(a)*sp,2+rnd()*5,Math.sin(a)*sp,.9,.22,.03,col('#ffffff'),1,9,.6,y);}   // glints
   if(!many)shake(Math.min(10,2+size*2.5),.22);
  }
+ // The kill burst (5E addendum, a Session 6 hook): the infection bursting out of a destroyed Parasite machine. One pooled effect
+ // of at most 24 quads (a ground flash, two core sprites, a 16-step ring and four star rays = 23) in the Parasite accent colour, plus at
+ // most 14 pooled sparks; the white core is the short light flash (0.26 s).
+ function killBurst(x,y,z,r,hex){const h=hex||'#ff2030';spawn(fxKill,.26,x,y,z,rnd()*TAU,r||2,0,1,'',1).P={a:h};sparks(x,y+.3,z,Math.min(14,6+(r||2)*3),4+(r||2)*2,col(h),.24,.5,1.6,y-(r||2));}
+ function fxKill(e){const k=e.t/e.d,f=1-k,c=col(e.P.a),w=col('#ffffff'),R=e.a;disc(e.x,e.y-R*.45,e.z,R*(1.4+1.2*k),c,.5*f);sprite(e.x,e.y,e.z,R*(.5+1.3*k),c,.9*f*f);sprite(e.x,e.y,e.z,R*.5*(1-.6*k),w,.85*f*f);ring(e.x,e.y-R*.4,e.z,R*(.5+1.9*k),.12*R*f+.03,c,f,16);star(e.x,e.y,e.z,R*(.9+k),2,e.ang,w,f*.8,.05);}
  function fxGlowBurst(e){const k=e.t/e.d,f=1-k,c=col(e.P.a),w=col('#ffffff');disc(e.x,e.y-.3,e.z,e.a*(1+k),c,.6*f);sprite(e.x,e.y,e.z,e.a*(.4+.7*k),c,.9*f*f);ring(e.x,e.y-.3,e.z,e.a*(.3+1.6*k),.1,w,f,30);if(e.b)star(e.x,e.y,e.z,e.a*(.8+k),4,e.ang,w,f,.06);}
  // damage stages on a box-shaped object (called every frame it is damaged; frac = health left 0..1).
  // <70%: surface cracks and chipped edges; <45%: scorch and the odd spark; <22%: heavy cracks, smoke and sparks.
@@ -884,7 +889,7 @@ function create(T,host){
  function dispose(){host.scene.remove(qMesh);host.scene.remove(dMesh);qg.dispose();dg.dispose();}
  const stats=()=>({quads:qn,debrisVerts:dn,particles:pn,chunks:cn,effects:E.filter(e=>e.on).length,marks:S.filter(s=>s.on).length,caps:{quads:QMAX,verts:VMAX,particles:pcap(),chunks:dcap()}});
  const SUP_API=CQO?{superCharge:superChargeO,superLock:superLockO,superBeam:superBeamO,superNova:superNovaO,superShell:superShellO,superBlast:superBlastO,superImpact:superImpactO}:{superCharge,superLock,superBeam,superNova,superShell,superBlast,superImpact};
- return {begin,end,clear,dispose,stats,shift,...SUP_API,blast,shatter,wear,
+ return {begin,end,clear,dispose,stats,shift,...SUP_API,blast,shatter,killBurst,wear,
   quad,seg,segc,cap,flow,disc,sprite,puff,churn,shock,ring,bolt:CQO?boltO:bolt,star,crack,part,sparks,smoke,chunk,mark,glow:qMesh,debris:dMesh};
 }
 root.FX3D={create,PAL,KIND,MATS};
