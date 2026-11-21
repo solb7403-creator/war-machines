@@ -6545,3 +6545,16 @@ on the pad is noise at phone size; the town drive opens with the tank behind a r
 Not worth credits: rocks, grass, ferns, ore, fences, lamps, pipes, poles (small, simple, code-built reads fine); trees,
 people and livestock (many instances each: a Meshy model there costs triangles on LOW, the open item above); the viaduct,
 rail and dam (long repeating hard-surface pieces, which code builds well).
+
+## Checkpoint 45 — Session 5E-2d2: Conquest models + addendum (branch `claude/parasite-units-dropships-8y7kby`, from main `d61d259`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md first; it governs everything.
+- **Done and pushed:** slice 1 (this commit): the brief saved word for word; this checkpoint opened.
+- **Next, in order:** (1) read the listed sources and research the comparable games (findings recorded here); (2) the shared
+  Parasite look (one red in place of the magenta; hive, hive mast, cover wall, raid spire, battery, drone); (3) the six
+  Parasite units, HIGH and LOW, as swappable slots, in the world and the town; the five commanders; (4) the two dropships
+  and their sequence in the Defense Drill, with the spawn-identity test; (5) the portal gate and the LDF posts as scenery;
+  (6) the real tank in the town view and the login flash, with its browser test; (7) the addendum leftovers (turret cheek
+  plate sockets, the Session 6 hooks); (8) the 5E-2d1 leftovers (ten reviewer notes, the colony on LOW at most 197,849
+  triangles); (9) three critic rounds, the whole test list, two reviewers, release.
