@@ -38,6 +38,21 @@ function view(G,i){const b=G.json.bufferViews[i],x=b.extensions.EXT_meshopt_comp
 function accessor(G,i){const a=G.json.accessors[i],{out,stride}=view(G,a.bufferView),C=CT[a.componentType],n=NC[a.type],dv=new DataView(out.buffer),r=new Float64Array(a.count*n),size=C.BYTES_PER_ELEMENT;
  const get=C===Uint32Array?p=>dv.getUint32(p,true):C===Uint16Array?p=>dv.getUint16(p,true):C===Int16Array?p=>dv.getInt16(p,true):C===Int8Array?p=>dv.getInt8(p):p=>dv.getUint8(p);
  for(let k=0;k<a.count;k++)for(let j=0;j<n;j++)r[k*n+j]=get(k*stride+j*size);return {r,n,count:a.count,a};}
+// Hull Plating slot 4 (Session 5E-2d2): the TURRET cheek anchors are named in the manifest for every chassis, beside FRONT, LEFT
+// and RIGHT, and every weapon names its own turret cheeks. Anchors only: they are derived from the ring and the turret body
+// build.py measured (turret_plate_sockets / weapon_cheeks) and change no hitbox, socket (ty, cores, team) or muzzle tip.
+{const near=(a,b)=>Math.abs(a-b)<1e-9;let nc=0,nw=0;
+ for(const [id,rec] of Object.entries(manifest.items)){const M=rec.meta;
+  if(rec.kind==='chassis'){nc++;const P=M.plateSockets,t=P&&P.turret,off=M.ringOffset||[0,0],rr=M.ringRadius;
+   ok(P&&P.front&&P.left&&P.right&&t,id+' four plate slots: front, left, right, turret');
+   ok(t.pivot.length===3&&near(t.pivot[0],off[0])&&near(t.pivot[1],M.ty)&&near(t.pivot[2],off[1]),id+' turret plates turn about the ring centre at the socket height');
+   for(const [k,sg] of [['left',-1],['right',1]]){const a=t[k];ok(a.length===3&&a.every(Number.isFinite)&&near(a[0],off[0]+.3*rr)&&near(a[1],M.ty+.4*rr)&&near(a[2],off[1]+sg*(rr+.045)),id+' turret '+k+' cheek anchor on the ring');}
+   ok(t.left[2]<0&&t.right[2]>0&&P.left[2]<0&&P.right[2]>0,id+' left is -z, right is +z on every slot');
+   ok(t.left[1]>P.left[1]&&t.left[1]>P.front[1]&&t.left[1]<rec.height+.6,id+' turret anchors sit above the hull slots');}
+  if(rec.kind==='weapon'||rec.kind==='moon'){nw++;const c=M.cheeks,v=M.visual;ok(Array.isArray(c)&&c.length===2,id+' names its turret cheeks');
+   ok(near(c[0][0],.2*v.tip)&&near(c[0][1],v.y)&&near(c[0][2],-(v.width+.03))&&near(c[1][2],v.width+.03)&&near(c[1][0],c[0][0])&&near(c[1][1],c[0][1]),id+' cheeks on the turret body, behind the muzzle');
+   ok(c[0][0]<M.tips[0][0]*.5,id+' cheeks do not reach the muzzle');}}
+ ok(nc===9&&nw>=9,'every chassis and weapon carries the turret plate anchors ('+nc+', '+nw+')');}
 let totalLight=0,totalFull=0;const sums=[];
 for(const id of want){const rec=manifest.items[id],item=config.items.find(i=>i.id===id);ok(item,'config has '+id);
  ok(!files.includes(rec.source),'original not shipped: '+rec.source);

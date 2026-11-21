@@ -539,6 +539,18 @@ def top_y(H, x, z, fallback=0.0):
     return float(50.0 - t[0]) if prim[0] >= 0 else fallback
 
 
+def turret_plate_sockets(cx, cz, ty, rr):
+    """Hull Plating slot 4, the TURRET cheeks (Session 5E-2d2): two named anchors on the turret ring, in the hull frame at aim 0.
+    They turn with the turret about `pivot` (the ring centre at the socket height). Anchors only: no hitbox, socket or muzzle."""
+    return dict(pivot=[float(cx), float(ty), float(cz)], left=[float(cx + 0.30 * rr), float(ty + 0.40 * rr), float(cz - (rr + 0.045))],
+                right=[float(cx + 0.30 * rr), float(ty + 0.40 * rr), float(cz + (rr + 0.045))])
+
+
+def weapon_cheeks(tip, y, width):
+    """The turret body's own cheeks in the weapon frame (before the mount scale): where a TURRET plate sits on this weapon."""
+    return [[float(0.2 * tip), float(y), float(-(width + 0.03))], [float(0.2 * tip), float(y), float(width + 0.03)]]
+
+
 def item_meta(item, cfg, H, S):
     """What the game needs besides the mesh: socket height, muzzle tips, measured dimensions, seats for game-drawn add-ons."""
     V = H.V; mn, mx = V.min(0), V.max(0)
@@ -557,7 +569,8 @@ def item_meta(item, cfg, H, S):
         meta.update(ty=ty, ringRadius=rr, ringOffset=H.ring['offset'] if H.ring else [0, 0],
                     visual=dict(len=L, trackZ=tz, trackW=tw, h=th, deck=deck, ring=ty, x0=float(mn[0]), x1=float(mx[0]), fit=[-0.13, fy, tz - 0.02]),
                     track=[max(0.1, (L - th) / 2), th / 2 + 0.005, th / 2 + 0.03, 0],
-                    plateSockets=dict(front=[float(mx[0]) - 0.12, th * 0.74, 0], left=[-0.04, th * 0.6, -(tz + tw / 2 + 0.045)], right=[-0.04, th * 0.6, tz + tw / 2 + 0.045]))
+                    plateSockets=dict(front=[float(mx[0]) - 0.12, th * 0.74, 0], left=[-0.04, th * 0.6, -(tz + tw / 2 + 0.045)], right=[-0.04, th * 0.6, tz + tw / 2 + 0.045],
+                                      turret=turret_plate_sockets(*(H.ring['offset'] if H.ring else [0, 0]), ty, rr)))
         sk = item.get('sockets', {})
         xc = float(mn[0]) + 0.13 * L
         cores = sk.get('cores') or [[xc, None, z] for z in (-0.25, 0.0, 0.25)]
@@ -577,6 +590,7 @@ def item_meta(item, cfg, H, S):
         meta.update(tips=[[float(v) for v in t] for t in tips], barrels=len(S.tips),
                     halos=item.get('halos') or [[t[0], t[1], t[2], gc, 0.13] for t in tips],
                     visual=dict(tip=float(tips[0][0]), y=float(np.mean([t[1] for t in tips])), width=width, bore=float(item.get('turret', {}).get('barrels', [{}])[0].get('r', 0.1)) * 0.6))
+        meta['cheeks'] = weapon_cheeks(meta['visual']['tip'], meta['visual']['y'], meta['visual']['width'])
     else:
         meta.update(size=[float(x) for x in (mx - mn)])
         if S.tips:
