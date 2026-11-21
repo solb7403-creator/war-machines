@@ -104,12 +104,33 @@ root.ConquestSlots={version:1,items:{
  'ore-spent':S('nature','Spent deposit',[1.8,.4,1.6],'none'),
  'meteor':S('nature','Strike meteor',[17.8,18,3.4],'none (moving; the head is at the origin)'),
  'strike-crater':S('nature','Meteor Strike crater',[17.4,2.2,17.4],'none'),
- // ---- Parasite structures ----
- 'hive':S('parasite','Parasite hive',[22,13.6,16],'world box 22 x 16'),
+ // ---- Parasite structures (owner, Nov 21: greedy humans, not aliens; stolen machines, the red growth is the only organic part) ----
+ 'hive':S('parasite','Parasite hive (growth nest on a captured installation)',[22,13.6,16],'world box 22 x 16'),
  'hive-mast':S('parasite','Hive mast',[4.2,20.4,4.2],'world disc r2'),
  'cover-wall':S('parasite','Raid cover wall',[18,5,3],'world raid obstacle box (placement w, d, h)'),
  'raid-spire':S('parasite','Raid spire',[8.8,7.4,7.6],'none'),
+ 'par-battery':S('parasite','Plasma battery (o.part: base | gun)',[6.7,11.6,5.8],'none (the sim owns the hitbox)'),
+ 'portal-gate':S('parasite','Portal gate (o.state: dormant | open | suppressed)',[16,14,6],'none (scenery until Session 7)'),
+ // ---- Parasite units (Session 5E-2d2). o.part: hull | gun (the gun turns at the model's pivot); o.town: the light model the
+ //      town raid instances; o.cmd: a general's doctrine (shield | ambush | artillery | carrier | plasma). The sim owns every hitbox ----
+ 'par-raider':S('parasite','Scavenger (interceptor)',[2.9,2.6,5.4],'none (moving; the sim owns the hitbox)'),
+ 'par-breacher':S('parasite','Siphon (oxygen saboteur)',[4,4.3,6.2],'none (moving; the sim owns the hitbox)'),
+ 'par-sentinel':S('parasite','Hoard Fortress (heavy)',[4.8,5.4,6],'none (moving; the sim owns the hitbox)'),
+ 'par-command':S('parasite','Warlord (fire coordinator)',[4.7,6.6,5.8],'none (moving; the sim owns the hitbox)'),
+ 'par-swarm':S('parasite','Grabber (swarm buggy)',[1.7,1.4,2.4],'none (moving; the sim owns the hitbox)'),
+ 'par-brute':S('parasite','Wrecker (wall breaker)',[5.4,4.6,8],'none (moving; the sim owns the hitbox)'),
+ 'par-drone':S('parasite','Stolen drone',[2.8,1.2,3],'none (flying)'),
+ // ---- Parasite dropships (o.part: hull | ramp; o.wreck: the shot-down hulk; o.seed patches each raid's ships differently) ----
+ 'par-shuttle':S('parasite','Scavenger shuttle (light dropship)',[10,4.4,13],'none (flying)'),
+ 'par-hauler':S('parasite','Heavy hauler (dropship with a ramp)',[14,7.4,24],'none (flying)'),
+ // ---- the Lunar Defense Force post (scenery until Session 7; o.seed varies each post) ----
+ 'ldf-post':S('military','LDF post',[8,7,8],'none (scenery until Session 7)'),
  'loot-cache':S('prop','Loot cache',[2.4,1.6,1.8],'none'),
+ // ---- the four consumables (the 64 px HUD / drop icons are rendered from these: dev/tests/conquest-item-sprites.py) ----
+ 'item-repair':S('prop','Repair Kit',[1.1,.9,.8],'none'),
+ 'item-shield':S('prop','Shield Cell',[.8,1.2,.8],'none'),
+ 'item-scanner':S('prop','Scanner Charge',[1,1,1],'none'),
+ 'item-decoy':S('prop','Decoy Beacon',[.9,1.3,.9],'none'),
  'wreck-cache':S('prop','Wreck salvage',[3,1.6,2.2],'none'),
  'sector-flag':S('prop','Sector flag mast',[2.6,8,1],'none'),
  // ---- the town (ConquestTownKit): the eight buildings with no Meshy model ----

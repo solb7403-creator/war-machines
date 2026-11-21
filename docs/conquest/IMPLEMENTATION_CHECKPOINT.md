@@ -6554,9 +6554,13 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md fi
   world kit, see "Found on the way"); the TURRET cheek plate anchors (`dev/assets/meshy/build.py`, `resocket.py`,
   `manifest.json`, `meshy.mjs`); the dropship flight / unload logic and its spawn-identity test (`js/conquest/dropship.js`,
   `dev/tests/conquest-dropship.mjs`, in the CI list); the kill burst and the Parasite break-up preset (`js/fx3d.js`).
-- **In the working tree, not committed yet:** the shared Parasite palette (`js/conquest/worldkit.js` `pal.par`,
-  `ConquestWorldKit.PAR`) and the 16 new slots in `js/conquest/slots.js` (they go in with the models: `conquest-slots.mjs`
-  wants a model for every slot).
+- **WIP snapshot commit (Nov 21, "wip: builders' work in progress"):** a safety copy of work that is NOT finished or tested:
+  the shared Parasite palette (`worldkit.js` `pal.par`, `ConquestWorldKit.PAR`), the new slots (`slots.js`), the builders'
+  half-built files (`kit/parunits.js`, `kit/parstruct.js`, `kit/warmodels.js`, D's edits to `core.js`, `main.js`, `net.js`,
+  `meshy3d.js`, `showroom.js`, `login-tank-browser.py`), the four consumables (`kit/items.js`, `img/conquest/item-*.png`,
+  `dev/tests/conquest-item-sprites.py`) and the unit capture tool (`dev/tests/conquest-parasite-captures.py`). At this commit
+  `conquest-slots.mjs` FAILS on purpose-built checks (the new kit files are not in `index.html` / `web/boot.js` yet and not
+  every new slot has its model): the lead wires them in when the builders report.
 - **Running (four parallel builders, each owns its own files; the lead integrates):** (A) the six Parasite units and the drone
   -> `js/conquest/kit/parunits.js`; (B) the hive, hive mast, cover wall, raid spire and plasma battery in the new look ->
   `js/conquest/kit/parstruct.js` (the old ones in `kit/nature.js` are deleted by the lead when it lands); (C) the two

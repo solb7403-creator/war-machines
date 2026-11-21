@@ -15,6 +15,8 @@
 (function(root){
 'use strict';
 const TAU=Math.PI*2,clamp01=v=>v<0?0:v>1?1:v;
+// The one Parasite red (owner, Nov 21): every Parasite glow, vein, marker, shot and burst reads from here.
+const PAR={red:0xff2030,hot:0xff7a5c,deep:0xa01018};
 const MODELS={},MY3D=()=>typeof Meshy3D!=='undefined'?Meshy3D:root.Meshy3D;   // the Meshy loader is a top-level const in the page (not a window property)
 function model(id,build,o){MODELS[id]={build,o:o||{}};}
 // Surface codes ride in the vertex alpha below zero (0..2 stays "emission", as before): the solid shader paints the
@@ -184,7 +186,17 @@ function kit(S){if(S.worldKit)return S.worldKit;
    leaf:mat(0x4c7a34,'leaf',0,.2),leafD:mat(0x35582a,'leaf',0,.2),soil:mat(0x4a3a28,'dirt',0),water:mat(0x2a6a8a,'glass',.4),tank:mat(0x5f8a86,'paint',.6),white:mat(0xd5d0c2,'paint',.5),tyre:mat(0x15181c,'flat',0)},
   nat:{rock:mat(0x4a4d55,'rock',0,.1),rockD:mat(0x2e3036,'rock',0,.1),rockMoss:mat(0x6a6458,'rock',.8,.1),bark:mat(0x3e3024,'bark',.6,.1),burnt:mat(0x1c1814,'bark',.9),leaf:[0x2a4220,0x33502a,0x3d5a2c].map(h=>mat(h,'leaf',0,.25)),broad:[0x4b5a2c,0x3a4a24,0x5e6630,0x6b5a2a].map(h=>mat(h,'leaf',0,.25)),
    straw:mat(0xa89a5b,'leaf',0,.2),olive:mat(0x6b7a3a,'leaf',0,.2),ice:mat(0xa8dcf0,'glass',.25),soil:mat(0x4a3a28,'dirt',0),moss:mat(0x3e5a2e,'leaf',0,.2)},
-  par:{chitin:mat(0x2b1531,'chitin',.6),chitinD:mat(0x150a19,'chitin',.3),bone:mat(0x4a3550,'chitin',.1),wall:mat(0x2c2833,'chitin',.2),wallTop:mat(0x4a4352,'metal',.4),mag:glow(0xff2bd6,1.85),magHot:glow(0xff7ae8,1.95),magDim:glow(0xff2bd6,1)},
+  // The Parasites (owner, Nov 21): greedy humans, not aliens. Their machines and structures are human-built, stolen and over-armoured:
+  // dark scavenged steel under bolted-on plundered plating (LDF ceramic, settler panels, hazard stripes), gaudy gold trim, loot
+  // crates, nets and sacks strapped on, trophies of other colonies (flags, markings). The infection is the only organic part:
+  // red vein growth in seams, vents and cockpits, one shared Parasite red (PAR.red) against the blue human world.
+  par:{iron:mat(0x3d3c40,'metal',.55),ironD:mat(0x242327,'metal',.4),ironL:mat(0x5a5960,'metal',.5),rust:mat(0x6e3b22,'scrap',.9),scrap:mat(0x5a554e,'scrap',.7),weld:mat(0x17161a,'metal',.8),
+   plateMil:mat(0x9aa3ab,'metal',.5),plateMilD:mat(0x4a5562,'metal',.5),plateSet:[0x8f4f36,0x5f8a86,0xb39a66,0xc9c2b0,0x6f7f5a].map(h=>mat(h,'paint',.7,.1)),hazard:mat(0xc9981f,'paint',.7),hazardD:mat(0x15171a,'paint',.4),
+   gold:mat(0xc9a23f,'metal',0),goldD:mat(0x8a6a22,'metal',.2),crate:mat(0x7a5634,'timber',.4,.12),crateD:mat(0x4f3622,'timber',.5,.12),strap:mat(0x1c1a18,'flat',0),net:mat(0x2a2620,'cloth',0),sack:mat(0x8f8064,'cloth',0,.12),
+   tank:mat(0xd5d0c2,'paint',.5),tankBand:mat(0x2a6a8a,'paint',.4),flagLDF:mat(0x1f5f8a,'cloth',0),flagLDF2:mat(0xb8c4cc,'cloth',0),flagSet:[0x8a4a5a,0xc9a04a,0x4a6a8a,0xb8553a,0x5b8f4e].map(h=>mat(h,'cloth',0,.06)),
+   glassDead:mat(0x0c1014,'glass',.1),tyre:mat(0x15181c,'flat',0),
+   flesh:mat(0x4a1016,'chitin',.3),fleshD:mat(0x2a080c,'chitin',.2),fleshL:mat(0x7a1c22,'chitin',.15),
+   red:glow(PAR.red,1.85),redHot:glow(PAR.hot,1.95),redDim:glow(PAR.red,1),redLow:glow(PAR.deep,.6)},
   wreck:{hull:mat(0x3a3530,'scrap',.7),rust:mat(0x6a3f26,'scrap',.95),track:mat(0x1e1c1a,'metal',.8),moss:mat(0x3e5a2e,'leaf',0,.2),bag:mat(0x8f8064,'dirt',0,.15),wire:mat(0x2a2a2a,'metal',.9),post:mat(0x4a4038,'timber',.8),mud:mat(0x2a2018,'dirt',0)}};
  const K={S,T,hi,KB,pal,emit,part,mat,glow,tint,mix,rect,circ,col,SURF,surfA,hash,rng,build,place,geometry,instanced,setAt,tris,swapMeshes,swapped,pendingSwap,unit,M:(x,y,z,ry=0,s=1)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(s,s,s));},clear(){cache.clear();geos.clear();}};
  S.worldKit=K;return K;}
@@ -193,5 +205,5 @@ function kit(S){if(S.worldKit)return S.worldKit;
 // drew the slot rebuild their batches when the generation changes.
 let generation=0;
 function swap(id,item){const s=root.ConquestSlots&&root.ConquestSlots.items[id];if(!s)throw new Error('ConquestWorldKit: unknown slot "'+id+'"');s.model=item||null;generation++;return s;}
-root.ConquestWorldKit={kit,model,MODELS,SURF,surfA,hash,rng,swap,get generation(){return generation;},bump(){generation++;}};
+root.ConquestWorldKit={kit,model,MODELS,PAR,SURF,surfA,hash,rng,swap,get generation(){return generation;},bump(){generation++;}};
 })(typeof globalThis!=='undefined'?globalThis:window);

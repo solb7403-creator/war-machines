@@ -3,8 +3,9 @@
 // meshy3d: the owner's Meshy models in the game (Session 5E-1). Visual only: nothing here touches rules, hitboxes,
 // stats, saves or ownership. Each item ships as two GLBs made by dev/assets/meshy/build.py:
 //   LIGHT (battle, town, world map) and FULL (Garage, previews, close-ups; fetched only when shown).
-// Files are fetched one item at a time, cached, and the procedural model stays on screen until its GLB is ready;
-// nothing here ever blocks a battle from starting.
+// Files are fetched one item at a time and cached; nothing here ever blocks a battle from starting. In a battle the
+// procedural model stays on screen until its GLB is ready. The pilot's own tank outside a battle (home, garage, Conquest hub,
+// world, town) is never drawn as anything but itself (owner, Nov 20-21): tank() / tankShow() below say when it may be drawn.
 // The reader is deliberately narrow: exactly the GLB layout the pipeline writes (one quantized, meshopt-compressed
 // primitive, embedded WebP maps, an `extras.lunar` block describing the moving parts). Anything else fails closed and
 // the procedural model stays.
@@ -109,10 +110,27 @@ const Meshy3D=(()=>{
  }
  // ---- lazy per-item store ----
  const emit=()=>{generation++;if(typeof dispatchEvent==='function'&&typeof Event==='function')try{dispatchEvent(new Event('lunar-meshy-ready'));}catch(e){}};
+ // A download has WAIT_MS to land (one retry after a quick failure inside it); after that it has failed for this visit
+ // and is never swapped in late. LUNAR_MESHY_WAIT_MS: a test holds the files longer than that on purpose.
+ const WAIT_MS=()=>Number(typeof globalThis!=='undefined'&&globalThis.LUNAR_MESHY_WAIT_MS)||20000,sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ async function pull(url,json,opts){
+  const end=Date.now()+WAIT_MS();
+  for(let n=0;;n++){const ac=typeof AbortController==='function'?new AbortController():null,timer=ac?setTimeout(()=>ac.abort(),Math.max(1,end-Date.now())):0;
+   try{const r=await fetch(url,Object.assign(ac?{signal:ac.signal}:{},opts));if(!r.ok)fail('fetch '+r.status);return await (json?r.json():r.arrayBuffer());}
+   catch(err){if(n||end-Date.now()<1500)throw err;await sleep(700);}finally{clearTimeout(timer);}}
+ }
  function loadManifest(){
   if(manifestPromise)return manifestPromise;
-  manifestPromise=fetch(baseUrl+'manifest.json',{cache:'no-cache'}).then(r=>{if(!r.ok)fail('manifest '+r.status);return r.json();}).then(m=>{if(m.version!==VERSION)fail('manifest version');manifest=m;emit();return m;}).catch(e=>{manifest={version:VERSION,items:{},error:String(e.message||e)};return manifest;});
+  manifestPromise=pull(baseUrl+'manifest.json',true,{cache:'no-cache'}).then(m=>{if(m.version!==VERSION)fail('manifest version');manifest=m;emit();return m;}).catch(e=>{manifest={version:VERSION,items:{},error:String(e.message||e)};emit();return manifest;});
   return manifestPromise;
+ }
+ // the bytes of one file. Needs no 3D engine, so the pilot's own two files start with the page (prefetch) and the 3D
+ // engine finds them already here; bytes nobody decoded within a minute are dropped (the browser's cache keeps them)
+ const bytes=new Map();
+ function download(id,q){
+  const key=id+'|'+q;let p=bytes.get(key);if(p)return p;
+  p=loadManifest().then(m=>{const rec=m.items[id];return rec&&rec[q]?pull(baseUrl+id+'-'+q+'.glb?h='+(rec[q].hash||m.build||'')).then(buf=>({buf,rec})):null;});
+  bytes.set(key,p);p.catch(()=>{}).then(()=>setTimeout(()=>{if(bytes.get(key)===p)bytes.delete(key);},60000));return p;
  }
  // phones keep FULL maps at 1024 (a 2048 set is ~90 MB of GPU memory); desktops get the whole thing
  const coarse=()=>typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches;
@@ -123,13 +141,12 @@ const Meshy3D=(()=>{
   if(e)return e.state==='ready'?e.asset:null;
   if(manifest&&(!manifest.items[id]||!manifest.items[id][q])){store.set(key,{state:'missing'});return null;}
   e={state:'loading',t0:typeof performance!=='undefined'?performance.now():0};store.set(key,e);stats.requests++;
-  e.promise=loadManifest().then(async m=>{
-   const rec=m.items[id];if(!rec||!rec[q]){e.state='missing';return null;}
-   const [r]=await Promise.all([fetch(baseUrl+id+'-'+q+'.glb?h='+(rec[q].hash||m.build||'')),decoder()]);if(!r.ok)fail('fetch '+r.status);
-   const buf=await r.arrayBuffer(),asset=await decode(buf,{maxTexture:maxTextureFor(q)});
-   asset.id=id;asset.quality=q;asset.record=rec;asset.refs=0;e.asset=asset;e.state='ready';e.used=++clock;evict();e.ms=(typeof performance!=='undefined'?performance.now():0)-e.t0;e.bytes=buf.byteLength;
+  e.promise=Promise.all([download(id,q),decoder()]).then(async([d])=>{
+   if(!d){e.state='missing';emit();return null;}
+   const buf=d.buf,asset=await decode(buf,{maxTexture:maxTextureFor(q)});
+   asset.id=id;asset.quality=q;asset.record=d.rec;asset.refs=0;e.asset=asset;e.state='ready';e.used=++clock;evict();e.ms=(typeof performance!=='undefined'?performance.now():0)-e.t0;e.bytes=buf.byteLength;
    stats.bytes+=buf.byteLength;stats.ready++;stats.log.push({id,q,bytes:buf.byteLength,ms:Math.round(e.ms)});emit();return asset;
-  }).catch(err=>{e.state='error';e.error=String(err&&err.message||err);stats.failed++;return null;});
+  }).catch(err=>{e.state='error';e.error=String(err&&err.message||err);stats.failed++;emit();return null;}).finally(()=>bytes.delete(key));   // a failure is news too: whoever waits for this model draws the code-built one now
   return null;
  }
  const peek=(id,q)=>{const e=store.get(id+'|'+q);if(e&&e.state==='ready'){e.used=++clock;return e.asset;}return null;};
@@ -159,6 +176,19 @@ const Meshy3D=(()=>{
   for(const id of ids)request(id,'light');
   const st=ids.map(id=>(store.get(id+'|light')||{}).state);return st.every(x=>x==='loading'||x==='ready')&&st.includes('loading');
  }
+ // What may be drawn for one tank right now (owner, Nov 20-21: never a chassis, weapon or stand-in that is not the tank itself).
+ // 'meshy': its models have landed. 'wait': they are on their way: the caller shows its wait state and no tank at all.
+ // 'kit': the models are switched off, or a download failed for good: the code-built version of the same chassis and weapon,
+ // BOTH parts (one of each would read as a half-swapped tank). parts: 1 = the chassis alone, 2 = the weapon alone.
+ function tank(cls,ct,arch,wt,parts){
+  if(!enabled||detail==='none'||typeof THREE==='undefined'||typeof fetch!=='function')return 'kit';
+  const t=x=>Math.max(0,Math.min(2,x|0)),ids=[];if(parts!==2)ids.push(itemId.chassis(cls,t(ct)));if(parts!==1)ids.push(itemId.weapon(arch,t(wt)));
+  for(const id of ids)request(id,'light');
+  const st=ids.map(id=>(store.get(id+'|light')||{}).state);
+  return st.some(x=>x==='error'||x==='missing')?'kit':st.every(x=>x==='ready')?'meshy':'wait';
+ }
+ // the same tank as a label ({c, w, kind} with the model ids, and s as one string): what a surface says it is showing (tests read it)
+ function label(L,kind){const t=x=>Math.max(0,Math.min(2,x|0)),c=itemId.chassis(L.c.c,t(L.c.t)),w=itemId.weapon(L.w.a,t(L.w.t));return {c,w,kind,s:c+'+'+w+'+'+kind};}
  function withDetail(d,fn){const old=detail;detail=d;try{return fn();}finally{detail=old;}}
  const itemId={chassis:(cls,tier)=>'chassis-'+cls+'-'+tier,weapon:(arch,tier)=>arch==='moon'?'weapon-moon':'weapon-'+arch+'-'+tier};
 
@@ -349,7 +379,7 @@ const Meshy3D=(()=>{
   return {k:{meshy:{asset,paint:P,lunar:!!lunar,team}},anims:[],meta:{tips:(M.tips||[[1.9,.25,0]]).map(t=>t.slice()),halos:(M.halos||[]).map(h=>h.slice()),meshy:asset.id,barrels:M.barrels||0,scale:weaponFit(asset,arch,tier,cls,ct),profile:arch+':'+tier,legend:arch==='moon'?'moonbeam-unified':undefined}};
  }
  // measured dimensions of the active Meshy model in the CHASSIS_VISUALS / WEAPON_VISUALS shape (fittings and plates seat on these)
- const visual=(kind,a,t)=>{const as=peek(kind==='chassis'?itemId.chassis(a,t):itemId.weapon(a,t),'light');return as&&as.info.meta&&as.info.meta.visual||null;};
+ const visual=(kind,a,t)=>{if(detail==='none')return null;const as=peek(kind==='chassis'?itemId.chassis(a,t):itemId.weapon(a,t),'light');return as&&as.info.meta&&as.info.meta.visual||null;};
 
  // ---- motion: one controller per tank, fed by GraphicsMotion (track travel, kick, charge) ----
  const reducedMotion=()=>typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced();
@@ -449,10 +479,38 @@ const Meshy3D=(()=>{
  function townStep(t,quiet){for(const U of townLive){const c=U.uCh.value;c[CH.time]=quiet?0:t;c[CH.pulse]=quiet?.8:.72+.28*Math.sin(t*2.6);c[CH.sway]=quiet?0:Math.sin(t*2.3)*.6;c[CH.charge]=quiet?.3:.5+.5*Math.sin(t*1.7);}}
  // free the per-mesh materials of a removed tree (geometry and maps are shared and stay cached)
  function release(root){if(!root||!root.traverse)return;root.traverse(o=>{if(o.userData.meshyTownRelease){o.userData.meshyTownRelease();delete o.userData.meshyTownRelease;}const om=o.isMesh&&(o.userData.fadeOrig||o.material);if(om&&om.userData&&om.userData.meshyOwned&&!o.userData.meshyReleased){o.userData.meshyReleased=true;om.dispose();if(om!==o.material&&o.material)o.material.dispose();o.onBeforeRender=()=>{};const a=o.userData.meshy&&o.userData.meshy.asset;if(a)a.refs=Math.max(0,(a.refs||0)-1);}});}
- // warm the cache for a loadout (LIGHT only): called when a loadout is known before it is drawn
- function prefetch(L){if(!L)return;try{if(L.c)request(itemId.chassis(L.c.c,Math.max(0,Math.min(2,L.c.t|0))),'light');if(L.w)request(itemId.weapon(L.w.a,Math.max(0,Math.min(2,L.w.t|0))),'light');}catch(e){}}
- function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();generation++;}
- return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get fit(){return fitOn;},set fit(v){if(fitOn!==!!v){fitOn=!!v;generation++;}},weaponFit,get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;},
-  decode,container,request,peek,best,withDetail,pending,stamp,itemId,loadManifest,GLOW,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,slotAsset,slotSet,slotScale,townStep,townStamp,townAsset,TOWN_YAW,hostRenderer,releaseHost,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
+ // the pilot's own two files (LIGHT) start downloading now: called the moment a loadout is known, before the 3D engine is up
+ function prefetch(L){if(!L||!enabled||typeof fetch!=='function'||typeof document==='undefined')return;try{const t=x=>Math.max(0,Math.min(2,x|0));if(L.c)download(itemId.chassis(L.c.c,t(L.c.t)),'light');if(L.w)download(itemId.weapon(L.w.a,t(L.w.t)),'light');decoder().catch(()=>{});}catch(e){}}
+ function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();bytes.clear();generation++;}
+ return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get fit(){return fitOn;},set fit(v){if(fitOn!==!!v){fitOn=!!v;generation++;}},weaponFit,get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;bytes.clear();},
+  decode,container,request,peek,best,withDetail,pending,stamp,tank,label,itemId,loadManifest,GLOW,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,slotAsset,slotSet,slotScale,townStep,townStamp,townAsset,TOWN_YAW,hostRenderer,releaseHost,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
 })();
+// ---- the pilot's own tank on screen (owner, Nov 20-21) ----
+// Wherever the game draws the pilot's tank at or after login it shows the pilot's CURRENT tank or nothing: never an older
+// loadout, never a stand-in, never the code-built model first and the real one a second later. tankShow says what a surface
+// may draw for loadout L right now:
+//   'wait'  nothing yet (the surface shows its wait state): the device's copy is not proven to be the newest (js/core.js
+//           loadoutProven), or the 3D view is still starting, or the tank's model files are still landing
+//   'meshy' the owner's models      'kit' the code-built version of the same chassis and weapon (a download failed)
+//   '2d'    the 2D picture of the same tank (the 2D setting, or a device without WebGL)
+// own: the surface has its own 3D renderer already (the showroom, Conquest), so the battle view's state does not matter.
+function tankShow(L,parts,own){
+ if(!L||!L.c||!L.w)return 'wait';
+ if(typeof loadoutProven==='function'&&!loadoutProven())return 'wait';
+ if(!own&&typeof want3D==='function'){if(!want3D()||R3.failed)return '2d';if(!R3.ready)return 'wait';}
+ if(typeof THREE==='undefined')return own?'wait':'2d';
+ return Meshy3D.tank(L.c.c,L.c.t,L.w.a,L.w.t,parts);
+}
+// the label a 2D picture carries (canvas.dataset.tank): 'wait', or model ids + kind, as Meshy3D.label(...).s
+const tankTag=(L,show)=>show==='wait'||!L?'wait':Meshy3D.label(L,show).s;
+// the wait state on a 2D canvas: the empty pad with a slow scan ring where the tank will stand (cx, cy: the pad's centre, r: half its width)
+function tankWait2D(ctx,cx,cy,r,t){
+ const quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),k=quiet||t===undefined?.5:(t*.55)%1;
+ ctx.save();ctx.lineWidth=Math.max(1,r*.022);
+ ctx.strokeStyle='rgba(112,204,233,.42)';ctx.beginPath();ctx.ellipse(cx,cy,r,r*.34,0,0,7);ctx.stroke();
+ ctx.setLineDash([r*.07,r*.09]);ctx.strokeStyle='rgba(112,204,233,.22)';ctx.beginPath();ctx.ellipse(cx,cy,r*.72,r*.245,0,0,7);ctx.stroke();ctx.setLineDash([]);
+ const y=cy-k*r*.9,a=Math.sin(k*Math.PI);ctx.strokeStyle='rgba(150,226,246,'+(.55*a).toFixed(3)+')';ctx.beginPath();ctx.ellipse(cx,y,r*(.86-.1*k),r*.29*(1-.1*k),0,0,7);ctx.stroke();
+ const g=ctx.createLinearGradient(0,cy-r*.9,0,cy);g.addColorStop(0,'rgba(112,204,233,0)');g.addColorStop(1,'rgba(112,204,233,.10)');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(cx-r*.76,cy-r*.9);ctx.lineTo(cx+r*.76,cy-r*.9);ctx.lineTo(cx+r,cy);ctx.ellipse(cx,cy,r,r*.34,0,0,Math.PI);ctx.closePath();ctx.fill();
+ ctx.restore();
+}
 if(typeof module!=='undefined')module.exports=Meshy3D;
