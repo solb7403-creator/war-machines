@@ -6552,5 +6552,44 @@ rail and dam (long repeating hard-surface pieces, which code builds well).
 If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first; it governs everything.
 - Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`); this is Checkpoint 46.
 - **Done and pushed:** slice 1 (this brief saved word for word, this checkpoint opened).
-- **Next, in order:** research of comparable games (findings below), then the war core (shared rules + Worker), the
-  screens, alerts, the scripted first war, tests, two reviewers, release.
+- **Done:** research of comparable games (findings below).
+- **Next, in order:** the war core (shared rules `js/conquest/war.js` + Worker `worker/src/conquest-war.js`), the screens,
+  alerts, the scripted first war, tests, two reviewers, release.
+
+### Research: the best comparable games (Nov 22, before building)
+What the leaders do with a living war, timers, absence and alerts, and what Session 7 takes from each (sources are public
+wikis, developer statements and vendor guides found by web search; no internal data):
+1. **Helldivers 2, the Galactic War.** A defense is a timed campaign (24-48 h); it is lost when the timer runs out first; a
+   "gambit" (taking the attack's origin) wins it early; liberation decays over time. Taken: every assault has a visible
+   deadline (12 h) and can be fought any time until it lands; raids give a gambit-like counterplay (a won raid in a Parasite
+   territory weakens its hold for the next LDF counterattack; raiding the portal shuts it for 48 h).
+2. **XCOM 2, the Avatar Project.** A doom clock that the player pushes back with raids and by blocking Dark Events; critics:
+   oppressive late, trivial once understood. Taken: the front drifts toward the Parasites (about one territory every 2-3 days
+   left alone) but inside hard limits (ceiling 8, at most 2 net a day unfought, frozen after a full day away), and every
+   push has an answer (fight, fortify, station, raid the portal).
+3. **Clash of Clans, shields and guard** (Supercell: "Village Guard supports active play time, Shield provides downtime";
+   Oct 2025 rework: a flat 8 h Magic Shield). Taken: a defense won in person entrenches the territory for 24 h; after a full
+   day away the front holds; losses are bounded.
+4. **Clash Royale, chest timers.** "Chest unlocked!" notifications are the session trigger: an earned reward behind a wait,
+   one unlocking at a time, four slots. Taken: alerts always name a concrete, time-boxed fight ("Assault on Oxygen Spear
+   lands in 10 h"); Fortify has one queue (the chest-slot analog) and the Lunar Pass adds the second slot.
+5. **Push practice** (Pushwoosh, OneSignal, Facebook game guides): cap volume per player, honor quiet hours in local time,
+   event-triggered messages beat scheduled blasts, ask with context instead of at first launch; opted-in players retain
+   about 2x (correlational). Taken: at most 3 alerts a day, none in the pilot's local night, several events batched into
+   one, only fights the pilot can still join plus the Grand Offensive, asked from a tap after the first war battle.
+6. **iOS web push** (WebKit, Apple docs): only for a site added to the Home Screen (iOS/iPadOS 16.4+), permission only from
+   a user gesture, and every push must show a notification (silent pushes lose the permission). Taken: the one-time "Add LUNAR
+   to your Home Screen" card, the permission asked inside the tap, the service worker always shows the alert.
+7. **Foxhole.** Automated defenses keep ground from flipping while players are offline; latecomers miss the early war.
+   Taken: the LDF garrisons every human territory and fights the battles nobody joins; the scripted first war gives every
+   new pilot the opening of the war.
+8. **Rise of Kingdoms, KvK.** A campaign map apart from home, expansion only by building on territory, timed objectives,
+   teleport only onto held ground. Taken: Fortify builds on territory; holding ground gives its fast-travel node.
+9. **XCOM / strategy odds displays.** The odds are stated before the choice. Taken: every territory card shows
+   "DEFENSE n vs THREAT m · holds p% if you're away", recomputed live as you fortify or station.
+
+Sources: helldivers.wiki.gg (Defense Campaign, Liberation), dotesports.com Galactic War guide, vice.com and pcgamer.com on the
+XCOM 2 Avatar clock, gamezone.com and fragster.com on Clash of Clans shields (2015 and Oct 2025), gamedeveloper.com
+"Deconstructing Clash Royale", clashroyale.fandom.com Notifications, pushwoosh.com and onesignal.com game push guides,
+webkit.org "Web Push for Web Apps on iOS and iPadOS", developer.apple.com web push docs, pcgamer.com and wikipedia on Foxhole,
+riseofkingdoms.fandom.com Lost Kingdom.
