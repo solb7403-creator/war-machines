@@ -11,6 +11,8 @@ import {transaction as store,split as splitState,sweep,COLD_KEYS} from './conque
 import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS,LOOT_ACTIONS} from './conquest-sim.js';
 import {RESEARCH_ACTIONS,account as researchAccount} from './conquest-research.js';
 import {BAT_ACTIONS,account as batAccount,gearOf,field as batField} from './conquest-battalion.js';
+import {WAR_ACTIONS,reportTz,alertChange} from './conquest-war.js';
+import {writeAlertDoc} from './conquest-alerts.js';
 const allowed=(b,keys)=>b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).every(k=>keys.includes(k));
 const response=(status,error,state)=>({status,body:{error,...(state?{state:publicState(state)}:{})}});
 import {publicVeins} from './conquest-veins.js';
@@ -45,7 +47,9 @@ export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.s
  s.notice={kind:'dev',action:r.action};s.seq=r.seq;return s;}
 // Server-only fields never leave the Worker: the vein seed and unscanned veins (s.lodes) become the scanned-only s.veins view.
 // lseed: the loot seed (Session 6) never leaves the Worker either.
-export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};out.veins=publicVeins(s,s.lastWall||0);
+export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};
+ if(s.war&&typeof s.war==='object'){const {ak,...w}=s.war;out.war={...w,ev:(Array.isArray(w.ev)?w.ev:Object.values(w.ev||{})).map(e=>{if(!e||typeof e!=='object')return e;const {sc,...x}=e;return x;})};}/* Session 7: an authored roll (the first war's) never reaches the phone */
+ out.veins=publicVeins(s,s.lastWall||0);
  // Meteor Strike core rolls stay server-side until the strike is secured; the client only needs whether a slot is claimed.
  if(s.strikes&&typeof s.strikes==='object')out.strikes=Object.fromEntries(Object.entries(s.strikes).map(([k,v])=>[k,{claimed:v?.claimed?1:0}]));return out;}
 // Session 6C: the record is split (worker/src/conquest-store.js): the hot part is the CAS document, the cold part an immutable blob
@@ -85,11 +89,12 @@ function result(r){return r.error?response(r.status||409,r.error,r.state):{statu
 // (it sends the cv it has); the phone keeps its cold fields (js/conquest/session.js). Every other reply is the whole state.
 export function publicHot(s){const {hot}=splitState(s),{lastDigest,rate,raidRoll,...out}=hot;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
 export async function conquestSession(env,a,now=Date.now()){
- if(!allowed(a.b,['gv','initData']))return response(400,'invalid conquest session');
+ if(!allowed(a.b,['gv','initData','tz'])||a.b.tz!==undefined&&!(Number.isSafeInteger(a.b.tz)&&Math.abs(a.b.tz)<=840))return response(400,'invalid conquest session');
  const {loadout:L,legacy,view,rsAcct,batAcct}=await canonical(env,a.pid,now);
- const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);researchAccount(state,rsAcct,now);batAccount(state,batAcct,now);if(!state.mission)batField(state,state.battle,state.position,'wing');refitState(state,L);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state);return {state,anq};},now);
+ const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);researchAccount(state,rsAcct,now);batAccount(state,batAcct,now);if(!state.mission)batField(state,state.battle,state.position,'wing');refitState(state,L);reportTz(state,a.b.tz);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state),wal=alertChange(state,now);return {state,anq,wal};},now);
  if(!r0.abort&&r0.cv)await sweep(env,a.pid,r0.cv,r0.cvn,now);   // Session 6C: orphan cold blobs (an attempt that died between its blob and its CAS), throttled
  if(!r0.abort&&r0.anq?.length)await flush(env,r0.anq,r0.state?.an?.f,now);   // Session 6 analytics: entry, cohort and return, after the write
+ if(!r0.abort&&r0.wal)await writeAlertDoc(env,a.pid,r0.wal);   // Session 7: the war alert schedule (only when it changed), after the write
  const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r0,now,true),now);if(out.status===200&&r0.cv)out.body.cv=r0.cv;   // Session 6C: the cold version the phone now holds
  if(out.status===200&&out.body?.state?.plot)await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // builder jobs settle on open
  return out;
@@ -99,8 +104,8 @@ async function submit(env,a,request,reduce,now,cv=null){
  const r=await transaction(env,a.pid,previous=>{
   if(previous?.v!==1)return {abort:true,error:'open conquest session first'};
   if(request.seq===previous.seq){if(digest===previous.lastDigest)return {abort:true,state:previous,replayed:true};return {abort:true,error:'sequence already used',state:previous};}
-  try{const state=reduce(previous,request,now);seal(state,now);state.lastDigest=digest;const anq=takeQueue(state);return {state,anq};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
- },now);if(!r.abort&&r.anq?.length)await flush(env,r.anq,r.state?.an?.f,now);   // Session 6 analytics: counted only after the CAS write
+  try{const state=reduce(previous,request,now);seal(state,now);state.lastDigest=digest;const anq=takeQueue(state),wal=alertChange(state,now);return {state,anq,wal};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
+ },now);if(!r.abort&&r.anq?.length)await flush(env,r.anq,r.state?.an?.f,now);if(!r.abort&&r.wal)await writeAlertDoc(env,a.pid,r.wal);   // Session 7: the war alert schedule, after the write   // Session 6 analytics: counted only after the CAS write
  const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r,now),now);
  if(out.status===200&&r.state&&r.cv)out.body.cv=r.cv;   // Session 6C review (reviewer 1 blocker): the phone always gets the whole state. A hot-only reply carried each unit's moving half only and the phone could not rebuild it (apply threw, inputs were lost, the session reopened); the storage split, where the Firebase savings are, stays
  return out;
@@ -117,14 +122,15 @@ export async function conquestAction(env,a,now=Date.now()){
   if(!allowed(a.b,['gv','initData','seq','action'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1)return response(400,'invalid conquest action fields');
   if(a.pid!==OWNER_PID||!(await isOwner(env,a,[OWNER_ADMIN])))return response(403,'owner only');
   return submit(env,a,{seq:a.b.seq,action:a.b.action},devAction,now);}
- if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod','bat'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS,...BAT_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
+ if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod','bat','war'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS,...BAT_ACTIONS,...WAR_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
+ if(a.b.war!==undefined&&(!WAR_ACTIONS.includes(a.b.action)||JSON.stringify(a.b.war).length>1200))return response(400,'invalid conquest action fields');
  if(a.b.bat!==undefined&&JSON.stringify(a.b.bat).length>600)return response(400,'invalid conquest action fields');
- if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS,...BAT_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
+ if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS,...BAT_ACTIONS,...WAR_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
  if(a.b.plot!==undefined&&JSON.stringify(a.b.plot).length>(BIG_PLOT_ACTIONS.includes(a.b.action)?9000:2400))return response(400,'invalid conquest action fields');
- const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod','bat'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
+ const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod','bat','war'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
- const ctx=a.b.action==='recall-start'?{premium:await premiumPass(env,a.pid,now)}:MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:RESEARCH_ACTIONS.includes(a.b.action)?researchCtx(RULES.ecoNorm(await readEco(env,a.pid)),now):['hangar-arm','hangar-livery'].includes(a.b.action)?await (async()=>{const S=RULES.ecoNorm(await readEco(env,a.pid));return batCtx(S,S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L));})():{};   /* Session 6C: AUTO-ARM and liveries read the account once */   /* Session 6B: research reads the account once (bonus parts, finish credits, premium pass) */const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
+ const ctx=a.b.action==='recall-start'||a.b.action==='war-fortify'?{premium:await premiumPass(env,a.pid,now)}:   /* Session 7: the Lunar Pass Fortify perks (behind the store flag) */MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:RESEARCH_ACTIONS.includes(a.b.action)?researchCtx(RULES.ecoNorm(await readEco(env,a.pid)),now):['hangar-arm','hangar-livery'].includes(a.b.action)?await (async()=>{const S=RULES.ecoNorm(await readEco(env,a.pid));return batCtx(S,S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L));})():{};   /* Session 6C: AUTO-ARM and liveries read the account once */   /* Session 6B: research reads the account once (bonus parts, finish credits, premium pass) */const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
  const out=await submit(env,a,request,(p,r,n)=>owner&&p?.dev?.on?unlimited(p,q=>instant(applyAction(q,r,n,{...ctx,bmn:Object.fromEntries(Object.keys(RULES.mnOf({})).map(k=>[k,9e6]))}),n)):applyAction(p,r,n,ctx),now);
  // Session 5: publish the plot's public snapshot (visits, top 20, Base of the Week) after a verified plot change. Best effort.
  if(out.status===200&&out.body?.state?.plot&&!out.body.replayed&&(PLOT_ACTIONS.includes(a.b.action)||['build-base','upgrade-base','base-module'].includes(a.b.action)))await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});

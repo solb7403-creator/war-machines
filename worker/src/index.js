@@ -15,6 +15,8 @@ import { ownerGemEpic, ownerCheck } from "./owner.js";
 import {conquestSession,conquestInput,conquestAction,conquestEvent} from "./conquest.js";
 import {analyticsDays} from "./conquest-analytics.js";
 import {conquestVisit} from "./conquest-visit.js";
+import {sendWarAlerts} from "./conquest-alerts.js";
+import {vapidKeys} from "./webpush.js";
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -760,6 +762,7 @@ export default {
       try{return await webAuth(req,env);}catch{return json({error:"authentication unavailable"},503);}
     }
     if (path === "/lb.json" && req.method === "GET") return lbFile(req, env);
+    if (path === "/api/push-key" && req.method === "GET") { if (await netLimited(req, env)) return cors(json({ error: "rate" }, 429), req); try { const k = await vapidKeys(env); return cors(new Response(JSON.stringify({ key: k.pub }), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" } }), req); } catch (e) { return cors(json({ error: "push unavailable" }, 503), req); } }   // Session 7: browser war alerts (the private half never leaves the Worker)
     if (path === "/api/rates" && req.method === "GET") { if (await netLimited(req, env)) return cors(json({ error: "rate" }, 429), req); const r = await liveRates(); return cors(new Response(JSON.stringify({ ton: r.ton, sol: r.sol }), { headers: { "Content-Type": "application/json", "Cache-Control": r.ton > 0 && r.sol > 0 ? "public, max-age=300" : "no-store" } }), req); }   // Session 6B: website price labels (no account data)
     if (ROUTES[path]) {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }), req);
@@ -770,7 +773,7 @@ export default {
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
       if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261120175159"},409),req);
+        return cors(json({error:"update",build:"20261122065955"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);
@@ -795,6 +798,7 @@ export default {
       // two schedules, each its own run with its own budget of outside calls (50 on the Workers Free plan):
       // every minute 15:00-18:59 UTC, reminders only; every 5 minutes, the board and the farm check
       if (event && event.cron === "* 15-18 * * *") { await sendReminders(env).catch((e) => console.log("ntf", e && e.message)); return; }
+      if (event && event.cron === "1-56/5 * * * *") { await sendWarAlerts(env, Date.now(), { tg: (m, b) => tg(env, m, b), gameUrl: GAME_URL, webUrl: "/web/play.html" }).catch((e) => console.log("wal", e && e.message)); return; }   // Session 7: war alerts
       await buildLeaderboard(env).catch((e) => console.log("lb", e && e.message));
       await dbDel(env, `sgn/${dayOf(Date.now()) - 2}`).catch(() => {});   // signup counters are only needed for a day
     })());

@@ -6545,3 +6545,183 @@ on the pad is noise at phone size; the town drive opens with the tank behind a r
 Not worth credits: rocks, grass, ferns, ore, fences, lamps, pipes, poles (small, simple, code-built reads fine); trees,
 people and livestock (many instances each: a Meshy model there costs triangles on LOW, the open item above); the viaduct,
 rail and dam (long repeating hard-surface pieces, which code builds well).
+
+## Checkpoint 46 — Session 7: Living Front, logic and screens (branch `claude/living-front-logic-screens-o5ppmn`, from main `d61d259`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first; it governs everything.
+- Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`); this is Checkpoint 46.
+- **Done, tested and pushed:** brief saved; research (below); the war core: `js/conquest/war.js` (shared rules, CONQUEST.War),
+  `worker/src/conquest-war.js` (clock on every request via refreshState, Frontline sync, Fortify / Station / alerts actions,
+  battle start `warBegin` + settlement `warOutcome` through `sectorDefenseOutcome`), `worker/src/webpush.js` (VAPID keys made
+  by the Worker at meta/vapid; RFC 8291 encryption verified against an independent node:crypto decryptor in the scratchpad),
+  `worker/src/conquest-alerts.js` (cron `1-56/5`, index `wal/nx`), 9 new war operations in `js/conquest/combat.js`, supply in
+  `baseYield` (base.sup) and `Plot.rates` (plot.sup). Screens: `js/conquest/warmap.js` + `css/war.css` (War Map, territory /
+  campaign / Grand Offensive / alerts cards, War Report, opt-in), wired in `js/conquest/app.js` (warMap, warDefend, warRoute,
+  warRaid, warReport, warReportStep, NEXT chip, in-range war ops, after-action labels), `js/conquest/hub.js` (WAR MAP button,
+  Moon/Frontline lines, War Report on arrival), `web/sw.js`, script/style tags in index.html, web/play.html, web/boot.js.
+- **Tests:** new `dev/tests/conquest-war.mjs` (83 checks: decisions 1-10, 13; guardrails 5-7) and `dev/tests/conquest-war-pace.mjs`
+  (decisions 6/11: level 1 = half a regular day; all 12 to level 5 in 384 days with every bonus on, 390 without supply, 308 with
+  the Pass) + `dev/tools/war-model.mjs`; helper `dev/tests/lib/war-helpers.mjs`. Rewritten to the new rule (record below):
+  conquest-sector-authority, conquest-sector-victory, conquest-frontier-recovery, conquest-war-authority, conquest-sortie-chain.
+  All CI node tests that were run pass (ladder, base progression, plot, analytics, every wtest/*); guardrails, fair-arcade,
+  gear-combat, wtest/test and owner-rules still to re-run on the final code. `npm install --prefix worker` is needed locally.
+- **Done since:** `dev/tests/conquest-war-drift.mjs` (alone: one territory every 2.73 days; active: 7 -> 4.71 in a week, 88% of
+  pilots), `dev/tests/conquest-war-alerts.mjs` (46 checks: caps, night, batching, push round trip, VAPID, the cron on a fake DB:
+  `dev/tests/wtest/fakedb.mjs` now mirrors the new `wal/nx` index), publicState strips the authored rolls, `docs/owner-rules.json`
+  cpSites: conquest-campaign 4 -> 3, conquest-war 3 (Fortify cost + refund, war spoils: owner decisions 6 and 10) -> the PR needs
+  the `owner-rules-change` label. owner-rules PASS (47).
+- **Done since:** the browser test `dev/tests/conquest-war-browser.py` (+ war fixture in `dev/tests/conquest-server.mjs`,
+  `'war':True`) PASSES at 390x844 (War Report, War Map with 20 territories, the NEXT ORDER first on phones, the tapped card,
+  campaign + Grand Offensive cards, a real swipe reaches the last card). New tests added to conquest-check.yml. Phone layout:
+  `.wm-top-card` (next order / picked territory) above the board; computer: board left, cards right. CITADEL label moved in.
+  Local: `pip install playwright==1.55.0` (CI's pin) and the preinstalled Chromium.
+- **Done:** the browser test PASSES at all five sizes (390x844, 390x700, 320x568 touch; 1366x768, 1920x1080 mouse + keyboard).
+  It caught a real bug: the War Map dialog's flex column let its body shrink, so the sticky CLOSE floated mid-screen over the
+  map at 390x700 (fixed: block flow). Pictures in docs/conquest/session7/.
+- **Next, in order:** (A) the full test list on the final code (every node + browser test in the workflows, conquest-session6c.py,
+  perf.py); (B) two independent reviewers; (C) release (merge main first; dev/bump.sh; PR with the `owner-rules-change` label;
+  CI; merge; verify; ROADMAP row 7 RELEASED + row 7-V + 7T note; release record). Older plan items for reference: (5) the browser test `dev/tests/conquest-war-browser.py` (War Map, cards, War Report at
+  390x844, 390x700, 320x568 touch and 1366x768, 1920x1080 mouse; fits or scrolls; keyboard) using `dev/tests/conquest-server.mjs`
+  with a new war fixture; (6) add every new test to `.github/workflows/conquest-check.yml` (small additive edit); (7) full suite,
+  reviewers, release.
+
+### Decisions recorded (the lead's, with reasons)
+- **Supply is earned through fortification** (superseded after reviewer round 1, see "Reviewer round 1": now +16% x the whole front's
+  fortification, ring-weighted; the first reading below was +0.4% a level on each held Frontier/Warfront territory = +2% at level 5, max +16%):
+  humanity starts holding 7 of the 8, so a flat +2% each was +14% production from day 1 for everyone. Measured: it moved the
+  owner's town-ladder guard (mean CC10 27.3 -> 23.9 days, -17%, outside +-10%) and maxed in about two weeks (decision 11). Earned
+  this way it starts at 0 (ladder unchanged) and reaches its max only with the year-long fortification. Any other bonus: PROPOSAL.
+- **The Frontline and the Moon:** the six sectors keep the existing capture rules and their own count; the 20-minute alert after a
+  capture is gone (the war clock's assaults are the alerts, frontSync shows them as DEFENSE ALERT); when the clock takes a territory
+  its Frontline sector and camp fall with it (decision 1: nothing protects existing captures); a counterattack won in person
+  re-secures it; the LDF retaking it by strength does not (you did not secure it).
+- **Limits:** "at most one territory changes hands per tick" binds the clock (strength-decided results); a battle the pilot wins in
+  person is the pilot's act and resolves at once. "At most 2 net a day" is checked on the worst 24 h window containing the tick
+  (an early LDF retake can never let three losses through in the next window: found by the test). The freeze uses the pilot's
+  last request (s.lastWall), kept out of the war record so ordinary requests never rewrite it; announced events keep their time
+  left; the Grand Offensive keeps the weekend calendar and is skipped if its window ends while frozen.
+- **Heartland assaults** (weak incursions, 18% of assaults, 1-star generals) are fought as Colony Defense (colony, reservoir: three
+  light waves, the colony turrets fire in support) or the Refuge's Invasion Defense; one let through blights the zone, never captures.
+- **Counterattacks** are Joint Operations: the LDF lands a beachhead in the Parasite-held territory; hold it against three
+  counter-waves with five LDF tanks beside your Platoon (one defense engine for every war battle). The Grand Offensive is fought
+  as its first target's defense with three waves, its general and the whole Battalion.
+- **Planning picks:** Citadel approaches = Ash Redoubt + Oxygen Spear; the 7 new territories: SILT DUNES, OLD QUARRY, SOUTH MESA,
+  KILN FLATS, NORTHWATCH (Rear), GLASS FIELDS, CINDER SHELF (Frontier), plus the SPORE BASTION and THE CITADEL; generals
+  (1-3 stars fight in Session 7; 4-5 stars stay in the Inner Ring); the portal starts at Ash Redoubt (a won raid there shuts it
+  48 h; three shutdowns move it); a won raid in a Parasite-held territory weakens its hold -1 for 48 h (up to -2); Station value
+  = 0.25-0.5 a pilot by rating (pair max +1); a stationed Lancer shoots down one dropship of an airborne assault.
+- **Alerts** go live after the pilot's first war battle (the moment the browser permission is offered); Telegram through the
+  existing bot chat (ntf/<pid>); at most 3 a local day, none 22:00-08:00 local, 2 h apart at least, batched, an hour of time left.
+- **Tests changed by a decision here** (rule changed, not loosened): conquest-sector-authority, conquest-sector-victory,
+  conquest-war-authority, conquest-sortie-chain (the alert is a war assault, not a timer); conquest-frontier-recovery (the Refuge is
+  Heartland: never captured, so no retake path; a defense lost in person counts as absent, decision 3).
+
+### Research: the best comparable games (Nov 22, before building)
+What the leaders do with a living war, timers, absence and alerts, and what Session 7 takes from each (sources are public
+wikis, developer statements and vendor guides found by web search; no internal data):
+1. **Helldivers 2, the Galactic War.** A defense is a timed campaign (24-48 h); it is lost when the timer runs out first; a
+   "gambit" (taking the attack's origin) wins it early; liberation decays over time. Taken: every assault has a visible
+   deadline (12 h) and can be fought any time until it lands; raids give a gambit-like counterplay (a won raid in a Parasite
+   territory weakens its hold for the next LDF counterattack; raiding the portal shuts it for 48 h).
+2. **XCOM 2, the Avatar Project.** A doom clock that the player pushes back with raids and by blocking Dark Events; critics:
+   oppressive late, trivial once understood. Taken: the front drifts toward the Parasites (about one territory every 2-3 days
+   left alone) but inside hard limits (ceiling 8, at most 2 net a day unfought, frozen after a full day away), and every
+   push has an answer (fight, fortify, station, raid the portal).
+3. **Clash of Clans, shields and guard** (Supercell: "Village Guard supports active play time, Shield provides downtime";
+   Oct 2025 rework: a flat 8 h Magic Shield). Taken: a defense won in person entrenches the territory for 24 h; after a full
+   day away the front holds; losses are bounded.
+4. **Clash Royale, chest timers.** "Chest unlocked!" notifications are the session trigger: an earned reward behind a wait,
+   one unlocking at a time, four slots. Taken: alerts always name a concrete, time-boxed fight ("Assault on Oxygen Spear
+   lands in 10 h"); Fortify has one queue (the chest-slot analog) and the Lunar Pass adds the second slot.
+5. **Push practice** (Pushwoosh, OneSignal, Facebook game guides): cap volume per player, honor quiet hours in local time,
+   event-triggered messages beat scheduled blasts, ask with context instead of at first launch; opted-in players retain
+   about 2x (correlational). Taken: at most 3 alerts a day, none in the pilot's local night, several events batched into
+   one, only fights the pilot can still join plus the Grand Offensive, asked from a tap after the first war battle.
+6. **iOS web push** (WebKit, Apple docs): only for a site added to the Home Screen (iOS/iPadOS 16.4+), permission only from
+   a user gesture, and every push must show a notification (silent pushes lose the permission). Taken: the one-time "Add LUNAR
+   to your Home Screen" card, the permission asked inside the tap, the service worker always shows the alert.
+7. **Foxhole.** Automated defenses keep ground from flipping while players are offline; latecomers miss the early war.
+   Taken: the LDF garrisons every human territory and fights the battles nobody joins; the scripted first war gives every
+   new pilot the opening of the war.
+8. **Rise of Kingdoms, KvK.** A campaign map apart from home, expansion only by building on territory, timed objectives,
+   teleport only onto held ground. Taken: Fortify builds on territory; holding ground gives its fast-travel node.
+9. **XCOM / strategy odds displays.** The odds are stated before the choice. Taken: every territory card shows
+   "DEFENSE n vs THREAT m · holds p% if you're away", recomputed live as you fortify or station.
+
+Sources: helldivers.wiki.gg (Defense Campaign, Liberation), dotesports.com Galactic War guide, vice.com and pcgamer.com on the
+XCOM 2 Avatar clock, gamezone.com and fragster.com on Clash of Clans shields (2015 and Oct 2025), gamedeveloper.com
+"Deconstructing Clash Royale", clashroyale.fandom.com Notifications, pushwoosh.com and onesignal.com game push guides,
+webkit.org "Web Push for Web Apps on iOS and iPadOS", developer.apple.com web push docs, pcgamer.com and wikipedia on Foxhole,
+riseofkingdoms.fandom.com Lost Kingdom.
+
+### PROPOSALs (numbers or bonuses the brief did not set; the owner decides)
+1. **Supply reading** (recorded above): +2% per held Frontier/Warfront territory at fortification level 5 (+0.4% a level), max
+   +16%. The literal flat +2% a territory gave +14% from day 1 and broke the town-ladder guard. Alternative if the owner prefers:
+   the flat reading with the ladder's audit table re-based (an owner-rules change).
+2. **Par minutes of the new battle types** (the approved formula par x 225 x danger): Joint Operation 3.33 min (899 points in the
+   Frontier, 1,086 in the Warfront), Grand Offensive 5 min (1,631). Territory defenses pay the existing 675 as decided.
+3. **Station value**: 0.25-0.5 DEFENSE a reserve by its rating (gear power + 4 a rank, full 0.5 at 140), the pair capped at +1.
+4. **War pacing knobs** (tuned by the drift test): assault chance 62% a tick, counterattack 50%, heartland incursions 18% of
+   assaults, airborne 25%; garrison 3/3/2/1 (Heartland/Rear/Frontier/Warfront), LDF 3/2/2, Parasite hold 1/1/2.
+5. **Lunar Pass war perks** are built as decided (second slot, -20% cost, +20% speed) behind the store flag; a future store item
+   could be a one-off fortification speed-up (time only, never DEFENSE) priced in Session 8.
+
+### Open items (for later sessions)
+- Session 7-V (row added): the 7 new territories' ground (then `ex:1` makes them attackable), dropships in the world, the portal
+  gate alive, LDF posts placed, living terraform drawn. Session 7T: town attacks on this clock (alerts and Station reused).
+- Real-device push delivery is not exercised in CI (no real push service): the encryption and the VAPID signature are verified
+  against independent receivers; the first real alert should be checked on the owner's phone (website, then iPhone Home Screen).
+- Telegram alerts reach pilots who started the bot (ntf chat); website-only pilots get browser alerts after the opt-in.
+
+### Reviewer round 1
+- **Reviewer 1 (fun, fairness, pull; read-only):** D1-2, D4-9, D11 PASS; D3, D10, D12, D13 FAIL on what the player is shown; 5 blockers,
+  all fixed: (1) the territory card promised "+2% while held": now the true supply line (+0.4% a fortification level, now +x%) and a
+  SUPPLY chip; (2) the Fortify introduction could never show (flags set together): now from the end of the first war until the first
+  fortification, on every card; THE FIRST OFFENSIVE named on its card; (3) a lost war battle said "DEFENSE LOST · no payout": now
+  "ATTEMPT SPENT · NOT LOST YET" with the landing time and odds, and a war briefing shows the odds, ONE ATTEMPT and the true payout;
+  (4) alerts: a War alerts row in Settings (opens the War Map's controls), the opt-in card in the phone's top slot, the Telegram
+  /start note; (5) phone layout: a compact next-order card (the board shows at 320x568), BACK returns to the board's scroll place.
+  Copy fixes: "attacks in", seconds for short builds, no "entrenched" promise for heartland raids, no raid offer where none
+  exists, no "how to dodge" line. Not done (recorded): a website-mode browser run (the harness is Telegram's; the opt-in logic is
+  shared and unit-tested), the alert cron's throughput for 500,000 players (100 a run every 5 min: a queue before promotion, open item).
+- **Reviewer 2 (limits, odds, economy, pace, authority; read-only):** D1-D10, D13 PASS; D11 and D12 FAIL; 3 blockers, all fixed:
+  (B1) `publicState`'s new comment swallowed `out.veins=...` (scanned veins vanished on the phone): moved out, conquest-minerals
+  PASS; (B2) the supply bonus could max (+16%) with only the 8 Frontier/Warfront territories at level 5, about 285 days: now
+  **PROPOSAL: +16% x the front's fortification** (every level on a held capturable territory of the start, weighted by its ring's
+  danger, against all twelve at level 5), so its max needs the whole fortification: day 383, asserted >= 365 in the pace test;
+  (B3) the alert cron wrote its 3-a-day count after sending, in one best-effort write: now each pilot's count is written BEFORE
+  its alert is sent (a failed write stops the run: an alert can be lost, never a fourth), four pilots at a time. Also fixed: the
+  clock waits while a war battle is fought (N3), the alert forecast key covers fortify / station / jobs (N6), the Fortify-timer
+  test compares with the town's real timers, the Sortie-chain test builds the bundle before importing it, the recovery test's
+  "raid sectors keep their raid recapture path" assert is back, the owner-rules text calls the Fortify refund a PROPOSAL (N1).
+  Recorded, not changed: in-person wins sit outside the one-change-per-tick limit (N8: the limit binds the clock; a win in person
+  is the pilot's act); the scripted rolls still show odds (N4: the first war's beats are authored); the rolls are FNV over the loot
+  seed like every Conquest roll (N5: a keyed hash for all rolls is an open item for Session 7.8 / 9's exploit review).
+
+### Reviewer round 2
+- **Reviewer 2:** B1 FIXED, B2 FIXED (only all twelve at level 5 reach +16%; day 383), B3 NOT FIXED (dbPatch answers false on a refused
+  write, it throws only on a network error): now the run stops unless the count write succeeded. New blocker: pausing the whole clock
+  during a war battle broke the absence freeze (every command refreshes s.lastWall): now only the event being fought waits
+  (`ctx.fighting`, tested), the rest of the clock, the freeze and the weekend calendar run as before.
+- **Reviewer 1 round 2:** B1, B2, B3, B5 FIXED; B4 partly (now: the Settings row lands on the alerts card; the card says Telegram war
+  alerts follow the bot's Daily reminder switch; a website-mode browser run stays an open item: the harness is Telegram's and the
+  screens are the same code in both shells). Two new blockers, fixed: a fortification finished while away now stands before the
+  assault lands (jobs applied inside each tick, tested: 50% -> 70%); phones keep a one-line reward ("WIN IT: 675 PTS · SPOILS ·
+  ONE ATTEMPT") and the MOON / FRONTLINE explainer. Two rounds done: no third round (nothing clearly broken remains).
+
+### Release (in progress)
+- PR #148 opened from build 20261122065955 with the `owner-rules-change` label (added just after opening: the first owner-rules run
+  failed only on the missing label; the next push re-runs it). The first conquest CI run failed in `dev/tests/conquest-regression.sh`
+  (a source-level test runs `map()` with a minimal fake DOM: the new WAR MAP button used `d.append` and a bare `warMap` reference):
+  fixed (an `el()` row and a guarded call), the script passes locally. Main is still d61d259 (nothing to merge).
+- CI on `4979fc8`: the conquest job failed in `conquest-session6-loot.py` (run 2 of 3, 320x568: the 90 s wait for the session
+  and the terrain stream). Judged environmental: a fresh pilot's war log is empty (no War Report or other dialog pauses the
+  stream; checked on the test server), and locally main `d61d259` fails the same test (run 1, the SHIELD long-press) while this
+  branch passes the step that timed out. The one allowed re-run: the loot test passed, then `conquest-hub-browser.py` failed on a
+  real fault: the hub's new WAR MAP button made five hub actions where the hub's contract is four (its first-paint check counts
+  four). Fixed in the game code, no test changed: the War Map opens from the WARFRONT card (OPEN WAR MAP, one persistent node like
+  the BATTALION card's OPEN HANGAR); the hub test passes locally at all six sizes. The tests after it in the job (find-base,
+  plot-ui, session5d, seethrough-town, slots-browser, super-fx, war-browser, desktop-keys) are re-run locally on the fix.
+- Local on `4979fc8` (chromium, software renderer): conquest-session6c PASS at all five sizes (no page errors); perf PASS
+  (10 Arcade states, no errors; relative only).

@@ -7,7 +7,7 @@
 // The only per-pilot field is the pilot's own cohort record s.an = {f: first Conquest UTC day, d: flags, p: simulated play ms}.
 import {dbPatch,dbGet} from './db.js';
 const DAY=86400000;
-export const AN_EVENTS=Object.freeze(['enter','transmission_read','transmission_skip','mission_start','mission_end','death','bank','claim_town','build','raid_start','raid_end','gather','quit_point','session_minutes','return']);
+export const AN_EVENTS=Object.freeze(['enter','transmission_read','transmission_skip','mission_start','mission_end','death','bank','claim_town','build','raid_start','raid_end','gather','quit_point','session_minutes','return','war_battle','war_won','war_fortify']);   // Session 7: the Living Front (battle kind + territory, fortify territory + level)
 export const CLIENT_EVENTS=Object.freeze(['transmission_read','transmission_skip','quit_point','session_minutes']);
 export const SCREENS=Object.freeze(['world','map','briefing','after-action','supply','town','hub','loot','collection','help','more','dialog','radio']);
 const SAFE=/^[a-z0-9-]{1,40}$/;

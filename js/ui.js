@@ -1131,6 +1131,7 @@ function openSettings(){
   '<div class="q gfx"><div class="grow"><div class="t">Graphics</div><div class="p">'+gfxNote()+'</div></div></div>'+
   '<div class="seg c4" style="margin:-4px 0 6px">'+[['auto','Auto'],['high','High'],['low','Low'],['2d','2D']].map(([k,l])=>'<button class="'+(gfxMode()===k?'on':'')+'" data-act="gfx" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="q"><div class="grow"><div class="t">Daily reminder</div><div class="p">One message when your reward is ready</div></div><button class="toggle'+(save.remind?' on':'')+'" data-act="remind" aria-pressed="'+(!!save.remind)+'"><i></i></button></div>'+
+  '<div class="q"><div class="grow"><div class="t">War alerts</div><div class="p">Conquest assaults you can still stop: at most 3 a day, never at night</div></div><button class="btn sm" data-act="waralerts">SET</button></div>'+
   '<button class="q" data-act="info" data-arg="howto"><div class="grow"><div class="t">How to play</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="wiki"><div class="grow"><div class="t">Wiki and tokenomics</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="terms"><div class="grow"><div class="t">Terms and purchase help</div><div class="p">Refunds and payment problems: send /paysupport to the bot</div></div><span class="chev">›</span></button>'+
@@ -1610,6 +1611,7 @@ const ACT={
  sound:()=>{save.sound=save.sound===false;store();if(save.sound){audioResume();setTimeout(()=>fx('tap'),60);}else{sndLabClear();LW.stopAll();}const ov=findOv('sndlab');if(ov&&ov.re)ov.re();
   /* Session 6B: the toggle and the Volume row follow at once, wherever Settings is drawn (the sheet redraws on uiDirty; fill() keeps the focused control) */const on=save.sound!==false;document.querySelectorAll('.toggle[data-act="sound"]').forEach(b=>{b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});const vr=document.getElementById('vol-r'),vp=document.getElementById('vol-p');if(vr){vr.disabled=!on;vr.closest('.q')?.classList.toggle('off',!on);}if(vp)vp.textContent=volLabel();},
  remind:()=>setReminders(!save.remind),
+ waralerts:()=>{closeAll();const M=window.ConquestWarMap;if(typeof Conquest==='undefined'||!M)return;M.want('alerts');if(Conquest.active)M.onPending?.();else Conquest.open();},   /* Session 7: the War Map holds the war alerts (on/off, this device) */
  remindyes:()=>{const ov=findOv('remind');if(ov)closeOverlay(ov);setReminders(true);},
  remindno:()=>{save.remindAsked=true;store();const ov=findOv('remind');if(ov)closeOverlay(ov);},
  copyid:()=>{try{navigator.clipboard.writeText(playerKey()).then(()=>showToast('Player ID copied'),()=>showToast(playerKey()));}catch(e){showToast(playerKey());}},

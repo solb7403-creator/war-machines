@@ -1,0 +1,95 @@
+{
+ "scope": "the regular (60 min a day, audit method: a sortie every 90 s, yield and production collected, War Orders claimed) on the real Worker functions; modelled, not playtested",
+ "days": 120,
+ "incomePerDay": {
+  "cp": 7392,
+  "alloy": 1305,
+  "helium": 304
+ },
+ "production": {
+  "cp": 988,
+  "alloy": 431,
+  "helium": 105
+ },
+ "sorties": {
+  "cp": 6134,
+  "alloy": 874,
+  "helium": 199
+ },
+ "warOrders": {
+  "cp": 270,
+  "alloy": 0,
+  "helium": 0
+ },
+ "steadyPerDay": {
+  "cp": 7440,
+  "alloy": 1358,
+  "helium": 319
+ },
+ "halfDay": {
+  "cp": 3696,
+  "alloy": 653,
+  "helium": 152
+ },
+ "fortifyL1": {
+  "cp": 3700,
+  "alloy": 650,
+  "helium": 150
+ },
+ "l1VsHalfDay": {
+  "cp": 1,
+  "alloy": 1,
+  "helium": 0.99
+ },
+ "allTwelveToL5": {
+  "cp": 2888394,
+  "alloy": 507426,
+  "helium": 117102,
+  "ms": 362340000,
+  "jobs": 60
+ },
+ "pace": {
+  "everyBonus": {
+   "days": 383,
+   "levels": 60,
+   "milestones": {
+    "L1all": 11,
+    "L2all": 28,
+    "L3all": 65,
+    "L4all": 158,
+    "L5all": 383,
+    "supplyMax": 383
+   },
+   "supplyAtEnd": 0.16,
+   "pass": false
+  },
+  "noSupply": {
+   "days": 390,
+   "levels": 60,
+   "milestones": {
+    "L1all": 11,
+    "L2all": 28,
+    "L3all": 66,
+    "L4all": 160,
+    "L5all": 390,
+    "supplyMax": 390
+   },
+   "supplyAtEnd": 0.16,
+   "pass": false
+  },
+  "lunarPass": {
+   "days": 307,
+   "levels": 60,
+   "milestones": {
+    "L1all": 9,
+    "L2all": 23,
+    "L3all": 53,
+    "L4all": 127,
+    "L5all": 307,
+    "supplyMax": 307
+   },
+   "supplyAtEnd": 0.16,
+   "pass": true
+  }
+ }
+}

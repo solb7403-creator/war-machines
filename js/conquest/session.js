@@ -15,7 +15,7 @@ const rejected=e=>Number.isInteger(e?.status)&&e.status>=400&&e.status<500&&e.st
 const retryWait=e=>e?.status===429?1000:String(e?.message).includes('elapsed time')?250:0;
 class Session{
  constructor(view,transport){this.view=view;this.transport=transport;this.queue=[];this.elapsed=0;this.connected=false;this.disposed=false;this.busy=false;this.edges={};this.status='CONNECTING';this.serial=Promise.resolve();this.lastSend=0;this.nextConnect=0;this.pumpAt=performance.now();this.pushed=0;this.sent=0;this.stalled=false;this.corrections=[];}
- async connect(){this.nextConnect=performance.now()+5000;try{const r=await this.transport('/api/conquest/session',{});if(this.disposed)return false;this.keep(r);this.queue=[];this.sent=this.pushed;this.elapsed=0;this.stalled=false;this.apply(r.state);this.connected=true;this.pumpAt=performance.now()+150;this.status='SECURED';return true;}catch(e){this.connected=false;this.status='ONLINE REQUIRED FOR SECURE REWARDS';this.error=String(e.message);return false;}}
+ async connect(){this.nextConnect=performance.now()+5000;try{const r=await this.transport('/api/conquest/session',{tz:-new Date().getTimezoneOffset()});if(this.disposed)return false;this.keep(r);this.queue=[];this.sent=this.pushed;this.elapsed=0;this.stalled=false;this.apply(r.state);this.connected=true;this.pumpAt=performance.now()+150;this.status='SECURED';return true;}catch(e){this.connected=false;this.status='ONLINE REQUIRED FOR SECURE REWARDS';this.error=String(e.message);return false;}}
  // the cold fields of the last whole state, and its cold version (an input reply with only the hot part merges over them)
  keep(r){if(r&&r.state){this.cold={};for(const k of COLD)if(r.state[k]!==undefined)this.cold[k]=r.state[k];}if(r&&r.cv)this.cv=r.cv;return r;}
  merged(r){if(!r)return r;if(r.hot&&this.cold){if(r.cv)this.cv=r.cv;return {...this.cold,...r.hot};}this.keep(r);return r.state;}
@@ -67,7 +67,7 @@ class Session{
   return (async()=>{try{
    while(this.connected&&!this.disposed){if(this.busy||this.actionBusy){await sleep(20);continue;}if(this.sent<cut){const before=this.sent;await this.flush(cut-this.sent);if(this.sent===before)await sleep(25);continue;}break;}
    if(!this.connected||this.disposed)return false;this.busy=true;   // in the same turn as the checks above: no flush or action starts in between
-   const r=await this.transport('/api/conquest/session',{});if(!this.disposed){this.keep(r);this.apply(r.state);this.status='SECURED';}return true;
+   const r=await this.transport('/api/conquest/session',{tz:-new Date().getTimezoneOffset()});if(!this.disposed){this.keep(r);this.apply(r.state);this.status='SECURED';}return true;
   }catch(e){this.error=String(e.message);return false;}finally{this.busy=false;this.refreshing=false;}})();}
  dispose(){this.disposed=true;this.queue=[];this.connected=false;}
 }
