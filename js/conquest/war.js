@@ -245,6 +245,8 @@ function flip(w,id,to,k,now){w.o[id]=to;w.hs[id]=k;if(to==='p'){delete w.f[id];d
 // One tick of the war (when it is not frozen): land what is due, then schedule. Returns what happened (for the Worker's side effects:
 // the Frontline sector falls with its territory, trophies, alerts).
 function step(w,k,seed,ctx){const now=k*WAR.tickMs,out=[];ctx={...ctx,now};let flips=0;
+ // fortifications finished by this tick stand before anything lands (a level built while you were away counts); one on fallen ground is refunded by the Worker
+ for(let i=w.jobs.length-1;i>=0;i--){const j=w.jobs[i];if(j.ready>now)continue;w.jobs.splice(i,1);if(w.o[j.t]==='h'){w.f[j.t]=Math.max(w.f[j.t]||0,j.l);w.pk[j.t]=Math.max(w.pk[j.t]||0,w.f[j.t]);}else out.push({kind:'refund',job:j});}
  // generals return; the portal reopens
  for(const [id,x] of Object.entries(w.gen))if(x.back&&x.back<=now)x.back=0;
  // 1. events landing now, oldest first

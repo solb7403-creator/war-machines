@@ -54,10 +54,10 @@ function nextCard(host,s,o,now){const WR=W(),w=s.war,e=WR.nextOrder(w,now),c=o.e
  const O=WR.odds(w,e.go?{k:'a',t:e.t,g:e.g,air:1,ds:1,go:1}:e,ctxOf(s,now)),t=WR.BY[e.t];
  o.el('p','wm-kicker','NEXT ORDER · '+(firstOffensive(w,e)?'THE FIRST OFFENSIVE':EV_NAME[e.go?'g':e.k]),c);o.el('h3','wm-next-title',label(e,w),c);if(firstOffensive(w,e))o.el('p','wm-coach','The Parasites\' first offensive: a dropship lands a foothold. Beat it in person, or the LDF will have to take it back.',c);
  o.el('p','wm-time',(e.k==='c'?'The LDF attacks in ':'Lands in ')+left(e.l*WR.WAR.tickMs-now),c);if(O)o.el('p','wm-odds',O.line,c);
- const pay=e.go?WR.battlePoints('go',e.t):WR.battlePoints(e.k==='c'?'c':'a',e.t);o.el('p','wm-pay','WIN IT IN PERSON: '+fmtN(pay)+' base airdrop points × your league × your Command Base, spoils, '+(e.k==='c'?'the territory back, entrenched 24 h':t.heart?'the colony spared':'24 h entrenched')+'. One attempt: lose or leave and the strength roll decides it.',c);
+ const pay=e.go?WR.battlePoints('go',e.t):WR.battlePoints(e.k==='c'?'c':'a',e.t);o.el('p','wm-pay-short','WIN IT: '+fmtN(pay)+' PTS · SPOILS · ONE ATTEMPT',c);o.el('p','wm-pay','WIN IT IN PERSON: '+fmtN(pay)+' base airdrop points × your league × your Command Base, spoils, '+(e.k==='c'?'the territory back, entrenched 24 h':t.heart?'the colony spared':'24 h entrenched')+'. One attempt: lose or leave and the strength roll decides it.',c);
  c.append(o.button(action(e),()=>o.defend(e),'wm-go-btn cq-enter'));return c;}
 // the Fortify introduction (blueprint §3: the first offensive introduces counterattacks and Fortify): until the first fortification
-function coach(c,s,o){const w=s.war;if(w.sc?.fort&&!Object.keys(w.f||{}).length&&!(w.jobs||[]).length)o.el('p','wm-coach','NEW · FORTIFY: tap a territory you hold, then FORTIFY. +1 DEFENSE a level, and supply for your town on the Frontier and the Warfront.',c);}
+function coach(c,s,o){const w=s.war;if(w.sc?.fort&&!Object.keys(w.f||{}).length&&!(w.jobs||[]).length)o.el('p','wm-coach','NEW · FORTIFY: tap a territory you hold, then FORTIFY. +1 DEFENSE a level, and supply for your town.',c);}
 const firstOffensive=(w,e)=>!!(e&&e.k==='a'&&e.air&&w.sc?.f1===e.t&&!w.sc?.done);
 // ---- a territory's card (detail only on tap) -----------------------------------------------------------------------------------
 function territoryCard(host,s,o,now,id){const WR=W(),w=s.war,t=WR.BY[id],c=o.el('section','wm-card wm-terr',null,host),own=w.o[id],ev=w.ev.find(e=>e.t===id),goT=w.go&&!w.go.done&&w.go.t.includes(id);
@@ -123,7 +123,7 @@ async function subscribe(o){const P=pushSupport();if(!P.can)return false;const p
  const sub=(await reg.pushManager.getSubscription())||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key}),j=sub.toJSON();
  return o.act('war-alerts',{push:{endpoint:j.endpoint,keys:{p256dh:j.keys.p256dh,auth:j.keys.auth}},tz:-new Date().getTimezoneOffset()});}
 function alertsCard(host,s,o){const a=s.al||{},P=pushSupport(),c=o.el('section','wm-card wm-alerts',null,host);o.el('p','wm-kicker','WAR ALERTS · '+(a.on===0?'OFF':'ON')+(a.ask?'':' after your first war battle'),c);
- o.el('p','wm-what','At most 3 a day, never in your night, several events in one alert: only fights you can still join, and the Grand Offensive.'+(P.tg?' They come from the LUNAR bot in this chat: if you sent it /stop, send /start to get them again.':''),c);
+ o.el('p','wm-what','At most 3 a day, never in your night, several events in one alert: only fights you can still join, and the Grand Offensive.'+(P.tg?' They come from the LUNAR bot in this chat and follow its Daily reminder switch in Settings (or /stop and /start in the bot chat).':''),c);
  const row=o.el('div','wm-row',null,c);row.append(o.button(a.on===0?'TURN WAR ALERTS ON':'TURN WAR ALERTS OFF',()=>o.act('war-alerts',{on:a.on===0?1:0}),'wm-act'));
  if(a.ask&&a.on!==0&&P.can&&!(a.ps||[]).length&&P.perm!=='denied')row.append(o.button('ALERTS ON THIS DEVICE',async()=>{const ok=await subscribe(o).catch(()=>false);if(!ok)o.say?.('Alerts were not turned on for this browser.');},'wm-act'));
  if(P.needsHome)o.el('p','wm-fine','On iPhone and iPad, alerts work once LUNAR is on your Home Screen: tap Share, then Add to Home Screen, and open LUNAR from there.',c);
@@ -137,7 +137,7 @@ function optInCard(host,s,o){const a=s.al||{},P=pushSupport();let seen=false;try
 // ---- the War Map --------------------------------------------------------------------------------------------------------------
 function render(d,s,o){const WR=W();d.textContent='';d.classList.add('cq-warmap');const now=Date.now();if(!s?.war||!WR){o.el('p','wm-quiet','The War Map needs a connection to the game server.',d);d.append(o.button('CLOSE',o.close));return;}
  const n=counts(s),head=o.el('header','wm-head',null,d);head.append(o.button('CLOSE',o.close,'cq-lab-close-top wm-close'));o.el('p','cq-kicker','LUNAR / THE LIVING FRONT',head);o.el('h2','','WAR MAP',head);
- const chips=o.el('div','wm-chips',null,head);o.el('span','wm-chip wm-moon','MOON '+n.moon+' / '+n.of,chips).title='Territories humanity holds of all twenty';o.el('span','wm-chip wm-frontline','FRONTLINE '+n.front+' / '+n.frontOf,chips).title='The original six sectors you have secured';o.el('span','wm-chip wm-supply','SUPPLY +'+(Math.round(WR.supply(s.war)*1000)/10)+'% / 16%',chips).title='Town production from the Frontier and Warfront ground you fortify';
+ const chips=o.el('div','wm-chips',null,head);o.el('span','wm-chip wm-moon','MOON '+n.moon+' / '+n.of,chips).title='Territories humanity holds of all twenty';o.el('span','wm-chip wm-frontline','FRONTLINE '+n.front+' / '+n.frontOf,chips).title='The original six sectors you have secured';o.el('span','wm-chip wm-supply','SUPPLY +'+(Math.round(WR.supply(s.war)*1000)/10)+'% / 16%',chips).title='Town production from the ground you fortify (every level on the front counts; the dangerous rings more)';
  o.el('p','wm-count-note','MOON: the twenty territories humanity holds. FRONTLINE: the six original sectors you have secured yourself.',head);
  const body=o.el('div','wm-body',null,d),top=o.el('div','wm-top-card',null,body),mapCol=o.el('div','wm-map-col',null,body),side=o.el('div','wm-side',null,body);
  // on a phone the next order (or the picked territory) and its button come first, above the board; on a computer they head the side column
@@ -177,5 +177,5 @@ try{root.navigator?.serviceWorker?.addEventListener?.('message',e=>{if(e.data?.l
 const takePending=()=>{const v=pendingMap;pendingMap=false;return v;};
 // opened from an alert (?war=1): once the account is ready, open Conquest (its page then opens the War Map); gives up after 30 s
 if(pendingMap&&root.setInterval){let n=0;const t=root.setInterval(()=>{n++;const ready=root.Conquest&&typeof ACCOUNT_OK!=='undefined'&&ACCOUNT_OK;if(ready||n>60||!pendingMap){root.clearInterval(t);if(ready&&pendingMap&&!root.Conquest.active)try{root.Conquest.open();}catch(_){}}},500);}
-root.ConquestWarMap={render,report,shouldReport,hubLines,nextOp,counts,pushSupport,subscribe,label,left,takePending,lostLine,want:()=>{pendingMap=true;},get pending(){return pendingMap;},onPending:null};
+root.ConquestWarMap={render,report,shouldReport,hubLines,nextOp,counts,pushSupport,subscribe,label,left,takePending,lostLine,want:m=>{pendingMap=m||true;},get pending(){return pendingMap;},onPending:null};
 })(globalThis);

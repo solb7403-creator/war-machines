@@ -1611,7 +1611,7 @@ const ACT={
  sound:()=>{save.sound=save.sound===false;store();if(save.sound){audioResume();setTimeout(()=>fx('tap'),60);}else{sndLabClear();LW.stopAll();}const ov=findOv('sndlab');if(ov&&ov.re)ov.re();
   /* Session 6B: the toggle and the Volume row follow at once, wherever Settings is drawn (the sheet redraws on uiDirty; fill() keeps the focused control) */const on=save.sound!==false;document.querySelectorAll('.toggle[data-act="sound"]').forEach(b=>{b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});const vr=document.getElementById('vol-r'),vp=document.getElementById('vol-p');if(vr){vr.disabled=!on;vr.closest('.q')?.classList.toggle('off',!on);}if(vp)vp.textContent=volLabel();},
  remind:()=>setReminders(!save.remind),
- waralerts:()=>{closeAll();const M=window.ConquestWarMap;if(typeof Conquest==='undefined'||!M)return;M.want();if(Conquest.active)M.onPending?.();else Conquest.open();},   /* Session 7: the War Map holds the war alerts (on/off, this device) */
+ waralerts:()=>{closeAll();const M=window.ConquestWarMap;if(typeof Conquest==='undefined'||!M)return;M.want('alerts');if(Conquest.active)M.onPending?.();else Conquest.open();},   /* Session 7: the War Map holds the war alerts (on/off, this device) */
  remindyes:()=>{const ov=findOv('remind');if(ov)closeOverlay(ov);setReminders(true);},
  remindno:()=>{save.remindAsked=true;store();const ov=findOv('remind');if(ov)closeOverlay(ov);},
  copyid:()=>{try{navigator.clipboard.writeText(playerKey()).then(()=>showToast('Player ID copied'),()=>showToast(playerKey()));}catch(e){showToast(playerKey());}},

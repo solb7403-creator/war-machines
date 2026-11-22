@@ -37,7 +37,7 @@ export function warTick(s,now){const w=war(s,now),fighting=s.mission&&s.sectorDe
  for(const r of out)effects(s,r,now);if(!s.mission)WR.scriptReturn(w,now);jobs(s,now);frontSync(s,now);supplySync(s);return out;}
 // what a tick's outcome does outside the war record: the Frontline sector and its camp fall with their territory; a fortification
 // being built on fallen ground is refunded (it never stood)
-function effects(s,r,now){const lost=[];if(r.kind==='a'&&r.r==='lost')lost.push(r.id);if(r.kind==='go')for(const x of r.res||[])if(x.r==='lost')lost.push(x.id);
+function effects(s,r,now){if(r.kind==='refund'){refund(s,r.job);return;}const lost=[];if(r.kind==='a'&&r.r==='lost')lost.push(r.id);if(r.kind==='go')for(const x of r.res||[])if(x.r==='lost')lost.push(x.id);
  for(const id of lost){overrun(s,id,now);refundJobs(s,id);}}
 function overrun(s,id,now){const t=WR.BY[id];s.territory=s.territory||{};const fall=k=>{const x=s.territory[k];if(!x||x.owner!=='humanity')return;x.owner='parasites';x.status='recaptured';x.lostAt=now;x.awaitingReinforcements=true;
   for(const e of Object.values(s.battle?.enemies||{}))if(e?.base?.id===k&&s.spawns?.[e.key])s.spawns[e.key].generation=Math.floor(now/864e5)-1;};   // the camp's garrison returns

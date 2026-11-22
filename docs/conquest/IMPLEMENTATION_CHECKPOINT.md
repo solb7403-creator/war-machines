@@ -6704,3 +6704,8 @@ riseofkingdoms.fandom.com Lost Kingdom.
   write, it throws only on a network error): now the run stops unless the count write succeeded. New blocker: pausing the whole clock
   during a war battle broke the absence freeze (every command refreshes s.lastWall): now only the event being fought waits
   (`ctx.fighting`, tested), the rest of the clock, the freeze and the weekend calendar run as before.
+- **Reviewer 1 round 2:** B1, B2, B3, B5 FIXED; B4 partly (now: the Settings row lands on the alerts card; the card says Telegram war
+  alerts follow the bot's Daily reminder switch; a website-mode browser run stays an open item: the harness is Telegram's and the
+  screens are the same code in both shells). Two new blockers, fixed: a fortification finished while away now stands before the
+  assault lands (jobs applied inside each tick, tested: 50% -> 70%); phones keep a one-line reward ("WIN IT: 675 PTS · SPOILS ·
+  ONE ATTEMPT") and the MOON / FRONTLINE explainer. Two rounds done: no third round (nothing clearly broken remains).

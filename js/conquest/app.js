@@ -20,7 +20,7 @@ function closeWorld(){sessionEnd();root.ConquestPlotView?.close();transmissionCl
 function clear(){root.ConquestHub?.close();if(panel)panel.replaceChildren();}
 // Session 5: the Conquest Command hub page (js/conquest/hub.js). The four actions: deploy, fast travel, base, research (Session 6).
 let afterEnter=null;
-function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),research:labOnly,hangar:hangarOnly,war:()=>warMap(),warReport:s=>warReport(s),enter:mode=>{afterEnter=mode||null;enter();}});pageNav();if(root.ConquestWarMap){root.ConquestWarMap.onPending=()=>{if(root.ConquestWarMap.takePending())warMap();};if(root.ConquestWarMap.takePending())setTimeout(()=>warMap(),0);}return;}legacyHub();}   // Session 7: a war alert's link opens the War Map
+function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),research:labOnly,hangar:hangarOnly,war:()=>warMap(),warReport:s=>warReport(s),enter:mode=>{afterEnter=mode||null;enter();}});pageNav();if(root.ConquestWarMap){root.ConquestWarMap.onPending=()=>{const m=root.ConquestWarMap.takePending();if(m)warMap(null,m==='alerts');};const m=root.ConquestWarMap.takePending();if(m)setTimeout(()=>warMap(null,m==='alerts'),0);}return;}legacyHub();}   // Session 7: a war alert's link opens the War Map
 // Conquest as its own page (owner, Nov 8): the hub carries the app's bottom bar with CONQUEST lit; any other tab leaves
 // Conquest straight to that page. The world itself (ENTER CONQUEST) stays full screen.
 function pageNav(){if(typeof tabBarHtml!=='function'||!panel)return;const nav=el('nav','tabbar cq-pagenav',null,panel);nav.setAttribute('aria-label','Main');nav.innerHTML=tabBarHtml('conquest');panel.classList.add('cq-with-nav');
@@ -473,7 +473,7 @@ async function hangarOnly(){const Hg=root.ConquestHangar;if(!Hg||!panel||panel.q
 // arrival, and DEFEND / JOIN: a war battle is a physical operation, so its button sets the beacon (in the world, with fast travel
 // when a held node is near) or enters the world with it (from the hub); within the operation's radius the briefing opens at once.
 // js/conquest/warmap.js draws them; every change is a Worker action (worker/src/conquest-war.js).
-async function warMap(sel=null){const WM=root.ConquestWarMap;if(!WM||!panel)return;for(const x of panel.querySelectorAll('.cq-dialog.cq-map,.cq-dialog.cq-warreport,.cq-dialog.cq-warmap'))x.remove();if(panel.querySelector('.cq-dialog'))return;mapOpen=false;if(view)view.reset();
+async function warMap(sel=null,alerts=false){const WM=root.ConquestWarMap;if(!WM||!panel)return;for(const x of panel.querySelectorAll('.cq-dialog.cq-map,.cq-dialog.cq-warreport,.cq-dialog.cq-warmap'))x.remove();if(panel.querySelector('.cq-dialog'))return;mapOpen=false;if(view)view.reset();
  const d=dialog();d.classList.add('cq-warmap','cq-lab-hub');let s=view?.authority?.state||null,busy=false,pick=sel;
  const load=async()=>{try{s=(await cqCall('/api/conquest/session',{tz:-new Date().getTimezoneOffset()})).state;return !!s;}catch(e){return false;}};
  const say=t=>{const m=d.querySelector('.wm-msg');if(m)m.textContent=t;};
@@ -482,7 +482,7 @@ async function warMap(sel=null){const WM=root.ConquestWarMap;if(!WM||!panel)retu
  Object.defineProperty(o,'sel',{get:()=>pick});
  const draw=()=>{if(!d.isConnected)return;const top=d.scrollTop;WM.render(d,s,o);d.scrollTop=pick?0:top;if(!d.contains(document.activeElement))d.focus({preventScroll:true});};
  if(!s){el('p','cq-load','Opening the War Map…',d);if(!await load()){if(!d.isConnected)return;d.textContent='';el('p','cq-lab-why','The War Map needs a connection to the game server. Try again in a moment.',d);d.append(button('CLOSE',()=>d.remove()));return;}}
- draw();}
+ draw();if(alerts)d.querySelector('.wm-alerts')?.scrollIntoView({block:'start'});}
 // DEFEND / JOIN / START: in the world, the beacon to the operation (or its briefing when you are there); from the hub, into the world with it
 function warDefend(e){const W0=root.ConquestWar,C=root.ConquestCombat,id=W0?.opOf(e.go?{k:'a',t:e.t}:e),o=C?.operations[id];if(!o)return;if(!view){afterEnter='war-route:'+id;enter();return;}warRoute(id);}
 function warRoute(id){const o=root.ConquestCombat?.operations[id];if(!o||!view)return;for(const x of panel.querySelectorAll('.cq-dialog.cq-warmap,.cq-dialog.cq-warreport'))x.remove();
