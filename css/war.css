@@ -1,12 +1,12 @@
 /* Session 7 Living Front screens (js/conquest/warmap.js): the WAR MAP, the territory, campaign and Grand Offensive cards, the WAR
    REPORT and the war-alert cards. Phone first: one column that scrolls (the NEXT ORDER and its button above the board); from 900 px
    wide the board and the cards sit side by side. Sized inside the JS-sized Conquest panel (never vh). */
-.cq-dialog.cq-warmap{max-width:1180px;padding:0 14px 0;display:flex;flex-direction:column;background:#081220f7;scroll-padding-top:64px}
+.cq-dialog.cq-warmap{max-width:1180px;padding:0 14px 0;display:block;background:#081220f7;scroll-padding-top:64px}   /* block flow: a flex column let the body shrink and the sticky CLOSE float mid-screen (found by the 390x700 test) */
 .cq-dialog.cq-warmap .wm-close{margin:0 -14px 6px;width:calc(100% + 28px);position:sticky;top:0}
 .wm-head{padding:0 0 6px}.wm-head h2{margin:2px 0 6px;font-size:22px;letter-spacing:2px}
 .wm-chips{display:flex;gap:6px;flex-wrap:wrap}.wm-chip{display:inline-flex;align-items:center;min-height:28px;padding:3px 10px;border-radius:14px;font:700 12px 'Chakra Petch',sans-serif;letter-spacing:1px;border:1px solid}
 .wm-moon{color:#7ff3e0;border-color:#2fbfb0;background:#0b2a2a}.wm-frontline{color:#ffd58a;border-color:#a7843f;background:#2a2110}
-.wm-body{display:flex;flex-direction:column;gap:10px;min-height:0}.wm-side{display:flex;flex-direction:column;gap:10px;min-width:0}.wm-map-col{min-width:0}
+.wm-body{display:flex;flex-direction:column;gap:10px}.wm-side{display:flex;flex-direction:column;gap:10px;min-width:0}.wm-map-col{min-width:0}
 .wm-board{position:relative;border:1px solid #2b4458;border-radius:8px;background:#060d18;overflow:hidden}
 .wm-svg{display:block;width:100%;height:auto;aspect-ratio:1000/760;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .wm-bg{fill:#061019}.wm-edge{stroke:#2a4357;stroke-width:4}.wm-edge.wm-front{stroke:#ff4fa3;stroke-width:7;stroke-dasharray:14 8;filter:drop-shadow(0 0 6px #ff3c9a)}

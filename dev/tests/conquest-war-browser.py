@@ -64,7 +64,11 @@ async def main():
     node=page.locator('.cq-warmap .wm-t[data-t="oxygen"]')
     if mobile:
      await page.evaluate('document.querySelector(\'.cq-warmap .wm-t[data-t="oxygen"]\').scrollIntoView({block:"center"})');await page.wait_for_timeout(150)
-     nb=await node.bounding_box();await page.touchscreen.tap(nb['x']+nb['width']/2,nb['y']+nb['height']/2)   # a real touch at the node (its pulse ring animates, so no 'stable' wait)
+     nb=await node.bounding_box();cx,cy=nb['x']+nb['width']/2,nb['y']+nb['height']/2
+     hit=await page.evaluate(f'(()=>{{const e=document.elementFromPoint({cx},{cy});return (e&&(e.closest(".wm-t")?.dataset.t||e.className?.baseVal||e.className||e.tagName))+""}})()')
+     rects=await page.evaluate('(()=>{const r=s=>{const e=document.querySelector(s);if(!e)return null;const b=e.getBoundingClientRect();return [Math.round(b.top),Math.round(b.bottom)]};return {dlg:r(".cq-dialog.cq-warmap"),close:r(".cq-warmap .cq-close-bottom"),side:r(".wm-side"),map:r(".wm-board")}})()')
+     assert hit=='oxygen',('the node is covered at its centre',hit,nb,rects)
+     await page.touchscreen.tap(cx,cy)   # a real touch at the node (its pulse ring animates, so no 'stable' wait)
     else:
      await node.focus();await page.keyboard.press('Enter')
     await page.wait_for_selector('.cq-warmap .wm-terr',timeout=10000);card=await page.locator('.wm-terr').inner_text()
