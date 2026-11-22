@@ -6545,3 +6545,12 @@ on the pad is noise at phone size; the town drive opens with the tank behind a r
 Not worth credits: rocks, grass, ferns, ore, fences, lamps, pipes, poles (small, simple, code-built reads fine); trees,
 people and livestock (many instances each: a Meshy model there costs triangles on LOW, the open item above); the viaduct,
 rail and dam (long repeating hard-surface pieces, which code builds well).
+
+## Checkpoint 46 — Session 7: Living Front, logic and screens (branch `claude/living-front-logic-screens-o5ppmn`, from main `d61d259`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first; it governs everything.
+- Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`); this is Checkpoint 46.
+- **Done and pushed:** slice 1 (this brief saved word for word, this checkpoint opened).
+- **Next, in order:** research of comparable games (findings below), then the war core (shared rules + Worker), the
+  screens, alerts, the scripted first war, tests, two reviewers, release.
