@@ -22,7 +22,7 @@ function fight(s,now){let ticks=0,planned=[],stuck=0;while(s.battle.state==='act
 const {warEvent,warQuiet}=await import('./lib/war-helpers.mjs'),{CONQUEST:CQ}=await import('../../worker/src/sim.gen.js');
 const L=structuredClone(R.STOCK_L);L.w={a:'moon',t:2,q:1,s:false};L.c={c:'titan',t:2,q:1,s:false};
 let now=1800000000000,s=createState(L,now);const op=C.operations['sector-defense-refuge'];assert.equal(s.territory.refuge.owner,'humanity');
-assert(!C.raidIds.some(id=>C.operations[id].sector==='refuge'),'Refuge has no raid objective');
+assert(!C.raidIds.some(id=>C.operations[id].sector==='refuge'),'Refuge has no raid objective');assert(!C.sectorDefenseOpen({owner:'parasites',status:'recaptured'},'western'),'raid sectors keep their raid recapture path');
 warQuiet(CQ,s,now);let ev=warEvent(CQ,s,'refuge',now,{roll:.999});
 now+=1000;s.position=point(op.x-20,op.z+15);refreshState(s,now);assert.equal(s.territory.refuge.status,'defense-alert','a pending war assault is the Refuge alert');
 s=applyAction(s,{seq:s.seq+1,action:'start-sector-defense',mission:op.id},now+=1000);s=applyAction(s,{seq:s.seq+1,action:'return-exploration'},now+=1000);

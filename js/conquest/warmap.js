@@ -80,7 +80,7 @@ function territoryCard(host,s,o,now,id){const WR=W(),w=s.war,t=WR.BY[id],c=o.el(
  // Fortify (decision 6)
  if(t.cap&&own==='h')fortify(c,s,o,now,id);
  // what holding it gives (decision 10)
- const gives=[];if(t.ring===3||t.ring===4)gives.push('SUPPLY: +0.4% town production (materials and CP) per fortification level while held: now +'+(Math.round(4*(w.f[id]||0))/10)+'%, +2% at level 5');if(t.sector)gives.push((s.territory?.[t.sector]?.owner==='humanity'?'its fast-travel node (your Frontline holds it)':'its fast-travel node once you secure its Frontline sector'));if(WR.APPROACH.includes(id))gives.push('FRONT readiness: an approach to the Citadel');if(t.ex&&!t.inner&&!t.town)gives.push('its veins and missions, safe to work while held');
+ const gives=[];if(t.cap&&t.start==='h')gives.push('SUPPLY: each fortification level here adds +'+(Math.round(1600*WR.WAR.fortify.danger[t.ring]/69.5)/100)+'% town production (materials and CP) while held; the whole front at level 5 gives +16%');if(t.sector)gives.push((s.territory?.[t.sector]?.owner==='humanity'?'its fast-travel node (your Frontline holds it)':'its fast-travel node once you secure its Frontline sector'));if(WR.APPROACH.includes(id))gives.push('FRONT readiness: an approach to the Citadel');if(t.ex&&!t.inner&&!t.town)gives.push('its veins and missions, safe to work while held');
  if(gives.length){o.el('p','wm-kicker','HOLDING IT GIVES',c);const ul=o.el('ul','wm-gives',null,c);for(const x of gives)o.el('li','',x,ul);}
  return c;}
 function fortify(c,s,o,now,id){const WR=W(),w=s.war,t=WR.BY[id],F=WR.WAR.fortify,lv=w.f[id]||0,job=w.jobs.find(j=>j.t===id),b=o.el('div','wm-fort',null,c);

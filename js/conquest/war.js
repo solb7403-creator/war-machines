@@ -206,7 +206,10 @@ const fortifySlots=pass=>pass?WAR.pass.slots:WAR.fortify.slots;
 function fortifyAll(pass=false){const out={cp:0,alloy:0,helium:0,ms:0,jobs:0};for(const t of TERRITORIES){if(!t.cap||t.start!=='h')continue;for(let l=1;l<=WAR.fortify.max;l++){const c=fortifyCost(t.id,l,pass);for(const k of ['cp','alloy','helium'])out[k]=out[k]+c[k];out.ms+=fortifyTime(l,pass);out.jobs++;/* a price table's sum: no pilot's CP changes here */}}return out;}
 // ---- supply (decision 10): +2% production per held Frontier or Warfront territory at fortification level 5 (0.4% a level), max +16%
 // (materials and CP only, never points) ----
-function supply(w){if(!w?.o)return 0;let v=0;for(const t of TERRITORIES)if((t.ring===3||t.ring===4)&&w.o[t.id]==='h')v+=WAR.supply.per*Math.min(WAR.supply.levels,w.f?.[t.id]||0)/WAR.supply.levels;return Math.min(WAR.supply.max,Math.round(v*10000)/10000);}
+// PROPOSAL (reviewer round 1): +16% x the front's fortification: every level on a held capturable territory of the start counts, weighted
+// by its ring's danger, against all twelve at level 5 (so the max needs the whole year-long fortification, decision 11)
+const SUPPLY_FULL=TERRITORIES.filter(t=>t.cap&&t.start==='h').reduce((a,t)=>a+WAR.fortify.max*WAR.fortify.danger[t.ring],0);
+function supply(w){if(!w?.o)return 0;let v=0;for(const t of TERRITORIES)if(t.cap&&t.start==='h'&&w.o[t.id]==='h')v+=Math.min(WAR.fortify.max,w.f?.[t.id]||0)*WAR.fortify.danger[t.ring];return Math.min(WAR.supply.max,Math.round(WAR.supply.max*v/SUPPLY_FULL*10000)/10000);}
 // ---- war battle points (decision 10): par minutes x 225 x the ring's danger; a territory defense pays CQ_PTS.defense (675) ----------
 function battlePoints(kind,id){const t=BY[id];if(!t)return 0;if(kind==='a')return typeof CQ_PTS!=='undefined'?CQ_PTS.defense:675;const par=kind==='go'?WAR.par.go:WAR.par.counter;return Math.round(par*WAR.ppm*WAR.danger[t.ring]);}
 // the danger a war battle's spoils use (as other Conquest battles of the same danger): Frontier = HARD, Warfront = VETERAN

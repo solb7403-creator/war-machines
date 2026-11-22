@@ -129,7 +129,7 @@
   }
  ],
  "cpSites": {
-  "about": "every line that adds to or takes from a pilot's CP (ledger.cp or ledger['cp'] with =, +=, -=, *=, /=, ++, --; .cp += / -= / ++ / --) and every debit( call. A new CP source or sink is an owner decision. Session 7 (owner brief Nov 21, 2026, decisions 6 and 10): Fortify's cost and its refund when a territory falls before the job stands, and the war battles' spoils, in worker/src/conquest-war.js (a sector defense's pay moved there from conquest-campaign.js).",
+  "about": "every line that adds to or takes from a pilot's CP (ledger.cp or ledger['cp'] with =, +=, -=, *=, /=, ++, --; .cp += / -= / ++ / --) and every debit( call. A new CP source or sink is an owner decision. Session 7 (owner brief Nov 21, 2026, decisions 6 and 10): Fortify's cost (decision 6), the war battles' spoils (decision 10) and the refund of a pilot's own Fortify spend when the territory falls before the job stands (a PROPOSAL: nothing is gained), in worker/src/conquest-war.js (a sector defense's pay moved there from conquest-campaign.js).",
   "files": {
    "worker/src/conquest-campaign.js": 3,
    "worker/src/conquest-economy.js": 5,

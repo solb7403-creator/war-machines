@@ -74,7 +74,7 @@ const point=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'});
 {const F=WAR.fortify,c1=WR.fortifyCost('silt',1),c2=WR.fortifyCost('silt',2),f=WR.fortifyCost('western',1),wf=WR.fortifyCost('oxygen',1);
  ok(c1.cp===3700&&c1.alloy===650&&c1.helium===150,'level 1 (Rear) = about half a day of a regular pilot\'s Conquest income: 3,700 CP, 650 alloy, 150 He-3 (measured: dev/tests/conquest-war-pace.mjs)');
  ok(Math.abs(c2.cp/c1.cp-2.4)<.01&&Math.abs(f.cp/c1.cp-1.2)<.01&&Math.abs(wf.cp/c1.cp-1.45)<.01,'x2.4 a level, x1.0 / 1.2 / 1.45 by ring');
- ok(JSON.stringify(F.timeMs)===JSON.stringify(C.Plot?F.timeMs:F.timeMs)&&F.timeMs[0]===15000&&F.timeMs[4]===21600000,'the town\'s build timers: 15 s, 3 min, 20 min, 2 h, 6 h');
+ ok(JSON.stringify(F.timeMs)===JSON.stringify([1,2,3,4,5].map(l=>CONQUEST.Plot.timeOf('refinery',l))),'the town\'s build timers (the Refinery\'s: '+F.timeMs.map(x=>x/1000+' s').join(', ')+')');
  ok(WR.fortifyCost('silt',2,false,true).cp===Math.round(c2.cp*.25),'rebuilding a worn level costs a quarter');
  // on the Worker: one at a time, banked resources, the job lands on the clock; a fallen territory loses its fortification
  let s=createState(R.STOCK_L,T0);s.ledger.cp=1e6;s.ledger.banked={alloy:1e6,biomass:1e6,helium:1e6};warQuiet(CONQUEST,s,T0);
@@ -120,8 +120,8 @@ const point=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'});
  let s=createState(R.STOCK_L,T0);warQuiet(CONQUEST,s,T0);const e=warEvent(CONQUEST,s,'oxygen',T0,{roll:0});const pend=JSON.stringify(s.airdrop?.pend||null),cp=s.ledger.cp;
  s=applyCommands(s,{seq:1,commands:[{x:0,z:0}]},e.l*WAR.tickMs+1000);ok(JSON.stringify(s.airdrop?.pend||null)===pend&&s.ledger.cp===cp,'a battle nobody fought pays nothing');
  // supply: earned through fortification, max +16%, materials and CP only, never the yield's points
- const w=WR.fresh(T0);ok(WR.supply(w)===0,'supply starts at 0 (earned, not given: Checkpoint 46)');for(const t of WR.TERRITORIES)if(t.ring===3||t.ring===4)w.f[t.id]=5;w.o.ash='h';ok(WR.supply(w)===.16,'every Frontier and Warfront territory held at level 5: +16% (the max)');
- w.f.western=1;ok(Math.abs(WR.supply(w)-(.16-.016))<1e-9,'+0.4% a fortification level');const b={tier:3,claimedAt:T0-D,pointsAt:T0-D},y0=C.baseYield(b,0,T0),y1=C.baseYield({...b,sup:.16},0,T0);
+ const w=WR.fresh(T0);ok(WR.supply(w)===0,'supply starts at 0 (earned, not given: Checkpoint 46)');for(const t of WR.TERRITORIES)if(t.cap&&t.start==='h')w.f[t.id]=5;ok(WR.supply(w)===.16,'the whole front (all twelve) at level 5: +16% (the max)');
+ w.f.western=4;ok(WR.supply(w)<.16&&WR.supply(w)>.155,'every level counts (a Frontier level: '+((.16-WR.supply(w))*100).toFixed(2)+'%)');w.f.western=5;WR.flip(w,'western','p',1,T0);ok(WR.supply(w)<.16,'a fallen territory feeds nothing');const b={tier:3,claimedAt:T0-D,pointsAt:T0-D},y0=C.baseYield(b,0,T0),y1=C.baseYield({...b,sup:.16},0,T0);
  ok(y1.cp>y0.cp&&y1.alloy>y0.alloy&&y1.pts===y0.pts,'supply raises the yield\'s CP and materials, never its points');}
 
 // ---- decision 13: the scripted first war, on the clock --------------------------------------------------------------------------------

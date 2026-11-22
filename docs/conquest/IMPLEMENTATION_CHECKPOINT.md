@@ -6587,7 +6587,8 @@ If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first;
   reviewers, release.
 
 ### Decisions recorded (the lead's, with reasons)
-- **Supply is earned through fortification** (+0.4% a level on each held Frontier/Warfront territory = +2% at level 5, max +16%):
+- **Supply is earned through fortification** (superseded after reviewer round 1, see "Reviewer round 1": now +16% x the whole front's
+  fortification, ring-weighted; the first reading below was +0.4% a level on each held Frontier/Warfront territory = +2% at level 5, max +16%):
   humanity starts holding 7 of the 8, so a flat +2% each was +14% production from day 1 for everyone. Measured: it moved the
   owner's town-ladder guard (mean CC10 27.3 -> 23.9 days, -17%, outside +-10%) and maxed in about two weeks (decision 11). Earned
   this way it starts at 0 (ladder unchanged) and reaches its max only with the year-long fortification. Any other bonus: PROPOSAL.
@@ -6684,3 +6685,16 @@ riseofkingdoms.fandom.com Lost Kingdom.
   Copy fixes: "attacks in", seconds for short builds, no "entrenched" promise for heartland raids, no raid offer where none
   exists, no "how to dodge" line. Not done (recorded): a website-mode browser run (the harness is Telegram's; the opt-in logic is
   shared and unit-tested), the alert cron's throughput for 500,000 players (100 a run every 5 min: a queue before promotion, open item).
+- **Reviewer 2 (limits, odds, economy, pace, authority; read-only):** D1-D10, D13 PASS; D11 and D12 FAIL; 3 blockers, all fixed:
+  (B1) `publicState`'s new comment swallowed `out.veins=...` (scanned veins vanished on the phone): moved out, conquest-minerals
+  PASS; (B2) the supply bonus could max (+16%) with only the 8 Frontier/Warfront territories at level 5, about 285 days: now
+  **PROPOSAL: +16% x the front's fortification** (every level on a held capturable territory of the start, weighted by its ring's
+  danger, against all twelve at level 5), so its max needs the whole fortification: day 383, asserted >= 365 in the pace test;
+  (B3) the alert cron wrote its 3-a-day count after sending, in one best-effort write: now each pilot's count is written BEFORE
+  its alert is sent (a failed write stops the run: an alert can be lost, never a fourth), four pilots at a time. Also fixed: the
+  clock waits while a war battle is fought (N3), the alert forecast key covers fortify / station / jobs (N6), the Fortify-timer
+  test compares with the town's real timers, the Sortie-chain test builds the bundle before importing it, the recovery test's
+  "raid sectors keep their raid recapture path" assert is back, the owner-rules text calls the Fortify refund a PROPOSAL (N1).
+  Recorded, not changed: in-person wins sit outside the one-change-per-tick limit (N8: the limit binds the clock; a win in person
+  is the pilot's act); the scripted rolls still show odds (N4: the first war's beats are authored); the rolls are FNV over the loot
+  seed like every Conquest roll (N5: a keyed hash for all rolls is an open item for Session 7.8 / 9's exploit review).

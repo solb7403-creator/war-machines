@@ -46,7 +46,7 @@ export function pace(rows,{pass=false,supply=true}={}){const w=WR.fresh(start);f
  const targets=WR.TERRITORIES.filter(t=>t.cap&&t.start==='h').map(t=>t.id),bag={cp:0,alloy:0,helium:0},steady=rows.slice(Math.min(60,rows.length-30));let days=0,levels=0;const milestones={};
  for(let d=0;d<3650;d++){const r=d<rows.length?rows[d]:steady[d%steady.length],sup=supply?WR.supply(w):0;for(const k of K)bag[k]+=r.sortie[k]+r.orders[k]+r.prod[k]*(1+sup);
   for(let guard=0;guard<60;guard++){const next=targets.filter(id=>(w.f[id]||0)<5).map(id=>({id,l:(w.f[id]||0)+1,c:WR.fortifyCost(id,(w.f[id]||0)+1,pass)})).sort((a,b)=>a.c.cp-b.c.cp)[0];if(!next)break;if(!K.every(k=>bag[k]>=next.c[k]))break;
-   for(const k of K)bag[k]-=next.c[k];w.f[next.id]=next.l;levels++;if(!milestones['L'+next.l+'all']&&targets.every(id=>(w.f[id]||0)>=next.l))milestones['L'+next.l+'all']=d+1;}
+   for(const k of K)bag[k]-=next.c[k];w.f[next.id]=next.l;levels++;if(!milestones['L'+next.l+'all']&&targets.every(id=>(w.f[id]||0)>=next.l))milestones['L'+next.l+'all']=d+1;if(!milestones.supplyMax&&WR.supply(w)>=WR.WAR.supply.max)milestones.supplyMax=d+1;}
   if(targets.every(id=>w.f[id]>=5)){days=d+1;break;}}
  return {days,levels,milestones,supplyAtEnd:WR.supply(w),pass};}
 export function model(days=DAYS){const rows=income(days),steady=rows.slice(Math.min(60,rows.length-30)),all=avg(rows,r=>({cp:r.prod.cp+r.sortie.cp+r.orders.cp,alloy:r.prod.alloy+r.sortie.alloy+r.orders.alloy,helium:r.prod.helium+r.sortie.helium+r.orders.helium}));

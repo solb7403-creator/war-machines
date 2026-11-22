@@ -32,7 +32,8 @@ export const passLive=premium=>!!premium&&RULES.LAB_STORE_OPEN===true;
 export function war(s,now){s.war=WR.norm(s.war,now);return s.war;}
 export const ctxOf=s=>({pilots:Array.isArray(s.bat?.p)?s.bat.p:[],morale:0,tiers:0,titan:0});   // planning pick: shared-war morale counts 0 until a shared-war result exists
 // ---- the clock: every request (refreshState). seen: the pilot's last request before this one (s.lastWall) --------------------------
-export function warTick(s,now){const w=war(s,now),out=WR.advance(w,now,seedOf(s),ctxOf(s),Number(s.lastWall)||now);
+export function warTick(s,now){const w=war(s,now);if(s.mission&&s.sectorDefense?.active)return [];   // while a war battle is fought the clock waits (an assault never lands mid-fight); it catches up after
+ const out=WR.advance(w,now,seedOf(s),ctxOf(s),Number(s.lastWall)||now);
  for(const r of out)effects(s,r,now);if(!s.mission)WR.scriptReturn(w,now);jobs(s,now);frontSync(s,now);supplySync(s);return out;}
 // what a tick's outcome does outside the war record: the Frontline sector and its camp fall with their territory; a fortification
 // being built on fallen ground is refunded (it never stood)
@@ -129,5 +130,5 @@ export function alertDoc(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.w
 // After a Conquest reducer: the schedule doc to write after the commit, or null when nothing it depends on changed (a cheap key:
 // the tick, the events and their attempts, the Grand Offensive, ownership and the alert settings). Kept in s.war.ak.
 export function alertChange(s,now){try{return alertChange0(s,now);}catch(_){return null;}}   // best effort: the alerts never fail a Conquest request
-function alertChange0(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.war,now);const a=alertSettings(s),key=WR.u32(JSON.stringify([w.k,w.ev.map(e=>[e.id,e.tr|0,e.l]),w.go&&[w.go.w,w.go.tr|0,w.go.done|0],a.on,a.ask,a.tz,a.ps.map(p=>p.e),WR.IDS.map(id=>w.o[id]).join('')])).toString(36);
+function alertChange0(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.war,now);const a=alertSettings(s),key=WR.u32(JSON.stringify([w.k,w.ev.map(e=>[e.id,e.tr|0,e.l]),w.go&&[w.go.w,w.go.tr|0,w.go.done|0],a.on,a.ask,a.tz,a.ps.map(p=>p.e),WR.IDS.map(id=>w.o[id]+(w.f[id]|0)+(w.st[id]?.length|0)).join(''),w.jobs.length])).toString(36);
  if(key===w.ak)return null;w.ak=key;return alertDoc(s,now);}

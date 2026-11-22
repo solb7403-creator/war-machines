@@ -3,8 +3,8 @@
 // re-roll it), bound within the item cap, pity counters untouched, on every win that adds a chain link (field missions, raids,
 // Meteor Strikes, base and sector defenses). Nothing else: no CP, salvage, minerals, research parts, trophies, fragments or points.
 import assert from 'node:assert/strict';
-const WARH=await import('./lib/war-helpers.mjs'),{CONQUEST:CQ}=await import('../../worker/src/sim.gen.js');
 import {buildSim} from '../../worker/build-sim.mjs';buildSim();
+const WARH=await import('./lib/war-helpers.mjs'),{CONQUEST:CQ}=await import('../../worker/src/sim.gen.js');
 const {CONQUEST:{Combat:C},RULES:R}=await import('../../worker/src/sim.gen.js');
 const {createState}=await import('../../worker/src/conquest-sim.js');
 const {POLICY:P,missionReward}=await import('../../worker/src/conquest-economy.js');
