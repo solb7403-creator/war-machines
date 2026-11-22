@@ -6546,7 +6546,7 @@ Not worth credits: rocks, grass, ferns, ore, fences, lamps, pipes, poles (small,
 people and livestock (many instances each: a Meshy model there costs triangles on LOW, the open item above); the viaduct,
 rail and dam (long repeating hard-surface pieces, which code builds well).
 
-## Checkpoint 46 — Session 7: Living Front, logic and screens (branch `claude/living-front-logic-screens-o5ppmn`, from main `d61d259`) — IN PROGRESS
+## Checkpoint 46 — Session 7: Living Front, logic and screens (branch `claude/living-front-logic-screens-o5ppmn`, from main `d61d259`) — RELEASED Nov 22, 2026
 
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first; it governs everything.
@@ -6579,12 +6579,9 @@ If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first;
 - **Done:** the browser test PASSES at all five sizes (390x844, 390x700, 320x568 touch; 1366x768, 1920x1080 mouse + keyboard).
   It caught a real bug: the War Map dialog's flex column let its body shrink, so the sticky CLOSE floated mid-screen over the
   map at 390x700 (fixed: block flow). Pictures in docs/conquest/session7/.
-- **Next, in order:** (A) the full test list on the final code (every node + browser test in the workflows, conquest-session6c.py,
-  perf.py); (B) two independent reviewers; (C) release (merge main first; dev/bump.sh; PR with the `owner-rules-change` label;
-  CI; merge; verify; ROADMAP row 7 RELEASED + row 7-V + 7T note; release record). Older plan items for reference: (5) the browser test `dev/tests/conquest-war-browser.py` (War Map, cards, War Report at
-  390x844, 390x700, 320x568 touch and 1366x768, 1920x1080 mouse; fits or scrolls; keyboard) using `dev/tests/conquest-server.mjs`
-  with a new war fixture; (6) add every new test to `.github/workflows/conquest-check.yml` (small additive edit); (7) full suite,
-  reviewers, release.
+- **Released Nov 22** (PR #148, merge `57a9072`, build `20261122065955`): the record is "Release record (Nov 22, 2026)", the
+  last section of this checkpoint, with every open item. Next for the Living Front: row 7-V (the 3D, Fable) and row 7T (town
+  attacks on this clock, reusing its alerts and Station).
 
 ### Decisions recorded (the lead's, with reasons)
 - **Supply is earned through fortification** (superseded after reviewer round 1, see "Reviewer round 1": now +16% x the whole front's
@@ -6656,9 +6653,11 @@ webkit.org "Web Push for Web Apps on iOS and iPadOS", developer.apple.com web pu
 riseofkingdoms.fandom.com Lost Kingdom.
 
 ### PROPOSALs (numbers or bonuses the brief did not set; the owner decides)
-1. **Supply reading** (recorded above): +2% per held Frontier/Warfront territory at fortification level 5 (+0.4% a level), max
-   +16%. The literal flat +2% a territory gave +14% from day 1 and broke the town-ladder guard. Alternative if the owner prefers:
-   the flat reading with the ladder's audit table re-based (an owner-rules change).
+1. **Supply** (the rule as built, after reviewer rounds 1 and 2): +16% x the front's fortification: every fortification level on
+   a held capturable territory of the start, weighted by its ring's danger, against all twelve at level 5, so the +16% maximum
+   needs the whole year-long fortification (day 383 with every bonus on). The brief's literal reading (+2% per held
+   Frontier/Warfront territory) gave +14% from day 1 and broke the town-ladder guard. Alternative if the owner prefers: the
+   flat reading with the ladder's audit table re-based (an owner-rules change).
 2. **Par minutes of the new battle types** (the approved formula par x 225 x danger): Joint Operation 3.33 min (899 points in the
    Frontier, 1,086 in the Warfront), Grand Offensive 5 min (1,631). Territory defenses pay the existing 675 as decided.
 3. **Station value**: 0.25-0.5 DEFENSE a reserve by its rating (gear power + 4 a rank, full 0.5 at 140), the pair capped at +1.
@@ -6666,6 +6665,9 @@ riseofkingdoms.fandom.com Lost Kingdom.
    assaults, airborne 25%; garrison 3/3/2/1 (Heartland/Rear/Frontier/Warfront), LDF 3/2/2, Parasite hold 1/1/2.
 5. **Lunar Pass war perks** are built as decided (second slot, -20% cost, +20% speed) behind the store flag; a future store item
    could be a one-off fortification speed-up (time only, never DEFENSE) priced in Session 8.
+6. **Fortify refund** (recorded as a PROPOSAL in `docs/owner-rules.json`): when a territory falls before a queued fortification
+   stands, the pilot's own Fortify spend on that job comes back in full (nothing is gained). The alternative: the spend is
+   lost with the territory.
 
 ### Open items (for later sessions)
 - Session 7-V (row added): the 7 new territories' ground (then `ex:1` makes them attackable), dropships in the world, the portal
@@ -6710,18 +6712,70 @@ riseofkingdoms.fandom.com Lost Kingdom.
   assault lands (jobs applied inside each tick, tested: 50% -> 70%); phones keep a one-line reward ("WIN IT: 675 PTS · SPOILS ·
   ONE ATTEMPT") and the MOON / FRONTLINE explainer. Two rounds done: no third round (nothing clearly broken remains).
 
-### Release (in progress)
-- PR #148 opened from build 20261122065955 with the `owner-rules-change` label (added just after opening: the first owner-rules run
-  failed only on the missing label; the next push re-runs it). The first conquest CI run failed in `dev/tests/conquest-regression.sh`
-  (a source-level test runs `map()` with a minimal fake DOM: the new WAR MAP button used `d.append` and a bare `warMap` reference):
-  fixed (an `el()` row and a guarded call), the script passes locally. Main is still d61d259 (nothing to merge).
-- CI on `4979fc8`: the conquest job failed in `conquest-session6-loot.py` (run 2 of 3, 320x568: the 90 s wait for the session
-  and the terrain stream). Judged environmental: a fresh pilot's war log is empty (no War Report or other dialog pauses the
-  stream; checked on the test server), and locally main `d61d259` fails the same test (run 1, the SHIELD long-press) while this
-  branch passes the step that timed out. The one allowed re-run: the loot test passed, then `conquest-hub-browser.py` failed on a
-  real fault: the hub's new WAR MAP button made five hub actions where the hub's contract is four (its first-paint check counts
-  four). Fixed in the game code, no test changed: the War Map opens from the WARFRONT card (OPEN WAR MAP, one persistent node like
-  the BATTALION card's OPEN HANGAR); the hub test passes locally at all six sizes. The tests after it in the job (find-base,
-  plot-ui, session5d, seethrough-town, slots-browser, super-fx, war-browser, desktop-keys) are re-run locally on the fix.
-- Local on `4979fc8` (chromium, software renderer): conquest-session6c PASS at all five sizes (no page errors); perf PASS
-  (10 Arcade states, no errors; relative only).
+### Release record (Nov 22, 2026)
+- PR #148 merged 09:13 UTC as `57a9072` (merge commit; head `3d694ec`), all 12 checks green on the head: owner-rules
+  (with the `owner-rules-change` label), conquest, guardrails, transmission chromium + webkit, signup-browsers chromium / webkit /
+  firefox, website, balance, verify, asset-integrity. Release pre-approved in the owner's brief. Main had not moved from
+  `d61d259`, so there was nothing to merge in.
+- CI needed three fixes, none of them a test change:
+  1. owner-rules failed on the first run only because the `owner-rules-change` label was added just after the PR opened; the
+     next push re-ran it with the label: PASS.
+  2. conquest failed in `dev/tests/conquest-regression.sh`: a source-level test runs `map()` with a minimal fake DOM, and the
+     new WAR MAP button used `d.append` and a bare `warMap` reference. Fixed in the game code (`4979fc8`: an `el()` row and a
+     guarded call).
+  3. On `4979fc8` the conquest job failed once in `conquest-session6-loot.py` (run 2 of 3, 320x568: the 90 s wait for the
+     session and the terrain stream timed out; the other 11 checks green). Judged environmental, not this change: a fresh
+     pilot's war log is empty (no War Report or other dialog pauses the stream; checked on the test server), and locally main
+     `d61d259` fails the same test too (run 1, the SHIELD long-press). The one allowed re-run: the loot test passed, then
+     `conquest-hub-browser.py` failed on a real fault (the hub's new WAR MAP button made five hub actions; the hub's contract
+     is four). Fixed in the game code (`3d694ec`: OPEN WAR MAP in the WARFRONT card, one persistent node like OPEN HANGAR).
+     CI on `3d694ec`: all 12 green on the first run.
+- Local runs on the final code `3d694ec` (chromium, software renderer), all PASS: conquest-session6c (five sizes, no page
+  errors), conquest-hub-browser (six sizes), conquest-war-browser (five sizes), conquest-find-base, conquest-plot-ui,
+  conquest-session5d, conquest-seethrough-town, conquest-slots-browser, conquest-super-fx, conquest-desktop-keys. On `4979fc8`
+  (the last change touches only the hub's WARFRONT card): perf (10 Arcade states, no errors; relative only) and
+  conquest-regression.sh. Node: every test named in the workflows ran locally (06:30-06:53 UTC, before the reviewer fixes;
+  owner-rules 47 checks); on the final head they all pass in CI (the conquest job's node step, guardrails, balance,
+  owner-rules, verify). Everything else in the workflows' browser lists, WebKit and Firefox included, is evidenced by CI on
+  `3d694ec`.
+- Two browser tests fail in this container on main `d61d259` exactly as on this branch, and pass in CI: conquest-session6-loot
+  (the SHIELD long-press does not open the item picker) and conquest-airdrop-browser (after COLLECT YIELD the `base-production`
+  notice does not arrive within 20 s). Not this change: open item 11.
+- Worker: `Deploy Stars server (Cloudflare)` run 45006465510 SUCCESS on `57a9072` (deployed 09:19 UTC, version id
+  `70ebb51b-73d3-4983-96a3-846c558066d3`; the alert cron `1-56/5 * * * *` registered): `/pvp/health` =
+  `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`, live `version.json` = `{"v":"20261122065955"}` = repo (09:19 UTC).
+- GitHub Pages: `pages build and deployment` run 45006464678 SUCCESS on `57a9072` (09:14 UTC). This cloud container
+  cannot reach github.io or workers.dev (network policy), so the live values come from the deploy jobs' own checks.
+- Database rules: `Deploy Firebase rules` run 45006465701 SUCCESS on `57a9072` (09:13 UTC): the new `wal` index on `nx`
+  that the alert cron reads.
+- Website push keys: the Worker creates them itself on first use (`meta/vapid`, written once by compare-and-set; the DB rules
+  deny clients), so there is nothing for the owner to set up. The alert cron (`1-56/5 * * * *`) is in `worker/wrangler.toml`
+  and deployed with the Worker.
+- The build stamp `20261122065955` was made before the CI fixes and kept: nothing was deployed between them, so no player's
+  cache holds that stamp with older files.
+- No live players: no migration code. Revert plan if broken: revert `57a9072` on main (both deploys follow main). Not needed.
+- Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged.
+- This record and ROADMAP row 7 went to main in a second, docs-only PR from the same branch (restarted from main).
+
+**Open items for later sessions (none blocks this release):**
+1. **Session 7-V** (row added): the 7 new territories' ground (then `ex:1` makes them attackable), dropships flying their
+   routes, the portal gate alive, LDF posts placed, living terraform drawn; every hook is named in `js/conquest/war.js` HOOKS.
+2. **Session 7T:** town attacks on this clock, reusing its alerts and the Station rule.
+3. **Real-device push is unverified:** CI has no real push service; the encryption and the VAPID signature are verified
+   against independent receivers. Check the first real alert on the owner's phone (website, then iPhone Home Screen).
+4. **No website-mode browser run** of the alert opt-in: the harness is Telegram's; the screens and the opt-in logic are the
+   same code in both shells and unit-tested.
+5. **Alert throughput:** the cron sends to 100 pilots a run every 5 minutes; 500,000 players need a queue before public
+   promotion.
+6. **Telegram alerts reach only pilots who started the bot;** website-only pilots get browser alerts after the opt-in.
+7. **N5:** the war rolls are FNV over the loot seed, like every Conquest roll; a keyed hash for all rolls belongs to Session
+   7.8 / 9's exploit review.
+8. **N8:** a win in person sits outside the one-change-per-tick limit (the limit binds the clock; the win is the pilot's act).
+9. **N4:** the scripted first war's rolls still show odds (its beats are authored).
+10. **Lint gap:** nothing catches a `//` comment that swallows code on a joined line (reviewer 2's B1: `out.veins=...`
+    vanished from the phone state). A check for code after `//` would have caught it. Also stale: the comment above
+    `supply()` in `js/conquest/war.js` still describes the first supply reading (the code is the current rule, PROPOSAL 1).
+11. **Two browser tests fail in this container on main too** (pass in CI): conquest-session6-loot at the SHIELD long-press and
+    conquest-airdrop-browser at the COLLECT YIELD notice; the loot test also timed out once in CI (320x568, the 90 s session
+    wait). Worth hardening in a later session (a test changes only where a decision changes its rule).
+12. **PROPOSALs 1-6 above** wait for the owner.
