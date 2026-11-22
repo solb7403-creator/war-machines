@@ -36,7 +36,9 @@ export function buildSim(out = join(here, 'src', 'sim.gen.js')) {
     read('js/conquest/controls.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
     read('js/conquest/battalion.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
     read('js/conquest/plot.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
-    'return {Catalog:conquestRoot.ConquestCatalog,Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,Plot:conquestRoot.ConquestPlot,Battalion:conquestRoot.ConquestBattalion,tankOf,machineSpeed};\n})();\n';
+    // Session 7 Living Front: the war's shared rules (the clock, odds, limits, Fortify, Station, the Grand Offensive, alerts' plan)
+    read('js/conquest/war.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
+    'return {Catalog:conquestRoot.ConquestCatalog,Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,Plot:conquestRoot.ConquestPlot,Battalion:conquestRoot.ConquestBattalion,War:conquestRoot.ConquestWar,tankOf,machineSpeed};\n})();\n';
   writeFileSync(out, src);
   return out;
 }

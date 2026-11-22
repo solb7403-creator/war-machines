@@ -6553,8 +6553,15 @@ If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first;
 - Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`); this is Checkpoint 46.
 - **Done and pushed:** slice 1 (this brief saved word for word, this checkpoint opened).
 - **Done:** research of comparable games (findings below).
-- **Next, in order:** the war core (shared rules `js/conquest/war.js` + Worker `worker/src/conquest-war.js`), the screens,
-  alerts, the scripted first war, tests, two reviewers, release.
+- **Pushed as WORK IN PROGRESS (not yet tested as a whole):** the war core: `js/conquest/war.js` (shared rules, in the CONQUEST
+  bundle as `War`), `worker/src/conquest-war.js` (clock on every request, Frontline sync, Fortify/Station actions, battle
+  settlement, alert schedule doc), `worker/src/webpush.js` (VAPID keys made by the Worker at meta/vapid, RFC 8291 encryption:
+  verified against an independent node:crypto decryptor), `worker/src/conquest-alerts.js` (cron sender), the 9 new war
+  operations in `js/conquest/combat.js`, supply in `baseYield` / `Plot.rates`, cron `1-56/5`, index `wal/nx`.
+- **Known to fail until rewritten to the new rule (record each):** conquest-sector-authority, conquest-sector-victory,
+  conquest-frontier-recovery, conquest-war-authority (they pin the old 20-minute alert after a capture).
+- **Next, in order:** full node suite result, rewrite the four tests, new war tests, the screens (`js/conquest/warmap.js`),
+  the browser alerts client + `web/sw.js`, owner-rules CP sites (label), tests, two reviewers, release.
 
 ### Research: the best comparable games (Nov 22, before building)
 What the leaders do with a living war, timers, absence and alerts, and what Session 7 takes from each (sources are public
