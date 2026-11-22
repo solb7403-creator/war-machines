@@ -141,4 +141,7 @@ const point=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'});
  s.battle.state='victory';s=applyCommands(s,{seq:s.seq+1,commands:[{x:0,z:0}]},now+2000);ok(s.war.o[c1.t]==='h'&&s.settlement.kind==='war-retaken','and retakes it');s=applyAction(s,{seq:s.seq+1,action:'return-exploration'},now+3000);
  s=applyCommands(s,{seq:s.seq+1,commands:[{x:0,z:0}]},now+WAR.tickMs+5000);ok(s.war.sc.done&&s.war.sc.fort,'then Fortify is introduced and the war\'s own rolls take over');}
 
+// a war battle being fought: only its own event waits (it never lands mid-fight); the rest of the clock runs
+{const w=WR.fresh(T0);w.sc={n:9,done:1};const k=WR.tickOf(T0);w.ev.push({id:'a7',k:'a',t:'oxygen',g:'ixa',a:k,l:k+1,air:0,ds:0,tr:3,sc:.999},{id:'a8',k:'a',t:'helium',g:'nix',a:k,l:k+1,air:0,ds:0,sc:.999});
+ WR.advance(w,(k+1)*WAR.tickMs,'fight',{fighting:'a7'},(k+1)*WAR.tickMs-1000);ok(w.ev.some(e=>e.id==='a7')&&!w.ev.some(e=>e.id==='a8'),'the event being fought waits for the battle; the others land');}
 console.log('PASS conquest war (decisions 1-10 and 13; guardrails 5, 6, 7): '+pass+' checks');

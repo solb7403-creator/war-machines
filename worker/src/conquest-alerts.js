@@ -28,7 +28,7 @@ export async function sendWarAlerts(env,now=Date.now(),opts={}){const n=Math.max
   const batch=ev.filter(e=>first.ids.includes(e.id)),msg=message(batch,now);
   // the count first: written before anything is sent, so a failed write or a cut-short run can lose an alert, never send a fourth today
   const rest=WR.alertPlan(ev.filter(e=>!first.ids.includes(e.id)).map(e=>({...e,kind:e.k})),now,tz,{day:today,n:count.n+1,last:now});
-  try{await dbPatch(env,'',{[`wal/${pid}/sent`]:[...done,...first.ids].slice(-24),[`wal/${pid}/sd`]:today,[`wal/${pid}/sn`]:count.n+1,[`wal/${pid}/ls`]:now,[`wal/${pid}/nx`]:rest[0]?.at||null});}catch(_){stop=true;return;}
+  const wrote=await dbPatch(env,'',{[`wal/${pid}/sent`]:[...done,...first.ids].slice(-24),[`wal/${pid}/sd`]:today,[`wal/${pid}/sn`]:count.n+1,[`wal/${pid}/ls`]:now,[`wal/${pid}/nx`]:rest[0]?.at||null}).catch(()=>false);if(!wrote){stop=true;return;}   // dbPatch answers false on a refused write (it throws only on a network error)
   let delivered=false;
   // Telegram: the pilot's bot chat (ntf/<pid>: the daily-reminder opt-in, set by /start, off by /stop)
   if(opts.tg){const ntf=await dbGet(env,'ntf/'+pid).catch(()=>null);if(ntf&&ntf.on&&ntf.chat){const r=await opts.tg('sendMessage',{chat_id:ntf.chat,text:'☾ '+msg.title+'\n'+msg.body,reply_markup:{inline_keyboard:[[{text:'⚔ OPEN THE WAR MAP',web_app:{url:(opts.gameUrl||'')+'?war=1'}}]]}}).catch(()=>null);

@@ -248,7 +248,7 @@ function step(w,k,seed,ctx){const now=k*WAR.tickMs,out=[];ctx={...ctx,now};let f
  // generals return; the portal reopens
  for(const [id,x] of Object.entries(w.gen))if(x.back&&x.back<=now)x.back=0;
  // 1. events landing now, oldest first
- const due=w.ev.filter(e=>e.l<=k).sort((a,b)=>a.a-b.a||a.id.localeCompare(b.id));
+ const due=w.ev.filter(e=>e.l<=k&&e.id!==ctx.fighting).sort((a,b)=>a.a-b.a||a.id.localeCompare(b.id));   // ctx.fighting: the event the pilot is fighting right now lands after the battle
  for(const e of due){w.ev.splice(w.ev.indexOf(e),1);const t=BY[e.t],u=e.sc!==undefined?e.sc:unit(seed+':war:roll:'+e.id);
   if(e.k==='a'){const O=odds(w,e,ctx),held=u<O.p;const r={kind:'a',ev:e,id:e.t,p:O.p,held};
    if(t.heart){if(!held){w.tf[e.t]=Math.max(WAR.terra.min+1,w.tf[e.t]-1);logAt(w,{at:now,k:'a',t:e.t,r:'raided',by:'roll',g:e.g,p:O.p});r.r='raided';}else{logAt(w,{at:now,k:'a',t:e.t,r:'held',by:'ldf',g:e.g,p:O.p});w.cnt.held++;r.r='held';}}
@@ -263,7 +263,7 @@ function step(w,k,seed,ctx){const now=k*WAR.tickMs,out=[];ctx={...ctx,now};let f
    else{logAt(w,{at:now,k:'c',t:e.t,r:ok?'stalled':'failed',by:ok?'limit':'roll',p:O.p});r.r='failed';}
    delete w.st[e.t];out.push(r);}}
  // 2. the Grand Offensive's window ends: if it was not won in person, it launches; each target decided by strength with its extra THREAT
- if(w.go&&!w.go.done&&w.go.end<=k){const g=w.go;g.done=1;if(!g.won){const res=[];for(const id of g.t){if(w.o[id]!=='h'){res.push({id,r:'moot'});continue;}const e={id:'go'+g.w+':'+id,k:'a',t:id,g:g.g,air:1,ds:1,go:1},O=odds(w,e,ctx),u=unit(seed+':war:go:'+g.w+':'+id),held=u<O.p;
+ if(w.go&&!w.go.done&&w.go.end<=k&&ctx.fighting!=='go'+w.go.w){const g=w.go;g.done=1;if(!g.won){const res=[];for(const id of g.t){if(w.o[id]!=='h'){res.push({id,r:'moot'});continue;}const e={id:'go'+g.w+':'+id,k:'a',t:id,g:g.g,air:1,ds:1,go:1},O=odds(w,e,ctx),u=unit(seed+':war:go:'+g.w+':'+id),held=u<O.p;
    if(held){const worn=w.f[id]>0;if(worn)w.f[id]--;logAt(w,{at:now,k:'g',t:id,r:'held',by:'ldf',g:g.g,p:O.p,...(worn?{w:1}:{})});w.cnt.held++;res.push({id,r:'held',worn});}
    else{const blocked=netDay(w,k)+1>WAR.dayNetLoss?'day':parasiteHeld(w)+1>WAR.ceiling?'ceiling':'';if(blocked){const worn=w.f[id]>0;if(worn)w.f[id]--;logAt(w,{at:now,k:'g',t:id,r:'held',by:'limit',g:g.g,p:O.p,...(worn?{w:1}:{})});w.cnt.held++;res.push({id,r:'held',limit:blocked,worn});}
     else{flip(w,id,'p',k,now);noteNet(w,k,1);logAt(w,{at:now,k:'g',t:id,r:'lost',by:'roll',g:g.g,p:O.p});w.cnt.lost++;res.push({id,r:'lost'});}}

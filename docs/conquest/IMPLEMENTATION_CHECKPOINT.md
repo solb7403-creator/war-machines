@@ -6698,3 +6698,9 @@ riseofkingdoms.fandom.com Lost Kingdom.
   Recorded, not changed: in-person wins sit outside the one-change-per-tick limit (N8: the limit binds the clock; a win in person
   is the pilot's act); the scripted rolls still show odds (N4: the first war's beats are authored); the rolls are FNV over the loot
   seed like every Conquest roll (N5: a keyed hash for all rolls is an open item for Session 7.8 / 9's exploit review).
+
+### Reviewer round 2
+- **Reviewer 2:** B1 FIXED, B2 FIXED (only all twelve at level 5 reach +16%; day 383), B3 NOT FIXED (dbPatch answers false on a refused
+  write, it throws only on a network error): now the run stops unless the count write succeeded. New blocker: pausing the whole clock
+  during a war battle broke the absence freeze (every command refreshes s.lastWall): now only the event being fought waits
+  (`ctx.fighting`, tested), the rest of the clock, the freeze and the weekend calendar run as before.

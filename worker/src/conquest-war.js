@@ -32,8 +32,8 @@ export const passLive=premium=>!!premium&&RULES.LAB_STORE_OPEN===true;
 export function war(s,now){s.war=WR.norm(s.war,now);return s.war;}
 export const ctxOf=s=>({pilots:Array.isArray(s.bat?.p)?s.bat.p:[],morale:0,tiers:0,titan:0});   // planning pick: shared-war morale counts 0 until a shared-war result exists
 // ---- the clock: every request (refreshState). seen: the pilot's last request before this one (s.lastWall) --------------------------
-export function warTick(s,now){const w=war(s,now);if(s.mission&&s.sectorDefense?.active)return [];   // while a war battle is fought the clock waits (an assault never lands mid-fight); it catches up after
- const out=WR.advance(w,now,seedOf(s),ctxOf(s),Number(s.lastWall)||now);
+export function warTick(s,now){const w=war(s,now),fighting=s.mission&&s.sectorDefense?.active?s.sectorDefense.ev:null;   // the event being fought waits; the rest of the clock runs (the freeze and the weekend calendar hold)
+ const out=WR.advance(w,now,seedOf(s),{...ctxOf(s),fighting},Number(s.lastWall)||now);
  for(const r of out)effects(s,r,now);if(!s.mission)WR.scriptReturn(w,now);jobs(s,now);frontSync(s,now);supplySync(s);return out;}
 // what a tick's outcome does outside the war record: the Frontline sector and its camp fall with their territory; a fortification
 // being built on fallen ground is refunded (it never stood)
