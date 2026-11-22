@@ -51,3 +51,7 @@
 @media(min-width:900px){.cq-dialog.cq-warmap{padding:0 20px}.cq-dialog.cq-warmap .wm-close{margin:0 -20px 8px;width:calc(100% + 40px)}
  .wm-body{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);grid-template-rows:auto 1fr;align-items:start;gap:16px}.wm-map-col{grid-column:1;grid-row:1/span 2;position:sticky;top:56px}.wm-top-card{grid-column:2;grid-row:1}.wm-side{grid-column:2;grid-row:2}.wm-head h2{font-size:26px}}
 @media(max-width:360px){.wm-head h2{font-size:19px}.wm-chip{font-size:11px;padding:2px 8px}.wm-card,.wm-next-card{padding:8px 10px}.wm-next-title{font-size:15px}}
+.wm-supply{color:#b9f59a;border-color:#5aa63c;background:#142a10}.wm-count-note{margin:6px 0 0;font-size:10px;color:#8fa6b8;line-height:1.35}
+.wm-lost{margin:6px 0;padding:8px 10px;border-left:3px solid #ffd34d;background:#1d1a0c;color:#ffe9a8;font-size:12px;line-height:1.4}
+@media(max-width:899px){.wm-next-card{padding:8px 10px}.wm-next-card .wm-pay{display:none}.wm-next-card .wm-odds{font-size:12px;margin:2px 0}.wm-next-title{font-size:15px;margin:0 0 2px}.wm-next-card .wm-go-btn{margin-top:4px;min-height:40px!important}.wm-head h2{margin:0 0 4px}.wm-count-note{display:none}}
+@media(max-height:620px) and (max-width:899px){.wm-head .cq-kicker{display:none}.wm-head h2{font-size:17px}.wm-next-card .wm-time{display:inline;margin-right:6px}}

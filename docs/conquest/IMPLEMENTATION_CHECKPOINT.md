@@ -6672,3 +6672,15 @@ riseofkingdoms.fandom.com Lost Kingdom.
 - Real-device push delivery is not exercised in CI (no real push service): the encryption and the VAPID signature are verified
   against independent receivers; the first real alert should be checked on the owner's phone (website, then iPhone Home Screen).
 - Telegram alerts reach pilots who started the bot (ntf chat); website-only pilots get browser alerts after the opt-in.
+
+### Reviewer round 1
+- **Reviewer 1 (fun, fairness, pull; read-only):** D1-2, D4-9, D11 PASS; D3, D10, D12, D13 FAIL on what the player is shown; 5 blockers,
+  all fixed: (1) the territory card promised "+2% while held": now the true supply line (+0.4% a fortification level, now +x%) and a
+  SUPPLY chip; (2) the Fortify introduction could never show (flags set together): now from the end of the first war until the first
+  fortification, on every card; THE FIRST OFFENSIVE named on its card; (3) a lost war battle said "DEFENSE LOST · no payout": now
+  "ATTEMPT SPENT · NOT LOST YET" with the landing time and odds, and a war briefing shows the odds, ONE ATTEMPT and the true payout;
+  (4) alerts: a War alerts row in Settings (opens the War Map's controls), the opt-in card in the phone's top slot, the Telegram
+  /start note; (5) phone layout: a compact next-order card (the board shows at 320x568), BACK returns to the board's scroll place.
+  Copy fixes: "attacks in", seconds for short builds, no "entrenched" promise for heartland raids, no raid offer where none
+  exists, no "how to dodge" line. Not done (recorded): a website-mode browser run (the harness is Telegram's; the opt-in logic is
+  shared and unit-tested), the alert cron's throughput for 500,000 players (100 a run every 5 min: a queue before promotion, open item).
