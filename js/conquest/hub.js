@@ -20,7 +20,6 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
  const col=el('div','cq-hub-status',null,scroll);H.col=col;   // not a live region: it refreshes every second
  const acts=el('div','cq-hub-actions',null,panel);
  const deploy=button('ENTER CONQUEST',()=>o.enter(),'cq-enter cq-hub-deploy');acts.append(deploy);
- if(o.war)acts.append(button('WAR MAP',()=>o.war(),'cq-hub-act cq-hub-war'));   // Session 7: the War Map is the menu
  acts.append(button('FAST TRAVEL',()=>o.enter('travel'),'cq-hub-act'),button('MY BASE',()=>o.enter('base'),'cq-hub-act'));
  const rs=button('RESEARCH',()=>o.research?o.research():o.enter('research'),'cq-hub-act cq-hub-research');rs.title='The Science Lab: research new tank mods from the parts you find';acts.append(rs);   // Session 6B: live
  el('div','cq-hub-foot',null,panel).append(button('WORLD INTEL',()=>o.map(),'cq-secondary'));
@@ -36,7 +35,7 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
  const card=(title,cls)=>{const c=el('section','cq-hub-card '+(cls||''),null,col);el('h3','',title,c);return c;};
  // warfront
  const terr=s?.territory||{},secs=(root.ConquestWorld?.sectors||[]).map(x=>x.id),held=secs.filter(id=>terr[id]?.owner==='humanity').length,total=secs.length||6,alerts=Object.entries(terr).filter(([,t])=>t?.status==='defense-alert'||t?.status==='contested');
- const w=card('WARFRONT');if(s?.war&&root.ConquestWarMap)root.ConquestWarMap.hubLines(w,s,{el});else el('p','cq-hub-big',held+' / '+total+' SECTORS HELD',w);const bar=el('progress','cq-hub-bar',null,w);bar.max=total;bar.value=held;bar.setAttribute('aria-label','Frontline sectors held');   // Session 7: the Moon and the Frontline side by side
+ const w=card('WARFRONT');if(s?.war&&root.ConquestWarMap)root.ConquestWarMap.hubLines(w,s,{el});else el('p','cq-hub-big',held+' / '+total+' SECTORS HELD',w);const bar=el('progress','cq-hub-bar',null,w);bar.max=total;bar.value=held;bar.setAttribute('aria-label','Frontline sectors held');if(H.o.war)w.append(H.warBtn||(H.warBtn=H.o.button('OPEN WAR MAP',()=>H.o.war(),'cq-hub-war')));   // Session 7: the Moon and the Frontline side by side; the War Map opens from its card (one persistent node, like OPEN HANGAR: the cards rebuild every second), so the hub keeps its four actions
  el('small','',s?.warfront?.stage?'Stage '+s.warfront.stage+' of the shared warfront'+(s.warfront.name?' · '+s.warfront.name:''):'Every operation you win pushes the shared warfront.',w);
  // your base
  if(root.ConquestHangar&&s){const bc=card('BATTALION','cq-hub-battalion');root.ConquestHangar.hubCard(bc,s,{el:H.o.el,button:H.o.button,now,btn:H.o.hangar?(H.hangarBtn||(H.hangarBtn=H.o.button('OPEN HANGAR',()=>H.o.hangar(),'cq-hub-hangar'))):null});}   /* one OPEN HANGAR node for the hub's life: status() rebuilds the cards every second */

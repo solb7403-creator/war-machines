@@ -6715,3 +6715,13 @@ riseofkingdoms.fandom.com Lost Kingdom.
   failed only on the missing label; the next push re-runs it). The first conquest CI run failed in `dev/tests/conquest-regression.sh`
   (a source-level test runs `map()` with a minimal fake DOM: the new WAR MAP button used `d.append` and a bare `warMap` reference):
   fixed (an `el()` row and a guarded call), the script passes locally. Main is still d61d259 (nothing to merge).
+- CI on `4979fc8`: the conquest job failed in `conquest-session6-loot.py` (run 2 of 3, 320x568: the 90 s wait for the session
+  and the terrain stream). Judged environmental: a fresh pilot's war log is empty (no War Report or other dialog pauses the
+  stream; checked on the test server), and locally main `d61d259` fails the same test (run 1, the SHIELD long-press) while this
+  branch passes the step that timed out. The one allowed re-run: the loot test passed, then `conquest-hub-browser.py` failed on a
+  real fault: the hub's new WAR MAP button made five hub actions where the hub's contract is four (its first-paint check counts
+  four). Fixed in the game code, no test changed: the War Map opens from the WARFRONT card (OPEN WAR MAP, one persistent node like
+  the BATTALION card's OPEN HANGAR); the hub test passes locally at all six sizes. The tests after it in the job (find-base,
+  plot-ui, session5d, seethrough-town, slots-browser, super-fx, war-browser, desktop-keys) are re-run locally on the fix.
+- Local on `4979fc8` (chromium, software renderer): conquest-session6c PASS at all five sizes (no page errors); perf PASS
+  (10 Arcade states, no errors; relative only).
