@@ -162,5 +162,12 @@ function hubLines(card,s,o){const WR=W();if(!WR||!s?.war)return;const n=counts(s
  else o.el('small','','No fight inbound. Next war turn in '+left((WR.tickOf(now)+1)*WR.WAR.tickMs-now)+'.',card);}
 // the NEXT chip's war order (the single guidance channel): the most urgent fight you can still join, as an operation to drive to
 function nextOp(s,now=Date.now()){const WR=W(),C=root.ConquestCombat;if(!WR||!s?.war||!C)return null;const e=WR.nextOrder(s.war,now);if(!e)return null;const id=WR.opOf(e.go?{k:'a',t:e.t}:e),op=C.operations[id];if(!op)return null;const t=WR.BY[e.t];return {...op,warEvent:e.id,warLeft:e.l*WR.WAR.tickMs-now,line:'WAR · '+(e.k==='c'?'JOIN THE LDF AT '+t.short+' · goes in ':(t.heart?'RAID ON ':'ASSAULT ON ')+t.short+' · lands ')+'in '+left(e.l*WR.WAR.tickMs-now)+' · follow the beacon'};}
-root.ConquestWarMap=Object.freeze({render,report,shouldReport,hubLines,nextOp,counts,pushSupport,subscribe,label,left});
+// an alert's button (Telegram's web_app link or the website notification: ?war=1) or the service worker's focus message opens the War
+// Map: Conquest opens, then the War Map over its page (js/conquest/app.js hub() takes the flag once)
+let pendingMap=false;try{pendingMap=new URLSearchParams(root.location?.search||'').get('war')==='1';}catch(_){}
+try{root.navigator?.serviceWorker?.addEventListener?.('message',e=>{if(e.data?.lunar==='war-map'){pendingMap=true;if(root.Conquest&&!root.Conquest.active)root.Conquest.open();else root.ConquestWarMap.onPending?.();}});}catch(_){}
+const takePending=()=>{const v=pendingMap;pendingMap=false;return v;};
+// opened from an alert (?war=1): once the account is ready, open Conquest (its page then opens the War Map); gives up after 30 s
+if(pendingMap&&root.setInterval){let n=0;const t=root.setInterval(()=>{n++;const ready=root.Conquest&&typeof ACCOUNT_OK!=='undefined'&&ACCOUNT_OK;if(ready||n>60||!pendingMap){root.clearInterval(t);if(ready&&pendingMap&&!root.Conquest.active)try{root.Conquest.open();}catch(_){}}},500);}
+root.ConquestWarMap={render,report,shouldReport,hubLines,nextOp,counts,pushSupport,subscribe,label,left,takePending,get pending(){return pendingMap;},onPending:null};
 })(globalThis);

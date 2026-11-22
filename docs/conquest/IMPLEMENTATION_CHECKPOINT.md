@@ -6653,3 +6653,22 @@ XCOM 2 Avatar clock, gamezone.com and fragster.com on Clash of Clans shields (20
 "Deconstructing Clash Royale", clashroyale.fandom.com Notifications, pushwoosh.com and onesignal.com game push guides,
 webkit.org "Web Push for Web Apps on iOS and iPadOS", developer.apple.com web push docs, pcgamer.com and wikipedia on Foxhole,
 riseofkingdoms.fandom.com Lost Kingdom.
+
+### PROPOSALs (numbers or bonuses the brief did not set; the owner decides)
+1. **Supply reading** (recorded above): +2% per held Frontier/Warfront territory at fortification level 5 (+0.4% a level), max
+   +16%. The literal flat +2% a territory gave +14% from day 1 and broke the town-ladder guard. Alternative if the owner prefers:
+   the flat reading with the ladder's audit table re-based (an owner-rules change).
+2. **Par minutes of the new battle types** (the approved formula par x 225 x danger): Joint Operation 3.33 min (899 points in the
+   Frontier, 1,086 in the Warfront), Grand Offensive 5 min (1,631). Territory defenses pay the existing 675 as decided.
+3. **Station value**: 0.25-0.5 DEFENSE a reserve by its rating (gear power + 4 a rank, full 0.5 at 140), the pair capped at +1.
+4. **War pacing knobs** (tuned by the drift test): assault chance 62% a tick, counterattack 50%, heartland incursions 18% of
+   assaults, airborne 25%; garrison 3/3/2/1 (Heartland/Rear/Frontier/Warfront), LDF 3/2/2, Parasite hold 1/1/2.
+5. **Lunar Pass war perks** are built as decided (second slot, -20% cost, +20% speed) behind the store flag; a future store item
+   could be a one-off fortification speed-up (time only, never DEFENSE) priced in Session 8.
+
+### Open items (for later sessions)
+- Session 7-V (row added): the 7 new territories' ground (then `ex:1` makes them attackable), dropships in the world, the portal
+  gate alive, LDF posts placed, living terraform drawn. Session 7T: town attacks on this clock (alerts and Station reused).
+- Real-device push delivery is not exercised in CI (no real push service): the encryption and the VAPID signature are verified
+  against independent receivers; the first real alert should be checked on the owner's phone (website, then iPhone Home Screen).
+- Telegram alerts reach pilots who started the bot (ntf chat); website-only pilots get browser alerts after the opt-in.

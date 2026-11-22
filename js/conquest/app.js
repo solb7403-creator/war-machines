@@ -20,7 +20,7 @@ function closeWorld(){sessionEnd();root.ConquestPlotView?.close();transmissionCl
 function clear(){root.ConquestHub?.close();if(panel)panel.replaceChildren();}
 // Session 5: the Conquest Command hub page (js/conquest/hub.js). The four actions: deploy, fast travel, base, research (Session 6).
 let afterEnter=null;
-function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),research:labOnly,hangar:hangarOnly,war:()=>warMap(),warReport:s=>warReport(s),enter:mode=>{afterEnter=mode||null;enter();}});pageNav();return;}legacyHub();}
+function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),research:labOnly,hangar:hangarOnly,war:()=>warMap(),warReport:s=>warReport(s),enter:mode=>{afterEnter=mode||null;enter();}});pageNav();if(root.ConquestWarMap){root.ConquestWarMap.onPending=()=>{if(root.ConquestWarMap.takePending())warMap();};if(root.ConquestWarMap.takePending())setTimeout(()=>warMap(),0);}return;}legacyHub();}   // Session 7: a war alert's link opens the War Map
 // Conquest as its own page (owner, Nov 8): the hub carries the app's bottom bar with CONQUEST lit; any other tab leaves
 // Conquest straight to that page. The world itself (ENTER CONQUEST) stays full screen.
 function pageNav(){if(typeof tabBarHtml!=='function'||!panel)return;const nav=el('nav','tabbar cq-pagenav',null,panel);nav.setAttribute('aria-label','Main');nav.innerHTML=tabBarHtml('conquest');panel.classList.add('cq-with-nav');
