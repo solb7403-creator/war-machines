@@ -135,9 +135,9 @@ function optInCard(host,s,o){const a=s.al||{},P=pushSupport();let seen=false;try
 function render(d,s,o){const WR=W();d.textContent='';d.classList.add('cq-warmap');const now=Date.now();if(!s?.war||!WR){o.el('p','wm-quiet','The War Map needs a connection to the game server.',d);d.append(o.button('CLOSE',o.close));return;}
  const n=counts(s),head=o.el('header','wm-head',null,d);head.append(o.button('CLOSE',o.close,'cq-lab-close-top wm-close'));o.el('p','cq-kicker','LUNAR / THE LIVING FRONT',head);o.el('h2','','WAR MAP',head);
  const chips=o.el('div','wm-chips',null,head);o.el('span','wm-chip wm-moon','MOON '+n.moon+' / '+n.of,chips).title='Territories humanity holds of all twenty';o.el('span','wm-chip wm-frontline','FRONTLINE '+n.front+' / '+n.frontOf,chips).title='The original six sectors you have secured';
- const body=o.el('div','wm-body',null,d),mapCol=o.el('div','wm-map-col',null,body),side=o.el('div','wm-side',null,body);
- // on a phone the next order (and its button) comes before the board; on a computer it heads the side column
- if(o.sel)territoryCard(side,s,o,now,o.sel);else{nextCard(side,s,o,now);optInCard(side,s,o);goCard(side,s,o,now);campaignCard(side,s,o,now);alertsCard(side,s,o);}
+ const body=o.el('div','wm-body',null,d),top=o.el('div','wm-top-card',null,body),mapCol=o.el('div','wm-map-col',null,body),side=o.el('div','wm-side',null,body);
+ // on a phone the next order (or the picked territory) and its button come first, above the board; on a computer they head the side column
+ if(o.sel)territoryCard(top,s,o,now,o.sel);else{nextCard(top,s,o,now);optInCard(side,s,o);goCard(side,s,o,now);campaignCard(side,s,o,now);alertsCard(side,s,o);}
  board(mapCol,s,o,now);
  const m=o.el('p','cq-lab-msg wm-msg','',d);m.setAttribute('aria-live','polite');
  d.append(o.button('CLOSE',o.close,'cq-close-bottom'));}

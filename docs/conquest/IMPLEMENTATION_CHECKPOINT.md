@@ -6571,7 +6571,15 @@ If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first;
   `dev/tests/wtest/fakedb.mjs` now mirrors the new `wal/nx` index), publicState strips the authored rolls, `docs/owner-rules.json`
   cpSites: conquest-campaign 4 -> 3, conquest-war 3 (Fortify cost + refund, war spoils: owner decisions 6 and 10) -> the PR needs
   the `owner-rules-change` label. owner-rules PASS (47).
-- **Next, in order:** (3) optional Worker HTTP test; (5) the browser test `dev/tests/conquest-war-browser.py` (War Map, cards, War Report at
+- **Done since:** the browser test `dev/tests/conquest-war-browser.py` (+ war fixture in `dev/tests/conquest-server.mjs`,
+  `'war':True`) PASSES at 390x844 (War Report, War Map with 20 territories, the NEXT ORDER first on phones, the tapped card,
+  campaign + Grand Offensive cards, a real swipe reaches the last card). New tests added to conquest-check.yml. Phone layout:
+  `.wm-top-card` (next order / picked territory) above the board; computer: board left, cards right. CITADEL label moved in.
+  Local: `pip install playwright==1.55.0` (CI's pin) and the preinstalled Chromium.
+- **IN PROGRESS:** at 390x700 the touch tap on the Oxygen node does not open its card (waits for `.wm-terr`): debug (screenshot
+  at the tap; maybe the tap lands on the sticky CLOSE bar or the node's hit circle is under `.wm-top-card`), then 320x568,
+  1366x768 (keyboard Enter), 1920x1080.
+- **Next, in order:** (3) optional Worker HTTP test; (5) finish the browser test `dev/tests/conquest-war-browser.py` (War Map, cards, War Report at
   390x844, 390x700, 320x568 touch and 1366x768, 1920x1080 mouse; fits or scrolls; keyboard) using `dev/tests/conquest-server.mjs`
   with a new war fixture; (6) add every new test to `.github/workflows/conquest-check.yml` (small additive edit); (7) full suite,
   reviewers, release.

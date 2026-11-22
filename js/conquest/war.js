@@ -96,7 +96,7 @@ const TERRITORIES=Object.freeze([
  T('ridge','REFUGE RIDGE',4,1270,1175,{mx:720,my:300,short:'RIDGE',ex:1,sector:'ridge',def:'sector-defense-ridge',cop:'counterattack-ridge',what:'Ridge signal arrays above the colony'}),
  T('east','EASTERN RIM',5,1398,1074,{mx:840,my:400,short:'E. RIM',ex:1,start:'p',what:'The outer bastion of the Hive'}),
  T('bastion','SPORE BASTION',5,1540,960,{mx:930,my:560,short:'BASTION',start:'p',what:'The second bastion, behind the Eastern Rim'}),
- T('citadel','THE CITADEL',5,1660,1080,{mx:960,my:330,short:'CITADEL',start:'p',what:'The Parasite throne. Its siege arrives with the Citadel update'})
+ T('citadel','THE CITADEL',5,1660,1080,{mx:925,my:290,short:'CITADEL',start:'p',what:'The Parasite throne. Its siege arrives with the Citadel update'})
 ]);
 const BY=Object.freeze(Object.fromEntries(TERRITORIES.map(t=>[t.id,t])));
 const IDS=Object.freeze(TERRITORIES.map(t=>t.id));

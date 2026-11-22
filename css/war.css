@@ -49,5 +49,5 @@
 .wm-report .wm-r-win{border-left-color:#3fd8a0}.wm-report .wm-r-loss{border-left-color:#ff4f7a}.wm-report .wm-r-hold{border-left-color:#7fb4d0}.wm-report .wm-r-in{border-left-color:#ffd34d}
 .wm-chips-line{margin:0 0 6px;font:700 12px 'Chakra Petch',sans-serif;letter-spacing:1px;color:#9fe9df}
 @media(min-width:900px){.cq-dialog.cq-warmap{padding:0 20px}.cq-dialog.cq-warmap .wm-close{margin:0 -20px 8px;width:calc(100% + 40px)}
- .wm-body{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);align-items:start;gap:16px}.wm-map-col{position:sticky;top:56px}.wm-head h2{font-size:26px}}
+ .wm-body{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);grid-template-rows:auto 1fr;align-items:start;gap:16px}.wm-map-col{grid-column:1;grid-row:1/span 2;position:sticky;top:56px}.wm-top-card{grid-column:2;grid-row:1}.wm-side{grid-column:2;grid-row:2}.wm-head h2{font-size:26px}}
 @media(max-width:360px){.wm-head h2{font-size:19px}.wm-chip{font-size:11px;padding:2px 8px}.wm-card,.wm-next-card{padding:8px 10px}.wm-next-title{font-size:15px}}

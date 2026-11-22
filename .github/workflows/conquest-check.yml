@@ -101,6 +101,11 @@ jobs:
           # Session 6C: the Battalion rules through the Worker's HTTP routes (chips, Role Cores, recruits, field caps, the first Lab
           # grant, ally-only kills, store kinds refused, the cold-blob sweep)
           node dev/tests/wtest/conquest-battalion.mjs
+          # Session 7 Living Front: the war's rules decision by decision, the drift simulation, the year-long pace, the alerts
+          node dev/tests/conquest-war.mjs
+          node dev/tests/conquest-war-drift.mjs
+          node dev/tests/conquest-war-pace.mjs
+          node dev/tests/conquest-war-alerts.mjs
           node dev/tests/owner-rules.mjs
       - uses: actions/setup-python@v5
         with:
@@ -129,6 +134,7 @@ jobs:
           python dev/tests/conquest-seethrough-town.py
           python dev/tests/conquest-slots-browser.py
           python dev/tests/conquest-super-fx.py
+          python dev/tests/conquest-war-browser.py
       - name: Desktop keyboard journey (website build)
         run: python dev/tests/conquest-desktop-keys.py
 
@@ -149,6 +155,7 @@ jobs:
             docs/conquest/session5d
             docs/conquest/session5e2d1/slots
             docs/conquest/session5e2d1/town
+            docs/conquest/session7
 
   # Session 6C guardrails (blueprint §12): 2 better gear always helps (every authored encounter and town tier, 3 kits x 4 seeds) and
   # 4 composition matters (a balanced Battalion vs each one-role Battalion). A job of its own: they are long simulations.

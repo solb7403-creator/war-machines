@@ -47,6 +47,12 @@ const server=http.createServer(async(req,res)=>{try{if(previewFile(req,res))retu
   if(Array.isArray(o.roles))T.p.forEach((p,i)=>{if(o.roles[i]!==undefined)p.r=o.roles[i];});if(o.rc)s.rs={...(s.rs||{}),rc:{...o.rc}};if(o.chips)T.ch.e=o.chips|0;if(o.chipToday)T.ch.d=Math.floor(now/864e5);if(o.hurt)for(const p of T.p.slice(0,o.hurt))p.h=.5;if(o.rank)for(const p of T.p){p.rk=o.rank;p.xp=C.Battalion.RANK_XP[o.rank-1]||0;}
   if(o.gear==='epic'){const E=db.root.eco[pid];BA.account(s,{gear:BA.gearOf(E,s.loadout)},now);}else BA.arm(s);
   s.battle.friends=[];BA.field(s,s.battle,s.position,'wing');}
+ if(b.war){/* Session 7 scenario placement: a front mid-war (an inbound assault on Oxygen Spear led by a general, an LDF counterattack on a
+   Parasite-held Dust Crossroads, a Grand Offensive announced, Helium Basin fortified, a fresh War Report) */const now=Date.now(),WR=C.War,k=WR.tickOf(now);s.war=WR.fresh(now-3*864e5);s.war.k=k;s.war.sc={n:9,done:1};s.war.rep=now-6*36e5;s.war.o.crossroads='p';s.war.f.helium=2;s.war.pk.helium=2;
+  s.war.ev=[{id:'a91',k:'a',t:'oxygen',g:'rheel',a:k-1,l:k+1,air:1,ds:1},{id:'c92',k:'c',t:'crossroads',g:null,a:k,l:k+2,air:0,ds:0}];s.war.n=92;
+  s.war.go={w:Math.floor(now/864e5),a:k,open:k+4,end:k+12,g:'malgrath',t:['western','helium','ridge']};
+  s.war.log=[{at:now-5*36e5,k:'a',t:'western',r:'held',by:'ldf',g:'skaal',p:.7},{at:now-4*36e5,k:'a',t:'crossroads',r:'lost',by:'roll',g:'nix',p:.3},{at:now-3*36e5,k:'a',t:'reservoir',r:'raided',by:'roll',g:'skaal',p:.84}];
+  s.al={on:1,ask:1,tz:0,ps:[]};}
  db.root.conquest=db.root.conquest||{};db.root.conquest[pid]=s;res.end(JSON.stringify({ok:true}));return;
  }if(req.url==='/inspect'){res.end(JSON.stringify({state:cqLive(db,pid),measurements}));return;}
  const t=performance.now(),r=await worker.fetch(new Request('https://test'+req.url,{method:'POST',headers:{'Content-Type':'application/json'},body:raw}),env);const text=await r.text();measurements.push({path:req.url,ms:performance.now()-t,bytes:Buffer.byteLength(text),status:r.status});if(measurements.length>1000)measurements.shift();res.writeHead(r.status,{'Content-Type':'application/json'});res.end(text);
