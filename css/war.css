@@ -1,0 +1,53 @@
+/* Session 7 Living Front screens (js/conquest/warmap.js): the WAR MAP, the territory, campaign and Grand Offensive cards, the WAR
+   REPORT and the war-alert cards. Phone first: one column that scrolls (the NEXT ORDER and its button above the board); from 900 px
+   wide the board and the cards sit side by side. Sized inside the JS-sized Conquest panel (never vh). */
+.cq-dialog.cq-warmap{max-width:1180px;padding:0 14px 0;display:flex;flex-direction:column;background:#081220f7;scroll-padding-top:64px}
+.cq-dialog.cq-warmap .wm-close{margin:0 -14px 6px;width:calc(100% + 28px);position:sticky;top:0}
+.wm-head{padding:0 0 6px}.wm-head h2{margin:2px 0 6px;font-size:22px;letter-spacing:2px}
+.wm-chips{display:flex;gap:6px;flex-wrap:wrap}.wm-chip{display:inline-flex;align-items:center;min-height:28px;padding:3px 10px;border-radius:14px;font:700 12px 'Chakra Petch',sans-serif;letter-spacing:1px;border:1px solid}
+.wm-moon{color:#7ff3e0;border-color:#2fbfb0;background:#0b2a2a}.wm-frontline{color:#ffd58a;border-color:#a7843f;background:#2a2110}
+.wm-body{display:flex;flex-direction:column;gap:10px;min-height:0}.wm-side{display:flex;flex-direction:column;gap:10px;min-width:0}.wm-map-col{min-width:0}
+.wm-board{position:relative;border:1px solid #2b4458;border-radius:8px;background:#060d18;overflow:hidden}
+.wm-svg{display:block;width:100%;height:auto;aspect-ratio:1000/760;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.wm-bg{fill:#061019}.wm-edge{stroke:#2a4357;stroke-width:4}.wm-edge.wm-front{stroke:#ff4fa3;stroke-width:7;stroke-dasharray:14 8;filter:drop-shadow(0 0 6px #ff3c9a)}
+.wm-route{stroke:#ff8a3c;stroke-width:4;stroke-dasharray:6 10;opacity:.85}
+.wm-t{cursor:pointer;outline:none}.wm-t .wm-hit{fill:transparent}.wm-t .wm-disc{stroke-width:5}
+.wm-h .wm-disc{fill:#0c3d47;stroke:#36e0d0}.wm-p .wm-disc{fill:#45102e;stroke:#ff4fa3}.wm-new .wm-disc{fill:#0a1c24;stroke:#36e0d0;stroke-dasharray:8 7}
+.wm-heart .wm-disc{fill:#0f4a3a;stroke:#5ff0a8}.ring-5 .wm-disc{fill:#5a0f36;stroke:#ff2f8f;stroke-width:7}
+.wm-t .wm-glyph{fill:#d9fffa;opacity:.85}.wm-p .wm-glyph{fill:#ffd0e8}
+.wm-label{fill:#e7f2fb;font:700 30px 'Chakra Petch',sans-serif;text-anchor:middle;letter-spacing:1px;paint-order:stroke;stroke:#061019;stroke-width:8px}
+.wm-p .wm-label{fill:#ffc7e3}.wm-new .wm-label{fill:#9fc3cf}
+.wm-pip{fill:#23404d;stroke:#6fd9cf;stroke-width:1.5}.wm-pip.on{fill:#7ff3e0}
+.wm-entrench{fill:none;stroke:#ffe27a;stroke-width:4;stroke-dasharray:4 6}
+.wm-portal{fill:#3c1a4d;stroke:#b46bff;stroke-width:4}.wm-portal.open{fill:#c26bff;filter:drop-shadow(0 0 8px #c26bff)}
+.wm-badge circle{fill:#ff3c55;stroke:#fff;stroke-width:3}.wm-ev-c .wm-badge circle{fill:#2f8cff}.wm-go .wm-badge circle{fill:#ffb02e}.wm-badge text{fill:#fff;font:800 24px 'Chakra Petch',sans-serif;text-anchor:middle}
+.wm-pulse{fill:none;stroke:#ffd34d;stroke-width:5;animation:wm-pulse 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes wm-pulse{0%{opacity:.95;transform:scale(.82)}100%{opacity:0;transform:scale(1.18)}}
+@media(prefers-reduced-motion:reduce){.wm-pulse{animation:none;opacity:.8}}
+.wm-t:focus-visible .wm-disc,.wm-t.wm-sel .wm-disc{stroke:#ffffff;stroke-width:8}.wm-t:hover .wm-disc{stroke-width:8}
+.wm-legend{margin:0;padding:6px 10px;font-size:10px;letter-spacing:.5px;color:#9db2c4;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.wm-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}.wm-legend i.h{background:#36e0d0}.wm-legend i.p{background:#ff4fa3}.wm-legend i.n{border:2px dashed #36e0d0}.wm-legend b{color:#ffd34d;margin-right:2px}
+.wm-card,.wm-next-card{border:1px solid #2b4458;border-radius:8px;padding:10px 12px;background:#0a1828}.wm-next-card{border-color:#c79c3a;background:linear-gradient(180deg,#2a1f0c,#0a1828)}
+.wm-kicker{margin:0 0 4px;font:700 11px 'Chakra Petch',sans-serif;letter-spacing:1.5px;color:#8fb7cc}
+.wm-next-title{margin:2px 0 4px;font-size:17px;letter-spacing:1px;color:#ffe3a3}.wm-time{margin:0 0 4px;font-weight:700;color:#ffd34d}
+.wm-odds{margin:4px 0;font-size:13px;color:#dff3ff;line-height:1.35}.wm-pay,.wm-fine{display:block;margin:4px 0;font-size:11px;color:#9db2c4;line-height:1.35}
+.wm-quiet{margin:2px 0;color:#bcd0de}.wm-coach{margin:6px 0 0;color:#ffd9a0;font-weight:700}
+.wm-go-btn{width:100%;margin-top:8px;font-size:14px!important;letter-spacing:1px}
+.wm-card h3{margin:2px 0 4px;font-size:16px;letter-spacing:1px}.wm-what{margin:0 0 6px;font-size:12px;color:#c3d4e2;line-height:1.4}
+.wm-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.wm-back{min-height:36px!important;padding:6px 10px!important;font-size:11px!important}
+.wm-terra{display:inline-block;margin:0 0 6px;padding:2px 8px;border-radius:10px;font:700 10px 'Chakra Petch',sans-serif;letter-spacing:1px}.wm-terra-green{background:#0f3b2a;color:#7ff0b0}.wm-terra-barren{background:#25272b;color:#c9c3b6}.wm-terra-blight{background:#3a0f22;color:#ff9ccc}
+.wm-note{margin:4px 0 6px;font-size:12px;color:#9fd0e6}.wm-gen{margin:4px 0;font-size:11px;color:#ffb3d6;letter-spacing:.5px}
+.wm-event{border-left:3px solid #ff3c55;padding:4px 0 4px 10px;margin:6px 0}.wm-event-c{border-left-color:#2f8cff}.wm-event-g{border-left-color:#ffb02e}.wm-event-k{margin:0;font-weight:700;color:#ffd34d;font-size:12px;letter-spacing:1px}
+.wm-parts{margin:4px 0;padding:0 0 0 16px;font-size:11px;line-height:1.5}.wm-plus{color:#8ff3d8}.wm-minus{color:#ffa8cc}
+.wm-used,.wm-entrenched,.wm-job{margin:6px 0;font-weight:700;color:#ffe27a;font-size:12px}
+.wm-fort,.wm-station{border-top:1px solid #23394a;margin-top:8px;padding-top:8px}.wm-price{margin:2px 0 6px;font-size:12px;color:#e5f0f8}
+.wm-act{margin:4px 6px 0 0}.wm-row{display:flex;flex-wrap:wrap;gap:6px}.wm-reserves{display:flex;flex-direction:column;gap:6px}.wm-pilot{text-align:left}.wm-pilot.on{border-color:#7ff3e0!important;background:#0d3338!important}
+.wm-gives{margin:2px 0 0;padding-left:16px;font-size:12px;color:#c3d4e2;line-height:1.45}
+.wm-ready{display:block;width:100%;text-align:left;margin:6px 0 0;white-space:normal}.wm-ready.ok{border-color:#3fb58c!important;color:#9ff0c9!important}.wm-ready:disabled{opacity:1;cursor:default}
+.wm-msg{min-height:1.2em;margin:6px 0;color:#ffd36b;font-size:12px}
+.cq-dialog.cq-warreport{max-width:560px}.wm-report{margin:6px 0 10px;padding:0;list-style:none}.wm-report li{padding:6px 8px;margin:4px 0;border-radius:4px;font-size:13px;line-height:1.35;background:#0e1d2c;border-left:3px solid #5b7890}
+.wm-report .wm-r-win{border-left-color:#3fd8a0}.wm-report .wm-r-loss{border-left-color:#ff4f7a}.wm-report .wm-r-hold{border-left-color:#7fb4d0}.wm-report .wm-r-in{border-left-color:#ffd34d}
+.wm-chips-line{margin:0 0 6px;font:700 12px 'Chakra Petch',sans-serif;letter-spacing:1px;color:#9fe9df}
+@media(min-width:900px){.cq-dialog.cq-warmap{padding:0 20px}.cq-dialog.cq-warmap .wm-close{margin:0 -20px 8px;width:calc(100% + 40px)}
+ .wm-body{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);align-items:start;gap:16px}.wm-map-col{position:sticky;top:56px}.wm-head h2{font-size:26px}}
+@media(max-width:360px){.wm-head h2{font-size:19px}.wm-chip{font-size:11px;padding:2px 8px}.wm-card,.wm-next-card{padding:8px 10px}.wm-next-title{font-size:15px}}

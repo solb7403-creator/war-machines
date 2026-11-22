@@ -37,11 +37,11 @@ const WAR=Object.freeze({
  // a raid won in a Parasite-held territory weakens its hold for the next counterattack (the gambit: hit the source), up to -2, 48 h
  weaken:Object.freeze({per:1,max:2,ms:48*HOUR}),
  // decision 6: Fortify, 5 levels a territory, +1 DEFENSE each. Level 1 costs about half a day of a regular pilot's Conquest income
- // (the economy model's regular, 60 min a day, measured with the audit method on the real Worker functions: 7,121 CP, 1,306 alloy
- // and 303 He-3 a day over the first 120 days, dev/tools/war-model.mjs); each level costs 2.4x the last, times the ring's danger
+ // (the economy model's regular, 60 min a day, measured with the audit method on the real Worker functions, War Orders included:
+ // 7,392 CP, 1,305 alloy and 304 He-3 a day over the first 120 days, dev/tools/war-model.mjs); each level costs 2.4x the last, times the ring's danger
  // (Rear 1.0, Frontier 1.2, Warfront 1.45); one fortification at a time, on the town's build timers (15 s, 3 min, 20 min, 2 h, 6 h);
  // wear: an assault decided by the strength roll knocks a fortified territory down a level; rebuilding a worn level costs a quarter
- fortify:Object.freeze({max:5,l1:Object.freeze({cp:3560,alloy:653,helium:152}),mult:2.4,danger:Object.freeze([1,1,1,1.2,1.45,1]),
+ fortify:Object.freeze({max:5,l1:Object.freeze({cp:3700,alloy:650,helium:150}),mult:2.4,danger:Object.freeze([1,1,1,1.2,1.45,1]),
   timeMs:Object.freeze([15000,180000,1200000,7200000,21600000]),rebuild:.25,slots:1}),
  // decision 8 (behind the Lunar Pass flag; live when the store opens in Session 8): a second slot, 20% cheaper, 20% faster
  pass:Object.freeze({slots:2,cost:.8,time:.8}),
@@ -56,8 +56,11 @@ const WAR=Object.freeze({
  // decision 10: war battles pay par minutes x 225 x the ring's danger (Heartland and Rear 1.0, Frontier 1.2, Warfront 1.45); a territory
  // defense pays the existing "Defense victory (sector)" value (RULES.CQ_PTS.defense, 675)
  ppm:225,danger:Object.freeze([1,1,1,1.2,1.45,1.45]),par:Object.freeze({counter:3.33,go:5}),
- // decision 10: holding territory: supply +2% production (materials and CP only, never points) per held Frontier or Warfront territory
- supply:Object.freeze({per:.02,max:.16}),
+ // decision 10: holding territory: supply +2% production (materials and CP only, never points) per held Frontier or Warfront territory,
+ // max +16%, fed by the posts you fortify there: +0.4% a fortification level, so +2% at level 5 (lead's reading, recorded in Checkpoint 46:
+ // humanity starts holding 7 of the 8, so a flat +2% each was +14% from day 1 for everyone: it broke the owner's town-ladder guard,
+ // mean CC10 -17%, and maxed in about two weeks, against decision 11; earned this way it starts at 0 and takes about a year to max)
+ supply:Object.freeze({per:.02,levels:5,max:.16}),
  // living terraform (for 7-V to draw): -2 overrun, -1 blighted, 0 barren, 1 pylon lit, 2 lichen, 3 green; a held territory grows a step
  // every 2 days up to its ring's cap; a raid let through blights it a step; a fallen territory is overrun; a retaken one starts blighted
  terra:Object.freeze({min:-2,cap:Object.freeze([0,3,2,1,1,-2]),growTicks:8}),
@@ -70,28 +73,30 @@ const WAR=Object.freeze({
 // human ground; the second bastion and the Citadel stay Parasite-held. x,z: world metres (the War Map's layout and 7-V's ground).
 // sector: the Frontline sector on that ground (the six-sector Frontline keeps its own count, js/conquest/world.js sectors).
 // def: the defense operation an assault is fought in; cop: the LDF counterattack's operation.
+// mx,my: the War Map's schematic board (1000 x 760, the region map's orientation: south up, the Parasites east = right), spread for
+// touch (every pair at least 134 units apart: 48 px on a 390-px phone); short: its label there
 const T=(id,name,ring,x,z,o)=>Object.freeze({id,name,ring,x,z,ex:0,start:'h',sector:null,def:null,cop:null,cap:ring>=2&&ring<=4,heart:ring===1,inner:ring===5,...o});
 const TERRITORIES=Object.freeze([
- T('colony','REFUGE COLONY',1,1150,1130,{ex:1,def:'colony-defense-colony',what:'The Refuge terminal, the oxygen towers and the colony town'}),
- T('refuge','REFUGE CORRIDOR',1,1010,1100,{ex:1,sector:'refuge',def:'sector-defense-refuge',what:'The viaduct and the supply bastions'}),
- T('reservoir','RESERVOIR FLATS',1,860,1290,{ex:1,def:'colony-defense-reservoir',what:'The ice crater lake and the farms it waters'}),
- T('town','YOUR TOWN',1,1080,1160,{ex:1,town:1,what:'Your town at the Command Gate. Town attacks arrive with a later update'}),
- T('silt','SILT DUNES',2,690,1150,{what:'Barren dunes west of the corridor: an LDF post, Ferrite veins, a patrol'}),
- T('quarry','OLD QUARRY',2,650,1360,{what:'Abandoned regolith workings: convoys run here'}),
- T('mesa','SOUTH MESA',2,930,1480,{what:'A high mesa above the reservoir: an LDF watch post'}),
- T('kiln','KILN FLATS',2,1150,1440,{what:'Glassy flats south of the colony: a strike site and veins'}),
- T('watch','NORTHWATCH',2,700,960,{what:'The northern watch line: an LDF post and a convoy road'}),
- T('western','WESTERN SALVAGE REACH',3,920,925,{ex:1,sector:'western',def:'sector-defense-western',cop:'counterattack-western',what:'Depot gantries and alloy salvage'}),
- T('glass','GLASS FIELDS',3,840,770,{what:'Fused-glass plains on the north flank'}),
- T('helium','HELIUM BASIN',3,1080,835,{ex:1,sector:'helium',def:'sector-defense-helium',cop:'counterattack-helium',what:'Helium-3 extraction routes and gun emplacements'}),
- T('crossroads','DUST CROSSROADS',3,1100,954,{ex:1,def:'war-defense-crossroads',cop:'counterattack-crossroads',what:'The road junction north of the colony'}),
- T('cinder','CINDER SHELF',3,1320,1370,{what:'Ash terraces on the south flank'}),
- T('ash','ASH REDOUBT',4,1250,900,{ex:1,start:'p',sector:'ash',def:'sector-defense-ash',cop:'counterattack-ash',approach:1,what:'The armored siege gates: the road east to the Citadel'}),
- T('oxygen','OXYGEN SPEAR',4,1230,1020,{ex:1,sector:'oxygen',def:'sector-defense-oxygen',cop:'counterattack-oxygen',approach:1,what:'Reactor towers and air defense'}),
- T('ridge','REFUGE RIDGE',4,1270,1175,{ex:1,sector:'ridge',def:'sector-defense-ridge',cop:'counterattack-ridge',what:'Ridge signal arrays above the colony'}),
- T('east','EASTERN RIM',5,1398,1074,{ex:1,start:'p',what:'The outer bastion of the Hive'}),
- T('bastion','SPORE BASTION',5,1540,960,{start:'p',what:'The second bastion, behind the Eastern Rim'}),
- T('citadel','THE CITADEL',5,1660,1080,{start:'p',what:'The Parasite throne. Its siege arrives with the Citadel update'})
+ T('colony','REFUGE COLONY',1,1150,1130,{mx:560,my:270,short:'COLONY',ex:1,def:'colony-defense-colony',what:'The Refuge terminal, the oxygen towers and the colony town'}),
+ T('refuge','REFUGE CORRIDOR',1,1010,1100,{mx:330,my:420,short:'REFUGE',ex:1,sector:'refuge',def:'sector-defense-refuge',what:'The viaduct and the supply bastions'}),
+ T('reservoir','RESERVOIR FLATS',1,860,1290,{mx:270,my:230,short:'RESERVOIR',ex:1,def:'colony-defense-reservoir',what:'The ice crater lake and the farms it waters'}),
+ T('town','YOUR TOWN',1,1080,1160,{mx:420,my:320,short:'YOUR TOWN',ex:1,town:1,what:'Your town at the Command Gate. Town attacks arrive with a later update'}),
+ T('silt','SILT DUNES',2,690,1150,{mx:80,my:300,short:'SILT',what:'Barren dunes west of the corridor: an LDF post, Ferrite veins, a patrol'}),
+ T('quarry','OLD QUARRY',2,650,1360,{mx:90,my:90,short:'QUARRY',what:'Abandoned regolith workings: convoys run here'}),
+ T('mesa','SOUTH MESA',2,930,1480,{mx:300,my:70,short:'MESA',what:'A high mesa above the reservoir: an LDF watch post'}),
+ T('kiln','KILN FLATS',2,1150,1440,{mx:520,my:90,short:'KILN',what:'Glassy flats south of the colony: a strike site and veins'}),
+ T('watch','NORTHWATCH',2,700,960,{mx:110,my:520,short:'N.WATCH',what:'The northern watch line: an LDF post and a convoy road'}),
+ T('western','WESTERN SALVAGE REACH',3,920,925,{mx:300,my:580,short:'WESTERN',ex:1,sector:'western',def:'sector-defense-western',cop:'counterattack-western',what:'Depot gantries and alloy salvage'}),
+ T('glass','GLASS FIELDS',3,840,770,{mx:200,my:700,short:'GLASS',what:'Fused-glass plains on the north flank'}),
+ T('helium','HELIUM BASIN',3,1080,835,{mx:480,my:650,short:'HELIUM',ex:1,sector:'helium',def:'sector-defense-helium',cop:'counterattack-helium',what:'Helium-3 extraction routes and gun emplacements'}),
+ T('crossroads','DUST CROSSROADS',3,1100,954,{mx:500,my:470,short:'CROSSROADS',ex:1,def:'war-defense-crossroads',cop:'counterattack-crossroads',what:'The road junction north of the colony'}),
+ T('cinder','CINDER SHELF',3,1320,1370,{mx:750,my:120,short:'CINDER',what:'Ash terraces on the south flank'}),
+ T('ash','ASH REDOUBT',4,1250,900,{mx:680,my:600,short:'ASH',ex:1,start:'p',sector:'ash',def:'sector-defense-ash',cop:'counterattack-ash',approach:1,what:'The armored siege gates: the road east to the Citadel'}),
+ T('oxygen','OXYGEN SPEAR',4,1230,1020,{mx:680,my:440,short:'OXYGEN',ex:1,sector:'oxygen',def:'sector-defense-oxygen',cop:'counterattack-oxygen',approach:1,what:'Reactor towers and air defense'}),
+ T('ridge','REFUGE RIDGE',4,1270,1175,{mx:720,my:300,short:'RIDGE',ex:1,sector:'ridge',def:'sector-defense-ridge',cop:'counterattack-ridge',what:'Ridge signal arrays above the colony'}),
+ T('east','EASTERN RIM',5,1398,1074,{mx:840,my:400,short:'E. RIM',ex:1,start:'p',what:'The outer bastion of the Hive'}),
+ T('bastion','SPORE BASTION',5,1540,960,{mx:930,my:560,short:'BASTION',start:'p',what:'The second bastion, behind the Eastern Rim'}),
+ T('citadel','THE CITADEL',5,1660,1080,{mx:960,my:330,short:'CITADEL',start:'p',what:'The Parasite throne. Its siege arrives with the Citadel update'})
 ]);
 const BY=Object.freeze(Object.fromEntries(TERRITORIES.map(t=>[t.id,t])));
 const IDS=Object.freeze(TERRITORIES.map(t=>t.id));
@@ -199,8 +204,9 @@ const fortifyTime=(level,pass=false)=>Math.round(WAR.fortify.timeMs[clamp(level,
 const fortifySlots=pass=>pass?WAR.pass.slots:WAR.fortify.slots;
 // what it takes to fortify every capturable human territory of the start (12) from 0 to 5 (decision 6's year-long pace)
 function fortifyAll(pass=false){const out={cp:0,alloy:0,helium:0,ms:0,jobs:0};for(const t of TERRITORIES){if(!t.cap||t.start!=='h')continue;for(let l=1;l<=WAR.fortify.max;l++){const c=fortifyCost(t.id,l,pass);out.cp+=c.cp;out.alloy+=c.alloy;out.helium+=c.helium;out.ms+=fortifyTime(l,pass);out.jobs++;}}return out;}
-// ---- supply (decision 10): +2% production per held Frontier or Warfront territory, max +16% (materials and CP only, never points) ----
-function supply(w){if(!w?.o)return 0;const n=TERRITORIES.filter(t=>(t.ring===3||t.ring===4)&&w.o[t.id]==='h').length;return Math.min(WAR.supply.max,Math.round(n*WAR.supply.per*1000)/1000);}
+// ---- supply (decision 10): +2% production per held Frontier or Warfront territory at fortification level 5 (0.4% a level), max +16%
+// (materials and CP only, never points) ----
+function supply(w){if(!w?.o)return 0;let v=0;for(const t of TERRITORIES)if((t.ring===3||t.ring===4)&&w.o[t.id]==='h')v+=WAR.supply.per*Math.min(WAR.supply.levels,w.f?.[t.id]||0)/WAR.supply.levels;return Math.min(WAR.supply.max,Math.round(v*10000)/10000);}
 // ---- war battle points (decision 10): par minutes x 225 x the ring's danger; a territory defense pays CQ_PTS.defense (675) ----------
 function battlePoints(kind,id){const t=BY[id];if(!t)return 0;if(kind==='a')return typeof CQ_PTS!=='undefined'?CQ_PTS.defense:675;const par=kind==='go'?WAR.par.go:WAR.par.counter;return Math.round(par*WAR.ppm*WAR.danger[t.ring]);}
 // the danger a war battle's spoils use (as other Conquest battles of the same danger): Frontier = HARD, Warfront = VETERAN
@@ -226,8 +232,10 @@ function scheduleAssault(w,k,seed,now,force){const r=x=>unit(seed+':war:'+k+':'+
 function scheduleCounter(w,k,seed,now){const r=x=>unit(seed+':war:'+k+':'+x);if(w.ev.filter(e=>e.k==='c').length>=WAR.maxPending)return null;const all=candidates(w,now,'c');if(!all.length)return null;
  const t=all[Math.floor(r('ct')*all.length)%all.length];const ev={id:nextId(w,'c'),k:'c',t:t.id,g:null,a:k,l:k+warnTicks(),air:0,ds:0};w.ev.push(ev);return ev;}
 const logAt=(w,e)=>{w.log.push(e);if(w.log.length>WAR.log)w.log.splice(0,w.log.length-WAR.log);};
-// the unfought net loss inside the rolling day ending at tick k (losses +1, LDF retakes by strength -1)
-const netDay=(w,k)=>w.ld.filter(x=>x.k>k-WAR.dayTicks&&x.k<=k).reduce((a,x)=>a+x.d,0);
+// the unfought net loss (losses +1, LDF retakes by strength -1) of the worst 24 h window that contains tick k: every window that holds
+// tick k ends at or after it, so its known part is a suffix of the last day; the worst suffix bounds them all (an LDF retake early in
+// a day can never let three losses through in the next window)
+const netDay=(w,k)=>{let acc=0,worst=0;for(let t=k;t>k-WAR.dayTicks;t--){for(const x of w.ld)if(x.k===t)acc+=x.d;worst=Math.max(worst,acc);}return worst;};
 const noteNet=(w,k,d)=>{w.ld.push({k,d});w.ld=w.ld.filter(x=>x.k>k-WAR.dayTicks-2);};
 // a territory changes hands (the clock or a pilot's win). Fortification is lost with it; living terraform follows; stationed pilots return.
 function flip(w,id,to,k,now){w.o[id]=to;w.hs[id]=k;if(to==='p'){delete w.f[id];delete w.pk[id];delete w.en[id];w.tf[id]=-2;}else{w.tf[id]=Math.max(-1,Math.min(w.tf[id],-1));delete w.wk[id];}delete w.st[id];}
@@ -320,6 +328,15 @@ function beatGeneral(w,id,now){const g=GEN[id];if(!g)return false;const x=w.gen[
 function raidWon(w,id,now){const out={};if(!BY[id]||w.o[id]!=='p')return out;const q=w.wk[id]&&w.wk[id].until>now?w.wk[id]:{n:0,until:0};q.n=Math.min(WAR.weaken.max,q.n+WAR.weaken.per);q.until=now+WAR.weaken.ms;w.wk[id]=q;out.weak=q.n;
  if(w.por.at===id&&portalOpen(w,now)){w.por.until=now+WAR.portal.suppressMs;w.por.n++;out.portal=1;if(w.por.n>=WAR.portal.relocateAfter){w.por.n=0;w.por.moves++;const opts=TERRITORIES.filter(t=>w.o[t.id]==='p'&&t.id!==id&&t.ex).map(t=>t.id);w.por.at=opts.length?opts[w.por.moves%opts.length]:'east';out.moved=w.por.at;}}
  return out;}
+// The event an operation fights now (an assault on its territory, the LDF's counterattack, or the Grand Offensive on one of its targets),
+// or null: the Worker opens the battle only for this; the phone shows the same thing (the BRIEF button, the War Map's DEFEND / JOIN).
+function battleFor(w,op,now){if(!w||!op?.war)return null;const t=op.territory;
+ if(op.war==='c')return w.ev.find(e=>e.k==='c'&&e.t===t&&!e.tr&&e.l*WAR.tickMs>now)||null;
+ const g=w.go;if(g&&!g.done&&!g.tr&&g.t.includes(t)&&g.open*WAR.tickMs<=now&&g.end*WAR.tickMs>now)return {id:'go'+g.w,k:'g',t,g:g.g,go:1,l:g.end};
+ return w.ev.find(e=>e.k==='a'&&e.t===t&&!e.tr&&e.l*WAR.tickMs>now)||null;}
+// the operation that fights an event (assaults: the territory's defense; counterattacks: its Joint Operation; the Grand Offensive: the
+// first target's defense)
+const opOf=e=>{const t=BY[e?.t];if(!t)return null;return e.k==='c'?t.cop:t.def;};
 // ---- what the War Map and the alerts read ----------------------------------------------------------------------------------------------
 // The most urgent fight the pilot can still join (the NEXT ORDER): the soonest to land, assaults before counterattacks.
 function nextOrder(w,now){const j=joinable(w,now).sort((a,b)=>a.l-b.l||(a.k==='a'?-1:1));return j[0]||null;}
@@ -346,7 +363,7 @@ function alertEvents(w){const out=[];for(const e of w.ev)if(!e.tr)out.push({id:e
 function alertText(evs,at){const name=id=>BY[id]?.name||id,ago=e=>{const h=Math.max(1,Math.round((e.until-at)/HOUR));return h+' h';};const lines=evs.map(e=>e.kind==='a'?(BY[e.t]?.heart?'Parasites raiding ':'Assault on ')+name(e.t)+' lands in '+ago(e):e.kind==='c'?'LDF counterattack on '+name(e.t)+' · join it, '+ago(e)+' left':'GRAND OFFENSIVE · '+(e.n||3)+' territories · start it this weekend');
  return {title:evs.length>1?'LUNAR · '+evs.length+' WAR ALERTS':evs[0]?.kind==='g'?'LUNAR · GRAND OFFENSIVE':'LUNAR · WAR ALERT',body:lines.join('\n')};}
 // ---- Session 7-V hooks (visuals only; the logic is complete without them) ------------------------------------------------------------
-const HOOKS=Object.freeze({newGround:Object.freeze(TERRITORIES.filter(t=>!t.ex).map(t=>t.id)),dropships:'ConquestWar.dropships(war, now)',portal:'ConquestWar.portalOf(war, now)',ldfPosts:'ConquestWar.ldfPosts(war)',livingTerraform:'ConquestWar.terraOf(war, id)'});
+const HOOKS=Object.freeze({newGround:Object.freeze(TERRITORIES.filter(t=>!t.ex&&!t.inner).map(t=>t.id)),dropships:'ConquestWar.dropships(war, now)',portal:'ConquestWar.portalOf(war, now)',ldfPosts:'ConquestWar.ldfPosts(war)',livingTerraform:'ConquestWar.terraOf(war, id)'});
 // dropships in flight: every pending airborne assault flies from the portal's territory to its target (7-V draws the route and the landing)
 function dropships(w,now){const from=BY[w.por?.at]||BY.east;return w.ev.filter(e=>e.k==='a'&&e.air).map(e=>{const to=BY[e.t],a=e.a*WAR.tickMs,l=e.l*WAR.tickMs;return {id:e.id,from:{x:from.x,z:from.z},to:{x:to.x,z:to.z},ships:e.ds,at:a,lands:l,progress:clamp((now-a)/Math.max(1,l-a),0,1)};});}
 function portalOf(w,now){const t=BY[w.por?.at]||BY.ash;return {at:t.id,name:t.name,x:t.x,z:t.z,open:portalOpen(w,now),until:int(w.por?.until),suppressions:int(w.por?.n),relocateAfter:WAR.portal.relocateAfter};}
@@ -355,6 +372,6 @@ const TERRA_NAMES=Object.freeze({'-2':'OVERRUN','-1':'BLIGHTED','0':'BARREN','1'
 function terraOf(w,id){const v=clamp(num(w?.tf?.[id]),-2,3);return {level:v,name:TERRA_NAMES[String(v)],blight:v<0?-v:0,green:Math.max(0,v)};}
 root.ConquestWar=Object.freeze({WAR,TERRITORIES,BY,IDS,ADJ,RINGS,APPROACH,GENERALS,GEN,SCRIPT,ALERT,HOOKS,attackable,chance,fresh,norm,humanHeld,parasiteHeld,frontline,
  defenseOf,threatOf,holdOf,ldfOf,odds,portalOpen,fortifyCost,fortifyTime,fortifySlots,fortifyAll,supply,battlePoints,dangerOf,stationValue,rating,stationed,reserves,
- tickOf,warnTicks,step,advance,scriptReturn,scriptDone,goWeek,pending,joinable,begin,settle,beatGeneral,raidWon,nextOrder,report,alertPlan,alertEvents,alertText,
+ tickOf,warnTicks,step,advance,scriptReturn,scriptDone,goWeek,pending,joinable,battleFor,opOf,begin,settle,beatGeneral,raidWon,nextOrder,report,alertPlan,alertEvents,alertText,
  localHour,localDay,night,morning,dropships,portalOf,ldfPosts,terraOf,u32,unit,flip,netDay,isParasiteNeighbor});
 })(globalThis);

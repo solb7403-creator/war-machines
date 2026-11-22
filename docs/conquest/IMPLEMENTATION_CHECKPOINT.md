@@ -6551,17 +6551,61 @@ rail and dam (long repeating hard-surface pieces, which code builds well).
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first; it governs everything.
 - Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`); this is Checkpoint 46.
-- **Done and pushed:** slice 1 (this brief saved word for word, this checkpoint opened).
-- **Done:** research of comparable games (findings below).
-- **Pushed as WORK IN PROGRESS (not yet tested as a whole):** the war core: `js/conquest/war.js` (shared rules, in the CONQUEST
-  bundle as `War`), `worker/src/conquest-war.js` (clock on every request, Frontline sync, Fortify/Station actions, battle
-  settlement, alert schedule doc), `worker/src/webpush.js` (VAPID keys made by the Worker at meta/vapid, RFC 8291 encryption:
-  verified against an independent node:crypto decryptor), `worker/src/conquest-alerts.js` (cron sender), the 9 new war
-  operations in `js/conquest/combat.js`, supply in `baseYield` / `Plot.rates`, cron `1-56/5`, index `wal/nx`.
-- **Known to fail until rewritten to the new rule (record each):** conquest-sector-authority, conquest-sector-victory,
-  conquest-frontier-recovery, conquest-war-authority (they pin the old 20-minute alert after a capture).
-- **Next, in order:** full node suite result, rewrite the four tests, new war tests, the screens (`js/conquest/warmap.js`),
-  the browser alerts client + `web/sw.js`, owner-rules CP sites (label), tests, two reviewers, release.
+- **Done, tested and pushed:** brief saved; research (below); the war core: `js/conquest/war.js` (shared rules, CONQUEST.War),
+  `worker/src/conquest-war.js` (clock on every request via refreshState, Frontline sync, Fortify / Station / alerts actions,
+  battle start `warBegin` + settlement `warOutcome` through `sectorDefenseOutcome`), `worker/src/webpush.js` (VAPID keys made
+  by the Worker at meta/vapid; RFC 8291 encryption verified against an independent node:crypto decryptor in the scratchpad),
+  `worker/src/conquest-alerts.js` (cron `1-56/5`, index `wal/nx`), 9 new war operations in `js/conquest/combat.js`, supply in
+  `baseYield` (base.sup) and `Plot.rates` (plot.sup). Screens: `js/conquest/warmap.js` + `css/war.css` (War Map, territory /
+  campaign / Grand Offensive / alerts cards, War Report, opt-in), wired in `js/conquest/app.js` (warMap, warDefend, warRoute,
+  warRaid, warReport, warReportStep, NEXT chip, in-range war ops, after-action labels), `js/conquest/hub.js` (WAR MAP button,
+  Moon/Frontline lines, War Report on arrival), `web/sw.js`, script/style tags in index.html, web/play.html, web/boot.js.
+- **Tests:** new `dev/tests/conquest-war.mjs` (83 checks: decisions 1-10, 13; guardrails 5-7) and `dev/tests/conquest-war-pace.mjs`
+  (decisions 6/11: level 1 = half a regular day; all 12 to level 5 in 384 days with every bonus on, 390 without supply, 308 with
+  the Pass) + `dev/tools/war-model.mjs`; helper `dev/tests/lib/war-helpers.mjs`. Rewritten to the new rule (record below):
+  conquest-sector-authority, conquest-sector-victory, conquest-frontier-recovery, conquest-war-authority, conquest-sortie-chain.
+  All CI node tests that were run pass (ladder, base progression, plot, analytics, every wtest/*); guardrails, fair-arcade,
+  gear-combat, wtest/test and owner-rules still to re-run on the final code. `npm install --prefix worker` is needed locally.
+- **Next, in order:** (1) the drift test `dev/tests/conquest-war-drift.mjs` (settings already tuned: alone 2.77 days a territory
+  in week 1; half the assaults + daily fortify from 7 Parasite back to ~4.6 in a week; tuning harness in the scratchpad was
+  `drift.mjs`); (2) the alerts test `dev/tests/conquest-war-alerts.mjs` (alertPlan caps / night / batching / joinable; push
+  round trip with a node:crypto decryptor; VAPID JWT verify; the cron with fake tg/push via worker.fetch + fakedb); (3) a Worker
+  HTTP test `dev/tests/wtest/conquest-front.mjs` (public state carries no rolls; war actions; one claim; wal doc written);
+  (4) `docs/owner-rules.json` cpSites for conquest-war.js (Fortify debit/refund, spoils: owner decisions 6 and 10) + the
+  `owner-rules-change` label on the PR; (5) the browser test `dev/tests/conquest-war-browser.py` (War Map, cards, War Report at
+  390x844, 390x700, 320x568 touch and 1366x768, 1920x1080 mouse; fits or scrolls; keyboard) using `dev/tests/conquest-server.mjs`
+  with a new war fixture; (6) add every new test to `.github/workflows/conquest-check.yml` (small additive edit); (7) full suite,
+  reviewers, release.
+
+### Decisions recorded (the lead's, with reasons)
+- **Supply is earned through fortification** (+0.4% a level on each held Frontier/Warfront territory = +2% at level 5, max +16%):
+  humanity starts holding 7 of the 8, so a flat +2% each was +14% production from day 1 for everyone. Measured: it moved the
+  owner's town-ladder guard (mean CC10 27.3 -> 23.9 days, -17%, outside +-10%) and maxed in about two weeks (decision 11). Earned
+  this way it starts at 0 (ladder unchanged) and reaches its max only with the year-long fortification. Any other bonus: PROPOSAL.
+- **The Frontline and the Moon:** the six sectors keep the existing capture rules and their own count; the 20-minute alert after a
+  capture is gone (the war clock's assaults are the alerts, frontSync shows them as DEFENSE ALERT); when the clock takes a territory
+  its Frontline sector and camp fall with it (decision 1: nothing protects existing captures); a counterattack won in person
+  re-secures it; the LDF retaking it by strength does not (you did not secure it).
+- **Limits:** "at most one territory changes hands per tick" binds the clock (strength-decided results); a battle the pilot wins in
+  person is the pilot's act and resolves at once. "At most 2 net a day" is checked on the worst 24 h window containing the tick
+  (an early LDF retake can never let three losses through in the next window: found by the test). The freeze uses the pilot's
+  last request (s.lastWall), kept out of the war record so ordinary requests never rewrite it; announced events keep their time
+  left; the Grand Offensive keeps the weekend calendar and is skipped if its window ends while frozen.
+- **Heartland assaults** (weak incursions, 18% of assaults, 1-star generals) are fought as Colony Defense (colony, reservoir: three
+  light waves, the colony turrets fire in support) or the Refuge's Invasion Defense; one let through blights the zone, never captures.
+- **Counterattacks** are Joint Operations: the LDF lands a beachhead in the Parasite-held territory; hold it against three
+  counter-waves with five LDF tanks beside your Platoon (one defense engine for every war battle). The Grand Offensive is fought
+  as its first target's defense with three waves, its general and the whole Battalion.
+- **Planning picks:** Citadel approaches = Ash Redoubt + Oxygen Spear; the 7 new territories: SILT DUNES, OLD QUARRY, SOUTH MESA,
+  KILN FLATS, NORTHWATCH (Rear), GLASS FIELDS, CINDER SHELF (Frontier), plus the SPORE BASTION and THE CITADEL; generals
+  (1-3 stars fight in Session 7; 4-5 stars stay in the Inner Ring); the portal starts at Ash Redoubt (a won raid there shuts it
+  48 h; three shutdowns move it); a won raid in a Parasite-held territory weakens its hold -1 for 48 h (up to -2); Station value
+  = 0.25-0.5 a pilot by rating (pair max +1); a stationed Lancer shoots down one dropship of an airborne assault.
+- **Alerts** go live after the pilot's first war battle (the moment the browser permission is offered); Telegram through the
+  existing bot chat (ntf/<pid>); at most 3 a local day, none 22:00-08:00 local, 2 h apart at least, batched, an hour of time left.
+- **Tests changed by a decision here** (rule changed, not loosened): conquest-sector-authority, conquest-sector-victory,
+  conquest-war-authority, conquest-sortie-chain (the alert is a war assault, not a timer); conquest-frontier-recovery (the Refuge is
+  Heartland: never captured, so no retake path; a defense lost in person counts as absent, decision 3).
 
 ### Research: the best comparable games (Nov 22, before building)
 What the leaders do with a living war, timers, absence and alerts, and what Session 7 takes from each (sources are public

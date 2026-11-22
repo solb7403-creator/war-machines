@@ -91,10 +91,7 @@ export function reportTz(s,tz){if(tz===undefined)return;const v=Math.round(Numbe
 // ---- a war battle: start, then settle -------------------------------------------------------------------------------------------
 // The event this operation fights now (an assault on its territory, the LDF's counterattack, or the Grand Offensive on one of its
 // targets), or null. The phone shows the same thing from the same rules.
-export function battleFor(w,op,now){if(!op?.war)return null;const t=op.territory;
- if(op.war==='c')return w.ev.find(e=>e.k==='c'&&e.t===t&&!e.tr&&e.l*WAR.tickMs>now)||null;
- const g=w.go;if(g&&!g.done&&!g.tr&&g.t.includes(t)&&g.open*WAR.tickMs<=now&&g.end*WAR.tickMs>now)return {id:'go'+g.w,k:'g',t,g:g.g,go:1};
- return w.ev.find(e=>e.k==='a'&&e.t===t&&!e.tr&&e.l*WAR.tickMs>now)||null;}
+export const battleFor=WR.battleFor;
 export function warCheck(s,op,now){const w=war(s,now),e=battleFor(w,op,now);if(!e)fail('no battle here right now: the War Map shows what is inbound');return e;}
 // the battle begins: the one attempt is spent now. Returns the s.sectorDefense record.
 export function warBegin(s,op,now){const w=war(s,now),e=warCheck(s,op,now),b=WR.begin(w,e.id,s.attempt,now);if(!b)fail('this battle was already fought');al1(s);
@@ -103,10 +100,10 @@ const al1=s=>{alertSettings(s).ask=1;};   // the pilot's first war battle: from 
 // the battle's authored extras: the general who leads an assault joins its last wave; the Grand Offensive fights three waves
 export function warExtras(a,B){if(!a)return;const g=WR.GEN[a.g];if(g)B.general={id:g.id,stars:g.stars,pattern:g.pattern};if(a.go)B.waveMax=3;}
 // victory, defeat or a retreat. Returns the receipt (s.settlement).
-export function warOutcome(s,outcome,now){const a=s.sectorDefense;if(!a?.active)return s.settlement||null;a.active=false;const w=war(s,now),op=C.operations[s.mission],won=outcome==='victory',t=a.territory,kind=a.kind;
+export function warOutcome(s,outcome,now){const a=s.sectorDefense;if(!a?.active)return s.settlement||null;a.active=false;const w=war(s,now),t=a.territory||a.sector,kind=a.kind||'a',op=C.operations[s.mission]?.war?C.operations[s.mission]:C.operations[WR.opOf({k:kind==='c'?'c':'a',t})],won=outcome==='victory';
  const x=a.sector?s.territory?.[a.sector]:null;if(x&&x.status==='contested'){x.status=x.owner==='humanity'?'secured':(x.lostAt?'recaptured':'active-parasites');}   // the Frontline sector goes back to how it was; the war decides the ground
- const r=WR.settle(w,a.ev,won,now,a.attempt),base={kind:'war',war:kind,territory:t,outcome,at:now,stolen:0};
- if(!won||!r){settleOpKills(s,now);const receipt={...base,ptsRaw:0,cp:0,alloy:0,biomass:0,helium:0,used:1,line:'The strength roll decides it when it lands: '+(WR.odds(w,kind==='go'?{k:'a',t,g:w.go?.g,air:1,ds:1,go:1}:WR.pending(w,a.ev),{...ctxOf(s),now})?.line||'')};s.notice=receipt;frontSync(s,now);return receipt;}
+ const r=WR.settle(w,a.ev,won,now,a.attempt),base={kind:won&&r?(kind==='c'?'war-retaken':kind==='go'?'war-offensive':'war-held'):'war-fought',war:kind,territory:t,outcome,at:now,stolen:0};
+ if(!won||!r){settleOpKills(s,now);const receipt={...base,ptsRaw:0,cp:0,alloy:0,biomass:0,helium:0,used:1,line:'The strength roll decides it when it lands: '+(WR.odds(w,kind==='go'?{k:'a',t,g:w.go?.g,air:1,ds:1,go:1}:WR.pending(w,a.ev),{...ctxOf(s),now})?.line||'')};if(a.sector&&s.territory?.[a.sector])s.territory[a.sector].defenseReport=receipt;s.notice=receipt;frontSync(s,now);return receipt;}
  discardOpKills(s);track(s,'war_won',kind==='go'?'go':kind==='c'?'counter':'assault',t);const danger=kind==='a'?'defense':kind==='go'?'VETERAN':WR.dangerOf(t),pts=earn(s,'defense',WR.battlePoints(kind,t),now,{op:true});
  const links=chainWin(s,now),pay=chained(op?.reward||{cp:160,alloy:15,biomass:10,helium:2},links);s.ledger.cp+=pay.cp;for(const k of ['alloy','biomass','helium'])s.ledger.cargo[k]+=pay[k]||0;
  const key='war:'+a.ev+':'+(a.attempt|0),mn=cacheMinerals(s,danger,key),loot=bind(s,kind==='a'?roll(s,'defense',key):roll(s,'chest',key),now,{where:'war battle'});
@@ -115,7 +112,7 @@ export function warOutcome(s,outcome,now){const a=s.sectorDefense;if(!a?.active)
  if(kind==='c'&&a.sector)reSecure(s,a.sector,now);   // you retook it in person: the Frontline sector on that ground is yours again
  const receipt={...base,ptsRaw:pts,...(Object.keys(mn).length?{mn}:{}),...(empty(loot)&&!loot.pieces?{}:{loot}),cp:pay.cp,alloy:pay.alloy||0,biomass:pay.biomass||0,helium:pay.helium||0,reputation:40,...(trophy?{trophy}:{}),...(links?{chain:chainItem(s,key,links,now)}:{}),
   entrenched:kind!=='c'||w.o[t]==='h'?now+WAR.entrenchMs:0,...(kind==='go'?{targets:r.targets}:{})};
- s.notice=receipt;frontSync(s,now);return receipt;}
+ if(a.sector&&s.territory?.[a.sector])s.territory[a.sector].defenseReport=receipt;s.notice=receipt;frontSync(s,now);return receipt;}
 function reSecure(s,sector,now){s.territory=s.territory||{};const x=s.territory[sector]||{};s.territory[sector]={...x,owner:'humanity',status:'secured',capturedAt:x.capturedAt||now,awaitingReinforcements:false};s.achievements['secured-'+sector]=s.achievements['secured-'+sector]||now;}
 // a raid won (missionReward): in a Parasite-held territory it weakens the hold; in the portal's territory it shuts the portal for 48 h
 export function warRaid(s,op,now){const w=war(s,now),id=op?.sector&&WR.BY[op.sector]?op.sector:null;if(!id)return null;const r=WR.raidWon(w,id,now);return Object.keys(r).length?r:null;}
@@ -123,7 +120,7 @@ export function warRaid(s,op,now){const w=war(s,now),id=op?.sector&&WR.BY[op.sec
 // Events: the fights the pilot can still join, plus what the war will announce before the front holds (a full day after this
 // request), forecast from the same deterministic clock (nothing is sent before its announcement). Only the announcement's time,
 // territory and landing are written; the rolls never leave the Conquest record.
-export function alertDoc(s,now){const w=s.war,a=alertSettings(s);if(!w)return null;const live=a.on===1&&a.ask===1;
+export function alertDoc(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.war,now),a=alertSettings(s);const live=a.on===1&&a.ask===1;
  const evs=WR.alertEvents(w),seen=new Set(evs.map(e=>e.id));
  if(live){const f=structuredClone(w),ctx=ctxOf(s),end=WR.tickOf(now+WAR.freezeMs-1);for(let k=f.k+1;k<=end;k++){WR.step(f,k,seedOf(s),{...ctx});for(const e of WR.alertEvents(f))if(!seen.has(e.id)){seen.add(e.id);evs.push(e);}}}
  const ev=evs.filter(e=>e.until>now).map(e=>({id:e.id,k:e.kind,t:e.t,at:e.at,until:e.until,...(e.n?{n:e.n}:{})})).sort((x,y)=>x.at-y.at).slice(0,12);
@@ -131,5 +128,6 @@ export function alertDoc(s,now){const w=s.war,a=alertSettings(s);if(!w)return nu
  return {v:1,on:live?1:0,tz:a.tz,ev,nx:plan[0]?.at||0,ps:a.ps.map(p=>({e:p.e,k:p.k,a:p.a}))};}
 // After a Conquest reducer: the schedule doc to write after the commit, or null when nothing it depends on changed (a cheap key:
 // the tick, the events and their attempts, the Grand Offensive, ownership and the alert settings). Kept in s.war.ak.
-export function alertChange(s,now){const w=s.war;if(!w)return null;const a=alertSettings(s),key=WR.u32(JSON.stringify([w.k,w.ev.map(e=>[e.id,e.tr|0,e.l]),w.go&&[w.go.w,w.go.tr|0,w.go.done|0],a.on,a.ask,a.tz,a.ps.map(p=>p.e),WR.IDS.map(id=>w.o[id]).join('')])).toString(36);
+export function alertChange(s,now){try{return alertChange0(s,now);}catch(_){return null;}}   // best effort: the alerts never fail a Conquest request
+function alertChange0(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.war,now);const a=alertSettings(s),key=WR.u32(JSON.stringify([w.k,w.ev.map(e=>[e.id,e.tr|0,e.l]),w.go&&[w.go.w,w.go.tr|0,w.go.done|0],a.on,a.ask,a.tz,a.ps.map(p=>p.e),WR.IDS.map(id=>w.o[id]).join('')])).toString(36);
  if(key===w.ak)return null;w.ak=key;return alertDoc(s,now);}
