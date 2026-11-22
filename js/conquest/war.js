@@ -203,7 +203,7 @@ function fortifyCost(id,level,pass=false,rebuild=false){const t=BY[id],F=WAR.for
 const fortifyTime=(level,pass=false)=>Math.round(WAR.fortify.timeMs[clamp(level,1,WAR.fortify.max)-1]*(pass?WAR.pass.time:1));
 const fortifySlots=pass=>pass?WAR.pass.slots:WAR.fortify.slots;
 // what it takes to fortify every capturable human territory of the start (12) from 0 to 5 (decision 6's year-long pace)
-function fortifyAll(pass=false){const out={cp:0,alloy:0,helium:0,ms:0,jobs:0};for(const t of TERRITORIES){if(!t.cap||t.start!=='h')continue;for(let l=1;l<=WAR.fortify.max;l++){const c=fortifyCost(t.id,l,pass);out.cp+=c.cp;out.alloy+=c.alloy;out.helium+=c.helium;out.ms+=fortifyTime(l,pass);out.jobs++;}}return out;}
+function fortifyAll(pass=false){const out={cp:0,alloy:0,helium:0,ms:0,jobs:0};for(const t of TERRITORIES){if(!t.cap||t.start!=='h')continue;for(let l=1;l<=WAR.fortify.max;l++){const c=fortifyCost(t.id,l,pass);for(const k of ['cp','alloy','helium'])out[k]=out[k]+c[k];out.ms+=fortifyTime(l,pass);out.jobs++;/* a price table's sum: no pilot's CP changes here */}}return out;}
 // ---- supply (decision 10): +2% production per held Frontier or Warfront territory at fortification level 5 (0.4% a level), max +16%
 // (materials and CP only, never points) ----
 function supply(w){if(!w?.o)return 0;let v=0;for(const t of TERRITORIES)if((t.ring===3||t.ring===4)&&w.o[t.id]==='h')v+=WAR.supply.per*Math.min(WAR.supply.levels,w.f?.[t.id]||0)/WAR.supply.levels;return Math.min(WAR.supply.max,Math.round(v*10000)/10000);}

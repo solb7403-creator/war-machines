@@ -6566,13 +6566,12 @@ If your context was cleared, read docs/conquest/audit/SESSION_07_BRIEF.md first;
   conquest-sector-authority, conquest-sector-victory, conquest-frontier-recovery, conquest-war-authority, conquest-sortie-chain.
   All CI node tests that were run pass (ladder, base progression, plot, analytics, every wtest/*); guardrails, fair-arcade,
   gear-combat, wtest/test and owner-rules still to re-run on the final code. `npm install --prefix worker` is needed locally.
-- **Next, in order:** (1) the drift test `dev/tests/conquest-war-drift.mjs` (settings already tuned: alone 2.77 days a territory
-  in week 1; half the assaults + daily fortify from 7 Parasite back to ~4.6 in a week; tuning harness in the scratchpad was
-  `drift.mjs`); (2) the alerts test `dev/tests/conquest-war-alerts.mjs` (alertPlan caps / night / batching / joinable; push
-  round trip with a node:crypto decryptor; VAPID JWT verify; the cron with fake tg/push via worker.fetch + fakedb); (3) a Worker
-  HTTP test `dev/tests/wtest/conquest-front.mjs` (public state carries no rolls; war actions; one claim; wal doc written);
-  (4) `docs/owner-rules.json` cpSites for conquest-war.js (Fortify debit/refund, spoils: owner decisions 6 and 10) + the
-  `owner-rules-change` label on the PR; (5) the browser test `dev/tests/conquest-war-browser.py` (War Map, cards, War Report at
+- **Done since:** `dev/tests/conquest-war-drift.mjs` (alone: one territory every 2.73 days; active: 7 -> 4.71 in a week, 88% of
+  pilots), `dev/tests/conquest-war-alerts.mjs` (46 checks: caps, night, batching, push round trip, VAPID, the cron on a fake DB:
+  `dev/tests/wtest/fakedb.mjs` now mirrors the new `wal/nx` index), publicState strips the authored rolls, `docs/owner-rules.json`
+  cpSites: conquest-campaign 4 -> 3, conquest-war 3 (Fortify cost + refund, war spoils: owner decisions 6 and 10) -> the PR needs
+  the `owner-rules-change` label. owner-rules PASS (47).
+- **Next, in order:** (3) optional Worker HTTP test; (5) the browser test `dev/tests/conquest-war-browser.py` (War Map, cards, War Report at
   390x844, 390x700, 320x568 touch and 1366x768, 1920x1080 mouse; fits or scrolls; keyboard) using `dev/tests/conquest-server.mjs`
   with a new war fixture; (6) add every new test to `.github/workflows/conquest-check.yml` (small additive edit); (7) full suite,
   reviewers, release.
