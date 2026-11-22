@@ -6709,3 +6709,9 @@ riseofkingdoms.fandom.com Lost Kingdom.
   screens are the same code in both shells). Two new blockers, fixed: a fortification finished while away now stands before the
   assault lands (jobs applied inside each tick, tested: 50% -> 70%); phones keep a one-line reward ("WIN IT: 675 PTS · SPOILS ·
   ONE ATTEMPT") and the MOON / FRONTLINE explainer. Two rounds done: no third round (nothing clearly broken remains).
+
+### Release (in progress)
+- PR #148 opened from build 20261122065955 with the `owner-rules-change` label (added just after opening: the first owner-rules run
+  failed only on the missing label; the next push re-runs it). The first conquest CI run failed in `dev/tests/conquest-regression.sh`
+  (a source-level test runs `map()` with a minimal fake DOM: the new WAR MAP button used `d.append` and a bare `warMap` reference):
+  fixed (an `el()` row and a guarded call), the script passes locally. Main is still d61d259 (nothing to merge).
