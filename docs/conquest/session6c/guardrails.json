@@ -3,11 +3,11 @@
  "scope": "scripted pilot (the raids test's physical-input controller) on the shared engine; not a human playtest",
  "gearOrder": {
   "seeds": 4,
-  "encounters": 51,
+  "encounters": 60,
   "totals": {
-   "starter": 130,
-   "epic": 164,
-   "legendary": 183
+   "starter": 154,
+   "epic": 189,
+   "legendary": 219
   },
   "rows": [
    {
@@ -655,6 +655,132 @@
     }
    },
    {
+    "id": "colony-defense-colony",
+    "danger": "STANDARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 353,
+     "epic": 375,
+     "legendary": 380
+    }
+   },
+   {
+    "id": "colony-defense-reservoir",
+    "danger": "STANDARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 356,
+     "epic": 369,
+     "legendary": 382
+    }
+   },
+   {
+    "id": "war-defense-crossroads",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 377,
+     "epic": 389,
+     "legendary": 391
+    }
+   },
+   {
+    "id": "counterattack-western",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 250,
+     "epic": 321,
+     "legendary": 350
+    }
+   },
+   {
+    "id": "counterattack-helium",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 95,
+     "epic": 277,
+     "legendary": 319
+    }
+   },
+   {
+    "id": "counterattack-crossroads",
+    "danger": "HARD",
+    "wins": {
+     "starter": 4,
+     "epic": 4,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 301,
+     "epic": 322,
+     "legendary": 353
+    }
+   },
+   {
+    "id": "counterattack-oxygen",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 1,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 9,
+     "legendary": 185
+    }
+   },
+   {
+    "id": "counterattack-ridge",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 65
+    }
+   },
+   {
+    "id": "counterattack-ash",
+    "danger": "VETERAN",
+    "wins": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 4
+    },
+    "hull": {
+     "starter": 0,
+     "epic": 0,
+     "legendary": 207
+    }
+   },
+   {
     "id": "base-defense (town tier 1)",
     "danger": "HARD",
     "wins": {
@@ -755,653 +881,443 @@
    "raid-siege-4",
    "raid-siege-5"
   ],
-  "gear": "equal Rare gear (pilot and allies Rare)",
-  "scoring": "a win first, then the faster clear; a loss by the damage dealt",
+  "seeds": 2,
+  "gear": "stock pilot, four allies in equal Rare gear",
   "results": {
-   "balanced": {
-    "raid-intercept-3": {
-     "win": 1,
-     "s": 37.55,
-     "dmg": 4647,
-     "v": 999962.45
+   "balanced": [
+    {
+     "w": 2,
+     "t": 45.88
     },
-    "raid-intercept-4": {
-     "win": 1,
-     "s": 39.6,
-     "dmg": 3756,
-     "v": 999960.4
+    {
+     "w": 2,
+     "t": 66.72
     },
-    "raid-intercept-5": {
-     "win": 1,
-     "s": 31.25,
-     "dmg": 3756,
-     "v": 999968.75
+    {
+     "w": 2,
+     "t": 30.58
     },
-    "raid-sabotage-3": {
-     "win": 1,
-     "s": 38.6,
-     "dmg": 4723,
-     "v": 999961.4
+    {
+     "w": 2,
+     "t": 49.33
     },
-    "raid-sabotage-4": {
-     "win": 1,
-     "s": 42.4,
-     "dmg": 3832,
-     "v": 999957.6
+    {
+     "w": 2,
+     "t": 48.58
     },
-    "raid-sabotage-5": {
-     "win": 1,
-     "s": 83.4,
-     "dmg": 5538,
-     "v": 999916.6
+    {
+     "w": 2,
+     "t": 60.13
     },
-    "raid-battery-3": {
-     "win": 1,
-     "s": 49.5,
-     "dmg": 5949,
-     "v": 999950.5
+    {
+     "w": 2,
+     "t": 53.75
     },
-    "raid-battery-4": {
-     "win": 1,
-     "s": 35.35,
-     "dmg": 3988,
-     "v": 999964.65
+    {
+     "w": 2,
+     "t": 56.33
     },
-    "raid-battery-5": {
-     "win": 1,
-     "s": 37.25,
-     "dmg": 3988,
-     "v": 999962.75
+    {
+     "w": 2,
+     "t": 53.53
     },
-    "raid-extraction-3": {
-     "win": 1,
-     "s": 80.55,
-     "dmg": 6706,
-     "v": 999919.45
+    {
+     "w": 2,
+     "t": 65.35
     },
-    "raid-extraction-4": {
-     "win": 1,
-     "s": 80.5,
-     "dmg": 6861,
-     "v": 999919.5
+    {
+     "w": 2,
+     "t": 103.35
     },
-    "raid-extraction-5": {
-     "win": 1,
-     "s": 54.65,
-     "dmg": 5179,
-     "v": 999945.35
+    {
+     "w": 2,
+     "t": 68.03
     },
-    "raid-siege-3": {
-     "win": 1,
-     "s": 37.55,
-     "dmg": 4255,
-     "v": 999962.45
+    {
+     "w": 2,
+     "t": 38.77
     },
-    "raid-siege-4": {
-     "win": 1,
-     "s": 54.25,
-     "dmg": 4434,
-     "v": 999945.75
+    {
+     "w": 2,
+     "t": 53.85
     },
-    "raid-siege-5": {
-     "win": 1,
-     "s": 23.25,
-     "dmg": 3364,
-     "v": 999976.75
+    {
+     "w": 2,
+     "t": 25.25
     }
-   },
-   "guardian": {
-    "raid-intercept-3": {
-     "win": 1,
-     "s": 36.85,
-     "dmg": 4647,
-     "v": 999963.15
+   ],
+   "guardian": [
+    {
+     "w": 2,
+     "t": 53.5
     },
-    "raid-intercept-4": {
-     "win": 1,
-     "s": 38.65,
-     "dmg": 3756,
-     "v": 999961.35
+    {
+     "w": 1,
+     "t": 63
     },
-    "raid-intercept-5": {
-     "win": 1,
-     "s": 36.65,
-     "dmg": 3756,
-     "v": 999963.35
+    {
+     "w": 2,
+     "t": 51.35
     },
-    "raid-sabotage-3": {
-     "win": 1,
-     "s": 57.05,
-     "dmg": 5793,
-     "v": 999942.95
+    {
+     "w": 2,
+     "t": 48.95
     },
-    "raid-sabotage-4": {
-     "win": 1,
-     "s": 62.4,
-     "dmg": 4902,
-     "v": 999937.6
+    {
+     "w": 2,
+     "t": 74.58
     },
-    "raid-sabotage-5": {
-     "win": 1,
-     "s": 32.45,
-     "dmg": 3832,
-     "v": 999967.55
+    {
+     "w": 2,
+     "t": 37.13
     },
-    "raid-battery-3": {
-     "win": 1,
-     "s": 55.15,
-     "dmg": 5949,
-     "v": 999944.85
+    {
+     "w": 2,
+     "t": 50.55
     },
-    "raid-battery-4": {
-     "win": 1,
-     "s": 41.05,
-     "dmg": 3988,
-     "v": 999958.95
+    {
+     "w": 2,
+     "t": 57.63
     },
-    "raid-battery-5": {
-     "win": 1,
-     "s": 81.9,
-     "dmg": 5694,
-     "v": 999918.1
+    {
+     "w": 2,
+     "t": 61
     },
-    "raid-extraction-3": {
-     "win": 1,
-     "s": 65,
-     "dmg": 6070,
-     "v": 999935
+    {
+     "w": 2,
+     "t": 68.15
     },
-    "raid-extraction-4": {
-     "win": 1,
-     "s": 98.2,
-     "dmg": 6861,
-     "v": 999901.8
+    {
+     "w": 2,
+     "t": 91.47
     },
-    "raid-extraction-5": {
-     "win": 1,
-     "s": 73.65,
-     "dmg": 6861,
-     "v": 999926.35
+    {
+     "w": 2,
+     "t": 79.35
     },
-    "raid-siege-3": {
-     "win": 1,
-     "s": 33.75,
-     "dmg": 4255,
-     "v": 999966.25
+    {
+     "w": 2,
+     "t": 51.33
     },
-    "raid-siege-4": {
-     "win": 1,
-     "s": 54.15,
-     "dmg": 4434,
-     "v": 999945.85
+    {
+     "w": 2,
+     "t": 56.25
     },
-    "raid-siege-5": {
-     "win": 1,
-     "s": 70.15,
-     "dmg": 5071,
-     "v": 999929.85
+    {
+     "w": 2,
+     "t": 44.9
     }
-   },
-   "breacher": {
-    "raid-intercept-3": {
-     "win": 1,
-     "s": 35.65,
-     "dmg": 4647,
-     "v": 999964.35
+   ],
+   "breacher": [
+    {
+     "w": 2,
+     "t": 39.3
     },
-    "raid-intercept-4": {
-     "win": 1,
-     "s": 45.55,
-     "dmg": 3756,
-     "v": 999954.45
+    {
+     "w": 2,
+     "t": 56.67
     },
-    "raid-intercept-5": {
-     "win": 1,
-     "s": 32.85,
-     "dmg": 3756,
-     "v": 999967.15
+    {
+     "w": 2,
+     "t": 32.35
     },
-    "raid-sabotage-3": {
-     "win": 1,
-     "s": 40.35,
-     "dmg": 4723,
-     "v": 999959.65
+    {
+     "w": 2,
+     "t": 39.5
     },
-    "raid-sabotage-4": {
-     "win": 1,
-     "s": 57.55,
-     "dmg": 4902,
-     "v": 999942.45
+    {
+     "w": 2,
+     "t": 81.65
     },
-    "raid-sabotage-5": {
-     "win": 1,
-     "s": 56.3,
-     "dmg": 4902,
-     "v": 999943.7
+    {
+     "w": 2,
+     "t": 67.45
     },
-    "raid-battery-3": {
-     "win": 1,
-     "s": 64.2,
-     "dmg": 5949,
-     "v": 999935.8
+    {
+     "w": 2,
+     "t": 57.22
     },
-    "raid-battery-4": {
-     "win": 1,
-     "s": 38.4,
-     "dmg": 3988,
-     "v": 999961.6
+    {
+     "w": 2,
+     "t": 61.47
     },
-    "raid-battery-5": {
-     "win": 1,
-     "s": 37.2,
-     "dmg": 3988,
-     "v": 999962.8
+    {
+     "w": 2,
+     "t": 43.83
     },
-    "raid-extraction-3": {
-     "win": 1,
-     "s": 65.15,
-     "dmg": 6070,
-     "v": 999934.85
+    {
+     "w": 2,
+     "t": 68.1
     },
-    "raid-extraction-4": {
-     "win": 1,
-     "s": 96.3,
-     "dmg": 6861,
-     "v": 999903.7
+    {
+     "w": 2,
+     "t": 105.35
     },
-    "raid-extraction-5": {
-     "win": 1,
-     "s": 52.85,
-     "dmg": 5179,
-     "v": 999947.15
+    {
+     "w": 2,
+     "t": 75.55
     },
-    "raid-siege-3": {
-     "win": 1,
-     "s": 50.8,
-     "dmg": 5325,
-     "v": 999949.2
+    {
+     "w": 2,
+     "t": 53.53
     },
-    "raid-siege-4": {
-     "win": 1,
-     "s": 61.8,
-     "dmg": 4434,
-     "v": 999938.2
+    {
+     "w": 2,
+     "t": 36.65
     },
-    "raid-siege-5": {
-     "win": 1,
-     "s": 58,
-     "dmg": 4434,
-     "v": 999942
+    {
+     "w": 2,
+     "t": 29.13
     }
-   },
-   "lancer": {
-    "raid-intercept-3": {
-     "win": 1,
-     "s": 57.8,
-     "dmg": 5717,
-     "v": 999942.2
+   ],
+   "lancer": [
+    {
+     "w": 2,
+     "t": 49.8
     },
-    "raid-intercept-4": {
-     "win": 1,
-     "s": 77.35,
-     "dmg": 6508,
-     "v": 999922.65
+    {
+     "w": 2,
+     "t": 40.2
     },
-    "raid-intercept-5": {
-     "win": 1,
-     "s": 36.15,
-     "dmg": 3756,
-     "v": 999963.85
+    {
+     "w": 2,
+     "t": 51.58
     },
-    "raid-sabotage-3": {
-     "win": 1,
-     "s": 58.1,
-     "dmg": 5793,
-     "v": 999941.9
+    {
+     "w": 2,
+     "t": 78.17
     },
-    "raid-sabotage-4": {
-     "win": 1,
-     "s": 47.85,
-     "dmg": 3832,
-     "v": 999952.15
+    {
+     "w": 2,
+     "t": 37.95
     },
-    "raid-sabotage-5": {
-     "win": 1,
-     "s": 79.5,
-     "dmg": 5538,
-     "v": 999920.5
+    {
+     "w": 2,
+     "t": 68.5
     },
-    "raid-battery-3": {
-     "win": 1,
-     "s": 66.25,
-     "dmg": 5949,
-     "v": 999933.75
+    {
+     "w": 2,
+     "t": 55.98
     },
-    "raid-battery-4": {
-     "win": 1,
-     "s": 63.9,
-     "dmg": 5058,
-     "v": 999936.1
+    {
+     "w": 2,
+     "t": 40.95
     },
-    "raid-battery-5": {
-     "win": 1,
-     "s": 76.25,
-     "dmg": 5694,
-     "v": 999923.75
+    {
+     "w": 2,
+     "t": 61.3
     },
-    "raid-extraction-3": {
-     "win": 1,
-     "s": 63.5,
-     "dmg": 6070,
-     "v": 999936.5
+    {
+     "w": 2,
+     "t": 67.38
     },
-    "raid-extraction-4": {
-     "win": 1,
-     "s": 78.85,
-     "dmg": 6861,
-     "v": 999921.15
+    {
+     "w": 2,
+     "t": 83.97
     },
-    "raid-extraction-5": {
-     "win": 1,
-     "s": 64.95,
-     "dmg": 5179,
-     "v": 999935.05
+    {
+     "w": 2,
+     "t": 68.33
     },
-    "raid-siege-3": {
-     "win": 1,
-     "s": 35.05,
-     "dmg": 4255,
-     "v": 999964.95
+    {
+     "w": 2,
+     "t": 37.7
     },
-    "raid-siege-4": {
-     "win": 1,
-     "s": 52.05,
-     "dmg": 4434,
-     "v": 999947.95
+    {
+     "w": 2,
+     "t": 59.1
     },
-    "raid-siege-5": {
-     "win": 1,
-     "s": 32.9,
-     "dmg": 3364,
-     "v": 999967.1
+    {
+     "w": 2,
+     "t": 26.35
     }
-   },
-   "mender": {
-    "raid-intercept-3": {
-     "win": 1,
-     "s": 39.85,
-     "dmg": 4647,
-     "v": 999960.15
+   ],
+   "mender": [
+    {
+     "w": 2,
+     "t": 63.48
     },
-    "raid-intercept-4": {
-     "win": 1,
-     "s": 38.75,
-     "dmg": 3756,
-     "v": 999961.25
+    {
+     "w": 2,
+     "t": 62.08
     },
-    "raid-intercept-5": {
-     "win": 1,
-     "s": 63.7,
-     "dmg": 4826,
-     "v": 999936.3
+    {
+     "w": 2,
+     "t": 60.97
     },
-    "raid-sabotage-3": {
-     "win": 1,
-     "s": 40.35,
-     "dmg": 4723,
-     "v": 999959.65
+    {
+     "w": 2,
+     "t": 85.13
     },
-    "raid-sabotage-4": {
-     "win": 1,
-     "s": 59.75,
-     "dmg": 4902,
-     "v": 999940.25
+    {
+     "w": 2,
+     "t": 31.1
     },
-    "raid-sabotage-5": {
-     "win": 1,
-     "s": 44.65,
-     "dmg": 3832,
-     "v": 999955.35
+    {
+     "w": 2,
+     "t": 78.42
     },
-    "raid-battery-3": {
-     "win": 1,
-     "s": 53.7,
-     "dmg": 5949,
-     "v": 999946.3
+    {
+     "w": 2,
+     "t": 60.88
     },
-    "raid-battery-4": {
-     "win": 1,
-     "s": 41.2,
-     "dmg": 3988,
-     "v": 999958.8
+    {
+     "w": 2,
+     "t": 47.22
     },
-    "raid-battery-5": {
-     "win": 1,
-     "s": 70.15,
-     "dmg": 5058,
-     "v": 999929.85
+    {
+     "w": 2,
+     "t": 66.97
     },
-    "raid-extraction-3": {
-     "win": 1,
-     "s": 63.35,
-     "dmg": 6070,
-     "v": 999936.65
+    {
+     "w": 2,
+     "t": 72.95
     },
-    "raid-extraction-4": {
-     "win": 1,
-     "s": 103.75,
-     "dmg": 6582,
-     "v": 999896.25
+    {
+     "w": 2,
+     "t": 108
     },
-    "raid-extraction-5": {
-     "win": 1,
-     "s": 91.65,
-     "dmg": 6861,
-     "v": 999908.35
+    {
+     "w": 2,
+     "t": 98.3
     },
-    "raid-siege-3": {
-     "win": 1,
-     "s": 64.55,
-     "dmg": 5325,
-     "v": 999935.45
+    {
+     "w": 2,
+     "t": 47.88
     },
-    "raid-siege-4": {
-     "win": 1,
-     "s": 39.95,
-     "dmg": 3364,
-     "v": 999960.05
+    {
+     "w": 2,
+     "t": 52.77
     },
-    "raid-siege-5": {
-     "win": 1,
-     "s": 53.45,
-     "dmg": 4434,
-     "v": 999946.55
+    {
+     "w": 2,
+     "t": 28.8
     }
-   },
-   "corroder": {
-    "raid-intercept-3": {
-     "win": 1,
-     "s": 57.35,
-     "dmg": 5717,
-     "v": 999942.65
+   ],
+   "corroder": [
+    {
+     "w": 2,
+     "t": 59.5
     },
-    "raid-intercept-4": {
-     "win": 1,
-     "s": 51.45,
-     "dmg": 4826,
-     "v": 999948.55
+    {
+     "w": 2,
+     "t": 48.73
     },
-    "raid-intercept-5": {
-     "win": 1,
-     "s": 40.7,
-     "dmg": 3756,
-     "v": 999959.3
+    {
+     "w": 2,
+     "t": 39.92
     },
-    "raid-sabotage-3": {
-     "win": 1,
-     "s": 42.4,
-     "dmg": 4723,
-     "v": 999957.6
+    {
+     "w": 2,
+     "t": 42.3
     },
-    "raid-sabotage-4": {
-     "win": 1,
-     "s": 58.6,
-     "dmg": 4902,
-     "v": 999941.4
+    {
+     "w": 2,
+     "t": 71.63
     },
-    "raid-sabotage-5": {
-     "win": 1,
-     "s": 33.2,
-     "dmg": 3832,
-     "v": 999966.8
+    {
+     "w": 2,
+     "t": 58.82
     },
-    "raid-battery-3": {
-     "win": 1,
-     "s": 58.65,
-     "dmg": 5949,
-     "v": 999941.35
+    {
+     "w": 2,
+     "t": 72.83
     },
-    "raid-battery-4": {
-     "win": 1,
-     "s": 43.15,
-     "dmg": 3988,
-     "v": 999956.85
+    {
+     "w": 2,
+     "t": 83.33
     },
-    "raid-battery-5": {
-     "win": 1,
-     "s": 64.9,
-     "dmg": 5058,
-     "v": 999935.1
+    {
+     "w": 2,
+     "t": 51.35
     },
-    "raid-extraction-3": {
-     "win": 1,
-     "s": 65.05,
-     "dmg": 6070,
-     "v": 999934.95
+    {
+     "w": 2,
+     "t": 55.17
     },
-    "raid-extraction-4": {
-     "win": 1,
-     "s": 101.25,
-     "dmg": 6582,
-     "v": 999898.75
+    {
+     "w": 2,
+     "t": 104.05
     },
-    "raid-extraction-5": {
-     "win": 1,
-     "s": 67.15,
-     "dmg": 5179,
-     "v": 999932.85
+    {
+     "w": 2,
+     "t": 75.28
     },
-    "raid-siege-3": {
-     "win": 1,
-     "s": 30.1,
-     "dmg": 4255,
-     "v": 999969.9
+    {
+     "w": 2,
+     "t": 52.52
     },
-    "raid-siege-4": {
-     "win": 1,
-     "s": 52.5,
-     "dmg": 4434,
-     "v": 999947.5
+    {
+     "w": 2,
+     "t": 61.53
     },
-    "raid-siege-5": {
-     "win": 1,
-     "s": 37.75,
-     "dmg": 3364,
-     "v": 999962.25
+    {
+     "w": 2,
+     "t": 31.05
     }
-   },
-   "frostline": {
-    "raid-intercept-3": {
-     "win": 1,
-     "s": 64.65,
-     "dmg": 5717,
-     "v": 999935.35
+   ],
+   "frostline": [
+    {
+     "w": 2,
+     "t": 39.25
     },
-    "raid-intercept-4": {
-     "win": 1,
-     "s": 34.85,
-     "dmg": 3756,
-     "v": 999965.15
+    {
+     "w": 2,
+     "t": 66.2
     },
-    "raid-intercept-5": {
-     "win": 1,
-     "s": 36.3,
-     "dmg": 3756,
-     "v": 999963.7
+    {
+     "w": 2,
+     "t": 47.05
     },
-    "raid-sabotage-3": {
-     "win": 1,
-     "s": 40.45,
-     "dmg": 4723,
-     "v": 999959.55
+    {
+     "w": 1,
+     "t": 41.25
     },
-    "raid-sabotage-4": {
-     "win": 1,
-     "s": 42.55,
-     "dmg": 3832,
-     "v": 999957.45
+    {
+     "w": 2,
+     "t": 41.92
     },
-    "raid-sabotage-5": {
-     "win": 1,
-     "s": 83.2,
-     "dmg": 5538,
-     "v": 999916.8
+    {
+     "w": 2,
+     "t": 83.83
     },
-    "raid-battery-3": {
-     "win": 1,
-     "s": 59.7,
-     "dmg": 5949,
-     "v": 999940.3
+    {
+     "w": 2,
+     "t": 61.5
     },
-    "raid-battery-4": {
-     "win": 1,
-     "s": 57.1,
-     "dmg": 5058,
-     "v": 999942.9
+    {
+     "w": 2,
+     "t": 73.42
     },
-    "raid-battery-5": {
-     "win": 1,
-     "s": 67.4,
-     "dmg": 5058,
-     "v": 999932.6
+    {
+     "w": 2,
+     "t": 76.42
     },
-    "raid-extraction-3": {
-     "win": 1,
-     "s": 65.05,
-     "dmg": 6070,
-     "v": 999934.95
+    {
+     "w": 2,
+     "t": 66.38
     },
-    "raid-extraction-4": {
-     "win": 1,
-     "s": 97.8,
-     "dmg": 6861,
-     "v": 999902.2
+    {
+     "w": 2,
+     "t": 108.2
     },
-    "raid-extraction-5": {
-     "win": 1,
-     "s": 85.45,
-     "dmg": 6861,
-     "v": 999914.55
+    {
+     "w": 2,
+     "t": 102.63
     },
-    "raid-siege-3": {
-     "win": 1,
-     "s": 30.8,
-     "dmg": 4255,
-     "v": 999969.2
+    {
+     "w": 2,
+     "t": 44.28
     },
-    "raid-siege-4": {
-     "win": 1,
-     "s": 37.3,
-     "dmg": 3364,
-     "v": 999962.7
+    {
+     "w": 2,
+     "t": 57.28
     },
-    "raid-siege-5": {
-     "win": 1,
-     "s": 29.15,
-     "dmg": 3364,
-     "v": 999970.85
+    {
+     "w": 2,
+     "t": 28.77
     }
-   }
+   ]
   }
  }
 }
