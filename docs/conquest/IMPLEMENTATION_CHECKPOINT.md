@@ -6787,8 +6787,11 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
 - Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`, head `af852a8`); Checkpoint 46 is
   Session 7 (released); this is Checkpoint 47.
 - **Done:** brief saved word for word (first slice); sources read; research and the design below recorded.
-- **Next:** slice 1, the resumable raid engine `js/conquest/raid.js` (a port of plot.js drillGen proven identical to `drill()`
-  by a test, plus garrison units, the live pilot and save/restore), then the town attack track.
+- **Done (slice 1):** `js/conquest/raid.js` (ConquestRaid, in the CONQUEST bundle via worker/build-sim.mjs): the drill's port,
+  proven identical to `drill()` in 70 raids (every site; starter, two CC10, mid and damaged towns; levels 1-10) by the new
+  `dev/tests/conquest-raid-engine.mjs` (9 checks), plus save/restore, a main lane (half the spawns) and defenders (garrison,
+  fielded Platoon, the pilot: tankOf() stats scaled by ConquestRaid.UNIT, PROPOSAL numbers tuned by the fortress tests).
+- **Next:** the town attack track (shared rules `js/conquest/townwar.js`, Worker `worker/src/conquest-town.js`).
 
 ### Research: the best comparable games (Nov 23, before building)
 What the leaders do with PvE attacks on your base, defending in person, garrisons, gear loadouts, alerts and streaks, and what
