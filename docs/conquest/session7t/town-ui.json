@@ -1,29 +1,71 @@
 {
  "390x844": {
-  "beacon": "\u2604 STRIKE BEACON \u00b7 WESTERN SALVAGE REACH \u00b7 20:00 LEFT",
+  "beacon": "\u2604 STRIKE BEACON \u00b7 HELIUM BASIN \u00b7 20:00 LEFT",
   "hub": [
    "YOUR BASE",
    "",
    "RIDGE TOWN \u00b7 CC6"
   ],
   "gear": "picked",
-  "replay": "frames 299",
+  "replay": "frames 190",
   "repair": "started",
-  "live": "steps 115 \u00b7 fallen",
+  "live": "steps 118 \u00b7 held",
+  "lastChance": "fits",
+  "switches": "meteor off"
+ },
+ "390x700": {
+  "beacon": "\u2604 STRIKE BEACON \u00b7 HELIUM BASIN \u00b7 20:00 LEFT",
+  "hub": [
+   "YOUR BASE",
+   "",
+   "RIDGE TOWN \u00b7 CC6"
+  ],
+  "gear": "picked",
+  "replay": "frames 236",
+  "repair": "started",
+  "live": "steps 122 \u00b7 held",
+  "lastChance": "fits",
+  "switches": "meteor off"
+ },
+ "320x568": {
+  "beacon": "\u2604 STRIKE BEACON \u00b7 HELIUM BASIN \u00b7 20:00 LEFT",
+  "hub": [
+   "YOUR BASE",
+   "",
+   "RIDGE TOWN \u00b7 CC6"
+  ],
+  "gear": "picked",
+  "replay": "frames 188",
+  "repair": "started",
+  "live": "steps 118 \u00b7 held",
   "lastChance": "fits",
   "switches": "meteor off"
  },
  "1366x768": {
-  "beacon": "\u2604 STRIKE BEACON \u00b7 WESTERN SALVAGE REACH \u00b7 20:00 LEFT",
+  "beacon": "\u2604 STRIKE BEACON \u00b7 HELIUM BASIN \u00b7 20:00 LEFT",
   "hub": [
    "YOUR BASE",
    "",
    "RIDGE TOWN \u00b7 CC6"
   ],
   "gear": "picked",
-  "replay": "frames 245",
+  "replay": "frames 186",
   "repair": "started",
-  "live": "steps 170 \u00b7 fallen",
+  "live": "steps 181 \u00b7 held",
+  "lastChance": "fits",
+  "switches": "meteor off"
+ },
+ "1920x1080": {
+  "beacon": "\u2604 STRIKE BEACON \u00b7 HELIUM BASIN \u00b7 20:00 LEFT",
+  "hub": [
+   "YOUR BASE",
+   "",
+   "RIDGE TOWN \u00b7 CC6"
+  ],
+  "gear": "picked",
+  "replay": "frames 238",
+  "repair": "started",
+  "live": "steps 210 \u00b7 held",
   "lastChance": "fits",
   "switches": "meteor off"
  }

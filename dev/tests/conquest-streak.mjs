@@ -48,5 +48,14 @@ const mon=Date.UTC(2026,10,23,12),dayOf=t=>Math.floor(t/D);   // Monday Nov 23
  ok(TN.streakLine(st,d0+9).n===0,'after a long break the line shows 0 (it starts again on the next play)');}
 // review R2-B2: each milestone once per pilot: breaking the streak on purpose never farms its consumables
 {let st={},got=0;const d0=dayOf(mon);for(let w=0;w<8;w++)for(let d=0;d<3;d++){const r=TN.streakDay(st,d0+w*7+d);st=r.st;got+=r.rewards.filter(x=>x.it).length;}
- ok(got===2,'3 days on and 4 off for 8 weeks: '+got+' consumables (the day-1 and day-3 ones, once)');}
+ ok(got===2,'3 days on and 4 off for 8 weeks: '+got+' consumables (the day-1 and day-3 ones, once)');
+ // review (round 2): after a reset the hub's line never promises a milestone already given (8 days played, then back on day 20)
+ let s2={};for(let d=0;d<8;d++)s2=TN.streakDay(s2,d0+d).st;s2=TN.streakDay(s2,d0+20).st;const L3=TN.streakLine(s2,d0+20);
+ ok(L3.n===1&&L3.next?.d===30&&/DAY 30: TOWN DECORATION/.test(L3.text),'after a reset the line names the next milestone not yet given: '+L3.text);}
+// review R2 note: a day whose verified activity came through the world's commands (an operation won, a harvest: both are paid inside
+// applyCommands) counts on that request, with no action after it (a pilot who wins one operation and leaves)
+{const {applyCommands}=await import('../../worker/src/conquest-sim.js');const s=createState(R.STOCK_L,mon);s.inv=null;const t=mon+3600000;
+ earn(s,'field',100,t-1000,{op:true});   // the win, paid earlier in the same request's frames
+ const c=applyCommands(s,{seq:s.seq+1,commands:[{x:0,z:0}]},t);ok(c.stk?.n===1&&c.stk.nw?.d===dayOf(t),'a day won through the world\'s commands counts on that request, with no action after it');
+ const c2=applyCommands(c,{seq:c.seq+1,commands:[{x:0,z:0}]},t+60000);ok(c2.stk.n===1&&c2.inv.it.repair===c.inv.it.repair,'... once a day (the next command request adds nothing)');}
 console.log('PASS soft return streak (decision 11): '+pass+' checks');

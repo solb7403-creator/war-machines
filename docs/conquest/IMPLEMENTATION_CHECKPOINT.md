@@ -6848,7 +6848,38 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   flake while 5 runs shared the runners. `signup-browsers (webkit)` failed at `710f113` (the main game's garage: the Cores section
   did not open within 30 s at android-360, phone-390 passed); it passed at `2405729`, `7cd3bc5` and `26c4070`, and `710f113`
   changed Conquest files only. The runs of superseded commits were cancelled to free the runners; the head's run decides.
-  **Next: round 2 re-review at `ee5616a`** (both reviewers, read-only), then the release.
+  Build stamped `20261123061357` (`74f2df2`, main still `e2a7c64`); CI there: 12 of 13 green (both WebKit jobs included).
+- **Round 2 at `74f2df2`.** Reviewer 2: R2-B1 and R2-B2 PASS, decisions 1-11 PASS, no new blocker. Notes: a fight the pilot lost
+  while the unfought replay held is credited "by you" and paid (the better of the two: showing up never hurts); streak days synced
+  only after actions; no last chance inside an operation; the 5% CC-timeline guard not measured; `twsd` is 32 bits (brute-forced, it
+  now reveals only the town's own schedule). Reviewer 1: B1, B2, B4, B6 PASS; B5 PASS but the day 3-4 numbers were missing; **B3
+  FAIL**: the Worker's start, south of the Command Center, is boxed in by the Biodome at its default spot (0 m in every direction on
+  all 7 sites' day-30 model towns, 0/14 fights "fought"); **a new blocker**: after a reset the hub's streak line names milestones
+  already given. Notes: a welcome-back re-grant, held raids missing from the War Report, the alerts card copy, a Grand Offensive
+  target before the teaching raid.
+- **Fixed after round 2** (each with a test that fails without it): B3: raid.js starts the pilot on the nearest open spot (a free
+  3x3 patch, your own walls passing, opening onto at least 60 such cells; the asked spot when it is open), the same on the Worker
+  and in the phone's prediction (Biodome + Shield at their default spots: the tank drives 71 m in 5 s, 0 m before; reviewer 1's
+  stuck-real repro now moves 7-65 m in 10 s on ridge, crater and ash; its live2 repro: 16-21 of 21 fights fought, day 4 held 12/21
+  with the pilot against 3/21 unfought); the streak line skips milestones already given; streak days also sync on the command path
+  (an operation won or a harvest through the world's commands counts that day with no action after it); the Grand Offensive targets a
+  town only once its first raid has landed (the teaching raid comes first: conquest-away-raids' Grand Offensive block gains a
+  never-raided check and gives its town one landed raid first, changed for this rule); the War Report lists the town's raids since it
+  was read and a fresh one opens it (decision 9: a held raid appears only there and on the hub card; node check in
+  conquest-away-raids; the test server's town scenario marks the report read, so that browser flow is unchanged); the alerts card
+  says the one budget covers everything and its switch reads TURN ALERTS ON / OFF. Local: the 15 affected node suites,
+  conquest-regression.sh and conquest-war-browser.py PASS.
+- **The 5% guard (the Nov 10 brief), measured:** conquest-ladder-check's method reproduced in a scratch script (the audit's regular, 60
+  minutes a day, real reducers, the pilot seen at every request so the town clock runs, never defending) on its 101-pilot panel:
+  production shares only (damage cleared free) against no raids: CC5 unchanged; CC10 median 28.8 against 28.8 (0%), mean 28.15
+  against 27.28 (+3.2%): **holds**. (74 of 101 pilots flip between the greedy builder's fast and slow CC10 modes, both ways, -11 to
+  +10 days; the audit's single regular lands 2 days early on the held raids' caches.) With the damage and REPAIR paid by this
+  undefended builder (6 turrets, no walls: 95% of its raids lost): CC10 median +97%, mean +134% (21 pilots): a PROPOSAL below.
+- **Review B5's day 3-4 numbers:** the regular's young town (CC3) holds level-1 raids 18% (day 3) and 50% (day 4) unfought in the
+  fortress model (pessimistic: its first ring is not closed); reviewer 1's repro: day 3 9/40 unfought and 20/40 in person, day 4
+  26/40 and 28/40.
+- **Next: round 3** (B3 and the streak line were clearly broken, so a third round is allowed: narrow, on those fixes), CI, then the
+  release.
 - **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>
   (Session 7T Living Town)"; PR from `claude/festive-einstein-2nwwzo` to main with the body drafted from this checkpoint and the
   `owner-rules-change` label (docs/owner-rules.json cpSites +1, the held raid's cache, owner decision 5); CI green (the new `fortress`
@@ -6915,6 +6946,18 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
 - PROPOSAL (ops before launch): the alert cron visits 100 schedules every 5 minutes (about 28,800 a day); with every Conquest pilot's
   daily reminder now in it, 500,000 players need it every minute with a batch of about 200 (Workers Paid allows 1,000 outside calls
   a run).
+- PROPOSAL: REPAIR is the heavy cost of a lost raid, not the shares: an undefended builder pays about 111,000 CP of REPAIR in 42
+  repairs on the way to CC10, which then takes twice as long (the guard measurement above). Candidates, for the owner: town-raid
+  damage repaired at a lower price, or a coach step that closes a first wall ring before CC4. With defenses (the fortress model's
+  regular) a lost raid's REPAIR is 377 CP + 30 alloy + 13 composite at day 5 (about 6% of a day's CP), 1,711 CP + 158 alloy + 23
+  composite at day 120 (24%) and 4,656 CP + 385 alloy + 27 composite at day 330 (65%).
+- PROPOSAL (reviewer 1, round 2): a welcome-back re-grant of the day-1 and day-3 kits after 14 or more days away (milestones are given
+  once per pilot since R2-B2, so a returning pilot otherwise waits for the next milestone past their best).
+- Open: no last chance inside an operation (the attack was announced 12 h ahead; a pilot mid-fight elsewhere is not taken out of it:
+  the lead's decision); a fight the pilot lost while the unfought replay held is credited "by you" and paid (the better of the two).
+- Open: `twsd` is 32 bits: brute-forced from a replay seed it reveals only the town's own future schedule and raid seeds, never loot.
+- Measured for the final report: the fully built town holds 21 of 21 raids at days 60, 180 and 330 against the regular's raids
+  (levels 5-9) and the grinder's (levels 8-9).
 - Open: the ceiling (a) is "no breach", not "no damage": at the cap the fully built town holds 50 of 50 raids, yet 7 of 50 still
   wreck one building (never a vital, never 3), its Command Center never below 92%, about 527 CP-equivalent of REPAIR a raid (CP + 3
   a unit of alloy + 2 a unit of composite; `docs/conquest/session7t/fortress-model.json` ceiling.lostAny / minCore / bill).

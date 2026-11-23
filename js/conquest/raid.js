@@ -107,10 +107,16 @@ function make(plot,seed=1,opt={}){
  // garrison still stop at them)
  const tankBlocked=(i,j,own=false)=>{if(!Pl.inGrid(i,j)||!pass[i*N+j])return true;const si=blk[i*N+j];if(si<0)return false;const s=structs[si];return s.hp>0&&s.t!=='gate'&&!(own&&s.kind==='wall');};
  const hits=(x,z,own=false)=>{const r=UNIT.r;for(const [dx,dz] of [[0,0],[r,0],[-r,0],[0,r],[0,-r],[r*.7,r*.7],[-r*.7,r*.7],[r*.7,-r*.7],[-r*.7,-r*.7]])if(tankBlocked(cellOf(x+dx),cellOf(z+dz),own))return true;return false;};
+ // the pilot's start (review B3, round 2): the asked spot when the tank fits there and can drive away; otherwise the nearest cell whose
+ // 3x3 patch is free (your own walls pass) and opens onto at least 60 such cells, so a building at its default spot (the Biodome south
+ // of the Command Center) never boxes the tank in. Deterministic: the Worker and the phone's prediction pick the same spot.
+ const fits=(i,j)=>{for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(tankBlocked(i+a,j+b,true))return false;return true;},
+  roomy=(i,j)=>{const seen=new Set([i*N+j]),q=[[i,j]];while(q.length&&seen.size<60){const [a,b]=q.shift();for(const [x,y] of [[a+1,b],[a-1,b],[a,b+1],[a,b-1]]){const k=x*N+y;if(!seen.has(k)&&Pl.inGrid(x,y)&&fits(x,y)){seen.add(k);q.push([x,y]);}}}return seen.size>=60;},
+  openAt=(x,z)=>{const ci=cellOf(x),cj=cellOf(z);if(fits(ci,cj)&&roomy(ci,cj))return {x,z};for(let r=1;r<40;r++)for(let a=-r;a<=r;a++)for(const b of [-r,r])for(const [i,j] of [[ci+a,cj+b],[ci+b,cj+a]])if(Pl.inGrid(i,j)&&fits(i,j)&&roomy(i,j))return {x:Pl.cellX(i),z:Pl.cellZ(j)};return {x,z};};
  const units=[];
  {const list=Array.isArray(opt.units)?opt.units:[],gar=list.filter(u=>u&&u.k!=='p'),pts=gar.length?posts(p,gar.length,tankBlocked):[];let gi=0;
   for(const u0 of list){if(!u0)continue;const u={...u0,hp:Math.min(u0.max||u0.hp,u0.hp),down:0,cd:0,kills:0,done:0,tgt:-1};
-   if(u.k==='p'){const at=opt.pilot||{x:core.x,z:core.z+16};u.x=at.x;u.z=at.z;u.h=Number(at.h)||0;u.v=0;}else{const q=pts[gi++];u.post={x:q.x,z:q.z};u.x=q.x;u.z=q.z;u.h=Math.atan2(q.x-core.x,q.z-core.z);}
+   if(u.k==='p'){const at=opt.pilot||{x:core.x,z:core.z+16},q=openAt(Number(at.x)||0,Number(at.z)||0);u.x=q.x;u.z=q.z;u.h=Number(at.h)||0;u.v=0;}else{const q=pts[gi++];u.post={x:q.x,z:q.z};u.x=q.x;u.z=q.z;u.h=Math.atan2(q.x-core.x,q.z-core.z);}
    units.push(u);}}
  const pilot=units.find(u=>u.k==='p')||null;
  const unitShot=(u,x,z)=>{shots++;if(keepE&&shots<=3000)events.push({t:Math.round(time*10)/10,k:'shot',from:'u:'+u.id,ty:'tank',x:Math.round(x*10)/10,z:Math.round(z*10)/10});};

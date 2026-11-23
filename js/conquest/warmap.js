@@ -122,9 +122,9 @@ async function subscribe(o){const P=pushSupport();if(!P.can)return false;const p
  const raw=atob(k.key.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((k.key.length+3)%4)),key=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)key[i]=raw.charCodeAt(i);
  const sub=(await reg.pushManager.getSubscription())||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key}),j=sub.toJSON();
  return o.act('war-alerts',{push:{endpoint:j.endpoint,keys:{p256dh:j.keys.p256dh,auth:j.keys.auth}},tz:-new Date().getTimezoneOffset()});}
-function alertsCard(host,s,o){const a=s.al||{},P=pushSupport(),c=o.el('section','wm-card wm-alerts',null,host);o.el('p','wm-kicker','WAR ALERTS · '+(a.on===0?'OFF':'ON')+(a.ask?'':' after your first war battle'),c);
- o.el('p','wm-what','At most 3 a day, never in your night, several events in one alert: only fights you can still join, and the Grand Offensive.'+(P.tg?' They come from the LUNAR bot in this chat and follow its Daily reminder switch in Settings (or /stop and /start in the bot chat).':''),c);
- const row=o.el('div','wm-row',null,c);row.append(o.button(a.on===0?'TURN WAR ALERTS ON':'TURN WAR ALERTS OFF',()=>o.act('war-alerts',{on:a.on===0?1:0}),'wm-act'));if(a.on!==0)root.ConquestTownUI?.alertSwitches(c,{al:a},o);   /* Session 7T decision 9: per-type switches */
+function alertsCard(host,s,o){const a=s.al||{},P=pushSupport(),c=o.el('section','wm-card wm-alerts',null,host);o.el('p','wm-kicker','ALERTS · '+(a.on===0?'OFF':'ON')+(a.ask?'':' after your first war battle or town raid'),c);
+ o.el('p','wm-what','At most 3 a day for everything LUNAR sends, never in your night, several events in one alert, the most urgent first: raids on your town and fights you can still join, then the Grand Offensive, a breach to repair, the Strike Beacon, Meteor Strikes, a full yield and the daily reminder.'+(P.tg?' They come from the LUNAR bot in this chat and follow its Daily reminder switch in Settings (or /stop and /start in the bot chat).':''),c);
+ const row=o.el('div','wm-row',null,c);row.append(o.button(a.on===0?'TURN ALERTS ON':'TURN ALERTS OFF',()=>o.act('war-alerts',{on:a.on===0?1:0}),'wm-act'));if(a.on!==0)root.ConquestTownUI?.alertSwitches(c,{al:a},o);   /* Session 7T decision 9: per-type switches */
  if(a.ask&&a.on!==0&&P.can&&!(a.ps||[]).length&&P.perm!=='denied')row.append(o.button('ALERTS ON THIS DEVICE',async()=>{const ok=await subscribe(o).catch(()=>false);if(!ok)o.say?.('Alerts were not turned on for this browser.');},'wm-act'));
  if(P.needsHome)o.el('p','wm-fine','On iPhone and iPad, alerts work once LUNAR is on your Home Screen: tap Share, then Add to Home Screen, and open LUNAR from there.',c);
  if(P.perm==='denied')o.el('p','wm-fine','This browser blocks LUNAR\'s notifications: allow them in its site settings.',c);return c;}
@@ -151,11 +151,15 @@ function reportItems(s){const WR=W(),w=s.war;return WR.report(w,Date.now()).item
  if(x.r==='frozen')return {c:'wm-r-hold',t:'THE FRONT HELD while you were away (a full day away freezes the war).'};
  const who=x.by==='you'?'YOU':x.by==='ldf'?'THE LDF':x.by==='limit'?'THE LDF (REINFORCED)':'';const what=(x.k==='c'?'LDF counterattack on ':x.k==='g'?'Grand Offensive on ':'')+(t?t.name:'')+': '+(x.r==='held'&&who?who+' HELD IT':RES[x.r]||x.r)+(x.w?' · fortification worn down a level':'')+(g&&x.k!=='c'?' · '+g.name:'');
  return {c:x.r==='lost'||x.r==='raided'||x.r==='failed'?'wm-r-loss':x.r==='retaken'||x.r==='defended'||x.r==='beaten'?'wm-r-win':'wm-r-hold',t:what};});}
-function shouldReport(s){const WR=W();if(!WR||!s?.war)return false;return WR.report(s.war,Date.now()).fresh;}
+// Session 7T decision 9: the town's raids since the report was last read (held ones appear only here and on the hub card; a breach is
+// also an alert)
+function townItems(s){const T=root.ConquestTown,WR=W();if(!T||!s?.tw||!WR)return [];return T.fresher(s.tw,Number(s.war?.rep)||0).filter(x=>x.o!=='called').map(x=>{const g=WR.GEN[x.g],lv=' · level '+(x.lv|0)+(g?' · '+g.name:'');
+ return x.o==='held'?{c:'wm-r-win',t:'YOUR TOWN HELD'+(x.by==='you'?' (you defended it)':'')+lv+(x.cache?' · defense cache paid':'')}:{c:'wm-r-loss',t:(x.o==='fallen'?'YOUR TOWN FELL: the Command Center went down':'YOUR TOWN WAS BREACHED')+lv+' · REPAIR on the hub'};});}
+function shouldReport(s){const WR=W();if(!WR||!s?.war)return false;return WR.report(s.war,Date.now()).fresh||townItems(s).length>0;}
 function report(d,s,o){const WR=W(),w=s.war,now=Date.now(),R=WR.report(w,now);d.textContent='';d.classList.add('cq-warreport');
  d.append(o.button('CLOSE',o.done,'cq-lab-close-top'));o.el('p','cq-kicker','LUNAR / WAR REPORT',d);o.el('h2','','WHILE YOU WERE AWAY',d);
  const n=counts(s);o.el('p','wm-chips-line','MOON '+n.moon+' / '+n.of+' · FRONTLINE '+n.front+' / '+n.frontOf,d);
- const ul=o.el('ul','wm-report',null,d);for(const it of reportItems(s).slice(-8))o.el('li',it.c,it.t,ul);if(!ul.children.length)o.el('li','wm-r-hold','Quiet on every front.',ul);
+ const ul=o.el('ul','wm-report',null,d);for(const it of [...reportItems(s),...townItems(s)].slice(-8))o.el('li',it.c,it.t,ul);if(!ul.children.length)o.el('li','wm-r-hold','Quiet on every front.',ul);
  if(R.inbound.length){o.el('p','wm-kicker','INBOUND',d);const ib=o.el('ul','wm-report',null,d);for(const e of R.inbound.slice(0,4))o.el('li','wm-r-in',label(e,w)+' · '+(e.k==='c'?'the LDF attacks in ':'lands in ')+left(e.l*WR.WAR.tickMs-now),ib);}
  if(R.next){o.el('p','wm-kicker','YOUR ORDER',d);const O=WR.odds(w,R.next.go?{k:'a',t:R.next.t,g:R.next.g,air:1,ds:1,go:1}:R.next,ctxOf(s,now));if(O)o.el('p','wm-odds',O.line,d);d.append(o.button(action(R.next)+' · '+WR.BY[R.next.t].short,()=>{o.done();o.defend(R.next);},'wm-go-btn cq-enter'));}
  d.append(o.button('OPEN THE WAR MAP',()=>{o.done();o.map();},R.next?'wm-act':'wm-act cq-enter'));}

@@ -93,6 +93,7 @@ function step(tw,k,info,resolve){const T=tickMs(),at=k*T,out=[];
 // The Grand Offensive's town target (decision 1): created once its weekend is announced (lands at the window's end), unless the town
 // cannot be attacked then; called off when the Grand Offensive is beaten in person.
 function goSync(tw,info){const g=info.war?.go;if(!g||g.done||g.won||g.skip)return null;const id='go'+g.w;if(tw.ev.some(e=>e.id===id)||tw.log.some(x=>x.id===id))return null;const L=g.end*tickMs();
+ if(!tw.log.some(x=>x.o!=='called'))return null;   // review (round 2): a town joins the Grand Offensive's targets once its first raid (the teaching raid) has landed
  if((info.cc|0)<TOWN.fromCC||!(L>=int(info.townAt)+TOWN.newTownMs)||int(info.shieldUntil)>L)return null;const e={id,a:g.a,l:g.end,g:g.g,ln:Math.floor(unit(info.seed+':town:go:'+g.w)*8),go:1};tw.ev.push(e);return e;}
 // Advance the town clock to now (the Worker, on every request; before the town's own clock settles, so a raid sees the town as it
 // stood at its landing). seen: the pilot's last request (the freeze: after one full day away the front holds, and so does the town:
@@ -129,7 +130,7 @@ function streakDay(st0,day){const st=streakNorm(st0);if(st.last===day)return {st
  const w=weekOf(day);if(w!==st.wk){st.wk=w;st.fz=0;}st.n=(st.n|0)+1;st.last=day;st.best=Math.max(st.best,st.n);
  const rewards=STREAK.rewards.filter(r=>r.d===st.n&&!st.got[String(r.d)]);for(const r of rewards)st.got[String(r.d)]=1;return {st,days:st.n,rewards,frozen};}
 // the hub's one line (no modal)
-function streakLine(st0,day){const st=streakNorm(st0),alive=st.n&&(st.last===day||st.last===day-1||day-st.last-1<=STREAK.freezes-(weekOf(day)===st.wk?st.fz:0)),n=alive?st.n:0,nx=STREAK.rewards.find(r=>r.d>n),name=r=>r.it?(r.it==='repair'?'REPAIR KIT':'SCANNER CHARGE'):r.em?'BANNER EMBLEM':'TOWN DECORATION';
+function streakLine(st0,day){const st=streakNorm(st0),alive=st.n&&(st.last===day||st.last===day-1||day-st.last-1<=STREAK.freezes-(weekOf(day)===st.wk?st.fz:0)),n=alive?st.n:0,nx=STREAK.rewards.find(r=>r.d>n&&!st.got[String(r.d)]),name=r=>r.it?(r.it==='repair'?'REPAIR KIT':'SCANNER CHARGE'):r.em?'BANNER EMBLEM':'TOWN DECORATION';
  const left=STREAK.freezes-(weekOf(day)===st.wk?st.fz:0);
  return {n,today:st.last===day,next:nx||null,left,text:'STREAK '+n+' DAY'+(n===1?'':'S')+(st.last===day?' · TODAY ✓':' · PLAY TODAY')+(nx?' · DAY '+nx.d+': '+name(nx):' · EVERY MILESTONE EARNED')+' · '+left+' FREEZE'+(left===1?'':'S')+' LEFT THIS WEEK'};}
 // the town as a raid saw it (the replay's snapshot s.tw.rp.town, written by the Worker) back to a plot the raid engine reads

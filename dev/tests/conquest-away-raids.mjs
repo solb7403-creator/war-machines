@@ -63,7 +63,11 @@ function live(s,from,days,step=6*H,vis=null){const land=[];let t=from;for(;t<fro
  ok(s.tw.rp.u.length===2,'both garrison pilots fought the raid (they are in its replay)');ok(dn.length===(x.dn|0)&&s.bat.p.length===6,'a downed garrison pilot is never lost: '+dn.length+' at half hull, the roster still 6');}
 // ---- 7. the Grand Offensive's town target counts as one of that day's attacks; beaten in person it is called off ----
 {const s=townPilot(CONQUEST,R,createState,t0,{cc:7});s.war.t0=t0-10*D;const fri=Date.UTC(2026,10,27,0),kf=WR.tickOf(fri);let t=fri-6*H;for(;t<=fri;t+=H){s.lastWall=t-H;refreshState(s,t);}
- s.war.go={w:Math.floor(fri/D),a:kf,open:kf+4,end:kf+12,g:'malgrath',t:['western','helium','ridge']};for(t=fri+H;t<=fri+2*H;t+=H){s.lastWall=t-H;refreshState(s,t);}   // the weekend's Grand Offensive, announced Friday 00:00 UTC (Session 7's own rules make it; this test is about its town target)
+ const GO={w:Math.floor(fri/D),a:kf,open:kf+4,end:kf+12,g:'malgrath',t:['western','helium','ridge']};
+ // review (round 2): a town that was never raided is not a target: its first attack stays the teaching raid (test changed for this rule)
+ {const n=structuredClone(s);n.tw=TN.norm(n.tw,fri);n.tw.ev=[];n.tw.log=[];n.tw.n=0;n.war.go={...GO};for(let u=fri+H;u<=fri+2*H;u+=H){n.lastWall=u-H;refreshState(n,u);}ok(!n.tw.ev.some(e=>e.go),'a town never raided is not a Grand Offensive target (its first attack is the teaching raid)');}
+ if(!s.tw.log.some(x=>x.o!=='called')){s.tw.log.push({id:'t0',at:fri-2*D,o:'held',by:'away',lv:1,th:1,g:'skaal'});s.tw.n=Math.max(s.tw.n|0,1);}   // this town met its teaching raid two days before
+ s.war.go={...GO};for(t=fri+H;t<=fri+2*H;t+=H){s.lastWall=t-H;refreshState(s,t);}   // the weekend's Grand Offensive, announced Friday 00:00 UTC (Session 7's own rules make it; this test is about its town target)
  const go=s.war.go,ge=s.tw.ev.find(e=>e.go);ok(go&&ge&&ge.l===go.end,'the weekend Grand Offensive adds the town as a target, landing at its window\'s end ('+new Date(ge.l*T).toISOString()+')');
  const slots=TN.goSlots(s.war,ge.l*T-D,ge.l*T+D);ok(slots.includes(ge.l*T),'its landing is the slot held back for it');
  s.war.go.won=1;s.war.go.done=1;for(t=fri+3*H;t<=ge.l*T+6*H;t+=6*H){s.lastWall=t-H;refreshState(s,t);}ok(s.tw.log.find(x=>x.id===ge.id)?.o==='called','beaten in person, the Grand Offensive\'s town target is called off');
@@ -77,4 +81,15 @@ function live(s,from,days,step=6*H,vis=null){const land=[];let t=from;for(;t<fro
 {const s=townPilot(CONQUEST,R,createState,t0,{cc:3,claimed:t0-4*D});let first=null;for(let t=t0;t<t0+5*D&&!first;t+=6*H){s.lastWall=t-5*H;refreshState(s,t);first=(s.tw.ev||[]).find(e=>e.first)||null;}
  ok(first&&WR.GEN[first.g].stars===1&&TN.strength(s.war,first,{now:t0,tiers:0}).level===1,'the first attack on a town is a scouting party: '+(first?WR.GEN[first.g].name+' (1 star), raid level 1':'none'));
  const later=TN.step(TN.norm({...s.tw,ev:[],log:[{id:'t9',at:1,o:'held',by:'away',lv:1,th:1,g:'skaal'}],n:5},t0),WR.tickOf(t0)+40,{cc:3,townAt:0,shieldUntil:0,war:s.war,tiers:0,seed:'x'},null);ok(!later.some(x=>x.ev?.first),'only the first');}
+// review (round 2), decision 9: the War Report lists the town's raids since it was last read (a held raid appears only there and on the
+// hub card), and a fresh one opens the report; reading it (war-seen) clears them
+{globalThis.ConquestWar=WR;globalThis.ConquestTown=TN;await import('../../js/conquest/warmap.js');const WM=globalThis.ConquestWarMap,now=Date.now();
+ const s={war:WR.norm(WR.fresh(now-5*D),now),tw:TN.norm(null,now)};s.war.sc={n:9,done:1};s.war.ev=[];s.war.go=null;s.war.rep=now-3*H;
+ s.tw.log=[{id:'t1',at:now-2*H,o:'held',by:'away',lv:2,th:2,g:'skaal',cache:1},{id:'t0',at:now-9*H,o:'breached',by:'away',lv:2,th:2,g:'skaal'},{id:'go5',at:now-H,o:'called',by:'away',lv:3,th:3,g:'malgrath'}];
+ const texts=[],node=(tag,cls,text)=>({tag,cls,text,children:[],append(...x){this.children.push(...x);},classList:{add(){}},set textContent(v){this.children=[];},get textContent(){return '';}}),
+  el=(tag,cls,text,parent)=>{const e=node(tag,cls,text);if(text)texts.push(text);if(parent)parent.children.push(e);return e;},button=(label,fn,cls)=>{texts.push(label);return node('button',cls,label);};
+ ok(WM.shouldReport(s),'a raid on the town since the report was last read opens the War Report');
+ WM.report(node('section'),s,{el,button,done(){},defend(){},map(){}});const lines=texts.filter(t=>/YOUR TOWN/.test(t));
+ ok(lines.length===1&&/YOUR TOWN HELD · level 2 · GRUB-CAPTAIN SKAAL · defense cache paid/.test(lines[0]),'it lists the held raid (only the one since it was read; a called-off target never): '+lines.join(' | '));
+ s.war.rep=now;ok(!WM.shouldReport(s),'read (war-seen), nothing new: no report');}
 console.log('PASS away raids (decisions 1, 2, 3, 5): '+pass+' checks');

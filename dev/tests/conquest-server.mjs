@@ -64,6 +64,7 @@ const server=http.createServer(async(req,res)=>{try{if(previewFile(req,res))retu
   s.base={...(s.base||{}),tier:3,modules:s.base?.modules||{},builtAt:now-9e8,claimedAt:now-3e7,pointsAt:now-3e7,defense:{config:'turret',damage:0,wins:0,alertAt:0,nextAt:now+864e9,active:false}};s.position=point(C.Combat.baseDefinition.x,C.Combat.baseDefinition.z);s.battle.enemies=[];
   s.war=WR.norm(s.war,now);s.war.sc={n:9,done:1};s.tw=T.fresh(now);s.tw.k=k;s.tw.n=2;TWN.settle(s,{id:'t1',a:k-3,l:k-1,g:o.g1||'malgrath',ln:1},(k-1)*Tk,null);s.tw.past=[(k-1)*Tk];s.tw.seen=now-9e6;
   if(o.lastChance)s.plot.shieldUntil=0;if(o.incoming!==false)s.tw.ev=[o.lastChance?{id:'t2',a:k-2,l:k,g:o.g2||'kethra',ln:0,lc:now+(o.lcMs||55000)}:{id:'t2',a:k,l:k+2,g:o.g2||'kethra',ln:0}];
+  s.war.rep=now;   /* the War Report read: this scenario is about the hub card, the replay, the last chance and the switches (the report's town lines: conquest-away-raids.mjs) */
   const d=Math.floor(now/864e5);s.stk={n:3,last:d,wk:T.weekOf(d),fz:0,best:3,got:{1:1,3:1},nw:{d,n:3,r:[{d:3,it:'scanner',n:1}]}};delete s.bcn;s.al={on:1,ask:1,tz:0,ps:[]};}
  db.root.conquest=db.root.conquest||{};db.root.conquest[pid]=s;res.end(JSON.stringify({ok:true}));return;
  }if(req.url==='/inspect'){res.end(JSON.stringify({state:cqLive(db,pid),measurements}));return;}
