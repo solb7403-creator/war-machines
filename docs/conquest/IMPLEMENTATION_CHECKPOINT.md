@@ -6830,16 +6830,25 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   days, an alert's DEFEND link opens the town instead of starting the fight, the Peace Ward refusal text, gear AUTO label, "+0 KIT".
   **All six fixed in `710f113`** (with the non-blocking ones listed; tests: live-defense +3, away-raids +2, streak +1; quick
   browser pass green, the live defense now ends HELD).
-  **Reviewer 2 (at `f67e08d`) BLOCKERS (being fixed):** R2-B1 a raid landing while it is fought is settled unfought by the clock
+  **Reviewer 2 (at `f67e08d`) BLOCKERS:** R2-B1 a raid landing while it is fought is settled unfought by the clock
   (townwar.js step lands `tr` events; liveEnd then finds no event): the landing must wait for the fight (landing(): 'wait' while
   `s.td` fights it) + a test crossing the landing tick; R2-B2 a streak reset clears `got`, so day 1/3 consumables re-grant (3 on / 4
   off farms 16 in 8 weeks): milestones once per pilot. Notes to fold in: townwar.js advance's frozen GO skip `break` (later events
   shift 8 of 9 ticks); the cron can send at 22:01 local (re-check night at send time); the replay/live seeds are a 32-bit hash of the
   loot seed (brute-forceable: use a separate server-only town seed `s.twsd`, stripped from publicState); the alert doc's town
   forecast costs 30-400 ms a rebuild (skip rebuilds during an operation or a live fight); record the conquest-loot.mjs edit
-  (decision 2's Peace Ward rows). **CI:** `transmission (webkit)` failed at `26c4070` in conquest-flagship-browser.py
-  (raid-battery-1: the pilot's tank destroyed at 64 s); it passed on Session 7's PR #148, so suspect the forecast's request cost;
-  `signup-browsers (webkit)` failed at `710f113` (not yet read). Then re-review (round 2).
+  (decision 2's Peace Ward rows). **All fixed in `ee5616a`** (the notes too; tests: live-defense +2 crossing the landing tick,
+  streak +1 no farming; away-raids' seed check reads the town seed `s.twsd`, cold, stripped from publicState). The conquest-loot.mjs
+  edit, recorded (decision 2 changed its rule): the strike table gains `{p:.03,ward:1}`, the defense table `{p:.05,ward:1}`, and
+  `ward` joins the allowed row keys (the 24-hour town shield; never points or currency). Local after the fixes: live-defense,
+  away-raids, alerts-unified, war-alerts, beacon, streak, raid-engine, gear, owner-rules, wtest/conquest, conquest-town, analytics
+  PASS; conquest-fortress 8/8 (CI's `fortress` job passed at `710f113` too).
+  **CI (WebKit runs only there):** `transmission (webkit)` failed at `26c4070` (conquest-flagship-browser.py raid-battery-1, the
+  pilot's tank destroyed at 64 s) but passed at `2405729` on the same code (only docs differ between the two): an environmental
+  flake while 5 runs shared the runners. `signup-browsers (webkit)` failed at `710f113` (the main game's garage: the Cores section
+  did not open within 30 s at android-360, phone-390 passed); it passed at `2405729`, `7cd3bc5` and `26c4070`, and `710f113`
+  changed Conquest files only. The runs of superseded commits were cancelled to free the runners; the head's run decides.
+  **Next: round 2 re-review at `ee5616a`** (both reviewers, read-only), then the release.
 - **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>
   (Session 7T Living Town)"; PR from `claude/festive-einstein-2nwwzo` to main with the body drafted from this checkpoint and the
   `owner-rules-change` label (docs/owner-rules.json cpSites +1, the held raid's cache, owner decision 5); CI green (the new `fortress`
@@ -6906,6 +6915,12 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
 - PROPOSAL (ops before launch): the alert cron visits 100 schedules every 5 minutes (about 28,800 a day); with every Conquest pilot's
   daily reminder now in it, 500,000 players need it every minute with a batch of about 200 (Workers Paid allows 1,000 outside calls
   a run).
+- Open: the ceiling (a) is "no breach", not "no damage": at the cap the fully built town holds 50 of 50 raids, yet 7 of 50 still
+  wreck one building (never a vital, never 3), its Command Center never below 92%, about 527 CP-equivalent of REPAIR a raid (CP + 3
+  a unit of alloy + 2 a unit of composite; `docs/conquest/session7t/fortress-model.json` ceiling.lostAny / minCore / bill).
+- Open: (b) has no significance bar on the size of a gain: a step passes when its mean loss over the paired raids never rises and
+  it holds more, cuts the loss or loses fewer walls; the weakest steps pass by small margins (Flame Turret I->II: loss -0.010 over
+  200 raids, no extra hold; the garrison's Moonbeam roll -0.017; Flame III->IV -0.042). The no-harm side is strict.
 - Open: until the Citadel ships (7B) the town clock passes 0 Citadel tiers (`infoOf`), so every town attack is THREAT 1-4 (levels
   1-4): young towns get winnable raids, developed towns hold them easily until the Citadel raises them.
 - Open: a pilot who never opened Conquest still gets the daily reminder from the old run at 15:00-18:59 UTC (no time zone known).

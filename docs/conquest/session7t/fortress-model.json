@@ -3,7 +3,10 @@
   "threat": 16,
   "level": 9,
   "held": 50,
-  "n": 50
+  "n": 50,
+  "lostAny": 7,
+  "minCore": 92,
+  "bill": 527
  },
  "upgrades": {
   "level": 9,
