@@ -24,7 +24,7 @@ import {tick as researchTick} from './conquest-research.js';
 const {Plot:P,Raid:RD,War:WR,Combat:C,Battalion:BT,Town:TN}=CONQUEST,T=TN.TOWN,HOUR=3600000;
 const fail=m=>{throw Error('conquest: '+m);};
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v);
-export const TOWN_ACTIONS=['town-defend','town-leave','town-ward','town-seen'];
+export const TOWN_ACTIONS=['town-defend','town-leave','town-ward','town-seen','strike-beacon'];
 export function town(s,now){s.tw=TN.norm(s.tw,now);return s.tw;}
 const seedOf=s=>String(s.lseed|0)+':town';
 const infoOf=(s,now)=>({cc:s.plot?.cc|0,townAt:Number(s.base?.builtAt)||Number(s.plot?.at)||0,shieldUntil:Number(s.plot?.shieldUntil)||0,war:s.war,tiers:0,seed:seedOf(s)});   // tiers: the Citadel arrives with 7B
@@ -93,8 +93,8 @@ export function settle(s,e,at,live){const p=s.plot,tw=s.tw;
    receipt={...receipt,ptsRaw:pts,...(Object.keys(mn).length?{mn}:{}),...(empty(loot)&&!loot.pieces?{}:{loot}),reputation:60,...(trophy?{trophy}:{})};}}
  logOf(s,x);track(s,'town_raid',o,useLive?'live':'away');if(live)s.notice=receipt;return o;}
 // ---- the pilot's town actions --------------------------------------------------------------------------------------------------------
-// town-defend {town:{id}} · town-leave · town-ward · town-seen
-export function townAction(s,r,now,ctx={}){const tw=town(s,now),p=s.plot;if(!p||!s.base?.tier)fail('claim your town first');const q=record(r.town)?r.town:{};
+// town-defend {town:{id}} · town-leave · town-ward · town-seen · strike-beacon (no town needed)
+export function townAction(s,r,now,ctx={}){if(r.action==='strike-beacon'){beacon(s,now);return;}const tw=town(s,now),p=s.plot;if(!p||!s.base?.tier)fail('claim your town first');const q=record(r.town)?r.town:{};
  if(r.action==='town-seen'){tw.seen=now;s.notice={kind:'town-seen'};return;}
  if(r.action==='town-ward'){if(s.td?.active)fail('finish the defense first');if((tw.ws|0)<1)fail('no Peace Ward left: they drop as rare loot from raid commanders and town defenses');tw.ws--;tw.wu=now;p.shieldUntil=Math.max(int(p.shieldUntil),now)+T.wardMs;
   const off=tw.ev.filter(e=>!e.tr&&(e.lc||e.l*WR.WAR.tickMs)<p.shieldUntil);for(const e of off){tw.ev.splice(tw.ev.indexOf(e),1);logOf(s,{id:e.id,at:now,o:'called',by:'you',g:e.g,...(e.go?{go:1}:{}),why:'peace ward'});}
@@ -131,3 +131,22 @@ function liveEnd(s,M,now,why){const d=s.td,tw=s.tw,e=tw.ev.find(x=>x.id===d.id);
  d.active=false;delete d.st;
  if(e){tw.ev.splice(tw.ev.indexOf(e),1);tw.past=[...tw.past,now].slice(-6);const o=settle(s,e,now,{R,uf:s.tdu||null,fought,snap:s.tdp,gar:d.units.filter(u=>u.k==='g')});d.o=o;d.why=why;d.fought=fought?1:0;d.live=RD.outcomeOf(R);}
  delete s.tdu;delete s.tdp;s.td={active:false,id:d.id,o:d.o,live:d.live,why,fought:d.fought|0,at:now};s.notice={...(s.notice||{}),kind:'town-defended',live:d.live,why};}
+
+// ---- the Strike Beacon (decision 10; the Nov 10 brief C): once a UTC day the pilot calls a Meteor Strike at the current slot's site, for
+// 20 minutes from the call (a window of their choosing). start-mission accepts it as that slot (worker/src/conquest-sim.js): the same
+// waves, rewards, the server's roll for the slot (the stored one if the slot was already started) and Resonance; it counts as that slot.
+// Not while a real strike is telegraphed or open (join that one), not for a slot whose core is already yours, not twice in a UTC day.
+function beacon(s,now){if(s.mission)fail('finish the operation first');const b=TN.beaconOf(s,now);
+ if(!b.ready)fail(b.used?'the Strike Beacon recharges at 00:00 UTC (once a day)':b.claimed?'this strike\'s core is already yours: call the Beacon for the next one':b.open?'a Meteor Strike is open now: join it at '+(b.site?.name||'its site'):'no Meteor Strike to call');
+ const M=C.meteorStrike(now);s.bcn={d:b.day,slot:M.slot,site:M.site.id,until:now+TN.BEACON.windowMs,at:now};s.notice={kind:'strike-beacon',site:M.site.id,name:M.site.name,until:s.bcn.until};track(s,'beacon','call',M.site.id);}
+// the Beacon window the strike start accepts for this operation now, or null
+export function beaconFor(s,op,now){const b=s.bcn;return b&&op?.strike&&Number(b.until)>now&&b.site===op.id&&Number.isSafeInteger(Number(b.slot))?b:null;}
+// ---- the soft return streak (decision 11; the Nov 10 brief C, extended Nov 22): a UTC day counts when it has a verified Conquest
+// activity (an operation won or a harvest: the airdrop record's act day, the same rule as the Daily Base Yield's points), granted here
+// after the action. Two freeze days a week cover missed days (never a reset for one or two); rewards: day 1 a Repair Kit, day 3 a
+// Scanner Charge (the consumables, up to their cap), day 7 and every 30 days from 60 to 360 an earn-only banner emblem, days 30, 100 and
+// 365 a town decoration (earn-only ornaments); never points, minerals or CP. s.stk.nw: the latest grant, for the hub's one line.
+export function streakSync(s,now){const day=Math.floor(now/864e5);if(s.dev?.used||Number(s.airdrop?.act)!==day)return null;const st0=TN.streakNorm(s.stk);if(st0.last===day)return null;
+ const r=TN.streakDay(st0,day),inv=s.inv&&typeof s.inv==='object'?s.inv:null,given=[];
+ for(const x of r.rewards){if(x.it&&inv){inv.it=record(inv.it)?inv.it:{};const had=inv.it[x.it]|0;inv.it[x.it]=Math.min(RULES.CQ_ITEM_MAX,had+1);given.push({d:x.d,it:x.it,n:inv.it[x.it]-had});}else given.push(x);}
+ s.stk={...r.st,nw:{d:day,n:r.days,...(given.length?{r:given}:{}),...(r.frozen?{fz:r.frozen}:{})}};track(s,'streak',String(Math.min(r.days,400)),given.length?'reward':'day');return r;}

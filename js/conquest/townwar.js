@@ -118,7 +118,7 @@ const STREAK=Object.freeze({freezes:2,
   ...Array.from({length:11},(_,i)=>({d:60+30*i,em:'streak'+(60+30*i)})),{d:100,dc:'monument100'},{d:365,dc:'monolith365'}].sort((a,b)=>a.d-b.d))});
 // the art hooks (row 7-V draws them; until then the banner uses the glyph and the town shows the stand-in piece)
 const STREAK_ART=Object.freeze({emblems:Object.freeze(Object.fromEntries(STREAK.rewards.filter(r=>r.em).map((r,i)=>[r.em,{n:r.d+'-DAY EMBLEM',glyph:['✦','✧','❂','✪','✫','✬','✭','✮','✯','✰','❖','✵'][i]||'✦'}]))),
- decor:Object.freeze({beacon30:{n:'Day-30 Signal Beacon',stand:'antenna'},monument100:{n:'Day-100 Monument',stand:'statue'},monolith365:{n:'Day-365 Monolith',stand:'statue'}})});
+ decor:Object.freeze({beacon30:{n:'Day-30 Signal Beacon',item:'streak-beacon30'},monument100:{n:'Day-100 Monument',item:'streak-monument100'},monolith365:{n:'Day-365 Monolith',item:'streak-monolith365'}})});   // the earn-only town ornaments (js/conquest/catalog.js; stand-in designs until row 7-V)
 // st: {n streak days, last the UTC day of the last active day, wk the UTC week, fz freezes used this week, got {day: true} rewards taken}
 function streakNorm(st){const r=record(st)?st:{};return {n:int(r.n),last:int(r.last),wk:int(r.wk),fz:Math.min(STREAK.freezes,int(r.fz)),best:int(r.best),got:record(r.got)?Object.fromEntries(Object.entries(r.got).filter(([k])=>/^\d{1,3}$/.test(k)).map(([k])=>[k,1])):{}};}
 const weekOf=day=>Math.floor((day+3)/7);   // UTC weeks from Monday
