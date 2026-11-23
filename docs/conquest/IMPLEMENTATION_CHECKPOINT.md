@@ -7116,8 +7116,12 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
     cache PROPOSAL, prominent), the payer's day-365 walls (0.78) below the free grinder's (0.80) at 8 Selenite (Session 8's paid
     fortress, at the 2-hour play time), the farm bound for 3 days on / 14 off (22 Repair Kits + 22 Scanner Charges in 64 play days, 0.69
     a play day, under a daily pilot's ~1 consumable a day from kill caches).
-- **Next:** reviewer 2's report; fix its blockers; round 2 (both reviewers); the browser suites; release (merge main, dev/bump.sh, PR,
-  CI, merge, verify the Worker and Pages, ROADMAP row 7T-P, the release record).
+- **Local runs on the final code (after `e960eac`):** every CI node command PASS (173: `node build-sim.mjs` runs in `worker/` and
+  `signup-browser.cjs` with an engine, both PASS as CI runs them); the fortress job PASS (14 checks, 17 min); conquest-town-proposals.py
+  PASS at 5 sizes; conquest-town-ui.py (7T) PASS at 4 sizes, 1920x1080 timed out in the phone's replay simulation while the CPU ran at
+  load 9 (re-run alone pending); conquest-guardrails.mjs running.
+- **Next:** reviewer 2's report; fix its blockers; round 2 (both reviewers); re-run town-ui at 1920x1080 and the other browser suites;
+  release (merge main, dev/bump.sh, PR, CI, merge, verify the Worker and Pages, ROADMAP row 7T-P, the release record).
 
 ### Owner decisions (Nov 23) as recorded
 1. **Kept as shipped, owner-adopted:** the THREAT -> raid level table (cap 9) and the 60% chance at each eligible tick
