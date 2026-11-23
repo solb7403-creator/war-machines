@@ -7076,8 +7076,13 @@ pushwoosh.com, airship.com 2026 benchmarks, developers.facebook.com game notific
 If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md first; it governs everything.
 - Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`); Checkpoint 47 is Session 7T
   (released, PR #150, build `20261123061357`); this is Checkpoint 48. Work on **`claude/living-town-proposals-oqqiv2`**.
-- **Slice 1 (this commit):** the brief saved word for word to `docs/conquest/audit/SESSION_07TP_BRIEF.md`; this checkpoint opened.
-- **Next:** read the brief's list (Checkpoint 47 "Open items and PROPOSALs", RESOURCE_ECONOMY.md, rules.js STRIKE.resonance,
-  townwar.js STREAK and the town clock, plot.js repairPlan, the onboarding coach, fortress-model.mjs, economy-model.mjs,
-  conquest-fortress.mjs); then decision 1 (record), decision 2 (measure both Selenite candidates), decision 3 (coach step + re-measure),
-  decision 4 (welcome-back kits); reviews; release.
+- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07TP_BRIEF.md`; this checkpoint opened (`4b0f015`, pushed).
+- **Slice 2 (decision 1, recorded):** the THREAT -> raid level table `[1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]` (cap 9) and the 60% chance at
+  each eligible tick are **owner-adopted (Nov 23)**, kept exactly as shipped: `js/conquest/townwar.js` comments say so (no number
+  changed), `docs/economy/RESOURCE_ECONOMY.md` §16.1 (new section 16 Living Town) records both.
+- **Next:** decision 2 (measure both Selenite candidates with the fortress and economy models; ship the closer one or neither),
+  decision 3 (the wall-ring coach step + the repair re-measure), decision 4 (welcome-back kits); reviews; release.
+
+### Owner decisions (Nov 23) as recorded
+1. **Kept as shipped, owner-adopted:** the THREAT -> raid level table (cap 9) and the 60% chance at each eligible tick
+   (`ConquestTown.TOWN.level`, `TOWN.chance`; RESOURCE_ECONOMY.md §16.1). Not PROPOSALS any more.

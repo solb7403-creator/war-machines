@@ -1072,6 +1072,22 @@ months on the free path at any play time: chips are one a day), a payer gets the
 never buys power directly (chips buy research time, not levels), and the Battalion stage (day 17 at an hour a day) gives the first
 month its big goal.
 
+## 16. Living Town (Session 7T, owner brief Nov 22; Session 7T-P, owner decisions Nov 23)
+
+Code: `js/conquest/townwar.js` (`ConquestTown.TOWN`, shared with the Worker), `worker/src/conquest-town.js`, `js/conquest/raid.js`.
+Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids.mjs`, `dev/tests/conquest-live-defense.mjs`,
+`dev/tests/conquest-fortress.mjs` (model `dev/tools/fortress-model.mjs`).
+
+### 16.1 Town attacks: strength and pace (owner-adopted Nov 23, Session 7T-P decision 1)
+- **THREAT -> raid level** (`TOWN.level`, index = THREAT rounded, 0..16; the cap 9): `1, 1, 2, 3, 4, 5, 6, 7, 8, 8, 8, 8, 8, 8, 8, 9, 9`.
+  THREAT is Session 7's `threatOf` on the town (the attacking general's stars, the portal while open, the Citadel tiers cleared, the
+  Grand Offensive surge), never Command Center level, gear or purchases. The cap 9 is where the fully built town holds every raid at
+  the top strength (THREAT 16) without a breach. The first attack on a town is a teaching raid (a one-star general at level 1).
+- **The tick chance** (`TOWN.chance`): an eligible war tick announces a town attack **60%** of the time (about 0.9 a day at CC2-5
+  and 1.6 a day from CC6 under the pace limits: at most 1 in any 24 hours through CC5 and 2 from CC6, at least 8 hours apart, none
+  in a town's first 3 days, under a shield or while the front is frozen).
+- Both were Session 7T PROPOSALS; the owner adopted them as shipped on Nov 23.
+
 ## Appendix: model assumptions (`dev/tools/economy-model.mjs`)
 
 - **Arcade points a minute:** same formula as `dev/tests/s2/ppm.mjs` (measured win rate and match length, +20 s of screens, streak bonus, no featured bonus) on `league-grid-standard.json`. It reproduces `docs/launch/LEAGUES.md`: 223 / 264 / 320 / 343 / 460 / 495 / 702.
