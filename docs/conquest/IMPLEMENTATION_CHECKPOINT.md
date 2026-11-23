@@ -6951,7 +6951,9 @@ pushwoosh.com, airship.com 2026 benchmarks, developers.facebook.com game notific
   after tier IX: the Sovereign's Hand retaliating), never by Command Center level, gear or purchases.
 - **Outcomes:** FALLEN (the Command Center destroyed: 10% of the exposed production store and 5% of the composite stock),
   BREACHED (any building lost, the Command Center standing: 5% of the exposed production store), HELD (only walls and settler
-  homes damaged: nothing taken). "Breach" means a building fell; the ceiling test uses the same definition.
+  homes damaged: nothing taken). Corrected in session 2 (review B6): BREACHED is a vital lost or 3+ buildings wrecked (turrets
+  count; walls and homes never; raid.js `outcomeOf`), and the ceiling test uses exactly that rule; the fortress test reports what a
+  fully built town still loses at the cap (raids losing any building, the lowest Command Center hull, the REPAIR bill).
 - **Pace:** town attacks land on war ticks, announced two ticks (12 h) ahead; from CC2; a rolling 24-hour window holds at most
   1 (CC2-5) or 2 (CC6+); at least 8 h apart; none landing in a new town's first 3 days, while a shield is up or while the front
   is frozen (announced attacks keep their time left, as the war's events do); the Grand Offensive's town target lands at the

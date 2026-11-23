@@ -81,14 +81,15 @@ export function settle(s,e,at,live){const p=s.plot,tw=s.tw;
  const T0=bat(s);let dn=0;for(const u of R.units||[])if(u.down&&u.k!=='p'){const pl=T0.p.find(x=>x.id===u.id);if(pl&&pl.h!==.5){pl.h=.5;dn++;}}
  const taken=TN.lossOf(o,P.loot(p),p.cm);for(const [k,v] of Object.entries(taken)){if(k==='cm')p.cm=Math.max(0,(p.cm||0)-v);else p.st[k]=Math.max(0,(p.st[k]||0)-v);}
  if(o!=='held')p.shieldUntil=Math.max(int(p.shieldUntil),at+T.shieldMs);
- const x={id:e.id,at,o,by:useLive?'you':'away',lv,th:st.total,g:e.g,core:R.core,k:R.kills,sp:R.spawned,fell:(R.fell||[]).length,wl:R.wallsLost|0,...(Object.keys(taken).length?{tk:taken}:{}),...(e.go?{go:1}:{}),...(dn?{dn}:{})};
+ const x={id:e.id,at,o,by:useLive||live?.fought?'you':'away',lv,th:st.total,g:e.g,core:R.core,k:R.kills,sp:R.spawned,fell:(R.fell||[]).length,wl:R.wallsLost|0,...(Object.keys(taken).length?{tk:taken}:{}),...(e.go?{go:1}:{}),...(dn?{dn}:{})};
  let receipt={kind:'town-raid',...x,shield:o!=='held'?p.shieldUntil:0};
  if(o==='held'){const pay=T.cache;s.ledger.cp+=pay.cp;for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=(s.ledger.banked[k]||0)+pay[k];x.cache=1;
   s.base.defense.wins=(s.base.defense.wins|0)+1;p.ext=record(p.ext)?p.ext:{r:0,d:0,w:0};p.ext.w=Math.max(p.ext.w|0,s.base.defense.wins);s.achievements=s.achievements||{};s.achievements['base-defender']=s.achievements['base-defender']||at;tw.won=(tw.won|0)+1;
   receipt={...receipt,cp:pay.cp,alloy:pay.alloy,biomass:pay.biomass,helium:pay.helium};
   // in person (decision 6): a defense the pilot held and really fought pays the 675 defense points (inside the hourly limit and the cap),
   // the defense minerals and a loot roll, like any defense won live; the general who led it is beaten (a trophy and a retreat)
-  if(useLive&&live.fought){const pts=earn(s,'defense',RULES.CQ_PTS.defense,at,{op:true}),key='town:'+e.id,mn=cacheMinerals(s,'defense',key),loot=bind(s,roll(s,'defense',key),at,{where:'town defense'});
+  // (review: paid whenever the settled result is HELD and the pilot really fought, whichever of the two pictures counted)
+  if(live?.fought){const pts=earn(s,'defense',RULES.CQ_PTS.defense,at,{op:true}),key='town:'+e.id,mn=cacheMinerals(s,'defense',key),loot=bind(s,roll(s,'defense',key),at,{where:'town defense'});
    x.pts=pts;orderEvent(s,'op');orderEvent(s,'defense');s.reputation=(s.reputation||0)+60;s.campaignScore=(s.campaignScore||0)+15;let trophy=null;if(G&&WR.beatGeneral(s.war,G.id,at)){trophy=G.id;s.achievements['general-'+G.id]=at;}
    receipt={...receipt,ptsRaw:pts,...(Object.keys(mn).length?{mn}:{}),...(empty(loot)&&!loot.pieces?{}:{loot}),reputation:60,...(trophy?{trophy}:{})};}}
  logOf(s,x);track(s,'town_raid',o,useLive?'live':'away');if(live)s.notice=receipt;return o;}
@@ -96,7 +97,7 @@ export function settle(s,e,at,live){const p=s.plot,tw=s.tw;
 // town-defend {town:{id}} · town-leave · town-ward · town-seen · strike-beacon (no town needed)
 export function townAction(s,r,now,ctx={}){if(r.action==='strike-beacon'){beacon(s,now);return;}const tw=town(s,now),p=s.plot;if(!p||!s.base?.tier)fail('claim your town first');const q=record(r.town)?r.town:{};
  if(r.action==='town-seen'){tw.seen=now;s.notice={kind:'town-seen'};return;}
- if(r.action==='town-ward'){if(s.td?.active)fail('finish the defense first');if((tw.ws|0)<1)fail('no Peace Ward left: they drop as rare loot from raid commanders and town defenses');tw.ws--;tw.wu=now;p.shieldUntil=Math.max(int(p.shieldUntil),now)+T.wardMs;
+ if(r.action==='town-ward'){if(s.td?.active)fail('finish the defense first');if((tw.ws|0)<1)fail('no Peace Ward left: they drop as rare loot from defenses and Meteor Strikes');tw.ws--;tw.wu=now;p.shieldUntil=Math.max(int(p.shieldUntil),now)+T.wardMs;
   const off=tw.ev.filter(e=>!e.tr&&(e.lc||e.l*WR.WAR.tickMs)<p.shieldUntil);for(const e of off){tw.ev.splice(tw.ev.indexOf(e),1);logOf(s,{id:e.id,at:now,o:'called',by:'you',g:e.g,...(e.go?{go:1}:{}),why:'peace ward'});}
   s.notice={kind:'town-ward',until:p.shieldUntil,called:off.length,left:tw.ws};return;}
  if(r.action==='town-leave'){if(!s.td?.active)fail('no defense running');liveFinish(s,now,'left');return;}

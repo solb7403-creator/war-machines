@@ -13,7 +13,7 @@ import {track} from './conquest-analytics.js';
 import {tick as researchTick} from './conquest-research.js';
 import {townClock} from './conquest-town.js';
 // Session 7T decision 11: a return-streak banner emblem, once its day was reached (never sold)
-const streakEmblem=(s,e)=>typeof e==='string'&&!!CONQUEST.Town.STREAK_ART.emblems[e]&&!!CONQUEST.Town.streakNorm(s.stk).got[e.slice(6)];
+const streakEmblem=(s,e)=>typeof e==='string'&&!!CONQUEST.Town.STREAK_ART.emblems[e]&&CONQUEST.Town.streakNorm(s.stk).best>=Number(e.slice(6));   // kept for good once reached (review B4: never revoked by a reset)
 const P=CONQUEST.Plot,DAY=86400000;
 export const PLOT_ACTIONS=['plot-site','plot-build','plot-upgrade','plot-move','plot-remove','plot-wall','plot-collect','plot-drill','plot-banner','plot-theme','plot-feed','plot-research','plot-repair','plot-layout','plot-name'];
 // Which plot actions may run from the MAP (remote command): upgrades spend already-banked goods, as before Session 5.

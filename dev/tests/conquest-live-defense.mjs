@@ -58,4 +58,15 @@ function fight(s,now,{fire=true,per=20,max=2000}={}){let steps=0;while(s.td?.act
 {let {s,e}=setup();const L=e.l*T;s.lastWall=L-30000;refreshState(s,L+5000);const ev=s.tw.ev.find(x=>x.id===e.id);ok(ev&&ev.lc===L+5000+60000&&!s.tw.log.some(y=>y.id===e.id),'online at the landing: RAID INCOMING · DEFEND? for 60 seconds (nothing decided yet)');
  const s2=applyAction(structuredClone(s),{seq:s.seq+1,action:'town-defend',town:{id:e.id}},L+30000);ok(s2.td?.active,'DEFEND inside the minute starts the fight');
  s.lastWall=L+5000;refreshState(s,L+70000);ok(s.tw.log.some(y=>y.id===e.id&&y.by==='away')&&!s.tw.ev.some(x=>x.id===e.id),'no answer in the minute: decided unfought');}
+// review B2: a held defense the pilot really fought pays the defense points even when the unfought picture is the one that counts
+{const {settle}=await import('../../worker/src/conquest-town.js');const s=townPilot(CONQUEST,R,createState,t0,{cc:6,strong:true}),e=townAttack(CONQUEST,s,t0,{g:'kethra'}),at=e.l*T;
+ const R0=RD.make(s.plot,77,{threat:2,lane:0,damage:true,frames:false,events:false}).run(),R1={...R0,damage:{...(R0.damage||{}),cc:((R0.damage||{}).cc||0)+40}};
+ const before=s.airdrop?.pend?.raw||0,o=settle(s,e,at,{R:R1,uf:R0,fought:true,snap:null,gar:[]}),x=s.tw.log.at(-1);
+ ok(RD.outcomeOf(R0)==='held'&&o==='held'&&x.by==='you'&&x.pts>0&&(s.airdrop?.pend?.raw||0)>before&&s.tw.rp.by==='away','held and really fought: '+x.pts+' raw points although the unfought picture (less damage) is the one shown');
+ const s2=townPilot(CONQUEST,R,createState,t0,{cc:6,strong:true}),e2=townAttack(CONQUEST,s2,t0,{g:'kethra'});settle(s2,e2,e2.l*T,{R:R1,uf:R0,fought:false,snap:null,gar:[]});ok(!s2.tw.log.at(-1).pts,'not really fought: no points (no AFK points)');}
+// review B3: your own walls let your tank through (raiders and the garrison still stop at them): one closed ring around the middle
+{const p=P.newPlot('crater',0);p.cc=4;p.b.cc.l=4;const ring=P.wallPlan({...p,devx:1},[{k:'rect',a:[P.MID-9,P.MID-9],b:[P.MID+9,P.MID+9],o:1,l:1}],{dev:true});for(const x of ring.cells)p.w[x.i+','+x.j]=x.code;
+ const go=kind=>{const u=RD.unitOf(kind==='p'?{id:'you',kind:'p',L:R.STOCK_L}:{id:'g1',kind:'g',kit:{w:{a:'pulse',t:1,q:1},c:{c:'titan',t:1,q:1}},rk:3}),M=RD.make(p,5,{threat:1,units:[u],pilot:{x:P.cellX(P.MID),z:P.cellZ(P.MID+6),h:0},dt:.05,frames:false,events:false});
+  for(let i=0;i<300&&!M.over;i++)M.step({x:0,z:1});const v=M.units.find(w=>w.id===u.id);return P.cheb(Math.round(v.x/P.GRID.cell+P.MID),Math.round(v.z/P.GRID.cell+P.MID));};
+ const d=go('p');ok(d>9,'your tank drives out through its own wall ring (now '+d+' cells from the middle; the ring is at 9)');}
 console.log('PASS live defense (decisions 6 and 1): '+pass+' checks');

@@ -103,8 +103,10 @@ function make(plot,seed=1,opt={}){
  const steps=Math.round((opt.maxT||RAID.maxT+RAID.maxTPer*(threat-1))/dt);
  // ---- defenders (Session 7T): the garrison, the fielded Platoon and the pilot. None: the drill exactly. ----
  const cellOf=v=>Math.round(v/C+MID);
- const tankBlocked=(i,j)=>{if(!Pl.inGrid(i,j)||!pass[i*N+j])return true;const si=blk[i*N+j];if(si<0)return false;const s=structs[si];return s.hp>0&&s.t!=='gate';};
- const hits=(x,z)=>{const r=UNIT.r;for(const [dx,dz] of [[0,0],[r,0],[-r,0],[0,r],[0,-r],[r*.7,r*.7],[-r*.7,r*.7],[r*.7,-r*.7],[-r*.7,-r*.7]])if(tankBlocked(cellOf(x+dx),cellOf(z+dz)))return true;return false;};
+ // own: the pilot's tank (review B3: your walls let your own tank through, so you can meet the raid at the walls; raiders and the
+ // garrison still stop at them)
+ const tankBlocked=(i,j,own=false)=>{if(!Pl.inGrid(i,j)||!pass[i*N+j])return true;const si=blk[i*N+j];if(si<0)return false;const s=structs[si];return s.hp>0&&s.t!=='gate'&&!(own&&s.kind==='wall');};
+ const hits=(x,z,own=false)=>{const r=UNIT.r;for(const [dx,dz] of [[0,0],[r,0],[-r,0],[0,r],[0,-r],[r*.7,r*.7],[-r*.7,r*.7],[r*.7,-r*.7],[-r*.7,-r*.7]])if(tankBlocked(cellOf(x+dx),cellOf(z+dz),own))return true;return false;};
  const units=[];
  {const list=Array.isArray(opt.units)?opt.units:[],gar=list.filter(u=>u&&u.k!=='p'),pts=gar.length?posts(p,gar.length,tankBlocked):[];let gi=0;
   for(const u0 of list){if(!u0)continue;const u={...u0,hp:Math.min(u0.max||u0.hp,u0.hp),down:0,cd:0,kills:0,done:0,tgt:-1};
@@ -118,7 +120,7 @@ function make(plot,seed=1,opt={}){
  // the pilot's tank: the town drive's own handling (js/conquest/plotview.js driveStep), steered by the pilot's command
  const driveTank=(u,inp)=>{let sx=Number(inp?.x)||0,sz=Number(inp?.z)||0;const L=Math.hypot(sx,sz);if(L>1){sx/=L;sz/=L;}const mag=Math.min(1,Math.hypot(sx,sz)),ti=cellOf(u.x),tj=cellOf(u.z),sl=Pl.inGrid(ti,tj)?(SLOW[Pl.terrainAt(sid,ti,tj)]||1):1;
   u.v+=((mag>.08?u.spd*mag*sl:0)-u.v)*Math.min(1,dt*(mag>.08?3.5:6));if(mag>.08){const want=Math.atan2(sx,sz);let d=want-u.h;d=Math.atan2(Math.sin(d),Math.cos(d));u.h+=d*Math.min(1,dt*7);}
-  const stp=u.v*dt,nx=u.x+Math.sin(u.h)*stp,nz=u.z+Math.cos(u.h)*stp;if(!hits(nx,nz)){u.x=nx;u.z=nz;}else if(!hits(nx,u.z))u.x=nx;else if(!hits(u.x,nz))u.z=nz;else u.v*=.3;};
+  const stp=u.v*dt,nx=u.x+Math.sin(u.h)*stp,nz=u.z+Math.cos(u.h)*stp;if(!hits(nx,nz,true)){u.x=nx;u.z=nz;}else if(!hits(nx,u.z,true))u.x=nx;else if(!hits(u.x,nz,true))u.z=nz;else u.v*=.3;};
  const unitsStep=(live,inp)=>{for(const u of units){if(u.down)continue;u.cd=Math.max(-u.rof,u.cd-dt);
    if(u.k==='p'){driveTank(u,inp);const fire=!!(inp&&(inp.fire||inp.tapFire));if(!fire){u.cd=Math.max(0,u.cd);continue;}
     while(u.cd<=0){let f=null;if(inp.lockId!=null){const q=live.find(x=>!x.dead&&x.id===inp.lockId);if(q&&Math.hypot(q.x-u.x,q.z-u.z)<=u.rng)f=q;}

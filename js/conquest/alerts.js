@@ -43,7 +43,7 @@ function synth(d,now,tz=0,done=new Set(),v=null,text=null){const out=[],Wr=W(),C
    if(Number(d.pl)>0&&Wr.localDay(Number(d.pl),tz)===w.day||v&&Number(v.pl)===uday)continue;   // already played that day: no reminder
    out.push({id,type:'remind',at:w.at,until:w.until,...(text?{text:text(v||{},uday)}:{})});}}
  if(!d.ga)return out;
- for(const day of [utc,utc+1]){const id='bc'+day;if(done.has(id)||Number(d.bd)===day)continue;out.push({id,type:'beacon',at:Math.max(now,day*DAY),until:(day+1)*DAY});}   // once a UTC day, unused
+ if(Number(d.pl)>now-7*DAY)for(const day of [utc,utc+1]){const id='bc'+day;if(done.has(id)||Number(d.bd)===day)continue;out.push({id,type:'beacon',at:Math.max(now,day*DAY),until:(day+1)*DAY});}   // once a UTC day, unused
  const y=Number(d.y90)||0;if(y>0){const id='y'+Math.floor(y/DAY);if(!done.has(id))out.push({id,type:'yield',at:y,until:y+12*HOUR});}   // at most once a day
  const pl=Number(d.pl)||0,S=STRIKE_MS(),E=S.everyMs,lead=5*60000;if(pl>0&&C?.meteorStrike)for(let k=Math.floor(now/E);k<=Math.floor(now/E)+13;k++){const imp=k*E;if(imp-lead<now-lead||imp-lead>=pl+LIMIT.meteorPlayedMs)continue;   // only if played in the last 48 hours
   const id='mt'+k;if(done.has(id))continue;const M=C.meteorStrike(imp-1);out.push({id,type:'meteor',at:imp-lead,until:imp,site:M?.site?.name||''});}

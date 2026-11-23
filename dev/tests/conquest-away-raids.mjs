@@ -24,7 +24,7 @@ function live(s,from,days,step=6*H,vis=null){const land=[];let t=from;for(;t<fro
  ok(land.length/18>=1.1&&land.length/18<=2,'CC6+: about '+(land.length/18).toFixed(2)+' attacks a day after the first 3 days');
  const s2=townPilot(CONQUEST,R,createState,t0,{cc:7});const land2=live(s2,t0,21);ok(JSON.stringify(land2.map(x=>[x.id,x.at,x.g]))===JSON.stringify(land.map(x=>[x.id,x.at,x.g])),'the schedule is deterministic from the server seed');
  const s3=townPilot(CONQUEST,R,createState,t0,{cc:7});s3.lseed=12345;const land3=live(s3,t0,21);ok(JSON.stringify(land3.map(x=>x.at))!==JSON.stringify(land.map(x=>x.at)),'another pilot\'s seed gives another schedule');
- ok(land.every(x=>x.th>=1&&x.lv>=1&&x.lv<=10&&x.lv===TN.levelOf(x.th)),'each raid\'s level comes from its THREAT (never Command Center level): '+[...new Set(land.map(x=>x.th+'->L'+x.lv))].join(', '));}
+ ok(land.every(x=>x.th>=1&&x.lv>=1&&x.lv<=10&&x.lv===(x.id==='t1'?1:TN.levelOf(x.th))),'each raid\'s level comes from its THREAT (the first, a teaching raid, at level 1: review B5) (never Command Center level): '+[...new Set(land.map(x=>x.th+'->L'+x.lv))].join(', '));}
 // ---- 2. the freeze: after a full day away the town holds too; what was announced keeps its time left ----
 {const s=townPilot(CONQUEST,R,createState,t0,{cc:7});s.lastWall=t0;const k0=WR.tickOf(t0),e=townAttack(CONQUEST,s,t0);e.a=k0+3;e.l=k0+5;s.tw.k=k0;   // announced 18 h after the pilot left, landing 29 h after it
  const left=e.l*T-(e.a*T);refreshState(s,t0+5*D);ok(!s.tw.log.some(x=>x.id===e.id)&&s.tw.ev.some(x=>x.id===e.id),'away more than a day: the raid landing after the first full day did not land while the front was frozen');
@@ -73,4 +73,8 @@ function live(s,from,days,step=6*H,vis=null){const land=[];let t=from;for(;t<fro
  ok(r.plot.shieldUntil>=t0+60000+24*H-1&&r.tw.ws===0&&r.tw.log.find(x=>x.id===e.id)?.o==='called','a Peace Ward: 24 hours of shield; the raid it covers is called off');
  assert.throws(()=>applyAction(r,{seq:r.seq+1,action:'town-ward'},t0+120000),/no Peace Ward/);ok(true,'no ward left: refused');
  ok(R.LOOT.defense.rows.some(x=>x.ward)&&R.LOOT.strike.rows.some(x=>x.ward)&&!JSON.stringify(P.STORE.items).includes('ward'),'the Peace Ward drops as rare loot (live town defenses, Meteor Strikes) and is in no store');}
+// review B5: the first attack on a town is a teaching raid: a one-star general at level 1
+{const s=townPilot(CONQUEST,R,createState,t0,{cc:3,claimed:t0-4*D});let first=null;for(let t=t0;t<t0+5*D&&!first;t+=6*H){s.lastWall=t-5*H;refreshState(s,t);first=(s.tw.ev||[]).find(e=>e.first)||null;}
+ ok(first&&WR.GEN[first.g].stars===1&&TN.strength(s.war,first,{now:t0,tiers:0}).level===1,'the first attack on a town is a scouting party: '+(first?WR.GEN[first.g].name+' (1 star), raid level 1':'none'));
+ const later=TN.step(TN.norm({...s.tw,ev:[],log:[{id:'t9',at:1,o:'held',by:'away',lv:1,th:1,g:'skaal'}],n:5},t0),WR.tickOf(t0)+40,{cc:3,townAt:0,shieldUntil:0,war:s.war,tiers:0,seed:'x'},null);ok(!later.some(x=>x.ev?.first),'only the first');}
 console.log('PASS away raids (decisions 1, 2, 3, 5): '+pass+' checks');

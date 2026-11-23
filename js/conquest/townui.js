@@ -33,7 +33,7 @@ function hubLines(card,s,o){const T=TN();if(!T||!s?.plot||!s?.base?.tier)return;
  for(const e of open.slice(0,2)){const G=genOf(e.g),lc=!!(e.lc&&e.lc>now),left=(lc?e.lc:e.l*Tk)-now;let lv=0;try{lv=T.strength(s.war,e,{now,tiers:0}).level;}catch(_){}
   const row=el('div','cq-town-row cq-town-incoming'+(lc?' cq-town-lc':''),null,box);
   el('p','cq-town-head',(lc?'⚠ RAID INCOMING · DEFEND? ':'⚠ RAID INCOMING · LANDS IN ')+t2(left),row);
-  el('small','',(G?G.name+' '+stars(G.stars)+' · ':'')+'RAID LEVEL '+lv+(sideOf(s,e)?' · MAIN FORCE FROM THE '+sideOf(s,e):'')+(e.go?' · GRAND OFFENSIVE TARGET':''),row);
+  el('small','',(G?G.name+' '+stars(G.stars)+' · ':'')+'RAID LEVEL '+lv+(sideOf(s,e)?' · MAIN FORCE FROM THE '+sideOf(s,e):'')+(e.go?' · GRAND OFFENSIVE TARGET':'')+(e.first?' · YOUR FIRST RAID: a scouting party':''),row);
   el('small','cq-town-why',lc?'It lands now. Fight beside your turrets, or your garrison and turrets hold it alone.':'Away, your turrets and garrison fight it. Defend in person: the better result counts, and a held defense pays defense points.',row);
   if(o.act||o.defend){const b=button('DEFEND IN PERSON',()=>o.defend?o.defend(e.id):o.act('town-defend',{id:e.id}),'cq-town-defend');b.setAttribute('aria-label','Defend your town in person: raid lands in '+t2(left));row.append(b);}}
  // raided while away
@@ -47,7 +47,7 @@ function hubLines(card,s,o){const T=TN();if(!T||!s?.plot||!s?.base?.tier)return;
   if(o.act)btns.append(button('OK',()=>o.act('town-seen',{}),'cq-town-ok'));}
  if(Number(p.shieldUntil)>now)el('small','cq-town-shield','🛡 SHIELD UP · NO RAIDS FOR '+t2(p.shieldUntil-now),box);
  if((tw.ws|0)>0&&o.act){const r=el('div','cq-town-row cq-town-ward',null,box);el('small','','PEACE WARD ×'+tw.ws+' · a 24-hour shield (rare loot, never sold)',r);r.append(button('USE A PEACE WARD',()=>o.act('town-ward',{}),'cq-town-ward-go'));}
- if(!open.length&&!fresh.length){el('small','cq-town-quiet',(p.cc|0)<(T.TOWN.fromCC|0)?'Town attacks start at Command Center II.':'NO RAID INBOUND · every attack is announced 12 h ahead on the War Map and your alerts.',box);}}
+ if(!open.length&&!fresh.length){el('small','cq-town-quiet',(p.cc|0)<(T.TOWN.fromCC|0)?'Town attacks start at Command Center II.':'NO RAID INBOUND · every attack is announced here 12 h ahead, and in your alerts.',box);}}
 // ---- the Strike Beacon (decision 10) ---------------------------------------------------------------------------------------------------
 function beaconLine(card,s,o){const T=TN();if(!T)return;const {el,button}=o,now=o.now||Date.now();let b;try{b=T.beaconOf(s,now);}catch(_){return;}if(!b||(!b.ready&&!b.active&&!b.used))return;
  if(b.active){const row=el('div','cq-beacon cq-beacon-on',null,card);el('p','cq-hub-big','☄ STRIKE BEACON · '+(b.site?.name||'')+' · '+t2(b.until-now)+' LEFT',row);el('small','','Your called strike: the same waves, rewards and Resonance as the real one. Drive to the crater.',row);if(o.go)row.append(button('GO TO THE STRIKE',()=>o.go(b.site),'cq-beacon-go'));return;}
@@ -55,7 +55,7 @@ function beaconLine(card,s,o){const T=TN();if(!T)return;const {el,button}=o,now=
  el('small','cq-beacon-used','☄ Strike Beacon used today · recharges at 00:00 UTC',card);}
 // ---- the soft return streak (decision 11): one line ---------------------------------------------------------------------------------
 const REWARD={repair:'REPAIR KIT',scanner:'SCANNER CHARGE'};
-function rewardName(r){if(r.it)return '+'+(r.n??1)+' '+(REWARD[r.it]||r.it.toUpperCase());if(r.em){const a=TN()?.STREAK_ART?.emblems?.[r.em];return (a?a.glyph+' ':'')+(a?.n||'BANNER EMBLEM')+' (TOWN BANNER)';}if(r.dc){const a=TN()?.STREAK_ART?.decor?.[r.dc];return (a?.n||'TOWN DECORATION').toUpperCase()+' (TOWN ORNAMENT)';}return '';}
+function rewardName(r){if(r.it)return r.n===0?(REWARD[r.it]||r.it.toUpperCase())+' (YOURS ARE FULL)':'+'+(r.n??1)+' '+(REWARD[r.it]||r.it.toUpperCase());if(r.em){const a=TN()?.STREAK_ART?.emblems?.[r.em];return (a?a.glyph+' ':'')+(a?.n||'BANNER EMBLEM')+' (TOWN BANNER)';}if(r.dc){const a=TN()?.STREAK_ART?.decor?.[r.dc];return (a?.n||'TOWN DECORATION').toUpperCase()+' (TOWN ORNAMENT)';}return '';}
 function streakLine(card,s,o){const T=TN();if(!T)return;const now=o.now||Date.now(),day=Math.floor(now/864e5),L=T.streakLine(s?.stk,day),{el}=o;
  const line=el('small','cq-hub-streak'+(L.today?' cq-on':''),'🔥 '+L.text,card);line.title='A day counts when you win an operation or harvest. Two freeze days a week cover missed days. Rewards are consumables and earn-only cosmetics, never points.';
  const nw=s?.stk?.nw;if(nw&&nw.d===day&&nw.r?.length)el('small','cq-hub-streak-new','DAY '+nw.n+' · '+nw.r.map(rewardName).join(' · '),card);}
@@ -89,7 +89,7 @@ function statLine(st){return st?st.dps+' DMG/S · '+st.hp+' HULL · '+st.spd+'% 
 function gearPicker(d,s,p,ctx){const B=BT();if(!B||!s?.bat||!p)return null;const {el,button}=ctx,T=s.bat,free=B.spare(T.g,{w:T.own?.w,c:T.own?.c}),x=el('div','cq-bat-gear-pick',null,d);x.setAttribute('role','group');x.setAttribute('aria-label',p.cs+' gear');
  el('p','cq-kicker','GEAR · '+p.cs,x);const now=B.kitStats(p.kit,p.rk);el('small','cq-gear-now','NOW · '+statLine(now),x);
  for(const [slot,label] of [['w','WEAPON'],['c','CHASSIS']]){const sec=el('div','cq-gear-slot',null,x);el('b','',label,sec);const pinned=p.pin?.[slot]||'';
-  sec.append(button((pinned?'':'✓ ')+'AUTO · the best spare',()=>ctx.act('hangar-gear',{pilot:p.id,[slot]:''}),'cq-gear-auto'+(pinned?'':' cq-on')));
+  sec.append(button((pinned?'':'✓ ')+'AUTO · AUTO-ARM picks',()=>ctx.act('hangar-gear',{pilot:p.id,[slot]:''}),'cq-gear-auto'+(pinned?'':' cq-on')));
   const list=free[slot]||[];if(!list.length)el('small','','No spare '+label.toLowerCase()+': everything you own is on your own tank or another pilot.',sec);
   for(const it of list){const key=B.keyOf(it),on=pinned===key,holder=T.p.find(o=>o!==p&&o.pin?.[slot]===key),after=B.kitStats(kitWith(p.kit,slot,it),p.rk);
    const r=el('div','cq-gear-item'+(on?' cq-on':''),null,sec);el('span','cq-gear-name',itemName(slot,it),r);el('small','cq-gear-after','THEN · '+statLine(after)+(now&&after?' ('+(after.power>=now.power?'+':'')+(after.power-now.power)+' POWER)':''),r);
@@ -98,7 +98,7 @@ function gearPicker(d,s,p,ctx){const B=BT();if(!B||!s?.bat||!p)return null;const
 // ---- the per-type alert switches (decision 9) -----------------------------------------------------------------------------------------
 function alertSwitches(c,s,o){const A=AL();if(!A)return;const sw=s?.al?.sw||{},{el,button}=o,box=el('div','cq-alert-types',null,c);el('p','wm-kicker','ALERT TYPES · AT MOST 3 A DAY, NEVER AT NIGHT, THE MOST URGENT FIRST',box);
  for(const t of A.TYPES){const on=sw[t]!==0,b=button((on?'✓ ':'✕ ')+A.NAMES[t],()=>o.act('war-alerts',{sw:{[t]:on?0:1}}),'cq-alert-type'+(on?' cq-on':''));b.setAttribute('aria-pressed',String(on));box.append(b);}
- el('small','','The daily reminder on Telegram also stops with /stop in the bot.',box);}
+ el('small','','Alerts off stops every notification, the daily reminder too. On Telegram, /stop in the bot stops its messages.',box);}
 // ---- deep links from an alert (?town=defend | repair | yield, ?beacon=1), taken once ------------------------------------------------
 let pending=null;try{const q=new URLSearchParams(root.location?.search||'');pending=q.get('town')||(q.get('beacon')==='1'?'beacon':null);}catch(_){}
 try{root.navigator?.serviceWorker?.addEventListener?.('message',e=>{const q=String(e.data?.q||'');if(!q)return;try{const u=new URLSearchParams(q);pending=u.get('town')||(u.get('beacon')==='1'?'beacon':pending);}catch(_){}});}catch(_){}

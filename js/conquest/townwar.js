@@ -55,7 +55,7 @@ const tickMs=()=>W().WAR.tickMs,warn=()=>W().warnTicks();
 // [results], rp the latest raid's replay, ws Peace Wards held, wu the last ward used, won held raids, seen (the log read up to)}
 function fresh(now){return {v:1,k:W().tickOf(now),n:0,ev:[],past:[],log:[],rp:null,ws:0,won:0,seen:now};}
 function norm(t,now){if(!record(t)||t.v!==1){const f=fresh(now);if(record(t))f.ws=Math.min(10,int(t.ws));return f;}const G=W().GEN;   // a Peace Ward found before the first town attack is kept
- const ev=list(t.ev).filter(e=>typeof e.id==='string'&&/^(t\d{1,6}|go\d{1,9})$/.test(e.id)).map(e=>({id:e.id,a:int(e.a),l:int(e.l),g:G[e.g]?e.g:'skaal',ln:int(e.ln)%8,...(e.go?{go:1}:{}),...(e.lc?{lc:int(e.lc)}:{}),...(e.tr?{tr:int(e.tr)}:{}),...(e.sd!==undefined?{sd:int(e.sd)}:{})})).slice(0,4);
+ const ev=list(t.ev).filter(e=>typeof e.id==='string'&&/^(t\d{1,6}|go\d{1,9})$/.test(e.id)).map(e=>({id:e.id,a:int(e.a),l:int(e.l),g:G[e.g]?e.g:'skaal',ln:int(e.ln)%8,...(e.go?{go:1}:{}),...(e.lc?{lc:int(e.lc)}:{}),...(e.tr?{tr:int(e.tr)}:{}),...(e.sd!==undefined?{sd:int(e.sd)}:{}),...(e.first?{first:1}:{})})).slice(0,4);
  const past=(Array.isArray(t.past)?t.past:record(t.past)?Object.values(t.past):[]).map(int).filter(x=>x>0).sort((a,b)=>a-b).slice(-6);
  const log=list(t.log).slice(-TOWN.log).map(x=>({id:String(x.id||'').slice(0,16),at:int(x.at),o:['held','breached','fallen','called'].includes(x.o)?x.o:'held',by:x.by==='you'?'you':'away',lv:clamp(int(x.lv),1,10),th:Math.round(Number(x.th)*100)/100||0,g:G[x.g]?x.g:'skaal',core:clamp(int(x.core),0,100),k:int(x.k),sp:int(x.sp),fell:int(x.fell),wl:int(x.wl),...(record(x.tk)?{tk:Object.fromEntries(Object.entries(x.tk).filter(([k,v])=>['alloy','biomass','helium','fe','cm'].includes(k)&&int(v)>0).map(([k,v])=>[k,int(v)]))}:{}),...(x.cache?{cache:1}:{}),...(x.pts?{pts:int(x.pts)}:{}),...(x.go?{go:1}:{}),...(x.dn?{dn:int(x.dn)}:{}),...(x.why?{why:String(x.why).slice(0,24)}:{})}));
  const rp=record(t.rp)&&typeof t.rp.id==='string'?t.rp:null;
@@ -76,7 +76,8 @@ function pickGeneral(war,tiers,r,now){const [lo,hi]=STARS[clamp(tiers|0,0,9)],wa
  for(let s=want;s>=1;s--){const pool=G.filter(g=>g.stars===s&&!(int(war?.gen?.[g.id]?.back)>now));if(pool.length)return pool[Math.floor(r*997)%pool.length].id;}return G[0].id;}
 const levelOf=th=>Math.min(TOWN.cap,TOWN.level[clamp(Math.round(Number(th)||0),0,TOWN.level.length-1)]);
 // THREAT on the town for an attack (ctx: {now, tiers, titan}); the portal counts while open at that moment
-function strength(war,e,ctx={}){const T=W().threatOf(war,{g:e.g,t:'town'},ctx,!!e.go);return {...T,level:levelOf(T.total)};}
+// the first attack on a town is a teaching raid (review B5): a one-star general at level 1, whatever the THREAT around it
+function strength(war,e,ctx={}){const T=W().threatOf(war,{g:e.g,t:'town'},ctx,!!e.go);return {...T,level:e.first?1:levelOf(T.total)};}
 // ---- losses (decision 2) -----------------------------------------------------------------------------------------------------------
 // loot: ConquestPlot.loot(plot) (the Storage Depot protects 25% + 10% a level of the production store); cm: the whole composite stock
 function lossOf(outcome,loot,cm){const L=TOWN.loss[outcome]||TOWN.loss.held,out={};for(const k of ['alloy','biomass','helium','fe']){const v=Math.floor((loot?.raidable?.[k]||0)*L.store);if(v>0)out[k]=v;}const c=Math.floor((Number(cm)||0)*L.cm);if(c>0)out.cm=c;return out;}
@@ -87,7 +88,7 @@ const unit=t=>W().unit(t);
 function step(tw,k,info,resolve){const T=tickMs(),at=k*T,out=[];
  for(const e of tw.ev.filter(x=>x.l<=k&&!x.lc).sort((a,b)=>a.l-b.l||a.id.localeCompare(b.id))){const r=resolve?resolve(e,e.l*T):null;if(r==='wait')continue;tw.ev.splice(tw.ev.indexOf(e),1);if(r&&r!=='called')tw.past=[...tw.past,e.l*T].slice(-6);out.push({kind:'land',ev:e,r});}
  const L=k+warn(),Lms=L*T,why=canLand(tw,Lms,info);
- if(!why&&unit(info.seed+':town:'+k)<TOWN.chance){const e={id:'t'+(tw.n=(tw.n|0)+1),a:k,l:L,g:pickGeneral(info.war,info.tiers,unit(info.seed+':town:g:'+k),at),ln:Math.floor(unit(info.seed+':town:ln:'+k)*8)};tw.ev.push(e);out.push({kind:'announce',ev:e});}
+ if(!why&&unit(info.seed+':town:'+k)<TOWN.chance){const first=!(tw.n|0)&&!tw.log.length,e={id:'t'+(tw.n=(tw.n|0)+1),a:k,l:L,g:first?pickGeneral(info.war,0,0,at):pickGeneral(info.war,info.tiers,unit(info.seed+':town:g:'+k),at),ln:Math.floor(unit(info.seed+':town:ln:'+k)*8),...(first?{first:1}:{})};tw.ev.push(e);out.push({kind:'announce',ev:e});}
  return out;}
 // The Grand Offensive's town target (decision 1): created once its weekend is announced (lands at the window's end), unless the town
 // cannot be attacked then; called off when the Grand Offensive is beaten in person.

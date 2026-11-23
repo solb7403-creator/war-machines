@@ -40,6 +40,7 @@ const mon=Date.UTC(2026,10,23,12),dayOf=t=>Math.floor(t/D);   // Monday Nov 23
  assert.throws(()=>ban('streak7'),/earned on the return streak/);ok(true,'the day-7 emblem cannot be set before day 7');
  s.stk={n:7,last:dayOf(t),wk:TN.weekOf(dayOf(t)),fz:0,best:7,got:{1:1,3:1,7:1}};const b=ban('streak7');ok(b.plot.banner.emblem==='streak7','reached: it goes on the town banner');
  assert.throws(()=>ban('streak60'),/earned on the return streak/);ok(true,'a later emblem stays locked');
+ s.stk={n:1,last:dayOf(t)+20,wk:TN.weekOf(dayOf(t)+20),fz:0,best:7,got:{1:1}};ok(ban('streak7').plot.banner.emblem==='streak7','review B4: after the streak resets, the day-7 emblem is still yours (kept by the best streak)');
  ok(!CAT.eligible('streak-beacon30',s)&&CAT.eligible('streak-beacon30',{...s,stk:{...s.stk,best:30}})&&CAT.eligible('streak-monolith365',{stk:{best:365}}),'the Day-30 Signal Beacon is earned at 30 days, the Day-365 Monolith at 365');}
 // ---- 5. the hub's one line ----
 {const d0=dayOf(mon);let st={};for(let d=0;d<4;d++)st=TN.streakDay(st,d0+d).st;const L=TN.streakLine(st,d0+3),L2=TN.streakLine(st,d0+4);
