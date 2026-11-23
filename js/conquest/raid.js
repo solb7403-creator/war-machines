@@ -183,8 +183,11 @@ function make(plot,seed=1,opt={}){
   hpOf:id=>{const s=byId.get(id);return s?s.hp:0;}};}
 // The drill's result through this engine (the equality test's entry point): the same signature as ConquestPlot.drill.
 function drill(plot,seed=1,opt={}){return make(plot,seed,opt).run();}
-// the outcome a town attack reports (owner decision 2): FALLEN (the Command Center destroyed), BREACHED (a building lost, the Command
-// Center standing), HELD (only walls and settler homes damaged)
-const outcomeOf=r=>r.outcome==='breached'?'fallen':(r.fell||[]).some(f=>f.t!=='gate')?'breached':'held';   // a gate is a wall section
-root.ConquestRaid=Object.freeze({UNIT,make,drill,unitOf,posts,outcomeOf,rng});
+// the outcome a town attack reports (owner decision 2): FALLEN (the Command Center destroyed), BREACHED (a vital lost: the Reactor,
+// the Storage Depot or the Science Lab, or three buildings wrecked, the Command Center standing), HELD (the rest: repairs only)
+// (lead's definition, Checkpoint 47: Session 5B made the vitals the raid's objectives; a turret or two, homes and walls lost are a
+// repair, not a breach; three buildings wrecked is)
+const BREACH=3;   // buildings wrecked (turrets, production, support; never walls, homes or gates) that make a breach without a vital
+const outcomeOf=r=>r.outcome==='breached'?'fallen':(r.vitals||[]).length||(r.fell||[]).filter(f=>f.t!=='gate').length>=BREACH?'breached':'held';
+root.ConquestRaid=Object.freeze({UNIT,BREACH,make,drill,unitOf,posts,outcomeOf,rng});
 })(globalThis);

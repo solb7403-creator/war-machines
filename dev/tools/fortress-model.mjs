@@ -22,7 +22,7 @@ const {campaign,baseAction}=await import('../../worker/src/conquest-campaign.js'
 const {plotAction}=await import('../../worker/src/conquest-plot.js');
 const {claimOrder,orderEvent}=await import('../../worker/src/conquest-orders.js');
 const {MODEL}=await import('./economy-model.mjs');
-const DAY=86400000,HOUR=3600000,start=Date.UTC(2026,10,10,0),at=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'}),K=['cp','alloy','biomass','helium'];
+const YEAR=400,DAY=86400000,HOUR=3600000,start=Date.UTC(2026,10,10,0),at=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'}),K=['cp','alloy','biomass','helium'];
 // ---- profiles (the audit's: the economy model's town ladder uses them) ----
 const AUDIT=JSON.parse(readFileSync(new URL('../../docs/conquest/audit/model/audit-economy.json',import.meta.url),'utf8')).profiles;
 export const PROFILES={
@@ -57,7 +57,7 @@ export function income(pr,days){const key=JSON.stringify(pr.sessions)+days;if(ca
     missionReward(s,now);orderEvent(s,'kill',6);s.mission=null;s.position=at(1174,1168);bank(s,now);
     for(const o of (s.wo?.list||[]).filter(o=>o.done&&!o.claimed)){try{claimOrder(s,{seq:0,action:'claim-order',order:o.id},now);}catch(e){}}
     const b1=tot();build(now);const sp=diff(tot(),b1);for(const k of K)spent[k]+=sp[k];}
-   const d=diff(a0,tot());for(const k of K)row[k]+=d[k]-spent[k];}
+   const d=diff(a0,tot());for(const k of K)row[k]+=d[k]+spent[k];}   // gross: what the session earned (the earning town's own spend added back)
   row.cc=s.plot?.cc||0;out.push(row);}
  return cache[key]=out;}
 // minerals a day (the economy model's own formula: gathering, operation caches, Meteor Strikes with Resonance), for a play time
@@ -70,72 +70,72 @@ export function minerals(pr,d){const m=pr.sessions.reduce((a,x)=>a+x[1],0),n=pr.
  const strikes=Math.min(1440/Pm.strike.everyMin,n*(m/n+Pm.strike.windowMin)/Pm.strike.everyMin),okp=d<7?.6:d<21?.85:.95,st=strikes*okp;add(Pm.strike.guaranteed,st);inc.se+=st*(Pm.strike.se+1/Pm.strike.resonance.se);inc.mh+=st*(Pm.strike.mh+1/Pm.strike.resonance.mh);
  return inc;}
 // ---- 2. the town a pilot builds ----
-const SUPPORT=['storage','reactor','foundry','hangar','shield'];
-const ORDER=['cannon','mg','laser','rocket','missile','mortar','flame','siege','tesla','lasercannon','railgun'];
-// the walls' blend ladder, weakest to strongest (every unlocked (ore, level), by q)
+// One site plan per site (a decent player's: vitals and support by the Command Center, 42 turret slots on two rings typed so every
+// Command Center level's slots are unlocked types, wall rings from radius 18 outward). Every profile builds the same plan, so a pilot
+// who invests more always has the stronger town (more of the plan, at higher levels and better blends); the fully built town is the
+// plan at its maximum.
+const SLOT_TYPES=['cannon','mg','cannon','laser','mg','rocket','cannon','missile','laser','rocket','mortar','flame','missile','siege','mg','cannon','laser','tesla','rocket','missile','mortar','siege',
+ 'lasercannon','flame','tesla','cannon','missile','railgun','lasercannon','siege','mortar','tesla','laser','mg','railgun','lasercannon','missile','rocket','flame','siege','tesla','railgun'];
+const SUPPORT=Object.freeze([['storage',1],['reactor',5],['foundry',1],['hangar',1],['shield',3],['refinery',2],['biodome',2],['helium',1],['lab',1]]);
+const PLANS={};
+export function plan(site){if(PLANS[site])return PLANS[site];const p=P.newPlot(site,start);p.cc=10;p.b.cc.l=10;const sup=[],slots=[];
+ for(const b of Object.values(p.b))if(b.t==='storage')sup.push({id:'storage',t:'storage',i:b.i,j:b.j,r:b.r|0});   // the town's own Storage Depot (st.lv.storage)
+ for(const [t,n] of SUPPORT){if(t==='storage')continue;for(let k=0;k<n;k++){const at=P.autoPlace(p,t);if(!at)continue;const id='s'+sup.length;p.b[id]={t,...at,l:1};sup.push({id,t,...at});}}
+ for(let k=0,n=0;n<42&&k<1600;k++){const t=SLOT_TYPES[n],R=k%2?16:12,a=k*2.399,i=Math.round(P.MID+Math.cos(a)*R),j=Math.round(P.MID+Math.sin(a)*R);if(!P.placeError(p,t,i,j,0)){const id='t'+n;p.b[id]={t,i,j,r:0,l:1};slots.push({id,t,i,j});n++;}}
+ return PLANS[site]={sup,slots,base:P.newPlot(site,start).b};}
+// a slot's turret at its level, if its type is unlocked at this Command Center level
 const BLENDS=(()=>{const out=[[0,0]];for(let o=1;o<=6;o++)for(let l=1;l<=3;l++)out.push([o,l]);return out.sort((a,b)=>P.blendQ(a[0],a[1])-P.blendQ(b[0],b[1]));})();
 const oreFor=(o,l,n)=>o?{[P.ORES[o-1]]:P.ORE_UNITS[o]*P.BLEND_UNITS[l]*n/40}:{};
-// The pilot's town on a site at day `days` (the model replays every day up to it). Returns {plot, garrison units, log}.
-export function townAt(prName,site,days,{share,citadelX}={}){const pr={...PROFILES[prName]};if(share!==undefined)pr.share=share;const rows=income(pr,Math.max(1,Math.ceil(days)+1)),p=P.newPlot(site,start);p.cc=1;p.b.cc.l=1;
- const bag={cp:0,alloy:0,biomass:0,helium:0,fe:0,il:0,ar:0,tq:0,se:0,mh:0},jobs=[],rings=[];let cm=P.COMPOSITE.start,n=0,wallCells=0,ext=0;
- const cost=(t,l)=>P.costOf(t,l)||{},can=c=>Object.entries(c).every(([k,v])=>(bag[k]||0)>=v-1e-9),pay=c=>{for(const [k,v] of Object.entries(c))bag[k]-=v;};
- const turrets=()=>Object.values(p.b).filter(b=>P.BUILDINGS[b.t]?.turret);
- const ring=(R,a)=>[Math.round(P.MID+Math.cos(a)*R),Math.round(P.MID+Math.sin(a)*R)];
- // a decent player's placement: support buildings by the Command Center, turrets on two rings inside the walls
- const place=t=>{if(P.BUILDINGS[t]?.turret){const h=P.townH(p.cc),R1=Math.max(6,Math.round(h*.3)),R2=Math.max(9,Math.round(h*.43));for(let k=0;k<800;k++){const [i,j]=ring(k%2?R2:R1,(n+k)*2.399);if(!P.placeError(p,t,i,j,0))return {i,j,r:0};}return null;}return P.autoPlace(p,t);};
- const wallR0=()=>Math.max(11,Math.round(P.townH(p.cc)*.5));
- const day0=s=>Math.floor(s);
- for(let d=0;d<days;d++){const r=rows[d]||rows.at(-1),gear=0;for(const k of K)bag[k]+=Math.max(0,r[k])*pr.share;const mn=minerals(pr,d);for(const k of MIN)bag[k]+=mn[k]*.5;
-  if(pr.buyFeIl){bag.fe+=200;bag.il+=60;}   // common / uncommon ore bought as needed (the store's sellable ores)
-  // the Command Center on the audit ladder (its cost paid from the town's share; the ladder already accounts for it, so it never stalls)
-  const want=ccAt(pr,d+1);while(p.cc<want){p.cc++;p.b.cc.l=p.cc;const c=P.CC.cost[p.cc];if(c)for(const k of K)bag[k]=Math.max(0,bag[k]-(c[k]||0));}
-  // composite: the Foundry turns loaded alloy into composite at its rate (5 an hour a level), all day
-  const fl=P.levelSum(p,'foundry');if(fl){const make=Math.min(P.COMPOSITE.rate*fl*24,bag.alloy*P.COMPOSITE.perAlloy*.5);cm=Math.min(cm+make,P.COMPOSITE.cap0+P.COMPOSITE.capPer*fl+3000);bag.alloy-=make/P.COMPOSITE.perAlloy;}
-  // wall extensions: drill milestones (CC1/3/5/7/9) and defense wins (3 and 10) as the pilot plays; Foundry research with ore; the store packs
-  ext=Math.min(50,(p.cc>=9?20:p.cc>=7?16:p.cc>=5?12:p.cc>=3?8:4)+(d>=10?5:0)+(d>=30?5:0)+(P.levelOf(p,'foundry')>=5&&d>=40?30:P.levelOf(p,'foundry')*6)+(pr.extPacks?50:0));
-  // the builder in the pilot's sessions: start the next job whenever the builder is free (jobs run on the Worker clock)
-  for(const [h,mins] of pr.sessions){const t0=d*24+h,t1=t0+mins/60;let busy=[...jobs.filter(j=>j.end>t0)];for(const j of jobs.filter(j=>j.end<=t0))j.done?.();jobs.length=0;jobs.push(...busy);
-   for(let guard=0;guard<200;guard++){const free=pr.builders-jobs.filter(j=>j.end>(jobs.at(-1)?.start??t0)).length;let now=t0;const ends=jobs.map(j=>j.end).sort((a,b)=>a-b);if(jobs.length>=pr.builders){now=ends[0];if(now>t1)break;for(const j of jobs.filter(j=>j.end<=now)){j.done?.();jobs.splice(jobs.indexOf(j),1);}}
-    const job=nextJob();if(!job)break;pay(job.c);jobs.push({start:now,end:now+job.ms/HOUR,done:job.done});}}
-  // walls: rings outside the turrets, composite and ore permitting (instant orders; no builder)
-  const cap=P.wallBase(p.cc)+Math.floor(P.wallBase(p.cc)*ext/100);while(wallCells<cap&&cm>=1){const R0=wallR0()+rings.length,per=8*R0;if(R0>P.townH(p.cc)-1)break;const k=Math.min(per,Math.floor(cm),cap-wallCells);if(k<per*.5&&k<cap-wallCells)break;rings.push({R:R0,n:k,code:1});cm-=k;wallCells+=k;}
+// the plot of a build state: {cc, lv: {id: level}, rings: [{R, n, code}]}
+export function plotOf(site,st){const pl=plan(site),p=P.newPlot(site,start);p.cc=st.cc;p.b.cc.l=st.cc;for(const [id,b] of Object.entries(p.b))if(b.t==='storage')b.l=Math.max(1,st.lv.storage|0);
+ for(const x of pl.sup){if(x.t==='storage')continue;const l=st.lv[x.id]|0;if(l>0&&st.cc>=P.BUILDINGS[x.t].cc)p.b[x.id]={t:x.t,i:x.i,j:x.j,r:x.r|0,l};}
+ for(const x of pl.slots){const l=st.lv[x.id]|0;if(l>0)p.b[x.id]={t:x.t,i:x.i,j:x.j,r:0,l};}
+ for(const g of st.rings){const {o,l}=P.wdecode(g.code),pl2=P.wallPlan({...p,devx:1},[{k:'rect',a:[P.MID-g.R,P.MID-g.R],b:[P.MID+g.R,P.MID+g.R],o,l}],{dev:true});let k=0;for(const x of pl2.cells){if(k++>=g.n)break;p.w[x.i+','+x.j]=x.code;}}
+ p.ext={r:5,d:31,w:12};return p;}
+// The pilot's town on a site at day `days`: the plan, built day by day with the town's share of the income, the builder in the pilot's
+// sessions, the Foundry's composite and half of the mineral income.
+const BUILT={};
+export function townAt(prName,site,days,{share}={}){const key=prName+':'+site+':'+days+':'+share;if(BUILT[key])return BUILT[key];const pr={...PROFILES[prName]};if(share!==undefined)pr.share=share;const rows=income(pr,YEAR),pl=plan(site);
+ const st={cc:1,lv:{storage:1},rings:[]},bag={cp:0,alloy:0,biomass:0,helium:0,fe:0,il:0,ar:0,tq:0,se:0,mh:0};let cm=P.COMPOSITE.start,jobs=[];
+ const can=c=>Object.entries(c||{}).every(([k,v])=>(bag[k]||0)>=v-1e-9),pay=c=>{for(const [k,v] of Object.entries(c||{}))bag[k]-=v;};
+ const capOf=t=>P.levelCap(t,st.cc),countOK=(x)=>{const B=P.BUILDINGS[x.t];if(st.cc<B.cc)return false;if(B.turret)return pl.slots.indexOf(x)<P.TURRET_CAP[st.cc-1];const same=pl.sup.filter(y=>y.t===x.t),i=same.indexOf(x);return i<P.countCap(x.t,st.cc);};
+ const S0=P.SITES[site],power=()=>{let use=0,sup=12+3*st.cc;for(const x of [...pl.sup,...pl.slots]){const l=st.lv[x.id]|0;if(!l)continue;use+=P.BUILDINGS[x.t].pw*l;if(x.t==='reactor')sup+=P.BUILDINGS.reactor.power*l*S0.power;}return {use,sup:Math.round(sup)};};   // the plot's own power rules, without building the plot
+ for(let d=0;d<days;d++){const r=rows[d]||rows.at(-1);for(const k of K)bag[k]+=Math.max(0,r[k])*pr.share;const mn=minerals(pr,d);for(const k of MIN)bag[k]+=mn[k]*.5;if(pr.buyFeIl){bag.fe+=200;bag.il+=60;}
+  const want=ccAt(pr,d+1);while(st.cc<want){st.cc++;const c=P.CC.cost[st.cc];if(c)for(const k of K)bag[k]=Math.max(0,bag[k]-(c[k]||0));}
+  const fl=st.lv.s2|0||0,foundry=pl.sup.find(x=>x.t==='foundry'),fL=foundry?st.lv[foundry.id]|0:0;if(fL){const make=Math.min(P.COMPOSITE.rate*fL*24,bag.alloy*P.COMPOSITE.perAlloy*.5);cm+=make;bag.alloy-=make/P.COMPOSITE.perAlloy;}
+  // the builder: in each session, the next affordable job whenever a builder is free (jobs keep running on the Worker clock)
+  for(const [h,mins] of pr.sessions){const t0=d*24+h,t1=t0+mins/60;let now=t0;
+   for(let guard=0;guard<300;guard++){jobs=jobs.filter(j=>{if(j.end<=now){st.lv[j.id]=Math.max(st.lv[j.id]|0,j.l);return false;}return true;});if(jobs.length>=pr.builders){now=Math.min(...jobs.map(j=>j.end));if(now>t1)break;continue;}
+    const job=next();if(!job)break;pay(job.c);jobs.push({id:job.id,l:job.l,end:now+P.timeOf(job.t,job.l)/HOUR});}}
+  // walls: rings outside the turrets (instant orders), composite permitting, up to the cap with the extensions earned (or bought)
+  const ext=Math.min(50,(st.cc>=9?20:st.cc>=7?16:st.cc>=5?12:st.cc>=3?8:4)+(d>=10?5:0)+(d>=30?5:0)+(fL>=5&&d>=40?30:fL*6)+(pr.extPacks?50:0)),cap=P.wallBase(st.cc)+Math.floor(P.wallBase(st.cc)*ext/100);
+  let cells=st.rings.reduce((a,g)=>a+g.n,0);for(let guard=0;guard<40&&cells<cap&&cm>=1;guard++){let g=st.rings.find(x=>x.n<8*x.R);if(!g){const R0=18+st.rings.length;if(R0>P.townH(st.cc)-1)break;g={R:R0,n:0,code:1};st.rings.push(g);}const k=Math.min(8*g.R-g.n,Math.floor(cm),cap-cells);if(k<=0)break;g.n+=k;cm-=k;cells+=k;}
   // blends: the weakest ring first, to the best blend its ore and the Command Center allow
-  for(let guard=0;guard<40;guard++){const g=rings.slice().sort((a,b)=>P.wallStats(a.code,site).hp-P.wallStats(b.code,site).hp)[0];if(!g)break;const cur=P.wdecode(g.code),q0=P.blendQ(cur.o,cur.l);
-   const up=BLENDS.filter(([o,l])=>P.blendQ(o,l)>q0&&p.cc>=P.ORE_CC[o]&&can(oreFor(o,l,g.n))).sort((a,b)=>P.blendQ(b[0],b[1])-P.blendQ(a[0],a[1]))[0];if(!up)break;pay(oreFor(up[0],up[1],g.n));g.code=P.wcode(up[0],up[1]);}
- }
- function nextJob(){const cc=p.cc,cands=[];
-  const add=(t,l,id,prio)=>{const c=t==='cc'?{}:cost(t,l);if(!can(c))return;cands.push({t,l,id,c,prio,ms:P.timeOf(t,l)});};
-  for(const t of SUPPORT){const cur=Object.entries(p.b).filter(([,b])=>b.t===t);for(const [id,b] of cur)if(!P.buildCheck(p,t,(b.l|0)+1,id)&&(t!=='reactor'||P.powerUse(p)>P.powerSupply(p)*.8))add(t,(b.l|0)+1,id,t==='storage'?1:3);if(!P.buildCheck(p,t,1)&&(t!=='reactor'||P.powerUse(p)>P.powerSupply(p)*.8))add(t,1,null,2);}
-  const ts=turrets(),capN=P.TURRET_CAP[cc-1],free=P.powerSupply(p)-P.powerUse(p);
-  if(ts.length<capN){const types=ORDER.filter(t=>cc>=P.BUILDINGS[t].cc),t=types[ts.length%types.length];if(free>=P.BUILDINGS[t].pw)add(t,1,null,4);}
-  const low=Object.entries(p.b).filter(([,b])=>P.BUILDINGS[b.t]?.turret&&(b.l|0)<P.levelCap(b.t,cc)).sort((a,b)=>a[1].l-b[1].l||P.costOf(a[1].t,a[1].l+1).cp-P.costOf(b[1].t,b[1].l+1).cp)[0];
-  if(low&&free>=P.BUILDINGS[low[1].t].pw)add(low[1].t,low[1].l+1,low[0],5);
-  const pick=cands.sort((a,b)=>a.prio-b.prio||a.c.cp-b.c.cp)[0];if(!pick)return null;
-  if(!pick.id){const pos=place(pick.t);if(!pos)return null;const id='b'+(++p.n);p.b[id]={t:pick.t,...pos,l:0};return {c:pick.c,ms:pick.ms,done:()=>{p.b[id].l=1;}};}
-  const b=p.b[pick.id],target=pick.l;b.busy=1;return {c:pick.c,ms:pick.ms,done:()=>{b.l=Math.max(b.l|0,target);delete b.busy;}};}
- // the walls on the plot: the rings, innermost first (each ring one blend)
- for(const g of rings){const pl=P.wallPlan({...p,devx:1},[{k:'rect',a:[P.MID-g.R,P.MID-g.R],b:[P.MID+g.R,P.MID+g.R],o:P.wdecode(g.code).o,l:P.wdecode(g.code).l}],{dev:true});let k=0;for(const x of pl.cells){if(k++>=g.n)break;p.w[x.i+','+x.j]=x.code;}}
- for(const b of Object.values(p.b))if(!(b.l>0)&&b.t!=='cc'){}   // a building still under construction does not fight (l 0)
- const tier=Math.round(interp(pr.gear,days));return {plot:p,rings,bag,garrison:garrisonAt(pr,p,days,tier),ext};}
-// the garrison: the battalion model's roster at this day, fielded by the Hangar (the rest are reserves), one slot a Hangar level, the
-// spare gear tier the profile's pilot owns by then (Common / Rare / Epic)
-const BAT={};function rosterAt(pr,d){const m=pr.sessions.reduce((a,x)=>a+x[1],0);const key=m;if(!BAT[key])BAT[key]=MODEL.battalionModel({minutes:m});const B=BAT[key];
- // pilots by day: the model's own rule (the wingman, a RECRUIT job each session once a Hangar stands, the day's rescue win)
- return Math.min(16,1+Math.max(0,Math.floor(d-1))+Math.max(0,Math.floor(d-3)));}
-export function garrisonAt(pr,p,d,tier){const lv=P.levelOf(p,'hangar'),slots=Math.min(5,P.garrisonSlots(p)),roster=rosterAt(pr,d),fielded=BT.fieldCap(lv),reserves=Math.max(0,roster-fielded),n=Math.min(slots,reserves);
+  for(let guard=0;guard<60;guard++){const g=st.rings.filter(x=>x.n).sort((a,b)=>P.blendQ(P.wdecode(a.code).o,P.wdecode(a.code).l)-P.blendQ(P.wdecode(b.code).o,P.wdecode(b.code).l))[0];if(!g)break;const cur=P.wdecode(g.code),q0=P.blendQ(cur.o,cur.l);
+   const up=BLENDS.filter(([o,l])=>P.blendQ(o,l)>q0&&st.cc>=P.ORE_CC[o]&&can(oreFor(o,l,g.n))).sort((a,b)=>P.blendQ(b[0],b[1])-P.blendQ(a[0],a[1]))[0];if(!up)break;pay(oreFor(up[0],up[1],g.n));g.code=P.wcode(up[0],up[1]);}}
+ // the next job: support first (storage, power before it is short, the Foundry, the Hangar, shields), then a new turret slot, then the
+ // lowest turret's next level; never past the power the town has
+ function next(){const busy=new Set(jobs.map(j=>j.id)),{use,sup}=power(),c=[];
+  for(const x of pl.sup){if(busy.has(x.id)||!countOK(x))continue;const l=(st.lv[x.id]|0)+1;if(l>capOf(x.t))continue;const pw=P.BUILDINGS[x.t].pw;if(x.t==='reactor'?use<=sup*.85&&(st.lv[x.id]|0)>0:use+pw>sup)continue;
+   const prio=x.t==='reactor'?0:x.t==='storage'?1:x.t==='foundry'||x.t==='hangar'?2:x.t==='shield'?3:6;c.push({id:x.id,t:x.t,l,c:P.costOf(x.t,l),prio});}
+  for(const x of pl.slots){if(busy.has(x.id)||!countOK(x))continue;const l=(st.lv[x.id]|0)+1;if(l>capOf(x.t))continue;if(use+P.BUILDINGS[x.t].pw>sup)continue;c.push({id:x.id,t:x.t,l,c:P.costOf(x.t,l),prio:l===1?4:5});}
+  const ok=c.filter(x=>can(x.c)).sort((a,b)=>a.prio-b.prio||(st.lv[a.id]|0)-(st.lv[b.id]|0)||a.c.cp-b.c.cp);return ok[0]||null;}
+ for(const j of jobs)st.lv[j.id]=st.lv[j.id]|0;   // a job still running does not fight at its new level
+ const tier=Math.round(interp(pr.gear,days)),plot=plotOf(site,st);return BUILT[key]={plot,st,bag,garrison:garrisonAt(pr,plot,days,tier)};}
+// the garrison: the roster by this day (a pilot a day from the rescue and the Hangar's RECRUIT job, at most 16), fielded by the
+// Hangar (the rest are reserves), one slot a Hangar level, the spare gear tier the profile's pilot owns by then
+function rosterAt(d){return Math.min(16,1+Math.max(0,Math.floor(d-1))+Math.max(0,Math.floor(d-3)));}
+export function garrisonAt(pr,p,d,tier){const lv=P.levelOf(p,'hangar'),slots=Math.min(5,P.garrisonSlots(p)),fielded=BT.fieldCap(lv),n=Math.min(slots,Math.max(0,rosterAt(d)-fielded));
  const kit={w:{a:tier>=2?'siege':'pulse',t:Math.min(2,tier),q:tier>=2?1.08:1},c:{c:'titan',t:Math.min(2,tier),q:tier>=2?1.08:1}};
  return Array.from({length:n},(_,i)=>RD.unitOf({id:'g'+i,kind:'g',kit,rk:Math.min(10,1+Math.floor(d/12))}));}
-// the fully built town (decision 4a): Command Center 10, 42 turrets of all eleven types at the highest levels the power budget allows,
-// three Shield Generators, five Reactors, the Storage Depot, Hangar V, 3,000 cells (the +50% extension cap) of Moonheart heavy, a full
-// garrison (five) in top gear
-export function fullTown(site){const p=P.newPlot(site,start);p.cc=10;p.b.cc.l=10;p.ext={r:5,d:31,w:12};const put=(t,l,n=1)=>{for(let k=0;k<n;k++){const at=P.autoPlace(p,t);if(at)p.b['b'+(++p.n)]={t,...at,l};}};
- for(const b of Object.values(p.b))if(b.t==='storage')b.l=5;put('reactor',5,5);put('refinery',5,2);put('biodome',5,2);put('helium',5,1);put('foundry',5,1);put('shield',5,3);put('lab',4,1);put('hangar',5,1);
- let n=0;for(let k=0;P.turretCount(p)<42&&k<900;k++){const t=P.TURRETS[n%11],R=k%2?16:12,a=k*2.399,i=Math.round(P.MID+Math.cos(a)*R),j=Math.round(P.MID+Math.sin(a)*R);if(!P.placeError(p,t,i,j,0)){p.b['b'+(++p.n)]={t,i,j,r:0,l:5};n++;}}
- // the power budget: lower the dearest turrets a level at a time until the town's draw fits its supply
- for(let guard=0;guard<200&&P.powerUse(p)>P.powerSupply(p);guard++){const b=Object.values(p.b).filter(x=>P.BUILDINGS[x.t]?.turret&&x.l>1).sort((a,b)=>P.BUILDINGS[b.t].pw-P.BUILDINGS[a.t].pw||b.l-a.l)[0];if(!b)break;b.l--;}
- const cap=P.wallCapOf(p);for(let r=18;Object.keys(p.w).length<cap&&r<=P.townH(10);r++){const pl=P.wallPlan({...p,devx:1},[{k:'rect',a:[P.MID-r,P.MID-r],b:[P.MID+r,P.MID+r],o:6,l:3}],{dev:true});for(const x of pl.cells){if(Object.keys(p.w).length>=cap)break;p.w[x.i+','+x.j]=x.code;}}
+// the fully built town (decision 4a): the plan at its maximum: Command Center 10, every support building and all 42 turrets at the highest
+// levels the power budget allows (the dearest turrets a level lower until the draw fits), 3,000 cells (the +50% cap) of Moonheart heavy,
+// five garrison pilots in top gear (Epic, the best roll; one with Moonbeam)
+export function fullTown(site){const pl=plan(site),st={cc:10,lv:{storage:5},rings:[]};for(const x of pl.sup)st.lv[x.id]=P.levelCap(x.t,10);for(const x of pl.slots)st.lv[x.id]=5;
+ let p=plotOf(site,st);for(let guard=0;guard<300&&P.powerUse(p)>P.powerSupply(p);guard++){const x=pl.slots.filter(y=>st.lv[y.id]>1).sort((a,b)=>P.BUILDINGS[b.t].pw-P.BUILDINGS[a.t].pw||st.lv[b.id]-st.lv[a.id]||pl.slots.indexOf(b)-pl.slots.indexOf(a))[0];if(!x)break;st.lv[x.id]--;p=plotOf(site,st);}
+ let left=3000;for(let R=18;left>0&&R<=P.townH(10)-1;R++){const n=Math.min(8*R,left);st.rings.push({R,n,code:P.wcode(6,3)});left-=n;}p=plotOf(site,st);
  const kit={w:{a:'siege',t:2,q:1.1},c:{c:'titan',t:2,q:1.1}},gar=[0,1,2,3,4].map(i=>RD.unitOf({id:'g'+i,kind:'g',kit:i===0?{w:{a:'moon',t:2,q:1},c:kit.c}:kit,rk:10}));
- return {plot:p,garrison:gar};}
+ return {plot:p,st,garrison:gar};}
 // ---- 3. raids ----
 // THREAT for a raid at day d: the Citadel tiers on the profile's pacing (x citadelX), a general by those tiers, the portal open 3 raids
 // in 4, the Grand Offensive's surge 1 raid in 8 (the weekend's town target among ~8 raids a week)

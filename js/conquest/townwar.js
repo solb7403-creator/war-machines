@@ -34,8 +34,11 @@ const TOWN=Object.freeze({
  // THREAT -> raid level (index: THREAT rounded, 0..16). Calibrated by the fortress tests (decision 4): the regular's town holds about
  // 3 of 4 raids decided while away along the year; the level stops rising at CAP, where a fully built town holds every raid
  // without a breach even at the top strength (every Citadel tier, a five-star general, the portal open, the Grand Offensive surge)
- level:Object.freeze([2,2,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10]),
- cap:10,
+ // measured (dev/tools/fortress-model.mjs, every site, breach = a vital or 3 buildings): the fully built town holds every raid at level 9
+ // and 86% at 10, so the cap is 9; the regular holds about 71% at day 30 (THREAT 3-4: level 6), 79% at day 60 (6-7: level 7), all at
+ // day 120-180 (8-11: level 8) and 64% late (14-16: level 9); the grinder 86% late; PROPOSAL numbers until the owner sees them
+ level:Object.freeze([4,5,5,6,6,7,7,7,8,8,8,8,9,9,9,9,9]),
+ cap:9,
  log:16
 });
 // the general who attacks the town, by the Citadel tiers cleared (the Retaliation level, blueprint §5 "strength follows the

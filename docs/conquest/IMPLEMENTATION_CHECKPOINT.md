@@ -6800,10 +6800,25 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
      (pins `p.pin {w,c}` item keys `BT.keyOf`), `BT.autoArm(...,fixed)`, `BT.spare`, `BT.kitStats`; AUTO-ARM clears pins.
   Tests (all pass): conquest-raid-engine (9), conquest-away-raids (43), conquest-live-defense (19), conquest-gear (16).
   A full run of every CI node test on commit 3fd4763 (scratchpad runner) was 74 PASS / 0 FAIL when last checked.
-- **In progress:** `dev/tools/fortress-model.mjs` (written, not yet run): income (war-model method, any play time), minerals,
-  `townAt(profile, site, day)`, `fullTown(site)`, `raidSet`, `holdRate`. Next: run it, calibrate `TOWN.level` (and `RD.UNIT` if
-  needed) so the regular holds ~3/4, the ceiling holds at the cap; write dev/tests/conquest-fortress.mjs (a: ceiling, b: no dead
-  upgrades, c: regular path + variants, d: grinder / payer measured) as its own CI job.
+- **Fortress model done and calibrated** (`dev/tools/fortress-model.mjs`; numbers in docs/conquest/session7t/fortress-calibration.txt):
+  one site plan per site (`plan(site)`: support by the CC, 42 typed turret slots on rings 12/16, wall rings from R18), `townAt(profile,
+  site, day)` builds it with 50% of the income (war-model method), the builder in the pilot's sessions, Foundry composite and half the
+  minerals; `fullTown(site)` = the plan at max (power-fitted levels, Moonheart heavy, 5 top-gear garrison). BREACH rule (lead's,
+  `RD.BREACH`/`outcomeOf`): a vital lost or 3+ buildings wrecked (turrets lost alone are repairs). Measured hold rates per level: full
+  100% at L9, 86% at L10 -> **cap 9** (`TOWN.cap`); regular@30 L6 71%, @60 L7 79%, @120-180 L8 100% / L9 36-50%, @330 L9 64%;
+  grinder@330 L9 86%; payer@330 L9 86% (no edge: rare ore is earn-only, turrets max by mid-year). New `TOWN.level` THREAT->level table
+  `[4,5,5,6,6,7,7,7,8,8,8,8,9,9,9,9,9]` (PROPOSAL). Next: `dev/tests/conquest-fortress.mjs` as its own CI job: (a) fullTown holds
+  every raid at `levelOf(16)` on 7 sites x lanes; (b) no dead upgrades: each turret type's level step, each wall blend step, each shield
+  level, each garrison gear step (t0->t1->t2, roll, Moonbeam) lowers damage or raises holds over 7 sites x seeds on a reference town
+  at a challenging level; (c) regular hold rate over days 30/60/120/180/330 about 3/4 (band 0.65-0.9), share .7 ("building ahead")
+  > .5 > .3 ("pushing the Citadel without building", or citadelX 1.5); (d) grinder late ~0.86, fully built never (Moonheart walls:
+  ~0.05 Mh a day after plating -> decades), payer the same: PROPOSAL + ROADMAP row 8 requirement.
+- `js/conquest/alerts.js` (ConquestAlerts: TYPES priority 1-8, `plan` with per-type switches, `remindWindow`, `message`) is WRITTEN
+  but not yet bundled (add to worker/build-sim.mjs, export Alerts) nor wired: the cron (worker/src/conquest-alerts.js sendWarAlerts ->
+  ConquestAlerts.plan + synthesized remind/beacon/yield events, ntf read for Telegram + the reminder text), conquest-war.js alertDoc
+  (add town events from s.tw: type 'town' at announce until landing; 'breach' forecast only when fresh (s.tw.fc, recomputed at most
+  every 60 s); meteor slots at the pilot's last sector if played < 48 h; doc fields ty (switches), pl, bd, y90), writeAlertDoc patches
+  ntf/<pid>/u=1 and index.js sendReminders skips u (the unified cron sends their reminder). Update conquest-war-alerts.mjs only for this.
 - **Then:** alerts unification (decision 9: new js/conquest/alerts.js planner with priorities 1-8, the cron in
   worker/src/conquest-alerts.js, the daily reminder in worker/src/index.js sendReminders under the same budget, per-type switches;
   update dev/tests/conquest-war-alerts.mjs for this rule only); Strike Beacon action (`strike-beacon`, start-mission accepts the
