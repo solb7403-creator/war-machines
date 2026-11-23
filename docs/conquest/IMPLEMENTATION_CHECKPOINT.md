@@ -7132,8 +7132,13 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
   `signup-browser.cjs` with an engine, both PASS as CI runs them); the fortress job PASS (14 checks, 17 min); conquest-town-proposals.py
   PASS at 5 sizes; conquest-town-ui.py (7T) PASS at 4 sizes, 1920x1080 timed out in the phone's replay simulation while the CPU ran at
   load 9 (re-run alone pending); conquest-guardrails.mjs running.
-- **Next:** reviewer 2's report; fix its blockers; round 2 (both reviewers); re-run town-ui at 1920x1080 and the other browser suites;
-  release (merge main, dev/bump.sh, PR, CI, merge, verify the Worker and Pages, ROADMAP row 7T-P, the release record).
+- **Slice 6 (`e960eac`):** reviewer 1's round-1 fixes. **Slice 7 (`12100d6`):** reviewer 2's round-1 fix (ladderRun deterministic, every
+  raid counted by id), the panel and fortress (f) re-run (fortress 14 checks), guardrails 67 checks, conquest-town-ui.py 1920x1080 PASS
+  alone (all 5 sizes now).
+- **Round 2 (both reviewers, on `12100d6`) running; browser suites running** (town-proposals, town-ui, hub, plot-ui, base-builder,
+  onboarding, desktop-keys, war-browser).
+- **Next:** round 2 verdicts (fix any blocker), then release (merge main, dev/bump.sh, PR, CI, merge, verify the Worker and Pages, ROADMAP
+  row 7T-P, the release record) and the final report.
 
 ### Owner decisions (Nov 23) as recorded
 1. **Kept as shipped, owner-adopted:** the THREAT -> raid level table (cap 9) and the 60% chance at each eligible tick
