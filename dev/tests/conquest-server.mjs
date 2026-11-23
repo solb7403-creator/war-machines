@@ -1,4 +1,7 @@
 // Local-only browser harness: real Worker/auth/CAS/reducer, disposable Firebase emulator.
+// CQ_CLOCK_SHIFT (ms, test server only): the server's clock runs that far ahead, so a browser test can pick a moment (Session 7T: between
+// two Meteor Strikes, when the Strike Beacon can be called); the page shifts its own clock the same way. No production route reads it.
+if(process.env.CQ_CLOCK_SHIFT){const real=Date.now,off=Number(process.env.CQ_CLOCK_SHIFT)||0;Date.now=()=>real()+off;}
 import http from 'node:http';import {readFileSync} from 'node:fs';import {extname} from 'node:path';import {fileURLToPath} from 'node:url';import {createHmac} from 'node:crypto';import {makeDB} from './wtest/fakedb.mjs';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
 import {cqLive} from './wtest/cqlive.mjs';   // Session 6C: the Conquest record is split (hot + cold blob)
 const db=makeDB({pruneEmptyUnder:['conquest']}),env={BOT_TOKEN:'conquest-browser-only',FIREBASE_DB_SECRET:'SECRET'},pid='tg_8301';
@@ -53,6 +56,15 @@ const server=http.createServer(async(req,res)=>{try{if(previewFile(req,res))retu
   s.war.go={w:Math.floor(now/864e5),a:k,open:k+4,end:k+12,g:'malgrath',t:['western','helium','ridge']};
   s.war.log=[{at:now-5*36e5,k:'a',t:'western',r:'held',by:'ldf',g:'skaal',p:.7},{at:now-4*36e5,k:'a',t:'crossroads',r:'lost',by:'roll',g:'nix',p:.3},{at:now-3*36e5,k:'a',t:'reservoir',r:'raided',by:'roll',g:'skaal',p:.84}];
   s.al={on:1,ask:1,tz:0,ps:[]};}
+ if(b.town){/* Session 7T scenario placement: a CC6 town raided while away (the Worker's own unfought raid on it: the log line, the
+   replay, the damage and the losses), another attack announced and still defendable (lastChance: landing now, in its 60-second
+   window), a streak day with its reward, the Strike Beacon not yet called today, the alerts live */
+  const now=Date.now(),TWN=await import('../../worker/src/conquest-town.js'),{midTown}=await import('./lib/town-helpers.mjs'),T=C.Town,WR=C.War,k=WR.tickOf(now),Tk=WR.WAR.tickMs,o=b.town===true?{}:b.town;
+  const q=midTown(C.Plot,o.site||'ridge');if(s.plot?.b?.hg1){const at=C.Plot.autoPlace(q,'hangar');if(at)q.b.hg1={t:'hangar',...at,l:s.plot.b.hg1.l};}q.at=now-9e8;q.siteFree=1;q.st={alloy:200,biomass:150,helium:40,fe:20,at:now};q.cm=300;s.plot=q;
+  s.base={...(s.base||{}),tier:3,modules:s.base?.modules||{},builtAt:now-9e8,claimedAt:now-3e7,pointsAt:now-3e7,defense:{config:'turret',damage:0,wins:0,alertAt:0,nextAt:now+864e9,active:false}};s.position=point(C.Combat.baseDefinition.x,C.Combat.baseDefinition.z);s.battle.enemies=[];
+  s.war=WR.norm(s.war,now);s.war.sc={n:9,done:1};s.tw=T.fresh(now);s.tw.k=k;s.tw.n=2;TWN.settle(s,{id:'t1',a:k-3,l:k-1,g:o.g1||'malgrath',ln:1},(k-1)*Tk,null);s.tw.past=[(k-1)*Tk];s.tw.seen=now-9e6;
+  if(o.lastChance)s.plot.shieldUntil=0;if(o.incoming!==false)s.tw.ev=[o.lastChance?{id:'t2',a:k-2,l:k,g:o.g2||'kethra',ln:0,lc:now+(o.lcMs||55000)}:{id:'t2',a:k,l:k+2,g:o.g2||'kethra',ln:0}];
+  const d=Math.floor(now/864e5);s.stk={n:3,last:d,wk:T.weekOf(d),fz:0,best:3,got:{1:1,3:1},nw:{d,n:3,r:[{d:3,it:'scanner',n:1}]}};delete s.bcn;s.al={on:1,ask:1,tz:0,ps:[]};}
  db.root.conquest=db.root.conquest||{};db.root.conquest[pid]=s;res.end(JSON.stringify({ok:true}));return;
  }if(req.url==='/inspect'){res.end(JSON.stringify({state:cqLive(db,pid),measurements}));return;}
  const t=performance.now(),r=await worker.fetch(new Request('https://test'+req.url,{method:'POST',headers:{'Content-Type':'application/json'},body:raw}),env);const text=await r.text();measurements.push({path:req.url,ms:performance.now()-t,bytes:Buffer.byteLength(text),status:r.status});if(measurements.length>1000)measurements.shift();res.writeHead(r.status,{'Content-Type':'application/json'});res.end(text);

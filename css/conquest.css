@@ -602,3 +602,30 @@
  /* the map's buttons (zoom, LOCATE SELF, CLOSE MAP) come straight after the map on a short phone: they were below the fold */
  .cq-dialog.cq-map{display:flex;flex-direction:column}.cq-dialog.cq-map>h2{order:-4}.cq-dialog.cq-map>.cq-map-mission{order:-3}.cq-dialog.cq-map>canvas{order:-2}.cq-dialog.cq-map>.cq-map-controls{order:-1}}
 @media(pointer:coarse) and (max-width:360px) and (orientation:portrait){.cq-world .cq-heat{width:84px;gap:4px;padding:2px 5px}.cq-world .cq-heat .cq-heat-label{font-size:8px}}
+
+/* ---- Session 7T Living Town (js/conquest/townui.js): town attacks, raided while away, the Strike Beacon, the streak line, the last
+   chance, the live defense HUD, the Hangar gear picker, the alert switches. Fits or scrolls; 44 px touch targets. ---- */
+.cq-town{display:grid;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #22e6ff22}
+.cq-town-row{display:grid;gap:4px;padding:8px 10px;border:1px solid #ffb34766;border-radius:8px;background:#1a1408cc}
+.cq-town-head{margin:0;font-size:13px;font-weight:800;letter-spacing:.5px;color:#ffcf7a}
+.cq-town-incoming .cq-town-head,.cq-town-live{color:#ff8a95}.cq-town-live{margin:0;font-weight:800}
+.cq-town-lc{border-color:#ff5a6a;animation:cqTownPulse 1s ease-in-out infinite}@keyframes cqTownPulse{50%{box-shadow:0 0 0 3px #ff5a6a55}}
+@media (prefers-reduced-motion:reduce){.cq-town-lc{animation:none}}
+.cq-town-why,.cq-town-quiet,.cq-gear-now,.cq-gear-rule,.cq-gear-after,.cq-town-hud-help{color:#a8c6d7}
+.cq-town-raided{border-color:#7fe3ff66;background:#081a22cc}.cq-town-held .cq-town-head{color:#7ff0b0}.cq-town-breached .cq-town-head{color:#ffb347}.cq-town-fallen .cq-town-head{color:#ff8a95}
+.cq-town-btns,.cq-town-hud-btns{display:flex;flex-wrap:wrap;gap:6px}
+.cq .cq-town-row button,.cq .cq-beacon button,.cq .cq-town-hud button,.cq .cq-town-lastchance button{min-height:44px}
+.cq .cq-town-defend{background:#7a2230;border-color:#ff8a95;font-weight:800}.cq-town-shield{color:#7fe3ff}
+.cq-beacon{display:grid;gap:4px;margin:6px 0;padding:8px 10px;border:1px solid #ffb34766;border-radius:8px}.cq-beacon-on{border-color:#ffb347;background:#2a1a06cc}
+.cq .cq-beacon-call,.cq .cq-beacon-go{background:#5a3a0a;border-color:#ffb347;font-weight:800;justify-self:start}.cq-beacon-used{display:block;color:#8fa9b9}
+.cq-hub-streak{display:block;margin:2px 0 6px;color:#ffcf7a;font-weight:700}.cq-hub-streak.cq-on{color:#ffd36e}.cq-hub-streak-new{display:block;margin-bottom:6px;color:#7ff0b0;font-weight:700}
+.cq .cq-town-lastchance{border:2px solid #ff5a6a!important;background:#0b0f1afa}.cq .cq-town-lastchance .cq-town-lc-clock{margin:4px 0;font-size:32px;line-height:1.1;font-weight:800;color:#ff8a95;font-variant-numeric:tabular-nums}
+.cq-town-hud{position:absolute;left:8px;right:8px;top:8px;z-index:4;display:grid;gap:6px;padding:8px 10px;border:1px solid #ff8a9599;border-radius:10px;background:#0a0f18e6}
+.cq-town-hud-line{margin:0;font-size:12px;font-weight:800;color:#ffcf7a;font-variant-numeric:tabular-nums}.cq-town-hud-help{font-size:11px}
+.cq .cq-town-fire{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));z-index:4;width:84px;height:84px;border-radius:50%;background:#782c29e6;border:2px solid #ff8a95;font-weight:800;touch-action:none;user-select:none}
+.cq .cq-town-fire.cq-on{background:#c2453d}
+.cq .cq-bat-gear-pick{display:grid;gap:8px;margin:8px 0;padding:10px;border:1px solid #7fe3ff;border-radius:8px;background:#071019}
+.cq-gear-slot{display:grid;gap:6px}.cq-gear-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center;padding:6px 8px;border:1px solid #22e6ff33;border-radius:6px}.cq .cq-gear-item.cq-on,.cq .cq-gear-auto.cq-on,.cq .cq-bat-gearbtn.cq-on,.cq .cq-alert-type.cq-on{border-color:#7ff0b0}
+.cq-gear-name{font-weight:700;overflow-wrap:anywhere}.cq-gear-after{grid-column:1;overflow-wrap:anywhere}.cq .cq-gear-pick{grid-row:1/3;grid-column:2;min-height:44px}.cq .cq-gear-auto{min-height:44px;justify-self:start}
+.cq-alert-types{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.cq-alert-types .wm-kicker{flex:1 0 100%;margin:0}.cq .cq-alert-type{min-height:44px;font-size:11px}.cq .cq-alert-type:not(.cq-on){opacity:.75}
+.cq-plot.cq-town-live .cq-plot-drivehint,.cq-plot.cq-town-live .cq-plot-exit{display:none!important}

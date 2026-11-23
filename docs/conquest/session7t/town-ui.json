@@ -1,0 +1,30 @@
+{
+ "390x844": {
+  "beacon": "\u2604 STRIKE BEACON \u00b7 WESTERN SALVAGE REACH \u00b7 20:00 LEFT",
+  "hub": [
+   "YOUR BASE",
+   "",
+   "RIDGE TOWN \u00b7 CC6"
+  ],
+  "gear": "picked",
+  "replay": "frames 299",
+  "repair": "started",
+  "live": "steps 115 \u00b7 fallen",
+  "lastChance": "fits",
+  "switches": "meteor off"
+ },
+ "1366x768": {
+  "beacon": "\u2604 STRIKE BEACON \u00b7 WESTERN SALVAGE REACH \u00b7 20:00 LEFT",
+  "hub": [
+   "YOUR BASE",
+   "",
+   "RIDGE TOWN \u00b7 CC6"
+  ],
+  "gear": "picked",
+  "replay": "frames 245",
+  "repair": "started",
+  "live": "steps 170 \u00b7 fallen",
+  "lastChance": "fits",
+  "switches": "meteor off"
+ }
+}

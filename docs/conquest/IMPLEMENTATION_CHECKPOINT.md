@@ -6780,58 +6780,77 @@ riseofkingdoms.fandom.com Lost Kingdom.
     wait). Worth hardening in a later session (a test changes only where a decision changes its rule).
 12. **PROPOSALs 1-6 above** wait for the owner.
 
-## Checkpoint 47 — Session 7T: Living Town (branch `claude/living-town-raid-defense-j6n8ea`, from main `e2a7c64`) — IN PROGRESS
+## Checkpoint 47 — Session 7T: Living Town (branch `claude/living-town-raid-defense-j6n8ea`, from main `e2a7c64`; continued on `claude/festive-einstein-2nwwzo`, fast-forwarded to its head `9fd784e`) — IN PROGRESS
 
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first; it governs everything.
 - Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`, head `af852a8`); Checkpoint 46 is
-  Session 7 (released); this is Checkpoint 47.
-- **Done, tested, pushed:**
-  1. `js/conquest/raid.js` (ConquestRaid): the drill's port, proven identical to `drill()` (dev/tests/conquest-raid-engine.mjs),
-     save/restore, main lane, defenders (garrison 'g', fielded Platoon 'f', pilot 'p' from tankOf via `unitOf`; numbers in `UNIT`).
-  2. `js/conquest/townwar.js` (ConquestTown, shared): pace, THREAT -> `TOWN.level` table (PROVISIONAL until the fortress
-     calibration), `lossOf`, `goSync`/`goSlots`, `advance`, Beacon (`beaconOf`) and streak (`STREAK`, `streakDay`, `streakLine`).
-  3. `worker/src/conquest-town.js`: `townClock` (hooked in conquest-plot.js plotSync before settle), `settle` (unfought raid,
-     losses, 8 h shield, cache, wins, base-defender, replay `s.tw.rp`), the 60 s last chance (`e.lc`), the live defense
-     (`town-defend` -> `s.td` hot / `s.tdp` `s.tdu` cold; `liveSteps` from conquest-sim.js applyCommands; `town-leave`; idle 20 s),
-     `town-ward` (Peace Ward 24 h; loot rows LOOT.defense 5% / LOOT.strike 3%, `s.tw.ws`), `town-seen`. COLD_KEYS + tw/tdp/tdu/bcn/stk.
-     owner-rules.json cpSites conquest-town.js 1 (needs the `owner-rules-change` PR label). conquest-loot.mjs updated for the 2 rows.
-  4. Garrison = `garrisonOf(s)` (reserves by rating, Hangar level slots, max 5). Gear picker (decision 8): `hangar-gear` action
-     (pins `p.pin {w,c}` item keys `BT.keyOf`), `BT.autoArm(...,fixed)`, `BT.spare`, `BT.kitStats`; AUTO-ARM clears pins.
-  Tests (all pass): conquest-raid-engine (9), conquest-away-raids (43), conquest-live-defense (19), conquest-gear (16).
-  A full run of all 123 node test commands named in the CI workflows on commit 3fd4763 (the town attack slice, before the gear
-  picker and the breach rule): 123 PASS, 0 FAIL. Rerun them on the final code before release.
-- **Fortress model done and calibrated** (`dev/tools/fortress-model.mjs`; numbers in docs/conquest/session7t/fortress-calibration.txt):
-  one site plan per site (`plan(site)`: support by the CC, 42 typed turret slots on rings 12/16, wall rings from R18), `townAt(profile,
-  site, day)` builds it with 50% of the income (war-model method), the builder in the pilot's sessions, Foundry composite and half the
-  minerals; `fullTown(site)` = the plan at max (power-fitted levels, Moonheart heavy, 5 top-gear garrison). BREACH rule (lead's,
-  `RD.BREACH`/`outcomeOf`): a vital lost or 3+ buildings wrecked (turrets lost alone are repairs). Measured hold rates per level: full
-  100% at L9, 86% at L10 -> **cap 9** (`TOWN.cap`); regular@30 L6 71%, @60 L7 79%, @120-180 L8 100% / L9 36-50%, @330 L9 64%;
-  grinder@330 L9 86%; payer@330 L9 86% (no edge: rare ore is earn-only, turrets max by mid-year). New `TOWN.level` THREAT->level table
-  `[4,5,5,6,6,7,7,7,8,8,8,8,9,9,9,9,9]` (PROPOSAL). Next: `dev/tests/conquest-fortress.mjs` as its own CI job: (a) fullTown holds
-  every raid at `levelOf(16)` on 7 sites x lanes; (b) no dead upgrades: each turret type's level step, each wall blend step, each shield
-  level, each garrison gear step (t0->t1->t2, roll, Moonbeam) lowers damage or raises holds over 7 sites x seeds on a reference town
-  at a challenging level; (c) regular hold rate over days 30/60/120/180/330 about 3/4 (band 0.65-0.9), share .7 ("building ahead")
-  > .5 > .3 ("pushing the Citadel without building", or citadelX 1.5); (d) grinder late ~0.86, fully built never (Moonheart walls:
-  ~0.05 Mh a day after plating -> decades), payer the same: PROPOSAL + ROADMAP row 8 requirement.
-  -> `dev/tests/conquest-fortress.mjs` WRITTEN and committed (a/b/c/d as above; writes docs/conquest/session7t/fortress-model.json);
-  FIRST RUN: (a) FAILED 49/50: the fully built town breached once at level 9 on ICE BASIN, lane 0 (all other sites and lanes held).
-  Fix it first (hard rule): either improve the plan on ice (anti-air / placement for the frozen lakes) or set `TOWN.cap` 8 and
-  re-fit `TOWN.level`; then rerun (b)-(d). Rerun it first; fix any dead upgrade it
-  reports in the game or the reference town (record why); then add it as its own job in .github/workflows/conquest-check.yml (like
-  the guardrails job: it is a long simulation).
-- `js/conquest/alerts.js` (ConquestAlerts: TYPES priority 1-8, `plan` with per-type switches, `remindWindow`, `message`) is WRITTEN
-  but not yet bundled (add to worker/build-sim.mjs, export Alerts) nor wired: the cron (worker/src/conquest-alerts.js sendWarAlerts ->
-  ConquestAlerts.plan + synthesized remind/beacon/yield events, ntf read for Telegram + the reminder text), conquest-war.js alertDoc
-  (add town events from s.tw: type 'town' at announce until landing; 'breach' forecast only when fresh (s.tw.fc, recomputed at most
-  every 60 s); meteor slots at the pilot's last sector if played < 48 h; doc fields ty (switches), pl, bd, y90), writeAlertDoc patches
-  ntf/<pid>/u=1 and index.js sendReminders skips u (the unified cron sends their reminder). Update conquest-war-alerts.mjs only for this.
-- **Then:** alerts unification (decision 9: new js/conquest/alerts.js planner with priorities 1-8, the cron in
-  worker/src/conquest-alerts.js, the daily reminder in worker/src/index.js sendReminders under the same budget, per-type switches;
-  update dev/tests/conquest-war-alerts.mjs for this rule only); Strike Beacon action (`strike-beacon`, start-mission accepts the
-  beacon's slot) and the streak (Worker grants on the day's first verified activity); UI (new js/conquest/townui.js for the hub
-  raided card / Beacon card / streak line; plotview hooks for REPLAY and the live defense; the Hangar gear picker; settings
-  switches) + a browser test at 390x844, 390x700, 320x568, 1366x768, 1920x1080; CI workflow lines; reviewers; release.
+  Session 7 (released); this is Checkpoint 47. Work continues on **`claude/festive-einstein-2nwwzo`** (the session's branch; it was
+  fast-forwarded onto `claude/living-town-raid-defense-j6n8ea` head `9fd784e`, so every earlier 7T commit is in it).
+- **Done, tested, pushed (session 1):** raid.js (the resumable engine), townwar.js (pace, strength, losses, Beacon and streak rules),
+  worker/src/conquest-town.js (the clock, unfought raids, the last chance, the live defense, the Peace Ward), the garrison, the gear
+  picker action (`hangar-gear`), the fortress model. Tests: conquest-raid-engine, conquest-away-raids (43), conquest-live-defense
+  (19), conquest-gear (16).
+- **Done in session 2 (this continuation), each with tests:**
+  1. **The fortress passes (a)-(d)** (`dev/tests/conquest-fortress.mjs`, its own CI job `fortress`, ~12 min): see "Session 2 design
+     decisions" below for the ice shore walls, the town-attack routing rule, the separate wave stream, the (b) measurement and the
+     THREAT -> level refit `[4,5,5,6,6,7,7,7,8,8,8,8,8,8,8,9,9]` (cap 9).
+  2. **Alerts unified (decision 9)**, commit `ecaa71c`: js/conquest/alerts.js bundled (CONQUEST.Alerts); worker/src/conquest-alerts.js
+     sends every notification of a Conquest pilot in one budget (synthesizes the reminder, Beacon, yield and Meteor events); the request
+     side (conquest-war.js alertDoc) adds the town's attacks and the raids forecast to breach it (the real town clock run forward on a
+     copy, conquest-town.js townAlerts); per-type switches `s.al.sw`; `ntf/<pid>/u=1` makes worker/src/index.js sendReminders leave the
+     pilot to the alert cron. Test: conquest-alerts-unified.mjs (40); conquest-war-alerts.mjs unchanged (46 pass).
+  3. **Strike Beacon (decision 10) and the streak (decision 11)**, commit `cb7ac0a`: action `strike-beacon` (TOWN_ACTIONS, no town
+     needed), start-mission accepts the called slot (conquest-sim.js), `streakSync` after every action (a UTC day counts when
+     `s.airdrop.act` is that day: an operation won or a harvest), streak emblems on the town banner (conquest-plot.js), three earn-only
+     town decorations in the catalog (catalog.js `streak-*`, stand-in ornament designs). Tests: conquest-beacon.mjs (15),
+     conquest-streak.mjs (40); conquest-cosmetics / conquest-flagship-ui counts include the 3 earn-only decorations (decision 11).
+  4. **UI** (the commit after this note): js/conquest/townui.js (hub town lines, Beacon card, streak line, 60 s last chance, replay,
+     live HUD, gear picker, alert switches, deep links), hooks in hub.js, app.js (townAct / townLive / townTick / townReplay /
+     townBeacon, afterEnter modes, strikeOpenFor and the strike line with the Beacon), plotview.js (liveStep, setLive, playResult;
+     small additive edits), hangar.js (GEAR button), warmap.js (switches), index.html + web/boot.js (raid, townwar, alerts, townui),
+     web/sw.js (opens what the alert is about), css/conquest.css (7T block). Browser test dev/tests/conquest-town-ui.py (5 sizes;
+     `--quick` = 2) on the test server's `town` scenario (dev/tests/conquest-server.mjs; `CQ_CLOCK_SHIFT`, test server only, places
+     the run between two Meteor Strikes so the Beacon can be called).
+- **Next:** full run of every node and browser test named in the CI workflows + conquest-session6c.py + perf.py (run 3-4 at a time;
+  worker/build-sim.mjs now writes atomically, so parallel runs are safe); 2 reviewers (the brief's roles 1 and 2, read-only, not given
+  conclusions); fix; release per the brief (merge main first, dev/bump.sh, PR, CI, merge, verify /pvp/health + live version.json +
+  Pages, ROADMAP 7T/7-V/8, the release record here, the final report).
+
+### Session 2 design decisions (the lead's, with reasons and evidence; numbers the brief did not set are PROPOSALs)
+- **Ice Basin: shore walls first** (dev/tools/fortress-model.mjs `wallOrder`): walls cannot stand on ice, and the corner lake reaches
+  through every wall ring, so the plan's walls first seal it (every buildable cell inside the rings within 4 cells of a lake that
+  crosses them), then the square rings. The fully built ice town breached 4 of 32 raids at level 9 without it (3 turrets by the lake
+  gap); 3 cells deep: 0 of 32 but fragile; 4 deep: 0 of 32 with no building lost. Every profile builds the same plan. The full town
+  now really places 3,000 cells (ring cells on ice were silently skipped: 2,736 before).
+- **Town attacks: raiders read the layout, never the levels** (js/conquest/raid.js): every turret is weighed as fully upgraded (level
+  V range and damage) in the raiders' path cost. Weighed at its own level (the drill's rule), an upgrade pushed raiders onto a weaker
+  side: Laser Cannons III->IV made the reference town hold 78 -> 64 of 250 paired raids (t = 7.3), Cannon IV->V likewise (t = 4.9).
+  Weighed at the town's average level, raising any type re-scaled every gun against the walls and still moved the breach (MG IV->V
+  worse, t = 3.2). Level V for all: every turret step of all 11 types improves the town (t -1.8 to -11.6). A maxed town is weighed as
+  before, so the ceiling keeps its meaning. **The Defense Drill keeps 5B's rule** (`opt.own`): 5B's balance tests sit on knife edges
+  of the exact routing (the CC10 rare town at threat 10 lost its Command Center in one drill under the average rule) and may not be
+  loosened; the drill stays a practice raid, not a promise.
+- **Town attacks: the waves draw from their own random stream** (raid.js `rs`): the drill's one stream let a turret's salvo scatter
+  reshuffle every later spawn (a butterfly effect that made upgrade comparisons noise). Saved and restored with the live state.
+- **(b) is measured as the player feels it:** paired raids (the same seeds before and after), per raid loss = 1 a breach (2 a fall) +
+  each building's share of HP lost; walls destroyed counted apart (absolute HP and the REPAIR bill both rise with the upgraded item's
+  own HP and price). The reference town carries Reactors at their cap (no step runs short of power) and a realistic wall belt (8
+  segments, ~1,000 cells; the two rings it had made wall blends noise). A step passes when it never adds to the loss and holds more,
+  cuts the loss or loses fewer walls; an inconclusive step is measured again with 8, then 16 seeds a lane. 85 steps, all pass.
+- **THREAT -> level refit (PROPOSAL):** `[4,5,5,6,6,7,7,7,8,8,8,8,8,8,8,9,9]`, the cap 9 from THREAT 15. Before, every THREAT from 12
+  was level 9, so late in the year closing the portal or the Grand Offensive surge changed nothing. Now a late raid with the portal
+  shut is level 8. Regular along the year: day 30 67%, 60 76%, 120 71%, 180 100%, 330 62% (mean 75%).
+- **(d) the grinder's "about 9 of 10 late"** is measured and reported (the owner's words: "measured and reported"): 81% at day 330 at
+  the top strength (75% at level 9 alone); the asserted property is that more play builds a stronger town at the same strength. The
+  walls are the lever (the grinder's blend quality ~0.5 at day 330; rare ore is earn-only): a PROPOSAL in the final report.
+- **Alerts:** master switch off sends nothing (the reminder too); `/stop` silences Telegram only; the first town attack announced
+  makes the game's alerts live (`s.al.ask = 1`, as Session 7 did at the first war battle); a window that opens at night is met at
+  08:00 sharp (the planner jumps to the morning instead of stepping past it); the doc is rewritten when the town changes (its forecast
+  meets the town as built).
+- **Live defense on the phone:** the town view drives the tank (its stick or WASD), streams the world-space stick and FIRE as 50 ms
+  commands, draws the Worker's raiders from its states (interpolated), hides what fell, and pulls the tank toward the Worker's
+  position; FIRE bottom right (hold; Space), LEAVE THE FIGHT; any other dialog closes when the fight starts; the town tour ends.
 
 ### Research: the best comparable games (Nov 23, before building)
 What the leaders do with PvE attacks on your base, defending in person, garrisons, gear loadouts, alerts and streaks, and what

@@ -47,13 +47,14 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
   {const ln=root.ConquestLab?.line(s,now);if(ln)el('small','cq-hub-research-line',ln,b);}   // Session 6B: what the Science Lab is doing
   {const cd=root.ConquestHangar?.chipDay(s,now);if(cd){const c=el('small','cq-hub-chip-day'+(cd.n?' cq-hub-part-done':''),cd.text,b);c.title=cd.rule;}}   // Session 6C: beside the research line
   partDay(b,s,now);
-  const j=p.job;el('small','',j?'BUILDER · '+(j.t==='cc'?'CC'+(j.l||''):(root.ConquestPlot?.BUILDINGS[j.t]?.n||j.t).toUpperCase()+' '+(j.l||''))+' · '+(j.ready>now?t2(j.ready-now):'READY'):'BUILDER FREE · open MY BASE to build',b);}
+  const j=p.job;el('small','',j?'BUILDER · '+(j.t==='cc'?'CC'+(j.l||''):(root.ConquestPlot?.BUILDINGS[j.t]?.n||j.t).toUpperCase()+' '+(j.l||''))+' · '+(j.ready>now?t2(j.ready-now):'READY'):'BUILDER FREE · open MY BASE to build',b);
+  root.ConquestTownUI?.hubLines(b,s,{el,button:H.o.button,now,act:townAct,repair:()=>H.o.enter?.('town-repair'),replay:()=>H.o.enter?.('town-replay'),defend:id=>H.o.enter?.('town-defend:'+id)});}   // Session 7T: town attacks, raided while away, the shield, the Peace Ward
  else{el('p','cq-hub-big','NO BASE YET',b);partDay(b,s,now);const D=C?.baseDefinition,L=s?.ledger;el('small','',D&&L?'Claim your town: '+fmt(Math.min(L.cp,D.recipe.cp))+' / '+fmt(D.recipe.cp)+' CP. Seven sites, from crater rim to ash field; it grows with your Command Center.':'Win operations, bank salvage, then claim your own town.',b);el('small','cq-hub-where','⌂ Your base gate is next to the Refuge, about 90 m west. Tap MY BASE: the gold arrow takes you there.',b);}
  // Session 6C: your battalion (pilots, FORCE, the day's command chip, the RECRUIT job) and the HANGAR
  // War Orders (Session 6, spec §6.1): today's three and this week's one
  if(root.ConquestOrders){const o=card('WAR ORDERS','cq-hub-orders');root.ConquestOrders.card(o,s,{el});}
  // events
- const e=card('LIVE EVENTS');const M=C?.meteorStrike?.(now);
+ const e=card('LIVE EVENTS');const M=C?.meteorStrike?.(now);if(s){root.ConquestTownUI?.streakLine(e,s,{el,now});root.ConquestTownUI?.beaconLine(e,s,{el,button:H.o.button,now,act:townAct,go:()=>H.o.enter?.('beacon')});}   // Session 7T: the return streak (one line) and the Strike Beacon
  if(M&&M.phase!=='idle')el('p','cq-hub-big cq-hub-meteor','☄ METEOR STRIKE · '+M.site.name+' · '+(M.phase==='telegraph'?'IMPACT IN '+t2(M.impactAt-now):'OPEN · '+t2(M.closesAt-now)+' LEFT'),e);
  else if(M){const next=Math.ceil(now/7200000)*7200000;el('p','cq-hub-big','☄ NEXT METEOR STRIKE IN '+t2(next-now),e);}
  for(const [id] of alerts.slice(0,2))el('small','cq-hub-alert','⚠ INVASION · '+((root.ConquestWorld?.sectors||[]).find(x=>x.id===id)?.name||id.toUpperCase())+' NEEDS DEFENDERS',e);
@@ -113,6 +114,8 @@ async function hero3d(me){if(!H||H!==me||H.disposed)return;const gfx=typeof gfxM
  const resize=()=>{const w=host.clientWidth||390,h=host.clientHeight||380;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();};resize();H.resize=resize;root.addEventListener('resize',resize);
  let t=0,last=performance.now();const loop=now=>{if(!H||H.disposed)return;const dt=Math.min(.05,(now-last)/1000);last=now;townStep();if(!document.hidden){t+=reduce?0:dt;const a=Math.sin(t*.05)*.18;cam.position.set(6+Math.sin(a)*8,8+Math.sin(t*.11)*.4,13+Math.cos(a)*2);cam.lookAt(0,1.6,-17);earth.rotation.y=t*.02;tank.rotation.y=Math.sin(t*.2)*.12+.55;renderer.render(sc,cam);H.info={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,programs:renderer.info.programs?.length||0};}H.raf=requestAnimationFrame(loop);};
  H.renderer=renderer;H.scene=sc;cv.style.opacity='0';sc.background=new T.Color(0x03050a);H.raf=requestAnimationFrame(n=>{loop(n);cv.style.transition='opacity .6s';cv.style.opacity='1';const art=host.querySelector('.cq-hub-art');if(art){art.style.transition='opacity .6s';art.style.opacity='0';}});}
+// Session 7T: a town action from the hub (read the raid log, a Peace Ward, call the Strike Beacon): one Conquest action, then the cards
+async function townAct(action,fields){if(!H||!H.state||typeof apiFetch!=='function')return false;const me=H;try{const body={seq:H.state.seq+1,action,...(action.startsWith('town-')&&fields&&Object.keys(fields).length?{town:fields}:{})},r=await apiFetch('/api/conquest/action',body),j=await r.json();if(H!==me||H.disposed)return false;if(r.ok&&j.state){H.state=j.state;status(j.state,false);return true;}if(j.state)H.state=j.state;status(H.state,false);return false;}catch(_){return false;}}
 function close(){if(!H)return;H.disposed=true;cancelAnimationFrame(H.raf);clearInterval(H.tick);if(H.resize)root.removeEventListener('resize',H.resize);if(H.scene)H.scene.traverse(o=>{o.geometry?.dispose?.();const m=o.material;if(m)(Array.isArray(m)?m:[m]).forEach(x=>x.dispose?.());});if(H.renderer){H.renderer.dispose();H.renderer.forceContextLoss?.();H.renderer.domElement.remove();}H=null;}
 root.ConquestHub=Object.freeze({render,close,get state(){return H;}});
 })(globalThis);

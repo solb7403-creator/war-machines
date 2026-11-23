@@ -66,7 +66,7 @@ const int=v=>Math.max(0,Math.floor(Number(v)||0));
 function logOf(s,x){const tw=s.tw;tw.log=[...tw.log,x].slice(-T.log);}
 // the town as the raid sees it (and its replay): positions, levels, walls, the damage it already carries
 function snapOf(p){return {site:p.site,cc:p.cc|0,b:Object.fromEntries(Object.entries(p.b||{}).map(([id,b])=>[id,[b.t,b.i,b.j,b.r|0,b.l|0]])),w:P.encWalls(p.w),dmg:{...(p.dmg||{})}};}
-export function plotOfSnap(x){return {v:2,site:x.site,cc:x.cc|0,b:Object.fromEntries(Object.entries(x.b||{}).map(([id,a])=>[id,{t:a[0],i:a[1],j:a[2],r:a[3],l:a[4]}])),w:P.decWalls(x.w),dmg:{...(x.dmg||{})},n:0,st:{}};}
+export const plotOfSnap=TN.plotOfSnap;   // shared with the phone's replay (js/conquest/townwar.js)
 // ---- settle a raid (unfought, or after a live fight: live = {R the pilot's fight, fought: the pilot really fought}) ----------------------
 export function settle(s,e,at,live){const p=s.plot,tw=s.tw;
  const job=P.settle(p,at);if(job)s.notice={kind:'plot-built',type:job.t,level:job.l};P.accrue(p,at);researchTick(s,at);

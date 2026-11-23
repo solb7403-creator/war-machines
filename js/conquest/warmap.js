@@ -124,7 +124,7 @@ async function subscribe(o){const P=pushSupport();if(!P.can)return false;const p
  return o.act('war-alerts',{push:{endpoint:j.endpoint,keys:{p256dh:j.keys.p256dh,auth:j.keys.auth}},tz:-new Date().getTimezoneOffset()});}
 function alertsCard(host,s,o){const a=s.al||{},P=pushSupport(),c=o.el('section','wm-card wm-alerts',null,host);o.el('p','wm-kicker','WAR ALERTS · '+(a.on===0?'OFF':'ON')+(a.ask?'':' after your first war battle'),c);
  o.el('p','wm-what','At most 3 a day, never in your night, several events in one alert: only fights you can still join, and the Grand Offensive.'+(P.tg?' They come from the LUNAR bot in this chat and follow its Daily reminder switch in Settings (or /stop and /start in the bot chat).':''),c);
- const row=o.el('div','wm-row',null,c);row.append(o.button(a.on===0?'TURN WAR ALERTS ON':'TURN WAR ALERTS OFF',()=>o.act('war-alerts',{on:a.on===0?1:0}),'wm-act'));
+ const row=o.el('div','wm-row',null,c);row.append(o.button(a.on===0?'TURN WAR ALERTS ON':'TURN WAR ALERTS OFF',()=>o.act('war-alerts',{on:a.on===0?1:0}),'wm-act'));if(a.on!==0)root.ConquestTownUI?.alertSwitches(c,{al:a},o);   /* Session 7T decision 9: per-type switches */
  if(a.ask&&a.on!==0&&P.can&&!(a.ps||[]).length&&P.perm!=='denied')row.append(o.button('ALERTS ON THIS DEVICE',async()=>{const ok=await subscribe(o).catch(()=>false);if(!ok)o.say?.('Alerts were not turned on for this browser.');},'wm-act'));
  if(P.needsHome)o.el('p','wm-fine','On iPhone and iPad, alerts work once LUNAR is on your Home Screen: tap Share, then Add to Home Screen, and open LUNAR from there.',c);
  if(P.perm==='denied')o.el('p','wm-fine','This browser blocks LUNAR\'s notifications: allow them in its site settings.',c);return c;}
