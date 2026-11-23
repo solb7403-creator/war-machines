@@ -6779,3 +6779,14 @@ riseofkingdoms.fandom.com Lost Kingdom.
     conquest-airdrop-browser at the COLLECT YIELD notice; the loot test also timed out once in CI (320x568, the 90 s session
     wait). Worth hardening in a later session (a test changes only where a decision changes its rule).
 12. **PROPOSALs 1-6 above** wait for the owner.
+
+## Checkpoint 47 — Session 7T: Living Town (branch `claude/living-town-raid-defense-j6n8ea`, from main `e2a7c64`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first; it governs everything.
+- Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`, head `af852a8`); Checkpoint 46 is
+  Session 7 (released); this is Checkpoint 47.
+- **Done:** brief saved word for word (first slice).
+- **Next:** read the listed sources (war.js clock/threatOf/alertPlan/stationed, conquest-alerts.js + the daily-reminder cron,
+  plot.js drill/drillWaves/applyRaidDamage, plotview/townkit damage states, conquest-plot.js, battalion/hangar + AUTO-ARM,
+  economy-model regular/grinder), research the comparable games, then build in new files.
