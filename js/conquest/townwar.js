@@ -37,7 +37,7 @@ const TOWN=Object.freeze({
  // measured (dev/tools/fortress-model.mjs, every site, breach = a vital or 3 buildings): the fully built town holds every raid at level 9
  // and 86% at 10, so the cap is 9; the regular holds about 71% at day 30 (THREAT 3-4: level 6), 79% at day 60 (6-7: level 7), all at
  // day 120-180 (8-11: level 8) and 64% late (14-16: level 9); the grinder 86% late; PROPOSAL numbers until the owner sees them
- level:Object.freeze([4,5,5,6,6,7,7,7,8,8,8,8,8,8,8,9,9]),   // Session 7T refit: level 9 (the cap) from THREAT 15, so the portal and the Grand Offensive surge still matter late in the year
+ level:Object.freeze([1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]),   // Session 7T refit (PROPOSAL): a young town meets young raids (days 5-14 before any Citadel tier: THREAT 1-4), level 9 (the cap) only from THREAT 15 so the portal and the Grand Offensive surge still matter late in the year
  cap:9,
  log:16
 });

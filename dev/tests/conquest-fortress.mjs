@@ -39,10 +39,12 @@ let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;console.log('PASS '+m);};const
  out.upgrades={level:L,seeds:SEEDS,raids:score('ref',ref).length,steps};
  ok(!dead.length,'(b) no dead upgrades: all '+Object.keys(steps).length+' steps (every level of the 11 turret types, every wall upgrade, every Shield Generator level, every garrison gear step) hold more raids or cut the damage, never adding to the loss, over '+score('ref',ref).length+' or more paired raids each (an inconclusive step measured again with up to 16 seeds a lane)'+(dead.length?' DEAD: '+dead.join('; '):''));}
 // (c) the regular path, and its two variants
-{const days=[30,60,120,180,330],rate=(o={})=>days.map(d=>M.holdRate('regular',d,{n:3,...o}).p),r=rate(),mean=r.reduce((a,b)=>a+b,0)/r.length;out.regular={days,p:r,mean};
+// from the first raids (a new town is safe for 3 days; before any Citadel tier THREAT is 1-4) through the year
+{const days=[5,8,14,30,60,120,180,330],rate=(o={})=>days.map(d=>M.holdRate('regular',d,{n:3,...o}).p),r=rate(),mean=r.reduce((a,b)=>a+b,0)/r.length;out.regular={days,p:r,mean};
  ok(mean>=.65&&mean<=.9,'(c) the regular\'s town holds about 3 of 4 raids decided while away along the year: '+r.map((p,i)=>'day '+days[i]+' '+Math.round(p*100)+'%').join(', ')+' (mean '+Math.round(mean*100)+'%)');
+ ok((r[1]+r[2])/2>=.65,'the first raids are winnable: from the second week the young town holds '+Math.round((r[1]+r[2])/2*100)+'% (days 8 and 14)');
  // days 60-180, before the raids reach the top strength (from then on every town meets the same level 9 and the walls' rare ore decides)
- const vd=[60,120,180],ahead=vd.map(d=>M.holdRate('regular',d,{n:3,share:.7}).p),push=vd.map(d=>M.holdRate('regular',d,{n:3,share:.3,citadelX:1.4}).p),base=[r[1],r[2],r[3]],sum=a=>a.reduce((x,y)=>x+y,0);out.variants={days:vd,ahead,base,push};
+ const vd=[60,120,180],ahead=vd.map(d=>M.holdRate('regular',d,{n:3,share:.7}).p),push=vd.map(d=>M.holdRate('regular',d,{n:3,share:.3,citadelX:1.4}).p),base=[r[4],r[5],r[6]],sum=a=>a.reduce((x,y)=>x+y,0);out.variants={days:vd,ahead,base,push};
  ok(sum(ahead)>sum(base)&&sum(push)<sum(base),'building ahead of the Citadel holds more ('+ahead.map(p=>Math.round(p*100)+'%').join(', ')+'); pushing the Citadel without building holds fewer ('+push.map(p=>Math.round(p*100)+'%').join(', ')+')');}
 // (d) measured and reported: the grinder late in the year; fully built (the plan at its maximum: Moonheart heavy walls) never inside the year
 {const g=[60,180,330].map(d=>M.holdRate('grinder',d,{n:3}).p),pay=[180,330].map(d=>M.holdRate('payer',d,{n:3}).p),gt=M.townAt('grinder','ridge',365),pt=M.townAt('payer','ridge',365);

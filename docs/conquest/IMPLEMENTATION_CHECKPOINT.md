@@ -6792,9 +6792,9 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   picker action (`hangar-gear`), the fortress model. Tests: conquest-raid-engine, conquest-away-raids (43), conquest-live-defense
   (19), conquest-gear (16).
 - **Done in session 2 (this continuation), each with tests:**
-  1. **The fortress passes (a)-(d)** (`dev/tests/conquest-fortress.mjs`, its own CI job `fortress`, ~12 min): see "Session 2 design
-     decisions" below for the ice shore walls, the town-attack routing rule, the separate wave stream, the (b) measurement and the
-     THREAT -> level refit `[4,5,5,6,6,7,7,7,8,8,8,8,8,8,8,9,9]` (cap 9).
+  1. **The fortress passes (a)-(d)** (`dev/tests/conquest-fortress.mjs`, its own CI job `fortress`, ~12 min, 8 checks): see "Session 2
+     design decisions" below for the ice shore walls, the town-attack routing rule, the separate wave stream, the (b) measurement and
+     the THREAT -> level refit `[1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]` (cap 9).
   2. **Alerts unified (decision 9)**, commit `ecaa71c`: js/conquest/alerts.js bundled (CONQUEST.Alerts); worker/src/conquest-alerts.js
      sends every notification of a Conquest pilot in one budget (synthesizes the reminder, Beacon, yield and Meteor events); the request
      side (conquest-war.js alertDoc) adds the town's attacks and the raids forecast to breach it (the real town clock run forward on a
@@ -6805,7 +6805,7 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
      `s.airdrop.act` is that day: an operation won or a harvest), streak emblems on the town banner (conquest-plot.js), three earn-only
      town decorations in the catalog (catalog.js `streak-*`, stand-in ornament designs). Tests: conquest-beacon.mjs (15),
      conquest-streak.mjs (40); conquest-cosmetics / conquest-flagship-ui counts include the 3 earn-only decorations (decision 11).
-  4. **UI** (the commit after this note): js/conquest/townui.js (hub town lines, Beacon card, streak line, 60 s last chance, replay,
+  4. **UI**, commit `cf34eee`: js/conquest/townui.js (hub town lines, Beacon card, streak line, 60 s last chance, replay,
      live HUD, gear picker, alert switches, deep links), hooks in hub.js, app.js (townAct / townLive / townTick / townReplay /
      townBeacon, afterEnter modes, strikeOpenFor and the strike line with the Beacon), plotview.js (liveStep, setLive, playResult;
      small additive edits), hangar.js (GEAR button), warmap.js (switches), index.html + web/boot.js (raid, townwar, alerts, townui),
@@ -6838,9 +6838,15 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   own HP and price). The reference town carries Reactors at their cap (no step runs short of power) and a realistic wall belt (8
   segments, ~1,000 cells; the two rings it had made wall blends noise). A step passes when it never adds to the loss and holds more,
   cuts the loss or loses fewer walls; an inconclusive step is measured again with 8, then 16 seeds a lane. 85 steps, all pass.
-- **THREAT -> level refit (PROPOSAL):** `[4,5,5,6,6,7,7,7,8,8,8,8,8,8,8,9,9]`, the cap 9 from THREAT 15. Before, every THREAT from 12
-  was level 9, so late in the year closing the portal or the Grand Offensive surge changed nothing. Now a late raid with the portal
-  shut is level 8. Regular along the year: day 30 67%, 60 76%, 120 71%, 180 100%, 330 62% (mean 75%).
+- **THREAT -> level refit (PROPOSAL):** `[1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]`, the cap 9 from THREAT 15. Two findings: (1) every THREAT
+  from 12 was level 9, so late in the year closing the portal or the Grand Offensive surge changed nothing; now a late raid with the
+  portal shut is level 8; (2) the year calibration started at day 30, but the first raids land from day 3: before any Citadel tier
+  THREAT is 1-4 (stars 1-2, the portal, the surge), which mapped to levels 5-6, and a regular's young town (CC3-7, 7-17 turrets)
+  holds 0-14% of those (it holds 79-93% at level 2 from day 5): new pilots would have lost almost every raid for two weeks. Now THREAT
+  1-4 is level 1-4. Until the Citadel ships (7B) every pilot's THREAT is 1-4 (`infoOf` passes 0 tiers), so town attacks stay at
+  levels 1-4 for everyone until then. Regular along the year (dev/tests/conquest-fortress.mjs (c), from the first raids): day 5 62%,
+  8 67%, 14 86%, 30 100%, 60 86%, 120 71%, 180 100%, 330 62% (mean 79%); building ahead holds more (90/95/100% at days 60/120/180),
+  pushing the Citadel without building holds fewer (24/71/43%).
 - **(d) the grinder's "about 9 of 10 late"** is measured and reported (the owner's words: "measured and reported"): 81% at day 330 at
   the top strength (75% at level 9 alone); the asserted property is that more play builds a stronger town at the same strength. The
   walls are the lever (the grinder's blend quality ~0.5 at day 330; rare ore is earn-only): a PROPOSAL in the final report.
