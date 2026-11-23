@@ -6886,6 +6886,11 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   start when a fight began (fixed after round 3: the phone builds the same machine from the same snapshot, `s.tdp`, and starts the
   tank there; plotview.js liveStep, one additive line); a returning pilot now sees the War Report for the town's raids since the last
   read, held ones included (the lead keeps it: once a session, one tap, and decision 9 puts held raids there).
+- **CI at `f962e70`:** 12 of 13 green (both WebKit jobs, fortress, guardrails, balance, owner-rules included); the `conquest` job hit
+  its 55-minute limit inside the last test of its portrait journey: every earlier browser test passed and conquest-town-ui.py had
+  passed 4 of its 5 sizes (the live defense held at each) when it was stopped, so the desktop keyboard journey never ran. Cause: this
+  session added the town screens (about 10 minutes in CI) to that job. Fixed in the workflow (no test changed): the town screens are
+  a job of their own (`town-ui`, 30 minutes), and the conquest job's limit is 65 minutes for headroom.
 - **Next: CI on the head, then the release** (main still `e2a7c64`; the build stamp `20261123061357` was made before these fixes
   and is kept: nothing was deployed in between).
 - **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>

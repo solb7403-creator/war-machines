@@ -6,7 +6,7 @@ on:
 jobs:
   conquest:
     runs-on: ubuntu-24.04
-    timeout-minutes: 55
+    timeout-minutes: 65   # Session 7T: headroom: without the town screens (now their own job) the portrait journey still ends about 45 minutes in, before the desktop journey
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -144,7 +144,6 @@ jobs:
           python dev/tests/conquest-slots-browser.py
           python dev/tests/conquest-super-fx.py
           python dev/tests/conquest-war-browser.py
-          python dev/tests/conquest-town-ui.py
       - name: Desktop keyboard journey (website build)
         run: python dev/tests/conquest-desktop-keys.py
 
@@ -207,6 +206,34 @@ jobs:
         with:
           name: conquest-fortress
           path: docs/conquest/session7t/fortress-model.json
+
+  # Session 7T screens (brief: phone and computer equal): the hub town card, the Beacon, the streak line, the gear picker, the replay,
+  # REPAIR, the live defense, the last chance and the alert switches at 390x844, 390x700, 320x568 (touch) and 1366x768, 1920x1080 (mouse,
+  # keyboard). A job of its own (about 10 minutes): in the conquest job it pushed that job past its time limit.
+  town-ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser dependencies
+        run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Session 7T town screens (5 sizes)
+        run: python dev/tests/conquest-town-ui.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-town-ui
+          path: docs/conquest/session7t
 
   transmission:
     runs-on: ubuntu-24.04
