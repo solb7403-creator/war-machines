@@ -1,5 +1,6 @@
 // Session 7T (owner brief docs/conquest/audit/SESSION_07T_BRIEF.md, decisions 3, 5, 6): the resumable raid engine js/conquest/raid.js is
-// the Session 5B raid (plot.js drill) and nothing else when no defender and no main lane are asked for: the same outcome, damage,
+// the Session 5B raid (plot.js drill) and nothing else when no defender and no main lane are asked for (and, opt.own, raiders weigh each
+// turret at its own level as the drill does; town attacks weigh them at the town's average, decision 4b): the same outcome, damage,
 // frames and events on every site, for a starter town, two CC10 towns, a damaged town and a mid town, at several levels and seeds.
 // Then: save / restore at any step gives a deterministic continuation; defenders only ever help; a main lane takes half the spawns.
 import assert from 'node:assert/strict';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
@@ -13,12 +14,20 @@ function midTown(site){const p=P.newPlot(site,0);p.cc=6;p.b.cc.l=6;const put=(t,
 const towns=site=>{const st=starterTown(P,site,{blend:[1,1]}).p,rare=cc10Town(P,site,{}),comp=cc10Town(P,site,{blends:[[0,0]],cells:3000,ext:true}),mid=midTown(site),dam=structuredClone(mid);
  dam.dmg={};let k=0;for(const id of Object.keys(dam.b)){if(k++%3===0&&id!=='cc')dam.dmg[id]=Math.round(P.maxHpOf(dam,id)*.6);}for(const w of Object.keys(dam.w).slice(0,40))dam.dmg['w:'+w]=P.maxHpOf(dam,'w:'+w);dam.dmg.cc=Math.round(P.maxHpOf(dam,'cc')*.3);
  return {starter:[st,[1,2]],rare:[rare,[10,6]],comp:[comp,[10]],mid:[mid,[4,7]],damaged:[dam,[5]]};};
-// 1. identical to the drill
+// 1. identical to the drill (under the drill's own rule, opt.own: each turret weighed at its own level; town attacks weigh every turret
+// at the town's average level, the only difference: fortress decision 4b, no dead upgrades)
 {let n=0;for(const site of P.SITE_IDS){for(const [name,[p,levels]] of Object.entries(towns(site)))for(const threat of levels)for(const seed of [1,7]){
-  const opt={threat,damage:true},a=P.drill(p,seed,opt),b=RD.drill(p,seed,opt);n++;
+  const opt={threat,damage:true},a=P.drill(p,seed,opt),b=RD.drill(p,seed,{...opt,own:true});n++;
   if(J(a)!==J(b)){for(const k of Object.keys(a))if(J(a[k])!==J(b[k]))console.log('DIFF',site,name,threat,seed,k,J(a[k]).slice(0,200),'|',J(b[k]).slice(0,200));}
   assert.equal(J(b),J(a),site+' '+name+' L'+threat+' seed '+seed+': the port must equal drill()');}}
  ok(n>=7*5,'the resumable engine gives exactly drill()\'s result (outcome, damage, kills, breaches, frames, events) in '+n+' raids: every site, a starter town, two CC10 towns, a mid town and a damaged one, levels 1-10');}
+// 1b. a town attack differs from the drill in two engine rules only (fortress decision 4b, no dead upgrades): raiders weigh every turret
+// at the town's average level, and the waves draw from their own random stream, so a turret's level never reshuffles them: the first
+// wave spawns the same raiders at the same spots whatever the turrets' levels (the drill's one stream would shift them)
+{let same=0,n=0;for(const site of P.SITE_IDS){const lo=midTown(site),hi=structuredClone(lo);for(const b of Object.values(hi.b))if(P.BUILDINGS[b.t]?.turret)b.l=5;
+  for(const seed of [1,7]){const A=RD.make(lo,seed,{threat:6,frames:false,events:false}),B=RD.make(hi,seed,{threat:6,frames:false,events:false});for(let i=0;i<40;i++){A.step();B.step();}
+   const sig=M=>J(M.foes.slice(0,12).map(f=>[f.kind,Math.round(f.id)]));n++;if(sig(A)===sig(B)&&A.foes.length>0)same++;}}
+ ok(same===n,'a turret\'s level never changes the waves: the first raiders are the same in '+same+'/'+n+' raids (levels II-III vs V)');}
 // 2. save / restore: a raid cut at any step continues deterministically (the same continuation from the same saved state), and the
 // whole saved state is JSON (the Worker stores it between requests)
 {const p=midTown('ridge'),opt={threat:7,events:false,frames:false,damage:true};

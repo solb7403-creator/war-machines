@@ -82,15 +82,28 @@ export function plan(site){if(PLANS[site])return PLANS[site];const p=P.newPlot(s
  for(const b of Object.values(p.b))if(b.t==='storage')sup.push({id:'storage',t:'storage',i:b.i,j:b.j,r:b.r|0});   // the town's own Storage Depot (st.lv.storage)
  for(const [t,n] of SUPPORT){if(t==='storage')continue;for(let k=0;k<n;k++){const at=P.autoPlace(p,t);if(!at)continue;const id='s'+sup.length;p.b[id]={t,...at,l:1};sup.push({id,t,...at});}}
  for(let k=0,n=0;n<42&&k<1600;k++){const t=SLOT_TYPES[n],R=k%2?16:12,a=k*2.399,i=Math.round(P.MID+Math.cos(a)*R),j=Math.round(P.MID+Math.sin(a)*R);if(!P.placeError(p,t,i,j,0)){const id='t'+n;p.b[id]={t,i,j,r:0,l:1};slots.push({id,t,i,j});n++;}}
- return PLANS[site]={sup,slots,base:P.newPlot(site,start).b};}
+ return PLANS[site]={sup,slots,base:P.newPlot(site,start).b,walls:wallOrder(site,p)};}
+// The walls, in the order a decent player builds them: first SEAL every frozen-lake gap (a lake the raiders can cross reaches through
+// the wall rings, and walls cannot stand on ice: every buildable cell inside the rings within 4 cells of such a lake's ice becomes a
+// shore wall, nearest the ice first), then the square rings from radius 18 outward. Segments: [[i,j], ...]; only ICE BASIN has a shore.
+// (Measured on ICE BASIN's fully built town at the top strength: without the shore the raiders walk the lake past most of the rings
+// and 4 of 32 raids breach; 3 cells deep, 0 of 32 at level 9 but fragile; 4 deep, 0 of 32 with no building lost.)
+const SHORE=4;
+function wallOrder(site,p){const occ=P.occupancy(p),N=P.GRID.n,ok=(i,j)=>P.inGrid(i,j)&&P.inTown(10,i,j)&&!P.NOBUILD[P.terrainAt(site,i,j)]&&!occ.has(P.key(i,j)),gap=[];
+ for(let i=0;i<N;i++)for(let j=0;j<N;j++)if(P.terrainAt(site,i,j)==='ice'&&P.cheb(i,j)>=17&&P.inTown(10,i,j))gap.push([i,j]);
+ const shore=[];if(gap.length)for(let i=0;i<N;i++)for(let j=0;j<N;j++){if(P.cheb(i,j)>18||!ok(i,j))continue;let d=Infinity;for(const [a,b] of gap)d=Math.min(d,Math.max(Math.abs(a-i),Math.abs(b-j)));if(d<=SHORE)shore.push([i,j,d]);}
+ shore.sort((x,y)=>x[2]-y[2]||P.cheb(y[0],y[1])-P.cheb(x[0],x[1])||x[0]-y[0]||x[1]-y[1]);const used=new Set(shore.map(([i,j])=>P.key(i,j))),segs=[shore.map(([i,j])=>[i,j])];
+ for(let R=18;R<=P.townH(10)-1;R++){const seg=[];for(let i=P.MID-R;i<=P.MID+R;i++)for(const j of (i===P.MID-R||i===P.MID+R)?Array.from({length:2*R+1},(_,k)=>P.MID-R+k):[P.MID-R,P.MID+R])if(ok(i,j)&&!used.has(P.key(i,j)))seg.push([i,j]);segs.push(seg);}
+ return segs.filter(x=>x.length);}
+const segMax=seg=>seg.reduce((a,[i,j])=>Math.max(a,P.cheb(i,j)),0);
 // a slot's turret at its level, if its type is unlocked at this Command Center level
 const BLENDS=(()=>{const out=[[0,0]];for(let o=1;o<=6;o++)for(let l=1;l<=3;l++)out.push([o,l]);return out.sort((a,b)=>P.blendQ(a[0],a[1])-P.blendQ(b[0],b[1]));})();
 const oreFor=(o,l,n)=>o?{[P.ORES[o-1]]:P.ORE_UNITS[o]*P.BLEND_UNITS[l]*n/40}:{};
-// the plot of a build state: {cc, lv: {id: level}, rings: [{R, n, code}]}
+// the plot of a build state: {cc, lv: {id: level}, rings: [{s the wall segment (plan(site).walls), n cells built, code}]}
 export function plotOf(site,st){const pl=plan(site),p=P.newPlot(site,start);p.cc=st.cc;p.b.cc.l=st.cc;for(const [id,b] of Object.entries(p.b))if(b.t==='storage')b.l=Math.max(1,st.lv.storage|0);
  for(const x of pl.sup){if(x.t==='storage')continue;const l=st.lv[x.id]|0;if(l>0&&st.cc>=P.BUILDINGS[x.t].cc)p.b[x.id]={t:x.t,i:x.i,j:x.j,r:x.r|0,l};}
  for(const x of pl.slots){const l=st.lv[x.id]|0;if(l>0)p.b[x.id]={t:x.t,i:x.i,j:x.j,r:0,l};}
- for(const g of st.rings){const {o,l}=P.wdecode(g.code),pl2=P.wallPlan({...p,devx:1},[{k:'rect',a:[P.MID-g.R,P.MID-g.R],b:[P.MID+g.R,P.MID+g.R],o,l}],{dev:true});let k=0;for(const x of pl2.cells){if(k++>=g.n)break;p.w[x.i+','+x.j]=x.code;}}
+ for(const g of st.rings){const seg=pl.walls[g.s].slice(0,g.n);if(!seg.length)continue;const {o,l}=P.wdecode(g.code),pl2=P.wallPlan({...p,devx:1},[{k:'cells',c:seg.flat(),o,l}],{dev:true});for(const x of pl2.cells)p.w[x.i+','+x.j]=x.code;}
  p.ext={r:5,d:31,w:12};return p;}
 // The pilot's town on a site at day `days`: the plan, built day by day with the town's share of the income, the builder in the pilot's
 // sessions, the Foundry's composite and half of the mineral income.
@@ -109,7 +122,7 @@ export function townAt(prName,site,days,{share}={}){const key=prName+':'+site+':
     const job=next();if(!job)break;pay(job.c);jobs.push({id:job.id,l:job.l,end:now+P.timeOf(job.t,job.l)/HOUR});}}
   // walls: rings outside the turrets (instant orders), composite permitting, up to the cap with the extensions earned (or bought)
   const ext=Math.min(50,(st.cc>=9?20:st.cc>=7?16:st.cc>=5?12:st.cc>=3?8:4)+(d>=10?5:0)+(d>=30?5:0)+(fL>=5&&d>=40?30:fL*6)+(pr.extPacks?50:0)),cap=P.wallBase(st.cc)+Math.floor(P.wallBase(st.cc)*ext/100);
-  let cells=st.rings.reduce((a,g)=>a+g.n,0);for(let guard=0;guard<40&&cells<cap&&cm>=1;guard++){let g=st.rings.find(x=>x.n<8*x.R);if(!g){const R0=18+st.rings.length;if(R0>P.townH(st.cc)-1)break;g={R:R0,n:0,code:1};st.rings.push(g);}const k=Math.min(8*g.R-g.n,Math.floor(cm),cap-cells);if(k<=0)break;g.n+=k;cm-=k;cells+=k;}
+  let cells=st.rings.reduce((a,g)=>a+g.n,0);for(let guard=0;guard<40&&cells<cap&&cm>=1;guard++){let g=st.rings.find(x=>x.n<pl.walls[x.s].length);if(!g){const s0=st.rings.length;if(s0>=pl.walls.length||segMax(pl.walls[s0])>P.townH(st.cc)-1)break;g={s:s0,n:0,code:1};st.rings.push(g);}const k=Math.min(pl.walls[g.s].length-g.n,Math.floor(cm),cap-cells);if(k<=0)break;g.n+=k;cm-=k;cells+=k;}
   // blends: the weakest ring first, to the best blend its ore and the Command Center allow
   for(let guard=0;guard<60;guard++){const g=st.rings.filter(x=>x.n).sort((a,b)=>P.blendQ(P.wdecode(a.code).o,P.wdecode(a.code).l)-P.blendQ(P.wdecode(b.code).o,P.wdecode(b.code).l))[0];if(!g)break;const cur=P.wdecode(g.code),q0=P.blendQ(cur.o,cur.l);
    const up=BLENDS.filter(([o,l])=>P.blendQ(o,l)>q0&&st.cc>=P.ORE_CC[o]&&can(oreFor(o,l,g.n))).sort((a,b)=>P.blendQ(b[0],b[1])-P.blendQ(a[0],a[1]))[0];if(!up)break;pay(oreFor(up[0],up[1],g.n));g.code=P.wcode(up[0],up[1]);}}
@@ -129,11 +142,11 @@ export function garrisonAt(pr,p,d,tier){const lv=P.levelOf(p,'hangar'),slots=Mat
  const kit={w:{a:tier>=2?'siege':'pulse',t:Math.min(2,tier),q:tier>=2?1.08:1},c:{c:'titan',t:Math.min(2,tier),q:tier>=2?1.08:1}};
  return Array.from({length:n},(_,i)=>RD.unitOf({id:'g'+i,kind:'g',kit,rk:Math.min(10,1+Math.floor(d/12))}));}
 // the fully built town (decision 4a): the plan at its maximum: Command Center 10, every support building and all 42 turrets at the highest
-// levels the power budget allows (the dearest turrets a level lower until the draw fits), 3,000 cells (the +50% cap) of Moonheart heavy,
+// levels the power budget allows (the dearest turrets a level lower until the draw fits), 3,000 cells (the +50% cap: the shore first) of Moonheart heavy,
 // five garrison pilots in top gear (Epic, the best roll; one with Moonbeam)
 export function fullTown(site){const pl=plan(site),st={cc:10,lv:{storage:5},rings:[]};for(const x of pl.sup)st.lv[x.id]=P.levelCap(x.t,10);for(const x of pl.slots)st.lv[x.id]=5;
  let p=plotOf(site,st);for(let guard=0;guard<300&&P.powerUse(p)>P.powerSupply(p);guard++){const x=pl.slots.filter(y=>st.lv[y.id]>1).sort((a,b)=>P.BUILDINGS[b.t].pw-P.BUILDINGS[a.t].pw||st.lv[b.id]-st.lv[a.id]||pl.slots.indexOf(b)-pl.slots.indexOf(a))[0];if(!x)break;st.lv[x.id]--;p=plotOf(site,st);}
- let left=3000;for(let R=18;left>0&&R<=P.townH(10)-1;R++){const n=Math.min(8*R,left);st.rings.push({R,n,code:P.wcode(6,3)});left-=n;}p=plotOf(site,st);
+ let left=3000;for(let s=0;left>0&&s<pl.walls.length;s++){const n=Math.min(pl.walls[s].length,left);st.rings.push({s,n,code:P.wcode(6,3)});left-=n;}p=plotOf(site,st);
  const kit={w:{a:'siege',t:2,q:1.1},c:{c:'titan',t:2,q:1.1}},gar=[0,1,2,3,4].map(i=>RD.unitOf({id:'g'+i,kind:'g',kit:i===0?{w:{a:'moon',t:2,q:1},c:kit.c}:kit,rk:10}));
  return {plot:p,st,garrison:gar};}
 // ---- 3. raids ----
@@ -146,6 +159,14 @@ export function raid(town,r,site,seed){const R2=RD.make(town.plot,seed,{threat:r
 export function holdRate(prName,d,{sites=P.SITE_IDS,n=4,share,citadelX=1}={}){let held=0,all=0;const per=[];for(const site of sites){const t=townAt(prName,site,d,{share});const rs=raidSet(PROFILES[prName],d,n,{citadelX,seed:site.length});
   for(const [i,r] of rs.entries()){const x=raid(t,r,site,1000+i);all++;if(x.o==='held')held++;per.push({site,level:r.level,o:x.o});}}
  return {p:held/all,held,all,per};}
-if(process.argv[1]&&import.meta.url.endsWith(process.argv[1].split('/').pop())){const quick=process.argv.includes('--quick'),out={};
+// --calibrate: hold rates by raid level for each profile through the year and for the fully built town (every site, n raids a site
+// and level); the THREAT -> level table (js/conquest/townwar.js TOWN.level) is fitted to these (docs/conquest/session7t/fortress-calibration.txt)
+export function levelRates(town,site,levels,n=4){const out={};for(const L of levels){let held=0;for(let i=0;i<n;i++){const lanes=P.spawnCells(site,10).length,R=RD.make(town.plot,2000+i*13,{threat:L,lane:i%lanes,units:town.garrison,damage:true,frames:false,events:false}).run();if(RD.outcomeOf(R)==='held')held++;}out[L]=held/n;}return out;}
+if(process.argv[1]&&import.meta.url.endsWith(process.argv[1].split('/').pop())&&process.argv.includes('--calibrate')){const n=Number(process.argv[process.argv.indexOf('--calibrate')+1])||4,levels=[4,5,6,7,8,9,10],rows=[];
+ const one=(name,mk)=>{const t0=Date.now(),acc={};let st=null;for(const site of P.SITE_IDS){const t=mk(site);st=st||t.st;const r=levelRates(t,site,levels,n);for(const L of levels)acc[L]=(acc[L]||0)+r[L]/P.SITE_IDS.length;}
+  const line=name+' cc'+st.cc+' '+JSON.stringify(Object.fromEntries(levels.map(L=>[L,Math.round(acc[L]*100)])))+' ms '+(Date.now()-t0);rows.push(line);console.log(line);};
+ for(const [pr,days] of [['regular',[30,60,120,180,330]],['grinder',[60,180,330]],['payer',[180,330]]])for(const d of days)one(pr+'@'+d,site=>townAt(pr,site,d));one('full',site=>fullTown(site));
+ const o=process.argv.indexOf('--out');if(o>0)writeFileSync(process.argv[o+1],rows.join('\n')+'\n');}
+else if(process.argv[1]&&import.meta.url.endsWith(process.argv[1].split('/').pop())){const quick=process.argv.includes('--quick'),out={};
  for(const pr of ['regular','grinder','payer'])for(const d of [60,180,330]){const h=holdRate(pr,d,{n:quick?2:4});out[pr+'@'+d]={p:Math.round(h.p*100)/100,n:h.all,levels:[...new Set(h.per.map(x=>x.level))].sort((a,b)=>a-b)};console.log(pr,d,JSON.stringify(out[pr+'@'+d]));}
  const o=process.argv.indexOf('--json');if(o>0){mkdirSync('docs/conquest/session7t',{recursive:true});writeFileSync(process.argv[o+1],JSON.stringify(out,null,1)+'\n');}}

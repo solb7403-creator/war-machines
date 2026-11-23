@@ -37,7 +37,7 @@ const TOWN=Object.freeze({
  // measured (dev/tools/fortress-model.mjs, every site, breach = a vital or 3 buildings): the fully built town holds every raid at level 9
  // and 86% at 10, so the cap is 9; the regular holds about 71% at day 30 (THREAT 3-4: level 6), 79% at day 60 (6-7: level 7), all at
  // day 120-180 (8-11: level 8) and 64% late (14-16: level 9); the grinder 86% late; PROPOSAL numbers until the owner sees them
- level:Object.freeze([4,5,5,6,6,7,7,7,8,8,8,8,9,9,9,9,9]),
+ level:Object.freeze([4,5,5,6,6,7,7,7,8,8,8,8,8,8,8,9,9]),   // Session 7T refit: level 9 (the cap) from THREAT 15, so the portal and the Grand Offensive surge still matter late in the year
  cap:9,
  log:16
 });
@@ -131,5 +131,7 @@ function streakDay(st0,day){const st=streakNorm(st0);if(st.last===day)return {st
 function streakLine(st0,day){const st=streakNorm(st0),alive=st.n&&(st.last===day||st.last===day-1||day-st.last-1<=STREAK.freezes-(weekOf(day)===st.wk?st.fz:0)),n=alive?st.n:0,nx=STREAK.rewards.find(r=>r.d>n),name=r=>r.it?(r.it==='repair'?'REPAIR KIT':'SCANNER CHARGE'):r.em?'BANNER EMBLEM':'TOWN DECORATION';
  const left=STREAK.freezes-(weekOf(day)===st.wk?st.fz:0);
  return {n,today:st.last===day,next:nx||null,left,text:'STREAK '+n+' DAY'+(n===1?'':'S')+(st.last===day?' · TODAY ✓':' · PLAY TODAY')+(nx?' · DAY '+nx.d+': '+name(nx):' · EVERY MILESTONE EARNED')+' · '+left+' FREEZE'+(left===1?'':'S')+' LEFT THIS WEEK'};}
-root.ConquestTown=Object.freeze({TOWN,STARS,BEACON,STREAK,STREAK_ART,fresh,norm,perDay,goSlots,paceOk,canLand,pickGeneral,levelOf,strength,lossOf,step,goSync,advance,defendable,next,fresher,beaconOf,streakNorm,streakDay,streakLine,weekOf});
+// the town as a raid saw it (the replay's snapshot s.tw.rp.town, written by the Worker) back to a plot the raid engine reads
+function plotOfSnap(x){const Pl=root.ConquestPlot;return {v:2,site:x.site,cc:x.cc|0,b:Object.fromEntries(Object.entries(x.b||{}).map(([id,a])=>[id,{t:a[0],i:a[1],j:a[2],r:a[3],l:a[4]}])),w:Pl.decWalls(x.w),dmg:{...(x.dmg||{})},n:0,st:{}};}
+root.ConquestTown=Object.freeze({TOWN,STARS,BEACON,STREAK,STREAK_ART,plotOfSnap,fresh,norm,perDay,goSlots,paceOk,canLand,pickGeneral,levelOf,strength,lossOf,step,goSync,advance,defendable,next,fresher,beaconOf,streakNorm,streakDay,streakLine,weekOf});
 })(globalThis);

@@ -38,7 +38,7 @@ function posts(p,n,blocked){const Pl=P(),cc=p.b?.cc,sz=Pl.sizeOf('cc',cc?.r|0),c
 function make(plot,seed=1,opt={}){
  const Pl=P(),p=plot,S=Pl.SITES[p?.site]||Pl.SITES.ridge,sid=S.id,cc=Pl.clampCC(p.cc),h=Pl.townH(cc),threat=Pl.clampCC(opt.threat||cc),RAID=Pl.RAID,N=Pl.GRID.n,C=Pl.GRID.cell,MID=Pl.MID,NN=N*N,dt=opt.dt||RAID.dt,frames=[],events=[],keepF=opt.frames!==false,keepE=opt.events!==false;
  const cellX=Pl.cellX,cellZ=Pl.cellZ,KIND_IDS=Object.keys(RAID.kinds),BLOCKED=Pl.BLOCKED,SLOW=Pl.SLOW;
- const rnd=rng(seed);
+ const rnd=rng(seed),rs=opt.own?rnd:rng((Math.imul((seed>>>0)||1,2654435761)^0x5bd1e995)>>>0);   // town attacks: the waves draw from their own stream, so a turret's fire never reshuffles them (opt.own: the drill's one stream)
  const blk=new Int32Array(NN).fill(-1),structs=[],hpK=Math.pow(RAID.hpGrow,threat-1),dmK=Math.pow(RAID.dmGrow,threat-1);
  const addS=s=>{s.idx=structs.length;let x=0,z=0,x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity;for(const [i,j] of s.cells){blk[i*N+j]=s.idx;const cx=cellX(i),cz=cellZ(j);x+=cx;z+=cz;x0=Math.min(x0,cx-2);x1=Math.max(x1,cx+2);z0=Math.min(z0,cz-2);z1=Math.max(z1,cz+2);}
   s.x=x/s.cells.length;s.z=z/s.cells.length;s.x0=x0;s.x1=x1;s.z0=z0;s.z1=z1;s.eff=s.hp/Math.max(.05,(1-(s.dr||0))*(1-(s.refl||0)));structs.push(s);return s;};
@@ -56,8 +56,14 @@ function make(plot,seed=1,opt={}){
  const shieldK=(x,z)=>{let k=0;for(const q of shields)if(q.s.hp>0&&Math.hypot(q.x-x,q.z-z)<q.r)k=Math.max(k,q.k);return k*pf;};
  const turrets=structs.filter(s=>s.kind==='turret').map(s=>{const B=Pl.BUILDINGS[s.t].turret,l=s.l;return {s,type:s.t,B,range:B.range*S.range*(1+.04*(l-1)),min:B.min||0,dmg:B.dmg*(1+.25*(l-1)),cd:rnd()*B.rof*.5,kills:0,done:0};});
  const pass=new Uint8Array(NN),slow=new Float32Array(NN).fill(1);for(let i=0;i<N;i++)for(let j=0;j<N;j++){const c=i*N+j,t=Pl.terrainAt(sid,i,j);if(Pl.cheb(i,j)<=h+1&&!BLOCKED[t]){pass[c]=1;slow[c]=SLOW[t]||1;}}
- const threatMap=new Float32Array(NN),cover=t=>{const r=Math.ceil(t.range/C),ti=Math.round(t.s.x/C+MID),tj=Math.round(t.s.z/C+MID),out=[];for(let i=Math.max(0,ti-r);i<=Math.min(N-1,ti+r);i++)for(let j=Math.max(0,tj-r);j<=Math.min(N-1,tj+r);j++)if(Math.hypot(cellX(i)-t.s.x,cellZ(j)-t.s.z)<=t.range)out.push(i*N+j);return out;};
- for(const t of turrets){t.cells=cover(t);t.dps=t.s.hp>0?t.dmg*(t.B.salvo||1)/t.B.rof:0;for(const c of t.cells)threatMap[c]+=t.dps*RAID.threatK;}
+ const threatMap=new Float32Array(NN),cover=t=>{const r=Math.ceil(t.r0/C),ti=Math.round(t.s.x/C+MID),tj=Math.round(t.s.z/C+MID),out=[];for(let i=Math.max(0,ti-r);i<=Math.min(N-1,ti+r);i++)for(let j=Math.max(0,tj-r);j<=Math.min(N-1,tj+r);j++)if(Math.hypot(cellX(i)-t.s.x,cellZ(j)-t.s.z)<=t.r0)out.push(i*N+j);return out;};
+  // Town attacks (Session 7T, fortress decision 4b: no dead upgrades): raiders read the town's layout, never its levels. Every turret is
+ // weighed as fully upgraded (level V range and damage), so an upgrade never moves the raiders' path: it pays off where they already
+ // go (measured: weighed at their own level, Laser Cannons III->IV pushed raiders onto a weaker side and the reference town held 78 ->
+ // 64 of 250 raids; weighed at the town's average level, raising any type re-scaled every gun against the walls and moved the breach).
+ // A maxed town is weighed exactly as before. opt.own: each turret at its own level, the Defense Drill's rule (plot.js, 5B's balance)
+ const seen=t=>opt.own?t.s.l:5;
+ for(const t of turrets){t.r0=t.B.range*S.range*(1+.04*(seen(t)-1));t.cells=cover(t);t.dps=t.s.hp>0?t.B.dmg*(1+.25*(seen(t)-1))*(t.B.salvo||1)/t.B.rof:0;for(const c of t.cells)threatMap[c]+=t.dps*RAID.threatK;}
  const cost=c=>{const si=blk[c];let w=1/slow[c]+threatMap[c];if(si>=0){const s=structs[si];if(s.hp>0&&s!==core)w+=s.eff/RAID.breakRate;}return w;};
  const field=new Float64Array(NN).fill(Infinity),heap=Heap(),NB4=[[1,0],[-1,0],[0,1],[0,-1]],DX8=[1,-1,0,0,1,1,-1,-1],DZ8=[0,0,1,-1,1,-1,1,-1];let ver=0;
  const relax=()=>{while(heap.size){const [v,c]=heap.pop();if(v>field[c])continue;const i=(c/N)|0,j=c-i*N;for(const [a,b] of NB4){const x=i+a,z=j+b;if(x<0||z<0||x>=N||z>=N)continue;const n=x*N+z;if(!pass[n])continue;const nv=v+cost(n);if(nv<field[n]){field[n]=nv;heap.push(nv,n);}}}};
@@ -76,8 +82,8 @@ function make(plot,seed=1,opt={}){
  const spawns=Pl.spawnCells(sid,cc);let laneK=0;
  // the lane order: the drill's round robin, or the attack's main lane on every other spawn (half of them)
  const seq=(()=>{const L=spawns.length,m=Number.isInteger(opt.lane)&&L>1?((opt.lane%L)+L)%L:-1;if(m<0)return Array.from({length:L},(_,i)=>i);const o=[];for(let i=0;i<L;i++)if(i!==m){o.push(m,i);}return o;})();
- const spawn=kind=>{for(let tries=0;tries<seq.length;tries++){const cl=spawns[seq[(laneK++)%seq.length]].filter(([i,j])=>isFinite(field[i*N+j])||RAID.kinds[kind].air);if(!cl.length)continue;const [i,j]=cl[Math.floor(rnd()*cl.length)],K=RAID.kinds[kind];
-   foes.push({id:++id,kind,K,x:cellX(i)+(rnd()-.5)*2,z:cellZ(j)+(rnd()-.5)*2,hp:K.hp*hpK,max:K.hp*hpK,cd:rnd()*K.rof,burn:0,tgt:-1});return;}};
+ const spawn=kind=>{for(let tries=0;tries<seq.length;tries++){const cl=spawns[seq[(laneK++)%seq.length]].filter(([i,j])=>isFinite(field[i*N+j])||RAID.kinds[kind].air);if(!cl.length)continue;const [i,j]=cl[Math.floor(rs()*cl.length)],K=RAID.kinds[kind];
+   foes.push({id:++id,kind,K,x:cellX(i)+(rs()-.5)*2,z:cellZ(j)+(rs()-.5)*2,hp:K.hp*hpK,max:K.hp*hpK,cd:rs()*K.rof,burn:0,tgt:-1});return;}};
  const dmgTo=(t,f,base)=>{if(f.dead)return;const B=t.B,arm=f.K.armor||0,d=base*(f.K.light&&B.light?B.light:1)*(1-arm*(1-(B.pierce||0)));f.hp-=d;t.done+=Math.min(d,f.hp+d);killFoe(f);if(f.dead)t.kills++;};
  const shot=(t,x,z,extra)=>{shots++;if(keepE&&shots<=3000)events.push({t:Math.round(time*10)/10,k:'shot',from:t.s.id,ty:t.type,x:Math.round(x*10)/10,z:Math.round(z*10)/10,...(extra||{})});};
  const BK=10,bk=Array.from({length:BK*BK},()=>[]),bOf=v=>Math.max(0,Math.min(BK-1,Math.floor((v+160)/32)));
@@ -163,13 +169,13 @@ function make(plot,seed=1,opt={}){
  // ---- save / restore (the live defense: one request's steps at a time). Everything that changes is saved; the rest is rebuilt from the
  // same plot. The flow field is rebuilt from the structures standing (a fresh Dijkstra: the same shortest paths the drill keeps updating).
  const r2=v=>Math.round(v*1000)/1000;
- function save(){return {v:1,n,t:r2(time),r:rnd.get(),k:kills,d:done?1:0,o:over?1:0,hl:homesLost,wl:wallsLost,sh:shots,id,lk:laneK,pf:r2(pf),
+ function save(){return {v:1,n,t:r2(time),r:rnd.get(),...(rs!==rnd?{rs:rs.get()}:{}),k:kills,d:done?1:0,o:over?1:0,hl:homesLost,wl:wallsLost,sh:shots,id,lk:laneK,pf:r2(pf),
   hp:Object.fromEntries(structs.map((s,i)=>[i,s.hp]).filter(([i,v])=>v!==hp0[i]).map(([i,v])=>[i,r2(v)])),
   tu:turrets.map(t=>[r2(t.cd),t.kills,r2(t.done)]),
   fo:foes.map(f=>[f.id,KIND_IDS.indexOf(f.kind),r2(f.x),r2(f.z),r2(f.hp),r2(f.cd),r2(f.burn||0),r2(f.burnD||0),f.burnBy?turrets.indexOf(f.burnBy):-1,f.tgt,f.dead?1:0,f.scan|0]),
   wv:waves.map(w=>w.done?1:0),fe:fell.slice(),vi:vitals.slice(),br:breach.slice(),
   un:units.map(u=>[r2(u.x),r2(u.z),r2(u.h),r2(u.v||0),r2(u.hp),u.down,r2(u.cd),u.kills,r2(u.done)])};}
- function load(st){n=st.n|0;time=Number(st.t)||0;rnd.set(st.r);kills=st.k|0;done=!!st.d;over=!!st.o;homesLost=st.hl|0;wallsLost=st.wl|0;shots=st.sh|0;id=st.id|0;laneK=st.lk|0;
+ function load(st){n=st.n|0;time=Number(st.t)||0;rnd.set(st.r);if(rs!==rnd&&st.rs!==undefined)rs.set(st.rs);kills=st.k|0;done=!!st.d;over=!!st.o;homesLost=st.hl|0;wallsLost=st.wl|0;shots=st.sh|0;id=st.id|0;laneK=st.lk|0;
   for(const [i,v] of Object.entries(st.hp||{})){const s=structs[Number(i)];if(s)s.hp=Number(v);}
   (st.tu||[]).forEach((x,i)=>{const t=turrets[i];if(t){t.cd=Number(x[0]);t.kills=x[1]|0;t.done=Number(x[2]);}});
   foes.length=0;for(const x of st.fo||[]){const kind=KIND_IDS[x[1]],K=RAID.kinds[kind];if(!K)continue;foes.push({id:x[0],kind,K,x:Number(x[2]),z:Number(x[3]),hp:Number(x[4]),max:K.hp*hpK,cd:Number(x[5]),burn:Number(x[6]),burnD:Number(x[7]),burnBy:x[8]>=0?turrets[x[8]]:null,tgt:x[9],dead:!!x[10],scan:x[11]|0,ver:-1});}
