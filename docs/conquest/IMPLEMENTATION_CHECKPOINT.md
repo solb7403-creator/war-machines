@@ -6878,8 +6878,16 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
 - **Review B5's day 3-4 numbers:** the regular's young town (CC3) holds level-1 raids 18% (day 3) and 50% (day 4) unfought in the
   fortress model (pessimistic: its first ring is not closed); reviewer 1's repro: day 3 9/40 unfought and 20/40 in person, day 4
   26/40 and 28/40.
-- **Next: round 3** (B3 and the streak line were clearly broken, so a third round is allowed: narrow, on those fixes), CI, then the
-  release.
+- **Round 3 at `ad74522`** (reviewer 1, narrow: allowed because B3 was clearly broken): **B3 PASS** (from the tank's real start, 10 s
+  of stick: 4-128 m on ridge, crater, ash, ice and delta towns, the short ones a straight stick into a building; 0 m in every
+  direction before; bot defenses in the regular's CC10 towns: 11 of 14 fights "fought" at days 30 and 60, was 0 of 14; building the
+  raid machine 9-12 ms with or without the start search); **streak line PASS**; no regression; D6 and D11 PASS. With round 2's
+  reviewer 2 verdicts, **every decision 1-11 is PASS in both scopes.** Notes: the phone's tank jumped up to ~33 m to the Worker's
+  start when a fight began (fixed after round 3: the phone builds the same machine from the same snapshot, `s.tdp`, and starts the
+  tank there; plotview.js liveStep, one additive line); a returning pilot now sees the War Report for the town's raids since the last
+  read, held ones included (the lead keeps it: once a session, one tap, and decision 9 puts held raids there).
+- **Next: CI on the head, then the release** (main still `e2a7c64`; the build stamp `20261123061357` was made before these fixes
+  and is kept: nothing was deployed in between).
 - **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>
   (Session 7T Living Town)"; PR from `claude/festive-einstein-2nwwzo` to main with the body drafted from this checkpoint and the
   `owner-rules-change` label (docs/owner-rules.json cpSites +1, the held raid's cache, owner decision 5); CI green (the new `fortress`

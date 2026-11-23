@@ -684,6 +684,7 @@ function tankBanner(view){const bn=view?.authority?.state?.plot?.banner,veh=view
 // tank and sends its stick and FIRE in the world's 50 ms steps; liveStep draws the Worker's raiders (moving between its last two
 // answers), keeps what fell down, and pulls your tank toward where the Worker has it. The HUD is js/conquest/townui.js liveHud.
 function liveStep(dt){const L=X.live,s=X.ctx.view.authority?.state,td=s?.td,R=X.R,p=plotOf(),D=X.drive,K=root.ConquestControl;if(!L||!td?.active||!R||!p)return;
+ if(!L.start&&!td.st&&D){L.start=1;try{const RDm=root.ConquestRaid,TNm=root.ConquestTown,M=RDm&&TNm&&s.tdp?RDm.make(TNm.plotOfSnap(s.tdp),td.seed,{threat:td.lv,lane:td.ln,units:td.units,dt:.05,pilot:td.pilot,damage:true,frames:false,events:false}):null;if(M?.pilot){D.x=M.pilot.x;D.z=M.pilot.z;}}catch(_){}}   // 7T review (round 3): start where the Worker starts the tank (the same engine and snapshot), so the first reply never jumps it
  L.acc=Math.min(.3,L.acc+dt);const fire=!!(L.fire||D?.keys?.[' ']);while(L.acc>=.05&&K){L.acc-=.05;X.ctx.view.authority?.enqueue(K.command({x:D?.wx||0,z:D?.wz||0,fire}));}
  const st=td.st,now=performance.now();if(st&&st!==L.st){L.prev=L.st;L.st=st;L.span=Math.max(80,now-(L.at||now));L.at=now;}
  const k=L.prev?Math.min(1,(now-L.at)/L.span):1,KI=Object.keys(P.RAID.kinds),pm=new Map((L.prev?.fo||[]).map(f=>[f[0],f])),T=R.T,m=R._d||(R._d=new T.Matrix4()),cnt={};for(const kk of Object.keys(R.foes))cnt[kk]=0;
