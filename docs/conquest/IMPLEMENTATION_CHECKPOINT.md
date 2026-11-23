@@ -7094,8 +7094,11 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
   hub.js, css), SUGGEST A RING moved to the floating action row in WALLS (never scrolled away), the coach texts naming it, the coach pill
   shown when the first-visit tour ends (plotview.js, a pre-existing gap), the browser test's stricter reach (inside the scroller, never
   under a fixed bar).
-- **Slice 4 (this commit):** TOWN.se.n = 8, the heavy profile, the UI fixes above, conquest-town-proposals.py PASS at all 5 sizes.
-- **Next:** the fortress test (running); the full CI list; RESOURCE_ECONOMY §16; two reviewers; release.
+- **Slice 4 (`74bc7b0`):** TOWN.se.n = 8, the heavy profile, the UI fixes above, conquest-town-proposals.py PASS at all 5 sizes.
+- **Slice 5 (`433e241`):** RESOURCE_ECONOMY §16.2-16.4. Round 1 reviews launched on `433e241` (reviewer 1 fun and reward, reviewer 2
+  measurements, guards, regressions); the fortress test and every CI node command running locally.
+- **Next:** fix every review blocker, re-review (round 2), the browser suites, then release (merge main, dev/bump.sh, PR, CI, merge,
+  verify the Worker and Pages, ROADMAP row 7T-P, the release record).
 
 ### Owner decisions (Nov 23) as recorded
 1. **Kept as shipped, owner-adopted:** the THREAT -> raid level table (cap 9) and the 60% chance at each eligible tick
