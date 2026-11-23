@@ -31,10 +31,15 @@ export const PROFILES={
  // the paying pilot at the grinder's play time: the store's planned levers (docs/ROADMAP.md standing decisions: second builder, speed-ups,
  // wall extension packs, common / uncommon ore; checkout off until Session 8): two builders, the extension packs, Ferrite and Ilmenite
  // bought as needed, Epic gear from day 1 (crates); never CP, never rare-or-better ore (earn-only)
+ // the heavy player (owner, Nov 23: "I'd be shocked if players played for more than 2 [hours a day]"; Session 7T-P decision 2 targets
+ // them): 2 h a day in two sessions, the economy model's town ladder at 120 minutes (ladderOf: the log-midpoint of the regular's and the
+ // grinder's), the Citadel and gear paced between the two; otherwise as the grinder
+ heavy:{label:'Heavy (2 h a day, two sessions)',sessions:[[10,60],[19,60]],ladder:'heavy',share:.5,builders:1,citadel:[[0,0],[10,1],[32,3],[90,6],[208,9]],gear:[[0,0],[17,1],[95,2]]},
  payer:{label:'Paying pilot at the grinder\'s play time (store levers as planned)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:2,citadel:[[0,0],[6,1],[21,3],[60,6],[135,9]],gear:[[0,2]],buyFeIl:true,extPacks:true}};
 const interp=(pts,d)=>{let v=pts[0][1];for(let i=0;i<pts.length;i++){if(d>=pts[i][0])v=pts[i][1];if(i+1<pts.length&&d>=pts[i][0]&&d<pts[i+1][0]){const [a,va]=pts[i],[b,vb]=pts[i+1];return va+(vb-va)*(d-a)/(b-a);}}return v;};
 export const tiersAt=(pr,d)=>Math.max(0,Math.min(9,Math.floor(interp(pr.citadel,d))));
-const ccAt=(pr,d)=>{const L=AUDIT[pr.ladder].base.hit;let cc=0;for(let k=1;k<=10;k++)if(d>=L['CC'+k].day)cc=k;return cc;};
+const HEAVY=MODEL.ladderOf(120),hitOf=pr=>pr.ladder==='heavy'?Object.fromEntries(Object.entries(HEAVY).map(([k,day])=>[k,{day}])):AUDIT[pr.ladder].base.hit;
+const ccAt=(pr,d)=>{const L=hitOf(pr);let cc=0;for(let k=1;k<=10;k++)if(d>=L['CC'+k].day)cc=k;return cc;};
 // ---- 1. income (the war model's method, any play time) ----
 const cache={};
 export function income(pr,days){const key=JSON.stringify(pr.sessions)+days;if(cache[key])return cache[key];const s=createState(R.STOCK_L,start);s.lseed=7919;delete s.wo;s.war.sc={n:9,done:1};
@@ -63,8 +68,8 @@ export function income(pr,days){const key=JSON.stringify(pr.sessions)+days;if(ca
 // minerals a day (the economy model's own formula: gathering, operation caches, Meteor Strikes with Resonance), for a play time
 const Pm=MODEL.P,A=Pm.conquest.activities,MIN=['fe','il','ar','tq','se','mh'],ramp=(d,from,full)=>d<from?0:d>=full?1:.5;
 // measurement knobs (Session 7T-P decision 2, the Selenite candidates: dev/tools/selenite-candidates.mjs): resonanceSe overrides the
-// strikes a Strike Resonance Selenite takes (candidate A); noTownSe turns off the town defenses' Selenite (the 7T economy). Empty = the
-// live rules.
+// strikes a Strike Resonance Selenite takes (candidate A); noTownSe turns off the town defenses' Selenite (the 7T economy); townSeN sets
+// the Selenite a cap-level defense held in person pays (the amount's measurement). Empty = the live rules.
 export const KNOB={};
 export function minerals(pr,d){const m=pr.sessions.reduce((a,x)=>a+x[1],0),n=pr.sessions.length,inc=Object.fromEntries(MIN.map(k=>[k,0])),add=(o,x=1)=>{for(const [k,v] of Object.entries(o))inc[k]+=v*x;};
  const aAr=ramp(d,3,8),aTq=ramp(d,14,30),aVet=ramp(d,30,45),g=.25*m,sh={fe:.45,il:.30,ar:.17*aAr,tq:.08*aTq},tot=Object.values(sh).reduce((a,b)=>a+b,0);
@@ -83,7 +88,7 @@ export function minerals(pr,d){const m=pr.sessions.reduce((a,x)=>a+x[1],0),n=pr.
 // itself) x n. Half of it reaches the town (minerals(): the other half goes to plating), as for every mineral.
 const AUD=AUDIT,clockMemo=new Map(),shareMemo=new Map(),ipMemo=new Map(),nameOf=pr=>Object.keys(PROFILES).find(k=>PROFILES[k].label===pr.label)||'grinder';
 export function inPersonDays(pr,{seeds=24,days=YEAR}={}){const key=JSON.stringify(pr.sessions)+pr.ladder;if(clockMemo.has(key))return clockMemo.get(key);const T=WR.WAR.tickMs,out=new Float64Array(days+1),all=new Float64Array(days+1);
- const claim=start+AUD[pr.ladder].base.hit.CC1.day*DAY,sess=[];for(let d=0;d<=days+1;d++)for(const [h,m] of pr.sessions)sess.push([start+d*DAY+h*HOUR,start+d*DAY+h*HOUR+m*60000]);
+ const claim=start+hitOf(pr).CC1.day*DAY,sess=[];for(let d=0;d<=days+1;d++)for(const [h,m] of pr.sessions)sess.push([start+d*DAY+h*HOUR,start+d*DAY+h*HOUR+m*60000]);
  for(let sd=1;sd<=seeds;sd++){const war=WR.fresh(start),tw=TN.fresh(start);tw.k=WR.tickOf(start);for(let k=WR.tickOf(start)+1,K=WR.tickOf(start+days*DAY);k<=K;k++){const d=(k*T-start)/DAY,info={cc:ccAt(pr,d),townAt:claim,shieldUntil:0,war,tiers:0,seed:String(sd*7919+13)+':town'};
   for(const x of TN.step(tw,k,info,()=>'held'))if(x.kind==='land'){const a=x.ev.a*T,l=x.ev.l*T,dd=Math.floor((l-start)/DAY);if(dd>days)continue;all[dd]+=1/seeds;if(sess.some(([s0,s1])=>s0<l&&s1>a))out[dd]+=1/seeds;}}}
  const r={inPerson:out,all};clockMemo.set(key,r);return r;}
@@ -93,7 +98,7 @@ const IP_DAYS=[135,180,270,330,400];
 export function inPersonRate(prName,d,{n=3}={}){const key=prName+':'+d+':'+n;if(ipMemo.has(key))return ipMemo.get(key);const pr=PROFILES[prName];let ok=0,all=0;
  for(const site of P.SITE_IDS){const t=townAt(prName,site,d,{se:false}),lanes=P.spawnCells(site,10).length;for(let i=0;i<n;i++){const x=fight(t,{level:TN.TOWN.se.from,lane:i%lanes},3000+i*17,d,pr);all++;if(x.se)ok++;}}
  const r=ok/all;ipMemo.set(key,r);return r;}
-function townSe(pr,d){const n=TN.seOf(TN.TOWN.cap);if(!n)return 0;const sh=capShare(pr,Math.floor(d));if(!sh)return 0;const ip=inPersonDays(pr).inPerson[Math.min(YEAR,Math.floor(d))]||0;if(!ip)return 0;
+function townSe(pr,d){const n=KNOB.townSeN??TN.seOf(TN.TOWN.cap);if(!n)return 0;const sh=capShare(pr,Math.floor(d));if(!sh)return 0;const ip=inPersonDays(pr).inPerson[Math.min(YEAR,Math.floor(d))]||0;if(!ip)return 0;
  const nm=nameOf(pr),xs=IP_DAYS,i=xs.findIndex(x=>x>=d);let rate;if(i<=0)rate=inPersonRate(nm,xs[Math.max(0,i)]);else{const a=xs[i-1],b=xs[i],ra=inPersonRate(nm,a),rb=inPersonRate(nm,b);rate=ra+(rb-ra)*(d-a)/(b-a);}
  return ip*sh*rate*n;}
 // A defense in person (decision 6 of 7T): the pilot's tank (a bot: drive at the nearest raider, aim and fire), the fielded Platoon (up to 4

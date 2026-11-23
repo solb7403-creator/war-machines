@@ -382,7 +382,7 @@ export function battalionModel({ minutes = 60, packChips = 0, rescueFrom = 1, da
     if (nine === null && pool.xp >= 9 * BT.RANK_XP[8] && pilotsBy(d) >= 9) nine = d + 1; if (sixteen === null && pool.xp >= 16 * BT.RANK_XP[9] && pilotsBy(d) >= 16) sixteen = d + 1; }
   return { minutes, ladder: { CC2: L.CC2, CC3: L.CC3, CC5: L.CC5, CC7: L.CC7, CC9: L.CC9 }, stage, scienceLabIV: Math.round(lab4 * 10) / 10, packChips, roleCores: { firstMaxed: first, allSix: all, chips: 120 }, ranks: { onePilot: at, ninePilotsRank9: nine, rosterRank10: sixteen } };
 }
-export const MODEL = { P, PROFILES, timelines, dailyIncome, firstHour: hour, firstBaseMinute, researchModel, battalionModel };
+export const MODEL = { P, PROFILES, timelines, dailyIncome, firstHour: hour, firstBaseMinute, researchModel, battalionModel, ladderOf };   // ladderOf: the town ladder at a play time (the fortress model's 2-hour heavy profile, Session 7T-P)
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 const out = [];
 out.push('## Points a minute (base points = airdrop points), standard pilot\n');

@@ -4,7 +4,7 @@ GO TO WALLS, the map pill, the red marker where the town is open, then the ring 
 and decision 4, the welcome-back kits on the hub (back after 15 days away: WELCOME BACK · DAY 1 · +1 REPAIR KIT, the streak line naming
 the day-3 Scanner Charge), at 390x844, 390x700, 320x568 (touch: a real swipe reaches what is below) and 1366x768, 1920x1080 (mouse and
 keyboard). Every screen fits or scrolls. Pictures: docs/conquest/session7tp."""
-import asyncio,json,pathlib,shutil,sys
+import asyncio,json,os,pathlib,shutil,sys
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest/session7tp';OUT.mkdir(parents=True,exist_ok=True)
@@ -24,11 +24,15 @@ async def swipe(page,sel,up=True):   # a real finger (as conquest-plot-ui.py): t
   await cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':sx,'y':max(top,min(bot,sy+k*d))}]});await page.wait_for_timeout(16)
  await cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});await page.wait_for_timeout(250)
 async def reach(page,loc,scroller,touch,h):
- """the element is on screen after the pilot scrolls (a real swipe on touch, the wheel with a mouse); returns its box"""
+ """the element is on screen inside its scroller's visible box (never under a fixed bar) after the pilot scrolls (a real swipe on touch,
+ the wheel with a mouse); an element outside the scroller (a fixed bar's button) must simply be on screen; returns its box"""
+ inside=await loc.evaluate('(e,s)=>!!e.closest(s)',scroller)
  for _ in range(40):
-  bb=await loc.bounding_box()
-  if bb and bb['y']>=0 and bb['y']+bb['height']<=h+1:return bb
-  down=not bb or bb['y']+bb['height']>h
+  bb=await loc.bounding_box();sb=await page.locator(scroller).first.bounding_box() if inside else None
+  top=max(0,sb['y']) if sb else 0;bot=min(h,sb['y']+sb['height']) if sb else h
+  if bb and bb['y']>=top-1 and bb['y']+bb['height']<=bot+1:return bb
+  if not inside:raise AssertionError('a fixed control off screen: '+(await loc.inner_text())[:60]+' '+str(bb))
+  down=not bb or bb['y']+bb['height']>bot
   if touch:await swipe(page,scroller,down)
   else:
    sb=await page.locator(scroller).first.bounding_box();await page.mouse.move(sb['x']+sb['width']/2,max(sb['y'],0)+min(max(sb['height'],40)-10,200));await page.mouse.wheel(0,260 if down else -260);await page.wait_for_timeout(150)
@@ -77,11 +81,16 @@ async def main():
     ctx,page,errors=await open_page(w,h,mobile,{'welcome':True,'baseFunds':True})
     await page.wait_for_selector('.cq-hub .cq-hub-streak',timeout=60000)
     st=await inspect();assert st['stk'].get('nw',{}).get('wb')==1 and st['stk']['n']==1 and st['inv']['it']['repair']==3,('the Worker granted the welcome-back kit',st.get('stk'),st.get('inv'))
+    # the hub's first card: WELCOME BACK, PILOT · +1 REPAIR KIT, what the return's day 3 brings; on screen without scrolling
+    wc=page.locator('.cq-hub-welcome');await wc.wait_for(timeout=20000);wt=await wc.inner_text();assert 'WELCOME BACK, PILOT' in wt and '+1 REPAIR KIT' in wt and 'DAY 3 brings a SCANNER CHARGE' in wt,wt
+    first=await page.evaluate("(()=>{const c=document.querySelector('.cq-hub-welcome');return c&&c.parentElement.querySelector('.cq-hub-card')===c;})()");assert first,'the welcome card comes first'
+    await reach(page,wc,'.cq-hub-scroll',mobile,h);bb=await wc.bounding_box();assert bb['x']>=0 and bb['x']+bb['width']<=w+1,('the card fits the width',bb)
+    await page.screenshot(path=str(OUT/f'welcome-back-{w}x{h}.png'))
+    # ... and the LIVE EVENTS streak line says it too (reached by scrolling the hub)
     card=page.locator('.cq-hub-card',has=page.locator('.cq-hub-streak'));new=card.locator('.cq-hub-streak-new.cq-welcome')
     await reach(page,new,'.cq-hub-scroll',mobile,h);nt=await new.inner_text();lt=await card.locator('.cq-hub-streak').inner_text()
     assert 'WELCOME BACK · DAY 1 · +1 REPAIR KIT' in nt,nt;assert 'STREAK 1 DAY · TODAY ✓ · WELCOME BACK · DAY 3: SCANNER CHARGE' in lt,lt
-    bb=await new.bounding_box();assert bb['x']>=0 and bb['x']+bb['width']<=w+1,('the line fits the width',bb)
-    await page.screenshot(path=str(OUT/f'welcome-back-{w}x{h}.png'));r['welcome']=nt;assert not errors,errors[:3];await close_ctx(ctx)
+    await page.screenshot(path=str(OUT/f'welcome-back-streak-{w}x{h}.png'));r['welcome']=wt.replace('\n',' · ');assert not errors,errors[:3];await close_ctx(ctx)
     # ---- 2. decision 3: the coach's step 4, close the first wall ring before CC4 ----
     ctx,page,errors=await open_page(w,h,mobile,{'coachRing':True,'baseFunds':True})
     await page.wait_for_selector('.cq-hub .cq-hub-act',timeout=60000);mb=page.locator('.cq-hub-act',has_text='MY BASE').first;await reach(page,mb,'.cq-hub-scroll',mobile,h);await press(page,mb,mobile)
@@ -103,9 +112,9 @@ async def main():
     go=cc.locator('button',has_text='GO TO WALLS');await reach(page,go,'.cq-plot-sheet',mobile,h);await page.screenshot(path=str(OUT/f'coach-ring-card-{w}x{h}.png'));await press(page,go,mobile)
     await page.wait_for_function("ConquestPlotView.state.mode==='walls'",timeout=20000)
     # SUGGEST A RING drafts the closing order (an inner and an outer ring), the pilot sees it and confirms it
-    sg=page.locator('.cq-plot-suggest-btn');await reach(page,sg,'.cq-plot-sheet',mobile,h);await press(page,sg,mobile)
+    sg=page.locator('.cq-plot-fab .cq-plot-suggest-btn');await sg.wait_for(timeout=20000);await reach(page,sg,'.cq-plot-sheet',mobile,h);await press(page,sg,mobile)   # floats on the map: never scrolled away
     await page.wait_for_function('ConquestPlotView.state.draft.length>=1',timeout=20000);nd=await page.evaluate('ConquestPlotView.state.draft.length');r['suggest']=str(nd)+' rings drafted'
-    cf=page.locator('button',has_text='CONFIRM WALLS').first;await reach(page,cf,'.cq-plot-sheet',mobile,h);await page.screenshot(path=str(OUT/f'coach-ring-suggest-{w}x{h}.png'));await press(page,cf,mobile)
+    cf=page.locator('.cq-plot-fab button.cq-plot-primary',has_text='CONFIRM WALLS');await cf.wait_for(timeout=20000);await reach(page,cf,'.cq-plot-sheet',mobile,h);await page.screenshot(path=str(OUT/f'coach-ring-suggest-{w}x{h}.png'));await press(page,cf,mobile)
     await page.wait_for_function("(()=>{const p=Conquest.view.authority.state.plot;return p&&ConquestTown.ringOf(p).closed;})()",timeout=30000)
     await page.wait_for_function("(()=>{const g=ConquestPlotView.state.coachStep;return g&&g.id!=='ring';})()",timeout=20000)
     nx=await page.evaluate('ConquestPlotView.state.coachStep.id');st=await inspect()

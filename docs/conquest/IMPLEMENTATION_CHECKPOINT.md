@@ -7080,9 +7080,84 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
 - **Slice 2 (decision 1, recorded):** the THREAT -> raid level table `[1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]` (cap 9) and the 60% chance at
   each eligible tick are **owner-adopted (Nov 23)**, kept exactly as shipped: `js/conquest/townwar.js` comments say so (no number
   changed), `docs/economy/RESOURCE_ECONOMY.md` §16.1 (new section 16 Living Town) records both.
-- **Next:** decision 2 (measure both Selenite candidates with the fortress and economy models; ship the closer one or neither),
-  decision 3 (the wall-ring coach step + the repair re-measure), decision 4 (welcome-back kits); reviews; release.
+- **Slice 3 (`fe683d4`, pushed): decisions 2-4 built and tested** (details below): the cap-level Selenite drop (4 then), the first-ring
+  coach step with SUGGEST A RING, the welcome-back kits; tests conquest-town-selenite (14), conquest-coach-ring (26), conquest-streak (+24
+  = 62), conquest-town-proposals.py (5 sizes); fortress test (e) and (f); the tools selenite-candidates.mjs and coach-ring-repairs.mjs.
+- **Owner addendum (Nov 23, mid-session, appended to the brief):** decision 2 targets a **2-hour heavy player**, not the grinder: set
+  `TOWN.se.n` 4 -> 8 if the regular stays within 5 points and the ladder guard holds; add the `heavy` profile (sessions `[[10,60],[19,60]]`,
+  the town ladder `ladderOf(120)`, citadel `[[0,0],[10,1],[32,3],[90,6],[208,9]]`, gear `[[0,0],[17,1],[95,2]]`) to fortress-model.mjs and
+  selenite-candidates.mjs; update the tests that pin 4; report the grinder; Session 8's paid-fortress target uses the same 2-hour play
+  time (final report). **Done:** the heavy profile (fortress-model.mjs PROFILES.heavy; economy-model.mjs exports ladderOf), the
+  candidates tool measures base / A / B4 / B8 / B12 for the regular, heavy, grinder and payer: **8 shipped** (heavy 88.1% late, the
+  regular within 3.6 points; table under decision 2).
+- **Working tree after slice 3 (not yet committed):** the welcome-back card at the top of the hub (townui.js `welcome`, one call in
+  hub.js, css), SUGGEST A RING moved to the floating action row in WALLS (never scrolled away), the coach texts naming it, the coach pill
+  shown when the first-visit tour ends (plotview.js, a pre-existing gap), the browser test's stricter reach (inside the scroller, never
+  under a fixed bar).
+- **Slice 4 (this commit):** TOWN.se.n = 8, the heavy profile, the UI fixes above, conquest-town-proposals.py PASS at all 5 sizes.
+- **Next:** the fortress test (running); the full CI list; RESOURCE_ECONOMY §16; two reviewers; release.
 
 ### Owner decisions (Nov 23) as recorded
 1. **Kept as shipped, owner-adopted:** the THREAT -> raid level table (cap 9) and the 60% chance at each eligible tick
    (`ConquestTown.TOWN.level`, `TOWN.chance`; RESOURCE_ECONOMY.md §16.1). Not PROPOSALS any more.
+2. **Selenite for the late fortress.** Both candidates measured (dev/tools/selenite-candidates.mjs: the fortress model's real income,
+   builder and raid engine, 8 raids a site and day = 56 a day so one raid is 1.8 points, two seed sets; and the economy model):
+   - **A, Strike Resonance every 8 strikes:** the grinder's late hold rate (days 300/330/365) 85.1% against 85.7% today (0 and -1.2
+     points on the two sets): no gain, the Selenite (+16%) is too little to change a wall blend; the regular moves up to 7.1 points
+     (day 120): fails the 5-point rule. Economy model: the regular's Selenite plate set 24 days sooner (day 182 -> 158), the grinder's
+     not at all (38): it would speed casual pilots, not the late fortress.
+   - **B, a Selenite drop on a town defense held in person:** first measured flat (every held defense: the grinder 88.7-89.9% late but
+     the regular +7 to +13 points at day 120, and new pilots would get Selenite from their first teaching raid at day 3), then **gated to
+     the cap level (9)**, which only the Citadel's last tier brings (the grinder from about day 135, the regular from about day 320):
+     4 Selenite: the grinder 89.9% late (88.1 / 91.7) from 85.7%, the regular within 3.6 points at every day. The lead's design change
+     (gate to the cap): Selenite stays a late-fortress reward and the regular is protected; recorded in townwar.js TOWN.se.
+   - Modelled in fortress-model.mjs: a day's Selenite = the attacks the pilot's sessions can meet in person (the real town clock, 24
+     pilot seeds: the regular reaches 47% of its raids in person, the grinder all; about 1.36 raids a day from CC6) x the share of raids
+     at the cap (raidSet) x the in-person hold rate at the cap (a bot pilot beside the Platoon and garrison on the profile's towns without
+     this Selenite: the grinder 76-86%, the regular 67-71%) x n; half reaches the town (the other half to plating), as every mineral.
+   - Dormant until 7B: the town clock passes 0 Citadel tiers today (every town attack is level 1-4), so no raid reaches the cap yet;
+     worker settle() takes the tiers as a parameter (`cit`, 0 until 7B).
+   - **Owner addendum (Nov 23): the target is the 2-hour heavy player; shipped n = 8** (`TOWN.se.n`), measured with the heavy profile
+     (dev/tools/selenite-candidates.mjs on the final code, reproducing the owner's planning-chat numbers exactly):
+
+     | Candidate | Heavy (2 h) late, days 300/330/365 | Grinder (4 h) late | Regular: largest change at any day |
+     |---|---|---|---|
+     | 7T economy | 77.1% (75.0 / 79.2) | 85.7% (84.5 / 86.9) | 0 |
+     | A: Resonance every 8 | 80.4% (78.0 / 82.7) | 85.1% | 7.1 points (fails) |
+     | B: 4 Selenite at the cap | 81.3% (81.0 / 81.5) | 89.9% | 3.6 points |
+     | **B: 8 Selenite at the cap (shipped)** | **88.1% (85.7 / 90.5)** | **94.1%** | **3.6 points** |
+     | B: 12 Selenite at the cap | 87.8% (86.9 / 88.7) | 97.0% | 1.8 points |
+
+     With 8: the heavy player by day (set 1 / set 2) 60: 73 / 66, 180: 95 / 95, 300: 82 / 88, 330: 86 / 89, 365: 89 / 95; the paying pilot
+     (the grinder's play time) 84 / 75 at day 180 and 95 / 91 at day 330; Selenite a year: regular 199 (61 before), heavy 1,208 (122),
+     grinder 1,808 (206), payer 1,693; wall strength at day 365 (1 = fully built): heavy 0.67, grinder 0.80, payer 0.78, so nobody is
+     fully built inside the year (Moonheart stays the cap lever, earn-only). The regular's extra Selenite arrives after about day 320, so
+     its Selenite plate set (the economy model's day 182) does not move. The town-ladder guard holds: the drop is dormant until the
+     Citadel passes its tiers (the clock's raids are level 1-4 today; conquest-ladder-check runs without town attacks). Tests changed for
+     this decided rule: conquest-town-selenite (pins 8), conquest-fortress (e) (pins 8, the heavy player's check, the grinder reported;
+     the regular's 5-point guard unchanged).
+3. **The first-ring coach step** (js/conquest/plotview.js guideStep step 4 of 7/8, before CC4): `ConquestTown.ringOf` (closed when the
+   raid's gathering cells cannot reach the Command Center or a vital without crossing a wall; buildings never close a ring; a damaged wall
+   counts), the red marker where the town is open (3D holo and 2D), and **SUGGEST A RING** (`ConquestTown.ringPlan`, the lead's UX
+   addition): one tap drafts the closing order, an inner ring and (when the composite allows) an outer one, the ICE BASIN shore sealed
+   (walls cannot stand on ice: the 7T fortress plan's shore rule); the pilot confirms it like any draft. Why the double ring (measured on
+   21-pilot panels with fortress-model ladderRun): a ring hugging today's buildings left later buildings outside (27,000-56,000 CP of
+   REPAIR), a single roomy ring was still breached in 12 of 16 raids (about 20,000 CP), moving vitals into a small ring was worse
+   (49,000-102,000 CP); an inner ring of radius ~9 plus an outer one of ~13 about 200-1,400 CP.
+   **Re-measured (dev/tools/coach-ring-repairs.mjs, 101 pilots, the 7T guard method: 60 min a day, the real reducers, every raid decided
+   unfought, REPAIR paid when damaged; the no-raid baseline keeps the war running and holds town attacks off with a shield):**
+   CRATER RIM undefended (7T's builder) CC10 median 59.8 (+108%), mean 61.7 (+126%), REPAIR 109,413 CP in 40.2 repairs (7T: ~111,000 in 42);
+   **coached: REPAIR 650 CP in 3 repairs, CC10 median 19.8, mean 22.5, the ring closed before CC4 in 101/101**; seven sites undefended
+   167,855 CP (CC10 +101% / +191%), **coached 1,392 CP (CC10 median 25.8, mean 24.3), 101/101 closed before CC4**. A pilot who draws one ring
+   by hand: CRATER 195 CP, seven sites 23,934 CP (ICE BASIN's lake, hence SUGGEST A RING's sealed shore). Repairs are no longer heavy:
+   **no repair-price PROPOSAL is needed** (model-only price factors on a hand-drawn ring: x0.5 386 CP, x0.25 589 CP, no CC10 gain).
+   **Finding -> PROPOSAL:** a walled town holds its raids, and each held unfought raid pays 7T's defense cache (160 CP + 15 alloy + 10
+   biomass + 2 He-3), so the coached regular reaches CC10 sooner than with no town attacks (CRATER median 19.8 / mean 22.5 against
+   28.8 / 27.3; 57 of 101 pilots in the greedy builder's fast CC10 mode, under 24 days, against 15 of 101). Model-only cache factors:
+   x0.5 CC10 median 24.8 / mean 23.7 (48 fast), x0 26.8 / 24.8 (34 fast). Owner's call (7T decision 5): unchanged here.
+4. **Welcome-back kits** (townwar.js STREAK.welcome, worker streakSync, townui.js): back after 14 or more UTC days with no verified
+   activity (days between the last active day and today: day - last - 1 >= 14), the day-1 Repair Kit and the day-3 Scanner Charge again,
+   on that return's streak days 1 and 3, each re-armed once a return (only kits this pilot was given are re-armed; the next re-grant
+   needs another 14 days away); never points, minerals or CP; an owner dev record never gets them. The hub: a WELCOME BACK, PILOT card
+   first (what came back, what day 3 brings) and the streak line says WELCOME BACK. No farm: one day every 15 days for a year gives 25
+   Repair Kits and no Scanner Charge, while a daily pilot's kill caches drop about one consumable a day (LOOT mob 4%, elite 8%).

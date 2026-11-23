@@ -27,7 +27,7 @@ const ring=(p,r)=>{const [i,j]=centre(p);return {k:'ring',a:[i,j],b:[i+r,j],o:0,
  const town=(cc=1)=>{const p=P.newPlot('ridge',0);p.cc=cc;p.b.cc.l=cc;p.b.r1={t:'refinery',...P.autoPlace(p,'refinery'),l:1};p.b.t1={t:'cannon',...P.autoPlace(p,'cannon'),l:1};return p;},S={};
  let p=town();ok(G(p,S).id==='wall'&&G(p,S).k===3,'steps 1-3 as before: the first wall is step 3');
  draw(p,{k:'line',a:[30,30],b:[36,30],o:0,l:0});let g=G(p,S);ok(g.id==='ring'&&g.k===4&&g.n===7&&g.tab==='walls'&&/CLOSE YOUR WALL RING before CC4/.test(g.text)&&g.gap,'a wall that does not close the town: STEP 4 OF 7, CLOSE YOUR WALL RING (WALLS glows, the red marker)');
- ok(/LINE over the red marker/.test(g.here)&&/open WALLS/.test(g.short),'the map pill: "'+g.short+'", in WALLS: "'+g.here+'"');
+ ok(/SUGGEST A RING/.test(g.here)&&/open WALLS/.test(g.short)&&/SUGGEST A RING/.test(g.text),'the map pill: "'+g.short+'", in WALLS: "'+g.here+'" (the card names SUGGEST A RING too)');
  draw(p,ring(p,10));g=G(p,S);ok(g.id==='reactor'&&g.k===5,'the ring closed: the coach moves on (STEP 5: the Reactor inside your walls)');
  const out=structuredClone(p);out.b.re={t:'reactor',i:60,j:37,r:0,l:1};g=G(out,S);ok(g.id==='ring'&&/RING IN YOUR REACTOR/.test(g.text)&&g.gap,'a Reactor built outside the walls: the step comes back, RING IN YOUR REACTOR');
  const cc4=structuredClone(out);cc4.cc=4;cc4.b.cc.l=4;ok(G(cc4,S)?.id!=='ring','from CC4 the coach no longer asks (the step is for the first ring, before CC4)');

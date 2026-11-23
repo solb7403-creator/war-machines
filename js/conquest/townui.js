@@ -59,6 +59,12 @@ function rewardName(r){if(r.it)return r.n===0?(REWARD[r.it]||r.it.toUpperCase())
 function streakLine(card,s,o){const T=TN();if(!T)return;const now=o.now||Date.now(),day=Math.floor(now/864e5),L=T.streakLine(s?.stk,day),{el}=o;
  const line=el('small','cq-hub-streak'+(L.today?' cq-on':''),'🔥 '+L.text,card);line.title='A day counts when you win an operation or harvest. Two freeze days a week cover missed days. Rewards are consumables and earn-only cosmetics, never points. Back after 14 days away: the day-1 and day-3 kits again.';
  const nw=s?.stk?.nw;if(nw&&nw.d===day&&nw.r?.length)el('small','cq-hub-streak-new'+(nw.r.some(x=>x.wb)?' cq-welcome':''),(nw.r.some(x=>x.wb)?'WELCOME BACK · ':'')+'DAY '+nw.n+' · '+nw.r.map(rewardName).join(' · '),card);}   // Session 7T-P decision 4: a welcome-back kit says so
+// Session 7T-P decision 4: back after 14+ days away, the hub's first card says so on the days the welcome-back kits land (day 1 and day 3 of
+// the return), before the war and the town: the pilot sees what came back and what is next without scrolling
+function welcome(col,s,o){const T=TN();if(!T||!s?.stk)return;const now=o.now||Date.now(),day=Math.floor(now/864e5),nw=s.stk.nw;if(!nw||nw.d!==day||!(nw.wb||nw.r?.some(x=>x.wb)))return;const {el}=o;
+ const c=el('section','cq-hub-card cq-hub-welcome',null,col);el('h3','',nw.wb?'WELCOME BACK, PILOT':'WELCOME BACK · DAY '+nw.n,c);
+ const got=(nw.r||[]).filter(x=>x.wb);if(got.length)el('p','cq-hub-big',got.map(rewardName).join(' · '),c);
+ const L=T.streakLine(s.stk,day);el('small','',L.next&&L.welcome?'Play '+(L.next.d-L.n)+' more day'+(L.next.d-L.n===1?'':'s')+': DAY '+L.next.d+' brings '+(L.next.it==='scanner'?'a SCANNER CHARGE':'the next milestone')+'.':'Your streak is back on: two freeze days a week keep it safe.',c);}
 // ---- the 60-second last chance (decision 1): wherever the pilot is in Conquest -------------------------------------------------------
 let LC=null;
 function lastChance(panel,s,o){const T=TN(),now=Date.now();const e=T&&s?.tw?(s.tw.ev||[]).find(x=>x.lc&&x.lc>now&&!x.tr):null;
@@ -103,5 +109,5 @@ function alertSwitches(c,s,o){const A=AL();if(!A)return;const sw=s?.al?.sw||{},{
 let pending=null;try{const q=new URLSearchParams(root.location?.search||'');pending=q.get('town')||(q.get('beacon')==='1'?'beacon':null);}catch(_){}
 try{root.navigator?.serviceWorker?.addEventListener?.('message',e=>{const q=String(e.data?.q||'');if(!q)return;try{const u=new URLSearchParams(q);pending=u.get('town')||(u.get('beacon')==='1'?'beacon':pending);}catch(_){}});}catch(_){}
 const takeLink=()=>{const v=pending;pending=null;return v;};
-root.ConquestTownUI=Object.freeze({hubLines,beaconLine,streakLine,lastChance,replay,liveHud,gearPicker,alertSwitches,takeLink,unseen,t2,rewardName,get link(){return pending;}});
+root.ConquestTownUI=Object.freeze({hubLines,beaconLine,streakLine,welcome,lastChance,replay,liveHud,gearPicker,alertSwitches,takeLink,unseen,t2,rewardName,get link(){return pending;}});
 })(globalThis);

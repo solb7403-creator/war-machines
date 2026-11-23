@@ -33,13 +33,14 @@ const TOWN=Object.freeze({
  cache:Object.freeze({cp:160,alloy:15,biomass:10,helium:2}),
  // Session 7T-P decision 2 (owner, Nov 23): Selenite for the late fortress. A raid at the cap level (9) held in person (settled HELD and
  // really fought: the 675 defense points' own rule) drops n Selenite into the pilot's cargo (banked at the Refuge like every mineral).
- // The amount is the fortress model's (dev/tools/selenite-candidates.mjs): 4 brings the grinder to about 9 of 10 raids held late in the
- // year (89% and 91% on two seed sets, from 85% and 87%) while the regular's hold rates stay within 5 points of 7T's at every measured
- // day (the regular meets level 9 only from about day 320); the other candidate, Strike Resonance every 8 strikes, moved the grinder by
- // 0 and -1 points. Gated to the cap so Selenite stays a late-fortress reward (a drop on every held defense lifted the regular 7-13
- // points at day 120 and gave new pilots Selenite from their first raid). Raids reach level 9 once the Citadel (7B) passes its tiers
- // to the town clock (until then every town attack is level 1-4). Earn-only: never sold.
- se:Object.freeze({from:9,n:4}),
+ // The amount is the fortress model's (dev/tools/selenite-candidates.mjs, 56 raids a day on two seed sets). The owner's addendum (Nov 23)
+ // targets the 2-hour heavy player: 8 brings them to about 9 of 10 raids held late in the year (88.1%: 85.7 and 90.5, from 77.1; 4 gave
+ // 81.3, 12 gave 87.8) while the regular's hold rates stay within 3.6 points of 7T's at every measured day (the regular meets level 9
+ // only from about day 320); the grinder 94.1% (from 85.7). The other candidate, Strike Resonance every 8 strikes, moved the grinder by
+ // 0 and -1 points and the regular by 7. Gated to the cap so Selenite stays a late-fortress reward (a drop on every held defense lifted
+ // the regular 7-13 points at day 120 and gave new pilots Selenite from their first raid). Raids reach level 9 once the Citadel (7B)
+ // passes its tiers to the town clock (until then every town attack is level 1-4). Earn-only: never sold.
+ se:Object.freeze({from:9,n:8}),
  // THREAT -> raid level (index: THREAT rounded, 0..16). Calibrated by the fortress tests (decision 4): the regular's town holds about
  // 3 of 4 raids decided while away along the year; the level stops rising at CAP, where a fully built town holds every raid
  // without a breach even at the top strength (every Citadel tier, a five-star general, the portal open, the Grand Offensive surge)
