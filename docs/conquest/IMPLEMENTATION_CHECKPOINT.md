@@ -6813,6 +6813,10 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   at a challenging level; (c) regular hold rate over days 30/60/120/180/330 about 3/4 (band 0.65-0.9), share .7 ("building ahead")
   > .5 > .3 ("pushing the Citadel without building", or citadelX 1.5); (d) grinder late ~0.86, fully built never (Moonheart walls:
   ~0.05 Mh a day after plating -> decades), payer the same: PROPOSAL + ROADMAP row 8 requirement.
+  -> `dev/tests/conquest-fortress.mjs` WRITTEN and committed (a/b/c/d as above; writes docs/conquest/session7t/fortress-model.json);
+  its first run was started at the end of the context (output in the scratchpad, not kept): rerun it first; fix any dead upgrade it
+  reports in the game or the reference town (record why); then add it as its own job in .github/workflows/conquest-check.yml (like
+  the guardrails job: it is a long simulation).
 - `js/conquest/alerts.js` (ConquestAlerts: TYPES priority 1-8, `plan` with per-type switches, `remindWindow`, `message`) is WRITTEN
   but not yet bundled (add to worker/build-sim.mjs, export Alerts) nor wired: the cron (worker/src/conquest-alerts.js sendWarAlerts ->
   ConquestAlerts.plan + synthesized remind/beacon/yield events, ntf read for Telegram + the reminder text), conquest-war.js alertDoc
