@@ -6814,7 +6814,9 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   > .5 > .3 ("pushing the Citadel without building", or citadelX 1.5); (d) grinder late ~0.86, fully built never (Moonheart walls:
   ~0.05 Mh a day after plating -> decades), payer the same: PROPOSAL + ROADMAP row 8 requirement.
   -> `dev/tests/conquest-fortress.mjs` WRITTEN and committed (a/b/c/d as above; writes docs/conquest/session7t/fortress-model.json);
-  its first run was started at the end of the context (output in the scratchpad, not kept): rerun it first; fix any dead upgrade it
+  FIRST RUN: (a) FAILED 49/50: the fully built town breached once at level 9 on ICE BASIN, lane 0 (all other sites and lanes held).
+  Fix it first (hard rule): either improve the plan on ice (anti-air / placement for the frozen lakes) or set `TOWN.cap` 8 and
+  re-fit `TOWN.level`; then rerun (b)-(d). Rerun it first; fix any dead upgrade it
   reports in the game or the reference town (record why); then add it as its own job in .github/workflows/conquest-check.yml (like
   the guardrails job: it is a long simulation).
 - `js/conquest/alerts.js` (ConquestAlerts: TYPES priority 1-8, `plan` with per-type switches, `remindWindow`, `message`) is WRITTEN
