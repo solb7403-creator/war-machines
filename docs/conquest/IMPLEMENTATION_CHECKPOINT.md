@@ -6812,10 +6812,19 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
      web/sw.js (opens what the alert is about), css/conquest.css (7T block). Browser test dev/tests/conquest-town-ui.py (5 sizes;
      `--quick` = 2) on the test server's `town` scenario (dev/tests/conquest-server.mjs; `CQ_CLOCK_SHIFT`, test server only, places
      the run between two Meteor Strikes so the Beacon can be called).
-- **Next:** full run of every node and browser test named in the CI workflows + conquest-session6c.py + perf.py (run 3-4 at a time;
-  worker/build-sim.mjs now writes atomically, so parallel runs are safe); 2 reviewers (the brief's roles 1 and 2, read-only, not given
-  conclusions); fix; release per the brief (merge main first, dev/bump.sh, PR, CI, merge, verify /pvp/health + live version.json +
-  Pages, ROADMAP 7T/7-V/8, the release record here, the final report).
+- **Local test run at `f67e08d` (Nov 23):** all 130 node commands named in the CI workflows PASS (conquest-earned-defense needs
+  conquest-earned-journey first, as CI orders them); conquest-fortress 8/8; conquest-guardrails 67; conquest-session6c.py 5 sizes;
+  conquest-town-ui.py all flows at 5 sizes; conquest-hub-browser, conquest-plot-ui, conquest-war-browser, conquest-base-builder PASS.
+  conquest-desktop-keys.py FAILED once ("keyboard dead after 10 s" in the open world at 1440) while 3 browser suites and 2 reviewers
+  shared the CPU: rerun it alone; if it fails alone, compare with main `e2a7c64` before blaming 7T. perf.py: run with an idle CPU.
+- **Reviewers** (the brief's roles 1 and 2, read-only, given only the branch, head `f67e08d`, briefs and checkpoint) were started;
+  when their reports arrive: fix every BLOCKER, rerun what it touches, re-review (2 rounds at most).
+- **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>
+  (Session 7T Living Town)"; PR from `claude/festive-einstein-2nwwzo` to main with the body drafted from this checkpoint and the
+  `owner-rules-change` label (docs/owner-rules.json cpSites +1, the held raid's cache, owner decision 5); CI green (the new `fortress`
+  job takes ~12 min); merge; verify the Worker deploy (/pvp/health ok, live version.json = repo build) and GitHub Pages; then a docs
+  follow-up: ROADMAP row 7T -> RELEASED (PR, merge, build) and the release record at the end of this checkpoint; the final report
+  (frequencies, losses, hold rates at 3 points, every PROPOSAL, every open item: see "Open items and PROPOSALs" below).
 
 ### Session 2 design decisions (the lead's, with reasons and evidence; numbers the brief did not set are PROPOSALs)
 - **Ice Basin: shore walls first** (dev/tools/fortress-model.mjs `wallOrder`): walls cannot stand on ice, and the corner lake reaches
@@ -6857,6 +6866,33 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
 - **Live defense on the phone:** the town view drives the tank (its stick or WASD), streams the world-space stick and FIRE as 50 ms
   commands, draws the Worker's raiders from its states (interpolated), hides what fell, and pulls the tank toward the Worker's
   position; FIRE bottom right (hold; Space), LEAVE THE FIGHT; any other dialog closes when the fight starts; the town tour ends.
+
+### Open items and PROPOSALs (kept for the final report)
+- **How often towns are raided** (`dev/tests/conquest-away-raids.mjs`): CC1 never; CC2-5 at most 1 in any 24 hours (a CC3 town: 9 in
+  14 days); CC6+ at most 2 in 24 hours, 8 h apart (about 1.6 a day); none in a new town's first 3 days, while shielded or frozen.
+- **What a lost raid costs:** FALLEN 10% of the production store the Storage Depot does not protect + 5% of the composite stock (a CC3
+  town with 200 alloy and 300 composite: 13 alloy, 15 composite); BREACHED 5% of that exposed store (6 alloy + 3 biomass); HELD
+  nothing (and the defense cache, 160 CP + 15 alloy + 10 biomass + 2 He-3); then the damage to REPAIR and an 8-hour shield. Never
+  banked goods, the wallet, CP, points, plates, cosmetics or inventory.
+- PROPOSAL: the THREAT -> level table `[1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]` (cap 9).
+- PROPOSAL (session 1): a 60% chance at each eligible tick (the frequencies above).
+- PROPOSAL: the grinder's "about 9 of 10 late in the year" is not met (81% at day 330): the walls are the lever (the grinder's blend
+  quality ~0.56 of full after a year; Selenite and Moonheart are earn-only). Candidates to measure before choosing: Strike Resonance
+  every 8 strikes instead of 12 for Selenite, or a Selenite drop on a town defense held in person; no change made here.
+- PROPOSAL (Session 8 requirement, ROADMAP row 8): the paid fortress is not noticeably stronger: with the store levers as planned
+  the paying pilot is not fully built after a year (walls 0.58) and holds 71% late against the grinder's 81%. The store needs a lever
+  for the late fortress inside the rule that rare ore is earn-only.
+- PROPOSAL (ops before launch): the alert cron visits 100 schedules every 5 minutes (about 28,800 a day); with every Conquest pilot's
+  daily reminder now in it, 500,000 players need it every minute with a batch of about 200 (Workers Paid allows 1,000 outside calls
+  a run).
+- Open: until the Citadel ships (7B) the town clock passes 0 Citadel tiers (`infoOf`), so every town attack is THREAT 1-4 (levels
+  1-4): young towns get winnable raids, developed towns hold them easily until the Citadel raises them.
+- Open: a pilot who never opened Conquest still gets the daily reminder from the old run at 15:00-18:59 UTC (no time zone known).
+- Open: the fortress model's young towns build their first wall ring at radius 18 (too long to close early), so the measured early
+  hold rates are on the safe (pessimistic) side; a pilot who follows the coach closes a tight ring first.
+- Open (row 7-V): the replay draws the raiders and turret fire on the town as it stands now and not the garrison pilots; the live
+  defense draws the Worker's raiders between its answers (no turret shot effects, no ally tanks yet); the streak's emblems are glyphs
+  and its decorations stand-in ornaments.
 
 ### Research: the best comparable games (Nov 23, before building)
 What the leaders do with PvE attacks on your base, defending in person, garrisons, gear loadouts, alerts and streaks, and what
