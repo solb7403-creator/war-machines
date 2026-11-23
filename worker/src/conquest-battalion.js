@@ -10,7 +10,7 @@ const fail=m=>{throw Error('conquest: '+m);};
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v),int=v=>Math.max(0,Math.floor(Number(v)||0));
 const list=v=>Array.isArray(v)?v.filter(record):record(v)?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]).filter(record):[];
 const ids=v=>(Array.isArray(v)?v:record(v)?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]):[]).filter(x=>typeof x==='string');
-export const BAT_ACTIONS=['hangar-role','hangar-preset','hangar-arm','hangar-repair','hangar-recruit','hangar-livery'];
+export const BAT_ACTIONS=['hangar-role','hangar-preset','hangar-arm','hangar-repair','hangar-recruit','hangar-livery','hangar-gear'];
 const ROLES=['',...C.ROLE_ORDER];
 const kitOk=k=>record(k)&&record(k.w)&&record(k.c);
 const cleanKit=k=>{if(!kitOk(k))return null;const L=C.allyLoadout(k);return {w:{a:L.w.a,t:L.w.t,q:L.w.q,s:!!k.w.s&&L.w.t>=1},c:{c:L.c.c,t:L.c.t,q:L.c.q,s:!!k.c.s&&L.c.t>=1},...(k.mil?{mil:1}:{})};};
@@ -21,7 +21,7 @@ const cleanKit=k=>{if(!kitOk(k))return null;const L=C.allyLoadout(k);return {w:{
 // {e earned held, d the UTC day of the last earned chip, bs pack chips spent} · lv: the equipped livery · g: the account's owned
 // gear (AUTO-ARM's input, cached from the last account read) · own: the pilot's own weapon and chassis then (not spare)
 export function bat(s){const T=record(s.bat)?s.bat:(s.bat={});T.v=1;T.n=int(T.n);T.rn=int(T.rn);T.rd=int(T.rd);T.w=T.w?1:0;
- T.p=list(T.p).filter(p=>typeof p.id==='string'&&/^p\d{1,4}$/.test(p.id)).slice(0,BT.ROSTER_MAX).map(p=>({id:p.id,n:String(p.n||'').slice(0,32),cs:String(p.cs||'').slice(0,16),r:ROLES.includes(p.r)?p.r:'',xp:int(p.xp),rk:Math.max(1,Math.min(10,int(p.rk)||1)),k:int(p.k),h:p.h===.5?.5:1,kit:cleanKit(p.kit),at:int(p.at),src:String(p.src||'recruit').slice(0,12)}));
+ T.p=list(T.p).filter(p=>typeof p.id==='string'&&/^p\d{1,4}$/.test(p.id)).slice(0,BT.ROSTER_MAX).map(p=>({id:p.id,n:String(p.n||'').slice(0,32),cs:String(p.cs||'').slice(0,16),r:ROLES.includes(p.r)?p.r:'',xp:int(p.xp),rk:Math.max(1,Math.min(10,int(p.rk)||1)),k:int(p.k),h:p.h===.5?.5:1,kit:cleanKit(p.kit),at:int(p.at),src:String(p.src||'recruit').slice(0,12),...(record(p.pin)&&(typeof p.pin.w==='string'&&p.pin.w||typeof p.pin.c==='string'&&p.pin.c)?{pin:{w:typeof p.pin.w==='string'?p.pin.w.slice(0,24):'',c:typeof p.pin.c==='string'?p.pin.c.slice(0,24):''}}:{})}));   // Session 7T: pin, the pilot's own gear picks (decision 8)
  const have=new Set(T.p.map(p=>p.id));T.ps=Array.from({length:BT.PRESETS},(_,i)=>{const x=list(T.ps)[i]||{};return {f:BT.FORMATIONS.includes(x.f)?x.f:'wedge',ids:[...new Set(ids(x.ids).filter(id=>have.has(id)))].slice(0,9)};});
  T.pa=Math.max(0,Math.min(BT.PRESETS-1,int(T.pa)));
  T.rj=record(T.rj)&&typeof T.rj.id==='string'?{id:T.rj.id,at:int(T.rj.at),ms:int(T.rj.ms)||BT.RECRUIT.ms,left:Math.max(0,Number(T.rj.left)||0)}:null;
@@ -43,7 +43,14 @@ export function newPilot(s,src,now){const T=bat(s);if(T.p.length>=BT.ROSTER_MAX)
  const p={id:'p'+n,n:who.n,cs:who.cs,r:role,xp:0,rk:1,k:0,h:1,kit:null,at:now,src};T.p.push(p);arm(s);return p;}
 // AUTO-ARM over the whole roster with the cached account gear: the active preset's pilots first, then the rest (one item per tank)
 export function arm(s){const T=bat(s),pre=T.ps[T.pa]?.ids||[],order=[...pre.map(id=>T.p.find(p=>p.id===id)).filter(Boolean),...T.p.filter(p=>!pre.includes(p.id))];
- const kits=BT.autoArm(T.g,{w:T.own.w,c:T.own.c},order);for(const p of T.p)p.kit=cleanKit(kits[p.id]);return kits;}
+ const kits=BT.autoArm(T.g,{w:T.own.w,c:T.own.c},order,pins(T));for(const p of T.p)p.kit=cleanKit(kits[p.id]);return kits;}
+// Session 7T (owner decision 8): the pilots' own picks. Each pin names one of your spare owned items (the account record's gear, never
+// the phone's); one pilot per item, never an item on your own tank; a pin whose item is gone (sold, refunded, now on your tank) drops
+// and that slot goes back to AUTO-ARM.
+function pins(T){const free=BT.spare(T.g,{w:T.own.w,c:T.own.c}),taken=new Set(),out={};
+ for(const p of T.p){if(!p.pin)continue;const f={};for(const slot of ['w','c']){const k=p.pin[slot];if(!k)continue;const it=free[slot].find(x=>BT.keyOf(x)===k&&!taken.has(slot+k));if(it){f[slot]=it;taken.add(slot+k);}else p.pin[slot]='';}
+  if(!p.pin.w&&!p.pin.c)delete p.pin;if(f.w||f.c)out[p.id]=f;}
+ return out;}
 // The account's owned weapons and chassis (crate rolls and salvage multipliers), from the account record only. own: the loadout
 // the pilot fights with (its two items are not spare).
 export function gearOf(S,L){const g={w:[],c:[]};const add=(isW,k,t,s,q)=>(isW?g.w:g.c).push({k,t,s,q:Math.round(q*1000)/1000,m:Math.round((s?q:R.TIER_MULT[t]*q)*1000)/1000});
@@ -102,7 +109,15 @@ export function batAction(s,req,now,ctx={}){const T=bat(s),q=record(req.bat)?req
  if(req.action==='hangar-preset'){const i=int(q.i);if(i>=BT.PRESETS)fail('invalid preset');const have=new Set(T.p.map(p=>p.id)),list=Array.isArray(q.ids)?q.ids.filter(id=>typeof id==='string'&&have.has(id)):T.ps[i].ids;
   if(new Set(list).size!==list.length||list.length>9)fail('invalid force');const f=q.f===undefined?T.ps[i].f:q.f;if(!BT.FORMATIONS.includes(f))fail('invalid formation');if(f!==T.ps[i].f&&!rolesOpen(s))fail('formations open with Hangar level II');
   T.ps[i]={f,ids:list};T.pa=i;arm(s);s.notice={kind:'hangar-preset',i};return;}
- if(req.action==='hangar-arm'){if(ctx.gear){T.g=ctx.gear.g;T.own=ctx.gear.own;bat(s);}arm(s);s.notice={kind:'hangar-armed',n:T.p.length};return;}
+ if(req.action==='hangar-arm'){if(ctx.gear){T.g=ctx.gear.g;T.own=ctx.gear.own;bat(s);}for(const p of T.p)delete p.pin;arm(s);s.notice={kind:'hangar-armed',n:T.p.length};return;}   // AUTO-ARM, the one-tap option: every pilot on your best spare gear (your picks cleared)
+ // Session 7T (owner decision 8): pick a pilot's weapon and chassis from your spare owned items. bat: {pilot, w: item key | '' (AUTO),
+ // c: item key | '' (AUTO)} (a slot left out stays as it is). The gear is the account record's (ctx.gear, read on this action).
+ if(req.action==='hangar-gear'){if(ctx.gear){T.g=ctx.gear.g;T.own=ctx.gear.own;bat(s);}const p=T.p.find(x=>x.id===q.pilot);if(!p)fail('no such pilot');const free=BT.spare(T.g,{w:T.own.w,c:T.own.c}),want={};
+  for(const slot of ['w','c']){if(q[slot]===undefined)continue;if(typeof q[slot]!=='string'||q[slot].length>24)fail('invalid gear');if(q[slot]&&!free[slot].some(x=>BT.keyOf(x)===q[slot]))fail(slot==='w'?'that weapon is not one of your spare weapons (your own tank keeps its gun)':'that chassis is not one of your spare chassis (your own tank keeps its hull)');want[slot]=q[slot];}
+  if(!Object.keys(want).length)fail('pick a weapon or a chassis');const moved=[];
+  for(const [slot,k] of Object.entries(want)){if(k)for(const o of T.p)if(o!==p&&o.pin?.[slot]===k){o.pin[slot]='';moved.push(o.cs);if(!o.pin.w&&!o.pin.c)delete o.pin;}   // one pilot per item: it moves to this pilot
+   p.pin=p.pin||{w:'',c:''};p.pin[slot]=k;}
+  if(p.pin&&!p.pin.w&&!p.pin.c)delete p.pin;arm(s);s.notice={kind:'hangar-gear',pilot:p.id,kit:p.kit,...(moved.length?{moved}:{})};return;}
  if(req.action==='hangar-recruit'){if(hangarLevel(s)<1)fail('build a Hangar first (Command Center 2)');if(T.rj)fail('a recruit is already on the way');if(T.p.length>=BT.ROSTER_MAX)fail('the roster is full ('+BT.ROSTER_MAX+')');
   T.rn++;T.rj={id:'r'+T.rn,at:now,ms:BT.RECRUIT.ms,left:BT.RECRUIT.ms};s.notice={kind:'recruit-started',ms:BT.RECRUIT.ms};return;}
  if(req.action==='hangar-repair'){const hurt=T.p.filter(p=>p.h<1);if(!hurt.length)fail('every pilot is at full hull');if(!ctx.atRepair)fail('repair your pilots at the Refuge or your town');

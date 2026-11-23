@@ -11,6 +11,9 @@ import {trophyScore,trophySet} from './conquest-loot.js';
 import {orderEvent} from './conquest-orders.js';
 import {track} from './conquest-analytics.js';
 import {tick as researchTick} from './conquest-research.js';
+import {townClock} from './conquest-town.js';
+// Session 7T decision 11: a return-streak banner emblem, once its day was reached (never sold)
+const streakEmblem=(s,e)=>typeof e==='string'&&!!CONQUEST.Town.STREAK_ART.emblems[e]&&CONQUEST.Town.streakNorm(s.stk).best>=Number(e.slice(6));   // kept for good once reached (review B4: never revoked by a reset)
 const P=CONQUEST.Plot,DAY=86400000;
 export const PLOT_ACTIONS=['plot-site','plot-build','plot-upgrade','plot-move','plot-remove','plot-wall','plot-collect','plot-drill','plot-banner','plot-theme','plot-feed','plot-research','plot-repair','plot-layout','plot-name'];
 // Which plot actions may run from the MAP (remote command): upgrades spend already-banked goods, as before Session 5.
@@ -33,6 +36,7 @@ export function plotSync(s,now){const b=s.base;if(!b?.tier&&!s.plot)return null;
  if(p.theme&&typeof p.theme==='object')p.theme.decor=Array.isArray(p.theme.decor)?p.theme.decor:Object.values(p.theme.decor||{});   // Firebase drops an empty list
  if(!p.b.cc)p.b.cc={t:'cc',...(P.autoPlace(p,'cc')||{i:37,j:37,r:0}),l:p.cc|0};
  if(p.job?.t==='repair'&&p.job.ready<=now)researchTick(s,p.job.ready);   // Session 6B: a ruined Science Lab pauses research until the repair crews finish, not until the next request
+ townClock(s,now);   // Session 7T: town attacks land first, each on the town as it stood at its landing (worker/src/conquest-town.js)
  const done=P.settle(p,now);if(done)s.notice={kind:'plot-built',type:done.t,level:done.l};
  for(const k of Object.keys(p.dmg))if(!P.maxHpOf(p,k)||!(Number(p.dmg[k])>0))delete p.dmg[k];   // damage of a structure that no longer exists
  P.accrue(p,now);b.tier=P.tierOf(p.cc);b.modules=P.modulesOf(p);p.power=P.power(p)+trophyScore(s);p.def=P.defenseRating(p);   // Session 6: +15 Town Score per trophy type held
@@ -97,7 +101,7 @@ export function plotAction(s,r,now,ctx={}){const p=s.plot;if(!p)fail('build your
   p.drillAt=now;p.log=[{at:now,seed,threat:R.threat,outcome:R.outcome,kills:R.kills,spawned:R.spawned,lost:R.lost,core:R.core,time:R.time,power:p.power,walls:R.wallsLost,homes:R.homesLost,vitals:R.vitals,breaches:R.breaches.length,...(ext?{ext}:{})},...p.log].slice(0,8);P.alert(p,{at:now,kind:'drill',by:'drill crews',outcome:R.outcome,changed:ext?1:0});if(R.outcome!=='breached')orderEvent(s,'drill');   /* a held drill advances a War Order (the order pays once; the drill itself still pays nothing) */s.notice={kind:'plot-drill',...p.log[0]};return;}
  // Session 5C: the town's name (cosmetic; on the HOME card, visits, the hub and the share card). Validated here, never trusted from the phone.
  if(r.action==='plot-name'){only(['n']);if(typeof a.n!=='string'||a.n.length>64)fail('invalid town name');const t=P.townName(a.n);if(t.err)fail(t.err);if(t.name&&nameBlocked(t.name))fail('that name is not allowed: please pick another');if(t.name)p.nm=t.name;else delete p.nm;s.notice={kind:'plot-name',n:t.name};return;}
- if(r.action==='plot-banner'){only(['shape','colors','emblem']);if(!['shield','pennant','square','chevron'].includes(a.shape)||!Array.isArray(a.colors)||a.colors.length!==2||!a.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c))||!(['moon','tank','star','skull','gear','wing','bolt','crown'].includes(a.emblem)||a.emblem==='hive'&&trophySet(s)))fail(a.emblem==='hive'?'the Hive emblem needs the full Trophy Hall set':'invalid banner');   // 'hive': earn-only (Session 6)
+ if(r.action==='plot-banner'){only(['shape','colors','emblem']);if(!['shield','pennant','square','chevron'].includes(a.shape)||!Array.isArray(a.colors)||a.colors.length!==2||!a.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c))||!(['moon','tank','star','skull','gear','wing','bolt','crown'].includes(a.emblem)||a.emblem==='hive'&&trophySet(s)||streakEmblem(s,a.emblem)))fail(a.emblem==='hive'?'the Hive emblem needs the full Trophy Hall set':/^streak/.test(String(a.emblem))?'that emblem is earned on the return streak':'invalid banner');   // 'hive': earn-only (Session 6); 'streak<day>': earn-only (Session 7T decision 11)
   p.banner={shape:a.shape,colors:a.colors.map(c=>c.toLowerCase()),emblem:a.emblem};s.notice={kind:'plot-banner'};return;}
  if(r.action==='plot-theme'){only(['light','finish','decor']);if(!['cyan','amber','violet','green','red'].includes(a.light)||!['steel','sand','graphite'].includes(a.finish)||!Array.isArray(a.decor)||a.decor.length>6||!a.decor.every(d=>['flags','lamps','crates','antenna','plants','statue'].includes(d)))fail('invalid theme');
   p.theme={light:a.light,finish:a.finish,decor:[...new Set(a.decor)]};s.notice={kind:'plot-theme'};return;}

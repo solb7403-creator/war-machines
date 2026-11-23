@@ -17,8 +17,8 @@ const T=R.LOOT,row=(src,key,val)=>T[src].rows.find(r=>r[key]===val||key==='item'
 assert.deepEqual(T.mob.rows,[{p:.12,mn:'fe'},{p:.03,mn:'il'},{p:.04,item:1},{p:.005,frag:'c'}]);
 assert.deepEqual(T.elite.rows,[{p:.25,mn:'il'},{p:.06,mn:'ar'},{p:.08,item:1},{p:.03,part:1},{p:.01,frag:'u'}]);assert.equal(T.elite.pity.part,20);
 assert.deepEqual(T.commander.rows,[{p:.12,part:1},{p:.10,trophy:1},{p:.05,frag:'r'}]);assert.deepEqual(T.commander.ring,{4:[{p:.08,mn:'tq'}]});assert.equal(T.commander.pity.trophy,10);
-assert.deepEqual(T.chest,{always:{item:1},rows:[{p:.08,frag:'r'}]});assert.deepEqual(T.strike.rows,[{p:.15,part:1},{p:.10,frag:'r'}]);
-assert.deepEqual(T.defense.rows,[{p:.06,item:2},{p:.04,frag:'u'}]);assert.deepEqual(T.order,{daily:{item:1},third:{frag:'u'},weekly:{mn:{ar:1},frag:'r'}});
+assert.deepEqual(T.chest,{always:{item:1},rows:[{p:.08,frag:'r'}]});assert.deepEqual(T.strike.rows,[{p:.15,part:1},{p:.10,frag:'r'},{p:.03,ward:1}]);   // Session 7T owner decision 2: the Peace Ward (24 h town shield) as rare loot: these two rows only
+assert.deepEqual(T.defense.rows,[{p:.06,item:2},{p:.04,frag:'u'},{p:.05,ward:1}]);assert.deepEqual(T.order,{daily:{item:1},third:{frag:'u'},weekly:{mn:{ar:1},frag:'r'}});
 assert.equal(T.titan,null,'Hive Titan rows are 7B');assert.deepEqual(R.CQ_TROPHY_RESERVED,['hive-titan']);assert(!R.CQ_TROPHY['hive-titan']);
 assert.equal(R.CQ_ITEM_MAX,10);assert.equal(R.CQ_PART_MAX,50);assert.equal(R.CQ_FRAG.need,10);assert.equal(R.CQ_TROPHY_SCORE,15);
 assert.equal(R.CQ_ITEMS.repair.heal,.4);assert.equal(R.CQ_ITEMS.repair.healS,6);assert.equal(R.CQ_ITEMS.repair.cdMs,60000);assert.equal(R.CQ_ITEMS.decoy.radius,120);assert.equal(R.CQ_ITEMS.decoy.s,8);assert.equal(R.CQ_ITEMS.scanner.extra,100);
@@ -31,7 +31,7 @@ const storeIds=new Set([...PL.STORE.items.map(i=>i.id),...CAT.items.filter(i=>!i
 for(const id of lootIds)assert(!storeIds.has(id),'loot id '+id+' is also a store / catalog / Arcade id');
 assert(PL.STORE.checkout===false,'base store checkout stays disabled');
 for(const id of Object.values(CAT.pools).flat()){const i=CAT.byId[id];assert(i.earnOnly&&i.proposedUsd===null&&i.pool,'fragment piece '+id+' is earn-only, never priced');}
-const ALLOWED=new Set(['p','mn','item','part','frag','trophy']);
+const ALLOWED=new Set(['p','mn','item','part','frag','trophy','ward']);   // Session 7T owner decision 2: 'ward', the Peace Ward (a 24-hour town shield consumable, never points or currency)
 for(const [src,t] of Object.entries(T)){if(!t)continue;for(const r of [...(t.rows||[]),...Object.values(t.ring||{}).flat()]){for(const k of Object.keys(r))assert(ALLOWED.has(k),src+' row pays '+k+' (no points, no currency)');assert(!r.mn||R.MINERALS[r.mn],src);assert((r.item|0)<=2,src+' pays at most 2 consumables');}
  assert(!JSON.stringify(t).match(/pts|points|cp"|stars|ton|usd/i),src+' never pays points or currency');}
 assert(Object.values(T.order.weekly.mn).every(n=>n<=1),'never crate-sized minerals (store crates are 150 Ferrite / 60 Ilmenite)');

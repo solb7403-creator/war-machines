@@ -5,6 +5,7 @@ const freeze=o=>{Object.freeze(o);Object.values(o).forEach(v=>{if(v&&typeof v===
 const checkout=freeze({enabled:false,blocker:'COMMERCE NOT YET AVAILABLE: Stars/TON/SOL Conquest SKU pricing, authenticated receipts, replay, refunds and cross-device entitlement delivery have not received end-to-end certification. No live purchase or acceleration is enabled.'});
 const item=(id,name,slot,design,color,accent,earn,earnText,proposedUsd)=>({id,name,slot,design,color,accent,earn,earnText,proposedUsd,priceStatus:'Illustrative USD concept only; no live price or checkout',permanent:true,preview:true,competitive:false});
 const POOL_NAME={c:'COMMON',u:'UNCOMMON',r:'RARE',e:'EPIC'};
+const streakItem=(id,name,slot,design,color,accent,days)=>({id,name,slot,design,color,accent,earn:{streak:days},earnText:'A '+days+'-day return streak',earnOnly:true,proposedUsd:null,priceStatus:'Earn-only: never sold',permanent:true,preview:true,competitive:false});
 const frag=(id,name,slot,design,color,accent,pool)=>({id,name,slot,design,color,accent,earn:{frag:pool},earnText:'Ten '+POOL_NAME[pool].toLowerCase()+' blueprint fragments (loot drops)',pool,earnOnly:true,proposedUsd:null,priceStatus:'Earn-only: never sold',permanent:true,preview:true,competitive:false});
 const items=freeze([
  item('base-bastion','Bastion Ramparts','base',0,0x283b4b,0xd2aa55,{base:1},'Build Command Base I',7.99),
@@ -36,11 +37,15 @@ const items=freeze([
  frag('frag-r-ember','Ember Muzzle Halo','trail',0,0x7a2f22,0xff6a3d,'r'),frag('frag-r-tide','Tidal Wake Vanes','trail',1,0x1f4d5c,0x3df2ff,'r'),
  frag('frag-r-aurora','Aurora Convergence','trail',2,0x2f4a3a,0x9dff9a,'r'),frag('frag-r-solar','Solar Coil Rings','trail',3,0x6a4a1a,0xffd23d,'r'),frag('frag-r-void','Void Comet Fins','trail',4,0x231d3a,0xb06bff,'r'),
  frag('frag-e-dawn','Dawnline Ramparts','base',0,0x3a3038,0xffb070,'e'),frag('frag-e-glacier','Glacier Gantries','base',1,0x2b4656,0xbaf3ff,'e'),
- frag('frag-e-nebula','Nebula Cathedral','base',2,0x3c2c52,0xf08cff,'e'),frag('frag-e-titanbone','Titan-Bone Crown','base',3,0x4a463c,0xe8e0c8,'e'),frag('frag-e-umbra','Umbra Monolith','base',4,0x1e1f2a,0xffd36e,'e')
+ frag('frag-e-nebula','Nebula Cathedral','base',2,0x3c2c52,0xf08cff,'e'),frag('frag-e-titanbone','Titan-Bone Crown','base',3,0x4a463c,0xe8e0c8,'e'),frag('frag-e-umbra','Umbra Monolith','base',4,0x1e1f2a,0xffd36e,'e'),
+ // Session 7T decision 11: the return streak's town decorations (days 30, 100, 365). EARN-ONLY, never priced or sold; until row 7-V
+ // draws their own art they stand in as existing town ornament designs (ConquestTown.STREAK_ART.decor names them)
+ streakItem('streak-beacon30','Day-30 Signal Beacon','base',1,0x24384a,0x7fe8ff,30),streakItem('streak-monument100','Day-100 Monument','base',2,0x3a3446,0xffd36e,100),
+ streakItem('streak-monolith365','Day-365 Monolith','base',4,0x14161f,0xfff1b8,365)
 ]);
 const byId=freeze(Object.fromEntries(items.map(i=>[i.id,i]))),slots=freeze(['base','trail','armor','commander']),pools=freeze(Object.fromEntries(['c','u','r','e'].map(p=>[p,items.filter(i=>i.pool===p).map(i=>i.id)])));
 function eligible(i,s){if(typeof i==='string')i=byId[i];if(!i||!s||i.pool)return false;   // fragment pieces are granted by the Worker's fragment rule only
- const e=i.earn,r=s.raidProgress||{};return Object.entries(e).every(([k,n])=>({base:s.base?.tier||0,clears:r.clears||0,blueprint:r.blueprint?1:0,eliteBlueprint:r.eliteBlueprint?1:0,reputation:s.reputation||0,defenses:s.base?.defense?.wins||0,campaign:s.campaignScore||0}[k]||0)>=n);}
+ const e=i.earn,r=s.raidProgress||{};return Object.entries(e).every(([k,n])=>({base:s.base?.tier||0,clears:r.clears||0,blueprint:r.blueprint?1:0,eliteBlueprint:r.eliteBlueprint?1:0,reputation:s.reputation||0,defenses:s.base?.defense?.wins||0,campaign:s.campaignScore||0,streak:s.stk?.best|0}[k]||0)>=n);}
 function state(s){const c=s?.cosmetics||{},owned=c.owned||{},equipped=c.equipped||{};return {owned,equipped,available:items.filter(i=>owned[i.id]||eligible(i,s)),checkout};}
 function build(T,id,options={}){
  const i=typeof id==='string'?byId[id]:id;if(!i||!byId[i.id])throw Error('unknown Conquest cosmetic');const g=new T.Group(),segments=options.low?6:12;

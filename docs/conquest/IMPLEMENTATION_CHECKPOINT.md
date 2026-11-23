@@ -6779,3 +6779,264 @@ riseofkingdoms.fandom.com Lost Kingdom.
     conquest-airdrop-browser at the COLLECT YIELD notice; the loot test also timed out once in CI (320x568, the 90 s session
     wait). Worth hardening in a later session (a test changes only where a decision changes its rule).
 12. **PROPOSALs 1-6 above** wait for the owner.
+
+## Checkpoint 47 — Session 7T: Living Town (branch `claude/living-town-raid-defense-j6n8ea`, from main `e2a7c64`; continued on `claude/festive-einstein-2nwwzo`, fast-forwarded to its head `9fd784e`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first; it governs everything.
+- Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`, head `af852a8`); Checkpoint 46 is
+  Session 7 (released); this is Checkpoint 47. Work continues on **`claude/festive-einstein-2nwwzo`** (the session's branch; it was
+  fast-forwarded onto `claude/living-town-raid-defense-j6n8ea` head `9fd784e`, so every earlier 7T commit is in it).
+- **Done, tested, pushed (session 1):** raid.js (the resumable engine), townwar.js (pace, strength, losses, Beacon and streak rules),
+  worker/src/conquest-town.js (the clock, unfought raids, the last chance, the live defense, the Peace Ward), the garrison, the gear
+  picker action (`hangar-gear`), the fortress model. Tests: conquest-raid-engine, conquest-away-raids (43), conquest-live-defense
+  (19), conquest-gear (16).
+- **Done in session 2 (this continuation), each with tests:**
+  1. **The fortress passes (a)-(d)** (`dev/tests/conquest-fortress.mjs`, its own CI job `fortress`, ~12 min, 8 checks): see "Session 2
+     design decisions" below for the ice shore walls, the town-attack routing rule, the separate wave stream, the (b) measurement and
+     the THREAT -> level refit `[1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]` (cap 9).
+  2. **Alerts unified (decision 9)**, commit `ecaa71c`: js/conquest/alerts.js bundled (CONQUEST.Alerts); worker/src/conquest-alerts.js
+     sends every notification of a Conquest pilot in one budget (synthesizes the reminder, Beacon, yield and Meteor events); the request
+     side (conquest-war.js alertDoc) adds the town's attacks and the raids forecast to breach it (the real town clock run forward on a
+     copy, conquest-town.js townAlerts); per-type switches `s.al.sw`; `ntf/<pid>/u=1` makes worker/src/index.js sendReminders leave the
+     pilot to the alert cron. Test: conquest-alerts-unified.mjs (40); conquest-war-alerts.mjs unchanged (46 pass).
+  3. **Strike Beacon (decision 10) and the streak (decision 11)**, commit `cb7ac0a`: action `strike-beacon` (TOWN_ACTIONS, no town
+     needed), start-mission accepts the called slot (conquest-sim.js), `streakSync` after every action (a UTC day counts when
+     `s.airdrop.act` is that day: an operation won or a harvest), streak emblems on the town banner (conquest-plot.js), three earn-only
+     town decorations in the catalog (catalog.js `streak-*`, stand-in ornament designs). Tests: conquest-beacon.mjs (15),
+     conquest-streak.mjs (40); conquest-cosmetics / conquest-flagship-ui counts include the 3 earn-only decorations (decision 11).
+  4. **UI**, commit `cf34eee`: js/conquest/townui.js (hub town lines, Beacon card, streak line, 60 s last chance, replay,
+     live HUD, gear picker, alert switches, deep links), hooks in hub.js, app.js (townAct / townLive / townTick / townReplay /
+     townBeacon, afterEnter modes, strikeOpenFor and the strike line with the Beacon), plotview.js (liveStep, setLive, playResult;
+     small additive edits), hangar.js (GEAR button), warmap.js (switches), index.html + web/boot.js (raid, townwar, alerts, townui),
+     web/sw.js (opens what the alert is about), css/conquest.css (7T block). Browser test dev/tests/conquest-town-ui.py (5 sizes;
+     `--quick` = 2) on the test server's `town` scenario (dev/tests/conquest-server.mjs; `CQ_CLOCK_SHIFT`, test server only, places
+     the run between two Meteor Strikes so the Beacon can be called).
+- **Local test run at `f67e08d` (Nov 23):** all 130 node commands named in the CI workflows PASS (conquest-earned-defense needs
+  conquest-earned-journey first, as CI orders them); conquest-fortress 8/8; conquest-guardrails 67; conquest-session6c.py 5 sizes;
+  conquest-town-ui.py all flows at 5 sizes; conquest-hub-browser, conquest-plot-ui, conquest-war-browser, conquest-base-builder PASS.
+  conquest-desktop-keys.py FAILED once ("keyboard dead after 10 s" in the open world at 1440) while 3 browser suites and 2 reviewers
+  shared the CPU: rerun it alone; if it fails alone, compare with main `e2a7c64` before blaming 7T. perf.py: run with an idle CPU.
+- **Reviewers** (round 1 at `f67e08d`). PR #150 (draft, label `owner-rules-change`). **Reviewer 1 BLOCKERS (being fixed):**
+  B1 the replay plays under the drill's text (plotview.js ~334): show REPLAY · RAIDED WHILE AWAY · LEVEL n; B2 a held, fought defense
+  can pay 0 points (conquest-town.js settle pays only when the live picture is used): pay 675 when the settled result is HELD and the
+  pilot really fought; B3 the pilot starts inside its own walls, so the "fought" bar is unreachable for a built town (0/80): let the
+  pilot's tank pass its own walls (raid.js tank blocking + the town drive's block map while live); B4 streak emblems revoked on a reset
+  and not listed in the banner editor: key emblems to `best` (conquest-plot.js streakEmblem) and list earned ones (plotview.js ~579);
+  B5 the first raid is almost always lost: the first attack on a town is a teaching raid (1-star general, level 1), report days 3-4
+  with a PROPOSAL; B6 the record said "breach = a building fell": the code is a vital or 3 buildings (raid.js outcomeOf); correct it
+  and report the cap's leftover damage (7/50 raids lose a building, CC 92%, ~387 CP of repair a raid). Non-blocking to fold in: hub
+  copy (War Map shows no town attacks), alerts card copy (OFF also stops the reminder), Beacon alert only for pilots who played in 7
+  days, an alert's DEFEND link opens the town instead of starting the fight, the Peace Ward refusal text, gear AUTO label, "+0 KIT".
+  **All six fixed in `710f113`** (with the non-blocking ones listed; tests: live-defense +3, away-raids +2, streak +1; quick
+  browser pass green, the live defense now ends HELD).
+  **Reviewer 2 (at `f67e08d`) BLOCKERS:** R2-B1 a raid landing while it is fought is settled unfought by the clock
+  (townwar.js step lands `tr` events; liveEnd then finds no event): the landing must wait for the fight (landing(): 'wait' while
+  `s.td` fights it) + a test crossing the landing tick; R2-B2 a streak reset clears `got`, so day 1/3 consumables re-grant (3 on / 4
+  off farms 16 in 8 weeks): milestones once per pilot. Notes to fold in: townwar.js advance's frozen GO skip `break` (later events
+  shift 8 of 9 ticks); the cron can send at 22:01 local (re-check night at send time); the replay/live seeds are a 32-bit hash of the
+  loot seed (brute-forceable: use a separate server-only town seed `s.twsd`, stripped from publicState); the alert doc's town
+  forecast costs 30-400 ms a rebuild (skip rebuilds during an operation or a live fight); record the conquest-loot.mjs edit
+  (decision 2's Peace Ward rows). **All fixed in `ee5616a`** (the notes too; tests: live-defense +2 crossing the landing tick,
+  streak +1 no farming; away-raids' seed check reads the town seed `s.twsd`, cold, stripped from publicState). The conquest-loot.mjs
+  edit, recorded (decision 2 changed its rule): the strike table gains `{p:.03,ward:1}`, the defense table `{p:.05,ward:1}`, and
+  `ward` joins the allowed row keys (the 24-hour town shield; never points or currency). Local after the fixes: live-defense,
+  away-raids, alerts-unified, war-alerts, beacon, streak, raid-engine, gear, owner-rules, wtest/conquest, conquest-town, analytics
+  PASS; conquest-fortress 8/8 (CI's `fortress` job passed at `710f113` too).
+  **CI (WebKit runs only there):** `transmission (webkit)` failed at `26c4070` (conquest-flagship-browser.py raid-battery-1, the
+  pilot's tank destroyed at 64 s) but passed at `2405729` on the same code (only docs differ between the two): an environmental
+  flake while 5 runs shared the runners. `signup-browsers (webkit)` failed at `710f113` (the main game's garage: the Cores section
+  did not open within 30 s at android-360, phone-390 passed); it passed at `2405729`, `7cd3bc5` and `26c4070`, and `710f113`
+  changed Conquest files only. The runs of superseded commits were cancelled to free the runners; the head's run decides.
+  Build stamped `20261123061357` (`74f2df2`, main still `e2a7c64`); CI there: 12 of 13 green (both WebKit jobs included).
+- **Round 2 at `74f2df2`.** Reviewer 2: R2-B1 and R2-B2 PASS, decisions 1-11 PASS, no new blocker. Notes: a fight the pilot lost
+  while the unfought replay held is credited "by you" and paid (the better of the two: showing up never hurts); streak days synced
+  only after actions; no last chance inside an operation; the 5% CC-timeline guard not measured; `twsd` is 32 bits (brute-forced, it
+  now reveals only the town's own schedule). Reviewer 1: B1, B2, B4, B6 PASS; B5 PASS but the day 3-4 numbers were missing; **B3
+  FAIL**: the Worker's start, south of the Command Center, is boxed in by the Biodome at its default spot (0 m in every direction on
+  all 7 sites' day-30 model towns, 0/14 fights "fought"); **a new blocker**: after a reset the hub's streak line names milestones
+  already given. Notes: a welcome-back re-grant, held raids missing from the War Report, the alerts card copy, a Grand Offensive
+  target before the teaching raid.
+- **Fixed after round 2** (each with a test that fails without it): B3: raid.js starts the pilot on the nearest open spot (a free
+  3x3 patch, your own walls passing, opening onto at least 60 such cells; the asked spot when it is open), the same on the Worker
+  and in the phone's prediction (Biodome + Shield at their default spots: the tank drives 71 m in 5 s, 0 m before; reviewer 1's
+  stuck-real repro now moves 7-65 m in 10 s on ridge, crater and ash; its live2 repro: 16-21 of 21 fights fought, day 4 held 12/21
+  with the pilot against 3/21 unfought); the streak line skips milestones already given; streak days also sync on the command path
+  (an operation won or a harvest through the world's commands counts that day with no action after it); the Grand Offensive targets a
+  town only once its first raid has landed (the teaching raid comes first: conquest-away-raids' Grand Offensive block gains a
+  never-raided check and gives its town one landed raid first, changed for this rule); the War Report lists the town's raids since it
+  was read and a fresh one opens it (decision 9: a held raid appears only there and on the hub card; node check in
+  conquest-away-raids; the test server's town scenario marks the report read, so that browser flow is unchanged); the alerts card
+  says the one budget covers everything and its switch reads TURN ALERTS ON / OFF. Local: the 15 affected node suites,
+  conquest-regression.sh and conquest-war-browser.py PASS.
+- **The 5% guard (the Nov 10 brief), measured:** conquest-ladder-check's method reproduced in a scratch script (the audit's regular, 60
+  minutes a day, real reducers, the pilot seen at every request so the town clock runs, never defending) on its 101-pilot panel:
+  production shares only (damage cleared free) against no raids: CC5 unchanged; CC10 median 28.8 against 28.8 (0%), mean 28.15
+  against 27.28 (+3.2%): **holds**. (74 of 101 pilots flip between the greedy builder's fast and slow CC10 modes, both ways, -11 to
+  +10 days; the audit's single regular lands 2 days early on the held raids' caches.) With the damage and REPAIR paid by this
+  undefended builder (6 turrets, no walls: 95% of its raids lost): CC10 median +97%, mean +134% (21 pilots): a PROPOSAL below.
+- **Review B5's day 3-4 numbers:** the regular's young town (CC3) holds level-1 raids 18% (day 3) and 50% (day 4) unfought in the
+  fortress model (pessimistic: its first ring is not closed); reviewer 1's repro: day 3 9/40 unfought and 20/40 in person, day 4
+  26/40 and 28/40.
+- **Round 3 at `ad74522`** (reviewer 1, narrow: allowed because B3 was clearly broken): **B3 PASS** (from the tank's real start, 10 s
+  of stick: 4-128 m on ridge, crater, ash, ice and delta towns, the short ones a straight stick into a building; 0 m in every
+  direction before; bot defenses in the regular's CC10 towns: 11 of 14 fights "fought" at days 30 and 60, was 0 of 14; building the
+  raid machine 9-12 ms with or without the start search); **streak line PASS**; no regression; D6 and D11 PASS. With round 2's
+  reviewer 2 verdicts, **every decision 1-11 is PASS in both scopes.** Notes: the phone's tank jumped up to ~33 m to the Worker's
+  start when a fight began (fixed after round 3: the phone builds the same machine from the same snapshot, `s.tdp`, and starts the
+  tank there; plotview.js liveStep, one additive line); a returning pilot now sees the War Report for the town's raids since the last
+  read, held ones included (the lead keeps it: once a session, one tap, and decision 9 puts held raids there).
+- **CI at `f962e70`:** 12 of 13 green (both WebKit jobs, fortress, guardrails, balance, owner-rules included); the `conquest` job hit
+  its 55-minute limit inside the last test of its portrait journey: every earlier browser test passed and conquest-town-ui.py had
+  passed 4 of its 5 sizes (the live defense held at each) when it was stopped, so the desktop keyboard journey never ran. Cause: this
+  session added the town screens (about 10 minutes in CI) to that job. Fixed in the workflow (no test changed): the town screens are
+  a job of their own (`town-ui`, 30 minutes), and the conquest job's limit is 65 minutes for headroom.
+- **Next: CI on the head, then the release** (main still `e2a7c64`; the build stamp `20261123061357` was made before these fixes
+  and is kept: nothing was deployed in between).
+- **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>
+  (Session 7T Living Town)"; PR from `claude/festive-einstein-2nwwzo` to main with the body drafted from this checkpoint and the
+  `owner-rules-change` label (docs/owner-rules.json cpSites +1, the held raid's cache, owner decision 5); CI green (the new `fortress`
+  job takes ~12 min); merge; verify the Worker deploy (/pvp/health ok, live version.json = repo build) and GitHub Pages; then a docs
+  follow-up: ROADMAP row 7T -> RELEASED (PR, merge, build) and the release record at the end of this checkpoint; the final report
+  (frequencies, losses, hold rates at 3 points, every PROPOSAL, every open item: see "Open items and PROPOSALs" below).
+
+### Session 2 design decisions (the lead's, with reasons and evidence; numbers the brief did not set are PROPOSALs)
+- **Ice Basin: shore walls first** (dev/tools/fortress-model.mjs `wallOrder`): walls cannot stand on ice, and the corner lake reaches
+  through every wall ring, so the plan's walls first seal it (every buildable cell inside the rings within 4 cells of a lake that
+  crosses them), then the square rings. The fully built ice town breached 4 of 32 raids at level 9 without it (3 turrets by the lake
+  gap); 3 cells deep: 0 of 32 but fragile; 4 deep: 0 of 32 with no building lost. Every profile builds the same plan. The full town
+  now really places 3,000 cells (ring cells on ice were silently skipped: 2,736 before).
+- **Town attacks: raiders read the layout, never the levels** (js/conquest/raid.js): every turret is weighed as fully upgraded (level
+  V range and damage) in the raiders' path cost. Weighed at its own level (the drill's rule), an upgrade pushed raiders onto a weaker
+  side: Laser Cannons III->IV made the reference town hold 78 -> 64 of 250 paired raids (t = 7.3), Cannon IV->V likewise (t = 4.9).
+  Weighed at the town's average level, raising any type re-scaled every gun against the walls and still moved the breach (MG IV->V
+  worse, t = 3.2). Level V for all: every turret step of all 11 types improves the town (t -1.8 to -11.6). A maxed town is weighed as
+  before, so the ceiling keeps its meaning. **The Defense Drill keeps 5B's rule** (`opt.own`): 5B's balance tests sit on knife edges
+  of the exact routing (the CC10 rare town at threat 10 lost its Command Center in one drill under the average rule) and may not be
+  loosened; the drill stays a practice raid, not a promise.
+- **Town attacks: the waves draw from their own random stream** (raid.js `rs`): the drill's one stream let a turret's salvo scatter
+  reshuffle every later spawn (a butterfly effect that made upgrade comparisons noise). Saved and restored with the live state.
+- **(b) is measured as the player feels it:** paired raids (the same seeds before and after), per raid loss = 1 a breach (2 a fall) +
+  each building's share of HP lost; walls destroyed counted apart (absolute HP and the REPAIR bill both rise with the upgraded item's
+  own HP and price). The reference town carries Reactors at their cap (no step runs short of power) and a realistic wall belt (8
+  segments, ~1,000 cells; the two rings it had made wall blends noise). A step passes when it never adds to the loss and holds more,
+  cuts the loss or loses fewer walls; an inconclusive step is measured again with 8, then 16 seeds a lane. 85 steps, all pass.
+- **THREAT -> level refit (PROPOSAL):** `[1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]`, the cap 9 from THREAT 15. Two findings: (1) every THREAT
+  from 12 was level 9, so late in the year closing the portal or the Grand Offensive surge changed nothing; now a late raid with the
+  portal shut is level 8; (2) the year calibration started at day 30, but the first raids land from day 3: before any Citadel tier
+  THREAT is 1-4 (stars 1-2, the portal, the surge), which mapped to levels 5-6, and a regular's young town (CC3-7, 7-17 turrets)
+  holds 0-14% of those (it holds 79-93% at level 2 from day 5): new pilots would have lost almost every raid for two weeks. Now THREAT
+  1-4 is level 1-4. Until the Citadel ships (7B) every pilot's THREAT is 1-4 (`infoOf` passes 0 tiers), so town attacks stay at
+  levels 1-4 for everyone until then. Regular along the year (dev/tests/conquest-fortress.mjs (c), from the first raids): day 5 62%,
+  8 67%, 14 86%, 30 100%, 60 86%, 120 71%, 180 100%, 330 62% (mean 79%); building ahead holds more (90/95/100% at days 60/120/180),
+  pushing the Citadel without building holds fewer (24/71/43%).
+- **(d) the grinder's "about 9 of 10 late"** is measured and reported (the owner's words: "measured and reported"): 81% at day 330 at
+  the top strength (75% at level 9 alone); the asserted property is that more play builds a stronger town at the same strength. The
+  walls are the lever (the grinder's blend quality ~0.5 at day 330; rare ore is earn-only): a PROPOSAL in the final report.
+- **Alerts:** master switch off sends nothing (the reminder too); `/stop` silences Telegram only; the first town attack announced
+  makes the game's alerts live (`s.al.ask = 1`, as Session 7 did at the first war battle); a window that opens at night is met at
+  08:00 sharp (the planner jumps to the morning instead of stepping past it); the doc is rewritten when the town changes (its forecast
+  meets the town as built).
+- **Live defense on the phone:** the town view drives the tank (its stick or WASD), streams the world-space stick and FIRE as 50 ms
+  commands, draws the Worker's raiders from its states (interpolated), hides what fell, and pulls the tank toward the Worker's
+  position; FIRE bottom right (hold; Space), LEAVE THE FIGHT; any other dialog closes when the fight starts; the town tour ends.
+
+### Open items and PROPOSALs (kept for the final report)
+- **How often towns are raided** (`dev/tests/conquest-away-raids.mjs`): CC1 never; CC2-5 at most 1 in any 24 hours (a CC3 town: 9 in
+  14 days); CC6+ at most 2 in 24 hours, 8 h apart (about 1.6 a day); none in a new town's first 3 days, while shielded or frozen.
+- **What a lost raid costs:** FALLEN 10% of the production store the Storage Depot does not protect + 5% of the composite stock (a CC3
+  town with 200 alloy and 300 composite: 13 alloy, 15 composite); BREACHED 5% of that exposed store (6 alloy + 3 biomass); HELD
+  nothing (and the defense cache, 160 CP + 15 alloy + 10 biomass + 2 He-3); then the damage to REPAIR and an 8-hour shield. Never
+  banked goods, the wallet, CP, points, plates, cosmetics or inventory.
+- PROPOSAL: the THREAT -> level table `[1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]` (cap 9).
+- PROPOSAL (session 1): a 60% chance at each eligible tick (the frequencies above).
+- PROPOSAL: the grinder's "about 9 of 10 late in the year" is not met (81% at day 330): the walls are the lever (the grinder's blend
+  quality ~0.56 of full after a year; Selenite and Moonheart are earn-only). Candidates to measure before choosing: Strike Resonance
+  every 8 strikes instead of 12 for Selenite, or a Selenite drop on a town defense held in person; no change made here.
+- PROPOSAL (Session 8 requirement, ROADMAP row 8): the paid fortress is not noticeably stronger: with the store levers as planned
+  the paying pilot is not fully built after a year (walls 0.58) and holds 71% late against the grinder's 81%. The store needs a lever
+  for the late fortress inside the rule that rare ore is earn-only.
+- PROPOSAL (ops before launch): the alert cron visits 100 schedules every 5 minutes (about 28,800 a day); with every Conquest pilot's
+  daily reminder now in it, 500,000 players need it every minute with a batch of about 200 (Workers Paid allows 1,000 outside calls
+  a run).
+- PROPOSAL: REPAIR is the heavy cost of a lost raid, not the shares: an undefended builder pays about 111,000 CP of REPAIR in 42
+  repairs on the way to CC10, which then takes twice as long (the guard measurement above). Candidates, for the owner: town-raid
+  damage repaired at a lower price, or a coach step that closes a first wall ring before CC4. With defenses (the fortress model's
+  regular) a lost raid's REPAIR is 377 CP + 30 alloy + 13 composite at day 5 (about 6% of a day's CP), 1,711 CP + 158 alloy + 23
+  composite at day 120 (24%) and 4,656 CP + 385 alloy + 27 composite at day 330 (65%).
+- PROPOSAL (reviewer 1, round 2): a welcome-back re-grant of the day-1 and day-3 kits after 14 or more days away (milestones are given
+  once per pilot since R2-B2, so a returning pilot otherwise waits for the next milestone past their best).
+- Open: no last chance inside an operation (the attack was announced 12 h ahead; a pilot mid-fight elsewhere is not taken out of it:
+  the lead's decision); a fight the pilot lost while the unfought replay held is credited "by you" and paid (the better of the two).
+- Open: `twsd` is 32 bits: brute-forced from a replay seed it reveals only the town's own future schedule and raid seeds, never loot.
+- Measured for the final report: the fully built town holds 21 of 21 raids at days 60, 180 and 330 against the regular's raids
+  (levels 5-9) and the grinder's (levels 8-9).
+- Open: the ceiling (a) is "no breach", not "no damage": at the cap the fully built town holds 50 of 50 raids, yet 7 of 50 still
+  wreck one building (never a vital, never 3), its Command Center never below 92%, about 527 CP-equivalent of REPAIR a raid (CP + 3
+  a unit of alloy + 2 a unit of composite; `docs/conquest/session7t/fortress-model.json` ceiling.lostAny / minCore / bill).
+- Open: (b) has no significance bar on the size of a gain: a step passes when its mean loss over the paired raids never rises and
+  it holds more, cuts the loss or loses fewer walls; the weakest steps pass by small margins (Flame Turret I->II: loss -0.010 over
+  200 raids, no extra hold; the garrison's Moonbeam roll -0.017; Flame III->IV -0.042). The no-harm side is strict.
+- Open: until the Citadel ships (7B) the town clock passes 0 Citadel tiers (`infoOf`), so every town attack is THREAT 1-4 (levels
+  1-4): young towns get winnable raids, developed towns hold them easily until the Citadel raises them.
+- Open: a pilot who never opened Conquest still gets the daily reminder from the old run at 15:00-18:59 UTC (no time zone known).
+- Open: the fortress model's young towns build their first wall ring at radius 18 (too long to close early), so the measured early
+  hold rates are on the safe (pessimistic) side; a pilot who follows the coach closes a tight ring first.
+- Open (row 7-V): the replay draws the raiders and turret fire on the town as it stands now and not the garrison pilots; the live
+  defense draws the Worker's raiders between its answers (no turret shot effects, no ally tanks yet); the streak's emblems are glyphs
+  and its decorations stand-in ornaments.
+
+### Research: the best comparable games (Nov 23, before building)
+What the leaders do with PvE attacks on your base, defending in person, garrisons, gear loadouts, alerts and streaks, and what
+Session 7T takes from each (public wikis, developer notes and guides found by web search; no internal data):
+1. **Whiteout Survival, Crazy Joe** (bandit waves on every member's city; some waves only hit players who are online; points for
+   defending your city and for reinforcing): scheduled, announced PvE waves on your own town are a proven daily pull; being
+   online at the right moment pays more. Taken: every town attack is announced 12 h ahead and lands on the war clock; online at
+   landing gives the 60-second RAID INCOMING · DEFEND? last chance; only a defense fought in person pays airdrop points.
+2. **Last War: Survival, Zombie Siege** (20 escalating waves on alliance bases; you set your wall and defenders beforehand;
+   rewards by waves survived): the base layout and the defenders you leave behind decide the unfought result. Taken: the real
+   raid engine runs against your actual layout and garrison while you are away; the replay shows exactly why it held or broke.
+3. **Boom Beach, Lt. Hammerman's attacks and the Activity Log** (NPC attacks on your base; rewards claimed from the log;
+   replays of attacks made while you slept): Taken: "RAIDED while away · HELD / BREACHED · REPLAY · REPAIR ALL" on the hub, a
+   replay of the stored seed, held raids in the War Report with their cache.
+4. **Clash of Clans: Clan Castle defenders, shields, defense log** (donated troops leave the castle when attackers come close;
+   a shield after a loss; every attack replayable): Taken: the garrison (your reserve pilots, one slot per Hangar level) fights
+   in every raid; an 8-hour shield after a loss and an earnable 24-hour Peace Ward (rare loot, never sold); a capped, bounded
+   loss (CoC loot caps) so a breach stings but never wipes progress.
+5. **XCOM 2 loadouts** (each item is one physical object worn by one soldier; strip a soldier to rearm another): Taken: the
+   Hangar gear picker gives each pilot one of your spare weapons and chassis, one pilot per item, never what your own tank
+   wears, with the item's stats and the pilot's resulting stats before you confirm; AUTO-ARM stays as the one-tap default.
+6. **Duolingo streaks** (Streak Freeze, up to two equipped; a 7-day streak makes a learner 2.4x as likely to return the next
+   day; the Weekend Amulet kept streaks over weekends so people came back on Monday): Taken: the soft return streak with two
+   freeze days a week (a missed day never resets it), milestone rewards at 1/3/7/30 days, then a new earn-only banner emblem
+   every 30 days to day 360 and special town decorations on days 100 and 365 (cosmetic, never points or minerals).
+7. **Push practice** (OneSignal, Pushwoosh, Airship, Meta's game guidelines: cap per player, honor quiet hours, send on a real
+   event rather than a schedule, the most urgent message wins the cap): Taken: one budget for every notification the game sends
+   (3 a day, none at local night, batched), ordered by urgency: a defendable town attack first, the daily reminder last.
+
+Sources: mobi.gg and bluestacks.com Crazy Joe guides; ldshop.gg and lastwartutorial.com Zombie Siege guides; boombeach.fandom.com
+(Defending, Lt. Hammerman), en.wikipedia.org Boom Beach; supercell.com CoC release notes (Oct 2025 ranked update), clasher.us
+Clan Castle, sportskeeda.com and lootbar.gg on revenge and replays; pcgamer.com and gamingbolt.com on XCOM 2 loadouts;
+blog.duolingo.com (how the streak builds habit, improving the streak), lennysnewsletter.com Duolingo streaks; onesignal.com,
+pushwoosh.com, airship.com 2026 benchmarks, developers.facebook.com game notification best practices.
+
+### Design (the lead's decisions, with reasons; numbers the brief did not set are PROPOSALs in the final report)
+- **One raid engine, resumable:** `js/conquest/raid.js` (ConquestRaid) is a line-for-line port of plot.js `drillGen` into a
+  stepped, serializable state, so the live defense can run on the Worker request by request at the world's 50 ms step. A test
+  proves it gives exactly `drill()`'s result (outcome, damage, frames, events) with no garrison and no pilot. plot.js keeps the
+  Defense Drill unchanged (5E-2d2 owns that file; the drill pays nothing and stays the town's practice tool).
+- **Direction varies, composition never does** (blueprint §5 "Composition and direction vary; the warning never does"): each
+  attack's seed picks a main lane that takes half the spawns; the waves are `drillWaves(level)` exactly (owner decision 3).
+- **Strength:** THREAT = `ConquestWar.threatOf` on the town (the general's stars, the portal while open, Citadel tiers, the
+  Grand Offensive surge); the raid level 1-10 comes from one table calibrated by the fortress tests and capped at the ceiling
+  (decision 4a). The general who attacks the town is picked by the Citadel tiers cleared (1-2 stars before any tier; 5 stars only
+  after tier IX: the Sovereign's Hand retaliating), never by Command Center level, gear or purchases.
+- **Outcomes:** FALLEN (the Command Center destroyed: 10% of the exposed production store and 5% of the composite stock),
+  BREACHED (any building lost, the Command Center standing: 5% of the exposed production store), HELD (only walls and settler
+  homes damaged: nothing taken). Corrected in session 2 (review B6): BREACHED is a vital lost or 3+ buildings wrecked (turrets
+  count; walls and homes never; raid.js `outcomeOf`), and the ceiling test uses exactly that rule; the fortress test reports what a
+  fully built town still loses at the cap (raids losing any building, the lowest Command Center hull, the REPAIR bill).
+- **Pace:** town attacks land on war ticks, announced two ticks (12 h) ahead; from CC2; a rolling 24-hour window holds at most
+  1 (CC2-5) or 2 (CC6+); at least 8 h apart; none landing in a new town's first 3 days, while a shield is up or while the front
+  is frozen (announced attacks keep their time left, as the war's events do); the Grand Offensive's town target lands at the
+  window's end (Monday 00:00 UTC) and that slot is held back for it. PROPOSAL: a 60% chance at each eligible tick.
