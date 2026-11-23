@@ -6786,7 +6786,59 @@ riseofkingdoms.fandom.com Lost Kingdom.
 If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first; it governs everything.
 - Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`, head `af852a8`); Checkpoint 46 is
   Session 7 (released); this is Checkpoint 47.
-- **Done:** brief saved word for word (first slice).
-- **Next:** read the listed sources (war.js clock/threatOf/alertPlan/stationed, conquest-alerts.js + the daily-reminder cron,
-  plot.js drill/drillWaves/applyRaidDamage, plotview/townkit damage states, conquest-plot.js, battalion/hangar + AUTO-ARM,
-  economy-model regular/grinder), research the comparable games, then build in new files.
+- **Done:** brief saved word for word (first slice); sources read; research and the design below recorded.
+- **Next:** slice 1, the resumable raid engine `js/conquest/raid.js` (a port of plot.js drillGen proven identical to `drill()`
+  by a test, plus garrison units, the live pilot and save/restore), then the town attack track.
+
+### Research: the best comparable games (Nov 23, before building)
+What the leaders do with PvE attacks on your base, defending in person, garrisons, gear loadouts, alerts and streaks, and what
+Session 7T takes from each (public wikis, developer notes and guides found by web search; no internal data):
+1. **Whiteout Survival, Crazy Joe** (bandit waves on every member's city; some waves only hit players who are online; points for
+   defending your city and for reinforcing): scheduled, announced PvE waves on your own town are a proven daily pull; being
+   online at the right moment pays more. Taken: every town attack is announced 12 h ahead and lands on the war clock; online at
+   landing gives the 60-second RAID INCOMING · DEFEND? last chance; only a defense fought in person pays airdrop points.
+2. **Last War: Survival, Zombie Siege** (20 escalating waves on alliance bases; you set your wall and defenders beforehand;
+   rewards by waves survived): the base layout and the defenders you leave behind decide the unfought result. Taken: the real
+   raid engine runs against your actual layout and garrison while you are away; the replay shows exactly why it held or broke.
+3. **Boom Beach, Lt. Hammerman's attacks and the Activity Log** (NPC attacks on your base; rewards claimed from the log;
+   replays of attacks made while you slept): Taken: "RAIDED while away · HELD / BREACHED · REPLAY · REPAIR ALL" on the hub, a
+   replay of the stored seed, held raids in the War Report with their cache.
+4. **Clash of Clans: Clan Castle defenders, shields, defense log** (donated troops leave the castle when attackers come close;
+   a shield after a loss; every attack replayable): Taken: the garrison (your reserve pilots, one slot per Hangar level) fights
+   in every raid; an 8-hour shield after a loss and an earnable 24-hour Peace Ward (rare loot, never sold); a capped, bounded
+   loss (CoC loot caps) so a breach stings but never wipes progress.
+5. **XCOM 2 loadouts** (each item is one physical object worn by one soldier; strip a soldier to rearm another): Taken: the
+   Hangar gear picker gives each pilot one of your spare weapons and chassis, one pilot per item, never what your own tank
+   wears, with the item's stats and the pilot's resulting stats before you confirm; AUTO-ARM stays as the one-tap default.
+6. **Duolingo streaks** (Streak Freeze, up to two equipped; a 7-day streak makes a learner 2.4x as likely to return the next
+   day; the Weekend Amulet kept streaks over weekends so people came back on Monday): Taken: the soft return streak with two
+   freeze days a week (a missed day never resets it), milestone rewards at 1/3/7/30 days, then a new earn-only banner emblem
+   every 30 days to day 360 and special town decorations on days 100 and 365 (cosmetic, never points or minerals).
+7. **Push practice** (OneSignal, Pushwoosh, Airship, Meta's game guidelines: cap per player, honor quiet hours, send on a real
+   event rather than a schedule, the most urgent message wins the cap): Taken: one budget for every notification the game sends
+   (3 a day, none at local night, batched), ordered by urgency: a defendable town attack first, the daily reminder last.
+
+Sources: mobi.gg and bluestacks.com Crazy Joe guides; ldshop.gg and lastwartutorial.com Zombie Siege guides; boombeach.fandom.com
+(Defending, Lt. Hammerman), en.wikipedia.org Boom Beach; supercell.com CoC release notes (Oct 2025 ranked update), clasher.us
+Clan Castle, sportskeeda.com and lootbar.gg on revenge and replays; pcgamer.com and gamingbolt.com on XCOM 2 loadouts;
+blog.duolingo.com (how the streak builds habit, improving the streak), lennysnewsletter.com Duolingo streaks; onesignal.com,
+pushwoosh.com, airship.com 2026 benchmarks, developers.facebook.com game notification best practices.
+
+### Design (the lead's decisions, with reasons; numbers the brief did not set are PROPOSALs in the final report)
+- **One raid engine, resumable:** `js/conquest/raid.js` (ConquestRaid) is a line-for-line port of plot.js `drillGen` into a
+  stepped, serializable state, so the live defense can run on the Worker request by request at the world's 50 ms step. A test
+  proves it gives exactly `drill()`'s result (outcome, damage, frames, events) with no garrison and no pilot. plot.js keeps the
+  Defense Drill unchanged (5E-2d2 owns that file; the drill pays nothing and stays the town's practice tool).
+- **Direction varies, composition never does** (blueprint §5 "Composition and direction vary; the warning never does"): each
+  attack's seed picks a main lane that takes half the spawns; the waves are `drillWaves(level)` exactly (owner decision 3).
+- **Strength:** THREAT = `ConquestWar.threatOf` on the town (the general's stars, the portal while open, Citadel tiers, the
+  Grand Offensive surge); the raid level 1-10 comes from one table calibrated by the fortress tests and capped at the ceiling
+  (decision 4a). The general who attacks the town is picked by the Citadel tiers cleared (1-2 stars before any tier; 5 stars only
+  after tier IX: the Sovereign's Hand retaliating), never by Command Center level, gear or purchases.
+- **Outcomes:** FALLEN (the Command Center destroyed: 10% of the exposed production store and 5% of the composite stock),
+  BREACHED (any building lost, the Command Center standing: 5% of the exposed production store), HELD (only walls and settler
+  homes damaged: nothing taken). "Breach" means a building fell; the ceiling test uses the same definition.
+- **Pace:** town attacks land on war ticks, announced two ticks (12 h) ahead; from CC2; a rolling 24-hour window holds at most
+  1 (CC2-5) or 2 (CC6+); at least 8 h apart; none landing in a new town's first 3 days, while a shield is up or while the front
+  is frozen (announced attacks keep their time left, as the war's events do); the Grand Offensive's town target lands at the
+  window's end (Monday 00:00 UTC) and that slot is held back for it. PROPOSAL: a 60% chance at each eligible tick.
