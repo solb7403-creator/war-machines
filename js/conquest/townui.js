@@ -61,7 +61,10 @@ function streakLine(card,s,o){const T=TN();if(!T)return;const now=o.now||Date.no
  const nw=s?.stk?.nw;if(nw&&nw.d===day&&nw.r?.length)el('small','cq-hub-streak-new'+(nw.r.some(x=>x.wb)?' cq-welcome':''),(nw.r.some(x=>x.wb)?'WELCOME BACK · ':'')+'DAY '+nw.n+' · '+nw.r.map(rewardName).join(' · '),card);}   // Session 7T-P decision 4: a welcome-back kit says so
 // Session 7T-P decision 4: back after 14+ days away, the hub's first card says so on the days the welcome-back kits land (day 1 and day 3 of
 // the return), before the war and the town: the pilot sees what came back and what is next without scrolling
-function welcome(col,s,o){const T=TN();if(!T||!s?.stk)return;const now=o.now||Date.now(),day=Math.floor(now/864e5),nw=s.stk.nw;if(!nw||nw.d!==day||!(nw.wb||nw.r?.some(x=>x.wb)))return;const {el}=o;
+function welcome(col,s,o){const T=TN();if(!T||!s?.stk)return;const now=o.now||Date.now(),day=Math.floor(now/864e5),nw=s.stk.nw,L0=T.streakLine(s.stk,day);const {el}=o;
+ // review B3: back after 14+ days and not yet played today: the card says what playing today brings back
+ if(L0.back){const c=el('section','cq-hub-card cq-hub-welcome',null,col);el('h3','',"WELCOME BACK, PILOT",c);el('p','cq-hub-big','YOUR KITS ARE BACK',c);el('small','','Win an operation or harvest today: your day-1 REPAIR KIT comes back (day 3: a SCANNER CHARGE).',c);return;}
+ if(!nw||nw.d!==day||!(nw.wb||nw.r?.some(x=>x.wb)))return;
  const c=el('section','cq-hub-card cq-hub-welcome',null,col);el('h3','',nw.wb?'WELCOME BACK, PILOT':'WELCOME BACK · DAY '+nw.n,c);
  const got=(nw.r||[]).filter(x=>x.wb);if(got.length)el('p','cq-hub-big',got.map(rewardName).join(' · '),c);
  const L=T.streakLine(s.stk,day);el('small','',L.next&&L.welcome?'Play '+(L.next.d-L.n)+' more day'+(L.next.d-L.n===1?'':'s')+': DAY '+L.next.d+' brings '+(L.next.it==='scanner'?'a SCANNER CHARGE':'the next milestone')+'.':'Your streak is back on: two freeze days a week keep it safe.',c);}
@@ -70,7 +73,7 @@ let LC=null;
 function lastChance(panel,s,o){const T=TN(),now=Date.now();const e=T&&s?.tw?(s.tw.ev||[]).find(x=>x.lc&&x.lc>now&&!x.tr):null;
  if(!e||s.td?.active||o.skip?.has(e.id)){if(LC){LC.d.remove();LC=null;}return;}
  const {el,button}=o;if(!LC||LC.id!==e.id){if(LC)LC.d.remove();const d=el('section','cq-dialog cq-town-lastchance',null,panel);d.setAttribute('role','alertdialog');d.setAttribute('aria-label','Raid incoming: defend your town?');
-  const G=genOf(e.g);el('p','cq-kicker','YOUR TOWN',d);el('h2','','RAID INCOMING · DEFEND?',d);const clock=el('p','cq-town-lc-clock','',d);el('p','',(G?G.name+' '+stars(G.stars)+' · ':'')+'the attack is landing now. Fight beside your turrets and garrison: the better of your fight and theirs counts.',d);
+  const G=genOf(e.g);let lv=0;try{lv=T.strength(s.war,e,{now,tiers:0}).level;}catch(_){}const se=T.seOf?.(lv)||0;el('p','cq-kicker','YOUR TOWN',d);el('h2','','RAID INCOMING · DEFEND?',d);const clock=el('p','cq-town-lc-clock','',d);el('p','',(G?G.name+' '+stars(G.stars)+' · ':'')+'the attack is landing now. Fight beside your turrets and garrison: the better of your fight and theirs counts.'+(se?' Hold it in person: +'+se+' SELENITE.':''),d);   // Session 7T-P (review note): the cap-level Selenite at the decision point
   const row=el('div','cq-town-btns',null,d);const go=button('DEFEND · ONE ATTEMPT',()=>{o.act?.('town-defend',{id:e.id});},'cq-town-defend');row.append(go);row.append(button('LET THE TOWN FIGHT',()=>{o.skip?.add(e.id);d.remove();LC=null;},'cq-town-skip'));
   LC={id:e.id,d,clock};try{go.focus({preventScroll:true});}catch(_){}}
  LC.clock.textContent=t2(e.lc-now)+' LEFT';}

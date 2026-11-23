@@ -29,7 +29,7 @@ export function town(s,now){s.tw=TN.norm(s.tw,now);return s.tw;}
 // the town's own server-only seed (review: the raid seeds a replay shows must reveal nothing of the loot seed s.lseed)
 function townSeed(s){if(!Number.isSafeInteger(s.twsd)||s.twsd<=0){const a=new Uint32Array(1);crypto.getRandomValues(a);s.twsd=a[0]||1;}return s.twsd;}
 const seedOf=s=>String(townSeed(s))+':town';
-const infoOf=(s,now)=>({cc:s.plot?.cc|0,townAt:Number(s.base?.builtAt)||Number(s.plot?.at)||0,shieldUntil:Number(s.plot?.shieldUntil)||0,war:s.war,tiers:0,seed:seedOf(s)});   // tiers: the Citadel arrives with 7B
+const infoOf=(s,now)=>({cc:s.plot?.cc|0,townAt:Number(s.base?.builtAt)||Number(s.plot?.at)||0,shieldUntil:Number(s.plot?.shieldUntil)||0,war:s.war,tiers:0,seed:seedOf(s)});   // tiers: the Citadel arrives with 7B (tiers I-III) and Session 11 (IV-IX); pass them here, to settle's cit, to the town-defend start and to townui.js's hub preview together
 // ---- the garrison (decision 7): the reserve pilots (not fielded, not stationed, not downed), strongest first, one a Hangar level ------
 export function garrisonOf(s){const T0=bat(s),slots=P.garrisonSlots(s.plot);if(!slots)return [];const fielded=BT.picked(T0,hangarLevel(s),'battalion').map(p=>p.id);
  return WR.reserves(T0.p,fielded,s.war).map(p=>({p,r:WR.rating(p)})).sort((a,b)=>b.r-a.r||a.p.id.localeCompare(b.p.id)).slice(0,Math.min(5,slots)).map(x=>x.p);}
@@ -70,7 +70,7 @@ function logOf(s,x){const tw=s.tw;tw.log=[...tw.log,x].slice(-T.log);}
 function snapOf(p){return {site:p.site,cc:p.cc|0,b:Object.fromEntries(Object.entries(p.b||{}).map(([id,b])=>[id,[b.t,b.i,b.j,b.r|0,b.l|0]])),w:P.encWalls(p.w),dmg:{...(p.dmg||{})}};}
 export const plotOfSnap=TN.plotOfSnap;   // shared with the phone's replay (js/conquest/townwar.js)
 // ---- settle a raid (unfought, or after a live fight: live = {R the pilot's fight, fought: the pilot really fought}) ----------------------
-// cit: the Citadel tiers cleared (0 until 7B passes them: every town attack is level 1-4 until then)
+// cit: the Citadel tiers cleared (0 until the Citadel passes them: every town attack is level 1-4 until then; the cap-level Selenite needs tiers VIII-IX)
 export function settle(s,e,at,live,cit=0){const p=s.plot,tw=s.tw;
  const job=P.settle(p,at);if(job)s.notice={kind:'plot-built',type:job.t,level:job.l};P.accrue(p,at);researchTick(s,at);
  const st=TN.strength(s.war,e,{now:at,tiers:Math.max(0,Math.min(9,cit|0)),titan:0}),lv=st.level,seed=u32(String(townSeed(s))+':town:'+e.id),gar=garrisonOf(s),units=unitsOf(gar),snap=snapOf(p);

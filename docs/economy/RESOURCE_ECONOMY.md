@@ -1092,9 +1092,10 @@ Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids
 - **Rule** (`TOWN.se`, `ConquestTown.seOf`): a town raid at the **cap level (9)** settled HELD with the pilot **really fighting** (the 675
   defense points' own rule) drops **8 Selenite** into the pilot's cargo (banked at the Refuge like every mineral). None below the cap,
   none for an unfought raid, none for a fight that did not hold. Selenite stays earn-only (never in the store).
-- **Dormant until the Citadel (7B):** the town clock passes 0 Citadel tiers today, so every town attack is level 1-4; the cap comes with
-  the Citadel's last tier (in the fortress model: the 2-hour heavy player from about day 208, the grinder from about day 135, the regular
-  from about day 320).
+- **Ships inert until the Citadel's tiers VIII-IX (Session 11):** the town clock passes 0 Citadel tiers today, so every town attack is
+  level 1-4; 7B's tiers I-III top out at level 8 (THREAT 8); the cap (THREAT 15) needs tiers VIII-IX (in the fortress model: the 2-hour
+  heavy player from about day 208, the grinder from about day 135, the regular from about day 320). The session that passes the tiers to
+  the town passes them in all four places (the Worker's town clock, its settle, the town-defend start, the hub's preview).
 - **Measured** (`dev/tools/selenite-candidates.mjs`, the fortress model's real income, builder and raid engine, 56 raids a day on two seed
   sets; `docs/conquest/session7tp/selenite-candidates.json`): late in the year (days 300, 330, 365) the 2-hour heavy player holds 88.1%
   (77.1% before; 4 Selenite gave 81.3%, 12 gave 87.8%), the grinder 94.1% (85.7%), and the regular's hold rates stay within 3.6 points at

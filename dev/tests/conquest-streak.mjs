@@ -64,6 +64,8 @@ const mon=Date.UTC(2026,10,23,12),dayOf=t=>Math.floor(t/D);   // Monday Nov 23
  const run=(st,days)=>{const got=[];let r;for(const d of days){r=TN.streakDay(st,d);st=r.st;got.push(...r.rewards.map(x=>({...x,day:d})));}return {st,got,r};};
  let a=run({},Array.from({length:7},(_,i)=>d0+i));ok(a.st.n===7&&a.st.got['1']&&a.st.got['3']&&a.st.got['7'],'a 7-day streak: every early milestone given');
  const last=d0+6,back=last+15;   // 14 full UTC days with no activity in between
+ {const L=TN.streakLine(a.st,back);ok(L.back&&L.welcome&&/STREAK 0 DAYS · PLAY TODAY · WELCOME BACK · DAY 1: REPAIR KIT/.test(L.text),'review B3: back after 14 days, before the first win or harvest, the line names the kit that comes back: '+L.text);
+  ok(!TN.streakLine(a.st,last+14).back,'13 days away: no pending welcome on the line');}
  let b=run(a.st,[back]);ok(b.r.back===1&&b.r.days===1&&b.got.length===1&&b.got[0].it==='repair'&&b.got[0].wb===1,'14 days away, then a verified day: WELCOME BACK, the day-1 Repair Kit again (streak day 1)');
  ok(TN.streakLine(b.st,back).welcome&&/STREAK 1 DAY · TODAY ✓ · WELCOME BACK · DAY 3: SCANNER CHARGE/.test(TN.streakLine(b.st,back).text),'the hub line on the return: '+TN.streakLine(b.st,back).text);
  let c=run(b.st,[back+1,back+2]);ok(c.got.length===1&&c.got[0].it==='scanner'&&c.got[0].wb===1&&c.got[0].day===back+2,'the return\'s third day: the day-3 Scanner Charge again');

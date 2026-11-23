@@ -38,8 +38,9 @@ const TOWN=Object.freeze({
  // 81.3, 12 gave 87.8) while the regular's hold rates stay within 3.6 points of 7T's at every measured day (the regular meets level 9
  // only from about day 320); the grinder 94.1% (from 85.7). The other candidate, Strike Resonance every 8 strikes, moved the grinder by
  // 0 and -1 points and the regular by 7. Gated to the cap so Selenite stays a late-fortress reward (a drop on every held defense lifted
- // the regular 7-13 points at day 120 and gave new pilots Selenite from their first raid). Raids reach level 9 once the Citadel (7B)
- // passes its tiers to the town clock (until then every town attack is level 1-4). Earn-only: never sold.
+ // the regular 7-13 points at day 120 and gave new pilots Selenite from their first raid). Ships inert: level 9 needs THREAT 15, so
+ // Citadel tiers VIII-IX (Session 11; 7B builds tiers I-III, which top out at level 8), passed to the town clock in all four places
+ // (worker/src/conquest-town.js infoOf, settle's cit, the town-defend start, js/conquest/townui.js's hub preview). Earn-only: never sold.
  se:Object.freeze({from:9,n:8}),
  // THREAT -> raid level (index: THREAT rounded, 0..16). Calibrated by the fortress tests (decision 4): the regular's town holds about
  // 3 of 4 raids decided while away along the year; the level stops rising at CAP, where a fully built town holds every raid
@@ -150,31 +151,33 @@ function streakDay(st0,day){const st=streakNorm(st0);if(st.last===day)return {st
  const w=weekOf(day);if(w!==st.wk){st.wk=w;st.fz=0;}st.n=(st.n|0)+1;st.last=day;st.best=Math.max(st.best,st.n);
  const rewards=STREAK.rewards.filter(r=>r.d===st.n&&!st.got[String(r.d)]).map(r=>{const k=STREAK.welcome.days.indexOf(r.d);if(k>=0&&(st.wm>>k)&1){st.wm&=~(1<<k);return {...r,wb:1};}return r;});
  for(const r of rewards)st.got[String(r.d)]=1;return {st,days:st.n,rewards,frozen,back};}
-// the hub's one line (no modal)
-function streakLine(st0,day){const st=streakNorm(st0),alive=st.n&&(st.last===day||st.last===day-1||day-st.last-1<=STREAK.freezes-(weekOf(day)===st.wk?st.fz:0)),n=alive?st.n:0,nx=STREAK.rewards.find(r=>r.d>n&&!st.got[String(r.d)]),name=r=>r.it?(r.it==='repair'?'REPAIR KIT':'SCANNER CHARGE'):r.em?'BANNER EMBLEM':'TOWN DECORATION';
- const left=STREAK.freezes-(weekOf(day)===st.wk?st.fz:0),wk=STREAK.welcome.days.indexOf(nx?.d),welcome=!!(alive&&st.wb&&(st.wb===day||wk>=0&&(st.wm>>wk)&1));   // decision 4 (7T-P): the return's line says so
- return {n,today:st.last===day,next:nx||null,left,welcome,text:'STREAK '+n+' DAY'+(n===1?'':'S')+(st.last===day?' · TODAY ✓':' · PLAY TODAY')+(welcome?' · WELCOME BACK':'')+(nx?' · DAY '+nx.d+': '+name(nx):' · EVERY MILESTONE EARNED')+' · '+left+' FREEZE'+(left===1?'':'S')+' LEFT THIS WEEK'};}
+// the hub's one line (no modal). back: a return after 14+ days away not yet played today (review B3: the line names the kit that comes back)
+function streakLine(st0,day){const st=streakNorm(st0),back=!!(st.last&&st.last!==day&&day-st.last-1>=STREAK.welcome.away);if(back)for(const d of STREAK.welcome.days)delete st.got[String(d)];const alive=st.n&&(st.last===day||st.last===day-1||day-st.last-1<=STREAK.freezes-(weekOf(day)===st.wk?st.fz:0)),n=alive?st.n:0,nx=STREAK.rewards.find(r=>r.d>n&&!st.got[String(r.d)]),name=r=>r.it?(r.it==='repair'?'REPAIR KIT':'SCANNER CHARGE'):r.em?'BANNER EMBLEM':'TOWN DECORATION';
+ const left=STREAK.freezes-(weekOf(day)===st.wk?st.fz:0),wk=STREAK.welcome.days.indexOf(nx?.d),welcome=back||!!(alive&&st.wb&&(st.wb===day||wk>=0&&(st.wm>>wk)&1));   // decision 4 (7T-P): the return's line says so
+ return {n,today:st.last===day,next:nx||null,left,welcome,back,text:'STREAK '+n+' DAY'+(n===1?'':'S')+(st.last===day?' · TODAY ✓':' · PLAY TODAY')+(welcome?' · WELCOME BACK':'')+(nx?' · DAY '+nx.d+': '+name(nx):' · EVERY MILESTONE EARNED')+' · '+left+' FREEZE'+(left===1?'':'S')+' LEFT THIS WEEK'};}
 // ---- Session 7T-P decision 3 (owner, Nov 23): the first wall ring, the town coach's step before Command Center level 4 ---------------
 // Closed when raiders gathering outside the town cannot reach the Command Center or a vital (Reactor, Storage Depot, Science Lab)
 // without breaking a wall: a flood from the raid's gathering cells (ConquestPlot.spawnCells) over the ground raiders walk (the raid
 // engine's rule: the town and its gathering ring, never a natural barrier) through every cell that holds no wall. Buildings and turrets
 // never close a ring (raiders wreck them); a damaged wall still counts (REPAIR restores it). Pure and cheap (one flood over the 79x79
 // grid): the phone's coach and the models share it. Returns {closed, walls (cells), open (the first structure reached: 'cc' or the
-// vital's type), id, gap: [i,j] for the coach's marker: where the open way crosses the walls' ring, or the vital that stands outside it}.
+// vital's type), id, out (that vital stands outside the walls' ring), gap: [i,j] for the coach's marker: where the open way crosses the
+// walls' ring, or the vital that stands outside it}. A Gate closes a ring like a wall.
 function flood(p,o={}){const Pl=root.ConquestPlot,N=Pl.GRID.n,cc=Pl.clampCC(p.cc),h=Pl.townH(cc),site=p.site,w=record(p.w)?p.w:{},at=(i,j)=>i*N+j;
- const walk=(i,j)=>i>=0&&j>=0&&i<N&&j<N&&Pl.cheb(i,j)<=h+1&&!Pl.BLOCKED[Pl.terrainAt(site,i,j)]&&!w[i+','+j],from=new Int32Array(N*N).fill(-2),q=[];
+ const gate=new Set();for(const b of Object.values(p.b||{}))if(record(b)&&Pl.BUILDINGS[b.t]?.gate)for(const [i,j] of Pl.cells(b))gate.add(i+','+j);   // a Gate closes a ring like a wall (raiders must break its 900 HP; review B2)
+ const walk=(i,j)=>i>=0&&j>=0&&i<N&&j<N&&Pl.cheb(i,j)<=h+1&&!Pl.BLOCKED[Pl.terrainAt(site,i,j)]&&!w[i+','+j]&&!gate.has(i+','+j),from=new Int32Array(N*N).fill(-2),q=[];
  for(const lane of Pl.spawnCells(site,cc))for(const [i,j] of lane)if(walk(i,j)&&from[at(i,j)]===-2){from[at(i,j)]=-1;q.push(at(i,j));}
  for(let k=0;k<q.length;k++){const c=q[k];if(o.stop&&o.stop(c))return {from,hit:c,N};const i=(c/N)|0,j=c-i*N;for(const [x,z] of [[i+1,j],[i-1,j],[i,j+1],[i,j-1]]){if(!walk(x,z)||from[at(x,z)]!==-2)continue;from[at(x,z)]=c;q.push(at(x,z));}}
  return {from,hit:-1,N};}
-function ringOf(p,o={}){const Pl=root.ConquestPlot;if(!Pl||!p?.b?.cc)return {closed:false,walls:0,open:'cc',id:'cc',gap:null};
+function ringOf(p,o={}){const Pl=root.ConquestPlot;if(!Pl||!p?.b?.cc)return {closed:false,walls:0,open:'cc',id:'cc',out:false,gap:null};
  const N=Pl.GRID.n,w=record(p.w)?p.w:{},walls=Object.keys(w).length,tgt=new Map(),at=(i,j)=>i*N+j;
  const must=b=>b.t==='cc'||(b.l|0)>0&&(Pl.VITALS[b.t]||o.all&&Pl.BUILDINGS[b.t]&&!Pl.BUILDINGS[b.t].turret&&!Pl.BUILDINGS[b.t].gate);   // o.all: every building but turrets and gates
  for(const [id,b] of Object.entries(p.b)){if(!record(b)||!must(b))continue;for(const [i,j] of Pl.cells(b))tgt.set(at(i,j),{t:b.t,id});}
- const {from,hit}=flood(p,{stop:c=>tgt.has(c)});if(hit<0)return {closed:true,walls,open:'',id:'',gap:null};
+ const {from,hit}=flood(p,{stop:c=>tgt.has(c)});if(hit<0)return {closed:true,walls,open:'',id:'',out:false,gap:null};
  const T0=tgt.get(hit),c0=p.b.cc,sz=Pl.sizeOf('cc',c0.r|0),ci=c0.i+(sz.w-1)/2,cj=c0.j+(sz.d-1)/2,dist=(i,j)=>Math.hypot(i-ci,j-cj);
  const rs=Object.keys(w).map(k=>{const [i,j]=k.split(',').map(Number);return dist(i,j);}).sort((a,b)=>a-b),R=rs.length?rs[rs.length>>1]:0,path=[];for(let c=hit;c>=0;c=from[c])path.push([(c/N)|0,c%N]);
- let gap=null;if(T0.t!=='cc'&&dist(...path[0])>R+1)gap=path[0];else if(rs.length){let best=Infinity;for(const [i,j] of path){const d=Math.abs(dist(i,j)-R);if(d<best){best=d;gap=[i,j];}}}
- return {closed:false,walls,open:T0.t,id:T0.id,gap};}
+ const out=T0.t!=='cc'&&!!rs.length&&dist(...path[0])>R+1;let gap=null;if(out)gap=path[0];else if(rs.length){let best=Infinity;for(const [i,j] of path){const d=Math.abs(dist(i,j)-R);if(d<best){best=d;gap=[i,j];}}}
+ return {closed:false,walls,open:T0.t,id:T0.id,out,gap};}
 // The coach's SUGGEST A RING (decision 3): the one wall order (composite, no ore) that closes the town within the composite stock, in the
 // coach's own order: the RING tool from the Command Center by radius (the smallest that closes it), then a square RECT, then the square
 // with its frozen shore sealed (ICE BASIN: walls cannot stand on ice, so every buildable cell inside the square that touches the ice becomes

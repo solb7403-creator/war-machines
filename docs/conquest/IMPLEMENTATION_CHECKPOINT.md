@@ -7097,8 +7097,27 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
 - **Slice 4 (`74bc7b0`):** TOWN.se.n = 8, the heavy profile, the UI fixes above, conquest-town-proposals.py PASS at all 5 sizes.
 - **Slice 5 (`433e241`):** RESOURCE_ECONOMY §16.2-16.4. Round 1 reviews launched on `433e241` (reviewer 1 fun and reward, reviewer 2
   measurements, guards, regressions); the fortress test and every CI node command running locally.
-- **Next:** fix every review blocker, re-review (round 2), the browser suites, then release (merge main, dev/bump.sh, PR, CI, merge,
-  verify the Worker and Pages, ROADMAP row 7T-P, the release record).
+- **Review round 1, reviewer 1 (fun and reward) at `433e241`:** decision 1 PASS; 2 PASS (design, code, tests) with a record error; 3
+  FAIL; 4 PASS with a text gap. **Blockers, all fixed (slice 6):**
+  - **B1** the record said the drop wakes with 7B: 7B's tiers I-III top out at level 8; the cap needs tiers VIII-IX (Session 11). Fixed
+    in the checkpoint, RESOURCE_ECONOMY §16.2, townwar.js / conquest-town.js comments, the selenite test (+1 check: tiers I-III stay
+    below the cap); the open item (pass the tiers in all four places) recorded under decision 2.
+  - **B2** the coach named the Storage Depot as outside when the depot was inside (a ring across ICE BASIN's lake, a west gap, a cannon
+    in the line), a Gate did not close a ring, and the dead-end toast blamed a building that was not there. Fixed: `ringOf` returns
+    `out` (the vital stands beyond the walls' ring) and the vital text needs it; a ring open across the lake says "raiders cross the
+    frozen lake at the red marker... SUGGEST A RING seals the shore"; Gates close a ring like walls (raiders must break their 900 HP);
+    the NO RING FITS toast names the real cause (move the vital nearer, a building on the frozen shore, or erase a wall / let the
+    Foundry make composite). conquest-coach-ring +5 checks (31).
+  - **B3** on a return day, before the first win or harvest, the hub showed no welcome (the line named day 30). Fixed: `streakLine`
+    knows a pending return (`back`: names DAY 1: REPAIR KIT, says WELCOME BACK), the hub card says "Win an operation or harvest today:
+    your day-1 REPAIR KIT comes back (day 3: a SCANNER CHARGE)". conquest-streak +2 checks (64).
+  - Non-blocking, folded in: the RECT wording (corner to corner), focus moves to CONFIRM WALLS after SUGGEST, the last-chance dialog
+    names the +8 Selenite at the cap, a stronger red marker. Recorded for the final report: the coached regular's faster CC10 (the
+    cache PROPOSAL, prominent), the payer's day-365 walls (0.78) below the free grinder's (0.80) at 8 Selenite (Session 8's paid
+    fortress, at the 2-hour play time), the farm bound for 3 days on / 14 off (22 Repair Kits + 22 Scanner Charges in 64 play days, 0.69
+    a play day, under a daily pilot's ~1 consumable a day from kill caches).
+- **Next:** reviewer 2's report; fix its blockers; round 2 (both reviewers); the browser suites; release (merge main, dev/bump.sh, PR,
+  CI, merge, verify the Worker and Pages, ROADMAP row 7T-P, the release record).
 
 ### Owner decisions (Nov 23) as recorded
 1. **Kept as shipped, owner-adopted:** the THREAT -> raid level table (cap 9) and the 60% chance at each eligible tick
@@ -7118,8 +7137,11 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
      pilot seeds: the regular reaches 47% of its raids in person, the grinder all; about 1.36 raids a day from CC6) x the share of raids
      at the cap (raidSet) x the in-person hold rate at the cap (a bot pilot beside the Platoon and garrison on the profile's towns without
      this Selenite: the grinder 76-86%, the regular 67-71%) x n; half reaches the town (the other half to plating), as every mineral.
-   - Dormant until 7B: the town clock passes 0 Citadel tiers today (every town attack is level 1-4), so no raid reaches the cap yet;
-     worker settle() takes the tiers as a parameter (`cit`, 0 until 7B).
+   - **Ships inert until the Citadel's tiers VIII-IX (Session 11)** (review round 1, B1: 7B builds tiers I-III, which top out at THREAT 8,
+     level 8; the cap needs THREAT 15): the town clock passes 0 Citadel tiers today (every town attack is level 1-4); worker settle()
+     takes the tiers as a parameter (`cit`, 0 until then). **Open item:** the session that passes Citadel tiers to the town must pass them
+     in all four places, or the +8 hint never shows and the fought level differs from the paid one: worker/src/conquest-town.js `infoOf`
+     (`tiers:0`), `settle(..., cit)`, the town-defend start (`TN.strength(..., {tiers:0})`), and js/conquest/townui.js's hub preview.
    - **Owner addendum (Nov 23): the target is the 2-hour heavy player; shipped n = 8** (`TOWN.se.n`), measured with the heavy profile
      (dev/tools/selenite-candidates.mjs on the final code, reproducing the owner's planning-chat numbers exactly):
 
