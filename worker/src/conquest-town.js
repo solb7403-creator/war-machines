@@ -26,7 +26,9 @@ const fail=m=>{throw Error('conquest: '+m);};
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v);
 export const TOWN_ACTIONS=['town-defend','town-leave','town-ward','town-seen','strike-beacon'];
 export function town(s,now){s.tw=TN.norm(s.tw,now);return s.tw;}
-const seedOf=s=>String(s.lseed|0)+':town';
+// the town's own server-only seed (review: the raid seeds a replay shows must reveal nothing of the loot seed s.lseed)
+function townSeed(s){if(!Number.isSafeInteger(s.twsd)||s.twsd<=0){const a=new Uint32Array(1);crypto.getRandomValues(a);s.twsd=a[0]||1;}return s.twsd;}
+const seedOf=s=>String(townSeed(s))+':town';
 const infoOf=(s,now)=>({cc:s.plot?.cc|0,townAt:Number(s.base?.builtAt)||Number(s.plot?.at)||0,shieldUntil:Number(s.plot?.shieldUntil)||0,war:s.war,tiers:0,seed:seedOf(s)});   // tiers: the Citadel arrives with 7B
 // ---- the garrison (decision 7): the reserve pilots (not fielded, not stationed, not downed), strongest first, one a Hangar level ------
 export function garrisonOf(s){const T0=bat(s),slots=P.garrisonSlots(s.plot);if(!slots)return [];const fielded=BT.picked(T0,hangarLevel(s),'battalion').map(p=>p.id);
@@ -58,7 +60,7 @@ export function townAlerts(s,now,horizon){const p=s.plot;if(!p||!s.base?.tier)re
  return out;}
 // an attack landing at `at`: the Grand Offensive's target is called off when the Grand Offensive was beaten in person; a pilot online
 // at the landing (a request in the 2 minutes before it, and this request within 2 minutes after) gets the 60-second last chance
-function landing(s,e,at,now,seen){const w=s.war;if(e.go&&w?.go&&'go'+w.go.w===e.id&&w.go.won){logOf(s,{id:e.id,at,o:'called',by:'you',g:e.g,go:1,why:'grand offensive beaten'});return 'called';}
+function landing(s,e,at,now,seen){if(e.tr&&s.td?.active&&s.td.id===e.id)return 'wait';   /* review R2-B1: the attack being fought lands when the fight ends (liveEnd) */const w=s.war;if(e.go&&w?.go&&'go'+w.go.w===e.id&&w.go.won){logOf(s,{id:e.id,at,o:'called',by:'you',g:e.g,go:1,why:'grand offensive beaten'});return 'called';}
  if(int(s.plot?.shieldUntil)>at){logOf(s,{id:e.id,at,o:'called',by:'away',g:e.g,why:'shield'});return 'called';}
  if(!s.mission&&!s.td?.active&&at-seen<T.onlineMs&&now-at<T.onlineMs){e.lc=now+T.lastChanceMs;s.notice={kind:'town-incoming',id:e.id,until:e.lc};return 'wait';}
  return settle(s,e,at,null);}
@@ -70,7 +72,7 @@ export const plotOfSnap=TN.plotOfSnap;   // shared with the phone's replay (js/c
 // ---- settle a raid (unfought, or after a live fight: live = {R the pilot's fight, fought: the pilot really fought}) ----------------------
 export function settle(s,e,at,live){const p=s.plot,tw=s.tw;
  const job=P.settle(p,at);if(job)s.notice={kind:'plot-built',type:job.t,level:job.l};P.accrue(p,at);researchTick(s,at);
- const st=TN.strength(s.war,e,{now:at,tiers:0,titan:0}),lv=st.level,seed=u32(String(s.lseed|0)+':town:'+e.id),gar=garrisonOf(s),units=unitsOf(gar),snap=snapOf(p);
+ const st=TN.strength(s.war,e,{now:at,tiers:0,titan:0}),lv=st.level,seed=u32(String(townSeed(s))+':town:'+e.id),gar=garrisonOf(s),units=unitsOf(gar),snap=snapOf(p);
  const R0=live?.uf||RD.make(p,seed,{threat:lv,lane:e.ln,units,damage:true,frames:false,events:false}).run();
  const rank=r=>({fallen:0,breached:1,held:2})[RD.outcomeOf(r)],lost=r=>Object.values(r.damage||{}).reduce((a,v)=>a+v,0);
  const useLive=!!live?.R&&(rank(live.R)>rank(R0)||rank(live.R)===rank(R0)&&lost(live.R)<=lost(R0)),R=useLive?live.R:R0,o=RD.outcomeOf(R);   // decision 6: the better of the two, so showing up never hurts
@@ -111,7 +113,7 @@ function liveStart(s,id,now,ctx){const tw=s.tw,p=s.plot,e=tw.ev.find(x=>x.id===i
  const D=C.baseDefinition;if(Math.hypot(s.position.x-D.x,s.position.z-D.z)>D.radius){if(typeof ctx.travel==='function'){const why=ctx.travel();if(why)fail(why);}else fail('return to your town first');}
  e.tr=s.attempt=(s.attempt|0)+1;
  const job=P.settle(p,now);if(job)s.notice={kind:'plot-built',type:job.t,level:job.l};P.accrue(p,now);
- const st=TN.strength(s.war,e,{now,tiers:0,titan:0}),seed=u32(String(s.lseed|0)+':town:'+e.id),gar=unitsOf(garrisonOf(s)),T0=bat(s),gid=new Set(gar.map(u=>u.id));
+ const st=TN.strength(s.war,e,{now,tiers:0,titan:0}),seed=u32(String(townSeed(s))+':town:'+e.id),gar=unitsOf(garrisonOf(s)),T0=bat(s),gid=new Set(gar.map(u=>u.id));
  const plat=BT.picked(T0,hangarLevel(s),'platoon').filter(x=>!gid.has(x.id)&&x.h!==.5).map(x=>RD.unitOf({id:x.id,kind:'f',kit:x.kit||BT.militia(x.r),rk:x.rk,role:x.r}));
  const me=RD.unitOf({id:'you',kind:'p',L:s.loadout}),units=[...gar,...plat,me],pad=padOf(p);
  const uf=RD.make(p,seed,{threat:st.level,lane:e.ln,units:gar,damage:true,frames:false,events:false}).run();   // the unfought replay, now (the better of the two counts)

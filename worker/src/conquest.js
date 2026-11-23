@@ -48,7 +48,7 @@ export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.s
  s.notice={kind:'dev',action:r.action};s.seq=r.seq;return s;}
 // Server-only fields never leave the Worker: the vein seed and unscanned veins (s.lodes) become the scanned-only s.veins view.
 // lseed: the loot seed (Session 6) never leaves the Worker either.
-export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,tdu,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};   /* Session 7T: tdu, the unfought result held while you fight, stays on the Worker until the fight ends */
+export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,tdu,twsd,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};   /* Session 7T: tdu, the unfought result held while you fight, stays on the Worker until the fight ends */
  if(s.war&&typeof s.war==='object'){const {ak,...w}=s.war;out.war={...w,ev:(Array.isArray(w.ev)?w.ev:Object.values(w.ev||{})).map(e=>{if(!e||typeof e!=='object')return e;const {sc,...x}=e;return x;})};}/* Session 7: an authored roll (the first war's) never reaches the phone */
  out.veins=publicVeins(s,s.lastWall||0);
  // Meteor Strike core rolls stay server-side until the strike is secured; the client only needs whether a slot is claimed.

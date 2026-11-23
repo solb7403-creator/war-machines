@@ -98,7 +98,7 @@ function goSync(tw,info){const g=info.war?.go;if(!g||g.done||g.won||g.skip)retur
 // stood at its landing). seen: the pilot's last request (the freeze: after one full day away the front holds, and so does the town:
 // announced attacks keep their time left; a Grand Offensive target frozen at its landing is skipped with the Grand Offensive).
 function advance(tw,now,info,resolve,seen=now){const K=W().tickOf(now),T=tickMs(),out=[];if(!(K>tw.k))return out;let frozen=0;
- for(let k=tw.k+1;k<=K;k++){const at=k*T;if(at-seen>=W().WAR.freezeMs){frozen++;for(const e of tw.ev){if(e.go&&e.l<=k){tw.ev.splice(tw.ev.indexOf(e),1);out.push({kind:'skip',ev:e});break;}e.a++;e.l++;}continue;}out.push(...step(tw,k,info,resolve).map(x=>({...x,k})));}
+ for(let k=tw.k+1;k<=K;k++){const at=k*T;if(at-seen>=W().WAR.freezeMs){frozen++;for(const e of [...tw.ev]){if(e.go&&e.l<=k){tw.ev.splice(tw.ev.indexOf(e),1);out.push({kind:'skip',ev:e});continue;}e.a++;e.l++;}continue;}out.push(...step(tw,k,info,resolve).map(x=>({...x,k})));}
  tw.k=K;if(frozen)out.push({kind:'frozen',n:frozen});return out;}
 // what the pilot can defend now: announced, not landed (or in its last-chance minute), not yet fought
 function defendable(tw,now){return (tw?.ev||[]).filter(e=>!e.tr&&(e.lc?e.lc>now:e.l*tickMs()>now));}
@@ -125,7 +125,7 @@ function streakNorm(st){const r=record(st)?st:{};return {n:int(r.n),last:int(r.l
 const weekOf=day=>Math.floor((day+3)/7);   // UTC weeks from Monday
 // a verified activity on UTC day `day`: returns {st, days (the new streak count), rewards [milestones reached now], frozen (days covered)}
 function streakDay(st0,day){const st=streakNorm(st0);if(st.last===day)return {st,days:st.n,rewards:[],frozen:0};let frozen=0;
- if(st.n&&st.last&&day>st.last+1){let miss=day-st.last-1;for(let d=st.last+1;d<day&&miss>0;d++){const w=weekOf(d);if(w!==st.wk){st.wk=w;st.fz=0;}if(st.fz<STREAK.freezes){st.fz++;frozen++;miss--;}else break;}if(miss>0){st.n=0;st.got={};}}
+ if(st.n&&st.last&&day>st.last+1){let miss=day-st.last-1;for(let d=st.last+1;d<day&&miss>0;d++){const w=weekOf(d);if(w!==st.wk){st.wk=w;st.fz=0;}if(st.fz<STREAK.freezes){st.fz++;frozen++;miss--;}else break;}if(miss>0)st.n=0;}   // review R2-B2: a reset restarts the count; each milestone is given once per pilot (got is kept)
  const w=weekOf(day);if(w!==st.wk){st.wk=w;st.fz=0;}st.n=(st.n|0)+1;st.last=day;st.best=Math.max(st.best,st.n);
  const rewards=STREAK.rewards.filter(r=>r.d===st.n&&!st.got[String(r.d)]);for(const r of rewards)st.got[String(r.d)]=1;return {st,days:st.n,rewards,frozen};}
 // the hub's one line (no modal)

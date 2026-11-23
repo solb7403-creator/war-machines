@@ -69,4 +69,10 @@ function fight(s,now,{fire=true,per=20,max=2000}={}){let steps=0;while(s.td?.act
  const go=kind=>{const u=RD.unitOf(kind==='p'?{id:'you',kind:'p',L:R.STOCK_L}:{id:'g1',kind:'g',kit:{w:{a:'pulse',t:1,q:1},c:{c:'titan',t:1,q:1}},rk:3}),M=RD.make(p,5,{threat:1,units:[u],pilot:{x:P.cellX(P.MID),z:P.cellZ(P.MID+6),h:0},dt:.05,frames:false,events:false});
   for(let i=0;i<300&&!M.over;i++)M.step({x:0,z:1});const v=M.units.find(w=>w.id===u.id);return P.cheb(Math.round(v.x/P.GRID.cell+P.MID),Math.round(v.z/P.GRID.cell+P.MID));};
  const d=go('p');ok(d>9,'your tank drives out through its own wall ring (now '+d+' cells from the middle; the ring is at 9)');}
+// review R2-B1: a fight that crosses its own landing tick keeps its result: the clock waits for it, the fight settles it once
+{let s=townPilot(CONQUEST,R,createState,t0,{cc:6,strong:true});const e=townAttack(CONQUEST,s,t0,{g:'kethra'}),L=e.l*T;let now=L-4000;s.lastWall=now-1000;s.creditMs=0;
+ s=applyAction(s,{seq:s.seq+1,action:'town-defend',town:{id:e.id}},now);ok(s.td?.active,'defended four seconds before its landing');
+ for(let i=0;i<8&&s.td?.active;i++){now+=1000;s=applyCommands(s,{seq:s.seq+1,commands:Array.from({length:20},()=>({x:0,z:1,fire:true}))},now);}
+ ok(now>L&&s.td?.active&&!s.tw.log.some(x=>x.id===e.id),'its landing tick passes mid-fight: the clock does not settle it unfought');
+ s=applyAction(s,{seq:s.seq+1,action:'town-leave'},now+500);const xs=s.tw.log.filter(y=>y.id===e.id);ok(xs.length===1&&!s.td.active,'the fight settles it once ('+xs[0]?.o+')');}
 console.log('PASS live defense (decisions 6 and 1): '+pass+' checks');

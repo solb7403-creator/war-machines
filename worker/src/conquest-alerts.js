@@ -46,6 +46,7 @@ export async function sendWarAlerts(env,now=Date.now(),opts={}){const n=Math.max
   const today=WR.localDay(now,tz),count={day:Number(d.sd)===today?today:null,n:Number(d.sd)===today?Number(d.sn)|0:0,last:Number(d.ls)||0};
   const plan=AL.plan(ev,now-5*60000,tz,count,sw),first=plan[0];   // 5 minutes of slack: the cron runs every 5
   if(!first||first.at>now){await dbPatch(env,'',{[`wal/${pid}/nx`]:first?first.at:null}).catch(()=>{});return;}
+  if(WR.night(now,tz)){const p2=AL.plan(ev,now,tz,count,sw);await dbPatch(env,'',{[`wal/${pid}/nx`]:p2[0]?.at||null}).catch(()=>{});return;}   // review: never sent in the local night (the 5-minute slack once let one go at 22:01)
   const batch=ev.filter(e=>first.ids.includes(e.id)),msg=AL.message(batch,now);
   // the count first: written before anything is sent, so a failed write or a cut-short run can lose an alert, never send a fourth today
   const rest=AL.plan([...ev.filter(e=>!first.ids.includes(e.id)),...AL.synth(d,now,tz,new Set([...done,...first.ids]),record(ntf)?ntf:null,reminderText)].filter((e,i,a)=>a.findIndex(x=>x.id===e.id)===i),now,tz,{day:today,n:count.n+1,last:now},sw);

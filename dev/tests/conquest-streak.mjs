@@ -46,4 +46,7 @@ const mon=Date.UTC(2026,10,23,12),dayOf=t=>Math.floor(t/D);   // Monday Nov 23
 {const d0=dayOf(mon);let st={};for(let d=0;d<4;d++)st=TN.streakDay(st,d0+d).st;const L=TN.streakLine(st,d0+3),L2=TN.streakLine(st,d0+4);
  ok(L.n===4&&L.today&&/STREAK 4 DAYS · TODAY ✓ · DAY 7: BANNER EMBLEM/.test(L.text),'today played: '+L.text);ok(L2.n===4&&!L2.today&&/PLAY TODAY/.test(L2.text)&&/2 FREEZES LEFT/.test(L2.text),'tomorrow: '+L2.text);
  ok(TN.streakLine(st,d0+9).n===0,'after a long break the line shows 0 (it starts again on the next play)');}
+// review R2-B2: each milestone once per pilot: breaking the streak on purpose never farms its consumables
+{let st={},got=0;const d0=dayOf(mon);for(let w=0;w<8;w++)for(let d=0;d<3;d++){const r=TN.streakDay(st,d0+w*7+d);st=r.st;got+=r.rewards.filter(x=>x.it).length;}
+ ok(got===2,'3 days on and 4 off for 8 weeks: '+got+' consumables (the day-1 and day-3 ones, once)');}
 console.log('PASS soft return streak (decision 11): '+pass+' checks');

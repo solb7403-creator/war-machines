@@ -23,7 +23,7 @@ function live(s,from,days,step=6*H,vis=null){const land=[];let t=from;for(;t<fro
  ok(gaps.every(g=>g>=8*H),'CC6+: at least 8 hours apart (shortest '+Math.min(...gaps)/H+' h)');ok(at.every((x,i)=>i<2||x-at[i-2]>=D),'CC6+: at most 2 in any 24 hours');
  ok(land.length/18>=1.1&&land.length/18<=2,'CC6+: about '+(land.length/18).toFixed(2)+' attacks a day after the first 3 days');
  const s2=townPilot(CONQUEST,R,createState,t0,{cc:7});const land2=live(s2,t0,21);ok(JSON.stringify(land2.map(x=>[x.id,x.at,x.g]))===JSON.stringify(land.map(x=>[x.id,x.at,x.g])),'the schedule is deterministic from the server seed');
- const s3=townPilot(CONQUEST,R,createState,t0,{cc:7});s3.lseed=12345;const land3=live(s3,t0,21);ok(JSON.stringify(land3.map(x=>x.at))!==JSON.stringify(land.map(x=>x.at)),'another pilot\'s seed gives another schedule');
+ const s3=townPilot(CONQUEST,R,createState,t0,{cc:7});s3.twsd=12345;const land3=live(s3,t0,21);ok(JSON.stringify(land3.map(x=>x.at))!==JSON.stringify(land.map(x=>x.at)),'another pilot\'s seed gives another schedule');
  ok(land.every(x=>x.th>=1&&x.lv>=1&&x.lv<=10&&x.lv===(x.id==='t1'?1:TN.levelOf(x.th))),'each raid\'s level comes from its THREAT (the first, a teaching raid, at level 1: review B5) (never Command Center level): '+[...new Set(land.map(x=>x.th+'->L'+x.lv))].join(', '));}
 // ---- 2. the freeze: after a full day away the town holds too; what was announced keeps its time left ----
 {const s=townPilot(CONQUEST,R,createState,t0,{cc:7});s.lastWall=t0;const k0=WR.tickOf(t0),e=townAttack(CONQUEST,s,t0);e.a=k0+3;e.l=k0+5;s.tw.k=k0;   // announced 18 h after the pilot left, landing 29 h after it

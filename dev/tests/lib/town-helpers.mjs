@@ -2,7 +2,7 @@
 // clock announces one (two ticks ahead), and a strong town for held raids. Never used by the game.
 import {cc10Town} from '../fixtures/balance-towns.mjs';
 export function townPilot(CONQUEST,R,createState,now,{site='ridge',cc=2,claimed=now-4*864e5,strong=false}={}){const {Plot:P,Combat:C,World:W}=CONQUEST;
- const s=createState(R.STOCK_L,now);s.ledger.cp=50000;s.ledger.banked={alloy:2000,biomass:2000,helium:500};s.lseed=987654321;
+ const s=createState(R.STOCK_L,now);s.ledger.cp=50000;s.ledger.banked={alloy:2000,biomass:2000,helium:500};s.lseed=987654321;s.twsd=123456789;
  s.base={tier:P.tierOf(cc),modules:{},builtAt:claimed,claimedAt:claimed,pointsAt:claimed,defense:{config:'turret',damage:0,wins:0,alertAt:0,nextAt:now+864e9,active:false}};
  let p;if(strong){p=cc10Town(P,site,{blends:[[6,3]],cells:3000,ext:true});}else{p=P.newPlot(site,claimed);p.cc=cc;p.b.cc.l=cc;}
  p.at=claimed;p.st={alloy:200,biomass:150,helium:40,fe:20,at:now};p.cm=Math.max(p.cm||0,300);s.plot=p;

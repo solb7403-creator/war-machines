@@ -140,7 +140,7 @@ export function alertDoc(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.w
 // After a Conquest reducer: the schedule doc to write after the commit, or null when nothing it depends on changed (a cheap key:
 // the tick, the events and their attempts, the Grand Offensive, ownership and the alert settings). Kept in s.war.ak.
 export function alertChange(s,now){try{return alertChange0(s,now);}catch(_){return null;}}   // best effort: the alerts never fail a Conquest request
-function alertChange0(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.war,now);const a=alertSettings(s),tw=s.tw,p=s.plot;
+function alertChange0(s,now){if(!s?.war||s.mission||s.td?.active)return null;const w=s.war=WR.norm(s.war,now);const a=alertSettings(s),tw=s.tw,p=s.plot;   // not while fighting (the town forecast costs a raid a landing): the next request after the fight writes it
  // Session 7T: the town's clock, its attacks, the town itself (a forecast raid meets it as built), the Beacon, the yield, the switches
  // and the local day (the reminder skips a day already played)
  const town=tw?[tw.k,(tw.ev||[]).map(e=>[e.id,e.tr|0,e.l,e.lc|0]),(tw.log||[]).length,p?.cc|0,p?Object.values(p.b||{}).reduce((x,b)=>x+(b.l|0)*7+b.i*3+b.j,0):0,p?Object.keys(p.w||{}).length:0,p?Object.keys(p.dmg||{}).length:0,Number(p?.shieldUntil)||0,p?.job?.end|0,(s.bat?.p||[]).map(x=>x.id+(x.h===.5?'d':'')).join('')]:0;
