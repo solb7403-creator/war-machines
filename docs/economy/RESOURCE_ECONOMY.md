@@ -1088,6 +1088,40 @@ Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids
   in a town's first 3 days, under a shield or while the front is frozen).
 - Both were Session 7T PROPOSALS; the owner adopted them as shipped on Nov 23.
 
+### 16.2 Selenite for the late fortress (Session 7T-P decision 2 and the owner's addendum, Nov 23)
+- **Rule** (`TOWN.se`, `ConquestTown.seOf`): a town raid at the **cap level (9)** settled HELD with the pilot **really fighting** (the 675
+  defense points' own rule) drops **8 Selenite** into the pilot's cargo (banked at the Refuge like every mineral). None below the cap,
+  none for an unfought raid, none for a fight that did not hold. Selenite stays earn-only (never in the store).
+- **Dormant until the Citadel (7B):** the town clock passes 0 Citadel tiers today, so every town attack is level 1-4; the cap comes with
+  the Citadel's last tier (in the fortress model: the 2-hour heavy player from about day 208, the grinder from about day 135, the regular
+  from about day 320).
+- **Measured** (`dev/tools/selenite-candidates.mjs`, the fortress model's real income, builder and raid engine, 56 raids a day on two seed
+  sets; `docs/conquest/session7tp/selenite-candidates.json`): late in the year (days 300, 330, 365) the 2-hour heavy player holds 88.1%
+  (77.1% before; 4 Selenite gave 81.3%, 12 gave 87.8%), the grinder 94.1% (85.7%), and the regular's hold rates stay within 3.6 points at
+  every measured day. The other candidate, Strike Resonance every 8 strikes instead of 12, moved the grinder by 0 to -1 points, the
+  heavy player +3, and the regular by up to 7 points (it fails the 5-point rule); in this economy model it would bring the regular's
+  Selenite plate set 24 days sooner (day 182 to 158) and leave the grinder's (day 38) unchanged.
+- Selenite a year (fortress model, half to the town, half to plating): regular 199 (61 before), heavy 1,208 (122), grinder 1,808 (206).
+  Wall strength after a year (1 = Moonheart heavy everywhere): heavy 0.67, grinder 0.80, the paying pilot 0.78: nobody is fully built
+  inside the year.
+
+### 16.3 The first wall ring (Session 7T-P decision 3)
+- The town coach's step 4 (before CC4): CLOSE YOUR WALL RING, with a red marker where the town is open, until the raiders' gathering
+  cells cannot reach the Command Center or a vital without breaking a wall (`ConquestTown.ringOf`). **SUGGEST A RING** drafts the closing
+  order in one tap (`ConquestTown.ringPlan`: an inner ring and, when the composite allows, an outer one; ICE BASIN's frozen shore sealed);
+  the pilot confirms it like any wall order (composite only, never a price change).
+- **REPAIR on the way to CC10** (`dev/tools/coach-ring-repairs.mjs`, the Nov 10 guard method: the 60-minute regular on the real reducers,
+  every raid decided unfought, REPAIR paid when damaged; 101 pilots): without walls 109,413 CP in 40 repairs on CRATER RIM (CC10 twice as
+  long) and 167,855 CP across the seven sites; with the coach's ring 650 CP and 1,392 CP, CC10 no longer delayed. No repair-price change
+  is needed. PROPOSAL (owner): held unfought raids pay the defense cache (Session 7T decision 5), so a walled regular reaches CC10 sooner
+  than with no town attacks (CRATER median day 19.8 against 28.8); half the cache gives 24.8, none 26.8.
+
+### 16.4 Welcome-back kits (Session 7T-P decision 4)
+- Back after **14 or more UTC days with no verified activity**, the streak's day-1 Repair Kit and day-3 Scanner Charge are given once
+  more, on that return's streak days 1 and 3 (once a return; only kits the pilot was given before are re-armed). Never points, minerals
+  or CP; consumables stop at their cap (10). A pilot who plays one day every 15 days gets 25 Repair Kits a year and no Scanner Charge; a
+  daily pilot's kill caches drop about one consumable a day.
+
 ## Appendix: model assumptions (`dev/tools/economy-model.mjs`)
 
 - **Arcade points a minute:** same formula as `dev/tests/s2/ppm.mjs` (measured win rate and match length, +20 s of screens, streak bonus, no featured bonus) on `league-grid-standard.json`. It reproduces `docs/launch/LEAGUES.md`: 223 / 264 / 320 / 343 / 460 / 495 / 702.
