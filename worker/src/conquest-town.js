@@ -70,9 +70,10 @@ function logOf(s,x){const tw=s.tw;tw.log=[...tw.log,x].slice(-T.log);}
 function snapOf(p){return {site:p.site,cc:p.cc|0,b:Object.fromEntries(Object.entries(p.b||{}).map(([id,b])=>[id,[b.t,b.i,b.j,b.r|0,b.l|0]])),w:P.encWalls(p.w),dmg:{...(p.dmg||{})}};}
 export const plotOfSnap=TN.plotOfSnap;   // shared with the phone's replay (js/conquest/townwar.js)
 // ---- settle a raid (unfought, or after a live fight: live = {R the pilot's fight, fought: the pilot really fought}) ----------------------
-export function settle(s,e,at,live){const p=s.plot,tw=s.tw;
+// cit: the Citadel tiers cleared (0 until 7B passes them: every town attack is level 1-4 until then)
+export function settle(s,e,at,live,cit=0){const p=s.plot,tw=s.tw;
  const job=P.settle(p,at);if(job)s.notice={kind:'plot-built',type:job.t,level:job.l};P.accrue(p,at);researchTick(s,at);
- const st=TN.strength(s.war,e,{now:at,tiers:0,titan:0}),lv=st.level,seed=u32(String(townSeed(s))+':town:'+e.id),gar=garrisonOf(s),units=unitsOf(gar),snap=snapOf(p);
+ const st=TN.strength(s.war,e,{now:at,tiers:Math.max(0,Math.min(9,cit|0)),titan:0}),lv=st.level,seed=u32(String(townSeed(s))+':town:'+e.id),gar=garrisonOf(s),units=unitsOf(gar),snap=snapOf(p);
  const R0=live?.uf||RD.make(p,seed,{threat:lv,lane:e.ln,units,damage:true,frames:false,events:false}).run();
  const rank=r=>({fallen:0,breached:1,held:2})[RD.outcomeOf(r)],lost=r=>Object.values(r.damage||{}).reduce((a,v)=>a+v,0);
  const useLive=!!live?.R&&(rank(live.R)>rank(R0)||rank(live.R)===rank(R0)&&lost(live.R)<=lost(R0)),R=useLive?live.R:R0,o=RD.outcomeOf(R);   // decision 6: the better of the two, so showing up never hurts
@@ -92,6 +93,7 @@ export function settle(s,e,at,live){const p=s.plot,tw=s.tw;
   // the defense minerals and a loot roll, like any defense won live; the general who led it is beaten (a trophy and a retreat)
   // (review: paid whenever the settled result is HELD and the pilot really fought, whichever of the two pictures counted)
   if(live?.fought){const pts=earn(s,'defense',RULES.CQ_PTS.defense,at,{op:true}),key='town:'+e.id,mn=cacheMinerals(s,'defense',key),loot=bind(s,roll(s,'defense',key),at,{where:'town defense'});
+   const se=TN.seOf(lv);if(se){s.ledger.mn=s.ledger.mn||{};s.ledger.mn.se=(s.ledger.mn.se||0)+se;mn.se=(mn.se||0)+se;x.se=se;}   // Session 7T-P decision 2: a raid at the cap held in person drops Selenite (cargo, banked at the Refuge)
    x.pts=pts;orderEvent(s,'op');orderEvent(s,'defense');s.reputation=(s.reputation||0)+60;s.campaignScore=(s.campaignScore||0)+15;let trophy=null;if(G&&WR.beatGeneral(s.war,G.id,at)){trophy=G.id;s.achievements['general-'+G.id]=at;}
    receipt={...receipt,ptsRaw:pts,...(Object.keys(mn).length?{mn}:{}),...(empty(loot)&&!loot.pieces?{}:{loot}),reputation:60,...(trophy?{trophy}:{})};}}
  logOf(s,x);track(s,'town_raid',o,useLive?'live':'away');if(live)s.notice=receipt;return o;}
@@ -149,7 +151,9 @@ export function beaconFor(s,op,now){const b=s.bcn;return b&&op?.strike&&Number(b
 // after the action. Two freeze days a week cover missed days (never a reset for one or two); rewards: day 1 a Repair Kit, day 3 a
 // Scanner Charge (the consumables, up to their cap), day 7 and every 30 days from 60 to 360 an earn-only banner emblem, days 30, 100 and
 // 365 a town decoration (earn-only ornaments); never points, minerals or CP. s.stk.nw: the latest grant, for the hub's one line.
+// Session 7T-P decision 4: welcome-back kits: back after 14+ UTC days away, the day-1 Repair Kit and the day-3 Scanner Charge again, once a
+// return (ConquestTown.streakDay re-arms them; nw.wb marks the return day, a re-granted kit carries wb).
 export function streakSync(s,now){const day=Math.floor(now/864e5);if(s.dev?.used||Number(s.airdrop?.act)!==day)return null;const st0=TN.streakNorm(s.stk);if(st0.last===day)return null;
  const r=TN.streakDay(st0,day),inv=s.inv&&typeof s.inv==='object'?s.inv:null,given=[];
- for(const x of r.rewards){if(x.it&&inv){inv.it=record(inv.it)?inv.it:{};const had=inv.it[x.it]|0;inv.it[x.it]=Math.min(RULES.CQ_ITEM_MAX,had+1);given.push({d:x.d,it:x.it,n:inv.it[x.it]-had});}else given.push(x);}
- s.stk={...r.st,nw:{d:day,n:r.days,...(given.length?{r:given}:{}),...(r.frozen?{fz:r.frozen}:{})}};track(s,'streak',String(Math.min(r.days,400)),given.length?'reward':'day');return r;}
+ for(const x of r.rewards){if(x.it&&inv){inv.it=record(inv.it)?inv.it:{};const had=inv.it[x.it]|0;inv.it[x.it]=Math.min(RULES.CQ_ITEM_MAX,had+1);given.push({d:x.d,it:x.it,n:inv.it[x.it]-had,...(x.wb?{wb:1}:{})});}else given.push(x);}
+ s.stk={...r.st,nw:{d:day,n:r.days,...(given.length?{r:given}:{}),...(r.frozen?{fz:r.frozen}:{}),...(r.back?{wb:1}:{})}};track(s,'streak',String(Math.min(r.days,400)),given.some(x=>x.wb)?'welcome':given.length?'reward':'day');return r;}

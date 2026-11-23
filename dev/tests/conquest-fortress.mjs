@@ -53,8 +53,28 @@ let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;console.log('PASS '+m);};const
  const rg=[60,180,330].map(d=>M.holdRate('regular',d,{n:3}).p);out.grinder.regular=rg;
  // at the same strength: late in the year both meet the top THREAT (earlier the grinder has cleared the Citadel and meets stronger raids)
  ok(g[2]>rg[2],'(d) more play builds a stronger town: at the top strength (day 330) the grinder holds '+Math.round(g[2]*100)+'%, the regular '+Math.round(rg[2]*100)+'% (by day: the grinder '+g.map((p,i)=>'day '+[60,180,330][i]+' '+Math.round(p*100)+'%').join(', ')+'; the regular '+rg.map(p=>Math.round(p*100)+'%').join(', ')+')');
- console.log('REPORT (d) the owner\'s target for the grinder is about 9 of 10 late in the year: measured '+Math.round(g[2]*100)+'% at day 330'+(g[2]>=.85?' (met)':' (PROPOSAL in Checkpoint 47: the walls are the lever; rare ore is earn-only)'));
+ console.log('REPORT (d) the owner\'s target for the grinder is about 9 of 10 late in the year: measured '+Math.round(g[2]*100)+'% at day 330 with the cap-level Selenite (Session 7T-P decision 2; 81% before it; 56 raids a day on two seed sets: dev/tools/selenite-candidates.mjs)');
  ok(q(gt)<1,'(d) the grinder is not fully built after a year (wall strength '+q(gt).toFixed(2)+' of 1: Moonheart is earn-only and rare)');
  out.payerFullWithinYear=q(pt)>=.99;console.log('REPORT (d) the paying pilot at the grinder\'s play time: '+pay.map(p=>Math.round(p*100)+'%').join(', ')+', wall strength '+q(pt).toFixed(2)+' of 1 after a year: '+(out.payerFullWithinYear?'fully built':'NOT fully built: the store sells no rare ore (PROPOSAL for Session 8, ROADMAP row 8)'));}
+// (e) Session 7T-P decision 2 (owner, Nov 23): Selenite for the late fortress. A raid at the cap level held in person drops
+// ConquestTown.TOWN.se.n Selenite. With it the grinder holds more late in the year (days 300, 330, 365) than the 7T economy, and the regular's
+// hold rates stay within 5 points of the 7T economy's at every measured day (the regular meets the cap level only from about day 320).
+{const late=[300,330,365],days=[5,8,14,30,60,120,180,330],on=late.map(d=>M.holdRate('grinder',d,{n:3}).p),off=late.map(d=>M.holdRate('grinder',d,{n:3,se:false}).p),mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+ const rOn=out.regular.p,rOff=days.map(d=>M.holdRate('regular',d,{n:3,se:false}).p),shift=Math.max(...rOn.map((x,i)=>Math.abs(x-rOff[i])));out.selenite={rule:TN.TOWN.se,late,grinder:on,grinder7T:off,regular7T:rOff,regularMaxShift:shift};
+ ok(TN.seOf(TN.TOWN.cap)===4&&TN.seOf(TN.TOWN.cap-1)===0,'(e) the rule: '+TN.TOWN.se.n+' Selenite for a raid at the cap level ('+TN.TOWN.se.from+') held in person, none below it');
+ ok(mean(on)>mean(off),'(e) Selenite for the late fortress: the grinder holds '+Math.round(mean(on)*100)+'% late in the year (days '+late.join(', ')+': '+on.map(p=>Math.round(p*100)+'%').join(', ')+') against '+Math.round(mean(off)*100)+'% without it');
+ ok(shift<=.05,'(e) the regular\'s hold rates stay within 5 points of the 7T economy\'s at every measured day (largest change '+Math.round(shift*1000)/10+' points: '+rOn.map((p,i)=>'day '+days[i]+' '+Math.round(p*100)+'/'+Math.round(rOff[i]*100)).join(', ')+')');}
+// (f) Session 7T-P decision 3 (owner, Nov 23): the town coach's ring step (close a first wall ring before CC4; its SUGGEST A RING drafts an
+// inner ring and, when the composite allows, an outer one), re-measured on the way to CC10 with town attacks on (the Nov 10 brief's 5%
+// guard method: the audit's 60-minute regular on the real Worker reducers, every raid decided unfought, REPAIR paid when the town is
+// damaged; fortress-model.mjs ladderRun). 7T's undefended builder paid about 111,000 CP of REPAIR and took twice as long to CC10.
+// The 101-pilot panels and the PROPOSAL variants: dev/tools/coach-ring-repairs.mjs (docs/conquest/session7tp/coach-repairs.json).
+{const run=(o,n,sites)=>Array.from({length:n},(_,k)=>M.ladderRun((1001+k)*7919,{...o,site:sites?sites[k%sites.length]:'crater'})),med=a=>{const b=[...a].sort((x,y)=>x-y);return b[b.length>>1];},avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+ const N=Number(process.env.FORTRESS_PILOTS||21),none=run({raids:false},N),open=run({},N),coached=run({coach:true},N),all7=run({coach:true},N,sites);
+ const cc=r=>r.map(x=>x.cc10??200),rep=r=>avg(r.map(x=>x.repair.cp));out.coach={pilots:N,noRaids:{CC10:med(cc(none))},undefended:{CC10:med(cc(open)),repairCP:Math.round(rep(open))},coached:{CC10:med(cc(coached)),repairCP:Math.round(rep(coached))},coached7:{CC10:med(cc(all7)),repairCP:Math.round(rep(all7))}};
+ ok(coached.every(r=>r.ring.closedAt!==null&&r.ring.closedAt<=(r.hit.CC4??Infinity))&&all7.every(r=>r.ring.closedAt!==null&&r.ring.closedAt<=(r.hit.CC4??Infinity)),'(f) every coached pilot closes the first wall ring before CC4 ('+N+' on CRATER RIM, '+N+' across the seven sites, ICE BASIN by its sealed shore)');
+ ok(rep(coached)<=.05*rep(open)&&rep(all7)<=.05*rep(open),'(f) REPAIR on the way to CC10 falls from '+Math.round(rep(open))+' CP (undefended) to '+Math.round(rep(coached))+' CP with the coach\'s ring ('+Math.round(rep(all7))+' CP across the seven sites)');
+ ok(med(cc(coached))<=med(cc(none))&&med(cc(all7))<=med(cc(none)),'(f) CC10 is no longer delayed: median day '+med(cc(coached))+' coached (7 sites '+med(cc(all7))+') against '+med(cc(none))+' with no town attacks and '+med(cc(open))+' undefended');
+ console.log('REPORT (f) the coached pilot reaches CC10 sooner than with no town attacks (median day '+med(cc(coached))+' against '+med(cc(none))+'): its town holds its raids and each held raid pays 7T\'s defense cache (PROPOSAL in Checkpoint 48)');}
 mkdirSync('docs/conquest/session7t',{recursive:true});writeFileSync('docs/conquest/session7t/fortress-model.json',JSON.stringify(out,null,1)+'\n');
 console.log('PASS the fortress (decision 4 a-d): '+pass+' checks');

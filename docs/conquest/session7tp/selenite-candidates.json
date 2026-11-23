@@ -1,0 +1,253 @@
+{
+ "about": "Session 7T-P decision 2: the Selenite candidates (dev/tools/selenite-candidates.mjs, 8 raids a site and day, two seed sets)",
+ "rule": "closest to 90% late (days 300/330/365) with the regular within 5 points of base at every measured day",
+ "summary": {
+  "base": {
+   "sets": [
+    {
+     "seeds": "the fortress test's",
+     "grinderLate": 84.5,
+     "grinderByDay": {
+      "60": 100,
+      "180": 64.3,
+      "300": 83.9,
+      "330": 87.5,
+      "365": 82.1
+     },
+     "regularByDay": {
+      "5": 55.4,
+      "8": 73.2,
+      "14": 78.6,
+      "30": 100,
+      "60": 91.1,
+      "120": 75,
+      "180": 100,
+      "330": 73.2
+     },
+     "regularMaxShift": 0,
+     "regularMean": 80.8,
+     "payer": {
+      "180": 75,
+      "330": 83.9
+     },
+     "wallQ": {
+      "regular330": 0.33027999999999297,
+      "grinder330": 0.5024533333333588,
+      "grinder365": 0.5609866666666788,
+      "payer365": 0.5762933333333329
+     },
+     "seYear": {
+      "regular": 61,
+      "grinder": 206,
+      "payer": 206
+     }
+    },
+    {
+     "seeds": "second set",
+     "grinderLate": 86.9,
+     "grinderByDay": {
+      "60": 100,
+      "180": 64.3,
+      "300": 87.5,
+      "330": 85.7,
+      "365": 87.5
+     },
+     "regularByDay": {
+      "5": 37.5,
+      "8": 78.6,
+      "14": 80.4,
+      "30": 100,
+      "60": 91.1,
+      "120": 83.9,
+      "180": 100,
+      "330": 75
+     },
+     "regularMaxShift": 0,
+     "regularMean": 80.8,
+     "payer": {
+      "180": 71.4,
+      "330": 78.6
+     },
+     "wallQ": {
+      "regular330": 0.33027999999999297,
+      "grinder330": 0.5024533333333588,
+      "grinder365": 0.5609866666666788,
+      "payer365": 0.5762933333333329
+     },
+     "seYear": {
+      "regular": 61,
+      "grinder": 206,
+      "payer": 206
+     }
+    }
+   ],
+   "grinderLate": 85.7,
+   "regularMaxShift": 0
+  },
+  "A": {
+   "sets": [
+    {
+     "seeds": "the fortress test's",
+     "grinderLate": 84.5,
+     "grinderByDay": {
+      "60": 100,
+      "180": 62.5,
+      "300": 83.9,
+      "330": 85.7,
+      "365": 83.9
+     },
+     "regularByDay": {
+      "5": 55.4,
+      "8": 73.2,
+      "14": 78.6,
+      "30": 100,
+      "60": 91.1,
+      "120": 82.1,
+      "180": 100,
+      "330": 69.6
+     },
+     "regularMaxShift": 7.1,
+     "regularMean": 81.2,
+     "payer": {
+      "180": 78.6,
+      "330": 83.9
+     },
+     "wallQ": {
+      "regular330": 0.3365039999999952,
+      "grinder330": 0.5287066666666932,
+      "grinder365": 0.5423866666666807,
+      "payer365": 0.5613333333333405
+     },
+     "seYear": {
+      "regular": 71,
+      "grinder": 239,
+      "payer": 239
+     }
+    },
+    {
+     "seeds": "second set",
+     "grinderLate": 85.7,
+     "grinderByDay": {
+      "60": 100,
+      "180": 66.1,
+      "300": 85.7,
+      "330": 85.7,
+      "365": 85.7
+     },
+     "regularByDay": {
+      "5": 37.5,
+      "8": 78.6,
+      "14": 80.4,
+      "30": 100,
+      "60": 91.1,
+      "120": 82.1,
+      "180": 100,
+      "330": 71.4
+     },
+     "regularMaxShift": 3.6,
+     "regularMean": 80.1,
+     "payer": {
+      "180": 76.8,
+      "330": 87.5
+     },
+     "wallQ": {
+      "regular330": 0.3365039999999952,
+      "grinder330": 0.5287066666666932,
+      "grinder365": 0.5423866666666807,
+      "payer365": 0.5613333333333405
+     },
+     "seYear": {
+      "regular": 71,
+      "grinder": 239,
+      "payer": 239
+     }
+    }
+   ],
+   "grinderLate": 85.1,
+   "regularMaxShift": 7.1
+  },
+  "B": {
+   "sets": [
+    {
+     "seeds": "the fortress test's",
+     "grinderLate": 88.1,
+     "grinderByDay": {
+      "60": 100,
+      "180": 75,
+      "300": 87.5,
+      "330": 91.1,
+      "365": 85.7
+     },
+     "regularByDay": {
+      "5": 55.4,
+      "8": 73.2,
+      "14": 78.6,
+      "30": 100,
+      "60": 91.1,
+      "120": 75,
+      "180": 100,
+      "330": 76.8
+     },
+     "regularMaxShift": 3.6,
+     "regularMean": 81.3,
+     "payer": {
+      "180": 80.4,
+      "330": 92.9
+     },
+     "wallQ": {
+      "regular330": 0.3317013333333249,
+      "grinder330": 0.6470133333333002,
+      "grinder365": 0.6835999999999626,
+      "payer365": 0.6595866666666363
+     },
+     "seYear": {
+      "regular": 130,
+      "grinder": 1007,
+      "payer": 949
+     }
+    },
+    {
+     "seeds": "second set",
+     "grinderLate": 91.7,
+     "grinderByDay": {
+      "60": 100,
+      "180": 76.8,
+      "300": 89.3,
+      "330": 92.9,
+      "365": 92.9
+     },
+     "regularByDay": {
+      "5": 37.5,
+      "8": 78.6,
+      "14": 80.4,
+      "30": 100,
+      "60": 91.1,
+      "120": 83.9,
+      "180": 100,
+      "330": 75
+     },
+     "regularMaxShift": 0,
+     "regularMean": 80.8,
+     "payer": {
+      "180": 80.4,
+      "330": 89.3
+     },
+     "wallQ": {
+      "regular330": 0.3317013333333249,
+      "grinder330": 0.6470133333333002,
+      "grinder365": 0.6835999999999626,
+      "payer365": 0.6595866666666363
+     },
+     "seYear": {
+      "regular": 130,
+      "grinder": 1007,
+      "payer": 949
+     }
+    }
+   ],
+   "grinderLate": 89.9,
+   "regularMaxShift": 3.6
+  }
+ },
+ "choice": "B"
+}
