@@ -20,7 +20,8 @@ import {chainWin,chainItem} from './conquest-living.js';
 import {roll,bind,empty} from './conquest-loot.js';
 import {orderEvent} from './conquest-orders.js';
 import {track} from './conquest-analytics.js';
-const {War:WR,Combat:C,Battalion:BT}=CONQUEST,WAR=WR.WAR;
+import {townAlerts} from './conquest-town.js';
+const {War:WR,Combat:C,Battalion:BT,Alerts:AL}=CONQUEST,WAR=WR.WAR;
 const fail=m=>{throw Error('conquest: '+m);};
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v);
 export const WAR_ACTIONS=['war-fortify','war-station','war-seen','war-alerts'];
@@ -56,7 +57,7 @@ function refund(s,j){const c=WR.fortifyCost(j.t,j.l,!!j.pp,!!j.re);if(!c)return;
 function spend(s,price){for(const [k,n] of Object.entries(price))if((k==='cp'?s.ledger.cp:s.ledger.banked[k]||0)<n)fail('insufficient banked '+(k==='helium'?'He-3':k)+': need '+n);
  s.ledger.cp-=price.cp;for(const k of ['alloy','helium'])s.ledger.banked[k]-=price[k];}
 // ---- the pilot's war actions (the War Map) -------------------------------------------------------------------------------------
-// war-fortify {war:{t}} · war-station {war:{t,p:[pilot ids]}} · war-seen · war-alerts {war:{on?,tz?,push?:{endpoint,keys}|null,drop?}}
+// war-fortify {war:{t}} · war-station {war:{t,p:[pilot ids]}} · war-seen · war-alerts {war:{on?,tz?,push?:{endpoint,keys}|null,drop?,sw?:{type:0|1}}}
 export function warAction(s,r,now,ctx={}){const w=war(s,now),q=record(r.war)?r.war:{},pass=passLive(ctx.premium);
  if(r.action==='war-seen'){w.rep=now;s.notice={kind:'war-seen'};return;}
  if(r.action==='war-alerts'){alerts(s,q,now);return;}
@@ -81,12 +82,15 @@ export const isStationed=(s,pilotId)=>WR.stationed(s.war).has(pilotId);
 const PUSH_HOSTS=/^https:\/\/([a-z0-9-]+\.)*(fcm\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com|push\.microsoft\.com)\//;
 const b64u=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{16,140}={0,2}$/.test(v);
 export function alertSettings(s){const a=record(s.al)?s.al:{};const ps=(Array.isArray(a.ps)?a.ps:record(a.ps)?Object.values(a.ps):[]).filter(p=>record(p)&&typeof p.e==='string'&&PUSH_HOSTS.test(p.e)&&b64u(p.k)&&b64u(p.a)).slice(-3);
- s.al={on:a.on===0?0:1,ask:a.ask?1:0,tz:Number.isSafeInteger(a.tz)&&Math.abs(a.tz)<=840?a.tz:0,ps,...(a.home?{home:1}:{})};return s.al;}
-function alerts(s,q,now){const a=alertSettings(s);if(q.on!==undefined)a.on=q.on?1:0;if(q.tz!==undefined){const tz=Math.round(Number(q.tz));if(!Number.isSafeInteger(tz)||Math.abs(tz)>840)fail('invalid time zone');a.tz=tz;}
+ const sw=record(a.sw)?Object.fromEntries(Object.keys(a.sw).filter(k=>AL.PRI[k]&&a.sw[k]===0).map(k=>[k,0])):{};   // Session 7T decision 9: the types switched off
+ s.al={on:a.on===0?0:1,ask:a.ask?1:0,tz:Number.isSafeInteger(a.tz)&&Math.abs(a.tz)<=840?a.tz:0,ps,sw,...(a.home?{home:1}:{})};return s.al;}
+function alerts(s,q,now){const a=alertSettings(s);if(q.on!==undefined)a.on=q.on?1:0;
+ if(record(q.sw)){const keys=Object.keys(q.sw);if(keys.length>AL.TYPES.length||keys.some(k=>!AL.PRI[k]))fail('invalid alert type');for(const k of keys){if(q.sw[k])delete a.sw[k];else a.sw[k]=0;}}   // per-type switches (decision 9)
+ if(q.tz!==undefined){const tz=Math.round(Number(q.tz));if(!Number.isSafeInteger(tz)||Math.abs(tz)>840)fail('invalid time zone');a.tz=tz;}
  if(q.home)a.home=1;   // the iOS "Add LUNAR to your Home Screen" card was shown (one time)
  if(q.push===null||q.drop){a.ps=a.ps.filter(p=>p.e!==(q.drop||'')&&q.push!==null);}
  else if(record(q.push)){const e=String(q.push.endpoint||''),k=q.push.keys?.p256dh,au=q.push.keys?.auth;if(e.length>600||!PUSH_HOSTS.test(e)||!b64u(k)||!b64u(au))fail('invalid push subscription');a.ps=[...a.ps.filter(p=>p.e!==e),{e,k,a:au,at:now}].slice(-3);a.on=1;}
- s.al=a;s.notice={kind:'war-alerts',on:a.on,push:a.ps.length};}
+ s.al=a;s.notice={kind:'war-alerts',on:a.on,push:a.ps.length,sw:{...a.sw}};}
 // the client reports its time zone with each session open (the alerts' local night)
 export function reportTz(s,tz){if(tz===undefined)return;const v=Math.round(Number(tz));if(Number.isSafeInteger(v)&&Math.abs(v)<=840)alertSettings(s).tz=v;}
 // ---- a war battle: start, then settle -------------------------------------------------------------------------------------------
@@ -122,13 +126,24 @@ export function warRaid(s,op,now){const w=war(s,now),id=op?.sector&&WR.BY[op.sec
 // request), forecast from the same deterministic clock (nothing is sent before its announcement). Only the announcement's time,
 // territory and landing are written; the rolls never leave the Conquest record.
 export function alertDoc(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.war,now),a=alertSettings(s);const live=a.on===1&&a.ask===1;
- const evs=WR.alertEvents(w),seen=new Set(evs.map(e=>e.id));
+ const evs=live?WR.alertEvents(w):[],seen=new Set(evs.map(e=>e.id));
  if(live){const f=structuredClone(w),ctx=ctxOf(s),end=WR.tickOf(now+WAR.freezeMs-1);for(let k=f.k+1;k<=end;k++){WR.step(f,k,seedOf(s),{...ctx});for(const e of WR.alertEvents(f))if(!seen.has(e.id)){seen.add(e.id);evs.push(e);}}}
- const ev=evs.filter(e=>e.until>now).map(e=>({id:e.id,k:e.kind,t:e.t,at:e.at,until:e.until,...(e.n?{n:e.n}:{})})).sort((x,y)=>x.at-y.at).slice(0,12);
- const plan=live?WR.alertPlan(ev.map(e=>({...e,kind:e.k})),now,a.tz):[];
- return {v:1,on:live?1:0,tz:a.tz,ev,nx:plan[0]?.at||0,ps:a.ps.map(p=>({e:p.e,k:p.k,a:p.a}))};}
+ const ev=evs.filter(e=>e.until>now).map(e=>({id:e.id,k:e.kind,t:e.t,at:e.at,until:e.until,...(e.n?{n:e.n}:{})}));
+ // Session 7T decision 9: the town's attacks (and the raids forecast to breach it) join the same schedule, ahead of the war's
+ if(live){let tev=[];try{tev=townAlerts(s,now,now+WAR.freezeMs);}catch(_){}for(const e of tev)if(e.until>now&&!seen.has(e.id)){seen.add(e.id);ev.push(e);}}
+ ev.sort((x,y)=>x.at-y.at);const list=ev.slice(0,16);
+ // one budget for every notification (decision 9): rm, the daily reminder is sent by the alert cron (worker/src/index.js sendReminders
+ // leaves this pilot to it); ga, the game's alerts are live; pl, bd, y90: what the cron needs for the Meteor, the Beacon and the yield
+ const tier=s.base?.tier|0,d={v:1,on:a.on===1?1:0,ga:live?1:0,rm:1,tz:a.tz,ev:list,sw:{...a.sw},pl:now,bd:Number(s.bcn?.d)||0,y90:tier?(Number(s.base.claimedAt)||0)+.9*RULES.CQ_YIELD.day:0,ps:a.ps.map(p=>({e:p.e,k:p.k,a:p.a}))};
+ const plan=d.on?AL.plan([...list,...AL.synth(d,now,a.tz)],now,a.tz,undefined,a.sw):[];
+ return {...d,nx:plan[0]?.at||0};}
 // After a Conquest reducer: the schedule doc to write after the commit, or null when nothing it depends on changed (a cheap key:
 // the tick, the events and their attempts, the Grand Offensive, ownership and the alert settings). Kept in s.war.ak.
 export function alertChange(s,now){try{return alertChange0(s,now);}catch(_){return null;}}   // best effort: the alerts never fail a Conquest request
-function alertChange0(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.war,now);const a=alertSettings(s),key=WR.u32(JSON.stringify([w.k,w.ev.map(e=>[e.id,e.tr|0,e.l]),w.go&&[w.go.w,w.go.tr|0,w.go.done|0],a.on,a.ask,a.tz,a.ps.map(p=>p.e),WR.IDS.map(id=>w.o[id]+(w.f[id]|0)+(w.st[id]?.length|0)).join(''),w.jobs.length])).toString(36);
+function alertChange0(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.war,now);const a=alertSettings(s),tw=s.tw,p=s.plot;
+ // Session 7T: the town's clock, its attacks, the town itself (a forecast raid meets it as built), the Beacon, the yield, the switches
+ // and the local day (the reminder skips a day already played)
+ const town=tw?[tw.k,(tw.ev||[]).map(e=>[e.id,e.tr|0,e.l,e.lc|0]),(tw.log||[]).length,p?.cc|0,p?Object.values(p.b||{}).reduce((x,b)=>x+(b.l|0)*7+b.i*3+b.j,0):0,p?Object.keys(p.w||{}).length:0,p?Object.keys(p.dmg||{}).length:0,Number(p?.shieldUntil)||0,p?.job?.end|0,(s.bat?.p||[]).map(x=>x.id+(x.h===.5?'d':'')).join('')]:0;
+ const key=WR.u32(JSON.stringify([w.k,w.ev.map(e=>[e.id,e.tr|0,e.l]),w.go&&[w.go.w,w.go.tr|0,w.go.done|0],a.on,a.ask,a.tz,a.ps.map(p=>p.e),WR.IDS.map(id=>w.o[id]+(w.f[id]|0)+(w.st[id]?.length|0)).join(''),w.jobs.length,
+  town,Number(s.base?.claimedAt)||0,s.bcn?.d|0,a.sw,WR.localDay(now,a.tz)])).toString(36);
  if(key===w.ak)return null;w.ak=key;return alertDoc(s,now);}

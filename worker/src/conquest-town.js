@@ -40,6 +40,21 @@ export function townClock(s,now){const p=s.plot;if(!p||!s.base?.tier)return [];c
  for(const e of tw.ev.filter(x=>x.lc&&x.lc<=now&&!x.tr)){tw.ev.splice(tw.ev.indexOf(e),1);const r=settle(s,e,e.lc,null);tw.past=[...tw.past,e.l*WR.WAR.tickMs].slice(-6);out.push({kind:'land',ev:e,r});}
  // a live defense left without input finishes without the pilot (the rest of the fight runs; the better result counts)
  if(s.td?.active&&now-(s.td.last||now)>T.idleMs)liveFinish(s,now,'idle');
+ // the first town attack announced makes the game's alerts live (decision 9; Session 7 did this at the first war battle): from here
+ // the phone offers browser alerts, and "RAID INCOMING · DEFEND IT" can reach the pilot while away
+ if(out.some(x=>x.kind==='announce')){if(!record(s.al))s.al={};s.al.ask=1;}
+ return out;}
+// The town's alert events (decision 9, the Worker's cron sends them inside the one budget): the attacks the pilot can still defend
+// (type 'town', until their landing or the last chance), and, run forward on a copy of the record to `horizon` (the freeze: nothing
+// changes while the pilot is away), the attacks the clock will announce and the raids that will breach the town (type 'breach': REPAIR
+// and the replay; a held raid is only in the War Report). The real clock and raid engine decide them, so an alert never promises
+// what the next request would not show. Only times, ids and the general leave the record.
+export function townAlerts(s,now,horizon){const p=s.plot;if(!p||!s.base?.tier)return [];const tw=town(s,now),Tk=WR.WAR.tickMs,out=[];
+ for(const e of TN.defendable(tw,now))out.push({id:'tw'+e.id,ty:'town',at:e.a*Tk,until:e.lc||e.l*Tk,...(e.g?{g:e.g}:{})});
+ if(!(horizon>now))return out;let c;try{c=structuredClone(s);}catch(_){return out;}
+ for(let k=WR.tickOf(now)+1;k*Tk<=horizon;k++){let res;try{res=townClock(c,k*Tk+1);}catch(_){break;}
+  for(const x of res){const e=x.ev;if(!e||typeof e.id!=='string')continue;if(x.kind==='announce')out.push({id:'tw'+e.id,ty:'town',at:e.a*Tk,until:e.l*Tk,...(e.g?{g:e.g}:{})});
+   else if(x.kind==='land'&&(x.r==='breached'||x.r==='fallen'))out.push({id:'tb'+e.id,ty:'breach',at:e.l*Tk,until:e.l*Tk+16*HOUR,o:x.r});}}
  return out;}
 // an attack landing at `at`: the Grand Offensive's target is called off when the Grand Offensive was beaten in person; a pilot online
 // at the landing (a request in the 2 minutes before it, and this request within 2 minutes after) gets the 60-second last chance

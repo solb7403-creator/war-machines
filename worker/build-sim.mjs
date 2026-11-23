@@ -1,7 +1,7 @@
 // Builds worker/src/sim.gen.js: the game's own sim (js/rules.js + js/game.js) wrapped in createSim(),
 // so every live match gets its own copy, plus worker/sim-api.js (what the room calls).
 // Run by the deploy workflow and the tests; the output is not committed.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -41,8 +41,11 @@ export function buildSim(out = join(here, 'src', 'sim.gen.js')) {
     // Session 7T Living Town: the resumable town raid engine (the drill's port, defenders, save / restore) and the town attack rules
     read('js/conquest/raid.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
     read('js/conquest/townwar.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
-    'return {Catalog:conquestRoot.ConquestCatalog,Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,Plot:conquestRoot.ConquestPlot,Battalion:conquestRoot.ConquestBattalion,War:conquestRoot.ConquestWar,Raid:conquestRoot.ConquestRaid,Town:conquestRoot.ConquestTown,tankOf,machineSpeed};\n})();\n';
-  writeFileSync(out, src);
+    read('js/conquest/alerts.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
+    'return {Catalog:conquestRoot.ConquestCatalog,Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,Plot:conquestRoot.ConquestPlot,Battalion:conquestRoot.ConquestBattalion,War:conquestRoot.ConquestWar,Raid:conquestRoot.ConquestRaid,Town:conquestRoot.ConquestTown,Alerts:conquestRoot.ConquestAlerts,tankOf,machineSpeed};\n})();\n';
+  // only when it changed, and atomically (a temp file renamed over it): tests that build at start can run side by side
+  if (existsSync(out) && readFileSync(out, 'utf8') === src) return out;
+  const tmp = out + '.' + process.pid + '.tmp'; writeFileSync(tmp, src); renameSync(tmp, out);
   return out;
 }
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) console.log('wrote', buildSim());

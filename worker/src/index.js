@@ -15,7 +15,7 @@ import { ownerGemEpic, ownerCheck } from "./owner.js";
 import {conquestSession,conquestInput,conquestAction,conquestEvent} from "./conquest.js";
 import {analyticsDays} from "./conquest-analytics.js";
 import {conquestVisit} from "./conquest-visit.js";
-import {sendWarAlerts} from "./conquest-alerts.js";
+import {sendWarAlerts,reminderText} from "./conquest-alerts.js";
 import {vapidKeys} from "./webpush.js";
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
@@ -567,13 +567,9 @@ export async function sendReminders(env, now = Date.now(), batch = 0) {
   for (let i = 0; i < list.length && !slow; i += 4) {
     await Promise.all(list.slice(i, i + 4).map(async ([pid, v]) => {
       if (!v || !v.on || !v.chat) { up[`ntf/${pid}/nx`] = null; return; }
+      if (v.u === 1) { up[`ntf/${pid}/nx`] = null; return; }   // Session 7T decision 9: a Conquest pilot's reminder is sent by the alert cron, inside the one budget (worker/src/conquest-alerts.js)
       if (v.pl === d) { up[`ntf/${pid}/nx`] = d + 1; return; }   // already played today
-      const streak = v.pl === d - 1 ? v.sk || 0 : 0;
-      const text = v.gf === 0 && streak < 2   // first day back: the welcome-back gift is waiting
-        ? "☾ Your welcome-back gift is ready, pilot: a free Rare gem cache. Claim it with today's daily reward in Quests."
-        : streak >= 2
-        ? `☾ Your ${streak}-day streak ends at midnight UTC. Keep it going: every streak day adds +5% to your quest points, up to +30%.`
-        : "☾ Your daily reward and 4 new quests are ready, pilot. The top 1,000 on the leaderboard are tracked for the planned $LUNAR airdrop.";
+      const text = reminderText(v, d);   // first day back: the welcome-back gift; a streak about to end; or the daily reward
       const r = await tg(env, "sendMessage", { chat_id: v.chat, text, reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }]] } }).catch(() => null);
       if (r && r.ok) { up[`ntf/${pid}/nx`] = d + 1; up[`ntf/${pid}/last`] = d; sent++; }
       else if (r && r.error_code === 429) slow = true;   // Telegram says slow down: the rest wait for the next run
