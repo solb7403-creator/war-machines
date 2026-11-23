@@ -6799,7 +6799,8 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   4. Garrison = `garrisonOf(s)` (reserves by rating, Hangar level slots, max 5). Gear picker (decision 8): `hangar-gear` action
      (pins `p.pin {w,c}` item keys `BT.keyOf`), `BT.autoArm(...,fixed)`, `BT.spare`, `BT.kitStats`; AUTO-ARM clears pins.
   Tests (all pass): conquest-raid-engine (9), conquest-away-raids (43), conquest-live-defense (19), conquest-gear (16).
-  A full run of every CI node test on commit 3fd4763 (scratchpad runner) was 74 PASS / 0 FAIL when last checked.
+  A full run of all 123 node test commands named in the CI workflows on commit 3fd4763 (the town attack slice, before the gear
+  picker and the breach rule): 123 PASS, 0 FAIL. Rerun them on the final code before release.
 - **Fortress model done and calibrated** (`dev/tools/fortress-model.mjs`; numbers in docs/conquest/session7t/fortress-calibration.txt):
   one site plan per site (`plan(site)`: support by the CC, 42 typed turret slots on rings 12/16, wall rings from R18), `townAt(profile,
   site, day)` builds it with 50% of the income (war-model method), the builder in the pilot's sessions, Foundry composite and half the
