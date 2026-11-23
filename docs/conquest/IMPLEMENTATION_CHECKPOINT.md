@@ -6817,8 +6817,18 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   conquest-town-ui.py all flows at 5 sizes; conquest-hub-browser, conquest-plot-ui, conquest-war-browser, conquest-base-builder PASS.
   conquest-desktop-keys.py FAILED once ("keyboard dead after 10 s" in the open world at 1440) while 3 browser suites and 2 reviewers
   shared the CPU: rerun it alone; if it fails alone, compare with main `e2a7c64` before blaming 7T. perf.py: run with an idle CPU.
-- **Reviewers** (the brief's roles 1 and 2, read-only, given only the branch, head `f67e08d`, briefs and checkpoint) were started;
-  when their reports arrive: fix every BLOCKER, rerun what it touches, re-review (2 rounds at most).
+- **Reviewers** (round 1 at `f67e08d`). PR #150 (draft, label `owner-rules-change`). **Reviewer 1 BLOCKERS (being fixed):**
+  B1 the replay plays under the drill's text (plotview.js ~334): show REPLAY · RAIDED WHILE AWAY · LEVEL n; B2 a held, fought defense
+  can pay 0 points (conquest-town.js settle pays only when the live picture is used): pay 675 when the settled result is HELD and the
+  pilot really fought; B3 the pilot starts inside its own walls, so the "fought" bar is unreachable for a built town (0/80): let the
+  pilot's tank pass its own walls (raid.js tank blocking + the town drive's block map while live); B4 streak emblems revoked on a reset
+  and not listed in the banner editor: key emblems to `best` (conquest-plot.js streakEmblem) and list earned ones (plotview.js ~579);
+  B5 the first raid is almost always lost: the first attack on a town is a teaching raid (1-star general, level 1), report days 3-4
+  with a PROPOSAL; B6 the record said "breach = a building fell": the code is a vital or 3 buildings (raid.js outcomeOf); correct it
+  and report the cap's leftover damage (7/50 raids lose a building, CC 92%, ~387 CP of repair a raid). Non-blocking to fold in: hub
+  copy (War Map shows no town attacks), alerts card copy (OFF also stops the reminder), Beacon alert only for pilots who played in 7
+  days, an alert's DEFEND link opens the town instead of starting the fight, the Peace Ward refusal text, gear AUTO label, "+0 KIT".
+  Reviewer 2: pending. Then re-review (round 2).
 - **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>
   (Session 7T Living Town)"; PR from `claude/festive-einstein-2nwwzo` to main with the body drafted from this checkpoint and the
   `owner-rules-change` label (docs/owner-rules.json cpSites +1, the held raid's cache, owner decision 5); CI green (the new `fortress`
