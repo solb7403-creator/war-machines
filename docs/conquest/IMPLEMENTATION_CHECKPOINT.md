@@ -6828,7 +6828,8 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   and report the cap's leftover damage (7/50 raids lose a building, CC 92%, ~387 CP of repair a raid). Non-blocking to fold in: hub
   copy (War Map shows no town attacks), alerts card copy (OFF also stops the reminder), Beacon alert only for pilots who played in 7
   days, an alert's DEFEND link opens the town instead of starting the fight, the Peace Ward refusal text, gear AUTO label, "+0 KIT".
-  Reviewer 2: pending. Then re-review (round 2).
+  **All six fixed in `710f113`** (with the non-blocking ones listed; tests: live-defense +3, away-raids +2, streak +1; quick
+  browser pass green, the live defense now ends HELD). Reviewer 2: pending. Then re-review (round 2) of both at the fixed head.
 - **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>
   (Session 7T Living Town)"; PR from `claude/festive-einstein-2nwwzo` to main with the body drafted from this checkpoint and the
   `owner-rules-change` label (docs/owner-rules.json cpSites +1, the held raid's cache, owner decision 5); CI green (the new `fortress`
