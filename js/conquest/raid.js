@@ -185,6 +185,6 @@ function make(plot,seed=1,opt={}){
 function drill(plot,seed=1,opt={}){return make(plot,seed,opt).run();}
 // the outcome a town attack reports (owner decision 2): FALLEN (the Command Center destroyed), BREACHED (a building lost, the Command
 // Center standing), HELD (only walls and settler homes damaged)
-const outcomeOf=r=>r.outcome==='breached'?'fallen':(r.fell||[]).length?'breached':'held';
+const outcomeOf=r=>r.outcome==='breached'?'fallen':(r.fell||[]).some(f=>f.t!=='gate')?'breached':'held';   // a gate is a wall section
 root.ConquestRaid=Object.freeze({UNIT,make,drill,unitOf,posts,outcomeOf,rng});
 })(globalThis);

@@ -593,6 +593,9 @@ const CQ_ITEMS={repair:{n:'Repair Kit',w1:'REPAIR',d:'+40% hull over 6 s',w:40,c
  scanner:{n:'Scanner Charge',w1:'SCANNER',d:'A SCAN 100 m wider that also finds every vein in this sector',w:20,cdMs:30000,r:1,extra:100},
  decoy:{n:'Decoy Beacon',w1:'DECOY',d:'Pulls Parasites within 120 m to a beacon for 8 s',w:15,cdMs:45000,r:1,radius:120,s:8}};
 const CQ_ITEM_ORDER=['repair','shield','scanner','decoy'],CQ_ITEM_MAX=10;
+// Session 7T (owner brief decision 2): the Peace Ward, an earnable 24-hour shield for your town (rare loot rows 'ward' below: live town
+// defenses and Meteor Strikes; never sold, never in any store). Held in the town record (s.tw.ws, at most 10), used from the town.
+const CQ_WARD={n:'Peace Ward',w1:'PEACE WARD',d:'Shields your town from Parasite raids for 24 hours',r:2,max:10};
 // Research parts: the Science Lab's inputs (Session 6B). They drop and are stored now; 50 of each at most.
 const CQ_PARTS={thermal:{n:'Thermal Core',w1:'THERMAL'},coil:{n:'Ballistic Coil',w1:'COIL'},servo:{n:'Drive Servo',w1:'SERVO'},cap:{n:'Field Capacitor',w1:'CAPACITOR'}};
 const CQ_PART_ORDER=['thermal','coil','servo','cap'],CQ_PART_MAX=50,CQ_PART_R=2;
@@ -617,8 +620,8 @@ const LOOT={
  elite:{rows:[{p:0.25,mn:'il'},{p:0.06,mn:'ar'},{p:0.08,item:1},{p:0.03,part:1},{p:0.01,frag:'u'}],pity:{part:20}},   // sentinel, fire coordinator
  commander:{rows:[{p:0.12,part:1},{p:0.10,trophy:1},{p:0.05,frag:'r'}],ring:{4:[{p:0.08,mn:'tq'}]},pity:{trophy:10}},   // the five raid commanders; +8% Tranquillityite at VETERAN
  chest:{always:{item:1},rows:[{p:0.08,frag:'r'}]},                                                       // raid completion chest (the 25-shard blueprint and 3.5% elite roll stay)
- strike:{rows:[{p:0.15,part:1},{p:0.10,frag:'r'}]},                                                      // Meteor Strike secured (its minerals and Resonance unchanged)
- defense:{rows:[{p:0.06,item:2},{p:0.04,frag:'u'}]},                                                     // invasion / town defense held live (the defense cache unchanged)
+ strike:{rows:[{p:0.15,part:1},{p:0.10,frag:'r'},{p:0.03,ward:1}]},                                      // Meteor Strike secured (its minerals and Resonance unchanged); Session 7T: a Peace Ward 3%
+ defense:{rows:[{p:0.06,item:2},{p:0.04,frag:'u'},{p:0.05,ward:1}]},                                     // invasion / town defense held live (the defense cache unchanged); Session 7T: a Peace Ward 5%
  order:{daily:{item:1},third:{frag:'u'},weekly:{mn:{ar:1},frag:'r'}},                                    // War Orders (Part E): every daily, the day's third, the weekly
  titan:null};                                                                                            // Hive Titan rows: Session 7B
 // ---- Session 6 Part E (owner Decisions 2a, 3a; spec §6.1, §6.2) ----

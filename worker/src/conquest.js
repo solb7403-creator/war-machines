@@ -12,6 +12,7 @@ import {createState,applyCommands,applyAction,validateCommands,refreshState,refi
 import {RESEARCH_ACTIONS,account as researchAccount} from './conquest-research.js';
 import {BAT_ACTIONS,account as batAccount,gearOf,field as batField} from './conquest-battalion.js';
 import {WAR_ACTIONS,reportTz,alertChange} from './conquest-war.js';
+import {TOWN_ACTIONS} from './conquest-town.js';
 import {writeAlertDoc} from './conquest-alerts.js';
 const allowed=(b,keys)=>b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).every(k=>keys.includes(k));
 const response=(status,error,state)=>({status,body:{error,...(state?{state:publicState(state)}:{})}});
@@ -47,7 +48,7 @@ export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.s
  s.notice={kind:'dev',action:r.action};s.seq=r.seq;return s;}
 // Server-only fields never leave the Worker: the vein seed and unscanned veins (s.lodes) become the scanned-only s.veins view.
 // lseed: the loot seed (Session 6) never leaves the Worker either.
-export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};
+export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,tdu,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};   /* Session 7T: tdu, the unfought result held while you fight, stays on the Worker until the fight ends */
  if(s.war&&typeof s.war==='object'){const {ak,...w}=s.war;out.war={...w,ev:(Array.isArray(w.ev)?w.ev:Object.values(w.ev||{})).map(e=>{if(!e||typeof e!=='object')return e;const {sc,...x}=e;return x;})};}/* Session 7: an authored roll (the first war's) never reaches the phone */
  out.veins=publicVeins(s,s.lastWall||0);
  // Meteor Strike core rolls stay server-side until the strike is secured; the client only needs whether a slot is claimed.
@@ -122,12 +123,13 @@ export async function conquestAction(env,a,now=Date.now()){
   if(!allowed(a.b,['gv','initData','seq','action'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1)return response(400,'invalid conquest action fields');
   if(a.pid!==OWNER_PID||!(await isOwner(env,a,[OWNER_ADMIN])))return response(403,'owner only');
   return submit(env,a,{seq:a.b.seq,action:a.b.action},devAction,now);}
- if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod','bat','war'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS,...BAT_ACTIONS,...WAR_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
+ if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod','bat','war','town'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS,...BAT_ACTIONS,...WAR_ACTIONS,...TOWN_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
+ if(a.b.town!==undefined&&(!TOWN_ACTIONS.includes(a.b.action)||JSON.stringify(a.b.town).length>200))return response(400,'invalid conquest action fields');
  if(a.b.war!==undefined&&(!WAR_ACTIONS.includes(a.b.action)||JSON.stringify(a.b.war).length>1200))return response(400,'invalid conquest action fields');
  if(a.b.bat!==undefined&&JSON.stringify(a.b.bat).length>600)return response(400,'invalid conquest action fields');
- if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS,...BAT_ACTIONS,...WAR_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
+ if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS,...BAT_ACTIONS,...WAR_ACTIONS,...TOWN_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
  if(a.b.plot!==undefined&&JSON.stringify(a.b.plot).length>(BIG_PLOT_ACTIONS.includes(a.b.action)?9000:2400))return response(400,'invalid conquest action fields');
- const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod','bat','war'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
+ const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod','bat','war','town'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
  const ctx=a.b.action==='recall-start'||a.b.action==='war-fortify'?{premium:await premiumPass(env,a.pid,now)}:   /* Session 7: the Lunar Pass Fortify perks (behind the store flag) */MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:RESEARCH_ACTIONS.includes(a.b.action)?researchCtx(RULES.ecoNorm(await readEco(env,a.pid)),now):['hangar-arm','hangar-livery'].includes(a.b.action)?await (async()=>{const S=RULES.ecoNorm(await readEco(env,a.pid));return batCtx(S,S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L));})():{};   /* Session 6C: AUTO-ARM and liveries read the account once */   /* Session 6B: research reads the account once (bonus parts, finish credits, premium pass) */const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);

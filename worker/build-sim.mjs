@@ -40,7 +40,8 @@ export function buildSim(out = join(here, 'src', 'sim.gen.js')) {
     read('js/conquest/war.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
     // Session 7T Living Town: the resumable town raid engine (the drill's port, defenders, save / restore) and the town attack rules
     read('js/conquest/raid.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
-    'return {Catalog:conquestRoot.ConquestCatalog,Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,Plot:conquestRoot.ConquestPlot,Battalion:conquestRoot.ConquestBattalion,War:conquestRoot.ConquestWar,Raid:conquestRoot.ConquestRaid,tankOf,machineSpeed};\n})();\n';
+    read('js/conquest/townwar.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
+    'return {Catalog:conquestRoot.ConquestCatalog,Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,Plot:conquestRoot.ConquestPlot,Battalion:conquestRoot.ConquestBattalion,War:conquestRoot.ConquestWar,Raid:conquestRoot.ConquestRaid,Town:conquestRoot.ConquestTown,tankOf,machineSpeed};\n})();\n';
   writeFileSync(out, src);
   return out;
 }

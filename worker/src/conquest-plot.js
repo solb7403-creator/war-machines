@@ -11,6 +11,7 @@ import {trophyScore,trophySet} from './conquest-loot.js';
 import {orderEvent} from './conquest-orders.js';
 import {track} from './conquest-analytics.js';
 import {tick as researchTick} from './conquest-research.js';
+import {townClock} from './conquest-town.js';
 const P=CONQUEST.Plot,DAY=86400000;
 export const PLOT_ACTIONS=['plot-site','plot-build','plot-upgrade','plot-move','plot-remove','plot-wall','plot-collect','plot-drill','plot-banner','plot-theme','plot-feed','plot-research','plot-repair','plot-layout','plot-name'];
 // Which plot actions may run from the MAP (remote command): upgrades spend already-banked goods, as before Session 5.
@@ -33,6 +34,7 @@ export function plotSync(s,now){const b=s.base;if(!b?.tier&&!s.plot)return null;
  if(p.theme&&typeof p.theme==='object')p.theme.decor=Array.isArray(p.theme.decor)?p.theme.decor:Object.values(p.theme.decor||{});   // Firebase drops an empty list
  if(!p.b.cc)p.b.cc={t:'cc',...(P.autoPlace(p,'cc')||{i:37,j:37,r:0}),l:p.cc|0};
  if(p.job?.t==='repair'&&p.job.ready<=now)researchTick(s,p.job.ready);   // Session 6B: a ruined Science Lab pauses research until the repair crews finish, not until the next request
+ townClock(s,now);   // Session 7T: town attacks land first, each on the town as it stood at its landing (worker/src/conquest-town.js)
  const done=P.settle(p,now);if(done)s.notice={kind:'plot-built',type:done.t,level:done.l};
  for(const k of Object.keys(p.dmg))if(!P.maxHpOf(p,k)||!(Number(p.dmg[k])>0))delete p.dmg[k];   // damage of a structure that no longer exists
  P.accrue(p,now);b.tier=P.tierOf(p.cc);b.modules=P.modulesOf(p);p.power=P.power(p)+trophyScore(s);p.def=P.defenseRating(p);   // Session 6: +15 Town Score per trophy type held
