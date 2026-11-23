@@ -217,12 +217,12 @@ export function holdRate(prName,d,{sites=P.SITE_IDS,n=4,share,citadelX=1,se=true
 //  the composite allows, an outer one) and confirms it; when no wall can reach an exposed vital (beside ice or rock) it moves the vital in.
 //  coach:'single' draws only the first ring (a pilot who closes it by hand). Walls are instant orders: composite only, no builder time.
 //  repairX: a model-only price factor on the REPAIR of town-raid damage (the PROPOSAL's exact price; the game's REPAIR is unchanged).
-export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=1,site='crater',days=200}={}){const s=createState(R.STOCK_L,start);s.lseed=seed;delete s.wo;const hit={};
+export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=1,site='crater',days=200}={}){const s=createState(R.STOCK_L,start);s.lseed=seed;s.twsd=(seed>>>0)||1;delete s.wo;const hit={};   // twsd: the town's own seed, fixed (review round 1: the Worker would draw it at random)
  const legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,spent=0;const rep={n:0,cp:0,alloy:0,cm:0},ring={closedAt:null,cells:0,orders:0};
  const afford=c=>Object.entries(c||{}).every(([k,n])=>k==='cp'?s.ledger.cp>=n:k==='cm'?Math.floor(s.plot?.cm||0)>=n:P.MNS.includes(k)?true:(s.ledger.banked[k]||0)>=n);
  const mark=(k,now)=>{if(hit[k]===undefined)hit[k]=+((now-start)/DAY).toFixed(1);};
  const atGate=()=>{s.position=at(C.baseDefinition.x,C.baseDefinition.z);s.battle.enemies=[];};
- const build=now=>{const cp0=s.ledger.cp;try{build0(now);}finally{spent+=Math.max(0,cp0-s.ledger.cp);}};
+ const build=now=>{scan();const cp0=s.ledger.cp;try{build0(now);}finally{spent+=Math.max(0,cp0-s.ledger.cp);}};
  const closeRing=now=>{const p=s.plot,RO={all:coach==='all',single:coach==='single'},R0=TN.ringOf(p,RO);if(R0.closed){if(ring.closedAt===null)ring.closedAt=+((now-start)/DAY).toFixed(2);return false;}const c=p.b.cc,sz=P.sizeOf('cc',c.r|0),ci=Math.round(c.i+(sz.w-1)/2),cj=Math.round(c.j+(sz.d-1)/2);
   // a vital outside the walls ("RING IN YOUR ..."): only when no wall can reach it (beside ice or rock) the pilot moves it inside (free),
   // the nearest spot to the Command Center that closes the town; walls first (a cramped core leaves the rest of the town outside: measured
@@ -247,7 +247,11 @@ export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=1,site='
    if(!P.buildCheck(p,t,1)&&!(B.turret&&P.turretCount(p)>=6)){const pos=P.autoPlace(p,t);if(pos)opts.push({cp:P.costOf(t,1).cp,a:()=>plotAction(s,{action:'plot-build',plot:{type:t,...pos}},now)});}}
   opts.sort((x,y)=>x.cp-y.cp);for(const o of opts){try{if(o.cp<=s.ledger.cp){o.a();return;}}catch(e){}}};
  const split=cp0=>{const half=spent>=2550?Math.floor((s.ledger.cp-cp0)/2):0;s.ledger.cp-=half;};
- let logN=0;const seen=now=>{s.lastWall=now;if(!raids&&s.plot)s.plot.shieldUntil=start+4000*DAY;if(cacheX!==1&&s.tw?.log){const L=s.tw.log;for(const x of L.slice(Math.max(0,L.length-(L.length-logN)))) if(x.cache&&!x._cx){x._cx=1;const c=TN.TOWN.cache;s.ledger.cp-=Math.round(c.cp*(1-cacheX));for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=Math.max(0,(s.ledger.banked[k]||0)-Math.round(c[k]*(1-cacheX)));}logN=L.length;}};   // cacheX: a model-only factor on the held unfought raid's defense cache (a PROPOSAL's number)
+ // every raid once, by its id (the town log keeps only the last 16): the tally, and cacheX, a model-only factor on the held unfought raid's
+ // defense cache (a PROPOSAL's number)
+ const ids=new Set(),tally={held:0,breached:0,fallen:0},scan=()=>{for(const x of s.tw?.log||[]){if(ids.has(x.id))continue;ids.add(x.id);if(x.o in tally)tally[x.o]++;
+  if(x.cache&&cacheX!==1){const c=TN.TOWN.cache;s.ledger.cp-=Math.round(c.cp*(1-cacheX));for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=Math.max(0,(s.ledger.banked[k]||0)-Math.round(c[k]*(1-cacheX)));}}};
+ const seen=now=>{s.lastWall=now;if(!raids&&s.plot)s.plot.shieldUntil=start+4000*DAY;scan();};
  for(let day=0;day<days;day++){let now=start+day*DAY+19*HOUR;
   if(s.base.tier){atGate();try{baseAction(s,{action:'base-claim'},now);}catch(e){}try{plotAction(s,{action:'plot-collect',plot:{}},now);}catch(e){}}build(now);seen(now);
   if(s.base.tier)orderEvent(s,'drill',1);
@@ -257,8 +261,7 @@ export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=1,site='
    for(const o of (s.wo?.list||[]).filter(o=>o.done&&!o.claimed)){const c0=s.ledger.cp;try{claimOrder(s,{seq:0,action:'claim-order',order:o.id},now);}catch(e){}split(c0);}
    build(now);seen(now);}
   build(start+(day+1)*DAY-1000);if(hit.CC10&&day>hit.CC10+2)break;}
- const log=(s.tw?.log||[]).filter(x=>x.o!=='called'),out={held:0,breached:0,fallen:0};for(const x of log)out[x.o]=(out[x.o]||0)+1;
- return {hit,cc10:hit.CC10??null,repair:rep,raids:out,lost:out.breached+out.fallen,ring};}
+ scan();return {hit,cc10:hit.CC10??null,repair:rep,raids:tally,lost:tally.breached+tally.fallen,ring};}
 // --calibrate: hold rates by raid level for each profile through the year and for the fully built town (every site, n raids a site
 // and level); the THREAT -> level table (js/conquest/townwar.js TOWN.level) is fitted to these (docs/conquest/session7t/fortress-calibration.txt)
 export function levelRates(town,site,levels,n=4){const out={};for(const L of levels){let held=0;for(let i=0;i<n;i++){const lanes=P.spawnCells(site,10).length,R=RD.make(town.plot,2000+i*13,{threat:L,lane:i%lanes,units:town.garrison,damage:true,frames:false,events:false}).run();if(RD.outcomeOf(R)==='held')held++;}out[L]=held/n;}return out;}

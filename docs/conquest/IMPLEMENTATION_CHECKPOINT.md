@@ -7116,6 +7116,18 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
     cache PROPOSAL, prominent), the payer's day-365 walls (0.78) below the free grinder's (0.80) at 8 Selenite (Session 8's paid
     fortress, at the 2-hour play time), the farm bound for 3 days on / 14 off (22 Repair Kits + 22 Scanner Charges in 64 play days, 0.69
     a play day, under a daily pilot's ~1 consumable a day from kill caches).
+- **Review round 1, reviewer 2 (measurements, guards, regressions) at `433e241`:** decisions 1-4 PASS (numbers reproduced exactly at
+  HEAD: the heavy player 88.1% late at 8, the regular within 3.6 points; conquest-ladder-check PASS with ladder.json identical; payments
+  off; Selenite earn-only; (e)'s guard intact; no test assertion changed or loosened; the Worker authoritative). **Blocker B1 (fixed,
+  slice 7):** `ladderRun` was not deterministic (the town seed `s.twsd` was drawn at random: a pilot's CC10 moved 26.8 <-> 19.8 between
+  runs), its cache claw-back stopped once the 16-entry town log was full (half the caches kept), and its raid tallies came from that
+  capped log. Fixed: `s.twsd` from the pilot seed, every raid counted once by id (the tally and the cache factor); the 101-pilot panel
+  and fortress (f) re-run (numbers under decision 3). Notes folded in: the record's "level 1-4 today" (the Grand Offensive's target can
+  reach 7), the regular's first cap raids from about day 259, the measured attack rate (about 1.36 a day from CC6), N3 (pay a live fight
+  at `s.td.lv` or pass the same tiers everywhere) in the open item. **N1, recorded for the final report:** the regular's guard days stop
+  at 330, before most of its Selenite arrives; reviewer 2 pooled 12 seed sets at n=8: +2.1 points at day 345 (SE 0.6) and +3.0 at 365
+  (SE 1.0), inside 5, though single sets reach 5.4 and 7.2 (B4 also shows 7.2 on one set: noise). **N2:** the coached regular's CC10
+  pace (raids on) sits below the Session 6 band: it leads the owner's PROPOSAL list.
 - **Local runs on the final code (after `e960eac`):** every CI node command PASS (173: `node build-sim.mjs` runs in `worker/` and
   `signup-browser.cjs` with an engine, both PASS as CI runs them); the fortress job PASS (14 checks, 17 min); conquest-town-proposals.py
   PASS at 5 sizes; conquest-town-ui.py (7T) PASS at 4 sizes, 1920x1080 timed out in the phone's replay simulation while the CPU ran at
@@ -7142,10 +7154,11 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
      at the cap (raidSet) x the in-person hold rate at the cap (a bot pilot beside the Platoon and garrison on the profile's towns without
      this Selenite: the grinder 76-86%, the regular 67-71%) x n; half reaches the town (the other half to plating), as every mineral.
    - **Ships inert until the Citadel's tiers VIII-IX (Session 11)** (review round 1, B1: 7B builds tiers I-III, which top out at THREAT 8,
-     level 8; the cap needs THREAT 15): the town clock passes 0 Citadel tiers today (every town attack is level 1-4); worker settle()
+     level 8; the cap needs THREAT 15): the town clock passes 0 Citadel tiers today (a town attack is level 1-4, the Grand Offensive's target up to 7); worker settle()
      takes the tiers as a parameter (`cit`, 0 until then). **Open item:** the session that passes Citadel tiers to the town must pass them
      in all four places, or the +8 hint never shows and the fought level differs from the paid one: worker/src/conquest-town.js `infoOf`
-     (`tiers:0`), `settle(..., cit)`, the town-defend start (`TN.strength(..., {tiers:0})`), and js/conquest/townui.js's hub preview.
+     (`tiers:0`), `settle(..., cit)`, the town-defend start (`TN.strength(..., {tiers:0})`), and js/conquest/townui.js's hub preview
+     (reviewer 2, N3: or pay a live fight at `s.td.lv`, so a fight run at a lower level is never paid the cap's Selenite).
    - **Owner addendum (Nov 23): the target is the 2-hour heavy player; shipped n = 8** (`TOWN.se.n`), measured with the heavy profile
      (dev/tools/selenite-candidates.mjs on the final code, reproducing the owner's planning-chat numbers exactly):
 
@@ -7175,15 +7188,19 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
    (49,000-102,000 CP); an inner ring of radius ~9 plus an outer one of ~13 about 200-1,400 CP.
    **Re-measured (dev/tools/coach-ring-repairs.mjs, 101 pilots, the 7T guard method: 60 min a day, the real reducers, every raid decided
    unfought, REPAIR paid when damaged; the no-raid baseline keeps the war running and holds town attacks off with a shield):**
-   CRATER RIM undefended (7T's builder) CC10 median 59.8 (+108%), mean 61.7 (+126%), REPAIR 109,413 CP in 40.2 repairs (7T: ~111,000 in 42);
-   **coached: REPAIR 650 CP in 3 repairs, CC10 median 19.8, mean 22.5, the ring closed before CC4 in 101/101**; seven sites undefended
-   167,855 CP (CC10 +101% / +191%), **coached 1,392 CP (CC10 median 25.8, mean 24.3), 101/101 closed before CC4**. A pilot who draws one ring
-   by hand: CRATER 195 CP, seven sites 23,934 CP (ICE BASIN's lake, hence SUGGEST A RING's sealed shore). Repairs are no longer heavy:
-   **no repair-price PROPOSAL is needed** (model-only price factors on a hand-drawn ring: x0.5 386 CP, x0.25 589 CP, no CC10 gain).
-   **Finding -> PROPOSAL:** a walled town holds its raids, and each held unfought raid pays 7T's defense cache (160 CP + 15 alloy + 10
-   biomass + 2 He-3), so the coached regular reaches CC10 sooner than with no town attacks (CRATER median 19.8 / mean 22.5 against
-   28.8 / 27.3; 57 of 101 pilots in the greedy builder's fast CC10 mode, under 24 days, against 15 of 101). Model-only cache factors:
-   x0.5 CC10 median 24.8 / mean 23.7 (48 fast), x0 26.8 / 24.8 (34 fast). Owner's call (7T decision 5): unchanged here.
+   (Re-run after review round 1 with `ladderRun` deterministic and every raid counted: 101 pilots, `docs/conquest/session7tp/coach-repairs.json`.)
+   CRATER RIM undefended (7T's builder): CC10 median 58.8 (+104%), mean 65.0 (+138%), REPAIR 121,628 CP in 43 repairs (7T: ~111,000 in 42),
+   about 78 raids on the way (2.6 held); **coached (SUGGEST A RING): REPAIR 635 CP in 3 repairs, CC10 median 20.8, mean 22.7, 26 raids (18
+   held), the ring closed before CC4 in 101/101**; seven sites undefended 180,426 CP (CC10 +111% / +203%), **coached 1,421 CP (CC10 median
+   26.8, mean 24.6), 101/101 closed before CC4**. A pilot who draws one ring by hand: CRATER 188 CP, seven sites 25,289 CP (ICE BASIN's lake,
+   hence SUGGEST A RING's sealed shore). Repairs are no longer heavy: **no repair-price PROPOSAL is needed** (model-only price factors on a
+   hand-drawn ring: x0.5 388 CP, x0.25 589 CP, no CC10 gain).
+   **Finding -> PROPOSAL (leads the owner's list):** a walled town holds its raids, and each held unfought raid pays 7T's defense cache
+   (160 CP + 15 alloy + 10 biomass + 2 He-3), so the coached regular reaches CC10 sooner than with no town attacks: CRATER median 20.8 /
+   mean 22.7 against 28.8 / 27.3, below the Session 6 band (25.9-31.7) that conquest-ladder-check guards without town attacks. Model-only
+   cache factors: x0.5 26.8 / 24.0, x0 27.8 / 26.7: the cache explains about 4.0 of the 4.6 days of the mean gap, the rest is the greedy
+   builder's fast-mode flips (a model artifact). fortress (f) asserts only that CC10 is no longer delayed. Owner's call (7T decision 5):
+   unchanged here.
 4. **Welcome-back kits** (townwar.js STREAK.welcome, worker streakSync, townui.js): back after 14 or more UTC days with no verified
    activity (days between the last active day and today: day - last - 1 >= 14), the day-1 Repair Kit and the day-3 Scanner Charge again,
    on that return's streak days 1 and 3, each re-armed once a return (only kits this pilot was given are re-armed; the next re-grant

@@ -70,7 +70,9 @@ function logOf(s,x){const tw=s.tw;tw.log=[...tw.log,x].slice(-T.log);}
 function snapOf(p){return {site:p.site,cc:p.cc|0,b:Object.fromEntries(Object.entries(p.b||{}).map(([id,b])=>[id,[b.t,b.i,b.j,b.r|0,b.l|0]])),w:P.encWalls(p.w),dmg:{...(p.dmg||{})}};}
 export const plotOfSnap=TN.plotOfSnap;   // shared with the phone's replay (js/conquest/townwar.js)
 // ---- settle a raid (unfought, or after a live fight: live = {R the pilot's fight, fought: the pilot really fought}) ----------------------
-// cit: the Citadel tiers cleared (0 until the Citadel passes them: every town attack is level 1-4 until then; the cap-level Selenite needs tiers VIII-IX)
+// cit: the Citadel tiers cleared (0 until the Citadel passes them: until then a town attack is level 1-4, the Grand Offensive's target up to
+// 7; the cap-level Selenite needs tiers VIII-IX). The session that passes them: the same value here, in infoOf, at the town-defend start
+// and in the hub's preview (or pay a live fight at s.td.lv), so the level fought is the level paid
 export function settle(s,e,at,live,cit=0){const p=s.plot,tw=s.tw;
  const job=P.settle(p,at);if(job)s.notice={kind:'plot-built',type:job.t,level:job.l};P.accrue(p,at);researchTick(s,at);
  const st=TN.strength(s.war,e,{now:at,tiers:Math.max(0,Math.min(9,cit|0)),titan:0}),lv=st.level,seed=u32(String(townSeed(s))+':town:'+e.id),gar=garrisonOf(s),units=unitsOf(gar),snap=snapOf(p);

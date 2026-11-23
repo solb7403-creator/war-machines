@@ -639,16 +639,16 @@
    "CC10": 28.8
   },
   "undefended": {
-   "CC10": 58.8,
-   "repairCP": 120926
+   "CC10": 57.8,
+   "repairCP": 115375
   },
   "coached": {
-   "CC10": 25.8,
-   "repairCP": 623
+   "CC10": 20.8,
+   "repairCP": 688
   },
   "coached7": {
    "CC10": 26.8,
-   "repairCP": 1350
+   "repairCP": 1385
   }
  }
 }

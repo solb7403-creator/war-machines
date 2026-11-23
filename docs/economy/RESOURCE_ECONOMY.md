@@ -1084,7 +1084,7 @@ Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids
   Grand Offensive surge), never Command Center level, gear or purchases. The cap 9 is where the fully built town holds every raid at
   the top strength (THREAT 16) without a breach. The first attack on a town is a teaching raid (a one-star general at level 1).
 - **The tick chance** (`TOWN.chance`): an eligible war tick announces a town attack **60%** of the time (about 0.9 a day at CC2-5
-  and 1.6 a day from CC6 under the pace limits: at most 1 in any 24 hours through CC5 and 2 from CC6, at least 8 hours apart, none
+  and about 1.4 a day from CC6 under the pace limits (the real clock over a year: 1.36): at most 1 in any 24 hours through CC5 and 2 from CC6, at least 8 hours apart, none
   in a town's first 3 days, under a shield or while the front is frozen).
 - Both were Session 7T PROPOSALS; the owner adopted them as shipped on Nov 23.
 
@@ -1092,9 +1092,10 @@ Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids
 - **Rule** (`TOWN.se`, `ConquestTown.seOf`): a town raid at the **cap level (9)** settled HELD with the pilot **really fighting** (the 675
   defense points' own rule) drops **8 Selenite** into the pilot's cargo (banked at the Refuge like every mineral). None below the cap,
   none for an unfought raid, none for a fight that did not hold. Selenite stays earn-only (never in the store).
-- **Ships inert until the Citadel's tiers VIII-IX (Session 11):** the town clock passes 0 Citadel tiers today, so every town attack is
-  level 1-4; 7B's tiers I-III top out at level 8 (THREAT 8); the cap (THREAT 15) needs tiers VIII-IX (in the fortress model: the 2-hour
-  heavy player from about day 208, the grinder from about day 135, the regular from about day 320). The session that passes the tiers to
+- **Ships inert until the Citadel's tiers VIII-IX (Session 11):** the town clock passes 0 Citadel tiers today, so a town attack is level
+  1-4 (the Grand Offensive's target up to 7); 7B's tiers I-III top out at level 8; the cap (THREAT 15) needs tiers VIII-IX (in the
+  fortress model the first cap raids come about day 110 for the grinder, 169 for the heavy player and 259 for the regular, most of them
+  later: from about day 135, 208 and 320). The session that passes the tiers to
   the town passes them in all four places (the Worker's town clock, its settle, the town-defend start, the hub's preview).
 - **Measured** (`dev/tools/selenite-candidates.mjs`, the fortress model's real income, builder and raid engine, 56 raids a day on two seed
   sets; `docs/conquest/session7tp/selenite-candidates.json`): late in the year (days 300, 330, 365) the 2-hour heavy player holds 88.1%
@@ -1112,10 +1113,10 @@ Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids
   order in one tap (`ConquestTown.ringPlan`: an inner ring and, when the composite allows, an outer one; ICE BASIN's frozen shore sealed);
   the pilot confirms it like any wall order (composite only, never a price change).
 - **REPAIR on the way to CC10** (`dev/tools/coach-ring-repairs.mjs`, the Nov 10 guard method: the 60-minute regular on the real reducers,
-  every raid decided unfought, REPAIR paid when damaged; 101 pilots): without walls 109,413 CP in 40 repairs on CRATER RIM (CC10 twice as
-  long) and 167,855 CP across the seven sites; with the coach's ring 650 CP and 1,392 CP, CC10 no longer delayed. No repair-price change
+  every raid decided unfought, REPAIR paid when damaged; 101 pilots): without walls 121,628 CP in 43 repairs on CRATER RIM (CC10 twice as
+  long) and 180,426 CP across the seven sites; with the coach's ring 635 CP and 1,421 CP, CC10 no longer delayed. No repair-price change
   is needed. PROPOSAL (owner): held unfought raids pay the defense cache (Session 7T decision 5), so a walled regular reaches CC10 sooner
-  than with no town attacks (CRATER median day 19.8 against 28.8); half the cache gives 24.8, none 26.8.
+  than with no town attacks (CRATER median day 20.8 / mean 22.7 against 28.8 / 27.3); half the cache gives 26.8 / 24.0, none 27.8 / 26.7.
 
 ### 16.4 Welcome-back kits (Session 7T-P decision 4)
 - Back after **14 or more UTC days with no verified activity**, the streak's day-1 Repair Kit and day-3 Scanner Charge are given once
