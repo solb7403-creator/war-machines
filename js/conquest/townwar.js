@@ -39,8 +39,8 @@ const TOWN=Object.freeze({
  // only from about day 320); the grinder 94.1% (from 85.7). The other candidate, Strike Resonance every 8 strikes, moved the grinder by
  // 0 and -1 points and the regular by 7. Gated to the cap so Selenite stays a late-fortress reward (a drop on every held defense lifted
  // the regular 7-13 points at day 120 and gave new pilots Selenite from their first raid). Ships inert: level 9 needs THREAT 15, so
- // Citadel tiers VIII-IX (Session 11; 7B builds tiers I-III, which top out at level 8), passed to the town clock in all four places
- // (worker/src/conquest-town.js infoOf, settle's cit, the town-defend start, js/conquest/townui.js's hub preview). Earn-only: never sold.
+ // Citadel tiers VIII-IX (Session 11; 7B builds tiers I-III, which top out at level 8), passed to the town clock in all five places
+ // (worker/src/conquest-town.js infoOf, settle's cit, the town-defend start; js/conquest/townui.js's hub preview and last-chance line). Earn-only: never sold.
  se:Object.freeze({from:9,n:8}),
  // THREAT -> raid level (index: THREAT rounded, 0..16). Calibrated by the fortress tests (decision 4): the regular's town holds about
  // 3 of 4 raids decided while away along the year; the level stops rising at CAP, where a fully built town holds every raid

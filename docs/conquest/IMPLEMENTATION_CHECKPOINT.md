@@ -7101,7 +7101,7 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
   FAIL; 4 PASS with a text gap. **Blockers, all fixed (slice 6):**
   - **B1** the record said the drop wakes with 7B: 7B's tiers I-III top out at level 8; the cap needs tiers VIII-IX (Session 11). Fixed
     in the checkpoint, RESOURCE_ECONOMY §16.2, townwar.js / conquest-town.js comments, the selenite test (+1 check: tiers I-III stay
-    below the cap); the open item (pass the tiers in all four places) recorded under decision 2.
+    below the cap); the open item (pass the tiers in all five places) recorded under decision 2.
   - **B2** the coach named the Storage Depot as outside when the depot was inside (a ring across ICE BASIN's lake, a west gap, a cannon
     in the line), a Gate did not close a ring, and the dead-end toast blamed a building that was not there. Fixed: `ringOf` returns
     `out` (the vital stands beyond the walls' ring) and the vital text needs it; a ring open across the lake says "raiders cross the
@@ -7135,8 +7135,14 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
 - **Slice 6 (`e960eac`):** reviewer 1's round-1 fixes. **Slice 7 (`12100d6`):** reviewer 2's round-1 fix (ladderRun deterministic, every
   raid counted by id), the panel and fortress (f) re-run (fortress 14 checks), guardrails 67 checks, conquest-town-ui.py 1920x1080 PASS
   alone (all 5 sizes now).
-- **Round 2 (both reviewers, on `12100d6`) running; browser suites running** (town-proposals, town-ui, hub, plot-ui, base-builder,
-  onboarding, desktop-keys, war-browser).
+- **Round 2 at `12100d6`: every blocker PASS, no new blocker.** Reviewer 1: B1, B2, B3 PASS (Gates close a ring; a gap or a cannon in the
+  line says CLOSE YOUR WALL RING; ICE BASIN rings of radius 10-14 get the frozen-lake text; the return-day card and line). Reviewer 2: B1
+  PASS (two processes give identical pilots; the committed 101-pilot numbers and (f)'s 21 reproduce exactly; the cache's ~4.0 of 4.6 days
+  supported); no regression in e960eac. Notes folded in (slice 8): the shore toast names the building on the frozen lake; the tier wiring
+  is five places (the last-chance line too); the pre-win card says YOUR KITS ARE WAITING, never shows on an owner dev record, and with a
+  full kit bag says to use one first; conquest-town-proposals.py checks the pre-win card at the 5 sizes (fixture `welcome:'pending'`).
+- Browser suites on the round-2 code: conquest-town-proposals.py, conquest-town-ui.py (5 sizes), conquest-hub-browser.py PASS; plot-ui,
+  base-builder, onboarding, desktop-keys, war-browser running.
 - **Next:** round 2 verdicts (fix any blocker), then release (merge main, dev/bump.sh, PR, CI, merge, verify the Worker and Pages, ROADMAP
   row 7T-P, the release record) and the final report.
 
@@ -7161,9 +7167,10 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
    - **Ships inert until the Citadel's tiers VIII-IX (Session 11)** (review round 1, B1: 7B builds tiers I-III, which top out at THREAT 8,
      level 8; the cap needs THREAT 15): the town clock passes 0 Citadel tiers today (a town attack is level 1-4, the Grand Offensive's target up to 7); worker settle()
      takes the tiers as a parameter (`cit`, 0 until then). **Open item:** the session that passes Citadel tiers to the town must pass them
-     in all four places, or the +8 hint never shows and the fought level differs from the paid one: worker/src/conquest-town.js `infoOf`
-     (`tiers:0`), `settle(..., cit)`, the town-defend start (`TN.strength(..., {tiers:0})`), and js/conquest/townui.js's hub preview
-     (reviewer 2, N3: or pay a live fight at `s.td.lv`, so a fight run at a lower level is never paid the cap's Selenite).
+     in all five places, or the +8 hint never shows and the fought level differs from the paid one: worker/src/conquest-town.js `infoOf`
+     (`tiers:0`), `settle(..., cit)`, the town-defend start (`TN.strength(..., {tiers:0})`), js/conquest/townui.js's hub preview and its
+     last-chance dialog (five places; reviewer 2, N3: or pay a live fight at `s.td.lv`, so a fight run at a lower level is never paid the
+     cap's Selenite).
    - **Owner addendum (Nov 23): the target is the 2-hour heavy player; shipped n = 8** (`TOWN.se.n`), measured with the heavy profile
      (dev/tools/selenite-candidates.mjs on the final code, reproducing the owner's planning-chat numbers exactly):
 

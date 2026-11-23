@@ -63,7 +63,8 @@ function streakLine(card,s,o){const T=TN();if(!T)return;const now=o.now||Date.no
 // the return), before the war and the town: the pilot sees what came back and what is next without scrolling
 function welcome(col,s,o){const T=TN();if(!T||!s?.stk)return;const now=o.now||Date.now(),day=Math.floor(now/864e5),nw=s.stk.nw,L0=T.streakLine(s.stk,day);const {el}=o;
  // review B3: back after 14+ days and not yet played today: the card says what playing today brings back
- if(L0.back){const c=el('section','cq-hub-card cq-hub-welcome',null,col);el('h3','',"WELCOME BACK, PILOT",c);el('p','cq-hub-big','YOUR KITS ARE BACK',c);el('small','','Win an operation or harvest today: your day-1 REPAIR KIT comes back (day 3: a SCANNER CHARGE).',c);return;}
+ if(L0.back&&!s.dev?.used){const full=(s.inv?.it?.repair|0)>=(typeof CQ_ITEM_MAX==='number'?CQ_ITEM_MAX:10),c=el('section','cq-hub-card cq-hub-welcome',null,col);el('h3','',"WELCOME BACK, PILOT",c);el('p','cq-hub-big','YOUR KITS ARE WAITING',c);   // review round 2: never promise what the Worker will not give (an owner dev record; a full kit bag)
+  el('small','',full?'Win an operation or harvest today to restart your streak (your Repair Kits are full: use one first to take the free one; day 3: a SCANNER CHARGE).':'Win an operation or harvest today: your day-1 REPAIR KIT comes back (day 3: a SCANNER CHARGE).',c);return;}
  if(!nw||nw.d!==day||!(nw.wb||nw.r?.some(x=>x.wb)))return;
  const c=el('section','cq-hub-card cq-hub-welcome',null,col);el('h3','',nw.wb?'WELCOME BACK, PILOT':'WELCOME BACK · DAY '+nw.n,c);
  const got=(nw.r||[]).filter(x=>x.wb);if(got.length)el('p','cq-hub-big',got.map(rewardName).join(' · '),c);

@@ -91,6 +91,13 @@ async def main():
     await reach(page,new,'.cq-hub-scroll',mobile,h);nt=await new.inner_text();lt=await card.locator('.cq-hub-streak').inner_text()
     assert 'WELCOME BACK · DAY 1 · +1 REPAIR KIT' in nt,nt;assert 'STREAK 1 DAY · TODAY ✓ · WELCOME BACK · DAY 3: SCANNER CHARGE' in lt,lt
     await page.screenshot(path=str(OUT/f'welcome-back-streak-{w}x{h}.png'));r['welcome']=wt.replace('\n',' · ');assert not errors,errors[:3];await close_ctx(ctx)
+    # ---- 1b. back after 15 days, before the first win or harvest: the card says what playing today brings back (review B3) ----
+    ctx,page,errors=await open_page(w,h,mobile,{'welcome':'pending','baseFunds':True})
+    wc=page.locator('.cq-hub-welcome');await wc.wait_for(timeout=60000);wt=await wc.inner_text();assert 'WELCOME BACK, PILOT' in wt and 'YOUR KITS ARE WAITING' in wt and 'day-1 REPAIR KIT comes back' in wt,wt
+    await reach(page,wc,'.cq-hub-scroll',mobile,h);bb=await wc.bounding_box();assert bb['x']>=0 and bb['x']+bb['width']<=w+1,('the card fits the width',bb)
+    lt=await page.locator('.cq-hub-streak').first.inner_text();assert 'WELCOME BACK · DAY 1: REPAIR KIT' in lt,lt
+    st=await inspect();assert st['inv']['it']['repair']==2,('nothing granted before the first win',st['inv'])
+    await page.screenshot(path=str(OUT/f'welcome-pending-{w}x{h}.png'));r['pending']=lt;assert not errors,errors[:3];await close_ctx(ctx)
     # ---- 2. decision 3: the coach's step 4, close the first wall ring before CC4 ----
     ctx,page,errors=await open_page(w,h,mobile,{'coachRing':True,'baseFunds':True})
     await page.wait_for_selector('.cq-hub .cq-hub-act',timeout=60000);mb=page.locator('.cq-hub-act',has_text='MY BASE').first;await reach(page,mb,'.cq-hub-scroll',mobile,h);await press(page,mb,mobile)

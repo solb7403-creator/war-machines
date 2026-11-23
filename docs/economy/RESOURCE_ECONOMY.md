@@ -1096,7 +1096,8 @@ Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids
   1-4 (the Grand Offensive's target up to 7); 7B's tiers I-III top out at level 8; the cap (THREAT 15) needs tiers VIII-IX (in the
   fortress model the first cap raids come about day 110 for the grinder, 169 for the heavy player and 259 for the regular, most of them
   later: from about day 135, 208 and 320). The session that passes the tiers to
-  the town passes them in all four places (the Worker's town clock, its settle, the town-defend start, the hub's preview).
+  the town passes them in all five places (the Worker's town clock, its settle, the town-defend start, the hub's preview and its
+  last-chance line).
 - **Measured** (`dev/tools/selenite-candidates.mjs`, the fortress model's real income, builder and raid engine, 56 raids a day on two seed
   sets; `docs/conquest/session7tp/selenite-candidates.json`): late in the year (days 300, 330, 365) the 2-hour heavy player holds 88.1%
   (77.1% before; 4 Selenite gave 81.3%, 12 gave 87.8%), the grinder 94.1% (85.7%), and the regular's hold rates stay within 3.6 points at
