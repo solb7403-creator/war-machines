@@ -6780,7 +6780,7 @@ riseofkingdoms.fandom.com Lost Kingdom.
     wait). Worth hardening in a later session (a test changes only where a decision changes its rule).
 12. **PROPOSALs 1-6 above** wait for the owner.
 
-## Checkpoint 47 — Session 7T: Living Town (branch `claude/living-town-raid-defense-j6n8ea`, from main `e2a7c64`; continued on `claude/festive-einstein-2nwwzo`, fast-forwarded to its head `9fd784e`) — IN PROGRESS
+## Checkpoint 47 — Session 7T: Living Town (branch `claude/living-town-raid-defense-j6n8ea`, from main `e2a7c64`; continued on `claude/festive-einstein-2nwwzo`, fast-forwarded to its head `9fd784e`) — RELEASED Nov 23 (PR #150, merge `612b2b7`)
 
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first; it governs everything.
@@ -6891,8 +6891,10 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   passed 4 of its 5 sizes (the live defense held at each) when it was stopped, so the desktop keyboard journey never ran. Cause: this
   session added the town screens (about 10 minutes in CI) to that job. Fixed in the workflow (no test changed): the town screens are
   a job of their own (`town-ui`, 30 minutes), and the conquest job's limit is 65 minutes for headroom.
-- **Next: CI on the head, then the release** (main still `e2a7c64`; the build stamp `20261123061357` was made before these fixes
-  and is kept: nothing was deployed in between).
+- **RELEASED Nov 23**: PR #150 merged as `612b2b7` (09:35 UTC), build `20261123061357` live on the Worker and GitHub Pages: see
+  "Release record" at the end of this checkpoint. The final report's numbers are in "Open items and PROPOSALs" below. Next sessions:
+  7-V (the streak art, the replay's garrison, the live defense's shots and allies), 7B (the Citadel raises town raids above level
+  4), 8 (the paid-fortress requirement and the store).
 - **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>
   (Session 7T Living Town)"; PR from `claude/festive-einstein-2nwwzo` to main with the body drafted from this checkpoint and the
   `owner-rules-change` label (docs/owner-rules.json cpSites +1, the held raid's cache, owner decision 5); CI green (the new `fortress`
@@ -7040,3 +7042,30 @@ pushwoosh.com, airship.com 2026 benchmarks, developers.facebook.com game notific
   1 (CC2-5) or 2 (CC6+); at least 8 h apart; none landing in a new town's first 3 days, while a shield is up or while the front
   is frozen (announced attacks keep their time left, as the war's events do); the Grand Offensive's town target lands at the
   window's end (Monday 00:00 UTC) and that slot is held back for it. PROPOSAL: a 60% chance at each eligible tick.
+
+### Release record (Nov 23, 2026)
+- PR #150 merged 09:35 UTC as `612b2b7` (merge commit; head `8dd94e7`), every check green on the head: owner-rules (with the
+  `owner-rules-change` label), conquest, guardrails, fortress, transmission chromium + webkit, signup-browsers chromium / webkit /
+  firefox, website, balance, verify, asset-integrity. Release pre-approved in the owner's brief. Main had not moved from `e2a7c64`,
+  so there was nothing to merge in.
+- Reviews: two independent read-only reviewers, three rounds (the third allowed because B3, the live defense in a built town, was
+  clearly broken): every decision 1-11 PASS in both scopes at the end (Resume here above).
+- CI along the way: three WebKit failures were environmental (`transmission (webkit)` failed at `26c4070` and passed at `2405729` on
+  the same code; `signup-browsers (webkit)` failed once at `710f113`, a Conquest-only change, and passed before and after; on
+  `8dd94e7` `transmission (webkit)` lost its page in `conquest-living-war.py` (the renderer had gone blank, then TargetClosedError)
+  and its one re-run passed, a PR comment says why). At `f962e70` the conquest job hit its 55-minute limit inside its last portrait
+  test (every earlier test green): the town screens, added to it this session, became their own `town-ui` job and the conquest
+  job's limit 65 minutes (`8dd94e7`; no test changed). Runs of superseded commits were cancelled to free the runners. No test was
+  skipped, deleted or loosened; the tests changed for a decided rule are named in this checkpoint.
+- Worker: `Deploy Stars server (Cloudflare)` run 45148392091 SUCCESS on `612b2b7` (deployed 09:41 UTC, version id
+  `c9705261-4671-4bfc-a71a-f57ba96629f0`; the crons `*/5`, `* 15-18` and the alert cron `1-56/5` registered): `/pvp/health` =
+  `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`, live `version.json` = `{"v":"20261123061357"}` = repo (09:41 UTC).
+- GitHub Pages: `pages build and deployment` run 45148389989 SUCCESS on `612b2b7` (09:36 UTC). This container cannot reach
+  workers.dev (network policy: curl fails), so the live values come from the deploy job's own checks above.
+- Database rules: unchanged in this release (`database.rules.json` not touched), so `Deploy Firebase rules` did not run; the alert
+  cron reads Session 7's `wal` index.
+- The build stamp `20261123061357` was made before the last review fixes and kept: nothing was deployed in between, so no player's
+  cache holds that stamp with older files.
+- No live players: no migration code. Revert plan if broken: revert `612b2b7` on main (both deploys follow main). Not needed.
+- Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged.
+- This record and ROADMAP row 7T went to main in a second, docs-only PR from the same branch (restarted from main).
