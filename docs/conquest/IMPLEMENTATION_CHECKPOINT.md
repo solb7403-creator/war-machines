@@ -6786,12 +6786,30 @@ riseofkingdoms.fandom.com Lost Kingdom.
 If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first; it governs everything.
 - Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`, head `af852a8`); Checkpoint 46 is
   Session 7 (released); this is Checkpoint 47.
-- **Done:** brief saved word for word (first slice); sources read; research and the design below recorded.
-- **Done (slice 1):** `js/conquest/raid.js` (ConquestRaid, in the CONQUEST bundle via worker/build-sim.mjs): the drill's port,
-  proven identical to `drill()` in 70 raids (every site; starter, two CC10, mid and damaged towns; levels 1-10) by the new
-  `dev/tests/conquest-raid-engine.mjs` (9 checks), plus save/restore, a main lane (half the spawns) and defenders (garrison,
-  fielded Platoon, the pilot: tankOf() stats scaled by ConquestRaid.UNIT, PROPOSAL numbers tuned by the fortress tests).
-- **Next:** the town attack track (shared rules `js/conquest/townwar.js`, Worker `worker/src/conquest-town.js`).
+- **Done, tested, pushed:**
+  1. `js/conquest/raid.js` (ConquestRaid): the drill's port, proven identical to `drill()` (dev/tests/conquest-raid-engine.mjs),
+     save/restore, main lane, defenders (garrison 'g', fielded Platoon 'f', pilot 'p' from tankOf via `unitOf`; numbers in `UNIT`).
+  2. `js/conquest/townwar.js` (ConquestTown, shared): pace, THREAT -> `TOWN.level` table (PROVISIONAL until the fortress
+     calibration), `lossOf`, `goSync`/`goSlots`, `advance`, Beacon (`beaconOf`) and streak (`STREAK`, `streakDay`, `streakLine`).
+  3. `worker/src/conquest-town.js`: `townClock` (hooked in conquest-plot.js plotSync before settle), `settle` (unfought raid,
+     losses, 8 h shield, cache, wins, base-defender, replay `s.tw.rp`), the 60 s last chance (`e.lc`), the live defense
+     (`town-defend` -> `s.td` hot / `s.tdp` `s.tdu` cold; `liveSteps` from conquest-sim.js applyCommands; `town-leave`; idle 20 s),
+     `town-ward` (Peace Ward 24 h; loot rows LOOT.defense 5% / LOOT.strike 3%, `s.tw.ws`), `town-seen`. COLD_KEYS + tw/tdp/tdu/bcn/stk.
+     owner-rules.json cpSites conquest-town.js 1 (needs the `owner-rules-change` PR label). conquest-loot.mjs updated for the 2 rows.
+  4. Garrison = `garrisonOf(s)` (reserves by rating, Hangar level slots, max 5). Gear picker (decision 8): `hangar-gear` action
+     (pins `p.pin {w,c}` item keys `BT.keyOf`), `BT.autoArm(...,fixed)`, `BT.spare`, `BT.kitStats`; AUTO-ARM clears pins.
+  Tests (all pass): conquest-raid-engine (9), conquest-away-raids (43), conquest-live-defense (19), conquest-gear (16).
+  A full run of every CI node test on commit 3fd4763 (scratchpad runner) was 74 PASS / 0 FAIL when last checked.
+- **In progress:** `dev/tools/fortress-model.mjs` (written, not yet run): income (war-model method, any play time), minerals,
+  `townAt(profile, site, day)`, `fullTown(site)`, `raidSet`, `holdRate`. Next: run it, calibrate `TOWN.level` (and `RD.UNIT` if
+  needed) so the regular holds ~3/4, the ceiling holds at the cap; write dev/tests/conquest-fortress.mjs (a: ceiling, b: no dead
+  upgrades, c: regular path + variants, d: grinder / payer measured) as its own CI job.
+- **Then:** alerts unification (decision 9: new js/conquest/alerts.js planner with priorities 1-8, the cron in
+  worker/src/conquest-alerts.js, the daily reminder in worker/src/index.js sendReminders under the same budget, per-type switches;
+  update dev/tests/conquest-war-alerts.mjs for this rule only); Strike Beacon action (`strike-beacon`, start-mission accepts the
+  beacon's slot) and the streak (Worker grants on the day's first verified activity); UI (new js/conquest/townui.js for the hub
+  raided card / Beacon card / streak line; plotview hooks for REPLAY and the live defense; the Hangar gear picker; settings
+  switches) + a browser test at 390x844, 390x700, 320x568, 1366x768, 1920x1080; CI workflow lines; reviewers; release.
 
 ### Research: the best comparable games (Nov 23, before building)
 What the leaders do with PvE attacks on your base, defending in person, garrisons, gear loadouts, alerts and streaks, and what
