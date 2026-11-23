@@ -9,7 +9,7 @@ const {RULES:R,CONQUEST}=await import('../../worker/src/sim.gen.js');const {Plot
 const {createState,refreshState,applyAction}=await import('../../worker/src/conquest-sim.js');
 const {plotOfSnap,garrisonOf}=await import('../../worker/src/conquest-town.js');
 const {townPilot,townAttack,midTown}=await import('./lib/town-helpers.mjs');
-let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;};const H=3600000,D=24*H,T=WR.WAR.tickMs;
+let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;console.log('PASS '+m);};const H=3600000,D=24*H,T=WR.WAR.tickMs;
 const t0=Date.UTC(2026,10,23,1);   // a Monday, 01:00 UTC
 // a pilot who checks in every 6 hours (never frozen): every tick processed, every landing decided unfought (never online at landing)
 function live(s,from,days,step=6*H,vis=null){const land=[];let t=from;for(;t<from+days*D;t+=step){s.lastWall=t-step+60*60000;refreshState(s,t);for(const x of s.tw.log)if(!land.some(y=>y.id===x.id))land.push(x);vis?.(s,t);}return land;}
