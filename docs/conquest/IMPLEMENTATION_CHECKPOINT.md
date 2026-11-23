@@ -7069,3 +7069,15 @@ pushwoosh.com, airship.com 2026 benchmarks, developers.facebook.com game notific
 - No live players: no migration code. Revert plan if broken: revert `612b2b7` on main (both deploys follow main). Not needed.
 - Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged.
 - This record and ROADMAP row 7T went to main in a second, docs-only PR from the same branch (restarted from main).
+
+## Checkpoint 48 — Session 7T-P: Living Town proposals (branch `claude/living-town-proposals-oqqiv2`, from main `7041291`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md first; it governs everything.
+- Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`); Checkpoint 47 is Session 7T
+  (released, PR #150, build `20261123061357`); this is Checkpoint 48. Work on **`claude/living-town-proposals-oqqiv2`**.
+- **Slice 1 (this commit):** the brief saved word for word to `docs/conquest/audit/SESSION_07TP_BRIEF.md`; this checkpoint opened.
+- **Next:** read the brief's list (Checkpoint 47 "Open items and PROPOSALs", RESOURCE_ECONOMY.md, rules.js STRIKE.resonance,
+  townwar.js STREAK and the town clock, plot.js repairPlan, the onboarding coach, fortress-model.mjs, economy-model.mjs,
+  conquest-fortress.mjs); then decision 1 (record), decision 2 (measure both Selenite candidates), decision 3 (coach step + re-measure),
+  decision 4 (welcome-back kits); reviews; release.
