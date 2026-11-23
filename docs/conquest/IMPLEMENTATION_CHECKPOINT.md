@@ -6829,7 +6829,17 @@ If your context was cleared, read docs/conquest/audit/SESSION_07T_BRIEF.md first
   copy (War Map shows no town attacks), alerts card copy (OFF also stops the reminder), Beacon alert only for pilots who played in 7
   days, an alert's DEFEND link opens the town instead of starting the fight, the Peace Ward refusal text, gear AUTO label, "+0 KIT".
   **All six fixed in `710f113`** (with the non-blocking ones listed; tests: live-defense +3, away-raids +2, streak +1; quick
-  browser pass green, the live defense now ends HELD). Reviewer 2: pending. Then re-review (round 2) of both at the fixed head.
+  browser pass green, the live defense now ends HELD).
+  **Reviewer 2 (at `f67e08d`) BLOCKERS (being fixed):** R2-B1 a raid landing while it is fought is settled unfought by the clock
+  (townwar.js step lands `tr` events; liveEnd then finds no event): the landing must wait for the fight (landing(): 'wait' while
+  `s.td` fights it) + a test crossing the landing tick; R2-B2 a streak reset clears `got`, so day 1/3 consumables re-grant (3 on / 4
+  off farms 16 in 8 weeks): milestones once per pilot. Notes to fold in: townwar.js advance's frozen GO skip `break` (later events
+  shift 8 of 9 ticks); the cron can send at 22:01 local (re-check night at send time); the replay/live seeds are a 32-bit hash of the
+  loot seed (brute-forceable: use a separate server-only town seed `s.twsd`, stripped from publicState); the alert doc's town
+  forecast costs 30-400 ms a rebuild (skip rebuilds during an operation or a live fight); record the conquest-loot.mjs edit
+  (decision 2's Peace Ward rows). **CI:** `transmission (webkit)` failed at `26c4070` in conquest-flagship-browser.py
+  (raid-battery-1: the pilot's tank destroyed at 64 s); it passed on Session 7's PR #148, so suspect the forecast's request cost;
+  `signup-browsers (webkit)` failed at `710f113` (not yet read). Then re-review (round 2).
 - **Then release** (pre-approved): `git fetch origin main` and merge it if it moved; `sh dev/bump.sh`; commit "chore: build <V>
   (Session 7T Living Town)"; PR from `claude/festive-einstein-2nwwzo` to main with the body drafted from this checkpoint and the
   `owner-rules-change` label (docs/owner-rules.json cpSites +1, the held raid's cache, owner decision 5); CI green (the new `fortress`
