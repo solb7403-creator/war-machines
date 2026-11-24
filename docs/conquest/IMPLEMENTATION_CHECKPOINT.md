@@ -7252,3 +7252,26 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
   Charge; 3 days on / 14 off gives 22 + 22 in 64 play days (0.69 a play day), under a daily pilot's ~1 consumable a day from kill caches.
 - Carried from Checkpoint 47 and still open: the alert cron's capacity before launch (pre-launch load test), the replay's garrison and
   the live defense's shots (row 7-V), the THREAT 1-4 town raids until the Citadel (7B, then Session 11 for the cap).
+
+### Release record (Nov 24, 2026)
+- PR #152 merged 02:31 UTC as `207f10b` (merge commit; head `f994fe7`), every check green on the head: conquest, fortress, town-ui,
+  guardrails, transmission chromium + webkit, signup-browsers chromium / webkit / firefox, website, balance, verify, asset-integrity,
+  owner-rules. Release pre-approved in the owner's brief and approved again by the owner in chat (Nov 24). Main had not moved from
+  `7041291`, so there was nothing to merge in.
+- Reviews: two independent read-only reviewers, two rounds: every decision 1-4 PASS in both scopes at the end (Resume here above).
+- CI along the way: on `f994fe7` two `transmission` jobs failed once in code this PR does not touch (chromium: the open-world geometry
+  count in `conquest-session-032.py` after teleport round trips, a candidate race with terrain chunk cleanup in `view.js`; webkit: the
+  keyboard bot destroyed in `conquest-living-war.py`'s perimeter sweep, the same job that was flaky on the 7T PR); each passed on its
+  one re-run (a PR comment says why). No test was skipped, deleted or loosened; the tests changed for a decided rule are named in this
+  checkpoint. Open for a later session: the proposed hardening of `conquest-session-032.py` (wait for
+  `Conquest.view.chunks.size<=Conquest.view.wanted.length` before each geometry reading).
+- Worker: `Deploy Stars server (Cloudflare)` run 45313067502 SUCCESS on `207f10b` (deployed 02:38 UTC, version id
+  `1b6da238-3960-4e22-baa9-c22d73b52355`; 9 changed assets uploaded; the crons `*/5`, `* 15-18` and the alert cron `1-56/5`
+  registered): `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`, live `version.json` = `{"v":"20261123142107"}` =
+  repo (02:38 UTC).
+- GitHub Pages: `pages build and deployment` run 45313066366 SUCCESS on `207f10b` (02:33 UTC). This container cannot reach
+  workers.dev (network policy), so the live values come from the deploy job's own checks above.
+- Database rules: unchanged in this release (`database.rules.json` not touched), so `Deploy Firebase rules` did not run.
+- No live players: no migration code. Revert plan if broken: revert `207f10b` on main (both deploys follow main). Not needed.
+- Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged; Selenite earn-only.
+- This record and ROADMAP row 7T-P went to main in a second, docs-only PR from the same branch (restarted from main).
