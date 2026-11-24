@@ -29,6 +29,8 @@ on:
       - 'js/game.js'
       - 'worker/src/index.js'
       - '.github/workflows/lab-ui-check.yml'
+  # Session 7B: the auto-release workflow starts this after a merge it makes (its token's push starts no push workflows)
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:

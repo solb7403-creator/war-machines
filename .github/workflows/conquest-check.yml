@@ -245,7 +245,7 @@ jobs:
 
   transmission:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 60   # Session 7B: the WebKit install (--with-deps, apt) took 23 and 28+ minutes on Nov 24 (2-10 before) and the 35-minute limit cancelled the tests
     strategy:
       fail-fast: false
       matrix:

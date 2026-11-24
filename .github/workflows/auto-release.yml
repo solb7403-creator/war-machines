@@ -1,0 +1,62 @@
+name: Auto-release
+# Session 7B (owner brief docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md, STEP 1): merges a pull request by itself when its head
+# branch is claude/* in this repository (never a fork), it is ready (not a draft) and carries the auto-release label, every check
+# on its head commit finished green and it has no conflicts; a merge commit, as #150-#153. The merge is made with this workflow's
+# token, which starts no push workflows, so it then dispatches the ones a push to main would have run for the merged files (each
+# workflow's own on.push filters, read at the merge commit: deploy-worker, deploy-rules, graphify-code-index, owner-rules and the
+# push checks), and requests a GitHub Pages build when none started for the merge. Logic: .github/scripts/auto-release.mjs
+# (its unit test: dev/tests/auto-release.mjs, workflow auto-release-check.yml).
+on:
+  # the label added or the draft marked ready (the checks may already be green)
+  pull_request:
+    types: [labeled, ready_for_review]
+  # a check workflow finished (the last green one releases the pull request)
+  workflow_run:
+    workflows:
+      - Conquest regression
+      - Website layout and login contracts
+      - Owner rules
+      - AI tooling and graphics asset integrity
+      - Equipment Balance and Runtime Verification
+      - Validate Laboratory UI
+      - Auto-release check
+    types: [completed]
+  # a safety net: a check from outside GitHub Actions, or an event GitHub dropped
+  schedule:
+    - cron: '23,53 * * * *'
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Pull request number (empty: every open candidate)'
+        required: false
+permissions:
+  contents: write        # the merge
+  pull-requests: write   # read the pull request, merge it
+  actions: write         # dispatch the push workflows
+  checks: read
+  statuses: read
+  pages: write           # request a Pages build when none started
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+jobs:
+  gate:
+    name: auto-release gate
+    # a fork's pull request never runs this (and the script refuses forks again)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      # the decision code always comes from the default branch, whatever event started the run
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Merge every pull request that qualifies, then start what a push would have started
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.inputs.pr || github.event.pull_request.number || '' }}
+        run: node .github/scripts/auto-release.mjs

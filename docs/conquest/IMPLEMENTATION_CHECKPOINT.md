@@ -7275,3 +7275,53 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
 - No live players: no migration code. Revert plan if broken: revert `207f10b` on main (both deploys follow main). Not needed.
 - Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged; Selenite earn-only.
 - This record and ROADMAP row 7T-P went to main in a second, docs-only PR from the same branch (restarted from main).
+
+## Checkpoint 49 — Session 7B: Citadel Act I, logic only (branch `claude/citadel-act-i-logic-jpnnz3`, from main `2418328`)
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md first; it governs everything, then this section.
+- Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`, head `af852a8`; its
+  `js/conquest/dropship.js` exposes `ConquestDropship.flight(spec)` with `spec.hitAt` for a ship shot down, `planDrill`, `unitPose`,
+  `stage(S,K,o)`); Checkpoint 48 is Session 7T-P (released, PR #152); this is Checkpoint 49. Work on
+  **`claude/citadel-act-i-logic-jpnnz3`** (one branch for every PR of this session, restarted from main after each merge).
+- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md`; this checkpoint opened.
+- **Slice 2 (STEP 1, its own PR):** the auto-release workflow and the two flaky browser tests hardened (details under "STEP 1"
+  below). Local: `node dev/tests/auto-release.mjs` 257 PASS, `owner-rules` 47 PASS, `conquest-session-032.py --engine chromium` PASS
+  (4 sizes; the three cleanup readings 117/117/117 geometries with chunks 25 = wanted 25), `conquest-living-war.py --engine chromium
+  --quality high` running. WebKit cannot be installed in this container (its download is blocked): CI runs it.
+- **Next:** open the STEP 1 PR, merge it myself (merge commit), restart the branch from main, then STEP 2.
+
+### STEP 1: the auto-release workflow and two flaky tests (lead's decisions, with reasons)
+- **`.github/workflows/auto-release.yml` + `.github/scripts/auto-release.mjs`** (unit test `dev/tests/auto-release.mjs`, its own
+  workflow `auto-release-check.yml`). It merges a pull request when: head branch `claude/*` in this repository (the head and base
+  repository are the same by name and id: never a fork, a deleted fork's null head refused), base = the default branch, open, not a
+  draft, the `auto-release` label, GitHub reports it mergeable (no conflicts), and every check on the head commit finished green.
+  "Green" = success, neutral or skipped (GitHub itself counts a skipped job as passing); every check run (latest per name), every
+  Actions workflow run for that commit (so a queued workflow with no job yet still blocks) and every commit status must be green, and
+  at least one check must have run; the gate's own job and runs are left out. The merge is a merge commit titled
+  "Merge pull request #N: <title>" as #150-#153, pinned to the checked head SHA (a push during the check cannot slip in).
+- After the merge it reads every workflow file **at the merge commit**, applies each one's `on.push` filters (branches,
+  branches-ignore, paths, paths-ignore, `!` negations, renames counting both names) to the pull request's files and dispatches the
+  matching ones on main: a Conquest change starts deploy-worker, graphify-code-index and owner-rules; a docs-only merge only
+  owner-rules; `database.rules.json` deploy-rules. **Lead's choice:** `equipment-balance.yml` and `lab-ui-check.yml` also run on a push
+  to main but had no `workflow_dispatch`; each got one (two lines) so an auto-merge starts exactly what a push would have.
+- GitHub Pages: the site builds from main ("pages build and deployment"). The workflow waits up to 3 minutes for a Pages build of the
+  merge commit (the Pages API or that run); if none started, it requests one (`POST /pages/builds`) and waits up to 10 minutes; the
+  run's summary records it. Triggers: the label added / ready for review, any check workflow finishing (`workflow_run`), a fallback
+  sweep at :23 and :53, and a manual run. One run at a time (concurrency); the decision code always comes from main. A refused merge
+  fails the run so it shows; waiting for checks never fails it.
+- **`conquest-session-032.py` (Chromium):** the cause is in view.js's terrain stream: `pending` counts chunks still to build, not the
+  stale chunks of the previous spot, which are dropped one per stream call and only on a call that builds nothing. So `pending===0`
+  could read a geometry count that still held some of the old spot's chunks. Each geometry reading now waits for the stream to settle
+  at the tank's cell: its selection made for this cell (`selectionKey`), `pending===0` and `chunks.size<=wanted.length` (the
+  Checkpoint 48 proposal). The assertion (`cleanup[-1].geometry<=cleanup[0].geometry+3`) is unchanged; the readings now also record
+  chunks and wanted.
+- **`conquest-living-war.py` (WebKit, the keyboard bot destroyed in the perimeter sweep):** the CI log of PR #152 shows the cause:
+  `('perimeter', {'state': 'defeat', 'hp': 0, ..., 'selected': None, 'pick': {'y': 685.6, 'visible': True}, 'live': 1, 'canHit': True})`
+  at 390x844. The bot taps a hull only between y 130 and height-230 (the HUD's controls fill the bottom band); an enemy that stays low
+  on screen (beside the tank on the camera's side) could never be locked, so the bot drove at it firing along a stale aim (unlocked
+  fire never auto-aims) while it was shot. Which enemy ends up there depends on where the convoy fight ended, which the slower WebKit
+  frames change. Fix: when the target is visible but outside the tappable band, the bot turns the camera to put it straight ahead
+  of the tank (a pilot's camera drag), then taps it; every assertion is unchanged (hp above 0 throughout, every live enemy killed,
+  real taps, keys and lock).
+

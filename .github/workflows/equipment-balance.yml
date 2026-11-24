@@ -64,6 +64,8 @@ on:
       - 'js/range-engine.js'
       - 'dev/tests/lab-ui.mjs'
       - '.github/workflows/equipment-balance.yml'
+  # Session 7B: the auto-release workflow starts this after a merge it makes (its token's push starts no push workflows)
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
