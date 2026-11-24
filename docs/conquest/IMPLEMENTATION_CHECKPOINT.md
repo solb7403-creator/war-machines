@@ -7392,6 +7392,13 @@ least half of 4 seeded assaults; `dev/tests/conquest-citadel-pace.mjs` (CI job `
 - The bot is a careful pilot; a less precise player clears later. Siege prep (an airstrike, one fewer wave, no portal surges) makes
   every tier easier and is not used by the bot.
 
+### Worker cost of an assault (measured, Node 22 in this container; not Cloudflare's own meter)
+The Worker replays every assault from the pilot's verified commands. A Citadel step costs 2.0 ms (tier I) to 2.4 ms (tier III) with
+nine allies, against 0.4-0.8 ms for a raid or a counterattack (most of it the shared engine's line-of-sight and steering checks:
+`blockedAt`, `raidSolidAt`, `rockSolid`). A 7-minute assault is about 8,400 steps: 17-20 s of CPU spread over its requests (about 45 ms
+a second of fight), inside Workers Paid's limits. PROPOSAL (performance, not gameplay): bounding-box fast paths in world.js's collision
+lookups (exact results) would cut roughly a fifth of every operation's replay cost.
+
 ### STEP 3: the held-raid reward (owner, Nov 23), with every 7B change on
 Measured with `dev/tools/held-raid-cache.mjs` (`docs/conquest/session7b/held-raid-cache.json`): the walled 1-hour regular (the coach's
 ring) on the town-ladder guard's 101-pilot panel with town attacks on (fortress-model ladderRun on the real Worker reducers, every raid
