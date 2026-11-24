@@ -1,5 +1,6 @@
 // Conquest has its own versioned Firebase record and CAS boundary, separate from eco/airdrop.
 import {syncWarfront,persistWarfront,applyWarfront} from './conquest-warfront.js';
+import {citadelBoardPost} from './conquest-citadel-board.js';
 import {COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {BASE_ACTIONS} from './conquest-campaign.js';
 import {PLOT_ACTIONS,MINERAL_PLOT_ACTIONS,BIG_PLOT_ACTIONS} from './conquest-plot.js';
@@ -116,7 +117,9 @@ export async function conquestEvent(env,a,now=Date.now()){if(!allowed(a.b,['gv',
 export async function conquestInput(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData','seq','commands','cv'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||a.b.cv!==undefined&&(typeof a.b.cv!=='string'||a.b.cv.length>40))return response(400,'invalid conquest input');
  let commands;try{commands=validateCommands(a.b.commands);}catch{return response(400,'invalid conquest command');}
- return submit(env,a,{seq:a.b.seq,commands},applyCommands,now,a.b.cv||null);
+ const out=await submit(env,a,{seq:a.b.seq,commands},applyCommands,now,a.b.cv||null);
+ if(out.status===200&&!out.body?.replayed&&out.body?.state?.cit?.lb?.at===now)await citadelBoardPost(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // Session 7B: a Throne Run clear's time to the weekly board (best effort)
+ return out;
 }
 export async function conquestAction(env,a,now=Date.now()){
  if(a.b&&DEV_ACTIONS.includes(a.b.action)){
@@ -134,6 +137,7 @@ export async function conquestAction(env,a,now=Date.now()){
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
  const ctx=a.b.action==='recall-start'||a.b.action==='war-fortify'?{premium:await premiumPass(env,a.pid,now)}:   /* Session 7: the Lunar Pass Fortify perks (behind the store flag) */MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:RESEARCH_ACTIONS.includes(a.b.action)?researchCtx(RULES.ecoNorm(await readEco(env,a.pid)),now):['hangar-arm','hangar-livery','hangar-gear'].includes(a.b.action)?await (async()=>{const S=RULES.ecoNorm(await readEco(env,a.pid));return batCtx(S,S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L));})():{};   /* Session 6C: AUTO-ARM and liveries read the account once */   /* Session 6B: research reads the account once (bonus parts, finish credits, premium pass) */const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
  const out=await submit(env,a,request,(p,r,n)=>owner&&p?.dev?.on?unlimited(p,q=>instant(applyAction(q,r,n,{...ctx,bmn:Object.fromEntries(Object.keys(RULES.mnOf({})).map(k=>[k,9e6]))}),n)):applyAction(p,r,n,ctx),now);
+ if(out.status===200&&!out.body?.replayed&&out.body?.state?.cit?.lb?.at===now)await citadelBoardPost(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // Session 7B: the Throne Run board (a clear settled by an action)
  // Session 5: publish the plot's public snapshot (visits, top 20, Base of the Week) after a verified plot change. Best effort.
  if(out.status===200&&out.body?.state?.plot&&!out.body.replayed&&(PLOT_ACTIONS.includes(a.b.action)||['build-base','upgrade-base','base-module'].includes(a.b.action)))await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});
  return out;

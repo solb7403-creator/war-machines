@@ -29,8 +29,8 @@ const CIT=Object.freeze({
  ring:5,                                      // the Inner Ring: the ring's danger in the battle points formula (war.js WAR.danger)
  prepMs:48*HOUR,                              // each siege prep objective stays valid 48 hours
  // lead's design numbers (fixed for every tier): the warden's hull and shield core (re-formed twice), the gate and its generators
- warden:Object.freeze({hp:6000,core:1500,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
- gate:Object.freeze({hp:2600}),gen:Object.freeze({hp:1400}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),
+ warden:Object.freeze({hp:7000,core:1500,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
+ gate:Object.freeze({hp:2600}),gen:Object.freeze({hp:1800}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),
  ship:Object.freeze({hp:700,flyS:14,unloadS:6,everyS:30,firstS:4}),strike:Object.freeze({tellS:2,r:11,dmg:650,ahead:40}),
  cover:Object.freeze({r:7}),drop:Object.freeze({tellS:3,r:7,dmg:40}),portal:Object.freeze({atS:Object.freeze([50,20])}),
  gapS:8,                                      // the breather between two PUSH waves

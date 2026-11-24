@@ -39,13 +39,14 @@ export function assault(tier,{L=GEAR.common,allies=[],prep={},gambits=[],seed=1,
  while(B.state==='active'&&steps<maxSteps){
   const c=B.cit,alive=B.enemies.filter(e=>e.hp>0&&!e.dormant&&!e.resident),vis=alive.filter(e=>K.visible(B,p,e)),near=f=>vis.filter(f).sort((a,b)=>dist(a,p)-dist(b,p))[0];
   const objective=c.stage===0?alive.filter(e=>e.cit==='gen'||e.cit==='gate').sort((a,b)=>dist(a,p)-dist(b,p))[0]:null,warden=alive.find(e=>e.warden);
-  const close=near(e=>!e.cit&&!e.ship&&dist(e,p)<16);
+  const close=near(e=>!e.cit&&!e.ship&&dist(e,p)<(warden?8:16));   // in the warden's phase only a biting unit draws the pilot off the core
   const target=close||(warden&&vis.includes(warden)?warden:null)||near(e=>e.ship&&!e.landed)||(objective&&vis.includes(objective)?objective:null)||near(e=>e.wave&&!e.swarm)||near(e=>e.cit==='mortar')||near(e=>e.cit==='gun')||near(()=>true);
   const inPark=p.x>cen.x+g.u,hp=B.playerHp/B.playerMax;if(hp<.3)retreat=true;if(hp>.55||B.playerHp>=B.playerMax)retreat=false;
   const garrison=alive.filter(e=>e.wave&&!e.swarm&&!e.ship).sort((a,b)=>dist(a,p)-dist(b,p));
   let goal=objective||warden||garrison[0]||CI.at(CI.LAYOUT.throne.u-24,0);
   // the courtyard: wait outside the gate while the garrison is many, then go in (the gate first)
   if(c.stage>=1&&!inPark&&goal.x>cen.x+g.u){if(garrison.length>2&&!warden)goal=outside;else goal=Math.abs(p.z-cen.z)>6||dist(p,outside)>10?outside:inside;}
+  if(warden&&!retreat&&inPark)goal=warden;   // the core is the pilot's job: keep it in sight and in range
   if(retreat)goal=inPark?outside:home;
   const tv=target&&K.visible(B,p,target),dt0=target?dist(target,p):0,lo=target&&target.swarm?.35*range:.42*range,hi=.72*range;let mx=0,mz=0;
   const toward=q=>{const d=dist(q,p)||1;return [(q.x-p.x)/d,(q.z-p.z)/d];};

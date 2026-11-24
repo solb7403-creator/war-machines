@@ -56,3 +56,21 @@
 @media(max-width:899px){.wm-next-card{padding:8px 10px}.wm-next-card .wm-pay{display:none}.wm-pay-short{display:block!important}.wm-next-card .wm-odds{font-size:12px;margin:2px 0}.wm-next-title{font-size:15px;margin:0 0 2px}.wm-next-card .wm-go-btn{margin-top:4px;min-height:40px!important}.wm-head h2{margin:0 0 4px}.wm-count-note{font-size:9.5px;margin-top:4px}}
 @media(max-height:620px) and (max-width:899px){.wm-head .cq-kicker{display:none}.wm-head h2{font-size:17px}.wm-next-card .wm-time{display:inline;margin-right:6px}}
 .wm-pay-short{display:none;margin:2px 0;font:700 11px 'Chakra Petch',sans-serif;letter-spacing:.5px;color:#ffe3a3}
+/* Session 7B Citadel Act I (js/conquest/citadelui.js, cutscene.js): the campaign card, siege prep, Throne Run, the assault HUD, results, the reveal */
+.cq-cit-card .cq-cit-mech,.cq-cit-card .cq-cit-warden{margin:2px 0 6px;font-size:12px;line-height:1.4;color:#d8e6f2}.cq-cit-card .cq-cit-warden{color:#ffc3a8}
+.cq-cit-prep{margin:10px 0 4px;display:grid;gap:6px}.cq-cit-prep-row{display:block;width:100%;text-align:left;white-space:normal;font-size:12px!important}.cq-cit-prep-row.ok{border-color:#3fb58c!important;color:#9ff0c9!important}.cq-cit-prep-row:disabled{opacity:1;cursor:default}
+.cq-cit-reward{margin:8px 0;font-size:12px;line-height:1.4;color:#ffe2a0}.cq-cit-launch{display:block;width:100%;margin:8px 0 4px;white-space:normal}
+.cq-cit-throne{margin-top:12px;padding-top:8px;border-top:1px solid #2b4458;display:grid;gap:6px}.cq-cit-gambits{display:flex;flex-wrap:wrap;gap:6px}
+.cq-cit-gambit{display:inline-flex;flex-direction:column;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:.5px;border:1px solid #c0566b;background:#2a0f17;color:#ffb3c2}.cq-cit-gambit.boon{border-color:#3fb58c;background:#0d2a20;color:#9ff0c9}.cq-cit-gambit small{font-weight:400;letter-spacing:0;color:#d8e6f2}
+.cq-cit-tier{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.cq-cit-tier p{margin:0;font-size:12px;line-height:1.35}.cq-cit-run,.cq-cit-board-btn{min-height:44px;white-space:nowrap}
+@media(max-width:400px){.cq-cit-tier{grid-template-columns:1fr 1fr}.cq-cit-tier p{grid-column:1/-1}}
+.cq-cit-board ol{margin:8px 0;padding-left:0;list-style:none;display:grid;gap:4px}.cq-cit-board li{padding:6px 8px;border:1px solid #2b4458;border-radius:6px;font-size:13px}.cq-cit-board li.me{border-color:#ffd36b;color:#ffe2a0}
+.cq-cit-hud{position:absolute;left:50%;top:calc(max(8px,env(safe-area-inset-top,0px)) + 56px);transform:translateX(-50%);z-index:5;width:min(92vw,560px);padding:6px 10px;border:1px solid #ff8a4a99;border-radius:10px;background:#140a0ed9;color:#ffe9dc;text-align:center;pointer-events:none}
+.cq-cit-hud p{margin:0;font-size:12px;line-height:1.35;font-weight:700;letter-spacing:.4px}.cq-cit-hud .cq-cit-hud-obj{font-weight:600;color:#ffd6c2}.cq-cit-hud .cq-cit-hud-say{color:#ffd36b;opacity:.75}.cq-cit-hud .cq-cit-hud-say.fresh{opacity:1}
+.cq-cit-hud.cq-cit-core{border-color:#8fe7ff;box-shadow:0 0 12px #8fe7ff55}.cq-cit-air{pointer-events:auto;margin-top:6px;min-height:44px;padding:6px 14px;border-color:#7dd8ff!important;color:#c9f2ff!important}
+@media(min-width:900px){.cq-cit-hud{top:14px;width:min(46vw,620px)}.cq-cit-hud p{font-size:13px}}
+.cq-cit-result h2{margin:4px 0}.cq-cit-time{margin:0 0 6px;font-weight:700;color:#ffe2a0}.cq-cit-rewards{margin:6px 0;padding-left:18px;display:grid;gap:4px;font-size:13px;line-height:1.4}
+.cq-cutscene{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:0 16px max(24px,env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,#0000 35%,#000c 100%);pointer-events:auto}
+.cq-cut-card{width:min(100%,640px);margin-bottom:14px;text-align:center;color:#f2f6fa;text-shadow:0 2px 6px #000}.cq-cut-card h2{margin:4px 0;font-size:clamp(20px,5.6vw,34px);letter-spacing:1px}.cq-cut-line{margin:0;font-size:clamp(13px,3.6vw,17px);line-height:1.45;color:#d8e6f2}
+.cq-cut-bar{width:min(100%,640px);height:4px;border-radius:2px;background:#ffffff22;overflow:hidden}.cq-cut-bar i{display:block;height:100%;width:0;background:#ffd36b}
+.cq-cut-skip{position:absolute;top:calc(max(10px,env(safe-area-inset-top,0px)) + 8px);right:12px;min-height:44px;min-width:88px;z-index:41}
