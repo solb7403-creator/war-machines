@@ -953,6 +953,13 @@ function ecoLoadout(S,L0){
  const legal=f.weight<=FIT_BUDGET.weight&&f.power<=FIT_BUDGET.power;
  return {mods:legal?mods:fittingSelection(),looks:fittingValid(L0.looks,true)?{...(L0.looks||{})}:{},catalog:FIT_VERSION,w,c,up:{...chUp(S,c.c)},cores,gl:{...chGl(S,c.c)},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg),ap:apOf(S.ap)};   // vl: Vault level, looks only; ap: owned Hull Plating (never from the client)
 }
+// ---- Session 7B: the Citadel's first-clear airdrop bounties (owner, Nov 23: the blueprint's table x5; IV-IX for Session 11), base points,
+// once per account, outside the daily cap (a one-time progression milestone: ecoAward's free path). Index = tier. The Conquest record
+// sends a tier's bounty once, when that tier is first cleared (worker/src/conquest-citadel.js); the account credits each id once here,
+// by id (S.cbty), so a Conquest record reset, a replayed entry or a second entry with the same id can never pay twice
+const CIT_BOUNTY=Object.freeze([0,25000,37500,50000,75000,100000,150000,225000,325000,500000]);
+function ecoBounty(S,id,X){const m=/^cit([1-9])$/.exec(String(id||''));if(!m)return 0;const n=CIT_BOUNTY[+m[1]]|0;if(!n)return 0;
+ if(!S.cbty||typeof S.cbty!=='object'||Array.isArray(S.cbty))S.cbty={};if(S.cbty[id])return 0;S.cbty[id]=Math.max(1,X.day|0);return ecoAward(S,n,X,true);}
 // ---- points ----
 function ecoRoll(S,X){if(S.dailyDay!==X.day){S.dailyDay=X.day;S.dailyPts=0;}if(S.weeklyNum!==X.week){S.weeklyNum=X.week;S.weeklyPts=0;}}
 // every point a pilot earns goes through here: the daily cap, the daily/weekly boards and days active

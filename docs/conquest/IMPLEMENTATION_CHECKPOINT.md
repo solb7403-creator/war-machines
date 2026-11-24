@@ -7289,7 +7289,55 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   below). Local: `node dev/tests/auto-release.mjs` 257 PASS, `owner-rules` 47 PASS, `conquest-session-032.py --engine chromium` PASS
   (4 sizes; the three cleanup readings 117/117/117 geometries with chunks 25 = wanted 25), `conquest-living-war.py --engine chromium
   --quality high` running. WebKit cannot be installed in this container (its download is blocked): CI runs it.
-- **Next:** open the STEP 1 PR, merge it myself (merge commit), restart the branch from main, then STEP 2.
+- **STEP 1 PR #154** opened (not a draft), CI running; merge it myself when green (merge commit), then restart the branch from main.
+  STEP 2 work is built on a LOCAL branch `wip-7b` (never pushed to the PR branch before #154 merges): after the merge, rebase it onto
+  main and push to `claude/citadel-act-i-logic-jpnnz3`, open the STEP 2 PR as a DRAFT.
+- **STEP 2 built so far (local, `wip-7b`):** `js/conquest/citadel.js` (rules, tiers, record, prep, Throne Run, the Assault class),
+  `worker/src/conquest-citadel.js` (launch, prep, settlement, bounty), hooks: combat.js (archetypes swarm / mortar / dropship /
+  structure, the 3 operations `citadel-1..3` family 'citadel' danger HARD, fieldMissionIds excludes them, `this.moveOf` in friendStep,
+  Lancer air bonus on `t.ship`, baseYield `cpb`), plot.js rates `cpb`, controls.js (`B.slideOf`, `input.strike` -> `B.callStrike`,
+  command/validated `strike`), conquest-sim.js (hydrate, refreshState citadelSync, start-mission check/begin, victory citadelWon, raid
+  prep, defeat/retreat citadelLost, destroyed citadelDown: no wreck), session.js (apply builds the Assault), conquest-store.js COLD
+  (`cit`, `citRun`), rules.js (`CIT_BOUNTY`, `ecoBounty`), conquest-airdrop.js (`bounty()`, `e.bty`), eco.js creditConquest (bounty
+  once per account, outside the cap), the tiers in war ctx (conquest-war.js ctxOf, warmap.js ctxOf) and the town's five places
+  (conquest-town.js infoOf / settle default cit + live fights paid at `s.td.lv` / liveStart; townui.js hub preview + last chance).
+  `dev/tools/citadel-model.mjs`: the bot pilot + kits by profile/day (pacing). worker/build-sim.mjs bundles citadel.js.
+- **Still to build:** UI (Citadel card on the War Map, launch, prep, Throne Run + board, assault HUD, results, cutscenes,
+  stand-in views + hooks), the clear-time board (Worker doc + route), tests, guards with every change on, STEP 3, docs.
+
+### STEP 2 design (lead's decisions, with reasons)
+- **The assault is an Operation of the shared combat engine** (`ConquestCitadel.Assault extends ConquestCombat.Operation`), so the
+  Battalion, projectiles, roles, the warden's doctrine patterns, telegraphs and the Worker's command replay are the existing ones.
+  The three tiers are operations `citadel-1..3` in `ConquestCombat.operations` (family 'citadel', `battalion:true`).
+- **Where:** the Outer Works in the Inner Ring at (1590, 1080), east of the Eastern Rim (terrain unchanged; the ridge's crest is the
+  rampart line). The siege camp is 100 m west; launching from anywhere moves the tank there under fast travel's rule.
+- **Danger HARD for Act I** (measured): at VETERAN, Session 6C makes militia-armed allies freeze (MILITIA_VET); a day-20 regular's 9
+  militia allies dealt 700 damage to the pilot's 4,229. Act I is the Outer Works of weeks 2-8: HARD keeps militia crews useful;
+  Acts II-III can be VETERAN.
+- **The rampart blocks movement, not fire** (tanks fire over it; walls in shots would need a hook in every line-of-sight check);
+  the closed gate / shield gate blocks the gap; units slide along a wall toward the gate (player: controls.js `B.slideOf`, allies:
+  combat.js `this.moveOf`, Parasites: the Assault's `enemyAdvance`).
+- **Fixed stats:** every unit keeps its archetype's numbers in every tier; the wardens share one hull (6,000) and shield core (1,500,
+  re-formed at 2/3 and 1/3 hull after a 2.5 s tell, enraged below 40%); a tier differs by units, layout and tactics only.
+- **Tiers:** I generators (3 x 1,400) hold the shield gate, Swarm vents (4 every 14 s, cap 12); II a hard gate (2,600), 3 Spore
+  Mortars (a marked shell every 9 s each, on you or on a marked zone with someone in it), 5 forward cover bunkers (7 m: no shell
+  damage); III the hard gate, 4 dropships (each one wave; shot down before landing the wave is lost; Lancers' anti-air bonus).
+  PUSH: a 6-unit garrison, then 3 reinforcement waves (I-II) or the dropships (III); the portal surges twice unless suppressed.
+- **Wardens:** the Citadel's own (GATEWARDEN SKORVA ambush, SPOREMASTER VORN artillery, DECK-ADMIRAL THRAXA carrier, 3 stars), not
+  in the war's general pool (the war's picks, seeded streams and town attackers stay unchanged; a warden falls with its tier).
+- **Siege prep:** aa = any ANTI-AIR BATTERY KNOCKOUT raid won (one LDF airstrike: 650 to everything within 11 m after 2 s; never a
+  shield core), cv = any ARMORED INTERCEPTION raid won (one fewer reinforcement wave / dropship), po = the war's portal suppression
+  (no portal surges); 48 h each; every prep a siege launches with is spent by that assault, won or lost (a Throne Run uses none).
+- **Loss:** nothing else is taken: a destroyed tank leaves no wreck and loses no cargo (the LDF tows it back at 25% hull); downed
+  allies return at half hull (the Battalion rule: repair).
+- **First clear:** the bounty (outbox `e.bty` -> the account's `ecoBounty`, once per bounty id per account, `ecoAward` free path:
+  outside the cap), production +5% a tier (`base.cpb` / `plot.cpb`), the warden's trophy (`s.cit.tro`), Retaliation (= tiers
+  cleared) +1, the next tier; the battle points (2,284 raw: 7 par minutes x 225 x 1.45) under the cap, replacing the held kills.
+- **Throne Run:** a cleared tier relaunched = that UTC week's Gambit pair (a bane + a boon, rotating over 6 weeks), no siege prep;
+  the first clear of the tier that week pays the full chest (the loot tables' `commander` roll with the warden's doctrine trophy row
+  + the raid `chest` roll), later ones the `chest` roll; battle points every clear; the clear time (the Worker's assault clock) for
+  the weekly board.
+
 
 ### STEP 1: the auto-release workflow and two flaky tests (lead's decisions, with reasons)
 - **`.github/workflows/auto-release.yml` + `.github/scripts/auto-release.mjs`** (unit test `dev/tests/auto-release.mjs`, its own
@@ -7325,3 +7373,36 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   of the tank (a pilot's camera drag), then taps it; every assertion is unchanged (hp above 0 throughout, every live enemy killed,
   real taps, keys and lock).
 
+
+### Research: the best comparable sieges and raid bosses (before the Citadel was designed)
+One research agent, web search (wikipedia.org and wiki.warframe.com fetches were blocked). Lessons and what each changed here:
+1. **Generators drop the shield; split the objectives** (PlanetSide 2 Tech Plants: the shield falls only when both generators die;
+   Battlefield Rush: paired M-COMs a sector). -> Tier I: three gate generators on separate flanks power the shield gate.
+2. **Flank the guns** (World of Tanks Frontline: guns resist frontal fire, need 3 of 5). -> The outer guns are optional targets on the
+   rampart; the generators, not the guns, open the gate.
+3. **Prep removes one named, visible threat** (Mass Effect 2 suicide mission upgrades; XCOM 2 facilities; Helldivers 2 AA blocking
+   Eagle strikes). -> Each siege prep removes one authored piece and the assault shows it (the airstrike button, the missing wave, the
+   dead portal), as the blueprint says.
+4. **One player breaks the shield, the team does the damage** (Destiny's Templar/Aegis; Warframe Eidolon shields). -> The warden's
+   shield core: only your tank breaks it (combat.js `t.core`); while it is down the whole Battalion hits the hull.
+5. **Short, repeating damage windows** (Deep Rock Hiveguard, Destiny DPS phases). -> The core re-forms twice (at 2/3 and 1/3 hull) after a
+   tell: three breaks a fight.
+6. **The body shows the tells; telegraphs long enough to react** (Monster Hunter, telegraph design). -> Marked mortar zones 2.4 s ahead,
+   the warden's existing doctrine tells (pause, mark, launch), a 2.5 s tell before the core re-forms, enrage below 40%.
+7. **Allies must not be passive** (Space Marine 2 bots were made passive to keep the spotlight on the player and were criticised,
+   patch 3.0 eased it). -> Allies fight everything (swarm, guns, generators, mortars, dropships, the hull in its windows); only the
+   core is the pilot's.
+8. **Weekly caps still need a reason to replay** (Destiny 2 weekly loot lockouts; Deep Rock Deep Dives: one seed, paid once a week, best
+   time after). -> Throne Run: one full chest per tier per week, then the reduced chest, and a clear-time board.
+9. **Weekly modifiers apply to everyone and change tactics, not just stats** (WoW Mythic+ affixes; Diablo 4 sigils; Hades Pact rules).
+   -> Gambits are rule changes (no shield, an extra wave, the warden enraged from the start, a swarm tide, an open barrage, a portal
+   storm), the same pair for every pilot that week.
+10. **The server writes the times; boards are bracketed** (PlayFab: never post competitive scores from the client; weekly resets;
+    Diablo 3 brackets). -> The clear time is the Worker's own assault clock (sim time from verified commands), never the phone's; the
+    board is per tier and per week.
+11. **Cutscenes: skippable from the first frame, short on repeats** (Xbox accessibility: pausable cutscenes; Monster Hunter Wilds
+    hold-to-skip + gallery; Titanfall 2 boss name cards). -> Full reveal on a tier's first attempt, a short name-card version after,
+    SKIP from the first frame.
+Recommendations not taken (with reasons): no hard fail timer (kept the existing 10-minute operation clock: every operation has one and
+it bounds Worker time); "spend only prep that fired" (the brief says a loss spends the used siege prep: every prep active at launch
+is used by that assault); a minimum Battalion retry after a loss (downed allies need repair, as the brief says).

@@ -29,7 +29,8 @@ export function town(s,now){s.tw=TN.norm(s.tw,now);return s.tw;}
 // the town's own server-only seed (review: the raid seeds a replay shows must reveal nothing of the loot seed s.lseed)
 function townSeed(s){if(!Number.isSafeInteger(s.twsd)||s.twsd<=0){const a=new Uint32Array(1);crypto.getRandomValues(a);s.twsd=a[0]||1;}return s.twsd;}
 const seedOf=s=>String(townSeed(s))+':town';
-const infoOf=(s,now)=>({cc:s.plot?.cc|0,townAt:Number(s.base?.builtAt)||Number(s.plot?.at)||0,shieldUntil:Number(s.plot?.shieldUntil)||0,war:s.war,tiers:0,seed:seedOf(s)});   // tiers: the Citadel arrives with 7B (tiers I-III) and Session 11 (IV-IX); pass them here, to settle's cit, to the town-defend start and to townui.js's hub preview together
+const citTiers=s=>CONQUEST.Citadel.tiersOf(s);   // Session 7B: the Citadel tiers cleared (the Retaliation level), in all five places: here (the clock and the attacker's stars: ConquestTown.STARS), settle's cit, the town-defend start, townui.js's hub preview and its last-chance line
+const infoOf=(s,now)=>({cc:s.plot?.cc|0,townAt:Number(s.base?.builtAt)||Number(s.plot?.at)||0,shieldUntil:Number(s.plot?.shieldUntil)||0,war:s.war,tiers:citTiers(s),seed:seedOf(s)});
 // ---- the garrison (decision 7): the reserve pilots (not fielded, not stationed, not downed), strongest first, one a Hangar level ------
 export function garrisonOf(s){const T0=bat(s),slots=P.garrisonSlots(s.plot);if(!slots)return [];const fielded=BT.picked(T0,hangarLevel(s),'battalion').map(p=>p.id);
  return WR.reserves(T0.p,fielded,s.war).map(p=>({p,r:WR.rating(p)})).sort((a,b)=>b.r-a.r||a.p.id.localeCompare(b.p.id)).slice(0,Math.min(5,slots)).map(x=>x.p);}
@@ -73,9 +74,9 @@ export const plotOfSnap=TN.plotOfSnap;   // shared with the phone's replay (js/c
 // cit: the Citadel tiers cleared (0 until the Citadel passes them: until then a town attack is level 1-4, the Grand Offensive's target up to
 // 7; the cap-level Selenite needs tiers VIII-IX). The session that passes them: the same value here, in infoOf, at the town-defend start
 // and in the hub's preview (or pay a live fight at s.td.lv), so the level fought is the level paid
-export function settle(s,e,at,live,cit=0){const p=s.plot,tw=s.tw;
+export function settle(s,e,at,live,cit=citTiers(s)){const p=s.plot,tw=s.tw;
  const job=P.settle(p,at);if(job)s.notice={kind:'plot-built',type:job.t,level:job.l};P.accrue(p,at);researchTick(s,at);
- const st=TN.strength(s.war,e,{now:at,tiers:Math.max(0,Math.min(9,cit|0)),titan:0}),lv=st.level,seed=u32(String(townSeed(s))+':town:'+e.id),gar=garrisonOf(s),units=unitsOf(gar),snap=snapOf(p);
+ const st=TN.strength(s.war,e,{now:at,tiers:Math.max(0,Math.min(9,cit|0)),titan:0}),lv=live&&Number.isSafeInteger(live.lv)?live.lv:st.level,   /* a fight is paid at the level it was fought (s.td.lv) */seed=u32(String(townSeed(s))+':town:'+e.id),gar=garrisonOf(s),units=unitsOf(gar),snap=snapOf(p);
  const R0=live?.uf||RD.make(p,seed,{threat:lv,lane:e.ln,units,damage:true,frames:false,events:false}).run();
  const rank=r=>({fallen:0,breached:1,held:2})[RD.outcomeOf(r)],lost=r=>Object.values(r.damage||{}).reduce((a,v)=>a+v,0);
  const useLive=!!live?.R&&(rank(live.R)>rank(R0)||rank(live.R)===rank(R0)&&lost(live.R)<=lost(R0)),R=useLive?live.R:R0,o=RD.outcomeOf(R);   // decision 6: the better of the two, so showing up never hurts
@@ -117,7 +118,7 @@ function liveStart(s,id,now,ctx){const tw=s.tw,p=s.plot,e=tw.ev.find(x=>x.id===i
  const D=C.baseDefinition;if(Math.hypot(s.position.x-D.x,s.position.z-D.z)>D.radius){if(typeof ctx.travel==='function'){const why=ctx.travel();if(why)fail(why);}else fail('return to your town first');}
  e.tr=s.attempt=(s.attempt|0)+1;
  const job=P.settle(p,now);if(job)s.notice={kind:'plot-built',type:job.t,level:job.l};P.accrue(p,now);
- const st=TN.strength(s.war,e,{now,tiers:0,titan:0}),seed=u32(String(townSeed(s))+':town:'+e.id),gar=unitsOf(garrisonOf(s)),T0=bat(s),gid=new Set(gar.map(u=>u.id));
+ const st=TN.strength(s.war,e,{now,tiers:citTiers(s),titan:0}),seed=u32(String(townSeed(s))+':town:'+e.id),gar=unitsOf(garrisonOf(s)),T0=bat(s),gid=new Set(gar.map(u=>u.id));
  const plat=BT.picked(T0,hangarLevel(s),'platoon').filter(x=>!gid.has(x.id)&&x.h!==.5).map(x=>RD.unitOf({id:x.id,kind:'f',kit:x.kit||BT.militia(x.r),rk:x.rk,role:x.r}));
  const me=RD.unitOf({id:'you',kind:'p',L:s.loadout}),units=[...gar,...plat,me],pad=padOf(p);
  const uf=RD.make(p,seed,{threat:st.level,lane:e.ln,units:gar,damage:true,frames:false,events:false}).run();   // the unfought replay, now (the better of the two counts)
@@ -136,7 +137,7 @@ function liveEnd(s,M,now,why){const d=s.td,tw=s.tw,e=tw.ev.find(x=>x.id===d.id);
  // the pilot really fought (no AFK points, the standing owner rule): at least 5 raiders downed or 4% of the damage dealt to them
  const all=Object.values(R.byTurret||{}).reduce((a,t)=>a+t.dmg,0)+(R.units||[]).reduce((a,u)=>a+u.dmg,0),fought=!!me&&(me.kills>=5||me.dmg>=.04*all);
  d.active=false;delete d.st;
- if(e){tw.ev.splice(tw.ev.indexOf(e),1);tw.past=[...tw.past,now].slice(-6);const o=settle(s,e,now,{R,uf:s.tdu||null,fought,snap:s.tdp,gar:d.units.filter(u=>u.k==='g')});d.o=o;d.why=why;d.fought=fought?1:0;d.live=RD.outcomeOf(R);}
+ if(e){tw.ev.splice(tw.ev.indexOf(e),1);tw.past=[...tw.past,now].slice(-6);const o=settle(s,e,now,{R,uf:s.tdu||null,fought,snap:s.tdp,gar:d.units.filter(u=>u.k==='g'),lv:d.lv});d.o=o;d.why=why;d.fought=fought?1:0;d.live=RD.outcomeOf(R);}
  delete s.tdu;delete s.tdp;s.td={active:false,id:d.id,o:d.o,live:d.live,why,fought:d.fought|0,at:now};s.notice={...(s.notice||{}),kind:'town-defended',live:d.live,why};}
 
 // ---- the Strike Beacon (decision 10; the Nov 10 brief C): once a UTC day the pilot calls a Meteor Strike at the current slot's site, for

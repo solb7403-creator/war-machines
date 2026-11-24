@@ -31,7 +31,7 @@ const seedOf=s=>String(s.lseed|0)+':war';
 // the Lunar Pass perks wait for the store (decision 8: live when the store opens in Session 8), like the Lab's research perks
 export const passLive=premium=>!!premium&&RULES.LAB_STORE_OPEN===true;
 export function war(s,now){s.war=WR.norm(s.war,now);return s.war;}
-export const ctxOf=s=>({pilots:Array.isArray(s.bat?.p)?s.bat.p:[],morale:0,tiers:0,titan:0});   // planning pick: shared-war morale counts 0 until a shared-war result exists
+export const ctxOf=s=>({pilots:Array.isArray(s.bat?.p)?s.bat.p:[],morale:0,tiers:CONQUEST.Citadel.tiersOf(s),titan:0});   // planning pick: shared-war morale counts 0 until a shared-war result exists; Session 7B: the Citadel tiers cleared (threatOf / holdOf ctx.tiers: the Retaliation level)
 // ---- the clock: every request (refreshState). seen: the pilot's last request before this one (s.lastWall) --------------------------
 export function warTick(s,now){const w=war(s,now),fighting=s.mission&&s.sectorDefense?.active?s.sectorDefense.ev:null;   // the event being fought waits; the rest of the clock runs (the freeze and the weekend calendar hold)
  const out=WR.advance(w,now,seedOf(s),{...ctxOf(s),fighting},Number(s.lastWall)||now);

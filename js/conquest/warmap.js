@@ -14,7 +14,7 @@ const fmtN=n=>typeof fmtNum==='function'?fmtNum(n):String(n);
 const left=ms=>{if(ms>0&&ms<60000)return Math.ceil(ms/1000)+' s';const m=Math.max(0,Math.ceil(ms/60000)),h=Math.floor(m/60);return h>=24?Math.floor(h/24)+' d '+h%24+' h':h?h+' h '+String(m%60).padStart(2,'0')+' m':m+' m';};
 const pct=p=>Math.round(p*100)+'%';
 const svg=(tag,attrs,parent)=>{const e=document.createElementNS(SVGNS,tag);for(const [k,v] of Object.entries(attrs||{}))e.setAttribute(k,String(v));if(parent)parent.append(e);return e;};
-const ctxOf=(s,now)=>({pilots:s?.bat?.p||[],morale:0,tiers:0,titan:0,now});
+const ctxOf=(s,now)=>({pilots:s?.bat?.p||[],morale:0,tiers:root.ConquestCitadel?.tiersOf(s)||0,titan:0,now});   // Session 7B: the Citadel tiers cleared (the Retaliation level)
 const EV_NAME={a:'ASSAULT',c:'LDF COUNTERATTACK',g:'GRAND OFFENSIVE'};
 const ownerName=(w,id)=>w.o[id]==='p'?'PARASITE-HELD':'HUMANITY';
 function label(e,w){const t=W().BY[e.t];if(e.go||e.k==='g')return 'GRAND OFFENSIVE · '+(w.go?.t?.length||3)+' TERRITORIES';if(e.k==='c')return 'LDF COUNTERATTACK · '+t.name;return (t.heart?'RAID ON ':'ASSAULT ON ')+t.name;}

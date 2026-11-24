@@ -215,7 +215,7 @@ function modulesOf(p){const m={};for(const [type,B] of Object.entries(BUILDINGS)
 // Session 6 (owner Decision 10a): production x3 (Refinery 2.4, Biodome 1.8, Helium Extractor 0.45 an hour per level, above) and
 // Storage caps x2 (here); CP still binds every Command Center level.
 function caps(p){const d=Object.entries(p.b||{}).reduce((a,[id,b])=>b.t==='storage'&&!ruined(p,id)?Math.max(a,b.l|0):a,0);return {alloy:60+80*d,biomass:60+80*d,helium:16+20*d,fe:60,cm:COMPOSITE.cap0+COMPOSITE.capPer*levelSum(p,'foundry'),fh:COMPOSITE.hopperPer*levelSum(p,'foundry')};}
-function rates(p){const S=siteOf(p),r={alloy:0,biomass:0,helium:0,fe:0,cm:0},sup=1+Math.max(0,Math.min(.16,Number(p.sup)||0));   // Session 7 supply: held Frontier / Warfront territory, materials only here (minerals and composite unchanged)
+function rates(p){const S=siteOf(p),r={alloy:0,biomass:0,helium:0,fe:0,cm:0},sup=1+Math.max(0,Math.min(.16,Number(p.sup)||0))+Math.max(0,Math.min(.45,Number(p.cpb)||0));   // Session 7 supply: held Frontier / Warfront territory, materials only here (minerals and composite unchanged); Session 7B: + 5% a Citadel tier cleared (p.cpb)
  for(const [id,b] of Object.entries(p.b||{})){const B=BUILDINGS[b.t];if(!B?.prod||!(b.l>0)||ruined(p,id))continue;for(const [k,v] of Object.entries(B.prod))r[k]+=v*b.l*(k==='alloy'?S.alloy*sup:k==='biomass'?S.biomass*sup:k==='helium'?S.helium*sup:1);}
  if(S.rimFe&&ccLevel(p)>=1)r.fe+=3/24;   // two rim deposits: 3 Ferrite a day
  r.cm=COMPOSITE.rate*levelSum(p,'foundry');return r;}

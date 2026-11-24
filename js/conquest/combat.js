@@ -30,7 +30,14 @@ const archetypes=Object.freeze({
  raider:Object.freeze({name:'Parasite interceptor',cls:'scout',arch:'twin',hp:180,dps:18,shot:.45,speed:2.8,range:43,role:'player'}),
  breacher:Object.freeze({name:'Parasite oxygen saboteur',cls:'vanguard',arch:'siege',hp:230,dps:24,shot:1.15,speed:2.1,range:40,role:'facility'}),
  sentinel:Object.freeze({name:'Parasite heavy sentinel',cls:'titan',arch:'siege',hp:1100,dps:72,shot:1.15,speed:1.8,range:54,role:'player'}),
- command:Object.freeze({name:'Parasite fire coordinator',cls:'titan',arch:'pulse',hp:330,dps:26,shot:.65,speed:2.0,range:48,role:'support'})
+ command:Object.freeze({name:'Parasite fire coordinator',cls:'titan',arch:'pulse',hp:330,dps:26,shot:.65,speed:2.0,range:48,role:'support'}),
+ // Session 7B Citadel (js/conquest/citadel.js): the Swarm moves from the town drill engine into the field (the drill's swarmling at field
+ // scale: about a third of an interceptor's hull, quicker, a short bite); the Spore Mortar, the dropship and the fortress's structures
+ // never fire a gun (the Citadel module drives their shells, flights and gates). Fixed stats: the same in every tier
+ swarm:Object.freeze({name:'Parasite swarmling',cls:'scout',arch:'twin',hp:56,dps:11,shot:.55,speed:3.6,range:8,role:'player'}),
+ mortar:Object.freeze({name:'Spore Mortar',cls:'titan',arch:'siege',hp:600,dps:0,shot:9,speed:0,range:0,role:'support'}),
+ dropship:Object.freeze({name:'Parasite dropship',cls:'titan',arch:'pulse',hp:700,dps:0,shot:9,speed:0,range:0,role:'support'}),
+ structure:Object.freeze({name:'Parasite fortification',cls:'titan',arch:'siege',hp:900,dps:0,shot:9,speed:0,range:0,role:'support'})
 });
 // Hull Plating set traits (rules.js plateStats; RESOURCE_ECONOMY.md §6.1). Energy: the fire coordinator's and the plasma
 // batteries' pulse fire, plasma bombardment. Area: artillery/orbital strikes and plasma splash. Nothing else is cut.
@@ -93,7 +100,10 @@ const warOperations=[
  ...[['colony','REFUGE COLONY',1130,1235,'the colony\'s south fields'],['reservoir','RESERVOIR FLATS',870,1280,'the reservoir farms']].map(([t,name,x0,z0,where])=>{const [x,z]=raidPoint(x0,z0);return {id:'colony-defense-'+t,name:name+' / COLONY DEFENSE',family:'colony-defense',defense:true,colony:true,war:'a',territory:t,site:'war-'+t,x,z,danger:'STANDARD',waves:3,brief:'A Parasite raiding party is coming for '+where+'. Hold three light waves off the settlement beacon while the colony turrets fire in support. The heartland is never captured, but a raid let through spreads the blight.',reward:WAR_DEF.STANDARD};}),
  (()=>{const [x,z]=raidPoint(1085,985);return {id:'war-defense-crossroads',name:'DUST CROSSROADS / INVASION DEFENSE',family:'sector-defense',defense:true,war:'a',territory:'crossroads',site:'war-crossroads',x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the junction beacon. Lose it and the Parasites hold the road north of the colony.',reward:WAR_DEF.STANDARD};})(),
  ...[['western','WESTERN SALVAGE REACH',905,945,3],['helium','HELIUM BASIN',1065,858,3],['crossroads','DUST CROSSROADS',1080,990,3],['oxygen','OXYGEN SPEAR',1205,1040,4],['ridge','REFUGE RIDGE',1245,1160,4],['ash','ASH REDOUBT',1225,925,4]].map(([t,name,x0,z0,ring])=>{const [x,z]=raidPoint(x0,z0),danger=ring>=4?'VETERAN':'HARD';return {id:'counterattack-'+t,name:name+' / JOINT OPERATION',family:'counterattack',defense:true,war:'c',territory:t,site:'war-c-'+t,x,z,danger,waves:3,ldf:5,brief:'The LDF has landed a beachhead in '+name+'. Five LDF tanks fight beside your Platoon: hold the beacon against three Parasite counter-waves and the territory is retaken.',reward:WAR_DEF[danger]};})];
-const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperations,...strikeOperations,...sectors.map(sector=>{const [x,z]=raidPoint(sector.x,sector.z);return {id:'sector-defense-'+sector.id,name:sector.name+' / INVASION DEFENSE',family:'sector-defense',defense:true,war:'a',territory:sector.id,sector:sector.id,site:sector.id,x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the sector command beacon. A failed defense can recapture this frontier; your permanent first-clear history remains.',reward:{cp:160,alloy:15,biomass:10,helium:2}};}),...warOperations,{id:'base-defense',name:'COMMAND BASE / DEFENSE ALERT',family:'base-defense',site:'personal-base',x:1080,z:1160,danger:'HARD',brief:'Repel two incoming Parasite assault teams. Defend the Command Base reactor while using earned fortifications and your own weapons.',reward:{cp:160,alloy:15,biomass:10,helium:2}}].map(o=>[o.id,{activationRadius:45,...o}])));
+const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperations,...strikeOperations,...sectors.map(sector=>{const [x,z]=raidPoint(sector.x,sector.z);return {id:'sector-defense-'+sector.id,name:sector.name+' / INVASION DEFENSE',family:'sector-defense',defense:true,war:'a',territory:sector.id,sector:sector.id,site:sector.id,x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the sector command beacon. A failed defense can recapture this frontier; your permanent first-clear history remains.',reward:{cp:160,alloy:15,biomass:10,helium:2}};}),...warOperations,{id:'base-defense',name:'COMMAND BASE / DEFENSE ALERT',family:'base-defense',site:'personal-base',x:1080,z:1160,danger:'HARD',brief:'Repel two incoming Parasite assault teams. Defend the Command Base reactor while using earned fortifications and your own weapons.',reward:{cp:160,alloy:15,biomass:10,helium:2}},
+ // Session 7B: the Citadel's Act I tiers (the Outer Works, in the Inner Ring east of the Eastern Rim); their rules, layout and payouts are
+ // js/conquest/citadel.js and worker/src/conquest-citadel.js (battle points by the war formula, never this table's spoils)
+ ...[1,2,3].map(t=>({id:'citadel-'+t,name:'THE CITADEL · '+['','I','II','III'][t]+' · '+['','BREACH POINT','IRON RAIN','THE CARRIER DECK'][t],family:'citadel',citadel:t,battalion:true,site:'citadel',x:1590,z:1080,activationRadius:110,danger:'HARD',brief:'',reward:{cp:0,alloy:0,biomass:0,helium:0}}))].map(o=>[o.id,{activationRadius:45,...o}])));
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
 // The Refuge supply terminal: physical banking/repair point (same coordinates as the Worker POLICY.terminal).
 const refuge=freeze({id:'refuge',x:1174,z:1168,radius:12,name:'REFUGE SUPPLY'});
@@ -248,7 +258,7 @@ class Battle {
  if(sh)damage*=1+sh.k*sh.n;   // Corroder shred: the target takes more damage from everyone on your side
  if(ours&&t.core>0){if(ally)damage=0;else{const c=Math.min(t.core,damage);t.core-=c;damage-=c;}}   // a general's shield core: only the pilot breaks it (owner rule); allies cannot touch the unit while it holds
  if(shooter&&R){const m=shooter.m,ds=Math.hypot(t.x-shooter.x,t.z-shooter.z);   // role signatures (blueprint §4), x m (rank, Role Core level)
-  if(R===ROLES.lancer){if(ds<R.closeR)damage*=R.close;if(t.drone)damage*=1+R.air*m;if(sh)damage*=1+R.burst*m;}
+  if(R===ROLES.lancer){if(ds<R.closeR)damage*=R.close;if(t.drone||t.ship)damage*=1+R.air*m;if(sh)damage*=1+R.burst*m;}
   else if(R===ROLES.breacher){if(t.immobile||t.objectiveTarget||t.id===this.carrierId)damage*=1+R.structure*m;if(t.fz>0&&ds<R.frozenR)damage*=1+R.frozen*m;}}
  let blocked=0;if(q.team==='enemy'&&t===this.player){if(this.shieldT>0){blocked=damage*(1-SHIELD_MULT);damage*=SHIELD_MULT;}damage*=plateTaken(this.playerStats,q.kind==='pulse',false);const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
  if(q.team==='enemy'&&(t===this.player||fr)&&this.friends.length){const c=this.coverOf(t,q);if(c)damage*=1-c;}   // a Guardian between the shooter and you (or an ally) takes the edge off
@@ -419,7 +429,7 @@ Object.assign(Battle.prototype,{
    f.heat=Math.max(0,f.heat-(f.oh?Math.max(st.eng.cooling,st.eng.capacity*.13):st.eng.cooling)*dt);if(f.oh&&f.heat<=st.eng.capacity*.35)f.oh=0;
    if(f.dash){f.dash.t-=dt;if(f.dash.t<=0)f.dash=null;}
    const vx=f.dash?f.dash.x*st.speed*5.1:f.vx,vz=f.dash?f.dash.z*st.speed*5.1:f.vz;
-   if(vx||vz){const q=W.advance(f,vx*dt,vz*dt);if(q.x!==f.x||q.z!==f.z){f.heading=Math.atan2(q.x-f.x,q.z-f.z);f.x=q.x;f.y=q.y;f.z=q.z;f.surface=q.surface;}}
+   if(vx||vz){const q=this.moveOf?this.moveOf(f,vx*dt,vz*dt):W.advance(f,vx*dt,vz*dt);if(q.x!==f.x||q.z!==f.z){f.heading=Math.atan2(q.x-f.x,q.z-f.z);f.x=q.x;f.y=q.y;f.z=q.z;f.surface=q.surface;}}
    if(f.role==='mender'){const H=ROLES.mender,amt=H.heal*f.m*dt;let best=null,bf=1;
     if(this.playerHp>0&&this.playerHp<this.playerMax&&Math.hypot(P.x-f.x,P.z-f.z)<H.healR){bf=this.playerHp/this.playerMax;best=P;}
     for(const o of this.friends){if(o===f||o.down||o.hp<=0||o.hp>=o.maxHp*(o.hc||1)||Math.hypot(o.x-f.x,o.z-f.z)>H.healR)continue;const r=o.hp/o.maxHp;if(r<bf){bf=r;best=o;}}
@@ -577,13 +587,13 @@ function baseProduction(base,reputation=0){const b=base||{},m=b.modules||{};retu
 function baseYield(base,reputation=0,now=Date.now()){const b=base||{},Y=CQ_YIELD,t=Math.max(0,Math.min(5,b.tier|0)),f=at=>Math.max(0,Math.min(1,(now-(Number(at)||0))/Y.day));
  if(!t)return {tier:0,fill:0,pointsFill:0,cp:0,alloy:0,biomass:0,helium:0,pts:0,full:false,min:Y.min};
  const fill=f(b.claimedAt),pointsFill=f(b.pointsAt??b.claimedAt);
- const sup=1+Math.max(0,Math.min(.16,Number(b.sup)||0));   // Session 7 supply (js/conquest/war.js supply): held Frontier and Warfront territory, materials and CP only, never the points part
- return {tier:t,fill,pointsFill,cp:Math.floor(baseProduction(b,reputation)*fill*sup),alloy:Math.floor(Y.alloy[t]*fill*sup),biomass:Math.floor(Y.biomass[t]*fill*sup),helium:Math.floor(Y.helium[t]*fill*sup),pts:Math.floor(Y.pts[t]*pointsFill),full:fill>=1,min:Y.min,sup:sup-1};}
+ const sup0=1+Math.max(0,Math.min(.16,Number(b.sup)||0)),cpb=Math.max(0,Math.min(.45,Number(b.cpb)||0)),sup=sup0+cpb;   // Session 7 supply (js/conquest/war.js supply): held Frontier and Warfront territory, materials and CP only, never the points part; Session 7B: + 5% a Citadel tier cleared (b.cpb), the same rule
+ return {tier:t,fill,pointsFill,cp:Math.floor(baseProduction(b,reputation)*fill*sup),alloy:Math.floor(Y.alloy[t]*fill*sup),biomass:Math.floor(Y.biomass[t]*fill*sup),helium:Math.floor(Y.helium[t]*fill*sup),pts:Math.floor(Y.pts[t]*pointsFill),full:fill>=1,min:Y.min,sup:sup0-1,cpb};}
 // RECALL to the Command Base: a 15 s channel of simulated play that any damage breaks; 10 min cooldown, 5 min for
 // premium Lunar Pass owners (entitlement read by the Worker from the account, never from the client).
 const RECALL=freeze({channelMs:15000,cooldownMs:600000,premiumCooldownMs:300000});
 // Owner rule: raids unlock only after the six opening field missions each have a verified clear.
-const fieldMissionIds=freeze(Object.keys(operations).filter(id=>!operations[id].raid&&!operations[id].defense&&!operations[id].strike&&!operations[id].wingman&&id!=='base-defense'));   // the six (the wingman's rescue is not one)
+const fieldMissionIds=freeze(Object.keys(operations).filter(id=>!operations[id].raid&&!operations[id].defense&&!operations[id].strike&&!operations[id].wingman&&!operations[id].citadel&&id!=='base-defense'));   // the six (the wingman's rescue is not one)
 function fieldProgress(completed){return fieldMissionIds.filter(id=>completed?.[id]).length;}
 function raidsUnlocked(completed){return fieldProgress(completed)>=fieldMissionIds.length;}
 // Fast travel network, shared by client and Worker: the Refuge, the Command Base once built, and every frontier sector
