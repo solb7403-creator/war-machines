@@ -92,6 +92,11 @@ ok(JSON.stringify(R.CIT_BOUNTY)==='[0,25000,37500,50000,75000,100000,150000,2250
  {const b0={...s.base,cpb:0},Y0=C.baseYield(b0,0,t0+DAY),Y1=C.baseYield(s.base,0,t0+DAY);ok(Y1.cp>Y0.cp&&Y1.alloy>=Y0.alloy&&Y1.pts===Y0.pts,'production +5%: CP and materials up, the Daily Base Yield points unchanged');}
  ok(ctxOf(s).tiers===1&&WR.threatOf(s.war,{g:'skaal',t:'ash'},ctxOf(s)).parts.some(x=>x.k==='tiers'&&x.v===1),'Retaliation +1: war.js threatOf reads ctx.tiers');
  ok(CI.nextTier(s.cit)?.n===2,'the next tier appears');
+ // the Hive re-fortifies the next tier for 7 days after a first clear (lead's design: the measured pacing; Throne Runs stay open)
+ {const T=s.cit.fc[1],h={...s,mission:null,battle:{...s.battle,enemies:[]},hp:100};for(const id of WR.APPROACH)h.war.o[id]='h';
+  ok(/re-fortifies Citadel II: it opens in 6 d 23 h/.test(CI.launchWhy(h,2,T+H))&&CI.launchWhy(h,1,T+H)==='','the next tier re-fortifies for 7 days (Citadel II opens in 6 d 23 h); a Throne Run of tier I is open meanwhile');
+  let threw='';try{act(h,{action:'start-mission',mission:'citadel-2'},T+H);}catch(e){threw=e.message;}ok(/re-fortifies/.test(threw),'the Worker refuses Citadel II while it re-fortifies');
+  ok(CI.opensAt(h.cit,2)===T+7*DAY&&CI.launchWhy(h,2,T+7*DAY)==='','Citadel II opens 7 days after the first clear of Citadel I');}
  // a second clear of tier I (a Throne Run) pays loot, never first-clear points
  const s1={...s,mission:null,battle:{...s.battle,enemies:[]}};for(const id of WR.APPROACH)s1.war.o[id]='h';s1.war.ev=[];s1.war.k=WR.tickOf(t0+DAY);let s2=act(s1,{action:'start-mission',mission:'citadel-1'},t0+DAY);s2=winNow(s2,t0+DAY+1000);seal(s2,t0+DAY+1000);
  ok(s2.settlement.throne===1&&!s2.settlement.bounty&&s2.cit.t===1&&!airdrop(s2).out.slice(-1)[0]?.bty,'a repeat clear (Throne Run) pays no bounty');

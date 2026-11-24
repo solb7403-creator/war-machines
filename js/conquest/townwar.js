@@ -31,10 +31,11 @@ const TOWN=Object.freeze({
  // decision 5: a held unfought raid pays the existing defense cache (the town defense's CP and materials: ConquestCombat.operations
  // ['base-defense'].reward), counts toward the wall milestones (3 / 10 wins) and base-defender; no airdrop points
  cache:Object.freeze({cp:160,alloy:15,biomass:10,helium:2}),
- // Session 7B STEP 3 (owner, Nov 23): what a held UNFOUGHT raid pays (a raid you held in person keeps the whole cache above), the
- // first of four measured options (full, half, without its CP, none) that keeps the walled regular's CC10 day in the Session 6 band and
- // the heavy player's late fortress about 9 of 10 (dev/tools/held-raid-cache.mjs; Checkpoint 49 STEP 3)
- away:Object.freeze({cp:160,alloy:15,biomass:10,helium:2}),
+ // Session 7B STEP 3 (owner, Nov 23): what a held UNFOUGHT raid pays (a raid you held in person keeps the whole cache above): the
+ // cache without its CP, the first of four measured options (full, half, without its CP, none) that keeps the walled regular's CC10 day
+ // inside the Session 6 band (101 pilots: median 27.8, mean 26.5; the full cache gave 20.8 / 22.8) and the heavy player's late fortress
+ // about 9 of 10 (88.1%) (dev/tools/held-raid-cache.mjs; Checkpoint 49 STEP 3)
+ away:Object.freeze({cp:0,alloy:15,biomass:10,helium:2}),
  // Session 7T-P decision 2 (owner, Nov 23): Selenite for the late fortress. A raid at the cap level (9) held in person (settled HELD and
  // really fought: the 675 defense points' own rule) drops n Selenite into the pilot's cargo (banked at the Refuge like every mineral).
  // The amount is the fortress model's (dev/tools/selenite-candidates.mjs, 56 raids a day on two seed sets). The owner's addendum (Nov 23)

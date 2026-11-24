@@ -76,11 +76,11 @@ export const KNOB={};
 // the production bonus (+5% a tier: ConquestCombat.baseYield / ConquestPlot.rates cpb) and the Retaliation (the town attack's THREAT).
 // KNOB.cit7b=false turns it off (the Session 7T-P measurement). KNOB.heldCache: model-only factors on the held UNFOUGHT raid's defense
 // cache {cp, mat} (STEP 3's options: full {1,1}, half {.5,.5}, without its CP {0,1}, none {0,0}); the game pays its own rule.
-KNOB.cit7b=true;KNOB.heldCache={cp:1,mat:1};
+KNOB.cit7b=true;KNOB.heldCache=null;   // null: the game's own rule (ConquestTown.TOWN.away for a held unfought raid)
 const citFor=(s,pr,d)=>{if(!KNOB.cit7b||!pr?.citadel)return;const t=tiersAt(pr,d);if((s.cit?.t|0)!==t||s.cit?.v!==1)s.cit=CONQUEST.Citadel.norm({...(s.cit||{}),v:1,t});};
 // the held unfought raids a town meets a day (Session 7T-P decision 1: perDay at the Command Center level x the 60% chance) and the share
 // it holds (an approximation for the income only: the fortress test's hold rates run 62-100% by day; 85% is their mean), paying the cache
-const HOLD=.85,heldCacheOf=cc=>{const n=(TN.TOWN.perDay[cc]||0)*TN.TOWN.chance*HOLD,c=TN.TOWN.cache,f=KNOB.heldCache||{cp:1,mat:1};return {cp:n*c.cp*f.cp,alloy:n*c.alloy*f.mat,biomass:n*c.biomass*f.mat,helium:n*c.helium*f.mat};};
+const HOLD=.85,heldCacheOf=cc=>{const n=(TN.TOWN.perDay[cc]||0)*TN.TOWN.chance*HOLD,f=KNOB.heldCache,c=f?TN.TOWN.cache:TN.TOWN.away,x=f||{cp:1,mat:1};return {cp:n*c.cp*x.cp,alloy:n*c.alloy*x.mat,biomass:n*c.biomass*x.mat,helium:n*c.helium*x.mat};};
 export function minerals(pr,d){const m=pr.sessions.reduce((a,x)=>a+x[1],0),n=pr.sessions.length,inc=Object.fromEntries(MIN.map(k=>[k,0])),add=(o,x=1)=>{for(const [k,v] of Object.entries(o))inc[k]+=v*x;};
  const aAr=ramp(d,3,8),aTq=ramp(d,14,30),aVet=ramp(d,30,45),g=.25*m,sh={fe:.45,il:.30,ar:.17*aAr,tq:.08*aTq},tot=Object.values(sh).reduce((a,b)=>a+b,0);
  for(const k of ['fe','il','ar','tq']){const D=Pm.deposits[k],minutes=g*sh[k]/tot,supply=D.veins*D.cap*(D.regrowH<=24?Math.min(n,24/D.regrowH):24/D.regrowH)/D.yield,h=Math.min(minutes/A['gather_'+k].par,supply);inc[k]+=h*D.yield;if(k==='tq')inc.se+=h*D.seVein;}
@@ -227,7 +227,7 @@ export function holdRate(prName,d,{sites=P.SITE_IDS,n=4,share,citadelX=1,se=true
 //  the composite allows, an outer one) and confirms it; when no wall can reach an exposed vital (beside ice or rock) it moves the vital in.
 //  coach:'single' draws only the first ring (a pilot who closes it by hand). Walls are instant orders: composite only, no builder time.
 //  repairX: a model-only price factor on the REPAIR of town-raid damage (the PROPOSAL's exact price; the game's REPAIR is unchanged).
-export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=1,site='crater',days=200,cit=KNOB.cit7b}={}){const s=createState(R.STOCK_L,start);s.lseed=seed;s.twsd=(seed>>>0)||1;delete s.wo;const hit={};   // twsd: the town's own seed, fixed (review round 1: the Worker would draw it at random)
+export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=null,site='crater',days=200,cit=KNOB.cit7b}={}){   // cacheX null: the game's own held-raid payconst s=createState(R.STOCK_L,start);s.lseed=seed;s.twsd=(seed>>>0)||1;delete s.wo;const hit={};   // twsd: the town's own seed, fixed (review round 1: the Worker would draw it at random)
  const legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,spent=0;const rep={n:0,cp:0,alloy:0,cm:0},ring={closedAt:null,cells:0,orders:0};
  const afford=c=>Object.entries(c||{}).every(([k,n])=>k==='cp'?s.ledger.cp>=n:k==='cm'?Math.floor(s.plot?.cm||0)>=n:P.MNS.includes(k)?true:(s.ledger.banked[k]||0)>=n);
  const mark=(k,now)=>{if(hit[k]===undefined)hit[k]=+((now-start)/DAY).toFixed(1);};
@@ -260,8 +260,8 @@ export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=1,site='
  // every raid once, by its id (the town log keeps only the last 16): the tally, and cacheX, a model-only factor on the held unfought raid's
  // defense cache (a PROPOSAL's number)
  const ids=new Set(),tally={held:0,breached:0,fallen:0},scan=()=>{for(const x of s.tw?.log||[]){if(ids.has(x.id))continue;ids.add(x.id);if(x.o in tally)tally[x.o]++;
-  const fx=typeof cacheX==='number'?{cp:cacheX,mat:cacheX}:{cp:cacheX?.cp??1,mat:cacheX?.mat??1};
-  if(x.o==='held'&&x.by!=='you'&&(fx.cp!==1||fx.mat!==1)){const c=TN.TOWN.cache,paid=TN.cacheOf(x)||{cp:0,alloy:0,biomass:0,helium:0};s.ledger.cp+=Math.round(c.cp*fx.cp)-paid.cp;for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=Math.max(0,(s.ledger.banked[k]||0)+Math.round(c[k]*fx.mat)-paid[k]);}}};   /* the option's share of 7T's whole cache in place of what the game paid (TOWN.away) */
+  const fx=cacheX===null||cacheX===undefined?null:typeof cacheX==='number'?{cp:cacheX,mat:cacheX}:{cp:cacheX?.cp??1,mat:cacheX?.mat??1};
+  if(fx&&x.o==='held'&&x.by!=='you'){const c=TN.TOWN.cache,paid=TN.cacheOf(x)||{cp:0,alloy:0,biomass:0,helium:0};s.ledger.cp+=Math.round(c.cp*fx.cp)-paid.cp;for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=Math.max(0,(s.ledger.banked[k]||0)+Math.round(c[k]*fx.mat)-paid[k]);}}};   /* the option's share of 7T's whole cache in place of what the game paid (TOWN.away) */
  const seen=now=>{s.lastWall=now;if(!raids&&s.plot)s.plot.shieldUntil=start+4000*DAY;scan();};
  for(let day=0;day<days;day++){let now=start+day*DAY+19*HOUR;if(cit)citFor(s,PROFILES.regular,day);
   if(s.base.tier){atGate();try{baseAction(s,{action:'base-claim'},now);}catch(e){}try{plotAction(s,{action:'plot-collect',plot:{}},now);}catch(e){}}build(now);seen(now);

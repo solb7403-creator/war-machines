@@ -29,6 +29,7 @@ const CIT=Object.freeze({
  par:7,                                       // the assault's par minutes (lead's design: the brief's 6-8 minutes with the full Battalion)
  ring:5,                                      // the Inner Ring: the ring's danger in the battle points formula (war.js WAR.danger)
  prepMs:48*HOUR,                              // each siege prep objective stays valid 48 hours
+ refortMs:7*DAY,                              // lead's design (measured pacing): after a tier's first clear the Hive re-fortifies the next one for 7 days
  // lead's design numbers (fixed for every tier): the warden's hull and shield core (re-formed twice), the gate and its generators
  warden:Object.freeze({hp:18500,core:2800,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
  gate:Object.freeze({hp:15000}),gen:Object.freeze({hp:6000}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),
@@ -140,8 +141,10 @@ function prepOf(s,now){const c=norm(s?.cit),w=s?.war,live=k=>!!c.prep[k]&&c.prep
  try{po=!!w&&!WR().portalOpen(WR().norm(structuredClone(w),now),now)&&int(w.por?.until)>int(c.pu);}catch(_){po=false;}
  return {aa:live('aa'),cv:live('cv'),po,until:{aa:live('aa')?c.prep.aa.until:0,cv:live('cv')?c.prep.cv.until:0,po:po?int(w.por.until):0}};}
 // why this tier cannot be launched now ('' when it can). FORCE and DEFENSE are advice: they never block
+const opensAt=(c,t)=>{c=norm(c);t=int(t);return t>1&&t===c.t+1&&int(c.fc[t-1])>0?int(c.fc[t-1])+CIT.refortMs:0;};   // 0: open now (tier I, or a cleared tier's Throne Run)
+const dhm=ms=>{const m=Math.max(1,Math.ceil(ms/60000)),d=Math.floor(m/1440),h=Math.floor(m%1440/60);return d?d+' d '+h+' h':h?h+' h '+m%60+' m':m+' m';};
 function launchWhy(s,tier,now){const c=norm(s?.cit),t=int(tier);if(t<1||t>CIT.live)return 'that Citadel tier is not built yet';
- if(t>c.t+1)return 'break Citadel '+ROMAN[c.t+1]+' first';if(!frontHeld(s?.war))return 'hold both approach territories first (Ash Redoubt and Oxygen Spear)';
+ if(t>c.t+1)return 'break Citadel '+ROMAN[c.t+1]+' first';{const at=opensAt(c,t);if(at&&num(now)<at)return 'the Hive re-fortifies Citadel '+ROMAN[t]+': it opens in '+dhm(at-num(now));}if(!frontHeld(s?.war))return 'hold both approach territories first (Ash Redoubt and Oxygen Spear)';
  if(s?.mission)return 'finish or leave the operation first';if(s?.td?.active)return 'finish the town defense first';if(!(num(s?.hp)>0))return 'Machine disabled';return '';}
 // the assault's battle points (the approved formula: par minutes x 225 x the ring's danger)
 const battlePoints=()=>Math.round(CIT.par*WR().WAR.ppm*WR().WAR.danger[CIT.ring]);
@@ -257,6 +260,6 @@ class Assault extends CC.Operation{
 const make=(loadout,p,id)=>new Assault(loadout,p,id);
 // the staging point of the siege camp (where a launched assault starts)
 const stageAt=()=>{const q=at(LAYOUT.stage.u,LAYOUT.stage.v);return {x:q.x,z:q.z,y:W().groundAt(q.x,q.z),surface:'ground'};};
-root.ConquestCitadel=Object.freeze({CIT,TIERS,WARDENS,BANDS,PREP,GAMBITS,GAMBIT_WEEKS,LAYOUT,HOOKS,ROMAN,Assault,make,fresh,norm,tiersOf,isCitadel,tierOfId,nextTier,frontHeld,prepOf,
+root.ConquestCitadel=Object.freeze({opensAt,CIT,TIERS,WARDENS,BANDS,PREP,GAMBITS,GAMBIT_WEEKS,LAYOUT,HOOKS,ROMAN,Assault,make,fresh,norm,tiersOf,isCitadel,tierOfId,nextTier,frontHeld,prepOf,
  launchWhy,battlePoints,bountyOf,prodOf,cutOf,weekOf,gambitsOf,stageAt,centre,at,segDist});
 })(globalThis);

@@ -7289,11 +7289,12 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   below). Local: `node dev/tests/auto-release.mjs` 257 PASS, `owner-rules` 47 PASS, `conquest-session-032.py --engine chromium` PASS
   (4 sizes; the three cleanup readings 117/117/117 geometries with chunks 25 = wanted 25), `conquest-living-war.py --engine chromium
   --quality high` running. WebKit cannot be installed in this container (its download is blocked): CI runs it.
-- **STEP 1 PR #154** opened (not a draft). Its WebKit transmission job was cancelled twice by the job's 35-minute limit while the
-  browser engine was still installing (23.5 and 28+ minutes on Nov 24; 2-10 minutes on Nov 23); every test it reached passed. Commit
-  `fd47d4d` gives that job 60 minutes (no test changed); CI re-running. Merge it myself when green (merge commit), then restart the branch
-  from main. STEP 2 work is built on a LOCAL branch `wip-7b` (never pushed to the PR branch before #154 merges): after the merge, rebase
-  it onto main and push to `claude/citadel-act-i-logic-jpnnz3`, open the STEP 2 PR as a DRAFT.
+- **STEP 1: MERGED** as #154 (merge commit `43f1378`, by me at 08:16 UTC with every check green, as the brief directs). Its WebKit job had
+  been cancelled twice by the 35-minute job limit while the browser engine installed (23.5 and 28+ minutes on Nov 24; 2-10 on Nov 23);
+  `fd47d4d` gave the transmission job 60 minutes (no test changed). The merge started main's push workflows (owner-rules, equipment
+  balance, lab UI, the Graphify index, GitHub Pages); the new Auto-release workflow's first live run was a clean no-op (no labelled PR).
+- **STEP 2 + 3: draft PR #155** on `claude/citadel-act-i-logic-jpnnz3` (the branch restarted from main `43f1378`, the local work
+  cherry-picked onto it unchanged). Subscribed to its CI.
 - **STEP 2 status (Nov 24, 07:20 UTC):** built and tested locally: the UI (War Map card, launch, prep rows, Throne Run + board, HUD,
   result card, cutscenes that hide the whole HUD, stand-in views), the board route, `conquest-citadel.mjs` 74 PASS, the browser test
   `conquest-citadel.py` PASS at all 5 sizes (captures in docs/conquest/session7b/), the map marker (one ♜ for the Citadel; its tiers
@@ -7362,6 +7363,55 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   the first clear of the tier that week pays the full chest (the loot tables' `commander` roll with the warden's doctrine trophy row
   + the raid `chest` roll), later ones the `chest` roll; battle points every clear; the clear time (the Worker's assault clock) for
   the weekly board.
+
+
+### Pacing (brief: "validated with the real assault in the sim")
+Method: `dev/tools/citadel-model.mjs` drives the REAL assault (citadel.js through the Worker bundle, real commands) with a careful bot
+pilot (keeps outside each target's reach, breaks the rampart guns first, regroups at 30% hull for at most 20 s, dodges marked ground),
+on each profile's kit by day: the fortress model's gear schedule, the Hangar and roster from the economy model, the always-fielded
+pilot at the top rank and the rest at the rank the roster's pooled pilot-XP gives (`economy-model.mjs battalionModel().poolXp`), Role
+Cores by command chip day (Lancer, Breacher, Guardian first). `dev/tools/citadel-pace.mjs` finds each profile's first day that wins at
+least half of 4 seeded assaults; `dev/tests/conquest-citadel-pace.mjs` (CI job `citadel`) asserts the boundary days with 3 seeds.
+- **What the kits offer (measured):** three real power steps before day 60: the full Battalion (regular day 18, heavy 11, grinder 7),
+  rare gear (30 / 17 / 10) and the rank-9 force (48 / 26 / 14). Between them ranks and Role Cores add a few percent, which the assault
+  cannot tell apart: tier III at regular day 36 and day 48 cleared in the same times with the same ships downed.
+- **Tuning (each tier one step):** tier I takes the full Battalion (the regular's 7 allies on day 17 won 0 of 4, its 9 on day 18
+  won 4 of 4 in 6:34-7:07); tier II takes rare gear (common gear on day 26 won 0 of 3, rare on day 30 3 of 3 in 6:49-7:19); tier III is
+  the hardest fight on rare gear.
+- **The re-fortification (lead's decision, from this measurement):** with no kit step between rare and epic gear (day 150 for the
+  regular), tier III landed on the rare-gear day with tier II (regular 30, heavy 17, grinder 10: outside weeks 6-8 and week 3). After
+  each first clear the Hive re-fortifies the next tier for **7 days** (`CIT.refortMs`; the War Map's LAUNCH reads "the Hive re-fortifies
+  Citadel II: it opens in 6 d 23 h"; the Worker refuses earlier; Throne Runs of cleared tiers stay open meanwhile). It is the staggered
+  weekly unlock big raids use, it gives each tier a week of Throne Runs (one full chest a week) and siege prep, and it is legible.
+  Result: tier I regular day 18 (weeks 2-3), grinder 6 (days 5-7), heavy 9 (between; planned about 10); tier II regular 30, grinder 13,
+  heavy 17; **tier III regular 37 (weeks 6-8), grinder 20 (week 3), heavy 24 (between them; fortress-model PROFILES.heavy plans about
+  32: the heavy player reaches rare gear on day 17, so 7 days after it is day 24).**
+- PROFILES.citadel in `dev/tools/fortress-model.mjs` (the town attacks' Retaliation schedule) stays the blueprint's plan (regular 17 /
+  49, heavy 10 / 32, grinder 6 / 21): the measured tier III is earlier for the regular (37) and the heavy (24); reported, not changed
+  (the fortress test keeps its planned inputs).
+- The bot is a careful pilot; a less precise player clears later. Siege prep (an airstrike, one fewer wave, no portal surges) makes
+  every tier easier and is not used by the bot.
+
+### STEP 3: the held-raid reward (owner, Nov 23), with every 7B change on
+Measured with `dev/tools/held-raid-cache.mjs` (`docs/conquest/session7b/held-raid-cache.json`): the walled 1-hour regular (the coach's
+ring) on the town-ladder guard's 101-pilot panel with town attacks on (fortress-model ladderRun on the real Worker reducers, every raid
+unfought), the Citadel tiers on the regular's pacing (production +5% a tier, Retaliation); and the 2-hour heavy player's late fortress
+(days 300 / 330 / 365, 8 raids a site and day, two seed sets).
+
+| Option (a held UNFOUGHT raid pays) | CC10 median | CC10 mean | In 25.9-31.7 | Heavy late fortress |
+| --- | --- | --- | --- | --- |
+| full cache (160 CP + 15 alloy + 10 biomass + 2 He-3) | 20.8 | 22.8 | no | 88.1% (85.7 / 90.5) |
+| half | 26.8 | 24.1 | no (mean) | 88.1% |
+| **without its CP (15 alloy + 10 biomass + 2 He-3)** | **27.8** | **26.5** | **yes** | **88.1%** |
+| none | 27.8 | 26.5 | yes | 88.1% |
+| (no town attacks) | 26.8 | 26.8 | yes | - |
+| (full cache, 7B off: 7T-P's number) | 20.8 | 22.7 | no | 88.1% |
+
+**Shipped: the cache without its CP** (the first in the brief's order that keeps both): `ConquestTown.TOWN.away` = 0 CP, 15 alloy,
+10 biomass, 2 He-3 for a held raid nobody fought (worker/src/conquest-town.js settle); a raid held in person keeps the whole cache
+(`TOWN.cache`). The town log line and the War Report read what each paid (`ConquestTown.cacheOf`). The heavy player's late fortress is
+the same under every option: by day 300 that town is fully built and Selenite-bound, so neither the cache nor the production bonus
+moves it. Tests: `conquest-away-raids` (the unfought pay; the in-person cache), `conquest-live-defense` 26 PASS.
 
 
 ### STEP 1: the auto-release workflow and two flaky tests (lead's decisions, with reasons)
