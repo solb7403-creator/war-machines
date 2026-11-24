@@ -7299,8 +7299,7 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   a held raid nobody fought pays the cache without its CP (`ConquestTown.TOWN.away`: 15 alloy, 10 biomass, 2 He-3), and
   conquest-fortress guard (f) checks the coached CC10 median (and the seven sites') inside the Session 6 band 25.9-31.7 (commit
   `9ba960c`; "STEP 3" below). #155 is ready; its `auto-release` label was **removed at 12:34 UTC** so it would not merge without STEP 3.
-  **Next:** the re-runs with everything on (held-raid tool 101 pilots, conquest-fortress, conquest-ladder-check, owner-rules; the town,
-  cap and bounty suites already pass), their numbers into "STEP 3", `held-raid-cache.json` committed, push; CI green on the final head;
+  The re-runs with everything on all PASS (numbers under "STEP 3": "Owner decision: the re-run"). **Next:** CI green on the final head;
   put the `auto-release` label back on #155; verify the merge, the Worker and Pages deploy; the docs-only PR (ROADMAP row 7B + release
   record); the final report with every PROPOSAL.
 - **Review round 1 (independent reviewers on 1258a6a):** payout reviewer: exactly once / outside the cap / no replay or forge all PASS;
@@ -7499,6 +7498,15 @@ Also fixed on the way (review): a
 raid "held in person" now means really fought (`live.fought`; tapping DEFEND and leaving earned the whole cache), the log records it
 (`f`), `ConquestTown.cacheOf` reads it. Tests: `conquest-away-raids` 51, `conquest-town-selenite` 17 (DEFEND then leave), live
 defense 26.
+**Owner decision: the re-run (Nov 24, everything on, `9ba960c`).** `dev/tools/held-raid-cache.mjs` (101 pilots, 673 s): identical to
+the table above (full 20.8 / 22.8, half 26.8 / 24.1, **without its CP 27.8 / 26.5 in the band**, none 27.8 / 26.5, no town attacks
+26.8 / 26.8; the heavy player's late fortress 88.1% in every option; ship: noCP). `conquest-fortress` 15 PASS (1,015 s): (a) 50 / 50 at
+the cap, (b) 85 steps, (c) the regular 79% along the year, (d) the grinder 86% at day 330, (e) the heavy player 83% late with the
+cap-level Selenite and the regular within 4.8 points of 7T, **(f) the coached CC10 median day 27.8 (seven sites 27.8) inside the
+Session 6 band** (no town attacks 26.8, undefended 61.8; REPAIR 368,938 CP undefended against 660 coached).
+`conquest-ladder-check` PASS (101 pilots: CC5 5.8, CC10 median 26.8 / mean 26.8). `conquest-town-selenite` 17, `conquest-away-raids`
+51 (pins `TOWN.away` 0 CP / 15 / 10 / 2 and `TOWN.cache`), `conquest-live-defense` 27, `conquest-town` 94, `owner-rules` 48; the
+50,000 cap and each bounty once: `conquest-citadel` 79 and `wtest/conquest-citadel-payout` 19. All PASS.
 
 
 ### STEP 1: the auto-release workflow and two flaky tests (lead's decisions, with reasons)
