@@ -7,7 +7,8 @@
 //  - losses (decision 2): damage stays until REPAIR; FALLEN takes 10% of the exposed production store and 5% of the composite stock,
 //    BREACHED 5% of the exposed store, HELD nothing; never banked goods, the wallet, CP, points, plates, cosmetics or inventory; an
 //    8-hour shield after a loss; the Peace Ward (24 h, rare loot, never sold);
-//  - a held unfought raid pays the existing defense cache, counts toward the wall milestones and base-defender; no airdrop points;
+//  - a held unfought raid pays TOWN.away (the defense cache without its CP: Session 7B STEP 3, owner decision), one fought in person the
+//    whole cache; it counts toward the wall milestones and base-defender; no airdrop points;
 //  - defending in person (decision 6): the raid engine runs here in real time at the world's 50 ms step, one input request at a time
 //    (s.td, the live state; s.tdp, the town as it stood when the fight began); the result is the better of the pilot's fight and the
 //    unfought replay; a held fight pays 675 defense points inside the hourly limit and the cap; one attempt per attack;

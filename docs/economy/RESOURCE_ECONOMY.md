@@ -1138,8 +1138,13 @@ Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids
 - **REPAIR on the way to CC10** (`dev/tools/coach-ring-repairs.mjs`, the Nov 10 guard method: the 60-minute regular on the real reducers,
   every raid decided unfought, REPAIR paid when damaged; 101 pilots): without walls 121,628 CP in 43 repairs on CRATER RIM (CC10 twice as
   long) and 180,426 CP across the seven sites; with the coach's ring 635 CP and 1,421 CP, CC10 no longer delayed. No repair-price change
-  is needed. PROPOSAL (owner): held unfought raids pay the defense cache (Session 7T decision 5), so a walled regular reaches CC10 sooner
-  than with no town attacks (CRATER median day 20.8 / mean 22.7 against 28.8 / 27.3); half the cache gives 26.8 / 24.0, none 27.8 / 26.7.
+  is needed. Held unfought raids paid the whole defense cache (Session 7T decision 5), so a walled regular reached CC10 sooner than with
+  no town attacks (CRATER median day 20.8 / mean 22.7 against 28.8 / 27.3).
+- **Owner decision (Session 7B STEP 3, Nov 24):** a held raid **nobody fought** pays the defense cache **without its CP**: 15 alloy,
+  10 biomass and 2 He-3 (`ConquestTown.TOWN.away`); a raid really fought in person (`live.fought`) keeps the whole cache (160 CP +
+  15 alloy + 10 biomass + 2 He-3). Measured with every 7B change on (`dev/tools/held-raid-cache.mjs`, 101 pilots): the walled regular's
+  CC10 median 27.8 / mean 26.5, inside the Session 6 band 25.9-31.7 (the whole cache 20.8 / 22.8, half 26.8 / 24.1); the heavy player's
+  late fortress 88.1%. conquest-fortress guard (f) checks the coached CC10 median (and the seven sites') inside that band.
 
 ### 16.4 Welcome-back kits (Session 7T-P decision 4)
 - Back after **14 or more UTC days with no verified activity**, the streak's day-1 Repair Kit and day-3 Scanner Charge are given once

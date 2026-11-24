@@ -7484,11 +7484,15 @@ test's own 21 seeds (no raids: 26.8): full cache 20.8 (7 sites 26.8) passes (f);
 27.8 fails (f)** (the walled regular reaches CC10 one day after a town with no raids); a 0.75 CP share (not an option) 26.8 / 26.8.
 So no option keeps every rule: without its CP keeps the band and fails (f); half keeps (f) and the band's median but not its mean
 (24.1); full keeps (f) and misses the band.
-**Lead's decision: nothing new shipped; the 7T rule stands (the whole cache), as the owner adopted it in 7T-P.** A conflicted economy
-change is the owner's call ("prices, economy and airdrop points only as decided here"); shipping without its CP would leave CI red and
-hold the whole release; half is not the brief's pick either. Everything is in place for the owner's one-line choice:
-`ConquestTown.TOWN.away` (what a held raid nobody fought pays; 0 CP, 15 alloy, 10 biomass, 2 He-3 for "without its CP"), the measuring
-tool and its record (`docs/conquest/session7b/held-raid-cache.json`). PROPOSAL in the final report. Also fixed on the way (review): a
+**Lead's interim decision (before the owner's): nothing new shipped; the 7T rule stood (the whole cache).** A conflicted economy
+change is the owner's call ("prices, economy and airdrop points only as decided here").
+**Owner decision (Nov 24): ship "without its CP".** A held raid nobody fought pays 15 alloy, 10 biomass and 2 He-3, no CP
+(`ConquestTown.TOWN.away`); a raid really fought in person keeps the whole cache. conquest-fortress guard (f)'s CC10 check changes from
+"no later than with no town attacks" to "the coached CC10 median, and the seven sites', inside the Session 6 band (25.9-31.7)": its job
+is catching the REPAIR delay that doubled the time to CC10 (about 60 days undefended), which the band still catches; the owner decision
+is recorded in the test's comment. Re-run with everything on after the change: the held-raid tool, conquest-fortress,
+conquest-ladder-check, conquest-town-selenite, the town, cap and bounty suites (numbers under "Owner decision: the re-run" below).
+Also fixed on the way (review): a
 raid "held in person" now means really fought (`live.fought`; tapping DEFEND and leaving earned the whole cache), the log records it
 (`f`), `ConquestTown.cacheOf` reads it. Tests: `conquest-away-raids` 51, `conquest-town-selenite` 17 (DEFEND then leave), live
 defense 26.
