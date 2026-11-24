@@ -7295,11 +7295,14 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   balance, lab UI, the Graphify index, GitHub Pages); the new Auto-release workflow's first live run was a clean no-op (no labelled PR).
 - **STEP 2 + 3: draft PR #155** on `claude/citadel-act-i-logic-jpnnz3` (the branch restarted from main `43f1378`, the local work
   cherry-picked onto it unchanged). Subscribed to its CI.
-- **Status (Nov 24, 09:45 UTC):** STEP 2 built and tested; pacing measured (all brief targets hold with the 7-day re-fortification:
-  "Pacing" below); STEP 3 measured, **not shipped** (its options conflict with conquest-fortress (f): "STEP 3" below; PROPOSAL); reviews
-  done: round 1 (reviewers A and B, the payout reviewer) and round 2 (a fresh reviewer), every finding fixed or recorded below.
-  **Next:** CI green at the final head, mark #155 ready + `auto-release` label, verify the merge, the Worker and Pages deploy, the
-  docs-only PR (ROADMAP row 7B + release record), the final report with every PROPOSAL.
+- **Status (Nov 24, 12:40 UTC):** STEP 2 built, reviewed (two rounds) and green on CI; **STEP 3 shipped by owner decision (Nov 24):**
+  a held raid nobody fought pays the cache without its CP (`ConquestTown.TOWN.away`: 15 alloy, 10 biomass, 2 He-3), and
+  conquest-fortress guard (f) checks the coached CC10 median (and the seven sites') inside the Session 6 band 25.9-31.7 (commit
+  `9ba960c`; "STEP 3" below). #155 is ready; its `auto-release` label was **removed at 12:34 UTC** so it would not merge without STEP 3.
+  **Next:** the re-runs with everything on (held-raid tool 101 pilots, conquest-fortress, conquest-ladder-check, owner-rules; the town,
+  cap and bounty suites already pass), their numbers into "STEP 3", `held-raid-cache.json` committed, push; CI green on the final head;
+  put the `auto-release` label back on #155; verify the merge, the Worker and Pages deploy; the docs-only PR (ROADMAP row 7B + release
+  record); the final report with every PROPOSAL.
 - **Review round 1 (independent reviewers on 1258a6a):** payout reviewer: exactly once / outside the cap / no replay or forge all PASS;
   fixed its findings: a reset or restored Conquest record could lose a later tier's bounty (eco.js pays bounties in entries at or
   below the watermark, once by `S.cbty`; conquest-airdrop.js `acknowledge` numbers new entries past the account's watermark), ids past
