@@ -7289,9 +7289,16 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   below). Local: `node dev/tests/auto-release.mjs` 257 PASS, `owner-rules` 47 PASS, `conquest-session-032.py --engine chromium` PASS
   (4 sizes; the three cleanup readings 117/117/117 geometries with chunks 25 = wanted 25), `conquest-living-war.py --engine chromium
   --quality high` running. WebKit cannot be installed in this container (its download is blocked): CI runs it.
-- **STEP 1 PR #154** opened (not a draft), CI running; merge it myself when green (merge commit), then restart the branch from main.
-  STEP 2 work is built on a LOCAL branch `wip-7b` (never pushed to the PR branch before #154 merges): after the merge, rebase it onto
-  main and push to `claude/citadel-act-i-logic-jpnnz3`, open the STEP 2 PR as a DRAFT.
+- **STEP 1 PR #154** opened (not a draft). Its WebKit transmission job was cancelled twice by the job's 35-minute limit while the
+  browser engine was still installing (23.5 and 28+ minutes on Nov 24; 2-10 minutes on Nov 23); every test it reached passed. Commit
+  `fd47d4d` gives that job 60 minutes (no test changed); CI re-running. Merge it myself when green (merge commit), then restart the branch
+  from main. STEP 2 work is built on a LOCAL branch `wip-7b` (never pushed to the PR branch before #154 merges): after the merge, rebase
+  it onto main and push to `claude/citadel-act-i-logic-jpnnz3`, open the STEP 2 PR as a DRAFT.
+- **STEP 2 status (Nov 24, 07:20 UTC):** built and tested locally: the UI (War Map card, launch, prep rows, Throne Run + board, HUD,
+  result card, cutscenes that hide the whole HUD, stand-in views), the board route, `conquest-citadel.mjs` 74 PASS, the browser test
+  `conquest-citadel.py` PASS at all 5 sizes (captures in docs/conquest/session7b/), the map marker (one ♜ for the Citadel; its tiers
+  never show as plain missions: app.js lists, style.js minimap, conquest-campaign contracts), `conquest-terraform` (the Citadel's own
+  drive-reachability check; the other 67 sites keep the original box). **In progress: difficulty and pacing** (see "Calibration").
 - **STEP 2 built so far (local, `wip-7b`):** `js/conquest/citadel.js` (rules, tiers, record, prep, Throne Run, the Assault class),
   `worker/src/conquest-citadel.js` (launch, prep, settlement, bounty), hooks: combat.js (archetypes swarm / mortar / dropship /
   structure, the 3 operations `citadel-1..3` family 'citadel' danger HARD, fieldMissionIds excludes them, `this.moveOf` in friendStep,

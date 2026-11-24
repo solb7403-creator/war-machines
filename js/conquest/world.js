@@ -163,6 +163,7 @@ function forestAt(x,z){if(x<810||x>1160||z<1190||z>1275)return null;for(const f 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),mix=(a,b,t)=>a+(b-a)*t,smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 function hash(x,z){let n=Math.imul(x^SEED,374761393)^Math.imul(z,668265263);n=Math.imul(n^(n>>>13),1274126177);return (n>>>0)/4294967295;}
 function noise(x,z,s){x/=s;z/=s;let i=Math.floor(x),j=Math.floor(z),u=smooth(x-i),v=smooth(z-j);return mix(mix(hash(i,j),hash(i+1,j),u),mix(hash(i,j+1),hash(i+1,j+1),u),v);}
+const CPAD=Object.freeze({x0:1440,x1:1668,z0:1010,z1:1150,y:-182,edge:40});   // Session 7B: the Citadel plateau (padAt)
 function baseHeight(x,z){
  let h=(noise(x,z,2800)-.5)*720+(noise(x,z,600)-.5)*150+(noise(x,z,110)-.5)*16;
  // Broad highland uplift stays in the one canonical ground provider, including collision and map relief.
@@ -176,7 +177,11 @@ function baseHeight(x,z){
 }
 // The creek channel, crater bowl and lakebed are carved into the ground inside the south-west water box only; every
 // other point of the Moon keeps its exact height.
-function heightAt(x,z){const h=baseHeight(x,z);return x<WBOX[0]||x>WBOX[1]||z<WBOX[2]||z>WBOX[3]?h:h-carve(x,z);}
+function heightAt(x,z){const h=baseHeight(x,z);return x<WBOX[0]||x>WBOX[1]||z<WBOX[2]||z>WBOX[3]?(x>CPAD.x0-CPAD.edge&&x<CPAD.x1+CPAD.edge&&z>CPAD.z0-CPAD.edge&&z<CPAD.z1+CPAD.edge?padAt(x,z,h):h):h-carve(x,z);}
+// Session 7B: the Citadel's Outer Works stand on a plateau the Hive levelled into the Eastern Rim (the rim there falls 100 m across the
+// fortress; hill crests hid the gate generators from the assault). Flat at CPAD.y (the footprint's mean height: the least earthworks)
+// from the siege camp to the east wall, blending into the untouched Moon over CPAD.edge metres; every other point keeps its exact height.
+function padAt(x,z,h){const dx=Math.max(CPAD.x0-x,0,x-CPAD.x1),dz=Math.max(CPAD.z0-z,0,z-CPAD.z1),t=Math.hypot(dx,dz)/CPAD.edge;return t>=1?h:mix(h,CPAD.y,1-smooth(t));}
 // Bounded fine-grid cache; numeric in-world keys avoid hot-path strings. The stride exceeds
 // the padded Z range; out-of-region queries retain collision-free string keys.
 const gridCache=new Map();
@@ -281,7 +286,7 @@ function flora(cx,cz){const out=[],x0=cx*128,z0=cz*128;if(x0>1500||x0+128<640||z
  return out;}
 // Trees of the forest stands (their dense core is the cover canopy in blockedAt). Deterministic jittered grid.
 function forestTrees(f){const out=[];for(let gz=-f.r;gz<=f.r;gz+=4.5)for(let gx=-f.r;gx<=f.r;gx+=4.5){const jx=gx+(hash(f.x+gx*7,f.z+gz*3)-.5)*3,jz=gz+(hash(f.z+gz*5,f.x+gx*11)-.5)*3,d=Math.hypot(jx,jz);if(d>f.r)continue;const x=f.x+jx,z=f.z+jz;if(waterAt(x,z)||structureSolidAt(x,z))continue;out.push({x,z,y:groundAt(x,z),kind:'tree',size:1.15+hash(x,z)*.7,variant:hash(z,x),forest:f.id,edge:d>f.r-FOREST_EDGE});}return out;}
-function scenery(cx,cz){const out=[];for(let i=0;i<48;i++){const x=cx*128+hash(cx*53+i,cz)*128,z=cz*128+hash(cz*71+i,cx)*128;if(x<0||z<0||x>WIDTH||z>LENGTH||Math.hypot(x-1024,z-1024)<115)continue;if(structureSolidAt(x,z)||clearedAt(x,z)||installations.some(b=>Math.hypot(x-b.x,z-b.z)<25)||Math.hypot(x-1180,z-1080)<55||x>1095&&x<1170&&z>1130&&z<1240)continue;const b=legacyGreen(x,z);out.push({x,z,y:groundAt(x,z),kind:b?'tree':i===0&&hash(cx,cz)>.85?'relay':'rock',size:1+hash(cx+i,cz+8)*2.8,variant:hash(cx+i,cz+77)});}return out;}
+function scenery(cx,cz){const out=[];for(let i=0;i<48;i++){const x=cx*128+hash(cx*53+i,cz)*128,z=cz*128+hash(cz*71+i,cx)*128;if(x<0||z<0||x>WIDTH||z>LENGTH||Math.hypot(x-1024,z-1024)<115)continue;if(structureSolidAt(x,z)||clearedAt(x,z)||installations.some(b=>Math.hypot(x-b.x,z-b.z)<25)||Math.hypot(x-1180,z-1080)<55||x>1095&&x<1170&&z>1130&&z<1240||x>CPAD.x0-8&&x<CPAD.x1+8&&z>CPAD.z0-8&&z<CPAD.z1+8)continue;const b=legacyGreen(x,z);out.push({x,z,y:groundAt(x,z),kind:b?'tree':i===0&&hash(cx,cz)>.85?'relay':'rock',size:1+hash(cx+i,cz+8)*2.8,variant:hash(cx+i,cz+77)});}return out;}
 const landmarks=Object.freeze([{id:'bridge-01',x:1024,z:1024,name:'Refuge viaduct'},{id:'oxygen-01',x:1160,z:1080,name:'Oxygen complex'},{id:'refuge-01',x:1140,z:1160,name:'Refuge outpost'},{id:'crater-01',x:1210,z:1130,name:'Refuge ridge'},{id:'massif-01',x:14000,z:8000,name:'Highland overlook'}].map(Object.freeze));
 // Owner playtest (Nov 8 "can't find my base"): a drivable route for the HUD arrow. Grid A* (4 m cells) over the same move()
 // rules the tank drives by, plus a solid check every 0.5 m so a route never cuts a wall corner. Pure geometry: edge results

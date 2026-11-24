@@ -37,7 +37,8 @@ const archetypes=Object.freeze({
  swarm:Object.freeze({name:'Parasite swarmling',cls:'scout',arch:'twin',hp:56,dps:11,shot:.55,speed:3.6,range:8,role:'player'}),
  mortar:Object.freeze({name:'Spore Mortar',cls:'titan',arch:'siege',hp:600,dps:0,shot:9,speed:0,range:0,role:'support'}),
  dropship:Object.freeze({name:'Parasite dropship',cls:'titan',arch:'pulse',hp:700,dps:0,shot:9,speed:0,range:0,role:'support'}),
- structure:Object.freeze({name:'Parasite fortification',cls:'titan',arch:'siege',hp:900,dps:0,shot:9,speed:0,range:0,role:'support'})
+ structure:Object.freeze({name:'Parasite fortification',cls:'titan',arch:'siege',hp:900,dps:0,shot:9,speed:0,range:0,role:'support'}),
+ bastion:Object.freeze({name:'Parasite rampart gun',cls:'titan',arch:'siege',hp:1000,dps:16,shot:1.4,speed:0,range:96,role:'player'})   // outranges a tank's 92 m: flank or break it
 });
 // Hull Plating set traits (rules.js plateStats; RESOURCE_ECONOMY.md §6.1). Energy: the fire coordinator's and the plasma
 // batteries' pulse fire, plasma bombardment. Area: artillery/orbital strikes and plasma splash. Nothing else is cut.
@@ -103,7 +104,7 @@ const warOperations=[
 const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperations,...strikeOperations,...sectors.map(sector=>{const [x,z]=raidPoint(sector.x,sector.z);return {id:'sector-defense-'+sector.id,name:sector.name+' / INVASION DEFENSE',family:'sector-defense',defense:true,war:'a',territory:sector.id,sector:sector.id,site:sector.id,x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the sector command beacon. A failed defense can recapture this frontier; your permanent first-clear history remains.',reward:{cp:160,alloy:15,biomass:10,helium:2}};}),...warOperations,{id:'base-defense',name:'COMMAND BASE / DEFENSE ALERT',family:'base-defense',site:'personal-base',x:1080,z:1160,danger:'HARD',brief:'Repel two incoming Parasite assault teams. Defend the Command Base reactor while using earned fortifications and your own weapons.',reward:{cp:160,alloy:15,biomass:10,helium:2}},
  // Session 7B: the Citadel's Act I tiers (the Outer Works, in the Inner Ring east of the Eastern Rim); their rules, layout and payouts are
  // js/conquest/citadel.js and worker/src/conquest-citadel.js (battle points by the war formula, never this table's spoils)
- ...[1,2,3].map(t=>({id:'citadel-'+t,name:'THE CITADEL · '+['','I','II','III'][t]+' · '+['','BREACH POINT','IRON RAIN','THE CARRIER DECK'][t],family:'citadel',citadel:t,battalion:true,site:'citadel',x:1590,z:1080,activationRadius:110,danger:'HARD',brief:'',reward:{cp:0,alloy:0,biomass:0,helium:0}}))].map(o=>[o.id,{activationRadius:45,...o}])));
+ ...[1,2,3].map(t=>({id:'citadel-'+t,name:'THE CITADEL · '+['','I','II','III'][t]+' · '+['','BREACH POINT','IRON RAIN','THE CARRIER DECK'][t],family:'citadel',citadel:t,battalion:true,site:'citadel',x:1590,z:1080,activationRadius:140,danger:'HARD',brief:'',reward:{cp:0,alloy:0,biomass:0,helium:0}}))].map(o=>[o.id,{activationRadius:45,...o}])));
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
 // The Refuge supply terminal: physical banking/repair point (same coordinates as the Worker POLICY.terminal).
 const refuge=freeze({id:'refuge',x:1174,z:1168,radius:12,name:'REFUGE SUPPLY'});

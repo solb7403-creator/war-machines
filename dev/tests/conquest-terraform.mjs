@@ -1,7 +1,7 @@
 // The terraformed south (Phase 2): authored zones, the creek / reservoir / dam / fords / bridge, forest cover, reachability
 // of every authored site, and server-authoritative bio-flora harvesting. Shared ConquestWorld rules (phone == Worker).
 import assert from 'node:assert/strict';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
-const {RULES:R,CONQUEST:{World:W,Combat:C}}=await import('../../worker/src/sim.gen.js');
+const {RULES:R,CONQUEST:{World:W,Combat:C,Citadel:CI}}=await import('../../worker/src/sim.gen.js');
 const {createState,applyCommands,harvestStep}=await import('../../worker/src/conquest-sim.js');
 const A=await import('../../worker/src/conquest-airdrop.js');
 let passed=0;const ok=(c,m)=>{assert(c,m);passed++;console.log('PASS '+m);};
@@ -45,10 +45,14 @@ const at=(x,z,surface='ground')=>({x,z,y:surface==='bridge'?W.deckAt(x,z):W.grou
  ok(W.blockedAt(f.x,W.groundAt(f.x,f.z)+3,f.z)&&!W.blockedAt(f.x,W.groundAt(f.x,f.z)+W.FOREST_CANOPY+1,f.z),'the canopy blocks below 7.5 m, not above');}
 
 // ---- reachability: every authored site and every bio-flora node stays reachable from the spawn ----
-{const G=6,x0=640,x1=1460,z0=760,z1=1440,key=(x,z)=>Math.round((x-x0)/G)+':'+Math.round((z-z0)/G),seen=new Map(),queue=[at(898,1024)];seen.set(key(898,1024),queue[0]);
- for(let i=0;i<queue.length;i++){const p=queue[i];for(const [dx,dz] of [[G,0],[-G,0],[0,G],[0,-G]]){const q=W.advance(p,dx,dz);if(Math.hypot(q.x-p.x-dx,q.z-p.z-dz)>1.2||q.x<x0||q.x>x1||q.z<z0||q.z>z1)continue;const k=key(q.x,q.z);if(!seen.has(k)){seen.set(k,q);queue.push(q);}}}
- const reached=(x,z,r)=>{for(const q of seen.values())if(Math.hypot(q.x-x,q.z-z)<=r)return true;return false;};
- const sites=[...Object.values(C.operations).map(o=>['operation '+o.id,o.x,o.z,o.activationRadius||45]),...C.travelNodes(Object.fromEntries(W.sectors.map(s=>[s.id,{owner:'humanity',status:'secured'}])),5).map(n=>['travel '+n.id,n.x,n.z,24]),['Command Base',C.baseDefinition.x,C.baseDefinition.z,C.baseDefinition.radius],['Refuge terminal',1174,1168,12]];
+// Session 7B: the Citadel (the Outer Works, east of the Eastern Rim) is checked by its own drive from the spawn through a box that
+// reaches it (x up to 1720); every other site keeps the original box, unchanged
+{const G=6,x0=640,z0=760,z1=1440,key=(x,z)=>Math.round((x-x0)/G)+':'+Math.round((z-z0)/G),drive=x1=>{const seen=new Map(),queue=[at(898,1024)];seen.set(key(898,1024),queue[0]);
+ for(let i=0;i<queue.length;i++){const p=queue[i];for(const [dx,dz] of [[G,0],[-G,0],[0,G],[0,-G]]){const q=W.advance(p,dx,dz);if(Math.hypot(q.x-p.x-dx,q.z-p.z-dz)>1.2||q.x<x0||q.x>x1||q.z<z0||q.z>z1)continue;const k=key(q.x,q.z);if(!seen.has(k)){seen.set(k,q);queue.push(q);}}}return seen;},seen=drive(1460);
+ const near=(cells,x,z,r)=>{for(const q of cells.values())if(Math.hypot(q.x-x,q.z-z)<=r)return true;return false;},reached=(x,z,r)=>near(seen,x,z,r);
+ {const east=drive(1720),pts=[...Object.values(C.operations).filter(o=>o.citadel).map(o=>['operation '+o.id,o.x,o.z,o.activationRadius]),['the siege camp',CI.stageAt().x,CI.stageAt().z,12],['the throne',CI.at(CI.LAYOUT.throne.u,0).x,CI.at(CI.LAYOUT.throne.u,0).z,12]];
+  const miss=pts.filter(([n,x,z,r])=>!near(east,x,z,r)).map(s=>s[0]);ok(pts.length===5&&!miss.length,'the Citadel (3 tiers, the siege camp, the throne) reachable from the spawn by driving ('+east.size+' cells)'+(miss.length?' missing '+miss:''));}
+ const sites=[...Object.values(C.operations).filter(o=>!o.citadel).map(o=>['operation '+o.id,o.x,o.z,o.activationRadius||45]),...C.travelNodes(Object.fromEntries(W.sectors.map(s=>[s.id,{owner:'humanity',status:'secured'}])),5).map(n=>['travel '+n.id,n.x,n.z,24]),['Command Base',C.baseDefinition.x,C.baseDefinition.z,C.baseDefinition.radius],['Refuge terminal',1174,1168,12]];
  const missing=sites.filter(([n,x,z,r])=>!reached(x,z,r)).map(s=>s[0]);ok(!missing.length,'all '+sites.length+' authored operations, travel nodes and bases reachable from the spawn ('+seen.size+' cells)'+(missing.length?' missing '+missing:''));
  const lost=W.floraNodes.filter(n=>!reached(n.x,n.z,W.HARVEST.radius));ok(!lost.length,'all '+W.floraNodes.length+' bio-flora nodes reachable within harvest range'+(lost.length?' missing '+lost.map(n=>n.id):''));}
 

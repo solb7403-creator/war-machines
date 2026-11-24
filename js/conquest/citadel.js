@@ -29,12 +29,12 @@ const CIT=Object.freeze({
  ring:5,                                      // the Inner Ring: the ring's danger in the battle points formula (war.js WAR.danger)
  prepMs:48*HOUR,                              // each siege prep objective stays valid 48 hours
  // lead's design numbers (fixed for every tier): the warden's hull and shield core (re-formed twice), the gate and its generators
- warden:Object.freeze({hp:8000,core:1500,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
- gate:Object.freeze({hp:2600}),gen:Object.freeze({hp:1800}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),
+ warden:Object.freeze({hp:10000,core:1800,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
+ gate:Object.freeze({hp:2600}),gen:Object.freeze({hp:3000}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),
  ship:Object.freeze({hp:700,flyS:14,unloadS:6,everyS:30,firstS:4}),strike:Object.freeze({tellS:2,r:11,dmg:650,ahead:40}),
  cover:Object.freeze({r:7}),drop:Object.freeze({tellS:3,r:7,dmg:40}),portal:Object.freeze({atS:Object.freeze([50,20])}),
- waveS:35,                                    // PUSH: a reinforcement wave lands every 35 s after the gate falls (the pressure ramps; the phase stays near 2:15)
- wardenS:45,                                  // ...and the warden comes out at most 45 s after the last wave (or when the courtyard is down to two)
+ waveS:30,                                    // PUSH: a reinforcement wave lands every 35 s after the gate falls (the pressure ramps; the phase stays near 2:15)
+ wardenS:45, escortS:25,                                  // ...and the warden comes out at most 45 s after the last wave (or when the courtyard is down to two)
  // cutscenes (owner, Nov 23): always skippable; full length on a tier's first attempt, shorter after
  cut:Object.freeze({fullMs:18000,shortMs:5000})
 });
@@ -51,7 +51,7 @@ const W1=Object.freeze(['sentinel','sentinel','raider','raider','breacher','comm
 const T=o=>Object.freeze(o);
 const TIERS=Object.freeze([null,
  T({n:1,name:'BREACH POINT',act:1,mech:'Destroy the gate generators to drop the shield gate',unit:'swarm',unitName:'SWARM',role:'frostline',warden:WARDENS[1],
-  gate:'shield',gens:3,guns:4,swarm:T({every:14,n:4,cap:12}),mortars:0,cover:0,zones:0,ships:0,waves:4,
+  gate:'shield',gens:3,guns:4,swarm:T({every:12,n:5,cap:15}),mortars:0,cover:0,zones:0,ships:0,waves:5,rw:Object.freeze(['raider','raider','breacher','sentinel','raider','breacher']),
   brief:'Three gate generators hold the shield gate. Bring them down, push the courtyard while the Swarm pours from the vents, then break the warden.'}),
  T({n:2,name:'IRON RAIN',act:1,mech:'Marked bombardment zones. Take forward cover',unit:'mortar',unitName:'SPORE MORTAR',role:'lancer',warden:WARDENS[2],
   gate:'hard',gens:0,guns:4,swarm:T({every:24,n:3,cap:6}),mortars:3,cover:5,zones:3,ships:0,waves:4,
@@ -92,7 +92,7 @@ const at=(u,v)=>{const c=centre();return {x:c.x+u,z:c.z+v};};
 const LAYOUT=Object.freeze({
  wallR:2.6,gate:T({u:-30,v0:-9,v1:9}),
  walls:Object.freeze([[-30,-60,-30,-9],[-30,9,-30,60],[-30,-60,70,-60],[-30,60,70,60],[70,-60,70,60]].map(Object.freeze)),
- stage:T({u:-100,v:0}),                         // the siege camp: where the assault starts
+ stage:T({u:-130,v:0}),                         // the siege camp: where the assault starts (beyond the rampart guns' 96 m)
  gens:Object.freeze([[-46,-42],[-46,42],[-38,-17]].map(Object.freeze)),
  guns:Object.freeze([[-27,-50],[-27,-26],[-27,26],[-27,50]].map(Object.freeze)),
  gateAt:T({u:-31,v:0}),
@@ -161,7 +161,7 @@ class Assault extends CC.Operation{
   this.cit={tier:Tr.n,stage:0,open:0,waves:0,wavesMax:Tr.waves,lastWave:-99,ships:0,shipsMax:Tr.ships,portal:2,air:0,strikes:[],shells:[],drops:[],next:{swarm:6,mortar:[],ship:0,barrage:12},down:0,landed:0,gam:[],prep:{aa:0,cv:0,po:0},say:{t:'BREACH · '+Tr.mech.toUpperCase(),at:0},clear:0,phase:[0,0],warden:0};
   const L=LAYOUT,put=(kind,u,v,key,patch)=>{const q=at(u,v);try{this.deploy(kind,q.x,q.z,key);}catch(_){return null;}const e=this.enemies.at(-1);Object.assign(e,{immobile:true,noLoot:true},patch);return e;};
   // BREACH: the outer guns on the rampart, the generators (I) or the hard gate (II-III), the mortars (II-III)
-  L.guns.slice(0,Tr.guns).forEach(([u,v],i)=>put('command',u,v,'cit:gun:'+i,{cit:'gun'}));
+  L.guns.slice(0,Tr.guns).forEach(([u,v],i)=>put('bastion',u,v,'cit:gun:'+i,{cit:'gun'}));   // the rampart guns outrange a tank: they fire at the Battalion's nearest threat
   if(Tr.gate==='shield')L.gens.slice(0,Tr.gens).forEach(([u,v],i)=>put('structure',u,v,'cit:gen:'+i,{cit:'gen',hp:CIT.gen.hp,maxHp:CIT.gen.hp,objectiveTarget:true}));
   else put('structure',L.gateAt.u,L.gateAt.v,'cit:gate',{cit:'gate',hp:CIT.gate.hp,maxHp:CIT.gate.hp,objectiveTarget:true});
   L.mortars.slice(0,Tr.mortars).forEach(([u,v],i)=>{const e=put('mortar',u,v,'cit:mortar:'+i,{cit:'mortar',hp:CIT.mortar.hp,maxHp:CIT.mortar.hp});if(e)this.cit.next.mortar.push(4+2*i);});
@@ -187,7 +187,7 @@ class Assault extends CC.Operation{
  unstick(p,q){return this.wallHit(q)&&segDist(q.x,q.z,this.wallHit(q))<=segDist(p.x,p.z,this.wallHit(p))?p:q;}   // a unit standing in a wall's margin may only move out of it
  moveOf(f,dx,dz){return this.slideOf(f,W().advance(f,dx,dz));}
  enemyAdvance(e,dt){if(e.ship)return this.shipPose(e);if(e.drone)return super.enemyAdvance(e,dt);return this.slideOf(e,W().advance(e,e.vx*dt,e.vz*dt));}
- choose(e){if(e.ship||e.cit){e.vx=e.vz=0;e.target=this.player;return;}super.choose(e);}
+ choose(e){if(e.ship||e.cit){e.vx=e.vz=0;e.target=this.player;e.tf=0;if(e.cit==='gun'&&this.friends.length){const T=this.threat(e,Math.hypot(e.x-this.player.x,e.z-this.player.z));if(T?.f){e.target=T.t;e.tf=T.f.id;}}return;}super.choose(e);}
  // ---- the fight ----
  step(dt,fire){const c=this.cit;if(c.gam.includes('noshield')){this.shieldT=0;this.shieldCd=Math.max(this.shieldCd||0,.5);}if(c.gam.includes('overdrive')&&this.dashCd>0)this.dashCd=Math.max(0,this.dashCd-dt);
   super.step(dt,fire);if(this.state!=='active')return;this.citStep(dt);}
@@ -223,7 +223,7 @@ class Assault extends CC.Operation{
    for(const f of this.friends)if(f.side==='mine'&&!f.down&&f.hp>0&&!this.covered(f)&&dist2(f.x,f.z,sh.x,sh.z)<sh.r){f.hp=Math.max(0,f.hp-sh.dmg*(1-armor(CC.friendStats(f))));if(f.hp<=0)this.friendDown?.(f);}
    this.effects.push({kind:'destroy',weapon:'mortar',x:sh.x,y:W().groundAt(sh.x,sh.z)+.8,z:sh.z,r:sh.r,life:.6});}
   c.shells=c.shells.filter(x=>x.at>t);
-  for(const d of c.drops.filter(x=>x.at<=t)){if(d.k==='wave')this.citWave(RW,[[d.x-centre().x,d.z-centre().z]],'reinforce');}
+  for(const d of c.drops.filter(x=>x.at<=t)){if(d.k==='wave')this.citWave(TIERS[c.tier].rw||RW,[[d.x-centre().x,d.z-centre().z]],'reinforce');}
   c.drops=c.drops.filter(x=>x.at>t);
   for(const s of c.strikes.filter(x=>x.at<=t)){for(const e of this.enemies){if(e.hp<=0||e.dormant||e.resident||dist2(e.x,e.z,s.x,s.z)>=CIT.strike.r)continue;e.ad=1;if(e.core>0)continue;   // the LDF's ordnance never touches a shield core (only your tank breaks it)
     const old=e.hp;e.hp=Math.max(0,e.hp-CIT.strike.dmg);if(old>0&&!e.hp)this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}
@@ -237,7 +237,7 @@ class Assault extends CC.Operation{
  launchShip(){const c=this.cit,[u,v]=LAYOUT.pads[c.ships%LAYOUT.pads.length],pad=at(u,v),from=at(260,v*1.6);c.ships++;let e;try{this.deploy('dropship',pad.x,pad.z,'cit:ship:'+c.ships);}catch(_){return;}e=this.enemies.at(-1);
   Object.assign(e,{ship:{pad:[pad.x,pad.z],from:[from.x,from.z],t0:this.time,n:c.ships},noLoot:true,surface:'air',cd:999});const P=this.shipPose(e);Object.assign(e,{x:P.x,y:P.y,z:P.z});this.say('DROPSHIP INBOUND · SHOOT IT DOWN');}
  shipPose(e){const S=e.ship,k=clamp((this.time-S.t0)/CIT.ship.flyS,0,1),ease=1-(1-k)*(1-k),x=S.from[0]+(S.pad[0]-S.from[0])*ease,z=S.from[1]+(S.pad[1]-S.from[1])*ease,g=W().groundAt(x,z);
-  if(k>=1&&!e.landed&&e.hp>0){e.landed=1;this.cit.landed++;this.cit.lastShip=this.time;this.citWave(RW,[[S.pad[0]-centre().x,S.pad[1]-centre().z]],'ship');this.say('A DROPSHIP LANDED · ITS WAVE IS OUT');}
+  if(k>=1&&!e.landed&&e.hp>0){e.landed=1;this.cit.landed++;this.cit.lastShip=this.time;this.citWave(TIERS[this.cit.tier].rw||RW,[[S.pad[0]-centre().x,S.pad[1]-centre().z]],'ship');this.say('A DROPSHIP LANDED · ITS WAVE IS OUT');}
   if(e.landed&&this.time>=S.t0+CIT.ship.flyS+CIT.ship.unloadS&&!e.left){e.left=1;e.dormant=true;}
   if(e.left)return {x:S.pad[0]+400,y:g+90,z:S.pad[1],surface:'air'};
   return {x,y:g+(k>=1?1.5:1.5+34*(1-ease)),z,surface:'air'};}
@@ -245,9 +245,10 @@ class Assault extends CC.Operation{
  deployWarden(){const c=this.cit,Tr=TIERS[c.tier],G=Tr.warden,q=at(LAYOUT.throne.u,LAYOUT.throne.v);if(c.stage>=2)return;c.stage=2;c.warden=this.time;
   try{this.deploy('sentinel',q.x,q.z,'cit:warden');}catch(_){c.stage=1;return;}const e=this.enemies.at(-1);
   Object.assign(e,{warden:1,commander:true,general:G.id,pattern:G.pattern,hp:CIT.warden.hp,maxHp:CIT.warden.hp,core:CIT.warden.core,coreMax:CIT.warden.core,nextPattern:this.time+4,drones:0,noLoot:false,wave:'warden',...(c.gam.includes('enraged')?{enraged:true}:{})});
-  this.wardenId=e.id;this.citWave(['raider','raider'],[[LAYOUT.throne.u-8,-10],[LAYOUT.throne.u-8,10]],'escort');this.say(G.name+' · ONLY YOUR TANK BREAKS THE SHIELD CORE');}
+  this.wardenId=e.id;c.next.escort=this.time+CIT.escortS;this.citWave(['raider','raider'],[[LAYOUT.throne.u-8,-10],[LAYOUT.throne.u-8,10]],'escort');this.say(G.name+' · ONLY YOUR TANK BREAKS THE SHIELD CORE');}
  wardenStep(){const c=this.cit,e=this.enemies.find(x=>x.id===this.wardenId);if(!e)return;
   if(e.hp<=0){this.state='victory';c.stage=3;c.clear=Math.round(this.time*1000);this.projectiles=[];this.say('THE WARDEN FALLS');return;}
+  if(this.time>=(c.next.escort||Infinity)){c.next.escort=this.time+CIT.escortS;const k=(c.esc=(c.esc|0)+1)%2;this.citWave(['raider','breacher'],[[LAYOUT.throne.u-10,k?-14:14]],'escort'+c.esc);this.say('THE WARDEN CALLS ITS GUARD');}
   if(!e.enraged&&e.hp<e.maxHp*CIT.warden.enrage){e.enraged=true;e.nextPattern=Math.min(e.nextPattern||0,this.time+1.5);this.say('THE WARDEN ENRAGES');}
   if(c.reformAt){if(this.time>=c.reformAt){e.core=e.coreMax;c.reformAt=0;e.telegraph=false;this.say('SHIELD CORE UP · BREAK IT');}return;}
   const i=CIT.warden.reform.findIndex((f,k)=>!c.phase[k]&&e.core<=0&&e.hp<=e.maxHp*f);if(i>=0){for(let k=0;k<=i;k++)c.phase[k]=1;c.reformAt=this.time+CIT.warden.tellS;e.telegraph=true;this.say('THE CORE IS RE-FORMING');}}
