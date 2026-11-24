@@ -227,7 +227,7 @@ export function holdRate(prName,d,{sites=P.SITE_IDS,n=4,share,citadelX=1,se=true
 //  the composite allows, an outer one) and confirms it; when no wall can reach an exposed vital (beside ice or rock) it moves the vital in.
 //  coach:'single' draws only the first ring (a pilot who closes it by hand). Walls are instant orders: composite only, no builder time.
 //  repairX: a model-only price factor on the REPAIR of town-raid damage (the PROPOSAL's exact price; the game's REPAIR is unchanged).
-export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=null,site='crater',days=200,cit=KNOB.cit7b}={}){   // cacheX null: the game's own held-raid payconst s=createState(R.STOCK_L,start);s.lseed=seed;s.twsd=(seed>>>0)||1;delete s.wo;const hit={};   // twsd: the town's own seed, fixed (review round 1: the Worker would draw it at random)
+export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=null,site='crater',days=200,cit=KNOB.cit7b}={}){   /* cacheX null: the game's own held-raid pay */const s=createState(R.STOCK_L,start);s.lseed=seed;s.twsd=(seed>>>0)||1;delete s.wo;const hit={};   // twsd: the town's own seed, fixed (review round 1: the Worker would draw it at random)
  const legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,spent=0;const rep={n:0,cp:0,alloy:0,cm:0},ring={closedAt:null,cells:0,orders:0};
  const afford=c=>Object.entries(c||{}).every(([k,n])=>k==='cp'?s.ledger.cp>=n:k==='cm'?Math.floor(s.plot?.cm||0)>=n:P.MNS.includes(k)?true:(s.ledger.banked[k]||0)>=n);
  const mark=(k,now)=>{if(hit[k]===undefined)hit[k]=+((now-start)/DAY).toFixed(1);};
