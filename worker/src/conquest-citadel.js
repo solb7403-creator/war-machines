@@ -20,7 +20,8 @@ import {orderEvent} from './conquest-orders.js';
 import {track} from './conquest-analytics.js';
 const {Citadel:CI,War:WR,Combat:C}=CONQUEST,CIT=CI.CIT;
 const fail=m=>{throw Error('conquest: '+m);};
-export function cit(s){s.cit=CI.norm(s.cit);return s.cit;}
+const NORMED=new WeakSet();   // a record normalized once per request: every helper then edits the same object
+export function cit(s){if(!s.cit||!NORMED.has(s.cit)){s.cit=CI.norm(s.cit);NORMED.add(s.cit);}return s.cit;}
 export const tiersOf=s=>CI.tiersOf(s);
 // every request: the production bonus follows the tiers cleared (materials and CP only: ConquestCombat.baseYield, ConquestPlot.rates read
 // cpb); prep that ran out falls away
@@ -36,7 +37,7 @@ export function citadelBegin(s,B,op,now){const c=cit(s),tier=op.citadel,throne=t
  s.citRun={tier,attempt:s.attempt|0,throne:throne?1:0,w:week,at:now,prep:{aa:prep.aa?1:0,cv:prep.cv?1:0,po:prep.po?1:0,...(prep.po?{pu:prep.until.po}:{})},gambits};
  track(s,'citadel_start',String(tier),throne?'throne':'siege');}
 // every prep the assault launched with is spent (won or lost)
-function spend(s,run){const c=cit(s),p=run?.prep||{};if(p.aa)delete c.prep.aa;if(p.cv)delete c.prep.cv;if(p.po)c.pu=Math.max(c.pu|0,p.pu|0);return Object.keys(p).filter(k=>k!=='pu'&&p[k]);}
+function spend(s,run){const c=cit(s),p=run?.prep||{};if(p.aa)delete c.prep.aa;if(p.cv)delete c.prep.cv;if(p.po)c.pu=Math.max(Number(c.pu)||0,Number(p.pu)||0);   /* ms timestamps: never |0 (32-bit) */return Object.keys(p).filter(k=>k!=='pu'&&p[k]);}
 const merge=(a,b)=>{const o={};for(const x of [a,b])for(const [g,m] of Object.entries(x||{}))if(m&&typeof m==='object'&&!Array.isArray(m)){o[g]=o[g]||{};for(const [k,n] of Object.entries(m))o[g][k]=(o[g][k]|0)+(n|0);}return o;};
 // the assault won (applyCommands' victory): exactly once per attempt (the reducer settles a victory only while s.settlement is empty)
 export function citadelWon(s,B,now){const c=cit(s),run=s.citRun&&s.citRun.attempt===(s.attempt|0)?s.citRun:null,tier=B.cit.tier,first=tier===c.t+1,week=CI.weekOf(now),ms=Math.max(1,B.cit.clear|0),Tr=CI.TIERS[tier];

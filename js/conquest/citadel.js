@@ -33,7 +33,8 @@ const CIT=Object.freeze({
  gate:Object.freeze({hp:2600}),gen:Object.freeze({hp:1800}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),
  ship:Object.freeze({hp:700,flyS:14,unloadS:6,everyS:30,firstS:4}),strike:Object.freeze({tellS:2,r:11,dmg:650,ahead:40}),
  cover:Object.freeze({r:7}),drop:Object.freeze({tellS:3,r:7,dmg:40}),portal:Object.freeze({atS:Object.freeze([50,20])}),
- gapS:8,                                      // the breather between two PUSH waves
+ waveS:35,                                    // PUSH: a reinforcement wave lands every 35 s after the gate falls (the pressure ramps; the phase stays near 2:15)
+ wardenS:45,                                  // ...and the warden comes out at most 45 s after the last wave (or when the courtyard is down to two)
  // cutscenes (owner, Nov 23): always skippable; full length on a tier's first attempt, shorter after
  cut:Object.freeze({fullMs:18000,shortMs:5000})
 });
@@ -195,10 +196,10 @@ class Assault extends CC.Operation{
  citStep(dt){const c=this.cit,Tr=TIERS[c.tier],t=this.time;
   if(c.stage===0&&this.gateDown()){c.stage=1;c.open=t;this.say(Tr.gate==='shield'?'SHIELD GATE DOWN · PUSH INTO THE COURTYARD':'THE GATE IS BREACHED · PUSH IN');this.citWave(W1,LAYOUT.garrison,'garrison',true);if(c.shipsMax)c.next.ship=t+CIT.ship.firstS;}
   if(c.stage===1){
-   if(!c.shipsMax&&c.waves<c.wavesMax&&!c.drops.some(d=>d.k==='wave')&&this.pushLeft()<=2&&t>=c.lastWave+CIT.gapS){const [u,v]=LAYOUT.drops[c.waves%LAYOUT.drops.length],q=at(u,v);c.waves++;c.lastWave=t;c.drops.push({k:'wave',x:q.x,z:q.z,at:t+CIT.drop.tellS,n:c.waves});this.mark('cdrop',q.x,q.z,CIT.drop.r,CIT.drop.tellS,CIT.drop.dmg);this.say('REINFORCEMENTS INBOUND');}
+   if(!c.shipsMax&&c.waves<c.wavesMax&&!c.drops.some(d=>d.k==='wave')&&t>=c.open+CIT.waveS*(c.waves+1)){const [u,v]=LAYOUT.drops[c.waves%LAYOUT.drops.length],q=at(u,v);c.waves++;c.lastWave=t;c.drops.push({k:'wave',x:q.x,z:q.z,at:t+CIT.drop.tellS,n:c.waves});this.mark('cdrop',q.x,q.z,CIT.drop.r,CIT.drop.tellS,CIT.drop.dmg);this.say('REINFORCEMENTS INBOUND');}
    if(c.shipsMax&&c.ships<c.shipsMax&&t>=c.next.ship){this.launchShip();c.next.ship=t+CIT.ship.everyS;}
    const done=c.shipsMax?c.ships>=c.shipsMax&&!this.living(e=>e.ship&&!e.left).length:c.waves>=c.wavesMax&&!c.drops.some(d=>d.k==='wave');
-   if(done&&this.pushLeft()<=1)this.deployWarden();}
+   if(done&&(this.pushLeft()<=2||t>=Math.max(c.lastWave,c.lastShip||0)+CIT.wardenS))this.deployWarden();}
   if(c.stage===2)this.wardenStep();
   // the portal's surges (no portal reinforcements when the portal was suppressed: siege prep)
   if(c.portal>0&&c.stage>=1){const i=CIT.portal.atS.length-c.portal,due=i===0?c.stage>=1&&t>=c.open+CIT.portal.atS[0]:c.stage>=2&&t>=c.warden+CIT.portal.atS[1];if(due){c.portal--;this.citWave(['raider','raider','raider'],[[LAYOUT.portalAt.u,LAYOUT.portalAt.v]],'portal');this.effects.push({kind:'radio',...at(LAYOUT.portalAt.u,LAYOUT.portalAt.v),y:this.player.y+6,life:1.2});this.say('THE PORTAL SURGES');}}
@@ -228,7 +229,7 @@ class Assault extends CC.Operation{
     const old=e.hp;e.hp=Math.max(0,e.hp-CIT.strike.dmg);if(old>0&&!e.hp)this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}
    this.effects.push({kind:'destroy',weapon:'siege',x:s.x,y:W().groundAt(s.x,s.z)+.8,z:s.z,r:CIT.strike.r,life:.8});}
   c.strikes=c.strikes.filter(x=>x.at>t);
-  for(const e of this.enemies)if(e.ship&&e.hp<=0&&!e.landed&&!e.counted){e.counted=1;c.down++;this.say('DROPSHIP SHOT DOWN · ITS WAVE NEVER LANDS');}}
+  for(const e of this.enemies)if(e.ship&&e.hp<=0&&!e.landed&&!e.counted){e.counted=1;c.down++;c.lastShip=t;this.say('DROPSHIP SHOT DOWN · ITS WAVE NEVER LANDS');}}
  // the LDF airstrike (siege prep: the anti-air batteries knocked out): the pilot calls it on the locked target or 40 m ahead
  callStrike(p){const c=this.cit;if(!(c.air>0)||this.state!=='active')return false;const lock=this.enemies.find(e=>e.id===this.lockId&&e.hp>0),yaw=this.turretYaw||0,x=lock?lock.x:p.x+Math.sin(yaw)*CIT.strike.ahead,z=lock?lock.z:p.z+Math.cos(yaw)*CIT.strike.ahead;
   c.air--;c.strikes.push({x,z,at:this.time+CIT.strike.tellS});this.mark('air',x,z,CIT.strike.r,CIT.strike.tellS,0);this.say('LDF AIRSTRIKE INBOUND');return true;}
@@ -236,7 +237,7 @@ class Assault extends CC.Operation{
  launchShip(){const c=this.cit,[u,v]=LAYOUT.pads[c.ships%LAYOUT.pads.length],pad=at(u,v),from=at(260,v*1.6);c.ships++;let e;try{this.deploy('dropship',pad.x,pad.z,'cit:ship:'+c.ships);}catch(_){return;}e=this.enemies.at(-1);
   Object.assign(e,{ship:{pad:[pad.x,pad.z],from:[from.x,from.z],t0:this.time,n:c.ships},noLoot:true,surface:'air',cd:999});const P=this.shipPose(e);Object.assign(e,{x:P.x,y:P.y,z:P.z});this.say('DROPSHIP INBOUND · SHOOT IT DOWN');}
  shipPose(e){const S=e.ship,k=clamp((this.time-S.t0)/CIT.ship.flyS,0,1),ease=1-(1-k)*(1-k),x=S.from[0]+(S.pad[0]-S.from[0])*ease,z=S.from[1]+(S.pad[1]-S.from[1])*ease,g=W().groundAt(x,z);
-  if(k>=1&&!e.landed&&e.hp>0){e.landed=1;this.cit.landed++;this.citWave(RW,[[S.pad[0]-centre().x,S.pad[1]-centre().z]],'ship');this.say('A DROPSHIP LANDED · ITS WAVE IS OUT');}
+  if(k>=1&&!e.landed&&e.hp>0){e.landed=1;this.cit.landed++;this.cit.lastShip=this.time;this.citWave(RW,[[S.pad[0]-centre().x,S.pad[1]-centre().z]],'ship');this.say('A DROPSHIP LANDED · ITS WAVE IS OUT');}
   if(e.landed&&this.time>=S.t0+CIT.ship.flyS+CIT.ship.unloadS&&!e.left){e.left=1;e.dormant=true;}
   if(e.left)return {x:S.pad[0]+400,y:g+90,z:S.pad[1],surface:'air'};
   return {x,y:g+(k>=1?1.5:1.5+34*(1-ease)),z,surface:'air'};}
