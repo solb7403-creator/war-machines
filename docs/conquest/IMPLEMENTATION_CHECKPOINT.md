@@ -7383,9 +7383,11 @@ least half of 4 seeded assaults; `dev/tests/conquest-citadel-pace.mjs` (CI job `
   each first clear the Hive re-fortifies the next tier for **7 days** (`CIT.refortMs`; the War Map's LAUNCH reads "the Hive re-fortifies
   Citadel II: it opens in 6 d 23 h"; the Worker refuses earlier; Throne Runs of cleared tiers stay open meanwhile). It is the staggered
   weekly unlock big raids use, it gives each tier a week of Throne Runs (one full chest a week) and siege prep, and it is legible.
-  Result: tier I regular day 18 (weeks 2-3), grinder 6 (days 5-7), heavy 9 (between; planned about 10); tier II regular 30, grinder 13,
-  heavy 17; **tier III regular 37 (weeks 6-8), grinder 20 (week 3), heavy 24 (between them; fortress-model PROFILES.heavy plans about
-  32: the heavy player reaches rare gear on day 17, so 7 days after it is day 24).**
+  **Final measurement** (`docs/conquest/session7b/citadel-pace.json`, 4 seeds a day, won at least half): tier I regular **day 15**
+  (2 of 4 with 7 allies; 0 of 4 on day 17, 4 of 4 from the full Battalion on day 18: weeks 2-3), grinder **6** (days 5-7), heavy **9**
+  (between them; planned about 10); tier II regular 30 (0 of 4 on common gear, day 27), grinder 13, heavy 17 (0 of 4 on day 16);
+  **tier III regular 37 (weeks 6-8), grinder 20 (week 3), heavy 24 (between them; fortress-model PROFILES.heavy plans about 32: the
+  heavy player has rare gear from day 17, so 7 days after its tier II is day 24).** Every target in the brief holds.
 - PROFILES.citadel in `dev/tools/fortress-model.mjs` (the town attacks' Retaliation schedule) stays the blueprint's plan (regular 17 /
   49, heavy 10 / 32, grinder 6 / 21): the measured tier III is earlier for the regular (37) and the heavy (24); reported, not changed
   (the fortress test keeps its planned inputs).

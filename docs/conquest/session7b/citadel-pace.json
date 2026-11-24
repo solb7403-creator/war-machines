@@ -1,10 +1,11 @@
 {
- "about": "Session 7B pacing: the first day each profile's kit breaks each Citadel tier with the real assault (citadel-model.mjs bot, 4 seeded assaults a day, won at least half)",
+ "about": "Session 7B pacing: the first day each profile's kit breaks each Citadel tier with the real assault (citadel-model.mjs bot, 4 seeded assaults a day, won at least half); a tier after the first opens 7 days after the previous first clear",
  "seeds": 4,
+ "refortDays": 7,
  "check": {
   "1": {
    "regular": {
-    "day": 18,
+    "day": 15,
     "target": [
      8,
      21
@@ -27,23 +28,23 @@
   },
   "3": {
    "regular": {
-    "day": 30,
+    "day": 37,
     "target": [
      36,
      56
     ],
-    "ok": false
+    "ok": true
    },
    "grinder": {
-    "day": 10,
+    "day": 20,
     "target": [
      15,
      21
     ],
-    "ok": false
+    "ok": true
    },
    "heavy": {
-    "day": 17,
+    "day": 24,
     "target": "between the grinder and the regular",
     "ok": true
    }
@@ -52,43 +53,23 @@
  "results": {
   "regular": {
    "1": {
-    "day": 18,
+    "day": 15,
     "tried": [
      {
-      "d": 17,
-      "won": 0,
+      "d": 15,
+      "won": 2,
       "of": 4,
       "sec": [
        480,
        480,
-       480,
-       480
+       470,
+       468
       ],
       "kit": {
        "gear": 0,
        "allies": 7,
        "top": 8,
-       "force": 6,
-       "rc": {
-        "lancer": 4
-       }
-      }
-     },
-     {
-      "d": 18,
-      "won": 4,
-      "of": 4,
-      "sec": [
-       427,
-       394,
-       426,
-       403
-      ],
-      "kit": {
-       "gear": 0,
-       "allies": 9,
-       "top": 9,
-       "force": 6,
+       "force": 5,
        "rc": {
         "lancer": 4
        }
@@ -99,6 +80,27 @@
    "2": {
     "day": 30,
     "tried": [
+     {
+      "d": 27,
+      "won": 0,
+      "of": 4,
+      "sec": [
+       480,
+       460,
+       480,
+       480
+      ],
+      "kit": {
+       "gear": 0,
+       "allies": 9,
+       "top": 10,
+       "force": 7,
+       "rc": {
+        "lancer": 5,
+        "breacher": 3
+       }
+      }
+     },
      {
       "d": 30,
       "won": 4,
@@ -123,26 +125,26 @@
     ]
    },
    "3": {
-    "day": 30,
+    "day": 37,
     "tried": [
      {
-      "d": 30,
-      "won": 4,
+      "d": 37,
+      "won": 3,
       "of": 4,
       "sec": [
-       452,
-       447,
-       425,
-       478
+       456,
+       440,
+       464,
+       480
       ],
       "kit": {
        "gear": 1,
        "allies": 9,
        "top": 10,
-       "force": 7,
+       "force": 8,
        "rc": {
         "lancer": 5,
-        "breacher": 3
+        "breacher": 4
        }
       }
      }
@@ -153,6 +155,26 @@
    "1": {
     "day": 9,
     "tried": [
+     {
+      "d": 8,
+      "won": 0,
+      "of": 4,
+      "sec": [
+       480,
+       480,
+       480,
+       480
+      ],
+      "kit": {
+       "gear": 0,
+       "allies": 7,
+       "top": 8,
+       "force": 5,
+       "rc": {
+        "lancer": 3
+       }
+      }
+     },
      {
       "d": 9,
       "won": 2,
@@ -179,6 +201,26 @@
     "day": 17,
     "tried": [
      {
+      "d": 16,
+      "won": 0,
+      "of": 4,
+      "sec": [
+       480,
+       480,
+       480,
+       453
+      ],
+      "kit": {
+       "gear": 0,
+       "allies": 9,
+       "top": 10,
+       "force": 7,
+       "rc": {
+        "lancer": 4
+       }
+      }
+     },
+     {
       "d": 17,
       "won": 4,
       "of": 4,
@@ -201,25 +243,26 @@
     ]
    },
    "3": {
-    "day": 17,
+    "day": 24,
     "tried": [
      {
-      "d": 17,
+      "d": 24,
       "won": 4,
       "of": 4,
       "sec": [
-       452,
-       455,
-       444,
-       461
+       457,
+       451,
+       435,
+       454
       ],
       "kit": {
        "gear": 1,
        "allies": 9,
        "top": 10,
-       "force": 7,
+       "force": 8,
        "rc": {
-        "lancer": 4
+        "lancer": 5,
+        "breacher": 2
        }
       }
      }
@@ -293,37 +336,17 @@
     ]
    },
    "2": {
-    "day": 10,
+    "day": 13,
     "tried": [
      {
-      "d": 7,
-      "won": 1,
-      "of": 4,
-      "sec": [
-       480,
-       467,
-       480,
-       459
-      ],
-      "kit": {
-       "gear": 0,
-       "allies": 9,
-       "top": 10,
-       "force": 7,
-       "rc": {
-        "lancer": 3
-       }
-      }
-     },
-     {
-      "d": 10,
+      "d": 13,
       "won": 4,
       "of": 4,
       "sec": [
-       434,
-       433,
+       409,
+       421,
        418,
-       415
+       413
       ],
       "kit": {
        "gear": 1,
@@ -331,32 +354,32 @@
        "top": 10,
        "force": 8,
        "rc": {
-        "lancer": 3
+        "lancer": 4
        }
       }
      }
     ]
    },
    "3": {
-    "day": 10,
+    "day": 20,
     "tried": [
      {
-      "d": 10,
+      "d": 20,
       "won": 4,
       "of": 4,
       "sec": [
-       471,
-       459,
-       439,
-       459
+       410,
+       454,
+       451,
+       440
       ],
       "kit": {
        "gear": 1,
        "allies": 9,
        "top": 10,
-       "force": 8,
+       "force": 10,
        "rc": {
-        "lancer": 3
+        "lancer": 5
        }
       }
      }
