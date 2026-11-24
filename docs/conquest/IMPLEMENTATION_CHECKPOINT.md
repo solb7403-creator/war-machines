@@ -7624,3 +7624,15 @@ is used by that assault); a minimum Battalion retry after a loss (downed allies 
 - Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged; the Citadel bounties are the brief's
   (25,000 / 37,500 / 50,000, outside the cap, once per account); the held raid nobody fought pays the cache without its CP (owner).
 - This record and ROADMAP row 7B went to main in a second, docs-only PR from the same branch (restarted from main).
+
+## Checkpoint 50 — Session 7C: Integrity & Boards, logic only (branch `claude/integrity-boards-logic-dyeh7k`, from main `a48305b`)
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07C_BRIEF.md first; it governs everything, then this section.
+- Checkpoint 45 belongs to Session 5E-2d2 (running at the same time on Fable, branch `claude/parasite-units-dropships-8y7kby`, head
+  `af852a8` when this session started). Its files (js/conquest/combat.js, hub.js, plot.js, plotview.js, slots.js, style.js,
+  townkit.js, view.js, worldkit.js, kit/*, js/core.js, main.js, meshy3d.js, net.js, showroom.js, fx3d.js, web/boot.js) get only
+  small hook-in edits here; 7C lives in new modules. One branch for every PR of this session (restarted from main after each merge).
+- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07C_BRIEF.md`; this checkpoint opened; research running.
+- **Next:** STEP 1 (fortress-model Citadel days, the loot test's world-load wait, the Citadel result card, world.js collision fast
+  paths with a replay-identity test).
