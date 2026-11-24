@@ -46,7 +46,7 @@ export function assault(tier,{L=GEAR.common,allies=[],prep={},gambits=[],seed=1,
  const p=CI.stageAt(),B=CI.make(L,p,'citadel-'+tier).setup({prep,gambits});B.seed=(0x7b17c1ad^Math.imul(seed|0,2654435761))>>>0;
  B.squad.orders=1;B.squad.f='wedge';allies.forEach((a,i)=>{const sl=C.FORMS.wedge[i%C.FORMS.wedge.length];B.friends.push(C.friendUnit({id:800000001+i,side:'mine',pid:'p'+i,role:a.role,kit:a.kit,m:BT.strength(a.rk,a.lv||1),x:p.x+sl[0]*.5,z:p.z+sl[1]*.5-4}));});
  const g=CI.LAYOUT.gate,cen=CI.centre(),outside=CI.at(g.u-18,0),inside=CI.at(g.u+18,0),home=CI.stageAt(),range=C.engineeringValues(B.playerStats,B.engineering).range;
- let steps=0,stuck=0,last={...p},detour=0,retreat=false,seen=null;
+ let steps=0,stuck=0,last={...p},detour=0,retreat=false,seen=null,fled=0,calm=0;
  while(B.state==='active'&&steps<maxSteps){
   const c=B.cit,alive=B.enemies.filter(e=>e.hp>0&&!e.dormant&&!e.resident);if(steps%3===0||!seen)seen=new Set(alive.filter(e=>K.visible(B,p,e)));   // a pilot's eyes: what is in sight, looked at every 0.15 s
   const vis=alive.filter(e=>seen.has(e)),near=f=>vis.filter(f).sort((a,b)=>dist(a,p)-dist(b,p))[0];
@@ -54,14 +54,14 @@ export function assault(tier,{L=GEAR.common,allies=[],prep={},gambits=[],seed=1,
   const close=near(e=>!e.cit&&!e.ship&&dist(e,p)<(warden?8:16));   // in the warden's phase only a biting unit draws the pilot off the core
   const gun=near(e=>e.cit==='gun');   // the rampart guns outrange the tank: break them before standing in front of the gate
   const target=close||(warden&&vis.includes(warden)?warden:null)||near(e=>e.ship&&!e.landed)||gun||(objective&&vis.includes(objective)?objective:null)||near(e=>e.wave&&!e.swarm)||near(e=>e.cit==='mortar')||near(e=>e.cit==='gun')||near(()=>true);
-  const inPark=p.x>cen.x+g.u,hp=B.playerHp/B.playerMax;if(hp<.3)retreat=true;if(hp>.55||B.playerHp>=B.playerMax)retreat=false;
+  const inPark=p.x>cen.x+g.u,hp=B.playerHp/B.playerMax;if(hp<.3&&!retreat&&B.time>=(calm||0)){retreat=true;fled=B.time;}if(retreat&&(hp>.55||B.playerHp>=B.playerMax||B.time-fled>20)){retreat=false;calm=B.time+25;}   // regroup at most 20 s (nothing may heal the hull), then fight on
   const garrison=alive.filter(e=>e.wave&&!e.swarm&&!e.ship).sort((a,b)=>dist(a,p)-dist(b,p));
   const guns=alive.filter(e=>e.cit==='gun').sort((a,b)=>dist(a,p)-dist(b,p));let goal=(!warden&&guns[0])||objective||warden||garrison[0]||CI.at(CI.LAYOUT.throne.u-24,0);
   // the courtyard: wait outside the gate while the garrison is many, then go in (the gate first)
   if(c.stage>=1&&!inPark&&goal.x>cen.x+g.u){if(garrison.length>2&&!warden)goal=outside;else goal=Math.abs(p.z-cen.z)>6||dist(p,outside)>10?outside:inside;}
   if(warden&&!retreat&&inPark)goal=warden;   // the core is the pilot's job: keep it in sight and in range
   if(retreat)goal=inPark?outside:home;
-  const tv=target&&seen.has(target),dt0=target?dist(target,p):0,lo=target&&target.swarm?.35*range:.42*range,hi=.72*range;let mx=0,mz=0;
+  const tv=target&&seen.has(target),dt0=target?dist(target,p):0,er=target?(C.archetypes[target.kind]?.range||0):0,lo=target&&target.swarm?.35*range:Math.min(.86*range,Math.max(.42*range,er+6)),hi=Math.max(lo+8,.72*range);   /* outside the target's reach when the tank's range allows */let mx=0,mz=0;
   const toward=q=>{const d=dist(q,p)||1;return [(q.x-p.x)/d,(q.z-p.z)/d];};
   if(retreat)[mx,mz]=toward(goal);
   else if(tv&&dt0<lo&&!target.cit)[mx,mz]=toward(target).map(v=>-v);   // too close: back off while firing

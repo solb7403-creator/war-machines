@@ -38,7 +38,7 @@ const archetypes=Object.freeze({
  mortar:Object.freeze({name:'Spore Mortar',cls:'titan',arch:'siege',hp:600,dps:0,shot:9,speed:0,range:0,role:'support'}),
  dropship:Object.freeze({name:'Parasite dropship',cls:'titan',arch:'pulse',hp:700,dps:0,shot:9,speed:0,range:0,role:'support'}),
  structure:Object.freeze({name:'Parasite fortification',cls:'titan',arch:'siege',hp:900,dps:0,shot:9,speed:0,range:0,role:'support'}),
- bastion:Object.freeze({name:'Parasite rampart gun',cls:'titan',arch:'siege',hp:1000,dps:16,shot:1.4,speed:0,range:96,role:'player'})   // outranges a tank's 92 m: flank or break it
+ bastion:Object.freeze({name:'Parasite rampart gun',cls:'titan',arch:'siege',hp:1000,dps:9,shot:1.4,speed:0,range:96,role:'player'})   // outranges a tank's 92 m: flank or break it
 });
 // Hull Plating set traits (rules.js plateStats; RESOURCE_ECONOMY.md §6.1). Energy: the fire coordinator's and the plasma
 // batteries' pulse fire, plasma bombardment. Area: artillery/orbital strikes and plasma splash. Nothing else is cut.

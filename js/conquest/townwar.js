@@ -31,6 +31,10 @@ const TOWN=Object.freeze({
  // decision 5: a held unfought raid pays the existing defense cache (the town defense's CP and materials: ConquestCombat.operations
  // ['base-defense'].reward), counts toward the wall milestones (3 / 10 wins) and base-defender; no airdrop points
  cache:Object.freeze({cp:160,alloy:15,biomass:10,helium:2}),
+ // Session 7B STEP 3 (owner, Nov 23): what a held UNFOUGHT raid pays (a raid you held in person keeps the whole cache above), the
+ // first of four measured options (full, half, without its CP, none) that keeps the walled regular's CC10 day in the Session 6 band and
+ // the heavy player's late fortress about 9 of 10 (dev/tools/held-raid-cache.mjs; Checkpoint 49 STEP 3)
+ away:Object.freeze({cp:160,alloy:15,biomass:10,helium:2}),
  // Session 7T-P decision 2 (owner, Nov 23): Selenite for the late fortress. A raid at the cap level (9) held in person (settled HELD and
  // really fought: the 675 defense points' own rule) drops n Selenite into the pilot's cargo (banked at the Refuge like every mineral).
  // The amount is the fortress model's (dev/tools/selenite-candidates.mjs, 56 raids a day on two seed sets). The owner's addendum (Nov 23)
@@ -211,5 +215,6 @@ function ringPlan(p,o={}){const Pl=root.ConquestPlot;if(!Pl||!p?.b?.cc)return nu
  const clean=secs.map(({r,...x})=>x);return {sec:clean[0],secs:clean,fresh,inside,double:clean.length>1};}
 // the town as a raid saw it (the replay's snapshot s.tw.rp.town, written by the Worker) back to a plot the raid engine reads
 function plotOfSnap(x){const Pl=root.ConquestPlot;return {v:2,site:x.site,cc:x.cc|0,b:Object.fromEntries(Object.entries(x.b||{}).map(([id,a])=>[id,{t:a[0],i:a[1],j:a[2],r:a[3],l:a[4]}])),w:Pl.decWalls(x.w),dmg:{...(x.dmg||{})},n:0,st:{}};}
-root.ConquestTown=Object.freeze({TOWN,STARS,BEACON,STREAK,STREAK_ART,plotOfSnap,ringOf,ringPlan,fresh,norm,perDay,goSlots,paceOk,canLand,pickGeneral,levelOf,seOf,strength,lossOf,step,goSync,advance,defendable,next,fresher,beaconOf,streakNorm,streakDay,streakLine,weekOf});
+const cacheOf=x=>x?.o==='held'&&x.cache?(x.by==='you'?TOWN.cache:TOWN.away):null;   // Session 7B STEP 3
+root.ConquestTown=Object.freeze({TOWN,cacheOf,STARS,BEACON,STREAK,STREAK_ART,plotOfSnap,ringOf,ringPlan,fresh,norm,perDay,goSlots,paceOk,canLand,pickGeneral,levelOf,seOf,strength,lossOf,step,goSync,advance,defendable,next,fresher,beaconOf,streakNorm,streakDay,streakLine,weekOf});
 })(globalThis);

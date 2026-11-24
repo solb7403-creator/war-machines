@@ -14,6 +14,7 @@
 (function(root){
 'use strict';
 const TN=()=>root.ConquestTown,WR=()=>root.ConquestWar,P=()=>root.ConquestPlot,RD=()=>root.ConquestRaid,BT=()=>root.ConquestBattalion,AL=()=>root.ConquestAlerts;
+const cacheLine=c=>c?[['cp','CP'],['alloy','ALLOY'],['biomass','BIOMASS'],['helium','HE-3']].filter(([k])=>c[k]>0).map(([k,n])=>'+'+c[k]+' '+n).join(' · '):'';   // Session 7B STEP 3: what that held raid paid
 const pad=n=>String(n).padStart(2,'0');
 function t2(ms){const v=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(v/3600),m=Math.floor(v%3600/60),s=v%60;return h?h+':'+pad(m)+':'+pad(s):m+':'+pad(s);}
 const stars=n=>'★'.repeat(Math.max(0,n|0));
@@ -40,7 +41,7 @@ function hubLines(card,s,o){const T=TN();if(!T||!s?.plot||!s?.base?.tier)return;
  const fresh=unseen(s).filter(x=>x.by==='away');
  if(fresh.length){const x=fresh[0],G=genOf(x.g),row=el('div','cq-town-row cq-town-raided cq-town-'+x.o,null,box);
   el('p','cq-town-head','RAIDED WHILE AWAY · '+OUT[x.o]+(fresh.length>1?' · +'+(fresh.length-1)+' MORE':''),row);
-  el('small','',(G?G.name+' '+stars(G.stars)+' · ':'')+'LEVEL '+x.lv+' · '+x.k+'/'+x.sp+' RAIDERS DOWN'+(x.o==='held'&&x.cache?' · DEFENSE CACHE +160 CP':'')+(x.o!=='held'?' · '+(lossText(x)||'nothing taken')+' · 8 H SHIELD':'')+(x.dn?' · '+x.dn+' GARRISON PILOT'+(x.dn>1?'S':'')+' AT HALF HULL':''),row);
+  el('small','',(G?G.name+' '+stars(G.stars)+' · ':'')+'LEVEL '+x.lv+' · '+x.k+'/'+x.sp+' RAIDERS DOWN'+(x.o==='held'&&x.cache?' · DEFENSE CACHE '+cacheLine(TN().cacheOf?.(x)):'')+(x.o!=='held'?' · '+(lossText(x)||'nothing taken')+' · 8 H SHIELD':'')+(x.dn?' · '+x.dn+' GARRISON PILOT'+(x.dn>1?'S':'')+' AT HALF HULL':''),row);
   const btns=el('div','cq-town-btns',null,row);
   if(o.replay&&s.tw?.rp?.id===x.id&&s.tw.rp.by==='away')btns.append(button('REPLAY',()=>o.replay(),'cq-town-replay'));
   if(o.repair&&Object.keys(p.dmg||{}).length)btns.append(button('REPAIR ALL',()=>o.repair(),'cq-town-repair'));

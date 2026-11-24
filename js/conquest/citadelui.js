@@ -54,7 +54,7 @@ function hud(host,view,{el,button}){const C=CI(),B=view?.battle;if(!B?.cit||!C){
  if(c.stage===0)obj=T.gate==='shield'?'GATE GENERATORS '+live.filter(e=>e.cit==='gen').length+' / '+T.gens+' standing · the shield gate holds':'THE GATE '+fmtN(live.find(e=>e.cit==='gate')?.hp||0)+' / '+fmtN(C.CIT.gate.hp);
  else if(c.stage===1)obj=c.shipsMax?'DROPSHIPS '+c.ships+' / '+c.shipsMax+' · '+c.down+' SHOT DOWN · '+c.landed+' LANDED':'WAVES '+c.waves+' / '+c.wavesMax+' · '+live.filter(e=>e.wave&&!e.swarm&&!e.ship).length+' IN THE COURTYARD';
  else if(c.stage===2){const w=live.find(e=>e.warden);obj=w?T.warden.name+' '+stars(T.warden.stars)+' · '+(w.core>0?'SHIELD CORE '+fmtN(w.core)+' · ONLY YOUR TANK BREAKS IT':'CORE DOWN · EVERYONE FIRE')+' · HULL '+Math.round(100*w.hp/w.maxHp)+'%':'';}
- const clock=Math.max(0,600-(B.time||0)),gam=c.gam?.length?' · '+c.gam.map(k=>C.GAMBITS[k]?.name).join(' · '):'';
+ const clock=Math.max(0,C.CIT.limitS-(B.time||0)),gam=c.gam?.length?' · '+c.gam.map(k=>C.GAMBITS[k]?.name).join(' · '):'';
  h.children[0].textContent='CITADEL '+R[c.tier]+' · '+stage+' · '+mmss(clock)+gam;h.children[1].textContent=obj;
  const fresh=(B.time||0)-(c.say?.at||0)<4;h.children[2].textContent=c.say?.t||'';h.children[2].classList.toggle('fresh',fresh);
  const air=host.querySelector('#cq-strike');if(air){air.hidden=!(c.air>0)||B.state!=='active';const t='LDF AIRSTRIKE · '+c.air+(DESK()?' · X':'');if(air.textContent!==t)air.textContent=t;}

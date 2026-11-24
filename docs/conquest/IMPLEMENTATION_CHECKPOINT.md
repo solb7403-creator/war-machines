@@ -7316,20 +7316,38 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
 - **The assault is an Operation of the shared combat engine** (`ConquestCitadel.Assault extends ConquestCombat.Operation`), so the
   Battalion, projectiles, roles, the warden's doctrine patterns, telegraphs and the Worker's command replay are the existing ones.
   The three tiers are operations `citadel-1..3` in `ConquestCombat.operations` (family 'citadel', `battalion:true`).
-- **Where:** the Outer Works in the Inner Ring at (1590, 1080), east of the Eastern Rim (terrain unchanged; the ridge's crest is the
-  rampart line). The siege camp is 100 m west; launching from anywhere moves the tank there under fast travel's rule.
+- **Where:** the Outer Works in the Inner Ring at (1590, 1080), east of the Eastern Rim. **The plateau (lead's decision, measured):**
+  the rim there falls 100 m across the fortress (a 35° hillside); hill crests hid the gate generators from the assault and rocks boxed
+  the pilot in (the bot stalled at 81% hull with a generator 17 m away and out of sight). The whole Inner Ring is mountainous (40+ m of
+  relief under any 190 x 140 m footprint), so `js/conquest/world.js` now levels a plateau the Hive cut into the rim: flat at y -182 (the
+  footprint's mean height, the least earthworks) over x 1440-1668, z 1010-1150, blending into the untouched Moon over 40 m, no rocks
+  on it (`CPAD`, `padAt`, the scenery skip). Every other point keeps its exact height; nothing else stands there (checked: no other
+  operation, travel node, deposit, flora node or installation within x 1400-1740, z 940-1220). Client and Worker share it.
+  The siege camp is 130 m west of the centre (beyond the rampart guns' 96 m; the tiers' activation radius is 140 m); launching from
+  anywhere moves the tank there under fast travel's rule. `conquest-terraform` drives there from the spawn (its own check).
 - **Danger HARD for Act I** (measured): at VETERAN, Session 6C makes militia-armed allies freeze (MILITIA_VET); a day-20 regular's 9
   militia allies dealt 700 damage to the pilot's 4,229. Act I is the Outer Works of weeks 2-8: HARD keeps militia crews useful;
   Acts II-III can be VETERAN.
 - **The rampart blocks movement, not fire** (tanks fire over it; walls in shots would need a hook in every line-of-sight check);
   the closed gate / shield gate blocks the gap; units slide along a wall toward the gate (player: controls.js `B.slideOf`, allies:
   combat.js `this.moveOf`, Parasites: the Assault's `enemyAdvance`).
-- **Fixed stats:** every unit keeps its archetype's numbers in every tier; the wardens share one hull (6,000) and shield core (1,500,
-  re-formed at 2/3 and 1/3 hull after a 2.5 s tell, enraged below 40%); a tier differs by units, layout and tactics only.
-- **Tiers:** I generators (3 x 1,400) hold the shield gate, Swarm vents (4 every 14 s, cap 12); II a hard gate (2,600), 3 Spore
-  Mortars (a marked shell every 9 s each, on you or on a marked zone with someone in it), 5 forward cover bunkers (7 m: no shell
-  damage); III the hard gate, 4 dropships (each one wave; shot down before landing the wave is lost; Lancers' anti-air bonus).
-  PUSH: a 6-unit garrison, then 3 reinforcement waves (I-II) or the dropships (III); the portal surges twice unless suppressed.
+- **The siege window: 8 minutes** (lead's decision, measured). On open ground a careful pilot out-ranges every Parasite (the tank's
+  92 m against 43-54 m) and loses almost no hull, so hull alone cannot ask for the full Battalion; and the brief wants 6-8 minutes with
+  it. The assault therefore ends at 8:00 (`CIT.limitS` 480, the HUD's clock; the engine's 10-minute operation clock stays behind it):
+  a DPS check like a raid boss's enrage timer. Waves and dropships arrive when the courtyard is down to two (after 8 s / 10 s) or at
+  the latest 40 s / 30 s after the last, so a stronger force really is faster (on fixed timers 7 and 9 allies took the same time).
+- **Fixed stats** (every unit keeps one set of numbers in every tier; a tier differs by units, layout and tactics): the wardens
+  18,500 hull and a 2,800 shield core (re-formed at 2/3 and 1/3 after a 2.5 s tell, enraged below 40%), calling two escorts (raider +
+  breacher) every 30 s while at most 4 escorts live; the gate generators 6,000 (tier I only), the hard gate 15,000 (II-III), the
+  Spore Mortar 600, the dropship 700. **The rampart gun** (new archetype `bastion` in combat.js, one line): hull 1,000, 9 damage a
+  second, range 96 m: it out-ranges a tank, so the guns come first (flank them, the research's lesson 2); it fires at the Battalion's
+  nearest threat (the engine's own `threat()`), so allies draw part of its fire.
+- **Tiers (each one power step of the profiles' kits; measured with `dev/tools/citadel-pace.mjs`):** I Breach Point: 4 guns, 3
+  generators drop the shield gate, Swarm vents (4 every 14 s, at most 10), 6-unit garrison, 8 waves of 6 (raider x3, breacher x2,
+  sentinel): the full Battalion's step. II Iron Rain: 4 guns, the hard gate, 3 Spore Mortars (a marked shell every 9 s each), 5 forward
+  cover bunkers (7 m: no shell damage), 3 marked zones, 15 heavier waves of 6 (raider x2, sentinel x2, breacher, fire coordinator):
+  the rare gear step. III The Carrier Deck: 4 guns, the hard gate, 2 mortars, 2 bunkers, 16 dropships (each lands that heavier wave
+  unless shot down; Lancers' anti-air bonus): the hardest Act I fight on the same step (see Pacing below).
 - **Wardens:** the Citadel's own (GATEWARDEN SKORVA ambush, SPOREMASTER VORN artillery, DECK-ADMIRAL THRAXA carrier, 3 stars), not
   in the war's general pool (the war's picks, seeded streams and town attackers stay unchanged; a warden falls with its tier).
 - **Siege prep:** aa = any ANTI-AIR BATTERY KNOCKOUT raid won (one LDF airstrike: 650 to everything within 11 m after 2 s; never a
