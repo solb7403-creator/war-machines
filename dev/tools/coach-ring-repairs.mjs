@@ -15,7 +15,7 @@
 import {spawn} from 'node:child_process';import {writeFileSync,mkdirSync} from 'node:fs';import {fileURLToPath} from 'node:url';
 const arg=(k,d)=>{const i=process.argv.indexOf(k);return i>0?process.argv[i+1]:d;},SEED=k=>(1000+k)*7919;
 if(process.argv.includes('--one')){const M=await import('./fortress-model.mjs'),{CONQUEST}=await import('../../worker/src/sim.gen.js'),SITES7=CONQUEST.Plot.SITE_IDS,v=JSON.parse(arg('--one','{}')),out=[];
- for(let k=Number(v.from);k<Number(v.to);k++){const r=M.ladderRun(SEED(k),{raids:v.raids!==false,coach:v.coach==='single'?'single':!!v.coach,repairX:v.x??1,cacheX:v.cx??1,site:v.site||(v.sites?SITES7[k%7]:'crater')});out.push({k,cc10:r.cc10,cc5:r.hit.CC5??null,cc4:r.hit.CC4??null,rep:r.repair,raids:r.raids,ring:r.ring});}
+ for(let k=Number(v.from);k<Number(v.to);k++){const r=M.ladderRun(SEED(k),{raids:v.raids!==false,coach:v.coach==='single'?'single':!!v.coach,repairX:v.x??1,cacheX:v.cx??null,site:v.site||(v.sites?SITES7[k%7]:'crater')});out.push({k,cc10:r.cc10,cc5:r.hit.CC5??null,cc4:r.hit.CC4??null,rep:r.repair,raids:r.raids,ring:r.ring});}
  process.stdout.write(JSON.stringify(out)+'\n');}
 else{const me=fileURLToPath(import.meta.url),pilots=Number(arg('--pilots',101)),par=Math.max(1,Math.min(8,Number(arg('--par',4)))),chunk=Math.ceil(pilots/par);
  const VARIANTS=[['noRaids',{raids:false}],['undefended',{}],['coached',{coach:true}],['one ring by hand',{coach:'single'}],['one ring x0.5',{coach:'single',x:.5}],['one ring x0.25',{coach:'single',x:.25}],['coached, cache x0.5',{coach:true,cx:.5}],['coached, cache x0',{coach:true,cx:0}],

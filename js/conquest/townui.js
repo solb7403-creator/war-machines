@@ -14,6 +14,7 @@
 (function(root){
 'use strict';
 const TN=()=>root.ConquestTown,WR=()=>root.ConquestWar,P=()=>root.ConquestPlot,RD=()=>root.ConquestRaid,BT=()=>root.ConquestBattalion,AL=()=>root.ConquestAlerts;
+const cacheLine=c=>c?[['cp','CP'],['alloy','ALLOY'],['biomass','BIOMASS'],['helium','HE-3']].filter(([k])=>c[k]>0).map(([k,n])=>'+'+c[k]+' '+n).join(' · '):'';   // Session 7B STEP 3: what that held raid paid
 const pad=n=>String(n).padStart(2,'0');
 function t2(ms){const v=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(v/3600),m=Math.floor(v%3600/60),s=v%60;return h?h+':'+pad(m)+':'+pad(s):m+':'+pad(s);}
 const stars=n=>'★'.repeat(Math.max(0,n|0));
@@ -30,7 +31,7 @@ function hubLines(card,s,o){const T=TN();if(!T||!s?.plot||!s?.base?.tier)return;
  const box=el('div','cq-town',null,card);box.setAttribute('aria-label','Town attacks');
  if(s.td?.active){el('p','cq-town-live','⚔ DEFENDING YOUR TOWN · '+t2(now-(s.td.t0||now))+' IN',box);if(o.defend)box.append(button('RETURN TO THE FIGHT',()=>o.defend(s.td.id),'cq-town-go'));return;}
  const open=T.defendable(tw,now).sort((a,b)=>(a.lc||a.l*Tk)-(b.lc||b.l*Tk));
- for(const e of open.slice(0,2)){const G=genOf(e.g),lc=!!(e.lc&&e.lc>now),left=(lc?e.lc:e.l*Tk)-now;let lv=0;try{lv=T.strength(s.war,e,{now,tiers:0}).level;}catch(_){}
+ for(const e of open.slice(0,2)){const G=genOf(e.g),lc=!!(e.lc&&e.lc>now),left=(lc?e.lc:e.l*Tk)-now;let lv=0;try{lv=T.strength(s.war,e,{now,tiers:root.ConquestCitadel?.tiersOf(s)||0}).level;}catch(_){}
   const row=el('div','cq-town-row cq-town-incoming'+(lc?' cq-town-lc':''),null,box);
   el('p','cq-town-head',(lc?'⚠ RAID INCOMING · DEFEND? ':'⚠ RAID INCOMING · LANDS IN ')+t2(left),row);
   el('small','',(G?G.name+' '+stars(G.stars)+' · ':'')+'RAID LEVEL '+lv+(sideOf(s,e)?' · MAIN FORCE FROM THE '+sideOf(s,e):'')+(e.go?' · GRAND OFFENSIVE TARGET':'')+(e.first?' · YOUR FIRST RAID: a scouting party':'')+(T.seOf?.(lv)?' · HOLD IT IN PERSON: +'+T.seOf(lv)+' SELENITE':''),row);   /* Session 7T-P decision 2 */
@@ -40,7 +41,7 @@ function hubLines(card,s,o){const T=TN();if(!T||!s?.plot||!s?.base?.tier)return;
  const fresh=unseen(s).filter(x=>x.by==='away');
  if(fresh.length){const x=fresh[0],G=genOf(x.g),row=el('div','cq-town-row cq-town-raided cq-town-'+x.o,null,box);
   el('p','cq-town-head','RAIDED WHILE AWAY · '+OUT[x.o]+(fresh.length>1?' · +'+(fresh.length-1)+' MORE':''),row);
-  el('small','',(G?G.name+' '+stars(G.stars)+' · ':'')+'LEVEL '+x.lv+' · '+x.k+'/'+x.sp+' RAIDERS DOWN'+(x.o==='held'&&x.cache?' · DEFENSE CACHE +160 CP':'')+(x.o!=='held'?' · '+(lossText(x)||'nothing taken')+' · 8 H SHIELD':'')+(x.dn?' · '+x.dn+' GARRISON PILOT'+(x.dn>1?'S':'')+' AT HALF HULL':''),row);
+  el('small','',(G?G.name+' '+stars(G.stars)+' · ':'')+'LEVEL '+x.lv+' · '+x.k+'/'+x.sp+' RAIDERS DOWN'+(x.o==='held'&&x.cache?' · DEFENSE CACHE '+cacheLine(TN().cacheOf?.(x)):'')+(x.o!=='held'?' · '+(lossText(x)||'nothing taken')+' · 8 H SHIELD':'')+(x.dn?' · '+x.dn+' GARRISON PILOT'+(x.dn>1?'S':'')+' AT HALF HULL':''),row);
   const btns=el('div','cq-town-btns',null,row);
   if(o.replay&&s.tw?.rp?.id===x.id&&s.tw.rp.by==='away')btns.append(button('REPLAY',()=>o.replay(),'cq-town-replay'));
   if(o.repair&&Object.keys(p.dmg||{}).length)btns.append(button('REPAIR ALL',()=>o.repair(),'cq-town-repair'));
@@ -74,7 +75,7 @@ let LC=null;
 function lastChance(panel,s,o){const T=TN(),now=Date.now();const e=T&&s?.tw?(s.tw.ev||[]).find(x=>x.lc&&x.lc>now&&!x.tr):null;
  if(!e||s.td?.active||o.skip?.has(e.id)){if(LC){LC.d.remove();LC=null;}return;}
  const {el,button}=o;if(!LC||LC.id!==e.id){if(LC)LC.d.remove();const d=el('section','cq-dialog cq-town-lastchance',null,panel);d.setAttribute('role','alertdialog');d.setAttribute('aria-label','Raid incoming: defend your town?');
-  const G=genOf(e.g);let lv=0;try{lv=T.strength(s.war,e,{now,tiers:0}).level;}catch(_){}const se=T.seOf?.(lv)||0;el('p','cq-kicker','YOUR TOWN',d);el('h2','','RAID INCOMING · DEFEND?',d);const clock=el('p','cq-town-lc-clock','',d);el('p','',(G?G.name+' '+stars(G.stars)+' · ':'')+'the attack is landing now. Fight beside your turrets and garrison: the better of your fight and theirs counts.'+(se?' Hold it in person: +'+se+' SELENITE.':''),d);   // Session 7T-P (review note): the cap-level Selenite at the decision point
+  const G=genOf(e.g);let lv=0;try{lv=T.strength(s.war,e,{now,tiers:root.ConquestCitadel?.tiersOf(s)||0}).level;}catch(_){}const se=T.seOf?.(lv)||0;el('p','cq-kicker','YOUR TOWN',d);el('h2','','RAID INCOMING · DEFEND?',d);const clock=el('p','cq-town-lc-clock','',d);el('p','',(G?G.name+' '+stars(G.stars)+' · ':'')+'the attack is landing now. Fight beside your turrets and garrison: the better of your fight and theirs counts.'+(se?' Hold it in person: +'+se+' SELENITE.':''),d);   // Session 7T-P (review note): the cap-level Selenite at the decision point
   const row=el('div','cq-town-btns',null,d);const go=button('DEFEND · ONE ATTEMPT',()=>{o.act?.('town-defend',{id:e.id});},'cq-town-defend');row.append(go);row.append(button('LET THE TOWN FIGHT',()=>{o.skip?.add(e.id);d.remove();LC=null;},'cq-town-skip'));
   LC={id:e.id,d,clock};try{go.focus({preventScroll:true});}catch(_){}}
  LC.clock.textContent=t2(e.lc-now)+' LEFT';}

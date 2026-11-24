@@ -23,19 +23,36 @@ async def swipe(page,sel,up=True):   # a real finger (as conquest-plot-ui.py): t
  for k in range(1,13):
   await cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':sx,'y':max(top,min(bot,sy+k*d))}]});await page.wait_for_timeout(16)
  await cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});await page.wait_for_timeout(250)
+async def geo(loc,scroller):
+ """the element's box and its own scroller's box in one read. The hub rebuilds its cards every second (js/conquest/hub.js status:
+ replaceChildren) and the town sheet rebuilds on its own (plotview.js: sh.replaceChildren), so separate reads could measure an element
+ that had just been replaced (no box) or another scroller (Session 7B CI: 'not reachable' with the button on screen). A replaced element
+ is read again; one that stays hidden still has no box."""
+ for _ in range(10):
+  g=await loc.evaluate("(e,s)=>{if(!e.isConnected)return null;const r=e.getBoundingClientRect();if(!r.width&&!r.height)return null;const c=e.closest(s),q=c&&c.getBoundingClientRect();return {bb:{x:r.x,y:r.y,width:r.width,height:r.height},sb:q?{x:q.x,y:q.y,width:q.width,height:q.height}:null}}",scroller)
+  if g:return g
+  await loc.page.wait_for_timeout(100)
+ return None
+async def box(loc):
+ """the element's box, read again while the element is being replaced (see geo); None only if it stays hidden"""
+ for _ in range(10):
+  bb=await loc.bounding_box()
+  if bb:return bb
+  await loc.page.wait_for_timeout(100)
+ return None
 async def reach(page,loc,scroller,touch,h):
  """the element is on screen inside its scroller's visible box (never under a fixed bar) after the pilot scrolls (a real swipe on touch,
  the wheel with a mouse); an element outside the scroller (a fixed bar's button) must simply be on screen; returns its box"""
  inside=await loc.evaluate('(e,s)=>!!e.closest(s)',scroller)
  for _ in range(40):
-  bb=await loc.bounding_box();sb=await page.locator(scroller).first.bounding_box() if inside else None
+  g=await geo(loc,scroller);bb=g['bb'] if g else None;sb=g['sb'] if g and inside else None
   top=max(0,sb['y']) if sb else 0;bot=min(h,sb['y']+sb['height']) if sb else h
   if bb and bb['y']>=top-1 and bb['y']+bb['height']<=bot+1:return bb
   if not inside:raise AssertionError('a fixed control off screen: '+(await loc.inner_text())[:60]+' '+str(bb))
   down=not bb or bb['y']+bb['height']>bot
   if touch:await swipe(page,scroller,down)
   else:
-   sb=await page.locator(scroller).first.bounding_box();await page.mouse.move(sb['x']+sb['width']/2,max(sb['y'],0)+min(max(sb['height'],40)-10,200));await page.mouse.wheel(0,260 if down else -260);await page.wait_for_timeout(150)
+   sb=sb or await page.locator(scroller).first.bounding_box();await page.mouse.move(sb['x']+sb['width']/2,max(sb['y'],0)+min(max(sb['height'],40)-10,200));await page.mouse.wheel(0,260 if down else -260);await page.wait_for_timeout(150)
  raise AssertionError('not reachable by scrolling: '+(await loc.inner_text())[:60]+' '+str(await loc.bounding_box())+' scroller '+scroller)
 async def press(page,loc,touch):
  if touch:await loc.tap()
@@ -84,7 +101,7 @@ async def main():
     # the hub's first card: WELCOME BACK, PILOT · +1 REPAIR KIT, what the return's day 3 brings; on screen without scrolling
     wc=page.locator('.cq-hub-welcome');await wc.wait_for(timeout=20000);wt=await wc.inner_text();assert 'WELCOME BACK, PILOT' in wt and '+1 REPAIR KIT' in wt and 'DAY 3 brings a SCANNER CHARGE' in wt,wt
     first=await page.evaluate("(()=>{const c=document.querySelector('.cq-hub-welcome');return c&&c.parentElement.querySelector('.cq-hub-card')===c;})()");assert first,'the welcome card comes first'
-    await reach(page,wc,'.cq-hub-scroll',mobile,h);bb=await wc.bounding_box();assert bb['x']>=0 and bb['x']+bb['width']<=w+1,('the card fits the width',bb)
+    await reach(page,wc,'.cq-hub-scroll',mobile,h);bb=await box(wc);assert bb['x']>=0 and bb['x']+bb['width']<=w+1,('the card fits the width',bb)
     await page.screenshot(path=str(OUT/f'welcome-back-{w}x{h}.png'))
     # ... and the LIVE EVENTS streak line says it too (reached by scrolling the hub)
     card=page.locator('.cq-hub-card',has=page.locator('.cq-hub-streak'));new=card.locator('.cq-hub-streak-new.cq-welcome')
@@ -94,7 +111,7 @@ async def main():
     # ---- 1b. back after 15 days, before the first win or harvest: the card says what playing today brings back (review B3) ----
     ctx,page,errors=await open_page(w,h,mobile,{'welcome':'pending','baseFunds':True})
     wc=page.locator('.cq-hub-welcome');await wc.wait_for(timeout=60000);wt=await wc.inner_text();assert 'WELCOME BACK, PILOT' in wt and 'YOUR KITS ARE WAITING' in wt and 'day-1 REPAIR KIT comes back' in wt,wt
-    await reach(page,wc,'.cq-hub-scroll',mobile,h);bb=await wc.bounding_box();assert bb['x']>=0 and bb['x']+bb['width']<=w+1,('the card fits the width',bb)
+    await reach(page,wc,'.cq-hub-scroll',mobile,h);bb=await box(wc);assert bb['x']>=0 and bb['x']+bb['width']<=w+1,('the card fits the width',bb)
     lt=await page.locator('.cq-hub-streak').first.inner_text();assert 'WELCOME BACK · DAY 1: REPAIR KIT' in lt,lt
     st=await inspect();assert st['inv']['it']['repair']==2,('nothing granted before the first win',st['inv'])
     await page.screenshot(path=str(OUT/f'welcome-pending-{w}x{h}.png'));r['pending']=lt;assert not errors,errors[:3];await close_ctx(ctx)

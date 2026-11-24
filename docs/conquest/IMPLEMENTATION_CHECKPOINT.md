@@ -7289,7 +7289,225 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   below). Local: `node dev/tests/auto-release.mjs` 257 PASS, `owner-rules` 47 PASS, `conquest-session-032.py --engine chromium` PASS
   (4 sizes; the three cleanup readings 117/117/117 geometries with chunks 25 = wanted 25), `conquest-living-war.py --engine chromium
   --quality high` running. WebKit cannot be installed in this container (its download is blocked): CI runs it.
-- **Next:** open the STEP 1 PR, merge it myself (merge commit), restart the branch from main, then STEP 2.
+- **STEP 1: MERGED** as #154 (merge commit `43f1378`, by me at 08:16 UTC with every check green, as the brief directs). Its WebKit job had
+  been cancelled twice by the 35-minute job limit while the browser engine installed (23.5 and 28+ minutes on Nov 24; 2-10 on Nov 23);
+  `fd47d4d` gave the transmission job 60 minutes (no test changed). The merge started main's push workflows (owner-rules, equipment
+  balance, lab UI, the Graphify index, GitHub Pages); the new Auto-release workflow's first live run was a clean no-op (no labelled PR).
+- **STEP 2 + 3: draft PR #155** on `claude/citadel-act-i-logic-jpnnz3` (the branch restarted from main `43f1378`, the local work
+  cherry-picked onto it unchanged). Subscribed to its CI.
+- **Status (Nov 24, 12:40 UTC):** STEP 2 built, reviewed (two rounds) and green on CI; **STEP 3 shipped by owner decision (Nov 24):**
+  a held raid nobody fought pays the cache without its CP (`ConquestTown.TOWN.away`: 15 alloy, 10 biomass, 2 He-3), and
+  conquest-fortress guard (f) checks the coached CC10 median (and the seven sites') inside the Session 6 band 25.9-31.7 (commit
+  `9ba960c`; "STEP 3" below). #155 is ready; its `auto-release` label was **removed at 12:34 UTC** so it would not merge without STEP 3.
+  The re-runs with everything on all PASS (numbers under "STEP 3": "Owner decision: the re-run"). **Next:** CI green on the final head;
+  put the `auto-release` label back on #155; verify the merge, the Worker and Pages deploy; the docs-only PR (ROADMAP row 7B + release
+  record); the final report with every PROPOSAL.
+- **Review round 1 (independent reviewers on 1258a6a):** payout reviewer: exactly once / outside the cap / no replay or forge all PASS;
+  fixed its findings: a reset or restored Conquest record could lose a later tier's bounty (eco.js pays bounties in entries at or
+  below the watermark, once by `S.cbty`; conquest-airdrop.js `acknowledge` numbers new entries past the account's watermark), ids past
+  the live tiers pay 0 (`CIT_LIVE` in rules.js, both sides), the HUD's "AIRDROP TODAY" counts capped points only, a real end-to-end
+  test (`dev/tests/wtest/conquest-citadel-payout.mjs`, 19 checks: replay, two tabs, the account down, the cap reached, the hourly
+  limit, a reset record, cit4-9, a dev record; in the CI `citadel` job). Reviewer A: fixed a shield-core bypass (siege splash hit the
+  warden's hull while its core held: combat.js splash now meets the core first, allies never), PORTAL STORM (did nothing in a Throne
+  Run; now four surges), the dropship hook (real now: `ConquestCitadel.dropshipSpec(e)` in 5E-2d2's `flight(spec)` format, `hitAt`
+  recorded when shot down, citadelview plays the flight's animation when dropship.js is loaded; position and hit box stay the
+  assault's), the "held in person" loophole, the pacing test (measured windows, 6-8 minutes for every tier's boundary clears), the
+  fortress-model comment that hid a declaration, the stale research note; STEP 3 conflict recorded (above). Not changed: the card's
+  bounty line after a server-side record reset (cosmetic; the account pays each tier once regardless).
+- **Review round 1, reviewer B (on 1258a6a; its game code identical at 7e28155):** PASS for the tiers, the opening, the first clear and
+  its bounty, the tiers in war and town, the Throne Run, the cutscenes, payments off. Its FAILs and what was done: (1) conquest-fortress
+  threw at 1258a6a (the swallowed declaration, fixed in 7e28155) and fails (f) with "without its CP" (27.8 against 26.8): that is the
+  STEP 3 conflict above; the shipped rule stays the 7T whole cache, under which (f) passes (20.8 against 26.8 on its 21 seeds). Its
+  suggestion to assert the CC10 band with town attacks on was not taken: under the shipped rule the band is missed (20.8 / 22.8, the
+  STEP 3 table), which is the owner's decision; the assertion belongs with that choice. (2) Tapping DEFEND and leaving paid the whole
+  cache: fixed (`live.fought`, as for reviewer A). (3) The siege splash past the shield core: fixed (as for A). (4) Pacing: the final
+  `citadel-pace.json` is committed (05e87a5); `conquest-citadel-pace` asserts measured boundary days and every tier's 6-8 minutes; its
+  window checks follow from those asserted days and the 7-day rule (they fail if either changes); the heavy player's tier III (24
+  against the plan's about 32) is reported. (5) Evidence: the browser test timed the reveal from the tap, and 1920x1080 in software GL
+  on a busy machine streamed the world for minutes: the reveal's wait now starts once the world has streamed (`view.pending` 0, as
+  app.js waits); on a computer every button is pressed by the mouse and the keyboard by turns (a real click, then focus + Enter), the
+  airstrike by a click at 1920x1080 and the X key at 1366x768, the first reveal skipped by Escape and the Throne Run's by a click on
+  SKIP; the captures are re-taken at the final head. The website build (web/play.html, web/boot.js) gets a Citadel check in
+  `conquest-desktop-keys.py` (the War Map's card by mouse at 1440x900 and 420x700: CITADEL I, LAUNCH shut until FRONT is held).
+  (6) This section is current. (7) The dropship hook: done (as for A).
+- **CI on `05e87a5` (before the round-1 push):** `fortress` failed (f) with the cache without its CP (27.8 against 26.8: expected; the
+  7T whole cache is back in `1f04d55`); the `citadel` browser job read the reveal before its first caption was written (the caption
+  waited for the first animation frame, late on a slow runner: the text was only "SKIP"): the reveal now writes its first shot's
+  words and camera at once (`js/conquest/cutscene.js`), so a slow phone never shows an empty card either; `conquest`'s portrait
+  journey timed out in `conquest-session6-loot.py` waiting 90 s for the world at 1366x768 (a test this session does not touch).
+  Measured here at the same spawn and size, 3 runs each: the world streams in 62-64 s on main and 64-68 s on this branch with the
+  same draw calls (126-129) and triangles (278 K), the branch runs measured while a reviewer's tests shared the machine; no
+  streaming regression. (That test's long press on SHIELD fails in this container on main too.)
+- **Review round 2 (a fresh reviewer, on `1f04d55`):** all nine round-1 fixes verified FIXED in the code with its own probes (the core
+  under splash, `live.fought`, a late bounty paying once, PORTAL STORM's four surges, the dropship spec fed into 5E-2d2's real
+  `flight()` from its branch, the re-fortification on the real reducers, the siege window's loss, the guards (no line comment hides
+  code in the 43 changed scripts), the browser evidence). Its new findings, all fixed: the browser test now proves what played (the
+  reveal records its shot count: 4 on the first attempt, the short 2 on the Throne Run; the client asks `ConquestCitadel.cutOf`
+  instead of its own rule), that the Citadel fight exists while the reveal plays, and the loss's cause (the Worker's settlement
+  `why`, and the loss card, which now says why the assault failed: the siege window closed, the War Machine disabled, a withdrawal);
+  `conquest-away-raids` pins the whole cache (160 CP, 15 alloy, 10 biomass, 2 He-3) and tells `TOWN.away` from `TOWN.cache` by
+  identity; a dropship's flight tilt is applied after view.js's ground orientation, which overwrote it (dormant until dropship.js
+  loads). Not changed: the result card's bounty line after a server-side record reset (cosmetic; recorded in round 1).
+- **CI on `fc7d72d`:** the phone sizes passed (the reveal fix holds); at 1366x768 the X key's airstrike never reached the fight. A
+  real bug on slow devices: the other abilities latch at keydown (Session 5D: "a tap shorter than a frame still fires"), the
+  airstrike did not, so a quick X tap between two frames was lost (CI's software GL runs a few frames a second). `js/conquest/view.js`
+  now latches X like F, R, C and Shift (`KeyX:'strike'`, and the per-frame edge list). The phone's LDF AIRSTRIKE button was never
+  affected (it sets `pendingAbilities.strike`, kept until the next frame).
+- **CI on `5ca0dd9`:** every job green except two in tests this session did not write. `transmission (webkit)` hit a WebKit renderer
+  crash in `conquest-session-033.py` and passed on its re-run. `town-ui` failed three times, each in a different place (7T-P's
+  `conquest-town-proposals.py`: "GO TO WALLS not reachable" with the button on screen, then a welcome card read with no box right after
+  it was on screen; 7T's `conquest-town-ui.py`: a 240 s wait for the town replay). Root cause of the 7T-P failures: the hub rebuilds
+  every card each second (`hub.js` `status`: `replaceChildren`) and the town sheet rebuilds on its own (`plotview.js`), while the test
+  read an element and its scroller in separate steps, so a read could land on a replaced element (no box) or on another scroller.
+  Measured here: the hub's rebuild takes 1 ms on main and on this branch; idle reads find the card 80 of 80 times on both trees; the
+  test passed on main and failed once here at 1920x1080, as on CI. Fixed in the test, no assertion changed: `geo()` reads the element
+  and its own scroller in one step, and a just-replaced element is read again (`box()`). Passes at all five sizes.
+- **STEP 2 (first build, now on the PR branch):** `js/conquest/citadel.js` (rules, tiers, record, prep, Throne Run, the Assault class),
+  `worker/src/conquest-citadel.js` (launch, prep, settlement, bounty), hooks: combat.js (archetypes swarm / mortar / dropship /
+  structure, the 3 operations `citadel-1..3` family 'citadel' danger HARD, fieldMissionIds excludes them, `this.moveOf` in friendStep,
+  Lancer air bonus on `t.ship`, baseYield `cpb`), plot.js rates `cpb`, controls.js (`B.slideOf`, `input.strike` -> `B.callStrike`,
+  command/validated `strike`), conquest-sim.js (hydrate, refreshState citadelSync, start-mission check/begin, victory citadelWon, raid
+  prep, defeat/retreat citadelLost, destroyed citadelDown: no wreck), session.js (apply builds the Assault), conquest-store.js COLD
+  (`cit`, `citRun`), rules.js (`CIT_BOUNTY`, `ecoBounty`), conquest-airdrop.js (`bounty()`, `e.bty`), eco.js creditConquest (bounty
+  once per account, outside the cap), the tiers in war ctx (conquest-war.js ctxOf, warmap.js ctxOf) and the town's five places
+  (conquest-town.js infoOf / settle default cit + live fights paid at `s.td.lv` / liveStart; townui.js hub preview + last chance).
+  `dev/tools/citadel-model.mjs`: the bot pilot + kits by profile/day (pacing). worker/build-sim.mjs bundles citadel.js.
+- **Built since:** the UI (War Map card, launch, prep rows, Throne Run + board, HUD, result and loss cards, cutscenes that hide the
+  HUD, stand-in views and hooks), the clear-time board (Worker doc + route), the tests (`conquest-citadel` 79, the payout wtest 19,
+  `conquest-citadel-pace`, the 5-size browser test), the plateau, the tuning, STEP 3's measurement, the docs (blueprint and
+  RESOURCE_ECONOMY bounty tables).
+
+### STEP 2 design (lead's decisions, with reasons)
+- **The assault is an Operation of the shared combat engine** (`ConquestCitadel.Assault extends ConquestCombat.Operation`), so the
+  Battalion, projectiles, roles, the warden's doctrine patterns, telegraphs and the Worker's command replay are the existing ones.
+  The three tiers are operations `citadel-1..3` in `ConquestCombat.operations` (family 'citadel', `battalion:true`).
+- **Where:** the Outer Works in the Inner Ring at (1590, 1080), east of the Eastern Rim. **The plateau (lead's decision, measured):**
+  the rim there falls 100 m across the fortress (a 35° hillside); hill crests hid the gate generators from the assault and rocks boxed
+  the pilot in (the bot stalled at 81% hull with a generator 17 m away and out of sight). The whole Inner Ring is mountainous (40+ m of
+  relief under any 190 x 140 m footprint), so `js/conquest/world.js` now levels a plateau the Hive cut into the rim: flat at y -182 (the
+  footprint's mean height, the least earthworks) over x 1440-1668, z 1010-1150, blending into the untouched Moon over 40 m, no rocks
+  on it (`CPAD`, `padAt`, the scenery skip). Every other point keeps its exact height; nothing else stands there (checked: no other
+  operation, travel node, deposit, flora node or installation within x 1400-1740, z 940-1220). Client and Worker share it.
+  The siege camp is 130 m west of the centre (beyond the rampart guns' 96 m; the tiers' activation radius is 140 m); launching from
+  anywhere moves the tank there under fast travel's rule. `conquest-terraform` drives there from the spawn (its own check).
+- **Danger HARD for Act I** (measured): at VETERAN, Session 6C makes militia-armed allies freeze (MILITIA_VET); a day-20 regular's 9
+  militia allies dealt 700 damage to the pilot's 4,229. Act I is the Outer Works of weeks 2-8: HARD keeps militia crews useful;
+  Acts II-III can be VETERAN.
+- **The rampart blocks movement, not fire** (tanks fire over it; walls in shots would need a hook in every line-of-sight check);
+  the closed gate / shield gate blocks the gap; units slide along a wall toward the gate (player: controls.js `B.slideOf`, allies:
+  combat.js `this.moveOf`, Parasites: the Assault's `enemyAdvance`).
+- **The siege window: 8 minutes** (lead's decision, measured). On open ground a careful pilot out-ranges every Parasite (the tank's
+  92 m against 43-54 m) and loses almost no hull, so hull alone cannot ask for the full Battalion; and the brief wants 6-8 minutes with
+  it. The assault therefore ends at 8:00 (`CIT.limitS` 480, the HUD's clock; the engine's 10-minute operation clock stays behind it):
+  a DPS check like a raid boss's enrage timer. Waves and dropships arrive when the courtyard is down to two (after 8 s / 10 s) or at
+  the latest 40 s / 30 s after the last, so a stronger force really is faster (on fixed timers 7 and 9 allies took the same time).
+- **Fixed stats** (every unit keeps one set of numbers in every tier; a tier differs by units, layout and tactics): the wardens
+  18,500 hull and a 2,800 shield core (re-formed at 2/3 and 1/3 after a 2.5 s tell, enraged below 40%), calling two escorts (raider +
+  breacher) every 30 s while at most 4 escorts live; the gate generators 6,000 (tier I only), the hard gate 15,000 (II-III), the
+  Spore Mortar 600, the dropship 700. **The rampart gun** (new archetype `bastion` in combat.js, one line): hull 1,000, 9 damage a
+  second, range 96 m: it out-ranges a tank, so the guns come first (flank them, the research's lesson 2); it fires at the Battalion's
+  nearest threat (the engine's own `threat()`), so allies draw part of its fire.
+- **Tiers (each one power step of the profiles' kits; measured with `dev/tools/citadel-pace.mjs`):** I Breach Point: 4 guns, 3
+  generators drop the shield gate, Swarm vents (4 every 14 s, at most 10), 6-unit garrison, 8 waves of 6 (raider x3, breacher x2,
+  sentinel): the full Battalion's step. II Iron Rain: 4 guns, the hard gate, 3 Spore Mortars (a marked shell every 9 s each), 5 forward
+  cover bunkers (7 m: no shell damage), 3 marked zones, 15 heavier waves of 6 (raider x2, sentinel x2, breacher, fire coordinator):
+  the rare gear step. III The Carrier Deck: 4 guns, the hard gate, 2 mortars, 2 bunkers, 16 dropships (each lands that heavier wave
+  unless shot down; Lancers' anti-air bonus): the hardest Act I fight on the same step (see Pacing below).
+- **Wardens:** the Citadel's own (GATEWARDEN SKORVA ambush, SPOREMASTER VORN artillery, DECK-ADMIRAL THRAXA carrier, 3 stars), not
+  in the war's general pool (the war's picks, seeded streams and town attackers stay unchanged; a warden falls with its tier).
+- **Siege prep:** aa = any ANTI-AIR BATTERY KNOCKOUT raid won (one LDF airstrike: 650 to everything within 11 m after 2 s; never a
+  shield core), cv = any ARMORED INTERCEPTION raid won (one fewer reinforcement wave / dropship), po = the war's portal suppression
+  (no portal surges); 48 h each; every prep a siege launches with is spent by that assault, won or lost (a Throne Run uses none).
+- **Loss:** nothing else is taken: a destroyed tank leaves no wreck and loses no cargo (the LDF tows it back at 25% hull); downed
+  allies return at half hull (the Battalion rule: repair).
+- **First clear:** the bounty (outbox `e.bty` -> the account's `ecoBounty`, once per bounty id per account, `ecoAward` free path:
+  outside the cap), production +5% a tier (`base.cpb` / `plot.cpb`), the warden's trophy (`s.cit.tro`), Retaliation (= tiers
+  cleared) +1, the next tier; the battle points (2,284 raw: 7 par minutes x 225 x 1.45) under the cap, replacing the held kills.
+- **Throne Run:** a cleared tier relaunched = that UTC week's Gambit pair (a bane + a boon, rotating over 6 weeks), no siege prep;
+  the first clear of the tier that week pays the full chest (the loot tables' `commander` roll with the warden's doctrine trophy row
+  + the raid `chest` roll), later ones the `chest` roll; battle points every clear; the clear time (the Worker's assault clock) for
+  the weekly board.
+
+
+### Pacing (brief: "validated with the real assault in the sim")
+Method: `dev/tools/citadel-model.mjs` drives the REAL assault (citadel.js through the Worker bundle, real commands) with a careful bot
+pilot (keeps outside each target's reach, breaks the rampart guns first, regroups at 30% hull for at most 20 s, dodges marked ground),
+on each profile's kit by day: the fortress model's gear schedule, the Hangar and roster from the economy model, the always-fielded
+pilot at the top rank and the rest at the rank the roster's pooled pilot-XP gives (`economy-model.mjs battalionModel().poolXp`), Role
+Cores by command chip day (Lancer, Breacher, Guardian first). `dev/tools/citadel-pace.mjs` finds each profile's first day that wins at
+least half of 4 seeded assaults; `dev/tests/conquest-citadel-pace.mjs` (CI job `citadel`) asserts the boundary days with 3 seeds.
+- **What the kits offer (measured):** three real power steps before day 60: the full Battalion (regular day 18, heavy 11, grinder 7),
+  rare gear (30 / 17 / 10) and the rank-9 force (48 / 26 / 14). Between them ranks and Role Cores add a few percent, which the assault
+  cannot tell apart: tier III at regular day 36 and day 48 cleared in the same times with the same ships downed.
+- **Tuning (each tier one step):** tier I takes the full Battalion (the regular's 7 allies on day 17 won 0 of 4, its 9 on day 18
+  won 4 of 4 in 6:34-7:07); tier II takes rare gear (common gear on day 26 won 0 of 3, rare on day 30 3 of 3 in 6:49-7:19); tier III is
+  the hardest fight on rare gear.
+- **The re-fortification (lead's decision, from this measurement):** with no kit step between rare and epic gear (day 150 for the
+  regular), tier III landed on the rare-gear day with tier II (regular 30, heavy 17, grinder 10: outside weeks 6-8 and week 3). After
+  each first clear the Hive re-fortifies the next tier for **7 days** (`CIT.refortMs`; the War Map's LAUNCH reads "the Hive re-fortifies
+  Citadel II: it opens in 6 d 23 h"; the Worker refuses earlier; Throne Runs of cleared tiers stay open meanwhile). It is the staggered
+  weekly unlock big raids use, it gives each tier a week of Throne Runs (one full chest a week) and siege prep, and it is legible.
+  **Final measurement** (`docs/conquest/session7b/citadel-pace.json`, 4 seeds a day, won at least half): tier I regular **day 15**
+  (2 of 4 with 7 allies; 0 of 4 on day 17, 4 of 4 from the full Battalion on day 18: weeks 2-3), grinder **6** (days 5-7), heavy **9**
+  (between them; planned about 10); tier II regular 30 (0 of 4 on common gear, day 27), grinder 13, heavy 17 (0 of 4 on day 16);
+  **tier III regular 37 (weeks 6-8), grinder 20 (week 3), heavy 24 (between them; fortress-model PROFILES.heavy plans about 32: the
+  heavy player has rare gear from day 17, so 7 days after its tier II is day 24).** Every target in the brief holds.
+- PROFILES.citadel in `dev/tools/fortress-model.mjs` (the town attacks' Retaliation schedule) stays the blueprint's plan (regular 17 /
+  49, heavy 10 / 32, grinder 6 / 21): the measured tier III is earlier for the regular (37) and the heavy (24); reported, not changed
+  (the fortress test keeps its planned inputs).
+- The bot is a careful pilot; a less precise player clears later. Siege prep (an airstrike, one fewer wave, no portal surges) makes
+  every tier easier and is not used by the bot.
+
+### Worker cost of an assault (measured, Node 22 in this container; not Cloudflare's own meter)
+The Worker replays every assault from the pilot's verified commands. A Citadel step costs 2.0 ms (tier I) to 2.4 ms (tier III) with
+nine allies, against 0.4-0.8 ms for a raid or a counterattack (most of it the shared engine's line-of-sight and steering checks:
+`blockedAt`, `raidSolidAt`, `rockSolid`). A 7-minute assault is about 8,400 steps: 17-20 s of CPU spread over its requests (about 45 ms
+a second of fight), inside Workers Paid's limits. PROPOSAL (performance, not gameplay): bounding-box fast paths in world.js's collision
+lookups (exact results) would cut roughly a fifth of every operation's replay cost.
+
+### STEP 3: the held-raid reward (owner, Nov 23), with every 7B change on
+Measured with `dev/tools/held-raid-cache.mjs` (`docs/conquest/session7b/held-raid-cache.json`): the walled 1-hour regular (the coach's
+ring) on the town-ladder guard's 101-pilot panel with town attacks on (fortress-model ladderRun on the real Worker reducers, every raid
+unfought), the Citadel tiers on the regular's pacing (production +5% a tier, Retaliation); and the 2-hour heavy player's late fortress
+(days 300 / 330 / 365, 8 raids a site and day, two seed sets).
+
+| Option (a held UNFOUGHT raid pays) | CC10 median | CC10 mean | In 25.9-31.7 | Heavy late fortress |
+| --- | --- | --- | --- | --- |
+| full cache (160 CP + 15 alloy + 10 biomass + 2 He-3) | 20.8 | 22.8 | no | 88.1% (85.7 / 90.5) |
+| half | 26.8 | 24.1 | no (mean) | 88.1% |
+| **without its CP (15 alloy + 10 biomass + 2 He-3)** | **27.8** | **26.5** | **yes** | **88.1%** |
+| none | 27.8 | 26.5 | yes | 88.1% |
+| (no town attacks) | 26.8 | 26.8 | yes | - |
+| (full cache, 7B off: 7T-P's number) | 20.8 | 22.7 | no | 88.1% |
+
+**The conflict (review round 1, reviewer A; measured):** the brief's other rule, "with every change on ... conquest-fortress passes,
+never loosen a test", has guard (f) (Session 7T-P: the coached town's CC10 median is no later than with no town attacks). On that
+test's own 21 seeds (no raids: 26.8): full cache 20.8 (7 sites 26.8) passes (f); half 26.8 / 26.8 passes (f); **without its CP 27.8 /
+27.8 fails (f)** (the walled regular reaches CC10 one day after a town with no raids); a 0.75 CP share (not an option) 26.8 / 26.8.
+So no option keeps every rule: without its CP keeps the band and fails (f); half keeps (f) and the band's median but not its mean
+(24.1); full keeps (f) and misses the band.
+**Lead's interim decision (before the owner's): nothing new shipped; the 7T rule stood (the whole cache).** A conflicted economy
+change is the owner's call ("prices, economy and airdrop points only as decided here").
+**Owner decision (Nov 24): ship "without its CP".** A held raid nobody fought pays 15 alloy, 10 biomass and 2 He-3, no CP
+(`ConquestTown.TOWN.away`); a raid really fought in person keeps the whole cache. conquest-fortress guard (f)'s CC10 check changes from
+"no later than with no town attacks" to "the coached CC10 median, and the seven sites', inside the Session 6 band (25.9-31.7)": its job
+is catching the REPAIR delay that doubled the time to CC10 (about 60 days undefended), which the band still catches; the owner decision
+is recorded in the test's comment. Re-run with everything on after the change: the held-raid tool, conquest-fortress,
+conquest-ladder-check, conquest-town-selenite, the town, cap and bounty suites (numbers under "Owner decision: the re-run" below).
+Also fixed on the way (review): a
+raid "held in person" now means really fought (`live.fought`; tapping DEFEND and leaving earned the whole cache), the log records it
+(`f`), `ConquestTown.cacheOf` reads it. Tests: `conquest-away-raids` 51, `conquest-town-selenite` 17 (DEFEND then leave), live
+defense 26.
+**Owner decision: the re-run (Nov 24, everything on, `9ba960c`).** `dev/tools/held-raid-cache.mjs` (101 pilots, 673 s): identical to
+the table above (full 20.8 / 22.8, half 26.8 / 24.1, **without its CP 27.8 / 26.5 in the band**, none 27.8 / 26.5, no town attacks
+26.8 / 26.8; the heavy player's late fortress 88.1% in every option; ship: noCP). `conquest-fortress` 15 PASS (1,015 s): (a) 50 / 50 at
+the cap, (b) 85 steps, (c) the regular 79% along the year, (d) the grinder 86% at day 330, (e) the heavy player 83% late with the
+cap-level Selenite and the regular within 4.8 points of 7T, **(f) the coached CC10 median day 27.8 (seven sites 27.8) inside the
+Session 6 band** (no town attacks 26.8, undefended 61.8; REPAIR 368,938 CP undefended against 660 coached).
+`conquest-ladder-check` PASS (101 pilots: CC5 5.8, CC10 median 26.8 / mean 26.8). `conquest-town-selenite` 17, `conquest-away-raids`
+51 (pins `TOWN.away` 0 CP / 15 / 10 / 2 and `TOWN.cache`), `conquest-live-defense` 27, `conquest-town` 94, `owner-rules` 48; the
+50,000 cap and each bounty once: `conquest-citadel` 79 and `wtest/conquest-citadel-payout` 19. All PASS.
+
 
 ### STEP 1: the auto-release workflow and two flaky tests (lead's decisions, with reasons)
 - **`.github/workflows/auto-release.yml` + `.github/scripts/auto-release.mjs`** (unit test `dev/tests/auto-release.mjs`, its own
@@ -7325,3 +7543,36 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   of the tank (a pilot's camera drag), then taps it; every assertion is unchanged (hp above 0 throughout, every live enemy killed,
   real taps, keys and lock).
 
+
+### Research: the best comparable sieges and raid bosses (before the Citadel was designed)
+One research agent, web search (wikipedia.org and wiki.warframe.com fetches were blocked). Lessons and what each changed here:
+1. **Generators drop the shield; split the objectives** (PlanetSide 2 Tech Plants: the shield falls only when both generators die;
+   Battlefield Rush: paired M-COMs a sector). -> Tier I: three gate generators on separate flanks power the shield gate.
+2. **Flank the guns** (World of Tanks Frontline: guns resist frontal fire, need 3 of 5). -> The outer guns are optional targets on the
+   rampart; the generators, not the guns, open the gate.
+3. **Prep removes one named, visible threat** (Mass Effect 2 suicide mission upgrades; XCOM 2 facilities; Helldivers 2 AA blocking
+   Eagle strikes). -> Each siege prep removes one authored piece and the assault shows it (the airstrike button, the missing wave, the
+   dead portal), as the blueprint says.
+4. **One player breaks the shield, the team does the damage** (Destiny's Templar/Aegis; Warframe Eidolon shields). -> The warden's
+   shield core: only your tank breaks it (combat.js `t.core`); while it is down the whole Battalion hits the hull.
+5. **Short, repeating damage windows** (Deep Rock Hiveguard, Destiny DPS phases). -> The core re-forms twice (at 2/3 and 1/3 hull) after a
+   tell: three breaks a fight.
+6. **The body shows the tells; telegraphs long enough to react** (Monster Hunter, telegraph design). -> Marked mortar zones 2.4 s ahead,
+   the warden's existing doctrine tells (pause, mark, launch), a 2.5 s tell before the core re-forms, enrage below 40%.
+7. **Allies must not be passive** (Space Marine 2 bots were made passive to keep the spotlight on the player and were criticised,
+   patch 3.0 eased it). -> Allies fight everything (swarm, guns, generators, mortars, dropships, the hull in its windows); only the
+   core is the pilot's.
+8. **Weekly caps still need a reason to replay** (Destiny 2 weekly loot lockouts; Deep Rock Deep Dives: one seed, paid once a week, best
+   time after). -> Throne Run: one full chest per tier per week, then the reduced chest, and a clear-time board.
+9. **Weekly modifiers apply to everyone and change tactics, not just stats** (WoW Mythic+ affixes; Diablo 4 sigils; Hades Pact rules).
+   -> Gambits are rule changes (no shield, an extra wave, the warden enraged from the start, a swarm tide, an open barrage, a portal
+   storm), the same pair for every pilot that week.
+10. **The server writes the times; boards are bracketed** (PlayFab: never post competitive scores from the client; weekly resets;
+    Diablo 3 brackets). -> The clear time is the Worker's own assault clock (sim time from verified commands), never the phone's; the
+    board is per tier and per week.
+11. **Cutscenes: skippable from the first frame, short on repeats** (Xbox accessibility: pausable cutscenes; Monster Hunter Wilds
+    hold-to-skip + gallery; Titanfall 2 boss name cards). -> Full reveal on a tier's first attempt, a short name-card version after,
+    SKIP from the first frame.
+Recommendations not taken (with reasons): no hard fail timer (the research's advice; the measured fights then needed one: the 8-minute
+siege window, a DPS check, see "The siege window" above); "spend only prep that fired" (the brief says a loss spends the used siege prep: every prep active at launch
+is used by that assault); a minimum Battalion retry after a loss (downed allies need repair, as the brief says).

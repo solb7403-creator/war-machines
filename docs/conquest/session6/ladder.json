@@ -27,7 +27,7 @@
  "withChainAndOrders": {
   "pilots": 101,
   "CC5": 5.8,
-  "CC10": 28.8,
+  "CC10": 26.8,
   "CC5range": [
    5,
    5.8
@@ -42,12 +42,12 @@
   },
   "mean": {
    "CC5": 5.8,
-   "CC10": 27.3
+   "CC10": 26.8
   },
   "p25": {
    "CC5": 5.8,
    "CC10": 26.8
   },
-  "ordersClaimed": 42
+  "ordersClaimed": 40
  }
 }

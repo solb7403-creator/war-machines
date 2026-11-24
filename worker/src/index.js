@@ -15,6 +15,7 @@ import { ownerGemEpic, ownerCheck } from "./owner.js";
 import {conquestSession,conquestInput,conquestAction,conquestEvent} from "./conquest.js";
 import {analyticsDays} from "./conquest-analytics.js";
 import {conquestVisit} from "./conquest-visit.js";
+import {conquestCitadelBoard} from "./conquest-citadel-board.js";   // Session 7B: the Throne Run clear-time board (read only)
 import {sendWarAlerts,reminderText} from "./conquest-alerts.js";
 import {vapidKeys} from "./webpush.js";
 export {WebSession};
@@ -689,6 +690,7 @@ const ROUTES = {
   "/api/conquest/action": conquestAction,
   "/api/conquest/an": conquestEvent,
   "/api/conquest/visit": conquestVisit,
+  "/api/conquest/citadel-board": conquestCitadelBoard,
   "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
@@ -733,7 +735,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/conquest/visit": 30, "/api/conquest/an": 12, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
+const PID_RL = { "/api/conquest/visit": 30, "/api/conquest/citadel-board": 30, "/api/conquest/an": 12, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)
@@ -769,7 +771,7 @@ export default {
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
       if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261123142107"},409),req);
+        return cors(json({error:"update",build:"20261124123529"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);

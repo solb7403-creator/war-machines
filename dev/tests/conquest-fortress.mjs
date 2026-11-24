@@ -72,12 +72,16 @@ let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;console.log('PASS '+m);};const
 // guard method: the audit's 60-minute regular on the real Worker reducers, every raid decided unfought, REPAIR paid when the town is
 // damaged; fortress-model.mjs ladderRun). 7T's undefended builder paid about 111,000 CP of REPAIR and took twice as long to CC10.
 // The 101-pilot panels and the PROPOSAL variants: dev/tools/coach-ring-repairs.mjs (docs/conquest/session7tp/coach-repairs.json).
-{const run=(o,n,sites)=>Array.from({length:n},(_,k)=>M.ladderRun((1001+k)*7919,{...o,site:sites?sites[k%sites.length]:'crater'})),med=a=>{const b=[...a].sort((x,y)=>x-y);return b[b.length>>1];},avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+// Owner decision (Session 7B STEP 3, Nov 24): a held raid nobody fought pays the cache without its CP (ConquestTown.TOWN.away), and the
+// CC10 check reads "the coached CC10 median, and the seven sites', inside the Session 6 band (25.9-31.7)" instead of "no later than with
+// no town attacks": its job is catching the REPAIR delay that doubled the time to CC10, which the band still catches (undefended: about
+// 60 days); without its CP the coached regular reaches CC10 about a day after a town with no raids, inside the band.
+{const BAND6=[25.9,31.7],inBand=x=>x>=BAND6[0]&&x<=BAND6[1],run=(o,n,sites)=>Array.from({length:n},(_,k)=>M.ladderRun((1001+k)*7919,{...o,site:sites?sites[k%sites.length]:'crater'})),med=a=>{const b=[...a].sort((x,y)=>x-y);return b[b.length>>1];},avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
  const N=Number(process.env.FORTRESS_PILOTS||21),none=run({raids:false},N),open=run({},N),coached=run({coach:true},N),all7=run({coach:true},N,sites);
  const cc=r=>r.map(x=>x.cc10??200),rep=r=>avg(r.map(x=>x.repair.cp));out.coach={pilots:N,noRaids:{CC10:med(cc(none))},undefended:{CC10:med(cc(open)),repairCP:Math.round(rep(open))},coached:{CC10:med(cc(coached)),repairCP:Math.round(rep(coached))},coached7:{CC10:med(cc(all7)),repairCP:Math.round(rep(all7))}};
  ok(coached.every(r=>r.ring.closedAt!==null&&r.ring.closedAt<=(r.hit.CC4??Infinity))&&all7.every(r=>r.ring.closedAt!==null&&r.ring.closedAt<=(r.hit.CC4??Infinity)),'(f) every coached pilot closes the first wall ring before CC4 ('+N+' on CRATER RIM, '+N+' across the seven sites, ICE BASIN by its sealed shore)');
  ok(rep(coached)<=.05*rep(open)&&rep(all7)<=.05*rep(open),'(f) REPAIR on the way to CC10 falls from '+Math.round(rep(open))+' CP (undefended) to '+Math.round(rep(coached))+' CP with the coach\'s ring ('+Math.round(rep(all7))+' CP across the seven sites)');
- ok(med(cc(coached))<=med(cc(none))&&med(cc(all7))<=med(cc(none)),'(f) CC10 is no longer delayed: median day '+med(cc(coached))+' coached (7 sites '+med(cc(all7))+') against '+med(cc(none))+' with no town attacks and '+med(cc(open))+' undefended');
- console.log('REPORT (f) the coached pilot reaches CC10 sooner than with no town attacks (median day '+med(cc(coached))+' against '+med(cc(none))+'): its town holds its raids and each held raid pays 7T\'s defense cache (PROPOSAL in Checkpoint 48)');}
+ ok(inBand(med(cc(coached)))&&inBand(med(cc(all7))),'(f) CC10 is no longer delayed: the coached median day '+med(cc(coached))+' (7 sites '+med(cc(all7))+') inside the Session 6 band '+BAND6.join('-')+' (no town attacks '+med(cc(none))+', undefended '+med(cc(open))+')');
+ console.log('REPORT (f) the coached pilot reaches CC10 on median day '+med(cc(coached))+' against '+med(cc(none))+' with no town attacks: a held raid nobody fought pays the cache without its CP (owner, Session 7B STEP 3)');}
 mkdirSync('docs/conquest/session7t',{recursive:true});writeFileSync('docs/conquest/session7t/fortress-model.json',JSON.stringify(out,null,1)+'\n');
 console.log('PASS the fortress (decision 4 a-d): '+pass+' checks');

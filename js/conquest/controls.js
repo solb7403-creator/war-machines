@@ -79,11 +79,12 @@ function advance(B,p,input,dt,exploration){
  const T=B.playerStats,mf=T.rm?B.modState():null;
  if(input.dash&&!B.dashState&&(mf?mfDashReady(T,mf,B.dashCd):B.dashCd<=0)){const l=Math.hypot(x,z),yaw=l>.2?Math.atan2(x,z):B.heading??B.turretYaw;B.dashState={t:values.dashTime,x:Math.sin(yaw),z:Math.cos(yaw)};B.dashCd=values.dashCooldown;if(mf){mfDash(T,mf,values.dashCooldown);if(T.rm.overdrive)B.dashCd=mf.dq>0?0:mf.dr;}}   // Overdrive: a charge left; Traction: the boost
  let left=dt,first=true;while(left>1e-8&&B.state==='active'&&B.playerHp>0){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed),B.dashState?.t??Infinity);left-=h;const old=p,speed=B.dashState?B.combatSpeed*values.dashSpeed:(exploration?B.combatSpeed*2:B.combatSpeed)*(mf?mfSpeed(T,mf):1);
- const q=W.advance(p,(B.dashState?.x??x)*speed*h,(B.dashState?.z??z)*speed*h);
+ const q0=W.advance(p,(B.dashState?.x??x)*speed*h,(B.dashState?.z??z)*speed*h),q=B.slideOf?B.slideOf(p,q0):q0;   // Session 7B: an operation may route the tank (the Citadel's rampart and gate)
  if(!baseBlocked(B,q)&&!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
  if(p!==old)B.heading=Math.atan2(p.x-old.x,p.z-old.z);
  const target=aim(B,p,input,h);
  if(first&&input.order&&B.squadOrder)B.squadOrder(input.order);   // Session 6C COMMAND: an order is an edge, decided where the lock stands now
+ if(first&&input.strike&&B.callStrike)B.callStrike(p);   // Session 7B: the LDF airstrike (Citadel siege prep), an edge like an order
  // SUPER is an edge: it acts once, on the first slice of the command it arrives in. No super charging: it starts one (the bar
  // is drawn from the battle clock, the same on the phone and on the Worker that replays the command). A bar sweeping: it stops
  // it. A command is STEP long, so the stop is judged at the middle of the step it arrived in (fair to an early and a late thumb)
@@ -99,10 +100,10 @@ function advance(B,p,input,dt,exploration){
 // normalized command the Worker replays, so reconciliation reproduces the prediction instead of correcting it.
 const STEP=.05;
 function command(c){let x=Number(c.x)||0,z=Number(c.z)||0;const l=Math.hypot(x,z);if(l>1){x/=l;z/=l;}const yaw=Number.isFinite(c.aimYaw)?c.aimYaw:0,pitch=Number.isFinite(c.aimPitch)?clamp(c.aimPitch,-.4,.5):0;
- const o={x,z,aimPitch:pitch||0,aimYaw:Math.atan2(Math.sin(yaw),Math.cos(yaw)),lockId:Number.isSafeInteger(c.lockId)&&c.lockId>=1&&c.lockId<=1e9?c.lockId:null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan};if(Number.isInteger(c.order)&&c.order>=1&&c.order<=5)o.order=c.order;return o;}   // order: Session 6C COMMAND (sent only when given)
+ const o={x,z,aimPitch:pitch||0,aimYaw:Math.atan2(Math.sin(yaw),Math.cos(yaw)),lockId:Number.isSafeInteger(c.lockId)&&c.lockId>=1&&c.lockId<=1e9?c.lockId:null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan};if(c.strike)o.strike=true;if(Number.isInteger(c.order)&&c.order>=1&&c.order<=5)o.order=c.order;return o;}   // order: Session 6C COMMAND (sent only when given)
 // The Worker's validateCommands mapping, verbatim. Predict and replay with validated(sent) so both sides compute bit-identical
 // steps (re-wrapping an angle is not always idempotent in floating point).
-function validated(c){return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan,order:c.order|0};}
+function validated(c){return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan,order:c.order|0,strike:!!c.strike};}
 // Presentation only: where the hull will be after a partial step with the current input. Never mutates the battle.
 function preview(B,p,input,dt,exploration){
  if(!(dt>0)||B.playerHp<=0||B.state!=='active')return p;const values=C.engineeringValues(B.playerStats,B.engineering);

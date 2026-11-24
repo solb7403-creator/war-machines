@@ -28,9 +28,14 @@ const TOWN=Object.freeze({
  // Center destroyed) 10% of the production store the Storage Depot does not protect plus 5% of the composite stock; BREACHED (a
  // building lost, the Command Center standing) 5% of that exposed store; HELD nothing
  loss:Object.freeze({fallen:Object.freeze({store:.10,cm:.05}),breached:Object.freeze({store:.05,cm:0}),held:Object.freeze({store:0,cm:0})}),
- // decision 5: a held unfought raid pays the existing defense cache (the town defense's CP and materials: ConquestCombat.operations
- // ['base-defense'].reward), counts toward the wall milestones (3 / 10 wins) and base-defender; no airdrop points
+ // decision 5: a held raid pays the existing defense cache (the town defense's CP and materials: ConquestCombat.operations
+ // ['base-defense'].reward; one nobody fought pays `away` below), counts toward the wall milestones (3 / 10 wins) and base-defender; no airdrop points
  cache:Object.freeze({cp:160,alloy:15,biomass:10,helium:2}),
+ // Session 7B STEP 3, owner decision (Nov 24): what a held raid nobody fought pays: the cache without its CP (a raid really fought in
+ // person keeps the whole cache above). Measured (dev/tools/held-raid-cache.mjs; Checkpoint 49 STEP 3): the first of the four options
+ // (full, half, without its CP, none) that keeps the walled regular's CC10 inside the Session 6 band (101 pilots: median 27.8, mean
+ // 26.5; the whole cache gave 20.8 / 22.8) and the heavy player's late fortress about 9 of 10 (88.1%)
+ away:Object.freeze({cp:0,alloy:15,biomass:10,helium:2}),
  // Session 7T-P decision 2 (owner, Nov 23): Selenite for the late fortress. A raid at the cap level (9) held in person (settled HELD and
  // really fought: the 675 defense points' own rule) drops n Selenite into the pilot's cargo (banked at the Refuge like every mineral).
  // The amount is the fortress model's (dev/tools/selenite-candidates.mjs, 56 raids a day on two seed sets). The owner's addendum (Nov 23)
@@ -68,7 +73,7 @@ function fresh(now){return {v:1,k:W().tickOf(now),n:0,ev:[],past:[],log:[],rp:nu
 function norm(t,now){if(!record(t)||t.v!==1){const f=fresh(now);if(record(t))f.ws=Math.min(10,int(t.ws));return f;}const G=W().GEN;   // a Peace Ward found before the first town attack is kept
  const ev=list(t.ev).filter(e=>typeof e.id==='string'&&/^(t\d{1,6}|go\d{1,9})$/.test(e.id)).map(e=>({id:e.id,a:int(e.a),l:int(e.l),g:G[e.g]?e.g:'skaal',ln:int(e.ln)%8,...(e.go?{go:1}:{}),...(e.lc?{lc:int(e.lc)}:{}),...(e.tr?{tr:int(e.tr)}:{}),...(e.sd!==undefined?{sd:int(e.sd)}:{}),...(e.first?{first:1}:{})})).slice(0,4);
  const past=(Array.isArray(t.past)?t.past:record(t.past)?Object.values(t.past):[]).map(int).filter(x=>x>0).sort((a,b)=>a-b).slice(-6);
- const log=list(t.log).slice(-TOWN.log).map(x=>({id:String(x.id||'').slice(0,16),at:int(x.at),o:['held','breached','fallen','called'].includes(x.o)?x.o:'held',by:x.by==='you'?'you':'away',lv:clamp(int(x.lv),1,10),th:Math.round(Number(x.th)*100)/100||0,g:G[x.g]?x.g:'skaal',core:clamp(int(x.core),0,100),k:int(x.k),sp:int(x.sp),fell:int(x.fell),wl:int(x.wl),...(record(x.tk)?{tk:Object.fromEntries(Object.entries(x.tk).filter(([k,v])=>['alloy','biomass','helium','fe','cm'].includes(k)&&int(v)>0).map(([k,v])=>[k,int(v)]))}:{}),...(x.cache?{cache:1}:{}),...(x.pts?{pts:int(x.pts)}:{}),...(x.go?{go:1}:{}),...(x.dn?{dn:int(x.dn)}:{}),...(x.se?{se:int(x.se)}:{}),...(x.why?{why:String(x.why).slice(0,24)}:{})}));
+ const log=list(t.log).slice(-TOWN.log).map(x=>({id:String(x.id||'').slice(0,16),at:int(x.at),o:['held','breached','fallen','called'].includes(x.o)?x.o:'held',by:x.by==='you'?'you':'away',lv:clamp(int(x.lv),1,10),th:Math.round(Number(x.th)*100)/100||0,g:G[x.g]?x.g:'skaal',core:clamp(int(x.core),0,100),k:int(x.k),sp:int(x.sp),fell:int(x.fell),wl:int(x.wl),...(record(x.tk)?{tk:Object.fromEntries(Object.entries(x.tk).filter(([k,v])=>['alloy','biomass','helium','fe','cm'].includes(k)&&int(v)>0).map(([k,v])=>[k,int(v)]))}:{}),...(x.cache?{cache:1}:{}),...(x.f?{f:1}:{}),...(x.pts?{pts:int(x.pts)}:{}),...(x.go?{go:1}:{}),...(x.dn?{dn:int(x.dn)}:{}),...(x.se?{se:int(x.se)}:{}),...(x.why?{why:String(x.why).slice(0,24)}:{})}));
  const rp=record(t.rp)&&typeof t.rp.id==='string'?t.rp:null;
  return {v:1,k:Number.isSafeInteger(Number(t.k))?Number(t.k):W().tickOf(now),n:int(t.n),ev,past,log,rp,ws:Math.min(10,int(t.ws)),...(t.wu?{wu:int(t.wu)}:{}),won:int(t.won),seen:int(t.seen)};}
 // ---- pace (decision 1) --------------------------------------------------------------------------------------------------------
@@ -211,5 +216,6 @@ function ringPlan(p,o={}){const Pl=root.ConquestPlot;if(!Pl||!p?.b?.cc)return nu
  const clean=secs.map(({r,...x})=>x);return {sec:clean[0],secs:clean,fresh,inside,double:clean.length>1};}
 // the town as a raid saw it (the replay's snapshot s.tw.rp.town, written by the Worker) back to a plot the raid engine reads
 function plotOfSnap(x){const Pl=root.ConquestPlot;return {v:2,site:x.site,cc:x.cc|0,b:Object.fromEntries(Object.entries(x.b||{}).map(([id,a])=>[id,{t:a[0],i:a[1],j:a[2],r:a[3],l:a[4]}])),w:Pl.decWalls(x.w),dmg:{...(x.dmg||{})},n:0,st:{}};}
-root.ConquestTown=Object.freeze({TOWN,STARS,BEACON,STREAK,STREAK_ART,plotOfSnap,ringOf,ringPlan,fresh,norm,perDay,goSlots,paceOk,canLand,pickGeneral,levelOf,seOf,strength,lossOf,step,goSync,advance,defendable,next,fresher,beaconOf,streakNorm,streakDay,streakLine,weekOf});
+const cacheOf=x=>x?.o==='held'&&x.cache?(x.f?TOWN.cache:TOWN.away):null;   // f: really fought in person   // Session 7B STEP 3
+root.ConquestTown=Object.freeze({TOWN,cacheOf,STARS,BEACON,STREAK,STREAK_ART,plotOfSnap,ringOf,ringPlan,fresh,norm,perDay,goSlots,paceOk,canLand,pickGeneral,levelOf,seOf,strength,lossOf,step,goSync,advance,defendable,next,fresher,beaconOf,streakNorm,streakDay,streakLine,weekOf});
 })(globalThis);

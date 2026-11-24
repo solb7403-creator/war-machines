@@ -276,6 +276,28 @@ Conquest has its own Firebase record and CAS boundary (`conquest/<pid>`), separa
    **When credit runs:** at once when an operation completes, otherwise when the oldest pending entry is 20 s old or 8 entries are pending, and always on session open. This batches world kills into fewer account writes.
 4. **Late credit** counts on the day it is credited, like a late Arcade result.
 
+### 3.6 Citadel first-clear bounties (Session 7B; owner, Nov 23)
+
+A Citadel tier's **first clear** pays an airdrop bounty in base points, **once per account, outside the 50,000 daily cap**. The owner set
+the blueprint's table x5 (blueprint §6):
+
+| Tier | I | II | III | IV | V | VI | VII | VIII | IX |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Bounty (base points, once) | 25,000 | 37,500 | 50,000 | 75,000 | 100,000 | 150,000 | 225,000 | 325,000 | 500,000 |
+
+Tiers I-III are live from Session 7B; IV-IX are recorded for Session 11 (the nine total 1,487,500). How it is paid:
+
+1. **Conquest side.** The assault is replayed by the Worker from the pilot's verified commands; its victory settles once (the reducer
+   settles a victory only while no settlement is pending). Only the first clear of the pilot's next tier (`s.cit.t` rises by one and
+   never falls) adds `{id: 'cit<N>', pts}` to that request's immutable outbox entry (`e.bty`); owner dev records add nothing.
+2. **Account side.** `eco.js creditConquest` passes each bounty id to `rules.js ecoBounty`, which pays it only if the account has not
+   been paid that id before (`eco.cbty`, written in the same atomic account write as the watermark) and only for ids `cit1`-`cit9` at
+   the table's amount. It credits through `ecoAward`'s free path: the boards and airdrop credit, never the daily cap. A replayed request,
+   a second pilot record or a forged id cannot pay twice.
+3. The assault's own **battle points** (par 7 minutes x 225 x the Inner Ring's danger 1.45 = 2,284 raw) and every repeat clear
+   (Throne Runs) stay inside the cap and the hourly limit like any operation. Production +5% a tier cleared applies to materials and
+   CP only; Daily Base Yield points are unchanged.
+
 ---
 
 ## 4. Conquest materials: CP, Alloy, Biomass, Helium-3
@@ -1116,8 +1138,13 @@ Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids
 - **REPAIR on the way to CC10** (`dev/tools/coach-ring-repairs.mjs`, the Nov 10 guard method: the 60-minute regular on the real reducers,
   every raid decided unfought, REPAIR paid when damaged; 101 pilots): without walls 121,628 CP in 43 repairs on CRATER RIM (CC10 twice as
   long) and 180,426 CP across the seven sites; with the coach's ring 635 CP and 1,421 CP, CC10 no longer delayed. No repair-price change
-  is needed. PROPOSAL (owner): held unfought raids pay the defense cache (Session 7T decision 5), so a walled regular reaches CC10 sooner
-  than with no town attacks (CRATER median day 20.8 / mean 22.7 against 28.8 / 27.3); half the cache gives 26.8 / 24.0, none 27.8 / 26.7.
+  is needed. Held unfought raids paid the whole defense cache (Session 7T decision 5), so a walled regular reached CC10 sooner than with
+  no town attacks (CRATER median day 20.8 / mean 22.7 against 28.8 / 27.3).
+- **Owner decision (Session 7B STEP 3, Nov 24):** a held raid **nobody fought** pays the defense cache **without its CP**: 15 alloy,
+  10 biomass and 2 He-3 (`ConquestTown.TOWN.away`); a raid really fought in person (`live.fought`) keeps the whole cache (160 CP +
+  15 alloy + 10 biomass + 2 He-3). Measured with every 7B change on (`dev/tools/held-raid-cache.mjs`, 101 pilots): the walled regular's
+  CC10 median 27.8 / mean 26.5, inside the Session 6 band 25.9-31.7 (the whole cache 20.8 / 22.8, half 26.8 / 24.1); the heavy player's
+  late fortress 88.1%. conquest-fortress guard (f) checks the coached CC10 median (and the seven sites') inside that band.
 
 ### 16.4 Welcome-back kits (Session 7T-P decision 4)
 - Back after **14 or more UTC days with no verified activity**, the streak's day-1 Repair Kit and day-3 Scanner Charge are given once

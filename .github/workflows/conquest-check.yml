@@ -243,6 +243,40 @@ jobs:
             docs/conquest/session7t
             docs/conquest/session7tp
 
+  # Session 7B Citadel Act I (docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md): the rules, the Worker's settlement and the first-clear
+  # bounty paid exactly once (conquest-citadel), the pacing with the real assault (conquest-citadel-pace: the bot pilot on each profile's
+  # kit), and the screens at 390x844, 390x700, 320x568 (touch) and 1366x768, 1920x1080 (mouse, keyboard)
+  citadel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - name: Citadel rules, settlement and the bounty
+        run: |
+          node dev/tests/conquest-citadel.mjs
+          node dev/tests/wtest/conquest-citadel-payout.mjs
+      - name: Citadel pacing (the real assault, three profiles)
+        run: node dev/tests/conquest-citadel-pace.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser dependencies
+        run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Citadel screens (5 sizes)
+        run: python dev/tests/conquest-citadel.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-citadel
+          path: docs/conquest/session7b
+
   transmission:
     runs-on: ubuntu-24.04
     timeout-minutes: 60   # Session 7B: the WebKit install (--with-deps, apt) took 23 and 28+ minutes on Nov 24 (2-10 before) and the 35-minute limit cancelled the tests

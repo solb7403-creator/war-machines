@@ -36,7 +36,8 @@ function fightOf(s,e,cit=9){const p=s.plot,lv=TN.strength(s.war,e,{now:t0+H,tier
  ok(TN.norm(s.tw,t0+2*H).log.at(-1).se===8,'the town log keeps it through the record\'s check (the War Report reads it)');}
 // ---- 3. never otherwise ----
 {const {s,e}=capRaid();const o=settle(s,e,t0+H,null,9);ok(o==='held'&&!(s.ledger.mn?.se|0)&&!s.tw.log.at(-1).se,'held unfought at the cap: the defense cache, no Selenite (it rewards defending in person)');}
-{const {s,e}=capRaid();const {R:Rl}=fightOf(s,e);const o=settle(s,e,t0+H,{R:Rl,uf:null,fought:false,snap:null,gar:[]},9);ok(o==='held'&&!(s.ledger.mn?.se|0),'present but not really fighting (no AFK reward): no Selenite');}
+{const {s,e}=capRaid();const {R:Rl}=fightOf(s,e);const cp0=s.ledger.cp,al0=s.ledger.banked.alloy|0;const o=settle(s,e,t0+H,{R:Rl,uf:null,fought:false,snap:null,gar:[]},9);ok(o==='held'&&!(s.ledger.mn?.se|0),'present but not really fighting (no AFK reward): no Selenite');
+ ok(s.ledger.cp-cp0===TN.TOWN.away.cp&&(s.ledger.banked.alloy|0)-al0===TN.TOWN.away.alloy&&!s.tw.log.at(-1).f,'... and the unfought pay (Session 7B STEP 3: DEFEND then leave earns TOWN.away, never the whole cache)');}
 {const {s,e}=capRaid(false);s.plot.cc=10;s.plot.b.cc.l=10;const {R:Rl}=fightOf(s,e);const o=settle(s,e,t0+H,{R:Rl,uf:null,fought:true,snap:null,gar:[]},9);ok(o!=='held'&&!(s.ledger.mn?.se|0),'a cap-level fight that did not hold (an unwalled town): no Selenite ('+o+')');}
 {const {s,e}=capRaid();const {R:Rl,lv}=fightOf(s,e,7);const o=settle(s,e,t0+H,{R:Rl,uf:null,fought:true,snap:null,gar:[]},7);ok(o==='held'&&lv<TN.TOWN.cap&&!(s.ledger.mn?.se|0),'held in person one step below the cap (level '+lv+'): no Selenite');}
 // ---- 4. today (no Citadel tiers on the town clock): the live defense pays no Selenite: the drop waits for tiers VIII-IX (Session 11) ----

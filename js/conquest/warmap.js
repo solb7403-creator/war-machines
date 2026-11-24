@@ -14,7 +14,7 @@ const fmtN=n=>typeof fmtNum==='function'?fmtNum(n):String(n);
 const left=ms=>{if(ms>0&&ms<60000)return Math.ceil(ms/1000)+' s';const m=Math.max(0,Math.ceil(ms/60000)),h=Math.floor(m/60);return h>=24?Math.floor(h/24)+' d '+h%24+' h':h?h+' h '+String(m%60).padStart(2,'0')+' m':m+' m';};
 const pct=p=>Math.round(p*100)+'%';
 const svg=(tag,attrs,parent)=>{const e=document.createElementNS(SVGNS,tag);for(const [k,v] of Object.entries(attrs||{}))e.setAttribute(k,String(v));if(parent)parent.append(e);return e;};
-const ctxOf=(s,now)=>({pilots:s?.bat?.p||[],morale:0,tiers:0,titan:0,now});
+const ctxOf=(s,now)=>({pilots:s?.bat?.p||[],morale:0,tiers:root.ConquestCitadel?.tiersOf(s)||0,titan:0,now});   // Session 7B: the Citadel tiers cleared (the Retaliation level)
 const EV_NAME={a:'ASSAULT',c:'LDF COUNTERATTACK',g:'GRAND OFFENSIVE'};
 const ownerName=(w,id)=>w.o[id]==='p'?'PARASITE-HELD':'HUMANITY';
 function label(e,w){const t=W().BY[e.t];if(e.go||e.k==='g')return 'GRAND OFFENSIVE · '+(w.go?.t?.length||3)+' TERRITORIES';if(e.k==='c')return 'LDF COUNTERATTACK · '+t.name;return (t.heart?'RAID ON ':'ASSAULT ON ')+t.name;}
@@ -100,7 +100,8 @@ function station(c,s,o,now,id){const WR=W(),BT=root.ConquestBattalion,w=s.war,ba
  for(const p of res){const on=pick.has(p.id),btn=o.button((on?'✓ ':'')+p.cs+' · '+(p.r?(BT.ROLE_INFO[p.r]?.n||p.r).toUpperCase():'WINGMAN')+' · RANK '+(p.rk|0||1),()=>{if(pick.has(p.id))pick.delete(p.id);else if(pick.size<WR.WAR.station.max)pick.add(p.id);o.act('war-station',{t:id,p:[...pick]});},'wm-pilot'+(on?' on':''));btn.setAttribute('aria-pressed',on?'true':'false');row.append(btn);}
  o.el('small','wm-fine','Free. They return when the battle is decided. A stationed pilot cannot garrison your town.'+(WR.BY[id].cap?' A stationed Lancer shoots down a landing dropship.':''),b);}
 // ---- the campaign card (blueprint §2: the next Citadel tier and three readiness lines) ------------------------------------------
-function campaignCard(host,s,o,now){const WR=W(),w=s.war,c=o.el('section','wm-card wm-campaign',null,host),held=WR.APPROACH.filter(id=>w.o[id]==='h').length;
+function campaignCard(host,s,o,now){if(root.ConquestCitadelUI&&root.ConquestCitadel)return root.ConquestCitadelUI.card(host,s,o,now);   // Session 7B: the Citadel's card (js/conquest/citadelui.js)
+ const WR=W(),w=s.war,c=o.el('section','wm-card wm-campaign',null,host),held=WR.APPROACH.filter(id=>w.o[id]==='h').length;
  o.el('p','wm-kicker','THE CAMPAIGN · NEXT: CITADEL I · BREACH POINT',c);o.el('p','wm-what','The Citadel\'s first tier arrives with the Citadel update. Get ready: each line below is advice, never a lock.',c);
  const R=root.ConquestRating,Cb=root.ConquestCombat,band=Cb?.zoneBand?Cb.zoneBand(4):null,force=root.ConquestHangar?.force?.(s)||0,def=s.plot?.def|0;
  const line=(k,txt,ok,go)=>{const b=o.button((ok?'✓ ':'○ ')+txt,go||(()=>{}),'wm-ready'+(ok?' ok':''));if(!go||ok)b.disabled=!go;c.append(b);};

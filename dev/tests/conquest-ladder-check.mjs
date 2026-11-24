@@ -22,10 +22,11 @@ const {missionReward,bank}=await import('../../worker/src/conquest-economy.js');
 const {campaign,baseAction}=await import('../../worker/src/conquest-campaign.js');
 const {plotAction}=await import('../../worker/src/conquest-plot.js');
 const {claimOrder,orderEvent}=await import('../../worker/src/conquest-orders.js');
+const FM=await import('../tools/fortress-model.mjs');   // Session 7B: the profiles' Citadel pacing (PROFILES.regular.citadel)
 const KILLS=6,DAY=86400000,   // KILLS: Parasites destroyed a sortie (an operation fields 6-12; 6 and 10 give the same ladder)
 start=Date.UTC(2026,10,10,0),at=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'});
 const AUDIT=JSON.parse(readFileSync(new URL('../../docs/conquest/audit/model/audit-economy.json',import.meta.url),'utf8')).profiles.regular.base.hit;
-function run(sessions,{chain,orders,seed}){const s=createState(R.STOCK_L,start);s.lseed=seed;delete s.wo;const hit={},   // a fixed pilot seed; createState already drew day 0's War Orders from a random one, so they are redrawn from this seed
+function run(sessions,{chain,orders,seed,cit=false}){const s=createState(R.STOCK_L,start);s.lseed=seed;delete s.wo;const hit={},   // a fixed pilot seed; createState already drew day 0's War Orders from a random one, so they are redrawn from this seed
  legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,spent=0,claimed=0;
  const afford=c=>Object.entries(c||{}).every(([k,n])=>k==='cp'?s.ledger.cp>=n:P.MNS.includes(k)?true:s.ledger.banked[k]>=n);
  const mark=(k,now)=>{if(hit[k]===undefined)hit[k]={day:+((now-start)/DAY).toFixed(1),playMin:Math.round(played)};};
@@ -39,7 +40,8 @@ function run(sessions,{chain,orders,seed}){const s=createState(R.STOCK_L,start);
    if(!P.buildCheck(p,t,1)&&!(B.turret&&P.turretCount(p)>=6)){const pos=P.autoPlace(p,t);if(pos)opts.push({cp:P.costOf(t,1).cp,a:()=>plotAction(s,{action:'plot-build',plot:{type:t,...pos}},now)});}}
   opts.sort((x,y)=>x.cp-y.cp);for(const o of opts){try{if(o.cp<=s.ledger.cp){o.a();return;}}catch(e){}}};
  const split=cp0=>{const half=spent>=2550?Math.floor((s.ledger.cp-cp0)/2):0;s.ledger.cp-=half;};
- for(let day=0;day<180;day++){for(const [h,mins] of sessions){let now=start+day*DAY+h*3600000;
+ for(let day=0;day<180;day++){if(cit){const t=FM.tiersAt(FM.PROFILES.regular,day);if((s.cit?.t|0)!==t)s.cit=CONQUEST.Citadel.norm({...(s.cit||{}),v:1,t});}   // Session 7B: the Citadel tiers on the regular's pacing (the production bonus +5% a tier)
+  for(const [h,mins] of sessions){let now=start+day*DAY+h*3600000;
   if(s.base.tier){atGate();try{baseAction(s,{action:'base-claim'},now);}catch(e){}try{plotAction(s,{action:'plot-collect',plot:{}},now);}catch(e){}}build(now);
   if(orders&&s.base.tier)orderEvent(s,'drill',1);   // a real pilot fights: kills and a Defense Drill a session move War Orders too
   for(let m=0;m<mins;m+=1.5){now+=90000;played+=1.5;const id=played<=75?legacy[serial%legacy.length]:C.raidIds[serial%C.raidIds.length];serial++;
@@ -51,7 +53,7 @@ function run(sessions,{chain,orders,seed}){const s=createState(R.STOCK_L,start);
  return {hit,playedMin:Math.round(played),ordersClaimed:claimed};}
 const regular=[[19,60]],PANEL=101,SEED=k=>(1000+k)*7919;
 const v1=run(regular,{chain:false,orders:false,seed:SEED(0)}),v2=run(regular,{chain:true,orders:false,seed:SEED(0)});
-const panel=[];for(let k=1;k<=PANEL;k++)panel.push(run(regular,{chain:true,orders:true,seed:SEED(k)}));
+const panel=[];for(let k=1;k<=PANEL;k++)panel.push(run(regular,{chain:true,orders:true,cit:true,seed:SEED(k)}));   // EVERY change on: Session 6's, 7's and 7B's (the Citadel)
 const day=(v,c)=>v.hit[c]?.day,off=(a,b)=>Math.round((a/b-1)*1000)/10,inside=(a,b)=>a!==undefined&&Math.abs(a/b-1)<=.1;
 const med=a=>[...a].sort((x,y)=>x-y)[a.length>>1],pc=(a,q)=>[...a].sort((x,y)=>x-y)[Math.floor(a.length*q)],avg=a=>Math.round(a.reduce((x,y)=>x+y,0)/a.length*10)/10,days=c=>panel.map(v=>day(v,c)??999);
 const all={CC5:med(days('CC5')),CC10:med(days('CC10'))},share=c=>Math.round(100*panel.filter(v=>inside(day(v,c),AUDIT[c].day)).length/PANEL);

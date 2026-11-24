@@ -1,5 +1,6 @@
 // Conquest has its own versioned Firebase record and CAS boundary, separate from eco/airdrop.
 import {syncWarfront,persistWarfront,applyWarfront} from './conquest-warfront.js';
+import {citadelBoardPost} from './conquest-citadel-board.js';
 import {COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {BASE_ACTIONS} from './conquest-campaign.js';
 import {PLOT_ACTIONS,MINERAL_PLOT_ACTIONS,BIG_PLOT_ACTIONS} from './conquest-plot.js';
@@ -64,7 +65,7 @@ const premiumCaches=new WeakMap();
 async function premiumPass(env,pid,now){const cache=premiumCaches.get(env)||new Map();premiumCaches.set(env,cache);const hit=cache.get(pid);if(hit&&now-hit.at<60000)return hit.value;let value;try{value=passPremium(await readEco(env,pid),now);}catch{return false;}if(cache.size>=5000)cache.delete(cache.keys().next().value);cache.set(pid,{at:now,value});return value;}
 async function canonical(env,pid,now=Date.now()){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');const day=Math.floor(now/86400000),lgi=S.lgi|0;
  // The HUD's airdrop numbers come from the account on every session open (today's points across all modes, league pay).
- const loadout=S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L);return {loadout,legacy:S.cqState?.v===1?S.cqState:null,rsAcct:researchCtx(S,now),batAcct:batCtx(S,loadout),view:{d:day,dailyPts:S.dailyDay===day?S.dailyPts||0:0,cap:RULES.DAILY_CAP,cq:S.cqd?.d===day?S.cqd.b||0:0,lgi,pay:RULES.LG_BASE_PAY[lgi]||1,at:now,mn:RULES.mnOf(S.mn),ap:RULES.apOf(S.ap),pts:Math.max(0,Math.round(Number(S.pts)||0)),bmn:RULES.mnOf(S.bmn),rm:Object.keys(S.rm||{}).filter(k=>S.rm[k])}};}
+ const loadout=S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L);return {loadout,legacy:S.cqState?.v===1?S.cqState:null,rsAcct:researchCtx(S,now),batAcct:batCtx(S,loadout),view:{d:day,dailyPts:S.dailyDay===day?Math.max(0,(S.dailyPts||0)-(S.fx&&S.fx.d===day?S.fx.n|0:0)):0,cap:RULES.DAILY_CAP,cq:S.cqd?.d===day?S.cqd.b||0:0,lgi,pay:RULES.LG_BASE_PAY[lgi]||1,at:now,mn:RULES.mnOf(S.mn),ap:RULES.apOf(S.ap),pts:Math.max(0,Math.round(Number(S.pts)||0)),bmn:RULES.mnOf(S.bmn),rm:Object.keys(S.rm||{}).filter(k=>S.rm[k])}};}
 // Session 6B: what research reads from the account (eco record): bonus parts (Lunar Pass premium tiers, part packs), instant-finish
 // credits (written only by a verified purchase; checkout is off until Session 8) and the current season's premium pass (slot + 25%).
 function researchCtx(S,now){const prem=RULES.passResearch(passPremium(S,now));   /* the pass's research perks wait for the Lab store (rules.js passResearch) */return {bpt:{...(S.bpt||{})},bch:Math.max(0,S.bch|0),rsx:{...(S.rsx||{})},lsm:{...(S.lsm||{})},prem:prem?1:0,premium:prem};}
@@ -84,7 +85,7 @@ async function settleAirdrop(env,pid,r,now,force=false){
  const view={d:c.day,dailyPts:c.dailyPts,cap:RULES.DAILY_CAP,cq:c.cqToday,lgi:c.lgi,pay:c.pay,at:now,mn:c.mn,ap:c.ap,pts:c.pts,rm:c.rm||[]};
  // Prune with its own CAS loop: server bookkeeping, not a pilot request (never counts against the request rate limit).
  for(let i=0;i<8;i++){const {v,tag}=await readTag(env,'conquest/'+pid);if(!v||v.v!==1)break;const cur=structuredClone(v);acknowledge(cur,c.cqw,view);if(await writeIf(env,'conquest/'+pid,cur,tag))break;}   // the outbox rides the hot part (conquest-store.js): this prune never touches the cold blob
- acknowledge(s,c.cqw,view);s.airdrop.credit={base:c.base,awarded:c.awarded,capped:c.capped,at:now,...(Object.keys(c.minerals||{}).length?{minerals:c.minerals}:{})};return r;}
+ acknowledge(s,c.cqw,view);s.airdrop.credit={base:c.base,awarded:c.awarded,capped:c.capped,at:now,...(Object.keys(c.minerals||{}).length?{minerals:c.minerals}:{}),...(c.bounty?{bounty:c.bounty}:{})};return r;}
 function result(r){return r.error?response(r.status||409,r.error,r.state):{status:200,body:{ok:true,state:publicState(r.state),replayed:!!r.replayed}};}
 // Session 6C: an input reply carries the hot part only when nothing cold changed and the phone already holds this cold version
 // (it sends the cv it has); the phone keeps its cold fields (js/conquest/session.js). Every other reply is the whole state.
@@ -116,7 +117,9 @@ export async function conquestEvent(env,a,now=Date.now()){if(!allowed(a.b,['gv',
 export async function conquestInput(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData','seq','commands','cv'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||a.b.cv!==undefined&&(typeof a.b.cv!=='string'||a.b.cv.length>40))return response(400,'invalid conquest input');
  let commands;try{commands=validateCommands(a.b.commands);}catch{return response(400,'invalid conquest command');}
- return submit(env,a,{seq:a.b.seq,commands},applyCommands,now,a.b.cv||null);
+ const out=await submit(env,a,{seq:a.b.seq,commands},applyCommands,now,a.b.cv||null);
+ if(out.status===200&&!out.body?.replayed&&out.body?.state?.cit?.lb?.at===now)await citadelBoardPost(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // Session 7B: a Throne Run clear's time to the weekly board (best effort)
+ return out;
 }
 export async function conquestAction(env,a,now=Date.now()){
  if(a.b&&DEV_ACTIONS.includes(a.b.action)){
@@ -134,6 +137,7 @@ export async function conquestAction(env,a,now=Date.now()){
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
  const ctx=a.b.action==='recall-start'||a.b.action==='war-fortify'?{premium:await premiumPass(env,a.pid,now)}:   /* Session 7: the Lunar Pass Fortify perks (behind the store flag) */MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:RESEARCH_ACTIONS.includes(a.b.action)?researchCtx(RULES.ecoNorm(await readEco(env,a.pid)),now):['hangar-arm','hangar-livery','hangar-gear'].includes(a.b.action)?await (async()=>{const S=RULES.ecoNorm(await readEco(env,a.pid));return batCtx(S,S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L));})():{};   /* Session 6C: AUTO-ARM and liveries read the account once */   /* Session 6B: research reads the account once (bonus parts, finish credits, premium pass) */const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
  const out=await submit(env,a,request,(p,r,n)=>owner&&p?.dev?.on?unlimited(p,q=>instant(applyAction(q,r,n,{...ctx,bmn:Object.fromEntries(Object.keys(RULES.mnOf({})).map(k=>[k,9e6]))}),n)):applyAction(p,r,n,ctx),now);
+ if(out.status===200&&!out.body?.replayed&&out.body?.state?.cit?.lb?.at===now)await citadelBoardPost(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // Session 7B: the Throne Run board (a clear settled by an action)
  // Session 5: publish the plot's public snapshot (visits, top 20, Base of the Week) after a verified plot change. Best effort.
  if(out.status===200&&out.body?.state?.plot&&!out.body.replayed&&(PLOT_ACTIONS.includes(a.b.action)||['build-base','upgrade-base','base-module'].includes(a.b.action)))await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});
  return out;

@@ -375,12 +375,12 @@ export function battalionModel({ minutes = 60, packChips = 0, rescueFrom = 1, da
   // ranks: one pilot always fielded; and the force at the top (9 pilots rank 9; the whole roster rank 10) with rotation
   const xpDay = d => { const o = opsOfDay(minutes, d), field = Math.max(0, 0.45 * minutes / A.field.par * (d < 1 ? 1 : d < 7 ? .5 : d < 30 ? .2 : .1)); return { field, raids: o.raids, strikes: o.strikes }; };
   const lvAt = d => [5, 4, 3, 2, 1].find(lv => d >= hangarDay(lv)) || 0;
-  let xp = 0, top = 0, rank = 1; const at = {}, pool = { xp: 0 }; let nine = null, sixteen = null;
+  let xp = 0, top = 0, rank = 1; const at = {}, pool = { xp: 0 }, poolXp = []; let nine = null, sixteen = null;   // poolXp[d]: the roster's pilot-XP after day d (Session 7B Citadel model)
   for (let d = 0; d < days && (sixteen === null || !at[10]); d++) { const x = xpDay(d), raidXp = x.raids * (d < 30 ? 2 : 2.5) + x.strikes * 2, fieldXp = x.field * 1.2; xp += raidXp + fieldXp;   // one pilot in every fight
     for (let r = 2; r <= 10; r++) if (!at[r] && xp >= BT.RANK_XP[r - 1]) at[r] = d + 1;
-    const cap = BT.FIELD[lvAt(d)], seats = Math.min(cap, 4) * (x.raids + x.strikes) * (d < 30 ? 2 : 2.5) + Math.min(cap, 2) * fieldXp; pool.xp += seats;   // pilot-XP the whole roster earns a day
+    const cap = BT.FIELD[lvAt(d)], seats = Math.min(cap, 4) * (x.raids + x.strikes) * (d < 30 ? 2 : 2.5) + Math.min(cap, 2) * fieldXp; pool.xp += seats; poolXp[d] = pool.xp;   // pilot-XP the whole roster earns a day
     if (nine === null && pool.xp >= 9 * BT.RANK_XP[8] && pilotsBy(d) >= 9) nine = d + 1; if (sixteen === null && pool.xp >= 16 * BT.RANK_XP[9] && pilotsBy(d) >= 16) sixteen = d + 1; }
-  return { minutes, ladder: { CC2: L.CC2, CC3: L.CC3, CC5: L.CC5, CC7: L.CC7, CC9: L.CC9 }, stage, scienceLabIV: Math.round(lab4 * 10) / 10, packChips, roleCores: { firstMaxed: first, allSix: all, chips: 120 }, ranks: { onePilot: at, ninePilotsRank9: nine, rosterRank10: sixteen } };
+  return { minutes, ladder: { CC2: L.CC2, CC3: L.CC3, CC5: L.CC5, CC7: L.CC7, CC9: L.CC9 }, stage, scienceLabIV: Math.round(lab4 * 10) / 10, packChips, roleCores: { firstMaxed: first, allSix: all, chips: 120 }, ranks: { onePilot: at, ninePilotsRank9: nine, rosterRank10: sixteen }, poolXp };
 }
 export const MODEL = { P, PROFILES, timelines, dailyIncome, firstHour: hour, firstBaseMinute, researchModel, battalionModel, ladderOf };   // ladderOf: the town ladder at a play time (the fortress model's 2-hour heavy profile, Session 7T-P)
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

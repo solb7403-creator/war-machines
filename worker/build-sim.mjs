@@ -42,7 +42,9 @@ export function buildSim(out = join(here, 'src', 'sim.gen.js')) {
     read('js/conquest/raid.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
     read('js/conquest/townwar.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
     read('js/conquest/alerts.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
-    'return {Catalog:conquestRoot.ConquestCatalog,Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,Plot:conquestRoot.ConquestPlot,Battalion:conquestRoot.ConquestBattalion,War:conquestRoot.ConquestWar,Raid:conquestRoot.ConquestRaid,Town:conquestRoot.ConquestTown,Alerts:conquestRoot.ConquestAlerts,tankOf,machineSpeed};\n})();\n';
+    // Session 7B Citadel Act I: the tiers, the record, siege prep, Throne Run and the assault (an Operation of the combat engine)
+    read('js/conquest/citadel.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
+    'return {Catalog:conquestRoot.ConquestCatalog,Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,Plot:conquestRoot.ConquestPlot,Battalion:conquestRoot.ConquestBattalion,War:conquestRoot.ConquestWar,Raid:conquestRoot.ConquestRaid,Town:conquestRoot.ConquestTown,Alerts:conquestRoot.ConquestAlerts,Citadel:conquestRoot.ConquestCitadel,tankOf,machineSpeed};\n})();\n';
   // only when it changed, and atomically (a temp file renamed over it): tests that build at start can run side by side
   if (existsSync(out) && readFileSync(out, 'utf8') === src) return out;
   const tmp = out + '.' + process.pid + '.tmp'; writeFileSync(tmp, src); renameSync(tmp, out);

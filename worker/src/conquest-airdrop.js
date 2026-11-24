@@ -38,9 +38,9 @@ export function settleOpKills(s,now){const a=airdrop(s),k=a.opk;delete a.opk;if(
 export function played(s,ms){const a=airdrop(s);a.ms=Math.min(36e5,a.ms+Math.max(0,ms));}
 // End of every Conquest transaction: this request's outcomes become one immutable entry (or wait in the spill).
 export function seal(s,now){
- const a=airdrop(s),p=a.pend,m=a.pmn,rm=list(a.prm).filter(x=>typeof x==='string'),rj=list(a.prsj).filter(x=>typeof x==='string');delete a.pend;delete a.pmn;delete a.prm;delete a.prsj;
- if(p&&p.raw>0||m||rm.length||rj.length){const sp=a.spill||(a.spill={raw:0,n:{},op:0});if(p&&p.raw>0){sp.raw=Math.round((sp.raw+p.raw)*100)/100;tally(sp.n,p.n);sp.op=sp.op||p.op;}if(m)sp.mn=tally(sp.mn||{},m);if(rm.length)sp.rm=[...new Set([...list(sp.rm),...rm])];if(rj.length)sp.rsj=[...new Set([...list(sp.rsj),...rj])];}
- if(a.spill&&(a.spill.raw>0||a.spill.mn||list(a.spill.rm).length||list(a.spill.rsj).length)&&a.out.length<OUTBOX_MAX){a.seq++;const e={id:a.seq,at:now,raw:a.spill.raw||0,n:a.spill.n||{},op:a.spill.op?1:0,ms:Math.round(a.ms)};if(a.spill.mn)e.mn=a.spill.mn;if(list(a.spill.rm).length)e.rm=list(a.spill.rm);if(list(a.spill.rsj).length)e.rsj=list(a.spill.rsj);a.out.push(e);a.ms=0;delete a.spill;}
+ const a=airdrop(s),p=a.pend,m=a.pmn,rm=list(a.prm).filter(x=>typeof x==='string'),rj=list(a.prsj).filter(x=>typeof x==='string'),bt=list(a.pbty).filter(x=>typeof x?.id==='string');delete a.pend;delete a.pmn;delete a.prm;delete a.prsj;delete a.pbty;
+ if(p&&p.raw>0||m||rm.length||rj.length||bt.length){const sp=a.spill||(a.spill={raw:0,n:{},op:0});if(bt.length)sp.bty=[...list(sp.bty),...bt].filter((x,i,arr)=>arr.findIndex(y=>y.id===x.id)===i);if(p&&p.raw>0){sp.raw=Math.round((sp.raw+p.raw)*100)/100;tally(sp.n,p.n);sp.op=sp.op||p.op;}if(m)sp.mn=tally(sp.mn||{},m);if(rm.length)sp.rm=[...new Set([...list(sp.rm),...rm])];if(rj.length)sp.rsj=[...new Set([...list(sp.rsj),...rj])];}
+ if(a.spill&&(a.spill.raw>0||a.spill.mn||list(a.spill.rm).length||list(a.spill.rsj).length||list(a.spill.bty).length)&&a.out.length<OUTBOX_MAX){a.seq++;const e={id:a.seq,at:now,raw:a.spill.raw||0,n:a.spill.n||{},op:a.spill.op?1:0,ms:Math.round(a.ms)};if(a.spill.mn)e.mn=a.spill.mn;if(list(a.spill.rm).length)e.rm=list(a.spill.rm);if(list(a.spill.rsj).length)e.rsj=list(a.spill.rsj);if(list(a.spill.bty).length)e.bty=list(a.spill.bty).map(x=>({id:String(x.id).slice(0,8),pts:Math.max(0,Math.floor(Number(x.pts)||0))}));a.out.push(e);a.ms=0;delete a.spill;}
  return a;}
 // Session 6B: a finished Science Lab research job. The mod rides this request's immutable outbox entry (e.rm) to the account,
 // where creditConquest records it once (eco S.rm); never points.
@@ -53,9 +53,13 @@ export function researchLegStart(s,id){const a=airdrop(s);a.prsj=[...list(a.prsj
 export function bankMinerals(s,mn){const a=airdrop(s),add={};for(const [k,v] of Object.entries(mn||{})){const n=Math.floor(Number(v)||0);if(n>0)add[k]=n;}if(Object.keys(add).length)a.pmn=tally(a.pmn||{},add);return add;}
 // Whether this request should credit the account now: an operation completed, the oldest entry waited long enough, or a
 // batch is pending. Everything else waits (cheaper; nothing is lost: the session open credits any leftovers).
-export function due(s,now){const a=airdrop(s),out=a.out.filter(e=>e.id>a.ack);return out.length>0&&(out.some(e=>e.op||e.mn||e.rm||e.rsj)||out.length>=CREDIT_BATCH||now-Math.min(...out.map(e=>e.at||now))>=CREDIT_AFTER_MS);}
+export function due(s,now){const a=airdrop(s),out=a.out.filter(e=>e.id>a.ack);return out.length>0&&(out.some(e=>e.op||e.mn||e.rm||e.rsj||e.bty)||out.length>=CREDIT_BATCH||now-Math.min(...out.map(e=>e.at||now))>=CREDIT_AFTER_MS);}
 export const pending=s=>airdrop(s).out.filter(e=>e.id>airdrop(s).ack);
 // After the account credited up to cqw: drop those entries and keep the latest account numbers for the HUD.
-export function acknowledge(s,cqw,view){const a=airdrop(s);a.ack=Math.max(a.ack,cqw|0);a.out=a.out.filter(e=>e.id>a.ack);if(view)a.view=view;return a;}
+export function acknowledge(s,cqw,view){const a=airdrop(s);a.ack=Math.max(a.ack,cqw|0);a.seq=Math.max(a.seq|0,a.ack);a.out=a.out.filter(e=>e.id>a.ack);if(view)a.view=view;return a;}   // Session 7B (payout review W1): a record reset or restored on the server numbers its next entries past the account's watermark, so they are credited
 // Estimated base points for display (the league factor last read from the account; the account credit is authoritative).
 export function estimate(s,raw){const a=airdrop(s),pay=Number(a.view?.pay)||1;return Math.round((Number(raw)||0)*pay);}
+// Session 7B: a Citadel tier's first-clear bounty (worker/src/conquest-citadel.js, once: the tier count only rises). It rides this request's
+// immutable outbox entry (e.bty, never merged into the capped raw points); the account credits each bounty id once per account
+// (rules.js ecoBounty: S.cbty, outside the daily cap). Never through earn(): no hourly limit, no Command Base multiplier, no league factor
+export function bounty(s,id,pts){if(s.dev?.used)return 0;const a=airdrop(s),n=Math.max(0,Math.floor(Number(pts)||0));const m=/^cit([1-9])$/.exec(String(id));if(!m||+m[1]>R.CIT_LIVE||!n)return 0;a.pbty=[...list(a.pbty).filter(x=>x.id!==id),{id,pts:n}];return n;}

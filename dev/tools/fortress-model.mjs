@@ -42,7 +42,7 @@ const HEAVY=MODEL.ladderOf(120),hitOf=pr=>pr.ladder==='heavy'?Object.fromEntries
 const ccAt=(pr,d)=>{const L=hitOf(pr);let cc=0;for(let k=1;k<=10;k++)if(d>=L['CC'+k].day)cc=k;return cc;};
 // ---- 1. income (the war model's method, any play time) ----
 const cache={};
-export function income(pr,days){const key=JSON.stringify(pr.sessions)+days;if(cache[key])return cache[key];const s=createState(R.STOCK_L,start);s.lseed=7919;delete s.wo;s.war.sc={n:9,done:1};
+export function income(pr,days){const key=JSON.stringify(pr.sessions)+days+(KNOB.cit7b?JSON.stringify(pr.citadel||0):'');if(cache[key])return cache[key];const s=createState(R.STOCK_L,start);s.lseed=7919;delete s.wo;s.war.sc={n:9,done:1};
  const legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0;
  const tot=()=>({cp:s.ledger.cp,alloy:(s.ledger.banked.alloy||0)+(s.ledger.cargo?.alloy||0),biomass:(s.ledger.banked.biomass||0)+(s.ledger.cargo?.biomass||0),helium:(s.ledger.banked.helium||0)+(s.ledger.cargo?.helium||0)});
  const diff=(a,b)=>Object.fromEntries(K.map(k=>[k,b[k]-a[k]])),add=(acc,d)=>{for(const k of K)acc[k]+=Math.max(0,d[k]);};
@@ -54,7 +54,7 @@ export function income(pr,days){const key=JSON.stringify(pr.sessions)+days;if(ca
   const opts=[];for(const t of ['refinery','biodome','helium','storage','reactor']){const B=P.BUILDINGS[t],cur=Object.entries(p.b).filter(([,b])=>b.t===t);for(const [id,b] of cur)if(!P.buildCheck(p,t,b.l+1,id))opts.push({cp:P.costOf(t,b.l+1).cp,a:()=>plotAction(s,{action:'plot-upgrade',plot:{id}},now)});
    if(!P.buildCheck(p,t,1)){const pos=P.autoPlace(p,t);if(pos)opts.push({cp:P.costOf(t,1).cp,a:()=>plotAction(s,{action:'plot-build',plot:{type:t,...pos}},now)});}}
   opts.sort((x,y)=>x.cp-y.cp);for(const o of opts){try{if(o.cp<=s.ledger.cp*.25){o.a();return;}}catch(e){}}};
- const out=[];for(let day=0;day<days;day++){const row={day,cc:0,...Object.fromEntries(K.map(k=>[k,0]))};
+ const out=[];for(let day=0;day<days;day++){const row={day,cc:0,...Object.fromEntries(K.map(k=>[k,0]))};citFor(s,pr,day);
   for(const [h,mins] of pr.sessions){let now=start+day*DAY+h*HOUR;const a0=tot();
    if(s.base.tier){atGate();try{baseAction(s,{action:'base-claim'},now);}catch(e){}try{plotAction(s,{action:'plot-collect',plot:{}},now);}catch(e){}}
    const b0=tot();build(now);const spent=diff(tot(),b0);if(s.base.tier)orderEvent(s,'drill',1);
@@ -71,6 +71,16 @@ const Pm=MODEL.P,A=Pm.conquest.activities,MIN=['fe','il','ar','tq','se','mh'],ra
 // strikes a Strike Resonance Selenite takes (candidate A); noTownSe turns off the town defenses' Selenite (the 7T economy); townSeN sets
 // the Selenite a cap-level defense held in person pays (the amount's measurement). Empty = the live rules.
 export const KNOB={};
+// Session 7B (owner brief docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md, STEP 3 "with every 7B change on"): the Citadel tiers a profile
+// has cleared by a day (its pacing, PROFILES[x].citadel) are written to the pilot's record (s.cit.t), so the Worker's own code applies
+// the production bonus (+5% a tier: ConquestCombat.baseYield / ConquestPlot.rates cpb) and the Retaliation (the town attack's THREAT).
+// KNOB.cit7b=false turns it off (the Session 7T-P measurement). KNOB.heldCache: model-only factors on the held UNFOUGHT raid's defense
+// cache {cp, mat} (STEP 3's options: full {1,1}, half {.5,.5}, without its CP {0,1}, none {0,0}); the game pays its own rule.
+KNOB.cit7b=true;KNOB.heldCache=null;   // null: the game's own rule (ConquestTown.TOWN.away for a held unfought raid)
+const citFor=(s,pr,d)=>{if(!KNOB.cit7b||!pr?.citadel)return;const t=tiersAt(pr,d);if((s.cit?.t|0)!==t||s.cit?.v!==1)s.cit=CONQUEST.Citadel.norm({...(s.cit||{}),v:1,t});};
+// the held unfought raids a town meets a day (Session 7T-P decision 1: perDay at the Command Center level x the 60% chance) and the share
+// it holds (an approximation for the income only: the fortress test's hold rates run 62-100% by day; 85% is their mean), paying the cache
+const HOLD=.85,heldCacheOf=cc=>{const n=(TN.TOWN.perDay[cc]||0)*TN.TOWN.chance*HOLD,f=KNOB.heldCache,c=f?TN.TOWN.cache:TN.TOWN.away,x=f||{cp:1,mat:1};return {cp:n*c.cp*x.cp,alloy:n*c.alloy*x.mat,biomass:n*c.biomass*x.mat,helium:n*c.helium*x.mat};};
 export function minerals(pr,d){const m=pr.sessions.reduce((a,x)=>a+x[1],0),n=pr.sessions.length,inc=Object.fromEntries(MIN.map(k=>[k,0])),add=(o,x=1)=>{for(const [k,v] of Object.entries(o))inc[k]+=v*x;};
  const aAr=ramp(d,3,8),aTq=ramp(d,14,30),aVet=ramp(d,30,45),g=.25*m,sh={fe:.45,il:.30,ar:.17*aAr,tq:.08*aTq},tot=Object.values(sh).reduce((a,b)=>a+b,0);
  for(const k of ['fe','il','ar','tq']){const D=Pm.deposits[k],minutes=g*sh[k]/tot,supply=D.veins*D.cap*(D.regrowH<=24?Math.min(n,24/D.regrowH):24/D.regrowH)/D.yield,h=Math.min(minutes/A['gather_'+k].par,supply);inc[k]+=h*D.yield;if(k==='tq')inc.se+=h*D.seVein;}
@@ -154,12 +164,12 @@ export function plotOf(site,st){const pl=plan(site),p=P.newPlot(site,start);p.cc
 // The pilot's town on a site at day `days`: the plan, built day by day with the town's share of the income, the builder in the pilot's
 // sessions, the Foundry's composite and half of the mineral income.
 const BUILT={};
-export function townAt(prName,site,days,{share,se=true}={}){const key=prName+':'+site+':'+days+':'+share+':'+(se?1:0);if(BUILT[key])return BUILT[key];const pr={...PROFILES[prName]};if(share!==undefined)pr.share=share;if(!se)pr.noTownSe=true;const rows=income(pr,YEAR),pl=plan(site);
+export function townAt(prName,site,days,{share,se=true}={}){const key=prName+':'+site+':'+days+':'+share+':'+(se?1:0)+':'+(KNOB.cit7b?1:0)+':'+JSON.stringify(KNOB.heldCache||0);if(BUILT[key])return BUILT[key];const pr={...PROFILES[prName]};if(share!==undefined)pr.share=share;if(!se)pr.noTownSe=true;const rows=income(pr,YEAR),pl=plan(site);
  const st={cc:1,lv:{storage:1},rings:[]},bag={cp:0,alloy:0,biomass:0,helium:0,fe:0,il:0,ar:0,tq:0,se:0,mh:0};let cm=P.COMPOSITE.start,jobs=[];
  const can=c=>Object.entries(c||{}).every(([k,v])=>(bag[k]||0)>=v-1e-9),pay=c=>{for(const [k,v] of Object.entries(c||{}))bag[k]-=v;};
  const capOf=t=>P.levelCap(t,st.cc),countOK=(x)=>{const B=P.BUILDINGS[x.t];if(st.cc<B.cc)return false;if(B.turret)return pl.slots.indexOf(x)<P.TURRET_CAP[st.cc-1];const same=pl.sup.filter(y=>y.t===x.t),i=same.indexOf(x);return i<P.countCap(x.t,st.cc);};
  const S0=P.SITES[site],power=()=>{let use=0,sup=12+3*st.cc;for(const x of [...pl.sup,...pl.slots]){const l=st.lv[x.id]|0;if(!l)continue;use+=P.BUILDINGS[x.t].pw*l;if(x.t==='reactor')sup+=P.BUILDINGS.reactor.power*l*S0.power;}return {use,sup:Math.round(sup)};};   // the plot's own power rules, without building the plot
- for(let d=0;d<days;d++){const r=rows[d]||rows.at(-1);for(const k of K)bag[k]+=Math.max(0,r[k])*pr.share;const mn=minerals(pr,d);for(const k of MIN)bag[k]+=mn[k]*.5;if(pr.buyFeIl){bag.fe+=200;bag.il+=60;}
+ for(let d=0;d<days;d++){const r=rows[d]||rows.at(-1);for(const k of K)bag[k]+=Math.max(0,r[k])*pr.share;if(st.cc>=2){const hc=heldCacheOf(st.cc);for(const k of K)bag[k]+=(hc[k]||0)*pr.share;}const mn=minerals(pr,d);for(const k of MIN)bag[k]+=mn[k]*.5;if(pr.buyFeIl){bag.fe+=200;bag.il+=60;}
   const want=ccAt(pr,d+1);while(st.cc<want){st.cc++;const c=P.CC.cost[st.cc];if(c)for(const k of K)bag[k]=Math.max(0,bag[k]-(c[k]||0));}
   const fl=st.lv.s2|0||0,foundry=pl.sup.find(x=>x.t==='foundry'),fL=foundry?st.lv[foundry.id]|0:0;if(fL){const make=Math.min(P.COMPOSITE.rate*fL*24,bag.alloy*P.COMPOSITE.perAlloy*.5);cm+=make;bag.alloy-=make/P.COMPOSITE.perAlloy;}
   // the builder: in each session, the next affordable job whenever a builder is free (jobs keep running on the Worker clock)
@@ -217,7 +227,7 @@ export function holdRate(prName,d,{sites=P.SITE_IDS,n=4,share,citadelX=1,se=true
 //  the composite allows, an outer one) and confirms it; when no wall can reach an exposed vital (beside ice or rock) it moves the vital in.
 //  coach:'single' draws only the first ring (a pilot who closes it by hand). Walls are instant orders: composite only, no builder time.
 //  repairX: a model-only price factor on the REPAIR of town-raid damage (the PROPOSAL's exact price; the game's REPAIR is unchanged).
-export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=1,site='crater',days=200}={}){const s=createState(R.STOCK_L,start);s.lseed=seed;s.twsd=(seed>>>0)||1;delete s.wo;const hit={};   // twsd: the town's own seed, fixed (review round 1: the Worker would draw it at random)
+export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=null,site='crater',days=200,cit=KNOB.cit7b}={}){   /* cacheX null: the game's own held-raid pay */const s=createState(R.STOCK_L,start);s.lseed=seed;s.twsd=(seed>>>0)||1;delete s.wo;const hit={};   // twsd: the town's own seed, fixed (review round 1: the Worker would draw it at random)
  const legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,spent=0;const rep={n:0,cp:0,alloy:0,cm:0},ring={closedAt:null,cells:0,orders:0};
  const afford=c=>Object.entries(c||{}).every(([k,n])=>k==='cp'?s.ledger.cp>=n:k==='cm'?Math.floor(s.plot?.cm||0)>=n:P.MNS.includes(k)?true:(s.ledger.banked[k]||0)>=n);
  const mark=(k,now)=>{if(hit[k]===undefined)hit[k]=+((now-start)/DAY).toFixed(1);};
@@ -250,9 +260,10 @@ export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=1,site='
  // every raid once, by its id (the town log keeps only the last 16): the tally, and cacheX, a model-only factor on the held unfought raid's
  // defense cache (a PROPOSAL's number)
  const ids=new Set(),tally={held:0,breached:0,fallen:0},scan=()=>{for(const x of s.tw?.log||[]){if(ids.has(x.id))continue;ids.add(x.id);if(x.o in tally)tally[x.o]++;
-  if(x.cache&&cacheX!==1){const c=TN.TOWN.cache;s.ledger.cp-=Math.round(c.cp*(1-cacheX));for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=Math.max(0,(s.ledger.banked[k]||0)-Math.round(c[k]*(1-cacheX)));}}};
+  const fx=cacheX===null||cacheX===undefined?null:typeof cacheX==='number'?{cp:cacheX,mat:cacheX}:{cp:cacheX?.cp??1,mat:cacheX?.mat??1};
+  if(fx&&x.o==='held'&&!x.f){const c=TN.TOWN.cache,paid=TN.cacheOf(x)||{cp:0,alloy:0,biomass:0,helium:0};s.ledger.cp+=Math.round(c.cp*fx.cp)-paid.cp;for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=Math.max(0,(s.ledger.banked[k]||0)+Math.round(c[k]*fx.mat)-paid[k]);}}};   /* the option's share of 7T's whole cache in place of what the game paid (TOWN.away) */
  const seen=now=>{s.lastWall=now;if(!raids&&s.plot)s.plot.shieldUntil=start+4000*DAY;scan();};
- for(let day=0;day<days;day++){let now=start+day*DAY+19*HOUR;
+ for(let day=0;day<days;day++){let now=start+day*DAY+19*HOUR;if(cit)citFor(s,PROFILES.regular,day);
   if(s.base.tier){atGate();try{baseAction(s,{action:'base-claim'},now);}catch(e){}try{plotAction(s,{action:'plot-collect',plot:{}},now);}catch(e){}}build(now);seen(now);
   if(s.base.tier)orderEvent(s,'drill',1);
   for(let m=0;m<60;m+=1.5){now+=90000;played+=1.5;const id=played<=75?legacy[serial%legacy.length]:C.raidIds[serial%C.raidIds.length];serial++;
