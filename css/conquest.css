@@ -618,6 +618,7 @@
 .cq .cq-town-defend{background:#7a2230;border-color:#ff8a95;font-weight:800}.cq-town-shield{color:#7fe3ff}
 .cq-beacon{display:grid;gap:4px;margin:6px 0;padding:8px 10px;border:1px solid #ffb34766;border-radius:8px}.cq-beacon-on{border-color:#ffb347;background:#2a1a06cc}
 .cq .cq-beacon-call,.cq .cq-beacon-go{background:#5a3a0a;border-color:#ffb347;font-weight:800;justify-self:start}.cq-beacon-used{display:block;color:#8fa9b9}
+.cq-hub-welcome{border-color:#ffb34799;background:linear-gradient(135deg,#2a1d0aee,#0a1220e6)}.cq-hub-welcome h3{color:#ffcf7a}.cq-hub-welcome .cq-hub-big{color:#7ff0b0}   /* Session 7T-P: the welcome-back card */
 .cq-hub-streak{display:block;margin:2px 0 6px;color:#ffcf7a;font-weight:700}.cq-hub-streak.cq-on{color:#ffd36e}.cq-hub-streak-new{display:block;margin-bottom:6px;color:#7ff0b0;font-weight:700}
 .cq .cq-town-lastchance{border:2px solid #ff5a6a!important;background:#0b0f1afa}.cq .cq-town-lastchance .cq-town-lc-clock{margin:4px 0;font-size:32px;line-height:1.1;font-weight:800;color:#ff8a95;font-variant-numeric:tabular-nums}
 .cq-town-hud{position:absolute;left:8px;right:8px;top:8px;z-index:4;display:grid;gap:6px;padding:8px 10px;border:1px solid #ff8a9599;border-radius:10px;background:#0a0f18e6}

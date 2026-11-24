@@ -33,7 +33,7 @@ function hubLines(card,s,o){const T=TN();if(!T||!s?.plot||!s?.base?.tier)return;
  for(const e of open.slice(0,2)){const G=genOf(e.g),lc=!!(e.lc&&e.lc>now),left=(lc?e.lc:e.l*Tk)-now;let lv=0;try{lv=T.strength(s.war,e,{now,tiers:0}).level;}catch(_){}
   const row=el('div','cq-town-row cq-town-incoming'+(lc?' cq-town-lc':''),null,box);
   el('p','cq-town-head',(lc?'⚠ RAID INCOMING · DEFEND? ':'⚠ RAID INCOMING · LANDS IN ')+t2(left),row);
-  el('small','',(G?G.name+' '+stars(G.stars)+' · ':'')+'RAID LEVEL '+lv+(sideOf(s,e)?' · MAIN FORCE FROM THE '+sideOf(s,e):'')+(e.go?' · GRAND OFFENSIVE TARGET':'')+(e.first?' · YOUR FIRST RAID: a scouting party':''),row);
+  el('small','',(G?G.name+' '+stars(G.stars)+' · ':'')+'RAID LEVEL '+lv+(sideOf(s,e)?' · MAIN FORCE FROM THE '+sideOf(s,e):'')+(e.go?' · GRAND OFFENSIVE TARGET':'')+(e.first?' · YOUR FIRST RAID: a scouting party':'')+(T.seOf?.(lv)?' · HOLD IT IN PERSON: +'+T.seOf(lv)+' SELENITE':''),row);   /* Session 7T-P decision 2 */
   el('small','cq-town-why',lc?'It lands now. Fight beside your turrets, or your garrison and turrets hold it alone.':'Away, your turrets and garrison fight it. Defend in person: the better result counts, and a held defense pays defense points.',row);
   if(o.act||o.defend){const b=button('DEFEND IN PERSON',()=>o.defend?o.defend(e.id):o.act('town-defend',{id:e.id}),'cq-town-defend');b.setAttribute('aria-label','Defend your town in person: raid lands in '+t2(left));row.append(b);}}
  // raided while away
@@ -57,14 +57,24 @@ function beaconLine(card,s,o){const T=TN();if(!T)return;const {el,button}=o,now=
 const REWARD={repair:'REPAIR KIT',scanner:'SCANNER CHARGE'};
 function rewardName(r){if(r.it)return r.n===0?(REWARD[r.it]||r.it.toUpperCase())+' (YOURS ARE FULL)':'+'+(r.n??1)+' '+(REWARD[r.it]||r.it.toUpperCase());if(r.em){const a=TN()?.STREAK_ART?.emblems?.[r.em];return (a?a.glyph+' ':'')+(a?.n||'BANNER EMBLEM')+' (TOWN BANNER)';}if(r.dc){const a=TN()?.STREAK_ART?.decor?.[r.dc];return (a?.n||'TOWN DECORATION').toUpperCase()+' (TOWN ORNAMENT)';}return '';}
 function streakLine(card,s,o){const T=TN();if(!T)return;const now=o.now||Date.now(),day=Math.floor(now/864e5),L=T.streakLine(s?.stk,day),{el}=o;
- const line=el('small','cq-hub-streak'+(L.today?' cq-on':''),'🔥 '+L.text,card);line.title='A day counts when you win an operation or harvest. Two freeze days a week cover missed days. Rewards are consumables and earn-only cosmetics, never points.';
- const nw=s?.stk?.nw;if(nw&&nw.d===day&&nw.r?.length)el('small','cq-hub-streak-new','DAY '+nw.n+' · '+nw.r.map(rewardName).join(' · '),card);}
+ const line=el('small','cq-hub-streak'+(L.today?' cq-on':''),'🔥 '+L.text,card);line.title='A day counts when you win an operation or harvest. Two freeze days a week cover missed days. Rewards are consumables and earn-only cosmetics, never points. Back after 14 days away: the day-1 and day-3 kits again.';
+ const nw=s?.stk?.nw;if(nw&&nw.d===day&&nw.r?.length)el('small','cq-hub-streak-new'+(nw.r.some(x=>x.wb)?' cq-welcome':''),(nw.r.some(x=>x.wb)?'WELCOME BACK · ':'')+'DAY '+nw.n+' · '+nw.r.map(rewardName).join(' · '),card);}   // Session 7T-P decision 4: a welcome-back kit says so
+// Session 7T-P decision 4: back after 14+ days away, the hub's first card says so on the days the welcome-back kits land (day 1 and day 3 of
+// the return), before the war and the town: the pilot sees what came back and what is next without scrolling
+function welcome(col,s,o){const T=TN();if(!T||!s?.stk)return;const now=o.now||Date.now(),day=Math.floor(now/864e5),nw=s.stk.nw,L0=T.streakLine(s.stk,day);const {el}=o;
+ // review B3: back after 14+ days and not yet played today: the card says what playing today brings back
+ if(L0.back&&!s.dev?.used){const full=(s.inv?.it?.repair|0)>=(typeof CQ_ITEM_MAX==='number'?CQ_ITEM_MAX:10),c=el('section','cq-hub-card cq-hub-welcome',null,col);el('h3','',"WELCOME BACK, PILOT",c);el('p','cq-hub-big','YOUR KITS ARE WAITING',c);   // review round 2: never promise what the Worker will not give (an owner dev record; a full kit bag)
+  el('small','',full?'Win an operation or harvest today to restart your streak (your Repair Kits are full: use one first to take the free one; day 3: a SCANNER CHARGE).':'Win an operation or harvest today: your day-1 REPAIR KIT comes back (day 3: a SCANNER CHARGE).',c);return;}
+ if(!nw||nw.d!==day||!(nw.wb||nw.r?.some(x=>x.wb)))return;
+ const c=el('section','cq-hub-card cq-hub-welcome',null,col);el('h3','',nw.wb?'WELCOME BACK, PILOT':'WELCOME BACK · DAY '+nw.n,c);
+ const got=(nw.r||[]).filter(x=>x.wb);if(got.length)el('p','cq-hub-big',got.map(rewardName).join(' · '),c);
+ const L=T.streakLine(s.stk,day);el('small','',L.next&&L.welcome?'Play '+(L.next.d-L.n)+' more day'+(L.next.d-L.n===1?'':'s')+': DAY '+L.next.d+' brings '+(L.next.it==='scanner'?'a SCANNER CHARGE':'the next milestone')+'.':'Your streak is back on: two freeze days a week keep it safe.',c);}
 // ---- the 60-second last chance (decision 1): wherever the pilot is in Conquest -------------------------------------------------------
 let LC=null;
 function lastChance(panel,s,o){const T=TN(),now=Date.now();const e=T&&s?.tw?(s.tw.ev||[]).find(x=>x.lc&&x.lc>now&&!x.tr):null;
  if(!e||s.td?.active||o.skip?.has(e.id)){if(LC){LC.d.remove();LC=null;}return;}
  const {el,button}=o;if(!LC||LC.id!==e.id){if(LC)LC.d.remove();const d=el('section','cq-dialog cq-town-lastchance',null,panel);d.setAttribute('role','alertdialog');d.setAttribute('aria-label','Raid incoming: defend your town?');
-  const G=genOf(e.g);el('p','cq-kicker','YOUR TOWN',d);el('h2','','RAID INCOMING · DEFEND?',d);const clock=el('p','cq-town-lc-clock','',d);el('p','',(G?G.name+' '+stars(G.stars)+' · ':'')+'the attack is landing now. Fight beside your turrets and garrison: the better of your fight and theirs counts.',d);
+  const G=genOf(e.g);let lv=0;try{lv=T.strength(s.war,e,{now,tiers:0}).level;}catch(_){}const se=T.seOf?.(lv)||0;el('p','cq-kicker','YOUR TOWN',d);el('h2','','RAID INCOMING · DEFEND?',d);const clock=el('p','cq-town-lc-clock','',d);el('p','',(G?G.name+' '+stars(G.stars)+' · ':'')+'the attack is landing now. Fight beside your turrets and garrison: the better of your fight and theirs counts.'+(se?' Hold it in person: +'+se+' SELENITE.':''),d);   // Session 7T-P (review note): the cap-level Selenite at the decision point
   const row=el('div','cq-town-btns',null,d);const go=button('DEFEND · ONE ATTEMPT',()=>{o.act?.('town-defend',{id:e.id});},'cq-town-defend');row.append(go);row.append(button('LET THE TOWN FIGHT',()=>{o.skip?.add(e.id);d.remove();LC=null;},'cq-town-skip'));
   LC={id:e.id,d,clock};try{go.focus({preventScroll:true});}catch(_){}}
  LC.clock.textContent=t2(e.lc-now)+' LEFT';}
@@ -103,5 +113,5 @@ function alertSwitches(c,s,o){const A=AL();if(!A)return;const sw=s?.al?.sw||{},{
 let pending=null;try{const q=new URLSearchParams(root.location?.search||'');pending=q.get('town')||(q.get('beacon')==='1'?'beacon':null);}catch(_){}
 try{root.navigator?.serviceWorker?.addEventListener?.('message',e=>{const q=String(e.data?.q||'');if(!q)return;try{const u=new URLSearchParams(q);pending=u.get('town')||(u.get('beacon')==='1'?'beacon':pending);}catch(_){}});}catch(_){}
 const takeLink=()=>{const v=pending;pending=null;return v;};
-root.ConquestTownUI=Object.freeze({hubLines,beaconLine,streakLine,lastChance,replay,liveHud,gearPicker,alertSwitches,takeLink,unseen,t2,rewardName,get link(){return pending;}});
+root.ConquestTownUI=Object.freeze({hubLines,beaconLine,streakLine,welcome,lastChance,replay,liveHud,gearPicker,alertSwitches,takeLink,unseen,t2,rewardName,get link(){return pending;}});
 })(globalThis);

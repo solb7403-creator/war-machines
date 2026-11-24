@@ -7069,3 +7069,153 @@ pushwoosh.com, airship.com 2026 benchmarks, developers.facebook.com game notific
 - No live players: no migration code. Revert plan if broken: revert `612b2b7` on main (both deploys follow main). Not needed.
 - Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged.
 - This record and ROADMAP row 7T went to main in a second, docs-only PR from the same branch (restarted from main).
+
+## Checkpoint 48 — Session 7T-P: Living Town proposals (branch `claude/living-town-proposals-oqqiv2`, from main `7041291`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md first; it governs everything.
+- Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`); Checkpoint 47 is Session 7T
+  (released, PR #150, build `20261123061357`); this is Checkpoint 48. Work on **`claude/living-town-proposals-oqqiv2`**.
+- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07TP_BRIEF.md`; this checkpoint opened (`4b0f015`, pushed).
+- **Slice 2 (decision 1, recorded):** the THREAT -> raid level table `[1,1,2,3,4,5,6,7,8,8,8,8,8,8,8,9,9]` (cap 9) and the 60% chance at
+  each eligible tick are **owner-adopted (Nov 23)**, kept exactly as shipped: `js/conquest/townwar.js` comments say so (no number
+  changed), `docs/economy/RESOURCE_ECONOMY.md` §16.1 (new section 16 Living Town) records both.
+- **Slice 3 (`fe683d4`, pushed): decisions 2-4 built and tested** (details below): the cap-level Selenite drop (4 then), the first-ring
+  coach step with SUGGEST A RING, the welcome-back kits; tests conquest-town-selenite (14), conquest-coach-ring (26), conquest-streak (+24
+  = 62), conquest-town-proposals.py (5 sizes); fortress test (e) and (f); the tools selenite-candidates.mjs and coach-ring-repairs.mjs.
+- **Owner addendum (Nov 23, mid-session, appended to the brief):** decision 2 targets a **2-hour heavy player**, not the grinder: set
+  `TOWN.se.n` 4 -> 8 if the regular stays within 5 points and the ladder guard holds; add the `heavy` profile (sessions `[[10,60],[19,60]]`,
+  the town ladder `ladderOf(120)`, citadel `[[0,0],[10,1],[32,3],[90,6],[208,9]]`, gear `[[0,0],[17,1],[95,2]]`) to fortress-model.mjs and
+  selenite-candidates.mjs; update the tests that pin 4; report the grinder; Session 8's paid-fortress target uses the same 2-hour play
+  time (final report). **Done:** the heavy profile (fortress-model.mjs PROFILES.heavy; economy-model.mjs exports ladderOf), the
+  candidates tool measures base / A / B4 / B8 / B12 for the regular, heavy, grinder and payer: **8 shipped** (heavy 88.1% late, the
+  regular within 3.6 points; table under decision 2).
+- **Working tree after slice 3 (not yet committed):** the welcome-back card at the top of the hub (townui.js `welcome`, one call in
+  hub.js, css), SUGGEST A RING moved to the floating action row in WALLS (never scrolled away), the coach texts naming it, the coach pill
+  shown when the first-visit tour ends (plotview.js, a pre-existing gap), the browser test's stricter reach (inside the scroller, never
+  under a fixed bar).
+- **Slice 4 (`74bc7b0`):** TOWN.se.n = 8, the heavy profile, the UI fixes above, conquest-town-proposals.py PASS at all 5 sizes.
+- **Slice 5 (`433e241`):** RESOURCE_ECONOMY §16.2-16.4. Round 1 reviews launched on `433e241` (reviewer 1 fun and reward, reviewer 2
+  measurements, guards, regressions); the fortress test and every CI node command running locally.
+- **Review round 1, reviewer 1 (fun and reward) at `433e241`:** decision 1 PASS; 2 PASS (design, code, tests) with a record error; 3
+  FAIL; 4 PASS with a text gap. **Blockers, all fixed (slice 6):**
+  - **B1** the record said the drop wakes with 7B: 7B's tiers I-III top out at level 8; the cap needs tiers VIII-IX (Session 11). Fixed
+    in the checkpoint, RESOURCE_ECONOMY §16.2, townwar.js / conquest-town.js comments, the selenite test (+1 check: tiers I-III stay
+    below the cap); the open item (pass the tiers in all five places) recorded under decision 2.
+  - **B2** the coach named the Storage Depot as outside when the depot was inside (a ring across ICE BASIN's lake, a west gap, a cannon
+    in the line), a Gate did not close a ring, and the dead-end toast blamed a building that was not there. Fixed: `ringOf` returns
+    `out` (the vital stands beyond the walls' ring) and the vital text needs it; a ring open across the lake says "raiders cross the
+    frozen lake at the red marker... SUGGEST A RING seals the shore"; Gates close a ring like walls (raiders must break their 900 HP);
+    the NO RING FITS toast names the real cause (move the vital nearer, a building on the frozen shore, or erase a wall / let the
+    Foundry make composite). conquest-coach-ring +5 checks (31).
+  - **B3** on a return day, before the first win or harvest, the hub showed no welcome (the line named day 30). Fixed: `streakLine`
+    knows a pending return (`back`: names DAY 1: REPAIR KIT, says WELCOME BACK), the hub card says "Win an operation or harvest today:
+    your day-1 REPAIR KIT comes back (day 3: a SCANNER CHARGE)". conquest-streak +2 checks (64).
+  - Non-blocking, folded in: the RECT wording (corner to corner), focus moves to CONFIRM WALLS after SUGGEST, the last-chance dialog
+    names the +8 Selenite at the cap, a stronger red marker. Recorded for the final report: the coached regular's faster CC10 (the
+    cache PROPOSAL, prominent), the payer's day-365 walls (0.78) below the free grinder's (0.80) at 8 Selenite (Session 8's paid
+    fortress, at the 2-hour play time), the farm bound for 3 days on / 14 off (22 Repair Kits + 22 Scanner Charges in 64 play days, 0.69
+    a play day, under a daily pilot's ~1 consumable a day from kill caches).
+- **Review round 1, reviewer 2 (measurements, guards, regressions) at `433e241`:** decisions 1-4 PASS (numbers reproduced exactly at
+  HEAD: the heavy player 88.1% late at 8, the regular within 3.6 points; conquest-ladder-check PASS with ladder.json identical; payments
+  off; Selenite earn-only; (e)'s guard intact; no test assertion changed or loosened; the Worker authoritative). **Blocker B1 (fixed,
+  slice 7):** `ladderRun` was not deterministic (the town seed `s.twsd` was drawn at random: a pilot's CC10 moved 26.8 <-> 19.8 between
+  runs), its cache claw-back stopped once the 16-entry town log was full (half the caches kept), and its raid tallies came from that
+  capped log. Fixed: `s.twsd` from the pilot seed, every raid counted once by id (the tally and the cache factor); the 101-pilot panel
+  and fortress (f) re-run (numbers under decision 3). Notes folded in: the record's "level 1-4 today" (the Grand Offensive's target can
+  reach 7), the regular's first cap raids from about day 259, the measured attack rate (about 1.36 a day from CC6), N3 (pay a live fight
+  at `s.td.lv` or pass the same tiers everywhere) in the open item. **N1, recorded for the final report:** the regular's guard days stop
+  at 330, before most of its Selenite arrives; reviewer 2 pooled 12 seed sets at n=8: +2.1 points at day 345 (SE 0.6) and +3.0 at 365
+  (SE 1.0), inside 5, though single sets reach 5.4 and 7.2 (B4 also shows 7.2 on one set: noise). **N2:** the coached regular's CC10
+  pace (raids on) sits below the Session 6 band: it leads the owner's PROPOSAL list.
+- **Local runs on the final code (after `e960eac`):** every CI node command PASS (173: `node build-sim.mjs` runs in `worker/` and
+  `signup-browser.cjs` with an engine, both PASS as CI runs them); the fortress job PASS (14 checks, 17 min); conquest-town-proposals.py
+  PASS at 5 sizes; conquest-town-ui.py (7T) PASS at 4 sizes, 1920x1080 timed out in the phone's replay simulation while the CPU ran at
+  load 9 (re-run alone pending); conquest-guardrails.mjs running.
+- **Slice 6 (`e960eac`):** reviewer 1's round-1 fixes. **Slice 7 (`12100d6`):** reviewer 2's round-1 fix (ladderRun deterministic, every
+  raid counted by id), the panel and fortress (f) re-run (fortress 14 checks), guardrails 67 checks, conquest-town-ui.py 1920x1080 PASS
+  alone (all 5 sizes now).
+- **Round 2 at `12100d6`: every blocker PASS, no new blocker.** Reviewer 1: B1, B2, B3 PASS (Gates close a ring; a gap or a cannon in the
+  line says CLOSE YOUR WALL RING; ICE BASIN rings of radius 10-14 get the frozen-lake text; the return-day card and line). Reviewer 2: B1
+  PASS (two processes give identical pilots; the committed 101-pilot numbers and (f)'s 21 reproduce exactly; the cache's ~4.0 of 4.6 days
+  supported); no regression in e960eac. Notes folded in (slice 8): the shore toast names the building on the frozen lake; the tier wiring
+  is five places (the last-chance line too); the pre-win card says YOUR KITS ARE WAITING, never shows on an owner dev record, and with a
+  full kit bag says to use one first; conquest-town-proposals.py checks the pre-win card at the 5 sizes (fixture `welcome:'pending'`).
+- Browser suites on the round-2 code: conquest-town-proposals.py, conquest-town-ui.py (5 sizes), conquest-hub-browser.py PASS; plot-ui,
+  base-builder, onboarding, desktop-keys, war-browser running.
+- **Next:** round 2 verdicts (fix any blocker), then release (merge main, dev/bump.sh, PR, CI, merge, verify the Worker and Pages, ROADMAP
+  row 7T-P, the release record) and the final report.
+
+### Owner decisions (Nov 23) as recorded
+1. **Kept as shipped, owner-adopted:** the THREAT -> raid level table (cap 9) and the 60% chance at each eligible tick
+   (`ConquestTown.TOWN.level`, `TOWN.chance`; RESOURCE_ECONOMY.md §16.1). Not PROPOSALS any more.
+2. **Selenite for the late fortress.** Both candidates measured (dev/tools/selenite-candidates.mjs: the fortress model's real income,
+   builder and raid engine, 8 raids a site and day = 56 a day so one raid is 1.8 points, two seed sets; and the economy model):
+   - **A, Strike Resonance every 8 strikes:** the grinder's late hold rate (days 300/330/365) 85.1% against 85.7% today (0 and -1.2
+     points on the two sets): no gain, the Selenite (+16%) is too little to change a wall blend; the regular moves up to 7.1 points
+     (day 120): fails the 5-point rule. Economy model: the regular's Selenite plate set 24 days sooner (day 182 -> 158), the grinder's
+     not at all (38): it would speed casual pilots, not the late fortress.
+   - **B, a Selenite drop on a town defense held in person:** first measured flat (every held defense: the grinder 88.7-89.9% late but
+     the regular +7 to +13 points at day 120, and new pilots would get Selenite from their first teaching raid at day 3), then **gated to
+     the cap level (9)**, which only the Citadel's last tier brings (the grinder from about day 135, the regular from about day 320):
+     4 Selenite: the grinder 89.9% late (88.1 / 91.7) from 85.7%, the regular within 3.6 points at every day. The lead's design change
+     (gate to the cap): Selenite stays a late-fortress reward and the regular is protected; recorded in townwar.js TOWN.se.
+   - Modelled in fortress-model.mjs: a day's Selenite = the attacks the pilot's sessions can meet in person (the real town clock, 24
+     pilot seeds: the regular reaches 47% of its raids in person, the grinder all; about 1.36 raids a day from CC6) x the share of raids
+     at the cap (raidSet) x the in-person hold rate at the cap (a bot pilot beside the Platoon and garrison on the profile's towns without
+     this Selenite: the grinder 76-86%, the regular 67-71%) x n; half reaches the town (the other half to plating), as every mineral.
+   - **Ships inert until the Citadel's tiers VIII-IX (Session 11)** (review round 1, B1: 7B builds tiers I-III, which top out at THREAT 8,
+     level 8; the cap needs THREAT 15): the town clock passes 0 Citadel tiers today (a town attack is level 1-4, the Grand Offensive's target up to 7); worker settle()
+     takes the tiers as a parameter (`cit`, 0 until then). **Open item:** the session that passes Citadel tiers to the town must pass them
+     in all five places, or the +8 hint never shows and the fought level differs from the paid one: worker/src/conquest-town.js `infoOf`
+     (`tiers:0`), `settle(..., cit)`, the town-defend start (`TN.strength(..., {tiers:0})`), js/conquest/townui.js's hub preview and its
+     last-chance dialog (five places; reviewer 2, N3: or pay a live fight at `s.td.lv`, so a fight run at a lower level is never paid the
+     cap's Selenite).
+   - **Owner addendum (Nov 23): the target is the 2-hour heavy player; shipped n = 8** (`TOWN.se.n`), measured with the heavy profile
+     (dev/tools/selenite-candidates.mjs on the final code, reproducing the owner's planning-chat numbers exactly):
+
+     | Candidate | Heavy (2 h) late, days 300/330/365 | Grinder (4 h) late | Regular: largest change at any day |
+     |---|---|---|---|
+     | 7T economy | 77.1% (75.0 / 79.2) | 85.7% (84.5 / 86.9) | 0 |
+     | A: Resonance every 8 | 80.4% (78.0 / 82.7) | 85.1% | 7.1 points (fails) |
+     | B: 4 Selenite at the cap | 81.3% (81.0 / 81.5) | 89.9% | 3.6 points |
+     | **B: 8 Selenite at the cap (shipped)** | **88.1% (85.7 / 90.5)** | **94.1%** | **3.6 points** |
+     | B: 12 Selenite at the cap | 87.8% (86.9 / 88.7) | 97.0% | 1.8 points |
+
+     With 8: the heavy player by day (set 1 / set 2) 60: 73 / 66, 180: 95 / 95, 300: 82 / 88, 330: 86 / 89, 365: 89 / 95; the paying pilot
+     (the grinder's play time) 84 / 75 at day 180 and 95 / 91 at day 330; Selenite a year: regular 199 (61 before), heavy 1,208 (122),
+     grinder 1,808 (206), payer 1,693; wall strength at day 365 (1 = fully built): heavy 0.67, grinder 0.80, payer 0.78, so nobody is
+     fully built inside the year (Moonheart stays the cap lever, earn-only). The regular's extra Selenite arrives after about day 320, so
+     its Selenite plate set (the economy model's day 182) does not move. The town-ladder guard holds: the drop is dormant until the
+     Citadel passes its tiers (the clock's raids are level 1-4 today; conquest-ladder-check runs without town attacks). Tests changed for
+     this decided rule: conquest-town-selenite (pins 8), conquest-fortress (e) (pins 8, the heavy player's check, the grinder reported;
+     the regular's 5-point guard unchanged).
+3. **The first-ring coach step** (js/conquest/plotview.js guideStep step 4 of 7/8, before CC4): `ConquestTown.ringOf` (closed when the
+   raid's gathering cells cannot reach the Command Center or a vital without crossing a wall; buildings never close a ring; a damaged wall
+   counts), the red marker where the town is open (3D holo and 2D), and **SUGGEST A RING** (`ConquestTown.ringPlan`, the lead's UX
+   addition): one tap drafts the closing order, an inner ring and (when the composite allows) an outer one, the ICE BASIN shore sealed
+   (walls cannot stand on ice: the 7T fortress plan's shore rule); the pilot confirms it like any draft. Why the double ring (measured on
+   21-pilot panels with fortress-model ladderRun): a ring hugging today's buildings left later buildings outside (27,000-56,000 CP of
+   REPAIR), a single roomy ring was still breached in 12 of 16 raids (about 20,000 CP), moving vitals into a small ring was worse
+   (49,000-102,000 CP); an inner ring of radius ~9 plus an outer one of ~13 about 200-1,400 CP.
+   **Re-measured (dev/tools/coach-ring-repairs.mjs, 101 pilots, the 7T guard method: 60 min a day, the real reducers, every raid decided
+   unfought, REPAIR paid when damaged; the no-raid baseline keeps the war running and holds town attacks off with a shield):**
+   (Re-run after review round 1 with `ladderRun` deterministic and every raid counted: 101 pilots, `docs/conquest/session7tp/coach-repairs.json`.)
+   CRATER RIM undefended (7T's builder): CC10 median 58.8 (+104%), mean 65.0 (+138%), REPAIR 121,628 CP in 43 repairs (7T: ~111,000 in 42),
+   about 78 raids on the way (2.6 held); **coached (SUGGEST A RING): REPAIR 635 CP in 3 repairs, CC10 median 20.8, mean 22.7, 26 raids (18
+   held), the ring closed before CC4 in 101/101**; seven sites undefended 180,426 CP (CC10 +111% / +203%), **coached 1,421 CP (CC10 median
+   26.8, mean 24.6), 101/101 closed before CC4**. A pilot who draws one ring by hand: CRATER 188 CP, seven sites 25,289 CP (ICE BASIN's lake,
+   hence SUGGEST A RING's sealed shore). Repairs are no longer heavy: **no repair-price PROPOSAL is needed** (model-only price factors on a
+   hand-drawn ring: x0.5 388 CP, x0.25 589 CP, no CC10 gain).
+   **Finding -> PROPOSAL (leads the owner's list):** a walled town holds its raids, and each held unfought raid pays 7T's defense cache
+   (160 CP + 15 alloy + 10 biomass + 2 He-3), so the coached regular reaches CC10 sooner than with no town attacks: CRATER median 20.8 /
+   mean 22.7 against 28.8 / 27.3, below the Session 6 band (25.9-31.7) that conquest-ladder-check guards without town attacks. Model-only
+   cache factors: x0.5 26.8 / 24.0, x0 27.8 / 26.7: the cache explains about 4.0 of the 4.6 days of the mean gap, the rest is the greedy
+   builder's fast-mode flips (a model artifact). fortress (f) asserts only that CC10 is no longer delayed. Owner's call (7T decision 5):
+   unchanged here.
+4. **Welcome-back kits** (townwar.js STREAK.welcome, worker streakSync, townui.js): back after 14 or more UTC days with no verified
+   activity (days between the last active day and today: day - last - 1 >= 14), the day-1 Repair Kit and the day-3 Scanner Charge again,
+   on that return's streak days 1 and 3, each re-armed once a return (only kits this pilot was given are re-armed; the next re-grant
+   needs another 14 days away); never points, minerals or CP; an owner dev record never gets them. The hub: a WELCOME BACK, PILOT card
+   first (what came back, what day 3 brings) and the streak line says WELCOME BACK. No farm: one day every 15 days for a year gives 25
+   Repair Kits and no Scanner Charge, while a daily pilot's kill caches drop about one consumable a day (LOOT mob 4%, elite 8%).

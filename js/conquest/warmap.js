@@ -154,7 +154,7 @@ function reportItems(s){const WR=W(),w=s.war;return WR.report(w,Date.now()).item
 // Session 7T decision 9: the town's raids since the report was last read (held ones appear only here and on the hub card; a breach is
 // also an alert)
 function townItems(s){const T=root.ConquestTown,WR=W();if(!T||!s?.tw||!WR)return [];return T.fresher(s.tw,Number(s.war?.rep)||0).filter(x=>x.o!=='called').map(x=>{const g=WR.GEN[x.g],lv=' · level '+(x.lv|0)+(g?' · '+g.name:'');
- return x.o==='held'?{c:'wm-r-win',t:'YOUR TOWN HELD'+(x.by==='you'?' (you defended it)':'')+lv+(x.cache?' · defense cache paid':'')}:{c:'wm-r-loss',t:(x.o==='fallen'?'YOUR TOWN FELL: the Command Center went down':'YOUR TOWN WAS BREACHED')+lv+' · REPAIR on the hub'};});}
+ return x.o==='held'?{c:'wm-r-win',t:'YOUR TOWN HELD'+(x.by==='you'?' (you defended it)':'')+lv+(x.cache?' · defense cache paid':'')+(x.se?' · +'+x.se+' Selenite':'')}:{c:'wm-r-loss',t:(x.o==='fallen'?'YOUR TOWN FELL: the Command Center went down':'YOUR TOWN WAS BREACHED')+lv+' · REPAIR on the hub'};});}
 function shouldReport(s){const WR=W();if(!WR||!s?.war)return false;return WR.report(s.war,Date.now()).fresh||townItems(s).length>0;}
 function report(d,s,o){const WR=W(),w=s.war,now=Date.now(),R=WR.report(w,now);d.textContent='';d.classList.add('cq-warreport');
  d.append(o.button('CLOSE',o.done,'cq-lab-close-top'));o.el('p','cq-kicker','LUNAR / WAR REPORT',d);o.el('h2','','WHILE YOU WERE AWAY',d);

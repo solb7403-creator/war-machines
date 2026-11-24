@@ -66,6 +66,14 @@ const server=http.createServer(async(req,res)=>{try{if(previewFile(req,res))retu
   if(o.lastChance)s.plot.shieldUntil=0;if(o.incoming!==false)s.tw.ev=[o.lastChance?{id:'t2',a:k-2,l:k,g:o.g2||'kethra',ln:0,lc:now+(o.lcMs||55000)}:{id:'t2',a:k,l:k+2,g:o.g2||'kethra',ln:0}];
   s.war.rep=now;   /* the War Report read: this scenario is about the hub card, the replay, the last chance and the switches (the report's town lines: conquest-away-raids.mjs) */
   const d=Math.floor(now/864e5);s.stk={n:3,last:d,wk:T.weekOf(d),fz:0,best:3,got:{1:1,3:1},nw:{d,n:3,r:[{d:3,it:'scanner',n:1}]}};delete s.bcn;s.al={on:1,ask:1,tz:0,ps:[]};}
+ if(b.welcome){/* Session 7T-P scenario placement (decision 4): a pilot back after 15 UTC days away (a 7-day streak, every early milestone
+   given) with a verified activity today; the Worker's own streakSync grants the welcome-back Repair Kit */
+  const now=Date.now(),TWN=await import('../../worker/src/conquest-town.js'),T=C.Town,d=Math.floor(now/864e5),L=d-15;s.stk={n:7,last:L,wk:T.weekOf(L),fz:0,best:7,got:{1:1,3:1,7:1}};
+  s.inv=s.inv&&typeof s.inv==='object'?s.inv:{v:1};s.inv.it={...(s.inv.it||{}),repair:2,scanner:1};if(b.welcome!=='pending'){s.airdrop=s.airdrop||{};s.airdrop.act=d;TWN.streakSync(s,now);}}   /* welcome:'pending': back, not yet played today */
+ if(b.coachRing){/* Session 7T-P scenario placement (decision 3): a CC2 town whose first wall does not close it (the coach's step 4) */
+  const now=Date.now(),Pl=C.Plot,o=b.coachRing===true?{}:b.coachRing,q=Pl.newPlot(o.site||'ridge',now);q.cc=2;q.b.cc.l=2;q.siteFree=1;q.at=now-9e8;
+  for(const t of ['refinery','cannon']){const at=Pl.autoPlace(q,t);if(at)q.b['b'+(++q.n)]={t,...at,l:1};}const pl=Pl.wallPlan(q,[{k:'line',a:[30,30],b:[36,30],o:0,l:0}]);for(const x of pl.cells)q.w[x.i+','+x.j]=x.code;q.cm-=pl.fresh;
+  s.base={tier:1,modules:{},builtAt:now-9e8,claimedAt:now-3e7,pointsAt:now-3e7};s.plot=q;s.position=point(C.Combat.baseDefinition.x,C.Combat.baseDefinition.z);s.battle.enemies=[];}
  db.root.conquest=db.root.conquest||{};db.root.conquest[pid]=s;res.end(JSON.stringify({ok:true}));return;
  }if(req.url==='/inspect'){res.end(JSON.stringify({state:cqLive(db,pid),measurements}));return;}
  const t=performance.now(),r=await worker.fetch(new Request('https://test'+req.url,{method:'POST',headers:{'Content-Type':'application/json'},body:raw}),env);const text=await r.text();measurements.push({path:req.url,ms:performance.now()-t,bytes:Buffer.byteLength(text),status:r.status});if(measurements.length>1000)measurements.shift();res.writeHead(r.status,{'Content-Type':'application/json'});res.end(text);

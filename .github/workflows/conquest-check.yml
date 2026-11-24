@@ -115,6 +115,10 @@ jobs:
           node dev/tests/conquest-alerts-unified.mjs
           node dev/tests/conquest-beacon.mjs
           node dev/tests/conquest-streak.mjs
+          # Session 7T-P: the first wall ring coach step (decision 3) and Selenite for the late fortress (decision 2); the welcome-back
+          # kits (decision 4) are in conquest-streak.mjs, the measurements in the fortress job
+          node dev/tests/conquest-coach-ring.mjs
+          node dev/tests/conquest-town-selenite.mjs
           node dev/tests/owner-rules.mjs
       - uses: actions/setup-python@v5
         with:
@@ -212,7 +216,7 @@ jobs:
   # keyboard). A job of its own (about 10 minutes): in the conquest job it pushed that job past its time limit.
   town-ui:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45   # Session 7T-P: + the coach ring step and the welcome-back kits at the five sizes
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -229,11 +233,15 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Session 7T town screens (5 sizes)
         run: python dev/tests/conquest-town-ui.py
+      - name: Session 7T-P screens (the coach ring step, the welcome-back kits; 5 sizes)
+        run: python dev/tests/conquest-town-proposals.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: conquest-town-ui
-          path: docs/conquest/session7t
+          path: |
+            docs/conquest/session7t
+            docs/conquest/session7tp
 
   transmission:
     runs-on: ubuntu-24.04

@@ -58,4 +58,36 @@ const mon=Date.UTC(2026,10,23,12),dayOf=t=>Math.floor(t/D);   // Monday Nov 23
  earn(s,'field',100,t-1000,{op:true});   // the win, paid earlier in the same request's frames
  const c=applyCommands(s,{seq:s.seq+1,commands:[{x:0,z:0}]},t);ok(c.stk?.n===1&&c.stk.nw?.d===dayOf(t),'a day won through the world\'s commands counts on that request, with no action after it');
  const c2=applyCommands(c,{seq:c.seq+1,commands:[{x:0,z:0}]},t+60000);ok(c2.stk.n===1&&c2.inv.it.repair===c.inv.it.repair,'... once a day (the next command request adds nothing)');}
-console.log('PASS soft return streak (decision 11): '+pass+' checks');
+// ---- Session 7T-P decision 4 (owner, Nov 23): welcome-back kits: back after 14 or more UTC days away (days with no verified activity),
+// the day-1 Repair Kit and the day-3 Scanner Charge again, once a return; never points or minerals ----
+{const d0=dayOf(mon),W=TN.STREAK.welcome;ok(W.away===14&&W.days.join()==='1,3','welcome back: after '+W.away+' days away, the day-'+W.days.join(' and day-')+' kits');
+ const run=(st,days)=>{const got=[];let r;for(const d of days){r=TN.streakDay(st,d);st=r.st;got.push(...r.rewards.map(x=>({...x,day:d})));}return {st,got,r};};
+ let a=run({},Array.from({length:7},(_,i)=>d0+i));ok(a.st.n===7&&a.st.got['1']&&a.st.got['3']&&a.st.got['7'],'a 7-day streak: every early milestone given');
+ const last=d0+6,back=last+15;   // 14 full UTC days with no activity in between
+ {const L=TN.streakLine(a.st,back);ok(L.back&&L.welcome&&/STREAK 0 DAYS · PLAY TODAY · WELCOME BACK · DAY 1: REPAIR KIT/.test(L.text),'review B3: back after 14 days, before the first win or harvest, the line names the kit that comes back: '+L.text);
+  ok(!TN.streakLine(a.st,last+14).back,'13 days away: no pending welcome on the line');}
+ let b=run(a.st,[back]);ok(b.r.back===1&&b.r.days===1&&b.got.length===1&&b.got[0].it==='repair'&&b.got[0].wb===1,'14 days away, then a verified day: WELCOME BACK, the day-1 Repair Kit again (streak day 1)');
+ ok(TN.streakLine(b.st,back).welcome&&/STREAK 1 DAY · TODAY ✓ · WELCOME BACK · DAY 3: SCANNER CHARGE/.test(TN.streakLine(b.st,back).text),'the hub line on the return: '+TN.streakLine(b.st,back).text);
+ let c=run(b.st,[back+1,back+2]);ok(c.got.length===1&&c.got[0].it==='scanner'&&c.got[0].wb===1&&c.got[0].day===back+2,'the return\'s third day: the day-3 Scanner Charge again');
+ let e=run(c.st,Array.from({length:10},(_,i)=>back+3+i));ok(!e.got.length,'then nothing more on this return (the day-7 emblem was already earned: never twice)');
+ ok(!TN.streakLine(c.st,back+3).welcome,'the line stops saying WELCOME BACK once both kits are given');
+ let n13=run(a.st,[last+14]);ok(n13.r.back===0&&!n13.got.length,'13 days away: no welcome-back kits (the streak restarts, every milestone already given)');
+ let again=run(e.st,[back+12+15]);ok(again.r.back===1&&again.got.length===1&&again.got[0].it==='repair'&&again.got[0].wb===1,'away 14 days again: the next return re-grants again (once a return)');
+ let same=run(again.st,[back+12+15]);ok(!same.got.length&&same.r.back===0,'the same return day twice: once');
+ // a pilot whose first streak never reached day 3: the return re-grants the day-1 kit; the day-3 kit, never given, comes as the plain milestone
+ let f=run({},[d0,d0+1]);let g=run(f.st,[d0+1+15,d0+17,d0+18]);ok(g.got.length===2&&g.got[0].wb===1&&g.got[1].it==='scanner'&&!g.got[1].wb,'never reached day 3 before: the return re-grants the day-1 kit; the day-3 kit is its first (no re-grant label)');
+ // no farm: a pilot who plays one day and then stays away 14 days, all year, gets one Repair Kit a return (and never the day-3 kit)
+ let st={},kits=0,scan=0;for(let d=d0;d<d0+365;d+=15){const r=TN.streakDay(st,d);st=r.st;for(const x of r.rewards){if(x.it==='repair')kits++;if(x.it==='scanner')scan++;}}
+ ok(kits===25&&scan===0,'one day every 15 days for a year: '+kits+' Repair Kits and '+scan+' Scanner Charges (one kit a return; a daily pilot\'s kill caches drop about one consumable a day: LOOT mob 4% and elite 8% an item); never points or minerals');
+ ok(TN.STREAK.rewards.filter(r=>W.days.includes(r.d)).every(r=>r.it&&!('pts' in r)&&!('mn' in r)&&!('cp' in r)),'the welcome-back kits are the day-1 and day-3 consumables only');}
+// ... and the Worker grants them on the return's first verified activity, never points, CP or minerals; an owner dev record never counts
+{let s=createState(R.STOCK_L,mon);s.inv=null;const d0=dayOf(mon);
+ for(let d=0;d<7;d++){const t=mon+d*D;earn(s,'field',100,t,{op:true});s=applyAction(s,{seq:s.seq+1,action:'war-seen'},t);}
+ const kits=s.inv.it.repair|0,scans=s.inv.it.scanner|0,t=mon+(6+15)*D;earn(s,'field',100,t,{op:true});const pts=s.airdrop?.pend?.raw||0,cp=s.ledger.cp,mn=JSON.stringify(s.ledger.mn||{});
+ const dv=structuredClone(s);s=applyAction(s,{seq:s.seq+1,action:'war-seen'},t);
+ ok(s.stk.n===1&&s.stk.nw.wb===1&&s.stk.nw.r?.[0]?.it==='repair'&&s.stk.nw.r[0].wb===1&&s.inv.it.repair===Math.min(R.CQ_ITEM_MAX,kits+1),'the Worker: back after 14 days away, a verified day re-grants the Repair Kit (nw.wb, the kit marked wb)');
+ ok((s.airdrop?.pend?.raw||0)===pts&&s.ledger.cp===cp&&JSON.stringify(s.ledger.mn||{})===mn,'... and gives no points, CP or minerals');
+ for(let d=1;d<=2;d++){const t2=t+d*D;earn(s,'field',100,t2,{act:true});s=applyAction(s,{seq:s.seq+1,action:'war-seen'},t2);}
+ ok(s.stk.n===3&&s.inv.it.scanner===Math.min(R.CQ_ITEM_MAX,scans+1)&&s.stk.nw.r?.[0]?.wb===1,'... and on the return\'s third day the Scanner Charge');
+ dv.dev={used:1};const dd=applyAction(dv,{seq:dv.seq+1,action:'war-seen'},t);ok(dd.stk.n===7&&!dd.stk.nw?.wb,'an owner dev-mode record never gets them');}
+console.log('PASS soft return streak (decision 11) and welcome-back kits (7T-P decision 4): '+pass+' checks');

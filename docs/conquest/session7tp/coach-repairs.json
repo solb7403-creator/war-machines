@@ -1,0 +1,449 @@
+{
+ "about": "Session 7T-P decision 3: REPAIR on the way to CC10 with town attacks on (fortress-model ladderRun; 101 pilots; 60 min a day; every raid decided unfought; REPAIR paid when damaged)",
+ "summary": {
+  "noRaids": {
+   "pilots": 101,
+   "CC10": {
+    "median": 28.8,
+    "mean": 27.3,
+    "fastMode": 15,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": 0,
+     "mean": 0
+    }
+   },
+   "repairCP": {
+    "median": 0,
+    "mean": 0
+   },
+   "repairs": {
+    "median": 0,
+    "mean": 0
+   },
+   "repairAlloy": {
+    "mean": 0
+   },
+   "repairComposite": {
+    "mean": 0
+   },
+   "raids": {
+    "held": 0,
+    "breached": 0,
+    "fallen": 0
+   },
+   "ring": {
+    "closedBeforeCC4": 0,
+    "meanClosedDay": null,
+    "meanCells": 0
+   }
+  },
+  "undefended": {
+   "pilots": 101,
+   "CC10": {
+    "median": 58.8,
+    "mean": 65,
+    "fastMode": 0,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": 104.2,
+     "mean": 138.1
+    }
+   },
+   "repairCP": {
+    "median": 100924,
+    "mean": 121628
+   },
+   "repairs": {
+    "median": 39,
+    "mean": 43.3
+   },
+   "repairAlloy": {
+    "mean": 10939
+   },
+   "repairComposite": {
+    "mean": 0
+   },
+   "raids": {
+    "held": 2.6,
+    "breached": 58.6,
+    "fallen": 17.3
+   },
+   "ring": {
+    "closedBeforeCC4": 0,
+    "meanClosedDay": null,
+    "meanCells": 0
+   }
+  },
+  "coached": {
+   "pilots": 101,
+   "CC10": {
+    "median": 20.8,
+    "mean": 22.7,
+    "fastMode": 56,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": -27.8,
+     "mean": -16.8
+    }
+   },
+   "repairCP": {
+    "median": 564,
+    "mean": 635
+   },
+   "repairs": {
+    "median": 3,
+    "mean": 3.1
+   },
+   "repairAlloy": {
+    "mean": 57
+   },
+   "repairComposite": {
+    "mean": 21
+   },
+   "raids": {
+    "held": 17.9,
+    "breached": 5.9,
+    "fallen": 2.4
+   },
+   "ring": {
+    "closedBeforeCC4": 101,
+    "meanClosedDay": 0.8,
+    "meanCells": 176
+   }
+  },
+  "one ring by hand": {
+   "pilots": 101,
+   "CC10": {
+    "median": 26.8,
+    "mean": 24.6,
+    "fastMode": 38,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": -6.9,
+     "mean": -9.9
+    }
+   },
+   "repairCP": {
+    "median": 180,
+    "mean": 188
+   },
+   "repairs": {
+    "median": 2,
+    "mean": 1.8
+   },
+   "repairAlloy": {
+    "mean": 17
+   },
+   "repairComposite": {
+    "mean": 14
+   },
+   "raids": {
+    "held": 16.4,
+    "breached": 7.5,
+    "fallen": 4.7
+   },
+   "ring": {
+    "closedBeforeCC4": 101,
+    "meanClosedDay": 0.8,
+    "meanCells": 184
+   }
+  },
+  "one ring x0.5": {
+   "pilots": 101,
+   "CC10": {
+    "median": 26.8,
+    "mean": 26.2,
+    "fastMode": 19,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": -6.9,
+     "mean": -4
+    }
+   },
+   "repairCP": {
+    "median": 376,
+    "mean": 388
+   },
+   "repairs": {
+    "median": 4,
+    "mean": 3.6
+   },
+   "repairAlloy": {
+    "mean": 35
+   },
+   "repairComposite": {
+    "mean": 15
+   },
+   "raids": {
+    "held": 18.8,
+    "breached": 6.7,
+    "fallen": 5.1
+   },
+   "ring": {
+    "closedBeforeCC4": 101,
+    "meanClosedDay": 0.8,
+    "meanCells": 184
+   }
+  },
+  "one ring x0.25": {
+   "pilots": 101,
+   "CC10": {
+    "median": 27.8,
+    "mean": 28.3,
+    "fastMode": 6,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": -3.5,
+     "mean": 3.7
+    }
+   },
+   "repairCP": {
+    "median": 590,
+    "mean": 589
+   },
+   "repairs": {
+    "median": 7,
+    "mean": 7.1
+   },
+   "repairAlloy": {
+    "mean": 55
+   },
+   "repairComposite": {
+    "mean": 15
+   },
+   "raids": {
+    "held": 15,
+    "breached": 9.4,
+    "fallen": 8.8
+   },
+   "ring": {
+    "closedBeforeCC4": 101,
+    "meanClosedDay": 0.8,
+    "meanCells": 184
+   }
+  },
+  "coached, cache x0.5": {
+   "pilots": 101,
+   "CC10": {
+    "median": 26.8,
+    "mean": 24,
+    "fastMode": 47,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": -6.9,
+     "mean": -12.1
+    }
+   },
+   "repairCP": {
+    "median": 564,
+    "mean": 630
+   },
+   "repairs": {
+    "median": 3,
+    "mean": 3.1
+   },
+   "repairAlloy": {
+    "mean": 56
+   },
+   "repairComposite": {
+    "mean": 21
+   },
+   "raids": {
+    "held": 19.5,
+    "breached": 6,
+    "fallen": 2.5
+   },
+   "ring": {
+    "closedBeforeCC4": 101,
+    "meanClosedDay": 0.8,
+    "meanCells": 176
+   }
+  },
+  "coached, cache x0": {
+   "pilots": 101,
+   "CC10": {
+    "median": 27.8,
+    "mean": 26.7,
+    "fastMode": 16,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": -3.5,
+     "mean": -2.2
+    }
+   },
+   "repairCP": {
+    "median": 564,
+    "mean": 629
+   },
+   "repairs": {
+    "median": 3,
+    "mean": 3.1
+   },
+   "repairAlloy": {
+    "mean": 56
+   },
+   "repairComposite": {
+    "mean": 21
+   },
+   "raids": {
+    "held": 21.7,
+    "breached": 5.8,
+    "fallen": 3.6
+   },
+   "ring": {
+    "closedBeforeCC4": 101,
+    "meanClosedDay": 0.8,
+    "meanCells": 176
+   }
+  },
+  "noRaids, 7 sites": {
+   "pilots": 101,
+   "CC10": {
+    "median": 28.8,
+    "mean": 27.3,
+    "fastMode": 15,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": 0,
+     "mean": 0
+    }
+   },
+   "repairCP": {
+    "median": 0,
+    "mean": 0
+   },
+   "repairs": {
+    "median": 0,
+    "mean": 0
+   },
+   "repairAlloy": {
+    "mean": 0
+   },
+   "repairComposite": {
+    "mean": 0
+   },
+   "raids": {
+    "held": 0,
+    "breached": 0,
+    "fallen": 0
+   },
+   "ring": {
+    "closedBeforeCC4": 0,
+    "meanClosedDay": null,
+    "meanCells": 0
+   }
+  },
+  "undefended, 7 sites": {
+   "pilots": 101,
+   "CC10": {
+    "median": 60.8,
+    "mean": 82.7,
+    "fastMode": 0,
+    "neverIn200Days": 12,
+    "vsNoRaids": {
+     "median": 111.1,
+     "mean": 202.9
+    }
+   },
+   "repairCP": {
+    "median": 84724,
+    "mean": 180426
+   },
+   "repairs": {
+    "median": 38,
+    "mean": 55.7
+   },
+   "repairAlloy": {
+    "mean": 16129
+   },
+   "repairComposite": {
+    "mean": 0
+   },
+   "raids": {
+    "held": 15.4,
+    "breached": 69.7,
+    "fallen": 14.8
+   },
+   "ring": {
+    "closedBeforeCC4": 0,
+    "meanClosedDay": null,
+    "meanCells": 0
+   }
+  },
+  "coached, 7 sites": {
+   "pilots": 101,
+   "CC10": {
+    "median": 26.8,
+    "mean": 24.6,
+    "fastMode": 41,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": -6.9,
+     "mean": -9.9
+    }
+   },
+   "repairCP": {
+    "median": 839,
+    "mean": 1421
+   },
+   "repairs": {
+    "median": 5,
+    "mean": 5.1
+   },
+   "repairAlloy": {
+    "mean": 128
+   },
+   "repairComposite": {
+    "mean": 27
+   },
+   "raids": {
+    "held": 15.6,
+    "breached": 9.7,
+    "fallen": 3.2
+   },
+   "ring": {
+    "closedBeforeCC4": 101,
+    "meanClosedDay": 0.8,
+    "meanCells": 170.8
+   }
+  },
+  "one ring by hand, 7 sites": {
+   "pilots": 101,
+   "CC10": {
+    "median": 26.8,
+    "mean": 34.3,
+    "fastMode": 27,
+    "neverIn200Days": 0,
+    "vsNoRaids": {
+     "median": -6.9,
+     "mean": 25.6
+    }
+   },
+   "repairCP": {
+    "median": 1238,
+    "mean": 25289
+   },
+   "repairs": {
+    "median": 4,
+    "mean": 13
+   },
+   "repairAlloy": {
+    "mean": 2373
+   },
+   "repairComposite": {
+    "mean": 37
+   },
+   "raids": {
+    "held": 18.4,
+    "breached": 18.6,
+    "fallen": 3.7
+   },
+   "ring": {
+    "closedBeforeCC4": 101,
+    "meanClosedDay": 0.8,
+    "meanCells": 159.6
+   }
+  }
+ }
+}

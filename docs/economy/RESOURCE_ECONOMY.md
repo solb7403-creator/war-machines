@@ -1072,6 +1072,59 @@ months on the free path at any play time: chips are one a day), a payer gets the
 never buys power directly (chips buy research time, not levels), and the Battalion stage (day 17 at an hour a day) gives the first
 month its big goal.
 
+## 16. Living Town (Session 7T, owner brief Nov 22; Session 7T-P, owner decisions Nov 23)
+
+Code: `js/conquest/townwar.js` (`ConquestTown.TOWN`, shared with the Worker), `worker/src/conquest-town.js`, `js/conquest/raid.js`.
+Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids.mjs`, `dev/tests/conquest-live-defense.mjs`,
+`dev/tests/conquest-fortress.mjs` (model `dev/tools/fortress-model.mjs`).
+
+### 16.1 Town attacks: strength and pace (owner-adopted Nov 23, Session 7T-P decision 1)
+- **THREAT -> raid level** (`TOWN.level`, index = THREAT rounded, 0..16; the cap 9): `1, 1, 2, 3, 4, 5, 6, 7, 8, 8, 8, 8, 8, 8, 8, 9, 9`.
+  THREAT is Session 7's `threatOf` on the town (the attacking general's stars, the portal while open, the Citadel tiers cleared, the
+  Grand Offensive surge), never Command Center level, gear or purchases. The cap 9 is where the fully built town holds every raid at
+  the top strength (THREAT 16) without a breach. The first attack on a town is a teaching raid (a one-star general at level 1).
+- **The tick chance** (`TOWN.chance`): an eligible war tick announces a town attack **60%** of the time (about 0.9 a day at CC2-5
+  and about 1.4 a day from CC6 under the pace limits (the real clock over a year: 1.36): at most 1 in any 24 hours through CC5 and 2 from CC6, at least 8 hours apart, none
+  in a town's first 3 days, under a shield or while the front is frozen).
+- Both were Session 7T PROPOSALS; the owner adopted them as shipped on Nov 23.
+
+### 16.2 Selenite for the late fortress (Session 7T-P decision 2 and the owner's addendum, Nov 23)
+- **Rule** (`TOWN.se`, `ConquestTown.seOf`): a town raid at the **cap level (9)** settled HELD with the pilot **really fighting** (the 675
+  defense points' own rule) drops **8 Selenite** into the pilot's cargo (banked at the Refuge like every mineral). None below the cap,
+  none for an unfought raid, none for a fight that did not hold. Selenite stays earn-only (never in the store).
+- **Ships inert until the Citadel's tiers VIII-IX (Session 11):** the town clock passes 0 Citadel tiers today, so a town attack is level
+  1-4 (the Grand Offensive's target up to 7); 7B's tiers I-III top out at level 8; the cap (THREAT 15) needs tiers VIII-IX (in the
+  fortress model the first cap raids come about day 110 for the grinder, 169 for the heavy player and 259 for the regular, most of them
+  later: from about day 135, 208 and 320). The session that passes the tiers to
+  the town passes them in all five places (the Worker's town clock, its settle, the town-defend start, the hub's preview and its
+  last-chance line).
+- **Measured** (`dev/tools/selenite-candidates.mjs`, the fortress model's real income, builder and raid engine, 56 raids a day on two seed
+  sets; `docs/conquest/session7tp/selenite-candidates.json`): late in the year (days 300, 330, 365) the 2-hour heavy player holds 88.1%
+  (77.1% before; 4 Selenite gave 81.3%, 12 gave 87.8%), the grinder 94.1% (85.7%), and the regular's hold rates stay within 3.6 points at
+  every measured day. The other candidate, Strike Resonance every 8 strikes instead of 12, moved the grinder by 0 to -1 points, the
+  heavy player +3, and the regular by up to 7 points (it fails the 5-point rule); in this economy model it would bring the regular's
+  Selenite plate set 24 days sooner (day 182 to 158) and leave the grinder's (day 38) unchanged.
+- Selenite a year (fortress model, half to the town, half to plating): regular 199 (61 before), heavy 1,208 (122), grinder 1,808 (206).
+  Wall strength after a year (1 = Moonheart heavy everywhere): heavy 0.67, grinder 0.80, the paying pilot 0.78: nobody is fully built
+  inside the year.
+
+### 16.3 The first wall ring (Session 7T-P decision 3)
+- The town coach's step 4 (before CC4): CLOSE YOUR WALL RING, with a red marker where the town is open, until the raiders' gathering
+  cells cannot reach the Command Center or a vital without breaking a wall (`ConquestTown.ringOf`). **SUGGEST A RING** drafts the closing
+  order in one tap (`ConquestTown.ringPlan`: an inner ring and, when the composite allows, an outer one; ICE BASIN's frozen shore sealed);
+  the pilot confirms it like any wall order (composite only, never a price change).
+- **REPAIR on the way to CC10** (`dev/tools/coach-ring-repairs.mjs`, the Nov 10 guard method: the 60-minute regular on the real reducers,
+  every raid decided unfought, REPAIR paid when damaged; 101 pilots): without walls 121,628 CP in 43 repairs on CRATER RIM (CC10 twice as
+  long) and 180,426 CP across the seven sites; with the coach's ring 635 CP and 1,421 CP, CC10 no longer delayed. No repair-price change
+  is needed. PROPOSAL (owner): held unfought raids pay the defense cache (Session 7T decision 5), so a walled regular reaches CC10 sooner
+  than with no town attacks (CRATER median day 20.8 / mean 22.7 against 28.8 / 27.3); half the cache gives 26.8 / 24.0, none 27.8 / 26.7.
+
+### 16.4 Welcome-back kits (Session 7T-P decision 4)
+- Back after **14 or more UTC days with no verified activity**, the streak's day-1 Repair Kit and day-3 Scanner Charge are given once
+  more, on that return's streak days 1 and 3 (once a return; only kits the pilot was given before are re-armed). Never points, minerals
+  or CP; consumables stop at their cap (10). A pilot who plays one day every 15 days gets 25 Repair Kits a year and no Scanner Charge; a
+  daily pilot's kill caches drop about one consumable a day.
+
 ## Appendix: model assumptions (`dev/tools/economy-model.mjs`)
 
 - **Arcade points a minute:** same formula as `dev/tests/s2/ppm.mjs` (measured win rate and match length, +20 s of screens, streak bonus, no featured bonus) on `league-grid-standard.json`. It reproduces `docs/launch/LEAGUES.md`: 223 / 264 / 320 / 343 / 460 / 495 / 702.
