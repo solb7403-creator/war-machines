@@ -7070,7 +7070,7 @@ pushwoosh.com, airship.com 2026 benchmarks, developers.facebook.com game notific
 - Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged.
 - This record and ROADMAP row 7T went to main in a second, docs-only PR from the same branch (restarted from main).
 
-## Checkpoint 48 — Session 7T-P: Living Town proposals (branch `claude/living-town-proposals-oqqiv2`, from main `7041291`) — IN PROGRESS
+## Checkpoint 48 — Session 7T-P: Living Town proposals (branch `claude/living-town-proposals-oqqiv2`, from main `7041291`) — RELEASED Nov 24 (PR #152, merge `207f10b`)
 
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md first; it governs everything.
@@ -7143,8 +7143,14 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
   full kit bag says to use one first; conquest-town-proposals.py checks the pre-win card at the 5 sizes (fixture `welcome:'pending'`).
 - Browser suites on the round-2 code: conquest-town-proposals.py, conquest-town-ui.py (5 sizes), conquest-hub-browser.py PASS; plot-ui,
   base-builder, onboarding, desktop-keys, war-browser running.
-- **Next:** round 2 verdicts (fix any blocker), then release (merge main, dev/bump.sh, PR, CI, merge, verify the Worker and Pages, ROADMAP
-  row 7T-P, the release record) and the final report.
+- **Release:** main had not moved from `7041291` (nothing to merge in); `dev/bump.sh` -> build `20261123142107` (`f994fe7`); PR #152,
+  all 14 checks green on `f994fe7` (two `transmission` jobs failed once in code this PR does not touch and passed on their one re-run:
+  a PR comment says why).
+- **RELEASED Nov 24**: PR #152 merged as `207f10b` (02:31 UTC; owner-approved in chat as well as in the brief). Worker and GitHub Pages
+  verified: see "Release record" at the end of this checkpoint. The final report is "Open items and PROPOSALs (final report)" below.
+  This record and ROADMAP row 7T-P went to main in a docs-only PR from the same branch (restarted from main). Next sessions: 7-V, 7B
+  (the Citadel), 8 (the paid fortress at the 2-hour play time), 11 (Citadel tiers VIII-IX wake the Selenite drop: pass the tiers in
+  all five places).
 
 ### Owner decisions (Nov 23) as recorded
 1. **Kept as shipped, owner-adopted:** the THREAT -> raid level table (cap 9) and the 60% chance at each eligible tick
@@ -7219,3 +7225,30 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
    needs another 14 days away); never points, minerals or CP; an owner dev record never gets them. The hub: a WELCOME BACK, PILOT card
    first (what came back, what day 3 brings) and the streak line says WELCOME BACK. No farm: one day every 15 days for a year gives 25
    Repair Kits and no Scanner Charge, while a daily pilot's kill caches drop about one consumable a day (LOOT mob 4%, elite 8%).
+
+### Open items and PROPOSALs (final report)
+- **Selenite candidates and the choice (decision 2):** measured with `dev/tools/selenite-candidates.mjs` (the fortress model's real
+  income, builder and raid engine; 56 raids a day; two seed sets) and the economy model; the table is under decision 2 above.
+  A (Strike Resonance every 8): heavy 80.4% late, grinder 85.1% (no gain), the regular moves 7.1 points: fails the 5-point rule.
+  B (Selenite on a cap-level defense held in person): 4 -> heavy 81.3%, grinder 89.9%; **8 (shipped, the owner's addendum) -> heavy
+  88.1%, grinder 94.1%, the regular within 3.6 points**; 12 -> heavy 87.8%, grinder 97.0%. The town-ladder guard holds (the drop is
+  dormant until the Citadel passes its tiers). Earn-only.
+- **Repairs after the coach step (decision 3):** 101 pilots, `dev/tools/coach-ring-repairs.mjs`: CRATER RIM undefended 121,628 CP in 43
+  repairs (CC10 median 58.8), coached 635 CP in 3 repairs (CC10 median 20.8), the ring closed before CC4 in 101/101; seven sites
+  180,426 -> 1,421 CP. Repairs are no longer heavy: no repair-price PROPOSAL.
+- **PROPOSAL (leads the list):** the held unfought raid's defense cache (7T decision 5: 160 CP + 15 alloy + 10 biomass + 2 He-3)
+  speeds a walled regular's CC10 below the Session 6 band: CRATER median 20.8 / mean 22.7 against 28.8 / 27.3 with no town attacks
+  (band 25.9-31.7). Model-only: half the cache 26.8 / 24.0, none 27.8 / 26.7. Owner's call; unchanged.
+- **PROPOSAL (Session 8, the owner's addendum):** the paid-fortress target uses the same 2-hour play time as decision 2. Measured at
+  8 Selenite: the payer's day-365 walls 0.78, below the free grinder's 0.80 (heavy 0.67): nobody is fully built inside the year and
+  the paid fortress still needs its own lever (Moonheart stays earn-only).
+- **Open item (Session 11):** the session that passes Citadel tiers to the town must pass them in all five places
+  (worker/src/conquest-town.js `infoOf` `tiers:0`, `settle(..., cit)`, the town-defend start `TN.strength(..., {tiers:0})`,
+  js/conquest/townui.js's hub preview and its last-chance dialog), or pay a live fight at `s.td.lv`, so a fight run below the cap is
+  never paid the cap's Selenite and the +8 hint shows.
+- **Open (noise, reviewer 2 N1):** the regular's guard days stop at 330, before most of its Selenite arrives (after about day 320);
+  pooled over 12 seed sets at 8: +2.1 points at day 345 and +3.0 at 365, inside 5; single sets reach 5.4 and 7.2.
+- **Measured (decision 4):** the welcome-back kits cannot be farmed: one day every 15 for a year gives 25 Repair Kits and no Scanner
+  Charge; 3 days on / 14 off gives 22 + 22 in 64 play days (0.69 a play day), under a daily pilot's ~1 consumable a day from kill caches.
+- Carried from Checkpoint 47 and still open: the alert cron's capacity before launch (pre-launch load test), the replay's garrison and
+  the live defense's shots (row 7-V), the THREAT 1-4 town raids until the Citadel (7B, then Session 11 for the cap).
