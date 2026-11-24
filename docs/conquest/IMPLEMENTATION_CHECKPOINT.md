@@ -7612,8 +7612,13 @@ is used by that assault); a minimum Battalion retry after a loss (downed allies 
   of the element and its own scroller); one re-run each for a WebKit renderer crash in `conquest-session-033.py` and for the 90 s
   world-stream wait in Session 6's `conquest-session6-loot.py` (it passed on its re-run; measured: main 62-64 s, this branch 64-68 s with
   the same draw calls and triangles), each explained in a PR comment.
-- Worker: WORKER_DEPLOY_PLACEHOLDER
-- GitHub Pages: PAGES_PLACEHOLDER
+- Worker: `Deploy Stars server (Cloudflare)` run 45411056997 SUCCESS on `9e375e8`, dispatched by the auto-release workflow (deployed
+  14:15 UTC, version id `5957a588-08e2-4b24-8282-ef7ae6ba3990`, startup 171 ms; 20 changed assets uploaded, the Citadel modules among
+  them; the crons `*/5`, `* 15-18` and the alert cron `1-56/5` registered): `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,
+  "queues":[]}`, live `version.json` = `{"v":"20261124123529"}` = repo. The other dispatched push checks: owner-rules, equipment
+  balance, lab UI, the Graphify index.
+- GitHub Pages: `pages build and deployment` run 45411050173 SUCCESS on `9e375e8` (14:11 UTC). This container cannot reach
+  workers.dev (network policy), so the live values come from the deploy job's own checks above.
 - Database rules: unchanged in this release (`database.rules.json` not touched), so `Deploy Firebase rules` did not run.
 - No live players: no migration code. Revert plan if broken: revert `9e375e8` on main (both deploys follow main). Not needed.
 - Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged; the Citadel bounties are the brief's
