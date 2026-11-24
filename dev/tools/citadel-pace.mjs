@@ -6,7 +6,7 @@
 // (lanes in parallel). Deterministic and read-only.
 // usage: node dev/tools/citadel-pace.mjs [--seeds 4] [--par 4]                 writes docs/conquest/session7b/citadel-pace.json
 //        node dev/tools/citadel-pace.mjs --one '{"p":"regular","t":1,"d":18,"s":0}'  one assault (prints JSON)
-import {spawn} from 'node:child_process';import {writeFileSync,mkdirSync} from 'node:fs';import {fileURLToPath} from 'node:url';
+import {spawn} from 'node:child_process';import {writeFileSync,mkdirSync} from 'node:fs';import {fileURLToPath} from 'node:url';import {resolve} from 'node:path';
 const arg=(k,d)=>{const i=process.argv.indexOf(k);return i>0?process.argv[i+1]:d;};
 // the brief's targets (days): tier I in weeks 2-3 for the regular and days 5-7 for the grinder; tier III in weeks 6-8 and week 3; the
 // 2-hour heavy player between them (fortress-model.mjs PROFILES.heavy: tier I about day 10, III about day 32)
@@ -24,7 +24,8 @@ export async function firstWin(run,p,t,{from=1,seeds=4,steps=6,max=80}={}){const
  for(const d of days.slice(0,steps)){const rs=await Promise.all(Array.from({length:seeds},(_,s)=>run({p,t,d,s})));const won=rs.filter(r=>r.won).length;tried.push({d,won,of:seeds,sec:rs.map(r=>r.sec),kit:rs[0].kit});if(won*2>=seeds)return {day:d,tried};}
  return {day:null,tried};}
 if(process.argv.includes('--one')){process.stdout.write(JSON.stringify(await one(JSON.parse(arg('--one','{}'))))+'\n');}
-else if(process.argv[1]&&process.argv[1].endsWith('citadel-pace.mjs')){const seeds=Number(arg('--seeds',4)),run=runner(Math.max(1,Math.min(8,Number(arg('--par',4)))));
+else if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){   // run as a script (never on import: conquest-citadel-pace.mjs ends with the same name)
+const seeds=Number(arg('--seeds',4)),run=runner(Math.max(1,Math.min(8,Number(arg('--par',4)))));
  // where each search starts: the kit day before the full Battalion (tier I) and before the rare gear day (tiers II-III)
  const M=await import('./citadel-model.mjs'),start=(p,f)=>{let d=1;for(let x=1;x<=80;x++){if(f(M.kitAt(p,x))){d=x;break;}}return Math.max(1,d-3);};
  // a tier after the first opens CIT.refortMs (7 days) after the previous tier's first clear (the Hive re-fortifies): its search starts there

@@ -7,7 +7,7 @@
 //   - kitAt(profile, day): the profile's tank and Battalion that day
 //   - pace(profile): the first day each tier is won in at least half of the seeded fights (with the tier before it already cleared)
 // usage: node dev/tools/citadel-model.mjs [--quick] [--json out.json] [--profile regular|heavy|grinder]
-import {writeFileSync,mkdirSync} from 'node:fs';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
+import {writeFileSync,mkdirSync} from 'node:fs';import {fileURLToPath} from 'node:url';import {resolve} from 'node:path';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
 const {CONQUEST,RULES:R}=await import('../../worker/src/sim.gen.js');const {Combat:C,World:W,Control:K,Citadel:CI,Battalion:BT}=CONQUEST;
 const {MODEL}=await import('./economy-model.mjs');const {GEAR}=await import('../tests/combat-sim.mjs');
 // the three play times of the fortress model (dev/tools/fortress-model.mjs PROFILES) and their gear schedules
@@ -80,7 +80,7 @@ export function assault(tier,{L=GEAR.common,allies=[],prep={},gambits=[],seed=1,
 // the first day a profile's kit wins this tier in at least half of n seeded fights (days from `from`, step `by`)
 export function firstWin(name,tier,{from=1,to=120,by=2,n=4,prep={}}={}){for(let d=from;d<=to;d+=by){const k=kitAt(name,d);let won=0;const runs=[];for(let i=0;i<n;i++){const r=assault(tier,{L:k.L,allies:k.allies,prep,seed:1000*tier+i});runs.push(r);if(r.outcome==='victory')won++;}
   if(won*2>=n)return {day:d,won,of:n,kit:{tier:k.tier,hangar:k.hangar,allies:k.allies.length,rank:k.top},median:runs.filter(r=>r.outcome==='victory').map(r=>r.seconds).sort((a,b)=>a-b)[0]};}return null;}
-if(process.argv[1]&&process.argv[1].endsWith('citadel-model.mjs')){
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){   // run as a script only (never on import)
  const quick=process.argv.includes('--quick'),only=process.argv.includes('--profile')?process.argv[process.argv.indexOf('--profile')+1]:null,out={};
  for(const name of only?[only]:Object.keys(PROFILES)){out[name]={};let from=1;for(const tier of [1,2,3]){const r=firstWin(name,tier,{from,to:quick?80:160,by:quick?3:1,n:quick?2:4});out[name][tier]=r;console.log(name,'tier',tier,JSON.stringify(r));if(r)from=r.day;}}
  const j=process.argv.includes('--json')?process.argv[process.argv.indexOf('--json')+1]:null;if(j){mkdirSync(j.replace(/\/[^/]*$/,''),{recursive:true});writeFileSync(j,JSON.stringify(out,null,1)+'\n');}}
