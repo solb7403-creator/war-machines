@@ -7275,3 +7275,14 @@ If your context was cleared, read docs/conquest/audit/SESSION_07TP_BRIEF.md firs
 - No live players: no migration code. Revert plan if broken: revert `207f10b` on main (both deploys follow main). Not needed.
 - Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged; Selenite earn-only.
 - This record and ROADMAP row 7T-P went to main in a second, docs-only PR from the same branch (restarted from main).
+
+## Checkpoint 49 — Session 7B: Citadel Act I, logic only (branch `claude/citadel-act-i-logic-jpnnz3`, from main `2418328`)
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md first; it governs everything, then this section.
+- Checkpoint 45 belongs to Session 5E-2d2 (paused on `claude/parasite-units-dropships-8y7kby`, head `af852a8`; its
+  `js/conquest/dropship.js` exposes `ConquestDropship.flight(spec)` with `spec.hitAt` for a ship shot down, `planDrill`, `unitPose`,
+  `stage(S,K,o)`); Checkpoint 48 is Session 7T-P (released, PR #152); this is Checkpoint 49. Work on
+  **`claude/citadel-act-i-logic-jpnnz3`** (one branch for every PR of this session, restarted from main after each merge).
+- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md`; this checkpoint opened.
+- **Next:** STEP 1 (its own PR, merged before the rest): the auto-release workflow, the two flaky browser tests hardened, merge it.
