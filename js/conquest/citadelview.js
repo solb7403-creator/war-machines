@@ -37,7 +37,7 @@ function sync(view){const B=view.battle;if(!B?.cit||!view.T||!view.scene||view.r
 // ConquestCitadel.dropshipSpec(e); the position and hit box stay the assault's own
 function ship(view,e,B){const D=root.ConquestDropship,m=view.enemyMeshes?.get(e.id);if(!D?.flight||!m)return;const spec=CI().dropshipSpec(e);if(!spec)return;
  try{const key=e.id+':'+(spec.hitAt??''),c=view.citShips||(view.citShips=new Map());let F=c.get(key);if(!F){F=D.flight({...spec,ground:(x,z)=>root.ConquestWorld.groundAt(x,z)});c.set(key,F);}
-  const P=F.pose(B.time||0);if(P&&P.vis!==false){m.rotation.x=P.pitch||0;m.rotation.z=P.roll||0;m.userData.dropshipPhase=P.phase;}}catch(_){}}
+  const P=F.pose(B.time||0);if(P&&P.vis!==false){m.userData.pose={p:P.pitch||0,r:P.roll||0};m.userData.dropshipPhase=P.phase;}else delete m.userData.pose;}catch(_){}}   // view.js applies the pose after the ground orientation
 // a Citadel unit's stand-in model (null: the view's own). Shapes cached per view (shared, never disposed per unit), the view's own
 // materials, a gun group and the selection / tell marker every Parasite model carries (the view turns the gun and shows the tell)
 function model(view,e){if(!(e.cit||e.swarm||e.ship||e.warden)||!view.T||typeof view.mat!=='function'||typeof view.form!=='function')return null;const T=view.T,g=new T.Group(),gun=new T.Group(),C=view.citCache||(view.citCache=new Map());g.add(gun);g.userData.gun=gun;

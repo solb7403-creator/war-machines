@@ -518,7 +518,7 @@ function warRoute(id){const o=root.ConquestCombat?.operations[id];if(!o||!view)r
 // plays (full on a tier's first attempt, short after) while the fight waits; a pilot on the hub enters the world first
 async function citadelLaunch(t){if(!view){afterEnter='citadel:'+t;enter();return;}const s0=view.authority?.state,seen=s0?.cit?.cs?.[t]|0;
  const ok=await view.requestAction('start-mission',{mission:'citadel-'+t});if(!ok){say(String(view.authority?.error||'UNAVAILABLE').replace(/^conquest: /,'').toUpperCase(),5000);return;}
- root.ConquestCutscene?.play(panel,view,t,{full:!(seen>0),el,button});}
+ root.ConquestCutscene?.play(panel,view,t,{full:root.ConquestCitadel?root.ConquestCitadel.cutOf(t,seen).full:!(seen>0),el,button});}   /* the rule: full on the first attempt, short after */
 // the clear-time board (Throne Run): the Worker's weekly document for this tier
 async function citadelBoard(t){const d=dialog();d.classList.add('cq-lab-hub');el('p','cq-load','Loading the board…',d);
  try{const r=await cqCall('/api/conquest/citadel-board',{t});d.textContent='';root.ConquestCitadelUI?.boardRows(d,r?.board||{tier:t,top:[]},{el,button},()=>d.remove());}catch(e){d.textContent='';el('p','cq-lab-why','The board needs a connection to the game server.',d);d.append(button('CLOSE',()=>d.remove()));}}

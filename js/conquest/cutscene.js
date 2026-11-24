@@ -23,7 +23,7 @@ function play(panel,view,tier,{full=true,el,button,done}={}){const shots=full?(S
  const d=mk('section','cq-cutscene',null,panel);d.setAttribute('role','dialog');d.setAttribute('aria-label','Citadel reveal');d.tabIndex=-1;
  const card=mk('div','cq-cut-card',null,d),k=mk('p','cq-kicker','',card),h=mk('h2','','',card),p=mk('p','cq-cut-line','',card),bar=mk('div','cq-cut-bar',null,d),fill=mk('i','',null,bar);
  const skipB=button?button('SKIP ▸',()=>end(),'cq-cut-skip'):(()=>{const b=mk('button','cq-cut-skip','SKIP ▸',d);b.type='button';b.onclick=()=>end();return b;})();if(skipB.parentNode!==d)d.append(skipB);
- const total=shots.reduce((a,x)=>a+x.ms,0),cam0=view?{yaw:view.yaw,pitch:view.pitch,distance:view.distance}:null,C=CI(),c0=C?.centre?.(),t0=performance.now();let i=-1,raf=0,over=false,resolve;
+ d.dataset.shots=String(shots.length);const total=shots.reduce((a,x)=>a+x.ms,0),cam0=view?{yaw:view.yaw,pitch:view.pitch,distance:view.distance}:null,C=CI(),c0=C?.centre?.(),t0=performance.now();let i=-1,raf=0,over=false,resolve;
  const fort=view&&c0?Math.atan2(-(c0.x-view.p.x),-(c0.z-view.p.z)):0;if(view)view.cinematic=true;panel.classList.add('cq-cinematic');   // the HUD strip and radio tips wait under the reveal
  const key=e=>{if(['Escape','Enter',' ','Spacebar'].includes(e.key)){e.preventDefault();end();}};document.addEventListener('keydown',key,true);
  function frame(){if(over)return;const t=performance.now()-t0;let acc=0,j=0;while(j<shots.length-1&&t>=acc+shots[j].ms){acc+=shots[j].ms;j++;}

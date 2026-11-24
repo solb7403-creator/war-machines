@@ -7295,11 +7295,11 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   balance, lab UI, the Graphify index, GitHub Pages); the new Auto-release workflow's first live run was a clean no-op (no labelled PR).
 - **STEP 2 + 3: draft PR #155** on `claude/citadel-act-i-logic-jpnnz3` (the branch restarted from main `43f1378`, the local work
   cherry-picked onto it unchanged). Subscribed to its CI.
-- **Status (Nov 24, 09:30 UTC):** STEP 2 built and tested; pacing measured (all brief targets hold with the 7-day re-fortification:
-  "Pacing" below); STEP 3 measured, **not shipped** (its options conflict with conquest-fortress (f): "STEP 3" below; PROPOSAL); review
-  round 1 complete (reviewers A and B, the payout reviewer: fixes below). **Next:** the 5-size browser test and the website check at the
-  final head, push, CI green, a round-2 check of the fixes by a fresh reviewer, `dev/bump.sh`, mark #155 ready + `auto-release` label,
-  verify the Worker and Pages deploy, the docs-only PR (ROADMAP row 7B + release record), the final report with every PROPOSAL.
+- **Status (Nov 24, 09:45 UTC):** STEP 2 built and tested; pacing measured (all brief targets hold with the 7-day re-fortification:
+  "Pacing" below); STEP 3 measured, **not shipped** (its options conflict with conquest-fortress (f): "STEP 3" below; PROPOSAL); reviews
+  done: round 1 (reviewers A and B, the payout reviewer) and round 2 (a fresh reviewer), every finding fixed or recorded below.
+  **Next:** CI green at the final head, mark #155 ready + `auto-release` label, verify the merge, the Worker and Pages deploy, the
+  docs-only PR (ROADMAP row 7B + release record), the final report with every PROPOSAL.
 - **Review round 1 (independent reviewers on 1258a6a):** payout reviewer: exactly once / outside the cap / no replay or forge all PASS;
   fixed its findings: a reset or restored Conquest record could lose a later tier's bounty (eco.js pays bounties in entries at or
   below the watermark, once by `S.cbty`; conquest-airdrop.js `acknowledge` numbers new entries past the account's watermark), ids past
@@ -7336,6 +7336,16 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   Measured here at the same spawn and size, 3 runs each: the world streams in 62-64 s on main and 64-68 s on this branch with the
   same draw calls (126-129) and triangles (278 K), the branch runs measured while a reviewer's tests shared the machine; no
   streaming regression. (That test's long press on SHIELD fails in this container on main too.)
+- **Review round 2 (a fresh reviewer, on `1f04d55`):** all nine round-1 fixes verified FIXED in the code with its own probes (the core
+  under splash, `live.fought`, a late bounty paying once, PORTAL STORM's four surges, the dropship spec fed into 5E-2d2's real
+  `flight()` from its branch, the re-fortification on the real reducers, the siege window's loss, the guards (no line comment hides
+  code in the 43 changed scripts), the browser evidence). Its new findings, all fixed: the browser test now proves what played (the
+  reveal records its shot count: 4 on the first attempt, the short 2 on the Throne Run; the client asks `ConquestCitadel.cutOf`
+  instead of its own rule), that the Citadel fight exists while the reveal plays, and the loss's cause (the Worker's settlement
+  `why`, and the loss card, which now says why the assault failed: the siege window closed, the War Machine disabled, a withdrawal);
+  `conquest-away-raids` pins the whole cache (160 CP, 15 alloy, 10 biomass, 2 He-3) and tells `TOWN.away` from `TOWN.cache` by
+  identity; a dropship's flight tilt is applied after view.js's ground orientation, which overwrote it (dormant until dropship.js
+  loads). Not changed: the result card's bounty line after a server-side record reset (cosmetic; recorded in round 1).
 - **STEP 2 (first build, now on the PR branch):** `js/conquest/citadel.js` (rules, tiers, record, prep, Throne Run, the Assault class),
   `worker/src/conquest-citadel.js` (launch, prep, settlement, bounty), hooks: combat.js (archetypes swarm / mortar / dropship /
   structure, the 3 operations `citadel-1..3` family 'citadel' danger HARD, fieldMissionIds excludes them, `this.moveOf` in friendStep,

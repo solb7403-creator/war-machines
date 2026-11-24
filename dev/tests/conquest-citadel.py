@@ -99,7 +99,8 @@ async def main():
     st=await inspect();assert st['mission']=='citadel-1' and st['citRun']['tier']==1 and st['citRun']['prep']['aa']==1,('the Worker started the assault with the prep',st.get('mission'),st.get('citRun'))
     cam=st['position'];stage=await page.evaluate('ConquestCitadel.stageAt()');assert abs(cam['x']-stage['x'])<14 and abs(cam['z']-stage['z'])<14,('at the siege camp',cam,stage)
     ctext=await cut.inner_text();assert 'CITADEL I · BREACH POINT' in ctext and 'SKIP' in ctext,ctext
-    shots=await page.evaluate('ConquestCutscene.SCRIPTS[1]().length');assert shots==4,shots
+    shots=await page.evaluate('ConquestCutscene.SCRIPTS[1]().length');played=await cut.get_attribute('data-shots');assert shots==4 and played=='4',('the full reveal plays on the first attempt',shots,played)
+    assert await page.evaluate('!!Conquest.view.battle?.cit&&Conquest.view.battle.cit.tier===1'),'the Citadel assault exists while the reveal plays'
     await page.wait_for_timeout(600);t0=await page.evaluate('Conquest.view.battle?.time||0');await page.wait_for_timeout(900);t1=await page.evaluate('Conquest.view.battle?.time||0')
     assert t1==t0 and await page.evaluate('Conquest.view.cinematic===true'),('the fight waits while the reveal plays',t0,t1)
     sk=page.locator('.cq-cut-skip');sb=await sk.bounding_box();assert sb and sb['y']>=0 and sb['x']+sb['width']<=w+1,('SKIP on screen',sb)
@@ -145,13 +146,16 @@ async def main():
     await press(page,page.locator('.cq-cit-board button',has_text='CLOSE').first,mobile)
     rn=page.locator('.cq-warmap .cq-cit-throne .cq-cit-run').first;await reach(page,rn,'.cq-dialog.cq-warmap',mobile,h);await press(page,rn,mobile)
     await page.locator('.cq-cutscene').wait_for(timeout=120000)
+    short=await page.locator('.cq-cutscene').get_attribute('data-shots');assert short==str(await page.evaluate('ConquestCutscene.shortOf(1).length')) and int(short)<4,('the short reveal after the first attempt',short)
     if mobile:await page.locator('.cq-cut-skip').tap()
     else:await page.locator('.cq-cut-skip').click();INPUT['mouse']+=1
     await page.wait_for_function('!document.querySelector(".cq-cutscene")&&Conquest.view.battle&&Conquest.view.battle.time>0.3',timeout=30000)
     j=await post('/fixture-citadel-lose');assert j['ok'],j   # the siege window runs out: the Worker's own defeat
     ls=page.locator('.cq-cit-result');await ls.wait_for(timeout=60000);lt2=await ls.inner_text()
     assert 'THE ASSAULT FAILED' in (await page.locator('.cq-result').inner_text()) and 'CITADEL I' in lt2,lt2
-    st=await inspect();assert st['cit']['lost']>=1 and st['cit']['t']==1 and st['hp']>0,('a loss takes nothing else: the tier stays cleared, the tank comes back',st.get('cit'),st.get('hp'))
+    assert 'the siege window closed' in lt2.lower(),('the loss card says why',lt2)
+    st=await inspect();assert (st.get('settlement') or {}).get('kind')=='citadel-loss' and st['settlement'].get('why')=='The siege window closed',('the Worker settled the loss with its cause',st.get('settlement'))
+    assert st['cit']['lost']>=1 and st['cit']['t']==1 and st['hp']>0,('a loss takes nothing else: the tier stays cleared, the tank comes back',st.get('cit'),st.get('hp'))
     await page.screenshot(path=str(OUT/f'loss-{w}x{h}.png'));r['loss']=' · '.join(l for l in lt2.split('\n') if l.strip())[:120]
     if not mobile:assert INPUT['mouse']>=4 and INPUT['keys']>=4,('a computer used both the mouse and the keyboard',INPUT)
     r['inputs']='touch' if mobile else f"mouse {INPUT['mouse']}, keyboard {INPUT['keys']}"
