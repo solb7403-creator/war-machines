@@ -1,0 +1,22 @@
+name: Auto-release check
+# Session 7B STEP 1: the auto-release gate's decisions (dev/tests/auto-release.mjs: who may be merged, every check green, the push
+# workflows a merge dispatches, the merge commit, the GitHub Pages fallback) against the real workflow files and a local fake API.
+on:
+  pull_request:
+    paths: ['.github/workflows/**', '.github/scripts/**', 'dev/tests/auto-release.mjs']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  auto-release-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: The auto-release gate's decisions
+        run: |
+          node --check .github/scripts/auto-release.mjs
+          node dev/tests/auto-release.mjs

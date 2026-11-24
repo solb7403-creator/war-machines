@@ -83,6 +83,13 @@ async def main(engine,journey_only=False,fallback=False,quality='auto'):
       assert info['state']=='active',(id,info)
       pick=info.get('pick')
       if pick and pick['visible'] and pick['id']!=info['selected'] and 130<pick['y']<height-230 and 10<pick['x']<width-10:await page.mouse.click(pick['x'],pick['y'])
+      elif info['live'] and info['canHit'] and not info['selected']:
+       # The bot only taps a hull between y 130 and height-230 (the HUD's controls fill the bottom band), so an enemy that stays low
+       # on screen (beside the tank on the camera's side) could never be locked: the bot then drove at it firing along a stale aim
+       # and could lose the tank (WebKit, PR #152: 'perimeter', defeat, live 1, the pick at y 685 of 844). Turn the camera to put
+       # the target straight ahead of the tank, as a pilot drags the camera, so its hull comes up into the tappable band; the tap,
+       # the lock and the fight stay the same real inputs. Deterministic: the camera always faces the chosen target.
+       await page.evaluate('t=>{const v=Conquest.view;v.yaw=Math.atan2(-(t.x-v.p.x),-(t.z-v.p.z));}',info['target'])
       target=info['target'];p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})')
       if id=='relay' and info['live'] and not info['canHit'] and p['z']>info['site']['z']-14:target={'x':info['site']['x']-25,'z':info['site']['z']-20}
       distance=math.hypot(target['x']-p['x'],target['z']-p['z'])
