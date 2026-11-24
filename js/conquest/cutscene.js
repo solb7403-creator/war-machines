@@ -24,7 +24,7 @@ function play(panel,view,tier,{full=true,el,button,done}={}){const shots=full?(S
  const card=mk('div','cq-cut-card',null,d),k=mk('p','cq-kicker','',card),h=mk('h2','','',card),p=mk('p','cq-cut-line','',card),bar=mk('div','cq-cut-bar',null,d),fill=mk('i','',null,bar);
  const skipB=button?button('SKIP ▸',()=>end(),'cq-cut-skip'):(()=>{const b=mk('button','cq-cut-skip','SKIP ▸',d);b.type='button';b.onclick=()=>end();return b;})();if(skipB.parentNode!==d)d.append(skipB);
  const total=shots.reduce((a,x)=>a+x.ms,0),cam0=view?{yaw:view.yaw,pitch:view.pitch,distance:view.distance}:null,C=CI(),c0=C?.centre?.(),t0=performance.now();let i=-1,raf=0,over=false,resolve;
- const fort=view&&c0?Math.atan2(-(c0.x-view.p.x),-(c0.z-view.p.z)):0;if(view)view.cinematic=true;
+ const fort=view&&c0?Math.atan2(-(c0.x-view.p.x),-(c0.z-view.p.z)):0;if(view)view.cinematic=true;panel.classList.add('cq-cinematic');   // the HUD strip and radio tips wait under the reveal
  const key=e=>{if(['Escape','Enter',' ','Spacebar'].includes(e.key)){e.preventDefault();end();}};document.addEventListener('keydown',key,true);
  function frame(){if(over)return;const t=performance.now()-t0;let acc=0,j=0;while(j<shots.length-1&&t>=acc+shots[j].ms){acc+=shots[j].ms;j++;}
   if(j!==i){i=j;const S=shots[j];k.textContent=S.kicker;h.textContent=S.title;p.textContent=S.line;d.dataset.shot=String(j);}
@@ -32,7 +32,7 @@ function play(panel,view,tier,{full=true,el,button,done}={}){const shots=full?(S
   if(view){const S=shots[j],u=Math.min(1,(t-acc)/Math.max(1,S.ms)),ease=u*u*(3-2*u),prev=j?shots[j-1].cam:{yaw:0,pitch:cam0.pitch,distance:cam0.distance};
    view.yaw=fort+(prev.yaw??0)+((S.cam.yaw??0)-(prev.yaw??0))*ease;view.pitch=(prev.pitch??.5)+((S.cam.pitch??.5)-(prev.pitch??.5))*ease;view.distance=(prev.distance??60)+((S.cam.distance??60)-(prev.distance??60))*ease;}
   if(t>=total){end();return;}raf=requestAnimationFrame(frame);}
- function end(){if(over)return;over=true;cancelAnimationFrame(raf);document.removeEventListener('keydown',key,true);d.remove();if(view){view.cinematic=false;if(cam0)Object.assign(view,cam0);}done?.();resolve?.();}
+ function end(){if(over)return;over=true;cancelAnimationFrame(raf);document.removeEventListener('keydown',key,true);d.remove();panel.classList.remove('cq-cinematic');if(view){view.cinematic=false;if(cam0)Object.assign(view,cam0);}done?.();resolve?.();}
  const promise=new Promise(r=>{resolve=r;});try{skipB.focus({preventScroll:true});}catch(_){}raf=requestAnimationFrame(frame);
  return {skip:end,done:promise,shots:shots.length,ms:total};}
 root.ConquestCutscene=Object.freeze({SCRIPTS,scriptOf,shortOf,play});

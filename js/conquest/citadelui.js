@@ -11,6 +11,7 @@ const fmtN=n=>Math.round(Number(n)||0).toLocaleString('en-US');
 const left=ms=>{const m=Math.max(0,Math.ceil(ms/60000));return m>=60?Math.floor(m/60)+' H '+(m%60?m%60+' M':''):m+' M';};
 const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 const stars=n=>'★'.repeat(Math.max(0,n|0));
+const DESK=()=>!!(root.matchMedia?.('(hover:hover) and (pointer:fine)')?.matches);   // the key hint only where a keyboard and mouse are (command.js's test)
 // ---- the campaign card (the War Map's side column) -------------------------------------------------------------------------------
 function card(host,s,o,now){const C=CI(),c=C.norm(s?.cit),T=C.nextTier(c),R=C.ROMAN,box=o.el('section','wm-card wm-campaign cq-cit-card',null,host);box.setAttribute('aria-label','The Citadel campaign');
  o.el('p','wm-kicker',T?'THE CAMPAIGN · NEXT: CITADEL '+R[T.n]+' · '+T.name:'THE CAMPAIGN · ACT I · THE OUTER WORKS BROKEN',box);
@@ -44,10 +45,10 @@ function boardRows(host,doc,{el,button},close){const C=CI(),box=el('section','cq
  const ol=el('ol','cq-cit-rows',null,box);rows.forEach((r,i)=>el('li',r.me?'me':'',(i+1)+'. '+String(r.n||'PILOT').slice(0,16)+' · '+mmss((r.ms|0)/1000),ol));
  el('small','wm-fine','The server times every run from its own record of your inputs: no clock on the phone counts.',box);if(close)box.append(button('CLOSE',close));return box;}
 // ---- the assault HUD (the battle's own state; drawn every HUD tick) ----------------------------------------------------------------
-function hud(host,view,{el,button}){const C=CI(),B=view?.battle;if(!B?.cit||!C){host.querySelector('.cq-cit-hud')?.remove();return null;}
+function hud(host,view,{el,button}){const C=CI(),B=view?.battle;if(!B?.cit||!C){host.querySelector('.cq-cit-hud')?.remove();host.querySelector('#cq-strike')?.remove();return null;}
  const c=B.cit,T=C.TIERS[c.tier];let h=host.querySelector('.cq-cit-hud');
  if(!h){h=el('section','cq-cit-hud',null,host);h.setAttribute('aria-live','polite');h.setAttribute('aria-label','Citadel assault');el('p','cq-cit-hud-head','',h);el('p','cq-cit-hud-obj','',h);el('p','cq-cit-hud-say','',h);
-  const air=button('LDF AIRSTRIKE · X',()=>{if(view.pendingAbilities)view.pendingAbilities.strike=true;},'cq-cit-air');air.id='cq-strike';h.append(air);}
+  const air=button('LDF AIRSTRIKE',()=>{if(view.pendingAbilities)view.pendingAbilities.strike=true;},'cq-cit-air');air.id='cq-strike';host.append(air);}   // beside the ability buttons (thumb reach); the HUD strip itself never takes a tap
  const stage=['BREACH','PUSH','THE GENERAL','CLEARED'][c.stage]||'',live=B.enemies.filter(e=>e.hp>0&&!e.dormant),R=C.ROMAN;
  let obj='';
  if(c.stage===0)obj=T.gate==='shield'?'GATE GENERATORS '+live.filter(e=>e.cit==='gen').length+' / '+T.gens+' standing · the shield gate holds':'THE GATE '+fmtN(live.find(e=>e.cit==='gate')?.hp||0)+' / '+fmtN(C.CIT.gate.hp);
@@ -56,7 +57,7 @@ function hud(host,view,{el,button}){const C=CI(),B=view?.battle;if(!B?.cit||!C){
  const clock=Math.max(0,600-(B.time||0)),gam=c.gam?.length?' · '+c.gam.map(k=>C.GAMBITS[k]?.name).join(' · '):'';
  h.children[0].textContent='CITADEL '+R[c.tier]+' · '+stage+' · '+mmss(clock)+gam;h.children[1].textContent=obj;
  const fresh=(B.time||0)-(c.say?.at||0)<4;h.children[2].textContent=c.say?.t||'';h.children[2].classList.toggle('fresh',fresh);
- const air=h.querySelector('#cq-strike');if(air){air.hidden=!(c.air>0)||B.state!=='active';air.textContent='LDF AIRSTRIKE · '+c.air+' · X';}
+ const air=host.querySelector('#cq-strike');if(air){air.hidden=!(c.air>0)||B.state!=='active';const t='LDF AIRSTRIKE · '+c.air+(DESK()?' · X':'');if(air.textContent!==t)air.textContent=t;}
  h.classList.toggle('cq-cit-core',c.stage===2&&!!live.find(e=>e.warden&&e.core>0));return h;}
 // ---- the result card (the Worker's receipt: s.settlement) --------------------------------------------------------------------------
 function result(d,rec,{el}){const C=CI();if(!rec||!C)return null;const R=C.ROMAN,T=C.TIERS[rec.tier]||{};const box=el('section','cq-cit-result',null,d);

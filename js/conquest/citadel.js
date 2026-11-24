@@ -29,7 +29,7 @@ const CIT=Object.freeze({
  ring:5,                                      // the Inner Ring: the ring's danger in the battle points formula (war.js WAR.danger)
  prepMs:48*HOUR,                              // each siege prep objective stays valid 48 hours
  // lead's design numbers (fixed for every tier): the warden's hull and shield core (re-formed twice), the gate and its generators
- warden:Object.freeze({hp:7000,core:1500,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
+ warden:Object.freeze({hp:8000,core:1500,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
  gate:Object.freeze({hp:2600}),gen:Object.freeze({hp:1800}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),
  ship:Object.freeze({hp:700,flyS:14,unloadS:6,everyS:30,firstS:4}),strike:Object.freeze({tellS:2,r:11,dmg:650,ahead:40}),
  cover:Object.freeze({r:7}),drop:Object.freeze({tellS:3,r:7,dmg:40}),portal:Object.freeze({atS:Object.freeze([50,20])}),
@@ -51,13 +51,13 @@ const W1=Object.freeze(['sentinel','sentinel','raider','raider','breacher','comm
 const T=o=>Object.freeze(o);
 const TIERS=Object.freeze([null,
  T({n:1,name:'BREACH POINT',act:1,mech:'Destroy the gate generators to drop the shield gate',unit:'swarm',unitName:'SWARM',role:'frostline',warden:WARDENS[1],
-  gate:'shield',gens:3,guns:4,swarm:T({every:14,n:4,cap:12}),mortars:0,cover:0,zones:0,ships:0,waves:3,
+  gate:'shield',gens:3,guns:4,swarm:T({every:14,n:4,cap:12}),mortars:0,cover:0,zones:0,ships:0,waves:4,
   brief:'Three gate generators hold the shield gate. Bring them down, push the courtyard while the Swarm pours from the vents, then break the warden.'}),
  T({n:2,name:'IRON RAIN',act:1,mech:'Marked bombardment zones. Take forward cover',unit:'mortar',unitName:'SPORE MORTAR',role:'lancer',warden:WARDENS[2],
-  gate:'hard',gens:0,guns:4,swarm:T({every:24,n:3,cap:6}),mortars:3,cover:5,zones:3,ships:0,waves:3,
+  gate:'hard',gens:0,guns:4,swarm:T({every:24,n:3,cap:6}),mortars:3,cover:5,zones:3,ships:0,waves:4,
   brief:'Spore Mortars shell every marked zone. Move between the bunkers, break the gate, silence the mortars and break the warden.'}),
  T({n:3,name:'THE CARRIER DECK',act:1,mech:'Dropships land mid-fight unless shot down',unit:'dropship',unitName:'DROPSHIP',role:'lancer',warden:WARDENS[3],
-  gate:'hard',gens:0,guns:4,swarm:T({every:24,n:3,cap:6}),mortars:1,cover:2,zones:0,ships:4,waves:0,
+  gate:'hard',gens:0,guns:4,swarm:T({every:24,n:3,cap:6}),mortars:1,cover:2,zones:0,ships:5,waves:0,
   brief:'Break the gate, then shoot the dropships down before they land: every one that lands unloads a wave. Then break the warden.'})]);
 // recommended FORCE (js/conquest/battalion.js force) and DEFENSE (the town rating) bands: advice shown beside your ratings, never a
 // lock. Lead's numbers from the pacing model (dev/tools/citadel-model.mjs): the regular's ratings at the tier's target day

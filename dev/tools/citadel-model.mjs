@@ -20,12 +20,23 @@ function stages(minutes){if(!memo.has(minutes)){const L=MODEL.ladderOf(minutes),
 function hangarAt(minutes,d){const {L}=stages(minutes),H=[15/3600,3/60,20/60,2,6];for(let lv=5;lv>=1;lv--){const cc=2*lv-1===1?2:2*lv-1,day=L['CC'+cc]+H[lv-1]/24;if(d>=day)return lv;}return 0;}
 function pilotsAt(minutes,d){const {B}=stages(minutes),h1=B.stage.wing;let n=1;if(d>=h1+8/24)n+=Math.floor(d-h1-8/24)+1;if(d>=1)n+=Math.floor(d-1)+1;return Math.min(16,n);}
 function rankAt(minutes,d){const {B}=stages(minutes),at=B.ranks.onePilot;let r=1;for(let k=2;k<=10;k++)if(at[k]!==undefined&&d>=at[k])r=k;return r;}
+// the rest of the force: the roster's pilot-XP (the economy model's pool: every seat of every raid, strike and field mission) shared by
+// the pilots fielded (at most 9); ranks reached by day d come from the XP after day d-1 (the model's own rule); past the model's last
+// day the last day's gain continues
+const RANK_XP=[0,4,12,25,45,75,115,170,240,330],rankOfXp=x=>{let r=1;for(let i=1;i<RANK_XP.length;i++)if(x>=RANK_XP[i])r=i+1;return Math.min(10,r);};
+function poolAt(minutes,d){const P=stages(minutes).B.poolXp,i=Math.floor(d)-1;if(i<0)return 0;if(i<P.length)return P[i];const n=P.length,step=P[n-1]-(P[n-2]||0);return P[n-1]+step*(i-n+1);}
+// Role Cores (Science Lab IV): one command chip a day from day 0, levels 2-5 cost 2 / 4 / 5 / 9 chips in 8 h jobs (the economy model's
+// order: one role to level 5, then the next). Lead's order for a Citadel Battalion: the roles it fields twice first (Lancer: the
+// anti-air; Breacher; Guardian), then Frostline, Mender, Corroder.
+const RC_ORDER=['lancer','breacher','guardian','frostline','mender','corroder'],RC_COST=[0,0,2,4,5,9];
+function coresAt(minutes,d){const lab=stages(minutes).B.scienceLabIV,lv={};let t=lab,spent=0;const chips=x=>Math.floor(x)+1;
+ for(const role of RC_ORDER)for(let l=2;l<=5;l++){const need=spent+RC_COST[l];let x=t;while(chips(x)<need&&x<400)x=Math.floor(x)+1;t=Math.max(t,x)+8/24;spent=need;if(t<=d)lv[role]=l;else return lv;}return lv;}
 export function kitAt(name,d){const pr=PROFILES[name],tier=Math.round(interp(pr.gear,d)),L=[GEAR.common,GEAR.rare,GEAR.epic][Math.min(2,tier)];
- const n=Math.min(BT.fieldCap(hangarAt(pr.minutes,d)),9,Math.max(0,pilotsAt(pr.minutes,d)-1)),top=rankAt(pr.minutes,d);
+ const n=Math.min(BT.fieldCap(hangarAt(pr.minutes,d)),9,Math.max(0,pilotsAt(pr.minutes,d)-1)),top=rankAt(pr.minutes,d),force=Math.min(top,rankOfXp(poolAt(pr.minutes,d)/Math.max(1,Math.min(9,pilotsAt(pr.minutes,d))))),rc=coresAt(pr.minutes,d);
  // the Battalion's kit: militia (Common, no cores) until the profile owns spare gear of its tier (the fortress model's ally kit)
  const kit=tier>=1?{w:{a:tier>=2?'siege':'pulse',t:Math.min(2,tier),q:tier>=2?1.08:1},c:{c:'titan',t:Math.min(2,tier),q:tier>=2?1.08:1}}:null;
- const allies=ROLES.slice(0,n).map((role,i)=>({role,kit:kit||BT.militia(role),rk:Math.max(1,top-Math.floor(i/3))}));
- return {L,tier,hangar:hangarAt(pr.minutes,d),allies,top};}
+ const allies=ROLES.slice(0,n).map((role,i)=>({role,kit:kit||BT.militia(role),rk:i?force:top,lv:rc[role]||1}));   // the pilot always fielded at the top rank
+ return {L,tier,hangar:hangarAt(pr.minutes,d),allies,top,force,rc};}
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 // ---- the bot pilot: a careful player's priorities on each phase; real commands only, never edits the battle --------------------------
 // It fights at range (the tank's 92 m against the Parasites' 43-54), lets the garrison come out through the gate before it enters,
@@ -33,11 +44,12 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 // hull, a flying dropship or a gate piece.
 export function assault(tier,{L=GEAR.common,allies=[],prep={},gambits=[],seed=1,maxSteps=12600,trace=null,each=null}={}){
  const p=CI.stageAt(),B=CI.make(L,p,'citadel-'+tier).setup({prep,gambits});B.seed=(0x7b17c1ad^Math.imul(seed|0,2654435761))>>>0;
- B.squad.orders=1;B.squad.f='wedge';allies.forEach((a,i)=>{const sl=C.FORMS.wedge[i%C.FORMS.wedge.length];B.friends.push(C.friendUnit({id:800000001+i,side:'mine',pid:'p'+i,role:a.role,kit:a.kit,m:BT.strength(a.rk,1),x:p.x+sl[0]*.5,z:p.z+sl[1]*.5-4}));});
+ B.squad.orders=1;B.squad.f='wedge';allies.forEach((a,i)=>{const sl=C.FORMS.wedge[i%C.FORMS.wedge.length];B.friends.push(C.friendUnit({id:800000001+i,side:'mine',pid:'p'+i,role:a.role,kit:a.kit,m:BT.strength(a.rk,a.lv||1),x:p.x+sl[0]*.5,z:p.z+sl[1]*.5-4}));});
  const g=CI.LAYOUT.gate,cen=CI.centre(),outside=CI.at(g.u-18,0),inside=CI.at(g.u+18,0),home=CI.stageAt(),range=C.engineeringValues(B.playerStats,B.engineering).range;
- let steps=0,stuck=0,last={...p},detour=0,retreat=false;
+ let steps=0,stuck=0,last={...p},detour=0,retreat=false,seen=null;
  while(B.state==='active'&&steps<maxSteps){
-  const c=B.cit,alive=B.enemies.filter(e=>e.hp>0&&!e.dormant&&!e.resident),vis=alive.filter(e=>K.visible(B,p,e)),near=f=>vis.filter(f).sort((a,b)=>dist(a,p)-dist(b,p))[0];
+  const c=B.cit,alive=B.enemies.filter(e=>e.hp>0&&!e.dormant&&!e.resident);if(steps%3===0||!seen)seen=new Set(alive.filter(e=>K.visible(B,p,e)));   // a pilot's eyes: what is in sight, looked at every 0.15 s
+  const vis=alive.filter(e=>seen.has(e)),near=f=>vis.filter(f).sort((a,b)=>dist(a,p)-dist(b,p))[0];
   const objective=c.stage===0?alive.filter(e=>e.cit==='gen'||e.cit==='gate').sort((a,b)=>dist(a,p)-dist(b,p))[0]:null,warden=alive.find(e=>e.warden);
   const close=near(e=>!e.cit&&!e.ship&&dist(e,p)<(warden?8:16));   // in the warden's phase only a biting unit draws the pilot off the core
   const target=close||(warden&&vis.includes(warden)?warden:null)||near(e=>e.ship&&!e.landed)||(objective&&vis.includes(objective)?objective:null)||near(e=>e.wave&&!e.swarm)||near(e=>e.cit==='mortar')||near(e=>e.cit==='gun')||near(()=>true);
@@ -48,7 +60,7 @@ export function assault(tier,{L=GEAR.common,allies=[],prep={},gambits=[],seed=1,
   if(c.stage>=1&&!inPark&&goal.x>cen.x+g.u){if(garrison.length>2&&!warden)goal=outside;else goal=Math.abs(p.z-cen.z)>6||dist(p,outside)>10?outside:inside;}
   if(warden&&!retreat&&inPark)goal=warden;   // the core is the pilot's job: keep it in sight and in range
   if(retreat)goal=inPark?outside:home;
-  const tv=target&&K.visible(B,p,target),dt0=target?dist(target,p):0,lo=target&&target.swarm?.35*range:.42*range,hi=.72*range;let mx=0,mz=0;
+  const tv=target&&seen.has(target),dt0=target?dist(target,p):0,lo=target&&target.swarm?.35*range:.42*range,hi=.72*range;let mx=0,mz=0;
   const toward=q=>{const d=dist(q,p)||1;return [(q.x-p.x)/d,(q.z-p.z)/d];};
   if(retreat)[mx,mz]=toward(goal);
   else if(tv&&dt0<lo&&!target.cit)[mx,mz]=toward(target).map(v=>-v);   // too close: back off while firing
