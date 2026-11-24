@@ -7295,13 +7295,9 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   balance, lab UI, the Graphify index, GitHub Pages); the new Auto-release workflow's first live run was a clean no-op (no labelled PR).
 - **STEP 2 + 3: draft PR #155** on `claude/citadel-act-i-logic-jpnnz3` (the branch restarted from main `43f1378`, the local work
   cherry-picked onto it unchanged). Subscribed to its CI.
-- **Status (Nov 24, 12:40 UTC):** STEP 2 built, reviewed (two rounds) and green on CI; **STEP 3 shipped by owner decision (Nov 24):**
-  a held raid nobody fought pays the cache without its CP (`ConquestTown.TOWN.away`: 15 alloy, 10 biomass, 2 He-3), and
-  conquest-fortress guard (f) checks the coached CC10 median (and the seven sites') inside the Session 6 band 25.9-31.7 (commit
-  `9ba960c`; "STEP 3" below). #155 is ready; its `auto-release` label was **removed at 12:34 UTC** so it would not merge without STEP 3.
-  The re-runs with everything on all PASS (numbers under "STEP 3": "Owner decision: the re-run"). **Next:** CI green on the final head;
-  put the `auto-release` label back on #155; verify the merge, the Worker and Pages deploy; the docs-only PR (ROADMAP row 7B + release
-  record); the final report with every PROPOSAL.
+- **Status (Nov 24, 14:30 UTC): RELEASED.** #155 merged by the auto-release workflow at 14:09 UTC as `9e375e8` (build
+  `20261124123529`), with STEP 2 and the owner's STEP 3 decision; the Worker and Pages deployed ("Release record" at the end of this
+  checkpoint). The docs-only PR carries this record and ROADMAP row 7B. Every PROPOSAL is under "Open items and PROPOSALs".
 - **Review round 1 (independent reviewers on 1258a6a):** payout reviewer: exactly once / outside the cap / no replay or forge all PASS;
   fixed its findings: a reset or restored Conquest record could lose a later tier's bounty (eco.js pays bounties in entries at or
   below the watermark, once by `S.cbty`; conquest-airdrop.js `acknowledge` numbers new entries past the account's watermark), ids past
@@ -7576,3 +7572,55 @@ One research agent, web search (wikipedia.org and wiki.warframe.com fetches were
 Recommendations not taken (with reasons): no hard fail timer (the research's advice; the measured fights then needed one: the 8-minute
 siege window, a DPS check, see "The siege window" above); "spend only prep that fired" (the brief says a loss spends the used siege prep: every prep active at launch
 is used by that assault); a minimum Battalion retry after a loss (downed allies need repair, as the brief says).
+
+### Open items and PROPOSALs (final report)
+- **Decided by the owner (Nov 24): STEP 3 ships "without its CP"** (a held raid nobody fought pays 15 alloy, 10 biomass and 2 He-3;
+  one fought in person the whole cache) and conquest-fortress guard (f) checks the coached CC10 median (and the seven sites') inside the
+  Session 6 band 25.9-31.7. Re-run with everything on: "STEP 3" above.
+- **PROPOSAL: the fortress model's planned Citadel days.** `dev/tools/fortress-model.mjs` PROFILES.citadel (the town attacks'
+  Retaliation schedule) keeps the blueprint's plan (tier I / III: regular 17 / 49, heavy 10 / 32, grinder 6 / 21); the real assault
+  measured regular 15 / 37, heavy 9 / 24, grinder 6 / 20. Moving the model to the measured days brings the regular's stronger raids
+  about 12 days earlier; do it in the next session that touches the town ladder, re-running conquest-fortress and conquest-ladder-check.
+- **PROPOSAL (performance): Worker replay cost.** A Citadel step costs 2.0-2.4 ms with nine allies (a raid 0.4-0.8 ms), most of it
+  the shared engine's line-of-sight and steering lookups (`blockedAt`, `raidSolidAt`, `rockSolid`). Bounding-box fast paths with exact
+  results would cut about a fifth of every operation's replay.
+- **Reported: the heavy player's tier III lands on day 24**, against the blueprint's "about 32". The brief's rule holds (between the
+  grinder's 20 and the regular's 37): the heavy player has rare gear from day 17, so its tier III comes 7 days after its tier II.
+  `dev/tools/citadel-pace.mjs` measures any change (a longer re-fortification before tier III would move it).
+- **Reported: pacing comes from a careful bot pilot** (it keeps outside each target's reach, breaks the rampart guns first, regroups
+  at 30% hull). People will clear later; the clear-time board (and Session 7C's boards) will show it once there are players.
+- **Low (cosmetic):** after a server-side reset of a Conquest record, re-clearing a tier settles its bounty line on the result card
+  while the account pays 0 (S.cbty). The account pays each tier once regardless.
+- **For Session 5E-2d2:** tier III's dropships call `ConquestDropship.flight(spec)` with `ConquestCitadel.dropshipSpec(e)` ({kind, at,
+  pad, out, seed, lane, hitAt}); the round-2 reviewer fed it into the real `flight()` from `claude/parasite-units-dropships-8y7kby`
+  (a ship shot down falls and crashes, its wave never lands). Keep that contract; the pose is applied after view.js's ground
+  orientation (`g.userData.pose`).
+- **For Session 11:** tiers IV-IX reuse this framework (`CIT_LIVE` in js/rules.js gates their bounties: 75,000 / 100,000 / 150,000 /
+  225,000 / 325,000 / 500,000 recorded in the blueprint and RESOURCE_ECONOMY.md), each with a reveal script in cutscene.js.
+- Unchanged by design: the Hive Titan's loot rows (Session 7C); payments off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false).
+
+### Release record (Nov 24, 2026)
+- PR #155 merged by the new auto-release workflow at 14:09 UTC as `9e375e8` (a merge commit by `github-actions[bot]`; head
+  `e556624`; build `20261124123529`): every check green on the head (conquest, fortress, citadel, town-ui, guardrails, transmission
+  chromium + webkit, signup-browsers chromium / webkit / firefox, website, balance, verify, asset-integrity, owner-rules, auto-release
+  check and gate). Release pre-approved in the brief and by the owner in chat (Nov 24). STEP 1 (#154) merged at 08:16 UTC as `43f1378`.
+- The owner's STEP 3 decision (Nov 24) arrived while #155 waited on CI; #155 had not merged, so it shipped inside #155: the
+  `auto-release` label came off at 12:34 UTC and went back once the decision's re-runs passed (STEP 3 above).
+- CI along the way (every failure investigated; no test skipped, deleted or loosened): the reveal read before its first caption on a
+  slow runner (the reveal now writes its first shot at once); the X key's airstrike lost between two frames (now latched at keydown, as
+  Session 5D's other abilities); 7T-P's `conquest-town-proposals.py` reading elements the hub and the town sheet rebuild (now one read
+  of the element and its own scroller); one re-run each for a WebKit renderer crash in `conquest-session-033.py` and for the 90 s
+  world-stream wait in Session 6's `conquest-session6-loot.py` (it passed on its re-run; measured: main 62-64 s, this branch 64-68 s with
+  the same draw calls and triangles), each explained in a PR comment.
+- Worker: `Deploy Stars server (Cloudflare)` run 45411056997 SUCCESS on `9e375e8`, dispatched by the auto-release workflow (deployed
+  14:15 UTC, version id `5957a588-08e2-4b24-8282-ef7ae6ba3990`, startup 171 ms; 20 changed assets uploaded, the Citadel modules among
+  them; the crons `*/5`, `* 15-18` and the alert cron `1-56/5` registered): `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,
+  "queues":[]}`, live `version.json` = `{"v":"20261124123529"}` = repo. The other dispatched push checks: owner-rules, equipment
+  balance, lab UI, the Graphify index.
+- GitHub Pages: `pages build and deployment` run 45411050173 SUCCESS on `9e375e8` (14:11 UTC). This container cannot reach
+  workers.dev (network policy), so the live values come from the deploy job's own checks above.
+- Database rules: unchanged in this release (`database.rules.json` not touched), so `Deploy Firebase rules` did not run.
+- No live players: no migration code. Revert plan if broken: revert `9e375e8` on main (both deploys follow main). Not needed.
+- Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); DAILY_CAP and CQ_PTS unchanged; the Citadel bounties are the brief's
+  (25,000 / 37,500 / 50,000, outside the cap, once per account); the held raid nobody fought pays the cache without its CP (owner).
+- This record and ROADMAP row 7B went to main in a second, docs-only PR from the same branch (restarted from main).
