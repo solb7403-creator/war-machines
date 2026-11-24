@@ -7346,6 +7346,11 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   `conquest-away-raids` pins the whole cache (160 CP, 15 alloy, 10 biomass, 2 He-3) and tells `TOWN.away` from `TOWN.cache` by
   identity; a dropship's flight tilt is applied after view.js's ground orientation, which overwrote it (dormant until dropship.js
   loads). Not changed: the result card's bounty line after a server-side record reset (cosmetic; recorded in round 1).
+- **CI on `fc7d72d`:** the phone sizes passed (the reveal fix holds); at 1366x768 the X key's airstrike never reached the fight. A
+  real bug on slow devices: the other abilities latch at keydown (Session 5D: "a tap shorter than a frame still fires"), the
+  airstrike did not, so a quick X tap between two frames was lost (CI's software GL runs a few frames a second). `js/conquest/view.js`
+  now latches X like F, R, C and Shift (`KeyX:'strike'`, and the per-frame edge list). The phone's LDF AIRSTRIKE button was never
+  affected (it sets `pendingAbilities.strike`, kept until the next frame).
 - **STEP 2 (first build, now on the PR branch):** `js/conquest/citadel.js` (rules, tiers, record, prep, Throne Run, the Assault class),
   `worker/src/conquest-citadel.js` (launch, prep, settlement, bounty), hooks: combat.js (archetypes swarm / mortar / dropship /
   structure, the 3 operations `citadel-1..3` family 'citadel' danger HARD, fieldMissionIds excludes them, `this.moveOf` in friendStep,
