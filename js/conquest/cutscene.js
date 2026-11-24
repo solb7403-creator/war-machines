@@ -33,7 +33,7 @@ function play(panel,view,tier,{full=true,el,button,done}={}){const shots=full?(S
    view.yaw=fort+(prev.yaw??0)+((S.cam.yaw??0)-(prev.yaw??0))*ease;view.pitch=(prev.pitch??.5)+((S.cam.pitch??.5)-(prev.pitch??.5))*ease;view.distance=(prev.distance??60)+((S.cam.distance??60)-(prev.distance??60))*ease;}
   if(t>=total){end();return;}raf=requestAnimationFrame(frame);}
  function end(){if(over)return;over=true;cancelAnimationFrame(raf);document.removeEventListener('keydown',key,true);d.remove();panel.classList.remove('cq-cinematic');if(view){view.cinematic=false;if(cam0)Object.assign(view,cam0);}done?.();resolve?.();}
- const promise=new Promise(r=>{resolve=r;});try{skipB.focus({preventScroll:true});}catch(_){}raf=requestAnimationFrame(frame);
+ const promise=new Promise(r=>{resolve=r;});try{skipB.focus({preventScroll:true});}catch(_){}frame();   /* the first shot's words and camera on the first paint (a slow phone never shows an empty card) */
  return {skip:end,done:promise,shots:shots.length,ms:total};}
 root.ConquestCutscene=Object.freeze({SCRIPTS,scriptOf,shortOf,play});
 })(globalThis);

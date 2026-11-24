@@ -7328,6 +7328,14 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   SKIP; the captures are re-taken at the final head. The website build (web/play.html, web/boot.js) gets a Citadel check in
   `conquest-desktop-keys.py` (the War Map's card by mouse at 1440x900 and 420x700: CITADEL I, LAUNCH shut until FRONT is held).
   (6) This section is current. (7) The dropship hook: done (as for A).
+- **CI on `05e87a5` (before the round-1 push):** `fortress` failed (f) with the cache without its CP (27.8 against 26.8: expected; the
+  7T whole cache is back in `1f04d55`); the `citadel` browser job read the reveal before its first caption was written (the caption
+  waited for the first animation frame, late on a slow runner: the text was only "SKIP"): the reveal now writes its first shot's
+  words and camera at once (`js/conquest/cutscene.js`), so a slow phone never shows an empty card either; `conquest`'s portrait
+  journey timed out in `conquest-session6-loot.py` waiting 90 s for the world at 1366x768 (a test this session does not touch).
+  Measured here at the same spawn and size, 3 runs each: the world streams in 62-64 s on main and 64-68 s on this branch with the
+  same draw calls (126-129) and triangles (278 K), the branch runs measured while a reviewer's tests shared the machine; no
+  streaming regression. (That test's long press on SHIELD fails in this container on main too.)
 - **STEP 2 (first build, now on the PR branch):** `js/conquest/citadel.js` (rules, tiers, record, prep, Throne Run, the Assault class),
   `worker/src/conquest-citadel.js` (launch, prep, settlement, bounty), hooks: combat.js (archetypes swarm / mortar / dropship /
   structure, the 3 operations `citadel-1..3` family 'citadel' danger HARD, fieldMissionIds excludes them, `this.moveOf` in friendStep,
