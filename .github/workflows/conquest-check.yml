@@ -257,7 +257,9 @@ jobs:
       - name: Worker dependencies
         run: npm install --prefix worker --no-audit --no-fund --package-lock=false
       - name: Citadel rules, settlement and the bounty
-        run: node dev/tests/conquest-citadel.mjs
+        run: |
+          node dev/tests/conquest-citadel.mjs
+          node dev/tests/wtest/conquest-citadel-payout.mjs
       - name: Citadel pacing (the real assault, three profiles)
         run: node dev/tests/conquest-citadel-pace.mjs
       - uses: actions/setup-python@v5

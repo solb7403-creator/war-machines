@@ -958,7 +958,8 @@ function ecoLoadout(S,L0){
 // sends a tier's bounty once, when that tier is first cleared (worker/src/conquest-citadel.js); the account credits each id once here,
 // by id (S.cbty), so a Conquest record reset, a replayed entry or a second entry with the same id can never pay twice
 const CIT_BOUNTY=Object.freeze([0,25000,37500,50000,75000,100000,150000,225000,325000,500000]);
-function ecoBounty(S,id,X){const m=/^cit([1-9])$/.exec(String(id||''));if(!m)return 0;const n=CIT_BOUNTY[+m[1]]|0;if(!n)return 0;
+const CIT_LIVE=3;   // the Citadel tiers built (Act I); Session 11 raises it with tiers IV-IX (js/conquest/citadel.js CIT.live reads it)
+function ecoBounty(S,id,X){const m=/^cit([1-9])$/.exec(String(id||''));if(!m||+m[1]>CIT_LIVE)return 0;const n=CIT_BOUNTY[+m[1]]|0;if(!n)return 0;
  if(!S.cbty||typeof S.cbty!=='object'||Array.isArray(S.cbty))S.cbty={};if(S.cbty[id])return 0;S.cbty[id]=Math.max(1,X.day|0);return ecoAward(S,n,X,true);}
 // ---- points ----
 function ecoRoll(S,X){if(S.dailyDay!==X.day){S.dailyDay=X.day;S.dailyPts=0;}if(S.weeklyNum!==X.week){S.weeklyNum=X.week;S.weeklyPts=0;}}

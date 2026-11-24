@@ -539,8 +539,11 @@ export async function creditConquest(env, pid, out, now = Date.now()) {
   const t = await tx(env, pid, (S, X) => {
     const w = Number.isSafeInteger(S.cqw) ? S.cqw : 0;
     const fresh = (Array.isArray(out) ? out : []).filter((e) => e && Number.isSafeInteger(e.id) && e.id > w && e.id <= 1e12).sort((a, b) => a.id - b.id);
-    const L = R.leagueInfo(S.lgi | 0), view = () => ({ cqw: Number.isSafeInteger(S.cqw) ? S.cqw : 0, day: X.day, dailyPts: S.dailyPts || 0, cqToday: S.cqd && S.cqd.d === X.day ? S.cqd.b : 0, lgi: S.lgi | 0, pay: L.pay, mn: R.mnOf(S.mn), ap: R.apOf(S.ap), pts: Math.max(0, Math.round(Number(S.pts) || 0)), rm: Object.keys(S.rm || {}).filter((k) => S.rm[k]) });
-    if (!fresh.length) return { abort: true, ...view(), base: 0, awarded: 0, capped: false };
+    const L = R.leagueInfo(S.lgi | 0), view = () => ({ cqw: Number.isSafeInteger(S.cqw) ? S.cqw : 0, day: X.day, dailyPts: Math.max(0, (S.dailyPts || 0) - (S.fx && S.fx.d === X.day ? S.fx.n | 0 : 0)), cqToday: S.cqd && S.cqd.d === X.day ? S.cqd.b : 0, lgi: S.lgi | 0, pay: L.pay, mn: R.mnOf(S.mn), ap: R.apOf(S.ap), pts: Math.max(0, Math.round(Number(S.pts) || 0)), rm: Object.keys(S.rm || {}).filter((k) => S.rm[k]) });
+    // Session 7B (payout review W1): a Citadel bounty in an entry at or below the watermark (a Conquest record reset or restored on the
+    // server restarts its outbox ids) is still paid, once: S.cbty decides, never the watermark
+    const late = []; for (const e of (Array.isArray(out) ? out : [])) if (e && Number.isSafeInteger(e.id) && e.id <= w) for (const b of R.listOf(e.bty)) if (b && typeof b.id === "string" && !(S.cbty && S.cbty[b.id])) late.push(b.id);
+    if (!fresh.length && !late.length) return { abort: true, ...view(), base: 0, awarded: 0, capped: false };
     let base = 0, spend = 0, ms = 0, op = false;const mn = {}, rm = [], rsj = [], bty = [];
     for (const e of fresh) {
       if (e.mn) { const m = R.mnOf(e.mn); for (const k of R.MN_ORDER) if (m[k] > 0 && m[k] <= 10000) mn[k] = (mn[k] || 0) + m[k]; }   // banked Conquest minerals (RESOURCE_ECONOMY.md §5.3): to the wallet, once, by entry id
@@ -552,11 +555,11 @@ export async function creditConquest(env, pid, out, now = Date.now()) {
     }
     const aw = R.ecoPlayAward(S, base, spend, X), got = R.ecoMinerals(S, mn);
     // Session 7B: each Citadel bounty id once per account, outside the daily cap (R.ecoBounty: S.cbty; the amount is the table's, by id)
-    let bounty = 0;for (const id of bty) bounty += R.ecoBounty(S, id, X);
+    let bounty = 0;for (const id of [...bty, ...late]) bounty += R.ecoBounty(S, id, X);
     if (rsj.length) { S.rsj = S.rsj && typeof S.rsj === "object" && !Array.isArray(S.rsj) ? S.rsj : {}; for (const id of rsj) S.rsj[id] = 1; }
     if (rm.length) { S.rm = S.rm && typeof S.rm === "object" && !Array.isArray(S.rm) ? S.rm : {}; for (const id of rm) { S.rm[id] = 1; if (S.rsj) delete S.rsj[id]; } }   // researched: no longer "being researched"
     if (op) R.ecoPlayDay(S, X);
-    S.cqw = fresh[fresh.length - 1].id;
+    if (fresh.length) S.cqw = fresh[fresh.length - 1].id;
     S.cqd = S.cqd && S.cqd.d === X.day ? S.cqd : { d: X.day, b: 0, ms: 0, n: 0 };
     S.cqd.b += aw.base; S.cqd.ms += ms; S.cqd.n += fresh.length;
     flags = watchConquest(S, X, now);

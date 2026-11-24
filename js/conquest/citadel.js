@@ -20,7 +20,7 @@ const ROMAN=Object.freeze(['','I','II','III','IV','V','VI','VII','VIII','IX']);
 // ---- settings (owner decisions in the brief; the lead's design numbers are named as such) ---------------------------------------
 const CIT=Object.freeze({
  v:1,
- live:3,                                      // tiers built: Act I. Tiers IV-IX arrive with Session 11 on this framework
+ live:CIT_LIVE,                               // tiers built (js/rules.js CIT_LIVE, 3: Act I). Tiers IV-IX arrive with Session 11 on this framework
  // first-clear airdrop bounties, base points, once per account, outside the 50,000 daily cap (owner, Nov 23: the blueprint's table x5;
  // IV-IX recorded for Session 11 in the blueprint and docs/economy/RESOURCE_ECONOMY.md)
  bounty:CIT_BOUNTY,                           // js/rules.js (the account side credits by the same table)
@@ -34,7 +34,7 @@ const CIT=Object.freeze({
  warden:Object.freeze({hp:18500,core:2800,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
  gate:Object.freeze({hp:15000}),gen:Object.freeze({hp:6000}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),
  ship:Object.freeze({hp:700,flyS:14,unloadS:6,everyS:30,minS:10,firstS:4}),strike:Object.freeze({tellS:2,r:11,dmg:650,ahead:40}),
- cover:Object.freeze({r:7}),drop:Object.freeze({tellS:3,r:7,dmg:40}),portal:Object.freeze({atS:Object.freeze([50,20])}),
+ cover:Object.freeze({r:7}),drop:Object.freeze({tellS:3,r:7,dmg:40}),portal:Object.freeze({atS:Object.freeze([[1,50],[2,20]].map(Object.freeze)),storm:Object.freeze([[1,25],[1,50],[2,20],[2,45]].map(Object.freeze))}),   // [stage, s after it starts]; PORTAL STORM: twice in the PUSH, twice at the warden
  waveS:40, waveMin:8,                                    // PUSH: a reinforcement wave lands every 35 s after the gate falls (the pressure ramps; the phase stays near 2:15)
  wardenS:45, escortS:30, escortCap:4,                                  // ...and the warden comes out at most 45 s after the last wave (or when the courtyard is down to two)
  // cutscenes (owner, Nov 23): always skippable; full length on a tier's first attempt, shorter after
@@ -81,7 +81,7 @@ const GAMBITS=Object.freeze({
  enraged:T({name:'ENRAGED WARDEN',bane:1,what:'The warden is enraged from the start: faster tells'}),
  tide:T({name:'SWARM TIDE',bane:1,what:'The Swarm vents open twice as often'}),
  barrage:T({name:'OPEN BARRAGE',bane:1,what:'A marked strike falls on you every 12 seconds'}),
- portalstorm:T({name:'PORTAL STORM',bane:1,what:'Portal reinforcements arrive even with the portal suppressed'}),
+ portalstorm:T({name:'PORTAL STORM',bane:1,what:'The portal surges four times: twice in the push, twice at the warden'}),
  airwing:T({name:'LDF AIR WING',bane:0,what:'One more LDF airstrike'}),
  overdrive:T({name:'OVERDRIVE',bane:0,what:'Your Dash recharges twice as fast'})});
 const GAMBIT_WEEKS=Object.freeze([['double','airwing'],['noshield','overdrive'],['tide','airwing'],['enraged','overdrive'],['barrage','airwing'],['portalstorm','overdrive']].map(Object.freeze));
@@ -176,7 +176,7 @@ class Assault extends CC.Operation{
  setup({prep={},gambits=[]}={}){const c=this.cit,g=(gambits||[]).filter(k=>GAMBITS[k]).slice(0,3);c.gam=g;c.prep={aa:prep.aa?1:0,cv:prep.cv?1:0,po:prep.po?1:0};
   c.air=(prep.aa?1:0)+(g.includes('airwing')?1:0);
   const more=g.includes('double')?1:0,less=prep.cv?1:0;if(c.shipsMax)c.shipsMax=Math.max(0,c.shipsMax-less+more);else c.wavesMax=Math.max(0,c.wavesMax-less+more);
-  c.portal=prep.po&&!g.includes('portalstorm')?0:CIT.portal.atS.length;return this;}
+  c.portal=g.includes('portalstorm')?CIT.portal.storm.length:prep.po?0:CIT.portal.atS.length;return this;}
  say(t){this.cit.say={t,at:Math.round(this.time*10)/10};}
  // a saved battle (Firebase drops empty lists and may hand lists back as maps): every list of the fortress's state, rebuilt
  citRestore(){const L=v=>Array.isArray(v)?v:record(v)?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]):[],c=record(this.cit)?this.cit:{};
@@ -206,7 +206,7 @@ class Assault extends CC.Operation{
    if(done&&(this.pushLeft()<=2||t>=Math.max(c.lastWave,c.lastShip||0)+CIT.wardenS))this.deployWarden();}
   if(c.stage===2)this.wardenStep();
   // the portal's surges (no portal reinforcements when the portal was suppressed: siege prep)
-  if(c.portal>0&&c.stage>=1){const i=CIT.portal.atS.length-c.portal,due=i===0?c.stage>=1&&t>=c.open+CIT.portal.atS[0]:c.stage>=2&&t>=c.warden+CIT.portal.atS[1];if(due){c.portal--;this.citWave(['raider','raider','raider'],[[LAYOUT.portalAt.u,LAYOUT.portalAt.v]],'portal');this.effects.push({kind:'radio',...at(LAYOUT.portalAt.u,LAYOUT.portalAt.v),y:this.player.y+6,life:1.2});this.say('THE PORTAL SURGES');}}
+  if(c.portal>0&&c.stage>=1){const L=c.gam.includes('portalstorm')?CIT.portal.storm:CIT.portal.atS,[st,ds]=L[Math.max(0,L.length-c.portal)]||[9,0],due=c.stage>=st&&t>=(st===1?c.open:c.warden)+ds;if(due){c.portal--;this.citWave(['raider','raider','raider'],[[LAYOUT.portalAt.u,LAYOUT.portalAt.v]],'portal');this.effects.push({kind:'radio',...at(LAYOUT.portalAt.u,LAYOUT.portalAt.v),y:this.player.y+6,life:1.2});this.say('THE PORTAL SURGES');}}
   this.swarmStep(Tr,t);this.mortarStep(Tr,t);this.impacts(t);
   if(c.gam.includes('barrage')&&t>=c.next.barrage){c.next.barrage=t+12;this.markStrike('orbital',this.player.x,this.player.z,0);}}
  gateDown(){const Tr=TIERS[this.cit.tier],k=Tr.gate==='shield'?'gen':'gate';return !this.enemies.some(e=>e.cit===k&&e.hp>0);}
@@ -233,7 +233,7 @@ class Assault extends CC.Operation{
     const old=e.hp;e.hp=Math.max(0,e.hp-CIT.strike.dmg);if(old>0&&!e.hp)this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}
    this.effects.push({kind:'destroy',weapon:'siege',x:s.x,y:W().groundAt(s.x,s.z)+.8,z:s.z,r:CIT.strike.r,life:.8});}
   c.strikes=c.strikes.filter(x=>x.at>t);
-  for(const e of this.enemies)if(e.ship&&e.hp<=0&&!e.landed&&!e.counted){e.counted=1;c.down++;c.lastShip=t;this.say('DROPSHIP SHOT DOWN · ITS WAVE NEVER LANDS');}}
+  for(const e of this.enemies)if(e.ship&&e.hp<=0&&!e.landed&&!e.counted){e.counted=1;e.ship.hitAt=t;c.down++;c.lastShip=t;this.say('DROPSHIP SHOT DOWN · ITS WAVE NEVER LANDS');}}
  // the LDF airstrike (siege prep: the anti-air batteries knocked out): the pilot calls it on the locked target or 40 m ahead
  callStrike(p){const c=this.cit;if(!(c.air>0)||this.state!=='active')return false;const lock=this.enemies.find(e=>e.id===this.lockId&&e.hp>0),yaw=this.turretYaw||0,x=lock?lock.x:p.x+Math.sin(yaw)*CIT.strike.ahead,z=lock?lock.z:p.z+Math.cos(yaw)*CIT.strike.ahead;
   c.air--;c.strikes.push({x,z,at:this.time+CIT.strike.tellS});this.mark('air',x,z,CIT.strike.r,CIT.strike.tellS,0);this.say('LDF AIRSTRIKE INBOUND');return true;}
@@ -258,8 +258,13 @@ class Assault extends CC.Operation{
   const i=CIT.warden.reform.findIndex((f,k)=>!c.phase[k]&&e.core<=0&&e.hp<=e.maxHp*f);if(i>=0){for(let k=0;k<=i;k++)c.phase[k]=1;c.reformAt=this.time+CIT.warden.tellS;e.telegraph=true;this.say('THE CORE IS RE-FORMING');}}
 }
 const make=(loadout,p,id)=>new Assault(loadout,p,id);
+// HOOKS.dropship: a Citadel ship as ConquestDropship.flight(spec) reads it (5E-2d2: kind, at = its wave's moment, pad {x,z}, out = the
+// unit vector from the pad back along its approach, seed, lane, hitAt when shot down). js/conquest/citadelview.js plays that flight's
+// animation on the stand-in when dropship.js is loaded; the ship's position and hit box stay this module's (shipPose)
+function dropshipSpec(e){const S=e?.ship;if(!S)return null;const dx=S.from[0]-S.pad[0],dz=S.from[1]-S.pad[1],l=Math.hypot(dx,dz)||1;
+ return {kind:'hauler',at:num(S.t0)+CIT.ship.flyS,pad:{x:S.pad[0],z:S.pad[1]},out:[dx/l,dz/l],seed:int(S.n),lane:int(S.n),...(Number.isFinite(S.hitAt)?{hitAt:S.hitAt}:{})};}
 // the staging point of the siege camp (where a launched assault starts)
 const stageAt=()=>{const q=at(LAYOUT.stage.u,LAYOUT.stage.v);return {x:q.x,z:q.z,y:W().groundAt(q.x,q.z),surface:'ground'};};
-root.ConquestCitadel=Object.freeze({opensAt,CIT,TIERS,WARDENS,BANDS,PREP,GAMBITS,GAMBIT_WEEKS,LAYOUT,HOOKS,ROMAN,Assault,make,fresh,norm,tiersOf,isCitadel,tierOfId,nextTier,frontHeld,prepOf,
+root.ConquestCitadel=Object.freeze({opensAt,dropshipSpec,CIT,TIERS,WARDENS,BANDS,PREP,GAMBITS,GAMBIT_WEEKS,LAYOUT,HOOKS,ROMAN,Assault,make,fresh,norm,tiersOf,isCitadel,tierOfId,nextTier,frontHeld,prepOf,
  launchWhy,battlePoints,bountyOf,prodOf,cutOf,weekOf,gambitsOf,stageAt,centre,at,segDist});
 })(globalThis);

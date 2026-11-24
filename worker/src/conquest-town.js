@@ -89,7 +89,7 @@ export function settle(s,e,at,live,cit=citTiers(s)){const p=s.plot,tw=s.tw;
  if(o!=='held')p.shieldUntil=Math.max(int(p.shieldUntil),at+T.shieldMs);
  const x={id:e.id,at,o,by:useLive||live?.fought?'you':'away',lv,th:st.total,g:e.g,core:R.core,k:R.kills,sp:R.spawned,fell:(R.fell||[]).length,wl:R.wallsLost|0,...(Object.keys(taken).length?{tk:taken}:{}),...(e.go?{go:1}:{}),...(dn?{dn}:{})};
  let receipt={kind:'town-raid',...x,shield:o!=='held'?p.shieldUntil:0};
- if(o==='held'){const pay=useLive||live?.fought?T.cache:T.away;s.ledger.cp+=pay.cp;for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=(s.ledger.banked[k]||0)+pay[k];if(pay.cp||pay.alloy||pay.biomass||pay.helium)x.cache=1;   /* Session 7B STEP 3: an unfought held raid pays TOWN.away */
+ if(o==='held'){const pay=live?.fought?T.cache:T.away;s.ledger.cp+=pay.cp;for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=(s.ledger.banked[k]||0)+pay[k];if(pay.cp||pay.alloy||pay.biomass||pay.helium)x.cache=1;if(live?.fought)x.f=1;   /* Session 7B STEP 3: the whole cache only for a raid really fought in person (review: DEFEND then leave was paid it); otherwise TOWN.away */
   s.base.defense.wins=(s.base.defense.wins|0)+1;p.ext=record(p.ext)?p.ext:{r:0,d:0,w:0};p.ext.w=Math.max(p.ext.w|0,s.base.defense.wins);s.achievements=s.achievements||{};s.achievements['base-defender']=s.achievements['base-defender']||at;tw.won=(tw.won|0)+1;
   receipt={...receipt,cp:pay.cp,alloy:pay.alloy,biomass:pay.biomass,helium:pay.helium};
   // in person (decision 6): a defense the pilot held and really fought pays the 675 defense points (inside the hourly limit and the cap),

@@ -70,6 +70,8 @@ ok(JSON.stringify(R.CIT_BOUNTY)==='[0,25000,37500,50000,75000,100000,150000,2250
  B.deployWarden();const w=B.enemies.find(e=>e.warden);ok(w&&w.core===CI.CIT.warden.core&&w.hp===CI.CIT.warden.hp,'the warden: its shield core up');
  B.friends.push(C.friendUnit({id:800000001,side:'mine',pid:'a',role:'breacher',kit:{w:{a:'pulse',t:2,q:1},c:{c:'titan',t:2,q:1}},m:1,x:p.x+4,z:p.z}));const f=B.friends.at(-1);
  const hp0=w.hp,core0=w.core;B.hit({x:w.x,y:w.y+2.2,z:w.z,vx:1,vy:0,vz:0,team:'ally',kind:'siege',owner:f.id},w,2.7);ok(w.hp===hp0&&w.core===core0,'an ally\'s hit does nothing while the shield core holds');
+ {const g=B.enemies.find(e=>!e.warden&&e.hp>0&&e.wave==='escort')||B.enemies.find(e=>!e.warden&&e.hp>0);const gx=g.x,gz=g.z;g.x=w.x+3;g.z=w.z;g.y=w.y;B.hit({x:g.x,y:g.y+2.2,z:g.z,vx:1,vy:0,vz:0,team:'ally',kind:'siege',owner:f.id},g,2.7);g.x=gx;g.z=gz;
+  ok(w.hp===hp0&&w.core===core0,'an ally\'s siege splash 3 m from the warden does nothing to it while the core holds (review: splash went around the core)');}
  B.cit.air=1;B.lockId=w.id;B.callStrike(p);B.time+=3;B.impacts(B.time);ok(w.core===core0&&w.hp===hp0,'the LDF airstrike never touches a shield core');
  B.random=()=>1;for(let i=0;i<400&&w.core>0;i++)B.hit({x:w.x,y:w.y+2.2,z:w.z,vx:1,vy:0,vz:0,team:'player',kind:'pulse',owner:0},w,2.7);ok(w.core===0,'the pilot\'s own fire breaks the shield core');
  B.hit({x:w.x,y:w.y+2.2,z:w.z,vx:1,vy:0,vz:0,team:'ally',kind:'siege',owner:f.id},w,2.7);ok(w.hp<hp0,'the core down: the Battalion hits the hull');
@@ -118,6 +120,7 @@ ok(JSON.stringify(R.CIT_BOUNTY)==='[0,25000,37500,50000,75000,100000,150000,2250
  ok(r1.cit.lb&&r1.cit.lb.t===1&&r1.cit.wk[1].w===wk,'the clear time goes to the weekly board (the Worker\'s own clock)');
  const r3=run(r2,t0+8*DAY);ok(r3.settlement.chest==='full','a new week: the full chest again');
  ok(new Set(CI.GAMBIT_WEEKS.map(x=>x.join())).size===CI.GAMBIT_WEEKS.length&&CI.GAMBIT_WEEKS.every(x=>CI.GAMBITS[x[0]].bane&&!CI.GAMBITS[x[1]].bane),'the Gambits rotate: a bane and a boon each week');
+{const mk=o=>CI.make(GEAR.epic,CI.stageAt(),'citadel-1').setup(o).cit.portal;ok(mk({})===2&&mk({prep:{po:1}})===0&&mk({gambits:['portalstorm']})===4,'PORTAL STORM: four portal surges in a Throne Run (twice in the push, twice at the warden); two normally; none with the portal suppressed');}
  const pr=pilot();const {citadelPrep}=await import('../../worker/src/conquest-citadel.js');pr.cit={...s.cit};citadelPrep(pr,Object.values(C.operations).find(o=>o.raid&&o.family==='battery'),t0);const tr=act(pr,{action:'start-mission',mission:'citadel-1'},t0+1000);
  ok(tr.battle.cit.air===(CI.gambitsOf(CI.weekOf(t0)).includes('airwing')?1:0)&&tr.cit.prep.aa,'a Throne Run uses no siege prep (it waits for the next siege)');}
 

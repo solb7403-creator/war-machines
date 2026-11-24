@@ -32,7 +32,12 @@ function drop(view){const g=view.citGroup;if(!g)return;view.scene.remove(g);g.us
 function sync(view){const B=view.battle;if(!B?.cit||!view.T||!view.scene||view.renderer?.isConquestCanvas||!CI()){drop(view);return;}
  if(view.citGroup&&view.citGroup.userData.tier!==B.cit.tier)drop(view);if(!view.citGroup){view.citGroup=build(view,B);view.scene.add(view.citGroup);}
  const g=view.citGroup;g.position.set(-view.origin.x,0,-view.origin.z);const T=CI().TIERS[B.cit.tier];g.userData.shield.visible=T.gate==='shield'&&B.cit.stage<1;
- for(const e of B.enemies)if(e.warden)core(view.enemyMeshes?.get(e.id),e);}
+ for(const e of B.enemies)if(e.warden)core(view.enemyMeshes?.get(e.id),e);else if(e.ship)ship(view,e,B);}
+// HOOKS.dropship: with 5E-2d2's js/conquest/dropship.js loaded, the stand-in plays its flight's animation (tilt, roll, the crash) from
+// ConquestCitadel.dropshipSpec(e); the position and hit box stay the assault's own
+function ship(view,e,B){const D=root.ConquestDropship,m=view.enemyMeshes?.get(e.id);if(!D?.flight||!m)return;const spec=CI().dropshipSpec(e);if(!spec)return;
+ try{const key=e.id+':'+(spec.hitAt??''),c=view.citShips||(view.citShips=new Map());let F=c.get(key);if(!F){F=D.flight({...spec,ground:(x,z)=>root.ConquestWorld.groundAt(x,z)});c.set(key,F);}
+  const P=F.pose(B.time||0);if(P&&P.vis!==false){m.rotation.x=P.pitch||0;m.rotation.z=P.roll||0;m.userData.dropshipPhase=P.phase;}}catch(_){}}
 // a Citadel unit's stand-in model (null: the view's own). Shapes cached per view (shared, never disposed per unit), the view's own
 // materials, a gun group and the selection / tell marker every Parasite model carries (the view turns the gun and shows the tell)
 function model(view,e){if(!(e.cit||e.swarm||e.ship||e.warden)||!view.T||typeof view.mat!=='function'||typeof view.form!=='function')return null;const T=view.T,g=new T.Group(),gun=new T.Group(),C=view.citCache||(view.citCache=new Map());g.add(gun);g.userData.gun=gun;
@@ -44,7 +49,7 @@ function model(view,e){if(!(e.cit||e.swarm||e.ship||e.warden)||!view.T||typeof v
  else if(e.cit==='gun'){add(g,'gun-base',()=>new T.BoxGeometry(2.4,1.4,2.4),0x5b4a52,.7);add(gun,'gun-barrel',()=>new T.CylinderGeometry(.3,.3,2.6,8),0x2c2f33,1.9,0,Math.PI/2);top=4;}
  else if(e.cit==='mortar'){add(g,'mortar-pit',()=>new T.CylinderGeometry(1.5,1.8,1,12),0x584a3e,.5);add(gun,'mortar-tube',()=>new T.CylinderGeometry(.55,.7,2.2,10),0x7d6a4e,1.6,0,.5);top=4;}
  else if(e.swarm){add(g,'swarm',()=>new T.ConeGeometry(.55,1.1,6),0xb35a76,.6,Math.PI/2);top=2.4;}
- else if(e.ship){/* 5E-2d2's dropship look plugs in here (ConquestDropship.flight / stage) once that session is merged */add(g,'ship-hull',()=>new T.BoxGeometry(5,2,8),COL.ship,0);add(g,'ship-wing',()=>new T.BoxGeometry(8.5,.3,2.4),0x4d3f48,.3);top=3;}
+ else if(e.ship){/* HOOKS.dropship: 5E-2d2's look replaces this stand-in; its flight's animation plays already (ship() above) */add(g,'ship-hull',()=>new T.BoxGeometry(5,2,8),COL.ship,0);add(g,'ship-wing',()=>new T.BoxGeometry(8.5,.3,2.4),0x4d3f48,.3);top=3;}
  else if(e.warden){add(g,'warden-body',()=>new T.CylinderGeometry(2,2.3,2.1,14),0x6a4252,1.05);add(gun,'warden-gun',()=>new T.CylinderGeometry(.5,.5,3.2,8),0x2c2f33,2.4,0,Math.PI/2);
   g.userData.core=add(g,'warden-core',()=>new T.TorusGeometry(2.6,.22,8,28),COL.core,2.3,Math.PI/2);top=6;}
  else return null;

@@ -275,8 +275,8 @@ class Battle {
  else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage*(this.defenseConfig==='shield'?.6:1));
  const fx={kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15,weapon:q.kind};if(ally)fx.a=1;this.effects.push(fx);
  // Heavy shells retain their shared direct damage; fragments affect only nearby distinct targets.
- if(q.kind==='siege'&&ours)for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5&&lineClear(q,center(e))){const dealt=Math.min(e.hp,damage*.3);if(ally){e.ad=1;if(shooter)shooter.charge=Math.min(SUPER_MAX,shooter.charge+dealt*FILL_DEALT*(owner.fillM||1));this.allyDmg=(this.allyDmg||0)+dealt;e.hp=Math.max(0,e.hp-damage*.3);if(e.hp===0)this.friendKill(e,shooter);continue;}
-  e.pd=1;this.pilotDmg=(this.pilotDmg||0)+dealt;this.charge=Math.min(SUPER_MAX,this.charge+dealt*FILL_DEALT*(this.playerStats.fillM||1));e.hp=Math.max(0,e.hp-damage*.3);if(e.hp===0){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}}
+ if(q.kind==='siege'&&ours)for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5&&lineClear(q,center(e))){let d=damage*.3;if(e.core>0){if(ally)continue;const c=Math.min(e.core,d);e.core-=c;d-=c;}   /* Session 7B review: a shield core takes splash too (only the pilot breaks it) */const dealt=Math.min(e.hp,d);if(ally){e.ad=1;if(shooter)shooter.charge=Math.min(SUPER_MAX,shooter.charge+dealt*FILL_DEALT*(owner.fillM||1));this.allyDmg=(this.allyDmg||0)+dealt;e.hp=Math.max(0,e.hp-d);if(e.hp===0)this.friendKill(e,shooter);continue;}
+  e.pd=1;this.pilotDmg=(this.pilotDmg||0)+dealt;this.charge=Math.min(SUPER_MAX,this.charge+dealt*FILL_DEALT*(this.playerStats.fillM||1));e.hp=Math.max(0,e.hp-d);if(e.hp===0){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}}
  return true;
  }
  alert(e){if(!e.key||e.radioCalled)return;e.radioCalled=true;for(const ally of this.enemies)if(ally!==e&&ally.hp>0&&Math.hypot(ally.x-e.x,ally.z-e.z)<80)ally.radioUntil=this.time+12;this.effects.push({kind:'radio',x:e.x,y:e.y+5,z:e.z,life:.5});}

@@ -56,10 +56,10 @@ export function bankMinerals(s,mn){const a=airdrop(s),add={};for(const [k,v] of 
 export function due(s,now){const a=airdrop(s),out=a.out.filter(e=>e.id>a.ack);return out.length>0&&(out.some(e=>e.op||e.mn||e.rm||e.rsj||e.bty)||out.length>=CREDIT_BATCH||now-Math.min(...out.map(e=>e.at||now))>=CREDIT_AFTER_MS);}
 export const pending=s=>airdrop(s).out.filter(e=>e.id>airdrop(s).ack);
 // After the account credited up to cqw: drop those entries and keep the latest account numbers for the HUD.
-export function acknowledge(s,cqw,view){const a=airdrop(s);a.ack=Math.max(a.ack,cqw|0);a.out=a.out.filter(e=>e.id>a.ack);if(view)a.view=view;return a;}
+export function acknowledge(s,cqw,view){const a=airdrop(s);a.ack=Math.max(a.ack,cqw|0);a.seq=Math.max(a.seq|0,a.ack);a.out=a.out.filter(e=>e.id>a.ack);if(view)a.view=view;return a;}   // Session 7B (payout review W1): a record reset or restored on the server numbers its next entries past the account's watermark, so they are credited
 // Estimated base points for display (the league factor last read from the account; the account credit is authoritative).
 export function estimate(s,raw){const a=airdrop(s),pay=Number(a.view?.pay)||1;return Math.round((Number(raw)||0)*pay);}
 // Session 7B: a Citadel tier's first-clear bounty (worker/src/conquest-citadel.js, once: the tier count only rises). It rides this request's
 // immutable outbox entry (e.bty, never merged into the capped raw points); the account credits each bounty id once per account
 // (rules.js ecoBounty: S.cbty, outside the daily cap). Never through earn(): no hourly limit, no Command Base multiplier, no league factor
-export function bounty(s,id,pts){if(s.dev?.used)return 0;const a=airdrop(s),n=Math.max(0,Math.floor(Number(pts)||0));if(!/^cit[1-9]$/.test(String(id))||!n)return 0;a.pbty=[...list(a.pbty).filter(x=>x.id!==id),{id,pts:n}];return n;}
+export function bounty(s,id,pts){if(s.dev?.used)return 0;const a=airdrop(s),n=Math.max(0,Math.floor(Number(pts)||0));const m=/^cit([1-9])$/.exec(String(id));if(!m||+m[1]>R.CIT_LIVE||!n)return 0;a.pbty=[...list(a.pbty).filter(x=>x.id!==id),{id,pts:n}];return n;}

@@ -261,7 +261,7 @@ export function ladderRun(seed,{raids=true,coach=false,repairX=1,cacheX=null,sit
  // defense cache (a PROPOSAL's number)
  const ids=new Set(),tally={held:0,breached:0,fallen:0},scan=()=>{for(const x of s.tw?.log||[]){if(ids.has(x.id))continue;ids.add(x.id);if(x.o in tally)tally[x.o]++;
   const fx=cacheX===null||cacheX===undefined?null:typeof cacheX==='number'?{cp:cacheX,mat:cacheX}:{cp:cacheX?.cp??1,mat:cacheX?.mat??1};
-  if(fx&&x.o==='held'&&x.by!=='you'){const c=TN.TOWN.cache,paid=TN.cacheOf(x)||{cp:0,alloy:0,biomass:0,helium:0};s.ledger.cp+=Math.round(c.cp*fx.cp)-paid.cp;for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=Math.max(0,(s.ledger.banked[k]||0)+Math.round(c[k]*fx.mat)-paid[k]);}}};   /* the option's share of 7T's whole cache in place of what the game paid (TOWN.away) */
+  if(fx&&x.o==='held'&&!x.f){const c=TN.TOWN.cache,paid=TN.cacheOf(x)||{cp:0,alloy:0,biomass:0,helium:0};s.ledger.cp+=Math.round(c.cp*fx.cp)-paid.cp;for(const k of ['alloy','biomass','helium'])s.ledger.banked[k]=Math.max(0,(s.ledger.banked[k]||0)+Math.round(c[k]*fx.mat)-paid[k]);}}};   /* the option's share of 7T's whole cache in place of what the game paid (TOWN.away) */
  const seen=now=>{s.lastWall=now;if(!raids&&s.plot)s.plot.shieldUntil=start+4000*DAY;scan();};
  for(let day=0;day<days;day++){let now=start+day*DAY+19*HOUR;if(cit)citFor(s,PROFILES.regular,day);
   if(s.base.tier){atGate();try{baseAction(s,{action:'base-claim'},now);}catch(e){}try{plotAction(s,{action:'plot-collect',plot:{}},now);}catch(e){}}build(now);seen(now);

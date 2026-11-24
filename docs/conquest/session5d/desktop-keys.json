@@ -14,7 +14,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 6.487187804086944
+    "fps": 11.998628728145324
    },
    "ArrowLeft": {
     "keys": [
@@ -28,7 +28,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 5.807200929152164
+    "fps": 10.284538909838849
    },
    "KeyS": {
     "keys": [
@@ -42,7 +42,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 7.500468779298664
+    "fps": 8.824567596187752
    },
    "KeyD": {
     "keys": [
@@ -56,7 +56,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 6.667777962993816
+    "fps": 9.678668215253609
    },
    "ArrowUp": {
     "keys": [
@@ -70,7 +70,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 6.666666666666667
+    "fps": 10.001666944490784
    }
   },
   "viewport": [
@@ -90,11 +90,11 @@
    "hint": true
   },
   "moved": {
-   "KeyW": 7.893764705887179,
-   "ArrowLeft": 7.480000000004793,
-   "KeyS": 7.877411764710814,
-   "KeyD": 8.602000000005319,
-   "ArrowUp": 8.33376470588746
+   "KeyW": 6.573764705886333,
+   "ArrowLeft": 5.720000000003665,
+   "KeyS": 6.0514117647096555,
+   "KeyD": 6.072000000003754,
+   "ArrowUp": 6.06776470588602
   },
   "spaceFires": true,
   "shiftRightDash": true,
@@ -105,13 +105,14 @@
    "connected": true,
    "keys": [],
    "p": {
-    "x": 1163.1220000000005,
-    "z": 1112.6738823529392
+    "x": 1162.352,
+    "z": 1114.4338823529404
    },
    "hint": false
   },
-  "movedAfter10s": 7.480000000004793,
-  "pageErrors": []
+  "movedAfter10s": 2.4219607843151607,
+  "pageErrors": [],
+  "citadel": "THE CAMPAIGN \u00b7 NEXT: CITADEL I \u00b7 BREACH POINT"
  },
  {
   "label": "420-desktop",
@@ -128,7 +129,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 14.545454545454545
+    "fps": 25.454545454545453
    },
    "ArrowLeft": {
     "keys": [
@@ -142,7 +143,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 11.614401858304328
+    "fps": 23.224308109154215
    },
    "KeyS": {
     "keys": [
@@ -156,7 +157,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 11.666666666666668
+    "fps": 25.164537359659292
    },
    "KeyD": {
     "keys": [
@@ -170,7 +171,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 12.727272727272727
+    "fps": 23.63636363636364
    },
    "ArrowUp": {
     "keys": [
@@ -184,7 +185,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 14.121800529567517
+    "fps": 23.999999999999996
    }
   },
   "viewport": [
@@ -204,11 +205,11 @@
    "hint": true
   },
   "moved": {
-   "KeyW": 7.453764705886897,
-   "ArrowLeft": 5.720000000003665,
-   "KeyS": 6.4254117647099065,
-   "KeyD": 5.5660000000034415,
-   "ArrowUp": 5.561764705885707
+   "KeyW": 4.554000000002816,
+   "ArrowLeft": 4.554000000002816,
+   "KeyS": 4.554000000002816,
+   "KeyD": 4.048000000002503,
+   "ArrowUp": 4.048000000002503
   },
   "spaceFires": true,
   "shiftRightDash": true,
@@ -219,12 +220,13 @@
    "connected": true,
    "keys": [],
    "p": {
-    "x": 1161.8459999999998,
-    "z": 1114.4338823529404
+    "x": 1161.4939999999997,
+    "z": 1116.6501999999991
    },
    "hint": false
   },
-  "movedAfter10s": 2.4219607843151607,
-  "pageErrors": []
+  "movedAfter10s": 3.9600000000025375,
+  "pageErrors": [],
+  "citadel": "THE CAMPAIGN \u00b7 NEXT: CITADEL I \u00b7 BREACH POINT"
  }
 ]

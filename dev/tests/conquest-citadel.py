@@ -1,11 +1,12 @@
 """Session 7B Citadel Act I screens in the shipped client against the real Worker on a disposable local DB (owner brief
 docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md): the War Map's campaign card (CITADEL I · BREACH POINT, FRONT held, FORCE / DEFENSE
 beside their bands, the siege prep rows, LAUNCH), the launch from the hub (into the world, the tank moved to the siege camp by the
-Worker), the reveal (full on the first attempt; SKIP by a tap or by Escape / Enter on a computer; the fight waits while it plays), the
+Worker), the reveal (full on the first attempt; SKIP by a tap, or on a computer by Escape and by a mouse click; the fight waits while it plays), the
 assault HUD (the phase, the objective, the clock, the LDF airstrike button from the anti-air prep: a tap or the X key), the result card
 of the first clear (the Worker's own settlement: the 25,000 bounty line, production, trophy, Retaliation, the next tier) and the Throne
 Run section afterwards (this week's Gambits, the full chest, RUN, BOARD). At 390x844, 390x700, 320x568 (touch: a real swipe reaches
-what is below) and 1366x768, 1920x1080 (mouse and keyboard). Every screen fits or scrolls. Pictures: docs/conquest/session7b."""
+what is below) and 1366x768, 1920x1080 (the mouse and the keyboard by turns: each button by a real click or by focus + Enter, the airstrike by a click
+or the X key). Every screen fits or scrolls. Pictures: docs/conquest/session7b."""
 import asyncio,json,os,pathlib,shutil,sys
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
@@ -36,10 +37,13 @@ async def reach(page,loc,scroller,touch,h):
   else:
    await page.mouse.move(sb['x']+sb['width']/2,max(sb['y'],0)+min(max(sb['height'],40)-10,200));await page.mouse.wheel(0,260 if down else -260);await page.wait_for_timeout(150)
  raise AssertionError('not reachable by scrolling: '+(await loc.inner_text())[:60]+' '+str(await loc.bounding_box()))
+INPUT={'mouse':0,'keys':0}
 async def press(page,loc,touch):
- if touch:await loc.tap()
- else:
-  await loc.focus();await page.keyboard.press('Enter')   # keyboard first on a computer
+ if touch:await loc.tap();return
+ # a computer: the mouse and the keyboard by turns (each desktop size uses both): a real click (Playwright moves the pointer onto the
+ # button and refuses if anything covers it), then focus + Enter
+ if INPUT['mouse']<=INPUT['keys']:await loc.click();INPUT['mouse']+=1
+ else:await loc.focus();await page.keyboard.press('Enter');INPUT['keys']+=1
 async def main():
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE,env={**os.environ})
  ready=json.loads(await server.stdout.readline());base='http://127.0.0.1:'+str(ready['port']);results={}
@@ -76,7 +80,7 @@ async def main():
    async def post(path,data={}):
     c=await browser.new_context();resp=await c.request.post(base+path,data=data);j=await resp.json();await c.close();return j
    for w,h,mobile in SIZES:
-    r={}
+    r={};INPUT.update(mouse=0,keys=0)
     ctx,page,errors=await open_page(w,h,mobile,{'citadel':{'prep':['aa']},'battalion':{'hangar':5,'n':10,'rank':5},'baseFunds':True})
     # ---- 1. the campaign card on the War Map (from the hub) ----
     await page.wait_for_selector('.cq-hub .cq-hub-war',timeout=60000);wb=page.locator('.cq-hub-war').first;await reach(page,wb,'.cq-hub-scroll',mobile,h);await press(page,wb,mobile)
@@ -88,7 +92,10 @@ async def main():
     assert await go.is_enabled(),'LAUNCH enabled with FRONT held';await page.screenshot(path=str(OUT/f'campaign-card-{w}x{h}.png'));r['card']=ct.split('\n')[0]
     # ---- 2. launch: into the world, the Worker moves the tank to the siege camp; the reveal plays (full, the first attempt) ----
     await press(page,go,mobile)
-    cut=page.locator('.cq-cutscene');await cut.wait_for(timeout=120000)
+    # the reveal starts once the world has streamed in (js/conquest/app.js afterEnterStep waits for view.pending 0): software GL at
+    # 1920x1080 on a busy machine takes minutes to stream it, so the reveal's own wait starts there
+    await page.wait_for_function('Conquest.view&&Conquest.view.authority&&Conquest.view.authority.connected&&!Conquest.view.pending',timeout=420000)
+    cut=page.locator('.cq-cutscene');await cut.wait_for(timeout=60000)
     st=await inspect();assert st['mission']=='citadel-1' and st['citRun']['tier']==1 and st['citRun']['prep']['aa']==1,('the Worker started the assault with the prep',st.get('mission'),st.get('citRun'))
     cam=st['position'];stage=await page.evaluate('ConquestCitadel.stageAt()');assert abs(cam['x']-stage['x'])<14 and abs(cam['z']-stage['z'])<14,('at the siege camp',cam,stage)
     ctext=await cut.inner_text();assert 'CITADEL I · BREACH POINT' in ctext and 'SKIP' in ctext,ctext
@@ -98,7 +105,7 @@ async def main():
     sk=page.locator('.cq-cut-skip');sb=await sk.bounding_box();assert sb and sb['y']>=0 and sb['x']+sb['width']<=w+1,('SKIP on screen',sb)
     await page.screenshot(path=str(OUT/f'reveal-{w}x{h}.png'))
     if mobile:await sk.tap()
-    else:await page.keyboard.press('Escape')
+    else:await page.keyboard.press('Escape');INPUT['keys']+=1   # a computer: Escape (the Throne Run's reveal below: a mouse click on SKIP)
     await page.wait_for_function('!document.querySelector(".cq-cutscene")&&Conquest.view.cinematic===false',timeout=10000)
     # ---- 3. the assault HUD; the LDF airstrike (anti-air prep) ----
     hud=page.locator('.cq-cit-hud');await hud.wait_for(timeout=20000);await page.wait_for_function('Conquest.view.battle&&Conquest.view.battle.time>0.5',timeout=30000)
@@ -107,7 +114,8 @@ async def main():
     air=page.locator('#cq-strike');await air.wait_for(state='visible',timeout=10000);ab=await air.bounding_box();assert ab and ab['y']+ab['height']<=h+1,('the airstrike button on screen',ab)
     await page.screenshot(path=str(OUT/f'assault-hud-{w}x{h}.png'))
     if mobile:await air.tap()
-    else:await page.keyboard.press('x')
+    elif w==1920:await air.click();INPUT['mouse']+=1   # the mouse at 1920x1080, the X key at 1366x768
+    else:await page.keyboard.press('x');INPUT['keys']+=1
     await page.wait_for_function('Conquest.view.authority.state.battle.cit.air===0&&Conquest.view.authority.state.battle.cit.strikes.length+0>=0',timeout=20000)
     st=await inspect();assert st['battle']['cit']['air']==0,('the Worker spent the airstrike',st['battle']['cit'].get('air'))
     r['hud']=ht.replace('\n',' · ')
@@ -127,9 +135,26 @@ async def main():
     assert 'THRONE RUN' in tt and 'FULL CHEST READY' in tt and 'RUN CITADEL I' in tt,tt
     gam=await page.evaluate('ConquestCitadel.gambitsOf(ConquestCitadel.weekOf(Date.now())).map(k=>ConquestCitadel.GAMBITS[k].name)');assert all(g in tt for g in gam),(gam,tt)
     nx=await page.locator('.cq-warmap .cq-cit-card').inner_text();assert 'NEXT: CITADEL II · IRON RAIN' in nx,nx
+    # the Hive re-fortifies the next tier for 7 days after a first clear: LAUNCH reads it and stays shut (Throne Runs stay open)
+    lk=page.locator('.cq-warmap .cq-cit-card .cq-cit-launch');lt=await lk.inner_text();assert 'RE-FORTIFIES CITADEL II' in lt and ('OPENS IN 7 D 0 H' in lt or 'OPENS IN 6 D' in lt) and not await lk.is_enabled(),lt
+    await reach(page,lk,'.cq-dialog.cq-warmap',mobile,h);await page.screenshot(path=str(OUT/f'refortify-{w}x{h}.png'));r['locked']=lt.strip()[:80]
     run=th.locator('.cq-cit-run').first;await reach(page,run,'.cq-dialog.cq-warmap',mobile,h);await page.screenshot(path=str(OUT/f'throne-run-{w}x{h}.png'))
     bd=th.locator('.cq-cit-board-btn').first;await press(page,bd,mobile);await page.locator('.cq-cit-board').wait_for(timeout=20000);bt=await page.locator('.cq-cit-board').inner_text();assert 'CLEAR TIMES' in bt,bt
     await page.screenshot(path=str(OUT/f'board-{w}x{h}.png'));r['throne']=' · '.join(l for l in tt.split('\n') if l.strip())[:160]
+    # a loss: a Throne Run of tier I runs out of its 8-minute siege window: THE ASSAULT FAILED, nothing taken (a Throne Run carries no prep)
+    await press(page,page.locator('.cq-cit-board button',has_text='CLOSE').first,mobile)
+    rn=page.locator('.cq-warmap .cq-cit-throne .cq-cit-run').first;await reach(page,rn,'.cq-dialog.cq-warmap',mobile,h);await press(page,rn,mobile)
+    await page.locator('.cq-cutscene').wait_for(timeout=120000)
+    if mobile:await page.locator('.cq-cut-skip').tap()
+    else:await page.locator('.cq-cut-skip').click();INPUT['mouse']+=1
+    await page.wait_for_function('!document.querySelector(".cq-cutscene")&&Conquest.view.battle&&Conquest.view.battle.time>0.3',timeout=30000)
+    j=await post('/fixture-citadel-lose');assert j['ok'],j   # the siege window runs out: the Worker's own defeat
+    ls=page.locator('.cq-cit-result');await ls.wait_for(timeout=60000);lt2=await ls.inner_text()
+    assert 'THE ASSAULT FAILED' in (await page.locator('.cq-result').inner_text()) and 'CITADEL I' in lt2,lt2
+    st=await inspect();assert st['cit']['lost']>=1 and st['cit']['t']==1 and st['hp']>0,('a loss takes nothing else: the tier stays cleared, the tank comes back',st.get('cit'),st.get('hp'))
+    await page.screenshot(path=str(OUT/f'loss-{w}x{h}.png'));r['loss']=' · '.join(l for l in lt2.split('\n') if l.strip())[:120]
+    if not mobile:assert INPUT['mouse']>=4 and INPUT['keys']>=4,('a computer used both the mouse and the keyboard',INPUT)
+    r['inputs']='touch' if mobile else f"mouse {INPUT['mouse']}, keyboard {INPUT['keys']}"
     assert not errors,errors[:3];await close_ctx(ctx);results[f'{w}x{h}']=r;print('PASS',w,h,json.dumps(r)[:300],flush=True)
    await browser.close()
   try:prev=json.loads((OUT/'citadel-ui.json').read_text()).get('sizes',{})   # one size at a time (--size) keeps the others' readings

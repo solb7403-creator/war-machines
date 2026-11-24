@@ -7295,12 +7295,40 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   balance, lab UI, the Graphify index, GitHub Pages); the new Auto-release workflow's first live run was a clean no-op (no labelled PR).
 - **STEP 2 + 3: draft PR #155** on `claude/citadel-act-i-logic-jpnnz3` (the branch restarted from main `43f1378`, the local work
   cherry-picked onto it unchanged). Subscribed to its CI.
-- **STEP 2 status (Nov 24, 07:20 UTC):** built and tested locally: the UI (War Map card, launch, prep rows, Throne Run + board, HUD,
-  result card, cutscenes that hide the whole HUD, stand-in views), the board route, `conquest-citadel.mjs` 74 PASS, the browser test
-  `conquest-citadel.py` PASS at all 5 sizes (captures in docs/conquest/session7b/), the map marker (one ♜ for the Citadel; its tiers
-  never show as plain missions: app.js lists, style.js minimap, conquest-campaign contracts), `conquest-terraform` (the Citadel's own
-  drive-reachability check; the other 67 sites keep the original box). **In progress: difficulty and pacing** (see "Calibration").
-- **STEP 2 built so far (local, `wip-7b`):** `js/conquest/citadel.js` (rules, tiers, record, prep, Throne Run, the Assault class),
+- **Status (Nov 24, 09:30 UTC):** STEP 2 built and tested; pacing measured (all brief targets hold with the 7-day re-fortification:
+  "Pacing" below); STEP 3 measured, **not shipped** (its options conflict with conquest-fortress (f): "STEP 3" below; PROPOSAL); review
+  round 1 complete (reviewers A and B, the payout reviewer: fixes below). **Next:** the 5-size browser test and the website check at the
+  final head, push, CI green, a round-2 check of the fixes by a fresh reviewer, `dev/bump.sh`, mark #155 ready + `auto-release` label,
+  verify the Worker and Pages deploy, the docs-only PR (ROADMAP row 7B + release record), the final report with every PROPOSAL.
+- **Review round 1 (independent reviewers on 1258a6a):** payout reviewer: exactly once / outside the cap / no replay or forge all PASS;
+  fixed its findings: a reset or restored Conquest record could lose a later tier's bounty (eco.js pays bounties in entries at or
+  below the watermark, once by `S.cbty`; conquest-airdrop.js `acknowledge` numbers new entries past the account's watermark), ids past
+  the live tiers pay 0 (`CIT_LIVE` in rules.js, both sides), the HUD's "AIRDROP TODAY" counts capped points only, a real end-to-end
+  test (`dev/tests/wtest/conquest-citadel-payout.mjs`, 19 checks: replay, two tabs, the account down, the cap reached, the hourly
+  limit, a reset record, cit4-9, a dev record; in the CI `citadel` job). Reviewer A: fixed a shield-core bypass (siege splash hit the
+  warden's hull while its core held: combat.js splash now meets the core first, allies never), PORTAL STORM (did nothing in a Throne
+  Run; now four surges), the dropship hook (real now: `ConquestCitadel.dropshipSpec(e)` in 5E-2d2's `flight(spec)` format, `hitAt`
+  recorded when shot down, citadelview plays the flight's animation when dropship.js is loaded; position and hit box stay the
+  assault's), the "held in person" loophole, the pacing test (measured windows, 6-8 minutes for every tier's boundary clears), the
+  fortress-model comment that hid a declaration, the stale research note; STEP 3 conflict recorded (above). Not changed: the card's
+  bounty line after a server-side record reset (cosmetic; the account pays each tier once regardless).
+- **Review round 1, reviewer B (on 1258a6a; its game code identical at 7e28155):** PASS for the tiers, the opening, the first clear and
+  its bounty, the tiers in war and town, the Throne Run, the cutscenes, payments off. Its FAILs and what was done: (1) conquest-fortress
+  threw at 1258a6a (the swallowed declaration, fixed in 7e28155) and fails (f) with "without its CP" (27.8 against 26.8): that is the
+  STEP 3 conflict above; the shipped rule stays the 7T whole cache, under which (f) passes (20.8 against 26.8 on its 21 seeds). Its
+  suggestion to assert the CC10 band with town attacks on was not taken: under the shipped rule the band is missed (20.8 / 22.8, the
+  STEP 3 table), which is the owner's decision; the assertion belongs with that choice. (2) Tapping DEFEND and leaving paid the whole
+  cache: fixed (`live.fought`, as for reviewer A). (3) The siege splash past the shield core: fixed (as for A). (4) Pacing: the final
+  `citadel-pace.json` is committed (05e87a5); `conquest-citadel-pace` asserts measured boundary days and every tier's 6-8 minutes; its
+  window checks follow from those asserted days and the 7-day rule (they fail if either changes); the heavy player's tier III (24
+  against the plan's about 32) is reported. (5) Evidence: the browser test timed the reveal from the tap, and 1920x1080 in software GL
+  on a busy machine streamed the world for minutes: the reveal's wait now starts once the world has streamed (`view.pending` 0, as
+  app.js waits); on a computer every button is pressed by the mouse and the keyboard by turns (a real click, then focus + Enter), the
+  airstrike by a click at 1920x1080 and the X key at 1366x768, the first reveal skipped by Escape and the Throne Run's by a click on
+  SKIP; the captures are re-taken at the final head. The website build (web/play.html, web/boot.js) gets a Citadel check in
+  `conquest-desktop-keys.py` (the War Map's card by mouse at 1440x900 and 420x700: CITADEL I, LAUNCH shut until FRONT is held).
+  (6) This section is current. (7) The dropship hook: done (as for A).
+- **STEP 2 (first build, now on the PR branch):** `js/conquest/citadel.js` (rules, tiers, record, prep, Throne Run, the Assault class),
   `worker/src/conquest-citadel.js` (launch, prep, settlement, bounty), hooks: combat.js (archetypes swarm / mortar / dropship /
   structure, the 3 operations `citadel-1..3` family 'citadel' danger HARD, fieldMissionIds excludes them, `this.moveOf` in friendStep,
   Lancer air bonus on `t.ship`, baseYield `cpb`), plot.js rates `cpb`, controls.js (`B.slideOf`, `input.strike` -> `B.callStrike`,
@@ -7310,8 +7338,10 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   once per account, outside the cap), the tiers in war ctx (conquest-war.js ctxOf, warmap.js ctxOf) and the town's five places
   (conquest-town.js infoOf / settle default cit + live fights paid at `s.td.lv` / liveStart; townui.js hub preview + last chance).
   `dev/tools/citadel-model.mjs`: the bot pilot + kits by profile/day (pacing). worker/build-sim.mjs bundles citadel.js.
-- **Still to build:** UI (Citadel card on the War Map, launch, prep, Throne Run + board, assault HUD, results, cutscenes,
-  stand-in views + hooks), the clear-time board (Worker doc + route), tests, guards with every change on, STEP 3, docs.
+- **Built since:** the UI (War Map card, launch, prep rows, Throne Run + board, HUD, result and loss cards, cutscenes that hide the
+  HUD, stand-in views and hooks), the clear-time board (Worker doc + route), the tests (`conquest-citadel` 79, the payout wtest 19,
+  `conquest-citadel-pace`, the 5-size browser test), the plateau, the tuning, STEP 3's measurement, the docs (blueprint and
+  RESOURCE_ECONOMY bounty tables).
 
 ### STEP 2 design (lead's decisions, with reasons)
 - **The assault is an Operation of the shared combat engine** (`ConquestCitadel.Assault extends ConquestCombat.Operation`), so the
@@ -7416,11 +7446,20 @@ unfought), the Citadel tiers on the regular's pacing (production +5% a tier, Ret
 | (no town attacks) | 26.8 | 26.8 | yes | - |
 | (full cache, 7B off: 7T-P's number) | 20.8 | 22.7 | no | 88.1% |
 
-**Shipped: the cache without its CP** (the first in the brief's order that keeps both): `ConquestTown.TOWN.away` = 0 CP, 15 alloy,
-10 biomass, 2 He-3 for a held raid nobody fought (worker/src/conquest-town.js settle); a raid held in person keeps the whole cache
-(`TOWN.cache`). The town log line and the War Report read what each paid (`ConquestTown.cacheOf`). The heavy player's late fortress is
-the same under every option: by day 300 that town is fully built and Selenite-bound, so neither the cache nor the production bonus
-moves it. Tests: `conquest-away-raids` (the unfought pay; the in-person cache), `conquest-live-defense` 26 PASS.
+**The conflict (review round 1, reviewer A; measured):** the brief's other rule, "with every change on ... conquest-fortress passes,
+never loosen a test", has guard (f) (Session 7T-P: the coached town's CC10 median is no later than with no town attacks). On that
+test's own 21 seeds (no raids: 26.8): full cache 20.8 (7 sites 26.8) passes (f); half 26.8 / 26.8 passes (f); **without its CP 27.8 /
+27.8 fails (f)** (the walled regular reaches CC10 one day after a town with no raids); a 0.75 CP share (not an option) 26.8 / 26.8.
+So no option keeps every rule: without its CP keeps the band and fails (f); half keeps (f) and the band's median but not its mean
+(24.1); full keeps (f) and misses the band.
+**Lead's decision: nothing new shipped; the 7T rule stands (the whole cache), as the owner adopted it in 7T-P.** A conflicted economy
+change is the owner's call ("prices, economy and airdrop points only as decided here"); shipping without its CP would leave CI red and
+hold the whole release; half is not the brief's pick either. Everything is in place for the owner's one-line choice:
+`ConquestTown.TOWN.away` (what a held raid nobody fought pays; 0 CP, 15 alloy, 10 biomass, 2 He-3 for "without its CP"), the measuring
+tool and its record (`docs/conquest/session7b/held-raid-cache.json`). PROPOSAL in the final report. Also fixed on the way (review): a
+raid "held in person" now means really fought (`live.fought`; tapping DEFEND and leaving earned the whole cache), the log records it
+(`f`), `ConquestTown.cacheOf` reads it. Tests: `conquest-away-raids` 51, `conquest-town-selenite` 17 (DEFEND then leave), live
+defense 26.
 
 
 ### STEP 1: the auto-release workflow and two flaky tests (lead's decisions, with reasons)
@@ -7487,6 +7526,6 @@ One research agent, web search (wikipedia.org and wiki.warframe.com fetches were
 11. **Cutscenes: skippable from the first frame, short on repeats** (Xbox accessibility: pausable cutscenes; Monster Hunter Wilds
     hold-to-skip + gallery; Titanfall 2 boss name cards). -> Full reveal on a tier's first attempt, a short name-card version after,
     SKIP from the first frame.
-Recommendations not taken (with reasons): no hard fail timer (kept the existing 10-minute operation clock: every operation has one and
-it bounds Worker time); "spend only prep that fired" (the brief says a loss spends the used siege prep: every prep active at launch
+Recommendations not taken (with reasons): no hard fail timer (the research's advice; the measured fights then needed one: the 8-minute
+siege window, a DPS check, see "The siege window" above); "spend only prep that fired" (the brief says a loss spends the used siege prep: every prep active at launch
 is used by that assault); a minimum Battalion retry after a loss (downed allies need repair, as the brief says).
