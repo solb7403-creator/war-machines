@@ -7351,6 +7351,15 @@ If your context was cleared, read docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.
   airstrike did not, so a quick X tap between two frames was lost (CI's software GL runs a few frames a second). `js/conquest/view.js`
   now latches X like F, R, C and Shift (`KeyX:'strike'`, and the per-frame edge list). The phone's LDF AIRSTRIKE button was never
   affected (it sets `pendingAbilities.strike`, kept until the next frame).
+- **CI on `5ca0dd9`:** every job green except two in tests this session did not write. `transmission (webkit)` hit a WebKit renderer
+  crash in `conquest-session-033.py` and passed on its re-run. `town-ui` failed three times, each in a different place (7T-P's
+  `conquest-town-proposals.py`: "GO TO WALLS not reachable" with the button on screen, then a welcome card read with no box right after
+  it was on screen; 7T's `conquest-town-ui.py`: a 240 s wait for the town replay). Root cause of the 7T-P failures: the hub rebuilds
+  every card each second (`hub.js` `status`: `replaceChildren`) and the town sheet rebuilds on its own (`plotview.js`), while the test
+  read an element and its scroller in separate steps, so a read could land on a replaced element (no box) or on another scroller.
+  Measured here: the hub's rebuild takes 1 ms on main and on this branch; idle reads find the card 80 of 80 times on both trees; the
+  test passed on main and failed once here at 1920x1080, as on CI. Fixed in the test, no assertion changed: `geo()` reads the element
+  and its own scroller in one step, and a just-replaced element is read again (`box()`). Passes at all five sizes.
 - **STEP 2 (first build, now on the PR branch):** `js/conquest/citadel.js` (rules, tiers, record, prep, Throne Run, the Assault class),
   `worker/src/conquest-citadel.js` (launch, prep, settlement, bounty), hooks: combat.js (archetypes swarm / mortar / dropship /
   structure, the 3 operations `citadel-1..3` family 'citadel' danger HARD, fieldMissionIds excludes them, `this.moveOf` in friendStep,
