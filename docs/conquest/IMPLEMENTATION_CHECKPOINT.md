@@ -7871,7 +7871,10 @@ what each changed here:
   address (#play): the garage check, which starts when `save.lab` exists, was switched back to Play mid-check. Two fixes: (1)
   `web/boot.js` downloads those 10 scripts together and runs them in order (`async=false`): one round trip instead of ten before the
   game opens (faster for every web player, not only the test); (2) the test starts the garage check after the loading screen hides
-  (nobody can touch the page before it). Chromium passed at all 4 sizes locally.
+  (nobody can touch the page before it). Chromium passed at all 4 sizes locally. **PROPOSAL (website load time):** the boot still loads
+  its first ~50 scripts one after another before main.js (one network round trip each); loading them the same way (together, run in
+  order) would cut the website's loading screen on a phone network by seconds. `web/boot.js` is a 5E-2d2 file, so only the 7C line was
+  changed here.
 - **conquest-session6-loot.py long press** (`a long press on SHIELD opens the item picker`, one CI run): the 500 ms hold timer starts
   in the pointerdown handler, so a long software-GL frame delayed it past the release. `js/conquest/app.js` now measures the hold from
   the touch itself (the event's time) and opens the picker at a release after 500 ms: a busy frame on a slow phone no longer turns a
