@@ -7644,8 +7644,10 @@ If your context was cleared, read docs/conquest/audit/SESSION_07C_BRIEF.md first
   time-attack stamp, RESOURCE_ECONOMY §5.5 / §5.7, the wiki and the LOOT screen's published odds, the fortress model's Titan ore.
   Tests: `conquest-titan` 30, `wtest/conquest-boards` 27 (CI `conquest` job); `conquest-loot` and `conquest-sortie-chain` updated to the
   decided Titan row (see "STEP 3" below).
-- **Next:** STEP 4 (the weekly War Effort bar, High Morale, the crate, squads), then every guard re-run with everything on, the browser
-  journeys and captures, the reviews.
+- **Slice 5 (STEP 4):** the weekly War Effort bar on the shared warfront document, High Morale, the crate, the cosmetic tiers, squads
+  and their banner (details under "STEP 4" below). Test: `wtest/conquest-wareffort` 22 (CI `conquest` job).
+- **Next:** every guard re-run with everything on (fortress, ladder, town-selenite, cap, bounties, boards, Titan, fingerprints), the
+  CI Node suite, the browser journeys and captures (phone sizes + 1366x768 + 1920x1080, keyboard and mouse), then the reviews.
 
 ### Research: the best comparable boards, raid bosses, anti-bot signals and community bars (before STEPs 2-4 were designed)
 One research agent, web search (gamedeveloper.com and docs.arbitrum.foundation fetches were blocked: search snippets used). Lessons and
@@ -7823,4 +7825,32 @@ what each changed here:
   victory; the pilot keeps a best per layout (`s.rbest`) and the week's featured-raid best (`s.rtb`).
 - **The fortress model counts the Titan's ore** (`minerals()`): Titans met = strikes met / 6 x the measured kill rate by gear (common
   .2, rare .8, epic .95), each kill 2 Tranquillityite, 0.2975 Selenite (the pity-adjusted rate: 1 per 3.36 kills) and 0.02 Moonheart.
+
+### STEP 4 (lead's decisions, with reasons)
+- **The week on the shared warfront document** (`worker/src/conquest-warfront.js`, the blueprint: "it reuses the shared warfront
+  document and campaign score"): every verified campaign point a pilot adds (the document's own lifetime watermark per pilot, so a
+  retry or a second tab never counts twice) also counts for the week (`we`: n active pilots, the counted score, by squad), each pilot up
+  to **two quotas** (lead's decision, research lesson 15: one pilot cannot carry the week; a grinder still counts double an ordinary
+  week). **The quota: 150 campaign points a week** (lead's decision: about 15 raids or a mix of raids, strikes and defenses: an
+  ordinary week of a 60-minute pilot playing four or five days); the goal = active pilots x 150 x 0.6. With zero pilots there is no
+  goal and nothing is won (tested); the first contribution of a new week moves the old one to `prev` with its result.
+- **A win** (`js/conquest/wareffort.js`, shared): High Morale for every pilot the next week: the war rules' existing "Shared-war morale"
+  DEFENSE part (js/conquest/war.js defenseOf; 0 until now) is 1 in `ctxOf` (worker/src/conquest-war.js and the War Map's warmap.js):
+  +1 DEFENSE on every territory in every personal world, that week only. The cosmetic reward tiers: I at 100% of the goal, II at 150%,
+  III at 200%; a contributor of a won week earns its tier's earn-only piece (`we-standard` banner standard, `we-trail` muzzle trail,
+  `we-monument` town ornament; existing designs as stand-ins until 7-V). Every contributor gets the War Effort crate (2 Repair Kits + 1
+  Scanner Charge, each item at most to the cap of 10). No CP, salvage or points bonus (tested). A loss takes nothing.
+- **Exactly once, in the pilot's own record:** the pilot's contribution of the week before (`s.wep`, captured at its first request of a
+  new week from the campaign board's baseline) and the shared view's result decide; the rewards are paid inside the record's own write
+  (`persistWarfront`) once per week (`wep.paid`, `wep.sq`), and the reply shows them once.
+- **Squads** (the referral squads: a recruiter and the pilots it recruited; a pilot's squad is its recruiter's, or its own): summed
+  counted contribution; a squad needs 2+ contributing members to rank. The top squad's leader name and town banner (its public
+  snapshot) fly at the warfront monument (`monument.banner`) and on every hub's WARFRONT card next week; its contributing members get an
+  uncommon fragment (lead's pick of "a fragment": the banner-standard pool), whether or not the bar was won. The public view never
+  carries a pilot id (the leader's id is a hidden Worker property).
+- **The monument's and the frontier's growth on a win** are hooks for the Fable 7-V session (`ConquestWarEffort.HOOKS`; the view's
+  `monument.grown` and `monument.banner`).
+- Reported (scale, Session 9's load test): the shared warfront document already holds every contributor's lifetime count (up to
+  10,000); the week adds one entry per active pilot. Every operation's campaign point is a compare-and-swap on it: shard it before
+  public launch (PROPOSAL).
 

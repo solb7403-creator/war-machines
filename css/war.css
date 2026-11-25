@@ -96,3 +96,5 @@
 .cq-boards-row i{font-style:normal;color:#b3c4d3}.cq-boards-empty{padding:8px 4px;color:#b3c4d3}
 .cq-boards-me{margin:8px 0}.cq-boards-share{min-height:44px;margin-top:6px}.cq-boards-sharebox{display:flex;flex-direction:column;gap:6px;margin-top:8px}.cq-boards-shareimg{width:100%;max-width:360px;border-radius:8px;border:1px solid #b36bff66}
 .cq-boards-foot{display:flex;justify-content:flex-end;padding-top:8px}.cq-boards-foot button{min-height:44px}
+/* Session 7C STEP 4: the War Effort lines in the hub's WARFRONT card */
+.cq-we-head{margin:6px 0 2px;font-size:12px;font-weight:700;color:#d7b4ff}.cq-we-bar{accent-color:#b36bff}.cq-we-last{color:#7fe0a0!important}.cq-we-squad{color:#ffd96a!important}

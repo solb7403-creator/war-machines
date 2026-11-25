@@ -90,6 +90,8 @@ jobs:
           # pilots, bands with the 20-pilot minimum, settlement and grants exactly once)
           node dev/tests/conquest-titan.mjs
           node dev/tests/wtest/conquest-boards.mjs
+          # Session 7C STEP 4: the weekly War Effort bar (population goal, zero pilots, squads, rewards once, High Morale)
+          node dev/tests/wtest/conquest-wareffort.mjs
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
           node dev/tests/conquest-earned-journey.mjs

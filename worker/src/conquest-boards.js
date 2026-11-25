@@ -84,7 +84,7 @@ export function applyGrants(s,grants,now){const done=new Set(Array.isArray(s.gra
 export async function clearGrants(env,pid,ids){if(!ids.length)return;const up={};for(const id of ids)up['cqgr/'+pid+'/'+id]=null;await dbPatch(env,'',up).catch(()=>{});}
 // ---- the reducer's part (worker/src/conquest-sim.js) ----
 // every request: the week's starting campaign score (the campaign board's baseline), set at the pilot's first request of the week
-export function boardWeek(s,now){const w=weekOf(now);if(!s.wkb||s.wkb.w!==w)s.wkb={w,cs:Math.max(0,s.campaignScore|0)};}
+export function boardWeek(s,now){const w=weekOf(now);if(!s.wkb||s.wkb.w!==w){if(s.wkb)s.wep={w:s.wkb.w,c:Math.max(0,(s.campaignScore|0)-(s.wkb.cs|0))};s.wkb={w,cs:Math.max(0,s.campaignScore|0)};}}   // wep: the week before's contribution (the War Effort's rewards: conquest-warfront.js)
 // a raid won: the Worker's own fight clock stamped in its receipt (sec), the pilot's best for the layout, the week's best on the featured
 // raid (the time-attack board's score)
 export function raidTime(s,id,B,now){const sec=Math.max(.1,Math.round((Number(B?.time)||0)*10)/10);s.settlement.sec=sec;s.rbest=record(s.rbest)?s.rbest:{};if(!(s.rbest[id]>0)||sec<s.rbest[id])s.rbest[id]=sec;
