@@ -177,6 +177,7 @@ function kit(S){if(S.worldKit)return S.worldKit;
     set.mesh.count=L.length;set.mesh.instanceMatrix.needsUpdate=true;set.mesh.userData.slot=id;set.mesh.userData.noPick=true;out.push(set.mesh);}return out;}
  // The two families (owner, Nov 8): the MILITARY is cool gunmetal armour with pale ceramic plates, gold trim and cyan / white
  // lights (the owner's Meshy town items are the reference); SETTLERS are warm, painted, patched and hand-built with amber light.
+ const parGlow=(hex,k,a)=>{const c=col(hex);return {c:[c[0]*k,c[1]*k,c[2]*k],a,j:0};};   // an emissive colour pre-scaled for the shader's 2.3x glow gain
  const pal={
   mil:{hull:mat(0x4a5562,'metal',.25),hull2:mat(0x353d49,'metal',.35),dark:mat(0x22262d,'metal',.2),plate:mat(0xaab4bd,'metal',.3),plate2:mat(0x8996a2,'metal',.4),trim:mat(0x66707d,'metal',.1),bare:mat(0x8a919a,'metal',.15),gold:mat(0xb8913f,'metal',0),
    conc:mat(0x5a5f66,'concrete',.3),glass:mat(0x0d1a24,'glass',.5),glassDark:mat(0x0a1016,'glass',0),cyan:glow(0x22e6ff,1),ice:glow(0xa8f8ff,1),white:glow(0xe8f6ff,1),red:glow(0xff3048,1),amber:glow(0xffb347,1),navy:mat(0x0d1729,'solar',0),hazard:mat(0xd9a521,'paint',.5),hazardD:mat(0x15171a,'paint',.3)},
@@ -190,13 +191,17 @@ function kit(S){if(S.worldKit)return S.worldKit;
   // dark scavenged steel under bolted-on plundered plating (LDF ceramic, settler panels, hazard stripes), gaudy gold trim, loot
   // crates, nets and sacks strapped on, trophies of other colonies (flags, markings). The infection is the only organic part:
   // red vein growth in seams, vents and cockpits, one shared Parasite red (PAR.red) against the blue human world.
-  par:{iron:mat(0x3d3c40,'metal',.55),ironD:mat(0x242327,'metal',.4),ironL:mat(0x5a5960,'metal',.5),rust:mat(0x6e3b22,'scrap',.9),scrap:mat(0x5a554e,'scrap',.7),weld:mat(0x17161a,'metal',.8),
-   plateMil:mat(0x9aa3ab,'metal',.5),plateMilD:mat(0x4a5562,'metal',.5),plateSet:[0x8f4f36,0x5f8a86,0xb39a66,0xc9c2b0,0x6f7f5a].map(h=>mat(h,'paint',.7,.1)),hazard:mat(0xc9981f,'paint',.7),hazardD:mat(0x15171a,'paint',.4),
+  // Seen in the game on the barren Moon (Nov 25): neutral grey steel and pale blue plates read as BLUE under the night's
+  // blue light and the units looked like human machines. So the steel is warm (umber, never grey-blue), the plundered plates
+  // are bone, brick, oxide, tan and khaki, and the glows are scaled so the tone mapper keeps them a deep red, not coral
+  // (the solid shader shows emission at 2.3x: a full-strength red burns out to pink).
+  par:{iron:mat(0x40332e,'metal',.55),ironD:mat(0x241c1a,'metal',.4),ironL:mat(0x5e4c42,'metal',.5),rust:mat(0x7a3a1e,'scrap',.9),scrap:mat(0x5c5046,'scrap',.7),weld:mat(0x17161a,'metal',.8),
+   plateMil:mat(0xa69c8e,'metal',.5),plateMilD:mat(0x574a41,'metal',.5),plateSet:[0x8f4f36,0x7a2f24,0xb39a66,0xc4b8a0,0x6f6a45].map(h=>mat(h,'paint',.7,.1)),hazard:mat(0xc9981f,'paint',.7),hazardD:mat(0x15171a,'paint',.4),
    gold:mat(0xc9a23f,'metal',0),goldD:mat(0x8a6a22,'metal',.2),crate:mat(0x7a5634,'timber',.4,.12),crateD:mat(0x4f3622,'timber',.5,.12),strap:mat(0x1c1a18,'flat',0),net:mat(0x2a2620,'cloth',0),sack:mat(0x8f8064,'cloth',0,.12),
-   tank:mat(0xd5d0c2,'paint',.5),tankBand:mat(0x2a6a8a,'paint',.4),flagLDF:mat(0x1f5f8a,'cloth',0),flagLDF2:mat(0xb8c4cc,'cloth',0),flagSet:[0x8a4a5a,0xc9a04a,0x4a6a8a,0xb8553a,0x5b8f4e].map(h=>mat(h,'cloth',0,.06)),
+   tank:mat(0xd5d0c2,'paint',.5),tankBand:mat(0x8a3324,'paint',.4),flagLDF:mat(0x27465c,'cloth',0),flagLDF2:mat(0x9d968a,'cloth',0),flagSet:[0x8a4a5a,0xc9a04a,0x7a4a2a,0xb8553a,0x5b8f4e].map(h=>mat(h,'cloth',0,.06)),
    glassDead:mat(0x0c1014,'glass',.1),tyre:mat(0x15181c,'flat',0),
    flesh:mat(0x4a1016,'chitin',.3),fleshD:mat(0x2a080c,'chitin',.2),fleshL:mat(0x7a1c22,'chitin',.15),
-   red:glow(PAR.red,1.85),redHot:glow(PAR.hot,1.95),redDim:glow(PAR.red,1),redLow:glow(PAR.deep,.6)},
+   red:parGlow(PAR.red,.52,1.85),redHot:parGlow(PAR.hot,.62,1.95),redDim:parGlow(PAR.red,.34,1),redLow:parGlow(PAR.deep,.5,.6)},
   wreck:{hull:mat(0x3a3530,'scrap',.7),rust:mat(0x6a3f26,'scrap',.95),track:mat(0x1e1c1a,'metal',.8),moss:mat(0x3e5a2e,'leaf',0,.2),bag:mat(0x8f8064,'dirt',0,.15),wire:mat(0x2a2a2a,'metal',.9),post:mat(0x4a4038,'timber',.8),mud:mat(0x2a2018,'dirt',0)}};
  const K={S,T,hi,KB,pal,emit,part,mat,glow,tint,mix,rect,circ,col,SURF,surfA,hash,rng,build,place,geometry,instanced,setAt,tris,swapMeshes,swapped,pendingSwap,unit,M:(x,y,z,ry=0,s=1)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(s,s,s));},clear(){cache.clear();geos.clear();}};
  S.worldKit=K;return K;}

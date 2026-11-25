@@ -28,7 +28,9 @@ PLACE='''([spec,gap,ahead,pitch,dist,dead])=>{const v=Conquest.view,W=ConquestWo
 U=lambda k,**o:dict(kind=k,**o)
 CMD=['shield','ambush','artillery','carrier','plasma']
 SHOTS={
- 'lineup':([U('raider'),U('breacher'),U('sentinel'),U('command'),U('swarm'),U('brute')],5.2,26,.42,23,0),
+ 'lineup':([U('raider'),U('breacher'),U('sentinel'),U('command'),U('swarm'),U('brute')],6.4,34,.4,25,0),
+ 'lineup-a':([U('raider'),U('breacher'),U('sentinel')],7,24,.42,23,0),
+ 'lineup-b':([U('command'),U('swarm'),U('brute')],7,24,.42,23,0),
  'lineup-close':([U('raider'),U('breacher'),U('sentinel'),U('command'),U('swarm'),U('brute')],5.4,13,.36,17,0),
  'pack':([U('swarm',dz=(i%2)*2.6) for i in range(7)],2.4,16,.42,20,0),
  'generals':([U('command',commander=True,pattern=p) for p in CMD],5.6,24,.42,23,0),
@@ -61,6 +63,7 @@ async def main(a):
    spec,gap,ahead,pitch,dist,dead=SHOTS[name]
    if a.ratio:await ratio(.3)
    placed=await page.evaluate(PLACE,[spec,gap,ahead,pitch,dist,dead]);await page.wait_for_timeout(400)
+   if not info:await page.wait_for_timeout(1500);placed=await page.evaluate(PLACE,[spec,gap,ahead,pitch,dist,dead]);await page.wait_for_timeout(400)   # the first shot: the jump to the capture ground settles first
    try:await page.wait_for_function('Conquest.view.pending===0',timeout=600000)
    except Exception:print('WARNING still streaming at the shot:',name,flush=True)
    if a.ratio:await ratio(a.ratio)

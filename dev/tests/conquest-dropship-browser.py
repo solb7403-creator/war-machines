@@ -18,7 +18,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[2]
 # what the stage shows right now, and a camera on a ship
 STATE='''()=>{const X=ConquestPlotView.state,D=X.drill,R=X.R,S=R&&R.ships&&R.ships.stage;if(!D||!S)return null;const n={};for(const [k,im] of Object.entries(S.meshes))n[k]=im.visible?im.count:0;
  const alive={r:0,s:0,d:0,w:0,b:0};for(const q of D.now||[])alive[q[1]]++;const drawn={};for(const [k,im] of Object.entries(R.foes))drawn[k]=im.visible?im.count:0;
- return {t:D.t,ships:D.ships?D.ships.ships.map(s=>({key:s.key,kind:s.kind,at:s.at,lane:s.lane,units:s.units.length,pad:s.flight.pad,hit:s.flight.hitAt})):[],now:(D.shipNow||[]).map(i=>({key:i.key,x:i.pose.x,z:i.pose.z,phase:i.pose.phase,ramp:i.pose.ramp,bay:i.pose.bay,y:i.pose.y,wreck:i.pose.wreck,flash:i.pose.flash})),n,alive,drawn,info:X.info,mats:Object.values(S.meshes).every(m=>m.material===R.S.MAT.solid||m.material===R.S.MAT.solidHit)};}'''
+ return {t:D.t,ships:D.ships?D.ships.ships.map(s=>({key:s.key,kind:s.kind,at:s.at,lane:s.lane,units:s.units.length,pad:s.flight.pad,hit:s.flight.hitAt})):[],now:(D.shipNow||[]).map(i=>({key:i.key,x:i.pose.x,z:i.pose.z,phase:i.pose.phase,ramp:i.pose.ramp,bay:i.pose.bay,y:i.pose.y,wreck:i.pose.wreck,flash:i.pose.flash})),n,alive,drawn,info:X.info,mats:Object.values(S.meshes).every(m=>m.material===R.S.MAT.par||m.material===R.S.MAT.parHit)};}'''
 async def main(a):
  out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True)
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)

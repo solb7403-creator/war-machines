@@ -64,7 +64,7 @@ function scene3d(view){const S=view.style,T=view.T;if(!S||view.renderer.isConque
  const cam=new T.PerspectiveCamera(50,1,.5,2000);const g={terrain:new T.Group(),build:new T.Group(),walls:new T.Group(),turrets:new T.Group(),homes:new T.Group(),holo:new T.Group(),grid:new T.Group(),fx:new T.Group(),actors:new T.Group()};for(const v of Object.values(g))sc.add(v);
  const im=(geo,n)=>{const m=new T.InstancedMesh(geo,S.MAT.solid,n);m.count=0;m.frustumCulled=false;m.visible=false;return m;};
  const crewN=S.low?8:16,crew=new T.InstancedMesh(k.person(),S.MAT.solid,crewN),rovers=new T.InstancedMesh(k.rover(),S.MAT.solid,S.low?2:4);crew.frustumCulled=rovers.frustumCulled=false;g.actors.add(crew,rovers);
- const foes={r:im(k.foe('r'),80),s:im(k.foe('s'),48),d:im(k.foe('d'),40),w:im(k.foe('w'),160),b:im(k.foe('b'),16)};for(const m of Object.values(foes))g.actors.add(m);
+ const foes={r:im(k.foe('r'),80),s:im(k.foe('s'),48),d:im(k.foe('d'),40),w:im(k.foe('w'),160),b:im(k.foe('b'),16)};for(const m of Object.values(foes)){if(S.MAT.par)m.material=S.MAT.par;g.actors.add(m);}   /* the raiders wear the Parasite material (red rim) */
  const fx={};for(const [n,[col,w,em]] of Object.entries(FX_LOOK)){const b=new S.Bld();if(n==='flame')b.add(S.G.cone6,k.M(0,0,.5,Math.PI/2,0,0,.5,1,.5),new T.Color(col),em);else b.box(0,0,.5,w,w,1,new T.Color(col),em);fx[n]=im(b.geometry(),48);g.actors.add(fx[n]);}
  return {S,T,k,sc,cam,g,crew,rovers,foes,fx,meshes:new Map(),tur:new Map(),wim:new Map(),him:new Map(),wgeo:new Map(),hgeo:new Map(),tgeo:new Map(),keys:{},anim:[]};}
 // Dispose a group's own geometries before clearing it (shared style geometries and cached kit geometries are kept).

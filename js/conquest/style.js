@@ -142,7 +142,7 @@ void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float 
 #include <colorspace_fragment>
 #include <fog_fragment>
 }`;
-const SOLID_VS=`attribute vec4 aCol;uniform vec4 uSite[8];uniform vec2 uOrigin,uViewport;uniform vec3 uRimCol;uniform float uHigh,uOutline;uniform sampler2D uAtmoMap,uShadowMap;uniform vec4 uAtmoBox;
+const SOLID_VS=`attribute vec4 aCol;uniform vec4 uSite[8];uniform vec2 uOrigin,uViewport;uniform vec3 uRimCol;uniform float uHigh,uOutline,uSiteRim;uniform sampler2D uAtmoMap,uShadowMap;uniform vec4 uAtmoBox;
 varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;varying float vShd;varying vec3 vNW;
 #include <common>
 #include <fog_pars_vertex>
@@ -162,7 +162,7 @@ void main(){
 #endif
  wp=modelMatrix*wp;vWP=wp.xyz;vNW=normalize(mat3(modelMatrix)*nw);vec3 rc=uRimCol*2.2;vec2 uvA=(wp.xz+uOrigin-uAtmoBox.xy)*uAtmoBox.zw;vAtm=texture2D(uAtmoMap,uvA).r;vShd=texture2D(uShadowMap,uvA).r*vAtm;
  // HIGH tints each vertex's rim by the nearest friendly / Parasite site; LOW keeps the neutral rim (no per-vertex loop).
- if(uHigh>.5){vec2 w=wp.xz+uOrigin;float best=0.;for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float f=1.-smoothstep(s.z*.6,s.z*1.25,length(w-s.xy));if(f>best){best=f;rc=mix(uRimCol*2.2,s.w>0.?vec3(.06,.62,.8):vec3(.85,.05,.55),f);}}}
+ if(uHigh>.5){vec2 w=wp.xz+uOrigin;float best=0.;for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float f=1.-smoothstep(s.z*.6,s.z*1.25,length(w-s.xy));if(f>best){best=f;rc=mix(uRimCol*2.2,s.w>0.?vec3(.06,.62,.8):vec3(.9,.05,.08),f*uSiteRim);}}}
  vRim=rc;}`;
 // Surface codes (Session 5E-2d1, js/conquest/worldkit.js SURF): a vertex alpha below zero is no emission but a material whose
 // detail the HIGH branch paints from world-anchored coordinates and the shared detail texture (two fetches): armour panel
@@ -386,7 +386,7 @@ function create(T,opts={}){
  const sunDir=V3(-.55,.5,.67).normalize(),rimDir=V3(.62,.32,-.72).normalize(),daySunDir=V3(-.7,.26,.66).normalize();   // inside the zones: a low frontier sun (~15 deg)
  const U={uTime:{value:0},uSunDir:{value:sunDir},uSunCol:{value:lin(0xe4ecff).multiplyScalar(2.9/Math.PI)},uRimDir:{value:rimDir},uRimCol:{value:lin(0x52c6ff).multiplyScalar(1.15/Math.PI)},
   uAmbUp:{value:lin(0x3a5a9c).multiplyScalar(1.5/Math.PI)},uAmbDn:{value:lin(0x16131f).multiplyScalar(1.5/Math.PI)},uSite:{value:Array.from({length:8},()=>new T.Vector4(0,0,0,0))},
-  uOrigin:{value:new T.Vector2()},uOutline:{value:0},uOutlineCol:{value:new T.Color(0x7ff2ff)},uPress:{value:new T.Vector4(0,0,-1,-1)},uPressR:{value:new T.Vector2(1,0)},uPressK:{value:0},uPressY:{value:-1e5},uGlow:{value:2.3},uHigh:{value:high?1:0},uSunV:{value:sunDir.clone()},uRimV:{value:rimDir.clone()},uUpV:{value:V3(0,1,0)},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
+  uOrigin:{value:new T.Vector2()},uOutline:{value:0},uSiteRim:{value:1},uOutlineCol:{value:new T.Color(0x7ff2ff)},uPress:{value:new T.Vector4(0,0,-1,-1)},uPressR:{value:new T.Vector2(1,0)},uPressK:{value:0},uPressY:{value:-1e5},uGlow:{value:2.3},uHigh:{value:high?1:0},uSunV:{value:sunDir.clone()},uRimV:{value:rimDir.clone()},uUpV:{value:V3(0,1,0)},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
   fogColor:{value:new T.Color(0x06070f)},fogNear:{value:900},fogFar:{value:2600},fogDensity:{value:.00025}};
  // Terraformed zones (owner art direction): a breathable daytime world under the atmosphere dome. The atmosphere map holds
  // each spot's zone factor (ConquestWorld.terraformAt), sampled per vertex: terrain, buildings and hulls inside a zone get warm
@@ -440,6 +440,10 @@ function create(T,opts={}){
  MAT.outline=outlineMat(0x8ff6ff);MAT.outlineAlly=outlineMat(0xffe29a);
  // A tank's own solid parts (trim strips, LOW hull) are never thinned with the building it is pressed against: the same program
  // with its own, always-off press uniforms. S.own(root) moves a vehicle's solid meshes onto it.
+ // The Parasite machines (Session 5E-2d2; owner, Nov 21: "a hostile red read against the blue human world"): the same solid
+ // shaders (one program, uniform values only) with a red rim light in place of the world's cyan one, wherever they are
+ // (uSiteRim 0: a friendly site's cyan glow never paints them). parHit = their 80 ms hit flash.
+ {const rim=()=>({value:lin(PAR.red).multiplyScalar(.62/Math.PI)});MAT.par=mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail},uRimCol:rim(),uSiteRim:{value:0}});MAT.parHit=mk(SOLID_VS,SOLID_FS,{uFlash:{value:1},uDetail:{value:tex.detail},uRimCol:rim(),uSiteRim:{value:0}});}
  MAT.own=mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail},uPress:{value:new T.Vector4(0,0,-1,-1)},uPressK:{value:0}});
  S.own=rt=>{rt?.traverse?.(o=>{if(o.isMesh&&o.material===MAT.solid)o.material=MAT.own;});return rt;};
  // Tighter view culling for the world's frame. The renderer tests one bounding sphere per mesh, and a ring wall, a road net or
@@ -986,7 +990,7 @@ function create(T,opts={}){
   if(!c){const o=Object.assign({seed},cmd?{cmd}:{}),Kk=KW(),box=root.ConquestSlots.items[slot].size,X=new Fx();
    X.flat(0,.05,0,box[0]*.62,box[2]*.58,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,box[0]*.86,box[2]*.76,AT.BLOB,E(cmd?PATTERN[cmd]:PAR.red,cmd?.55:.5),0);
    c={hull:Kk.geometry(slot,Object.assign({part:'hull'},o)),gun:Kk.geometry(slot,Object.assign({part:'gun'},o)),fx:keep(X.geometry()),pivot:PU.pivot||[0,box[1]*.6,0],box};unitCache.set(key,c);}
-  const g=new T.Group(),body=new T.Group(),gun=new T.Group(),mk=markers(),fx=low?null:fxMesh(c.fx);body.add(new T.Mesh(c.hull,MAT.solid));gun.position.set(c.pivot[0],c.pivot[1],c.pivot[2]);gun.add(new T.Mesh(c.gun,MAT.solid));body.add(gun);g.add(body);if(fx)g.add(fx);
+  const g=new T.Group(),body=new T.Group(),gun=new T.Group(),mk=markers(),fx=low?null:fxMesh(c.fx);body.add(new T.Mesh(c.hull,MAT.par));gun.position.set(c.pivot[0],c.pivot[1],c.pivot[2]);gun.add(new T.Mesh(c.gun,MAT.par));body.add(gun);g.add(body);if(fx)g.add(fx);
   mk.position.y=cmd?((root.ConquestParUnits?.standardTop||{})[kind]||c.box[1]+2.6)+.9:c.box[1]+1.3;g.add(mk);   // a general's marker floats clear of its standard
   Object.assign(g.userData,{gun,body,marker:mk,glow:fx,unit:kind,slot,general:cmd,death:DEATH[kind],half:c.box[0]/2,side:(e.id|0)%2?-1:1});return g;};
  // the death animation: dead = seconds since the unit died (0 or less = alive). The blast hops the hull, it rolls onto a flank
@@ -998,12 +1002,12 @@ function create(T,opts={}){
  // Immobile plasma battery (objective turret): a stolen anti-air mount, the kit's par-battery (base + the head that turns at 6.6 m)
  let batteryFx=null;
  S.battery=()=>{const Kk=KW();if(!batteryFx){const X=new Fx();X.bill(0,7,0,3.6,AT.BLOB,E(PAR.red,.5));X.bill(0,7,0,1.6,AT.BLOB,E(PAR.hot,.6));X.flat(0,.06,0,5.2,4.6,AT.BLOB,E(PAR.red,.45),0);X.flat(0,.05,0,4.6,4.2,AT.BLOB,[0,0,0],.7);batteryFx=keep(X.geometry());}
-  const g=new T.Group(),gun=new T.Group();gun.position.y=6.6;gun.add(new T.Mesh(Kk.geometry('par-battery',{part:'gun'}),MAT.solid));g.add(new T.Mesh(Kk.geometry('par-battery',{part:'base'}),MAT.solid),gun,fxMesh(batteryFx));
+  const g=new T.Group(),gun=new T.Group();gun.position.y=6.6;gun.add(new T.Mesh(Kk.geometry('par-battery',{part:'gun'}),MAT.par));g.add(new T.Mesh(Kk.geometry('par-battery',{part:'base'}),MAT.par),gun,fxMesh(batteryFx));
   const mk=markers();mk.position.y=11;g.add(mk);g.userData.gun=gun;g.userData.marker=mk;g.userData.slot='par-battery';g.scale.setScalar(1.65);return g;};   // 1.65: the size the battery has always been drawn at (11 x 9.6 m on the ground)
  // Airborne drone: a stolen human quad-rotor (the kit's par-drone), the same footprint as before
  let droneFx=null;
  S.drone=()=>{const Kk=KW();if(!droneFx){const X=new Fx();X.bill(0,1.3,.9,.7,AT.BLOB,E(PAR.red,.9));X.flat(0,-1.2,0,1.6,1.7,AT.BLOB,E(PAR.red,.35),0);droneFx=keep(X.geometry());}
-  const g=new T.Group(),body=new T.Group();body.position.y=.75;body.add(new T.Mesh(Kk.geometry('par-drone',{}),MAT.solid));g.add(body,fxMesh(droneFx));
+  const g=new T.Group(),body=new T.Group();body.position.y=.75;body.add(new T.Mesh(Kk.geometry('par-drone',{}),MAT.par));g.add(body,fxMesh(droneFx));
   const gun=new T.Group();g.add(gun);const mk=markers();mk.position.y=3;g.add(mk);g.userData.gun=gun;g.userData.marker=mk;g.userData.slot='par-drone';g.scale.setScalar(1.65);return g;};   // 1.65: today's drone footprint (4.6 x 4.9 m)
 
  // ---------- player tank dressing (canonical geometry untouched): cyan fender strips, contact shadow, ring underglow ----------

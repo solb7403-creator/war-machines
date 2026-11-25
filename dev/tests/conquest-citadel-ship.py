@@ -30,7 +30,7 @@ STEP='''([t,kill])=>{const v=Conquest.view,B=window.__B,e=window.__ship;B.time=t
  return new Promise(r=>{let n=0;const f=()=>{if(++n<5)return requestAnimationFrame(f);const g=v.enemyMeshes.get(e.id),U=g?.userData.ship,q=ConquestCitadelView.shipLook(v,e,B);
   const wave=B.enemies.filter(x=>x.wave==='ship').map(x=>{const m=v.enemyMeshes.get(x.id);return {id:x.id,kind:x.kind,x:x.x,z:x.z,step:!!m?.userData.pose?.step,dx:m?m.position.x+v.origin.x-x.x:null,dz:m?m.position.z+v.origin.z-x.z:null,unit:m?.userData.unit};});
   r({t,hauler:!!U,slot:g?.userData.slot,look:q&&{phase:q.phase,ramp:q.ramp,wreck:q.wreck,x:q.x,y:q.y,z:q.z,pitch:q.pitch,roll:q.roll,vis:q.vis},sim:{x:e.x,y:e.y,z:e.z,landed:!!e.landed,left:!!e.left,hp:e.hp},mesh:g&&{x:g.position.x+v.origin.x,y:g.position.y,z:g.position.z+v.origin.z,vis:g.visible},
-   parts:U&&{hull:U.hull.visible,ramp:U.ramp.visible,wreck:U.wreck.visible,rampAngle:U.ramp.rotation.x,mats:[U.hull,U.ramp,U.wreck].every(m=>m.material===v.style.MAT.solid||m.material===v.style.MAT.solidHit)},wave,down:B.cit.down,landed:B.cit.landed,calls:v.renderer.info.render.calls,programs:v.renderer.info.programs?.length});};requestAnimationFrame(f);});}'''
+   parts:U&&{hull:U.hull.visible,ramp:U.ramp.visible,wreck:U.wreck.visible,rampAngle:U.ramp.rotation.x,mats:[U.hull,U.ramp,U.wreck].every(m=>m.material===v.style.MAT.par||m.material===v.style.MAT.parHit)},wave,down:B.cit.down,landed:B.cit.landed,calls:v.renderer.info.render.calls,programs:v.renderer.info.programs?.length});};requestAnimationFrame(f);});}'''
 async def main(a):
  out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True);results={}
  async with async_playwright() as p:

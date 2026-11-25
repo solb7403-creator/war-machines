@@ -115,9 +115,9 @@ function unitPose(plan,id,t){
  * one. o.variant (0..5) = this raid's patching (kit/warmodels.js o.seed). draw(list of poses) -> what happened this frame. */
 function stage(S,K,o={}){
  const T=S.T,g=new T.Group(),v=(o.variant|0)+1,D={hauler:dims('hauler'),shuttle:dims('shuttle')},max=o.max||6,low=!!S.low;g.name='cq-dropships';
- const mk=(id,par,mat,n)=>{const im=new T.InstancedMesh(K.geometry(id,par),mat||S.MAT.solid,n||max);im.count=0;im.visible=false;im.frustumCulled=false;im.userData.noPick=true;im.userData.slot=id;g.add(im);return im;};
+ const PM=S.MAT.par||S.MAT.solid,PH=S.MAT.parHit||S.MAT.solidHit,mk=(id,par,mat,n)=>{const im=new T.InstancedMesh(K.geometry(id,par),mat||PM,n||max);im.count=0;im.visible=false;im.frustumCulled=false;im.userData.noPick=true;im.userData.slot=id;g.add(im);return im;};
  const M={hull:mk('par-hauler',{part:'hull',seed:v}),ramp:mk('par-hauler',{part:'ramp',seed:v}),shuttle:mk('par-shuttle',{seed:v}),
-  hitH:mk('par-hauler',{part:'hull',seed:v},S.MAT.solidHit,2),hitS:mk('par-shuttle',{seed:v},S.MAT.solidHit,2),wreckH:mk('par-hauler',{wreck:1,seed:v},null,3),wreckS:mk('par-shuttle',{wreck:1,seed:v},null,3)};
+  hitH:mk('par-hauler',{part:'hull',seed:v},PH,2),hitS:mk('par-shuttle',{seed:v},PH,2),wreckH:mk('par-hauler',{wreck:1,seed:v},null,3),wreckS:mk('par-shuttle',{wreck:1,seed:v},null,3)};
  const m=new T.Matrix4(),m2=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(),p=new T.Vector3(),s=new T.Vector3(1,1,1),was=new Map();
  function draw(list){const n={hull:0,ramp:0,shuttle:0,hitH:0,hitS:0,wreckH:0,wreckS:0},ev=[];
   for(const it of list){const P=it.pose;if(!P||!P.vis)continue;const hauler=P.kind==='hauler',key=it.key,prev=was.get(key);e.set(P.pitch,P.yaw,P.roll,'YXZ');q.setFromEuler(e);m.compose(p.set(P.x,P.y,P.z),q,s);

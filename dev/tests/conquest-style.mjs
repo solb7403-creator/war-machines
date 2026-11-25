@@ -60,8 +60,8 @@ for(const low of [false,true]){
  // six: a hull draw and a gun draw on the solid material, standing on the ground inside its slot box (the sim owns the hit
  // box), at most 5,000 triangles on HIGH; a general keeps its doctrine colour, never the Parasite red.
  const A=C.archetypes,PU=c.ConquestParUnits,unitOf=(kind,o)=>S.unit(Object.assign({id:7,kind,cls:(A[kind]||A.raider).cls,arch:(A[kind]||A.raider).arch},o||{}));
- const solidOf=g=>{const out=[];g.traverse(m=>{if(m.isMesh&&m.material===S.MAT.solid&&!g.userData.marker.children.includes(m))out.push(m);});return out;};
- for(const kind of ['raider','breacher','sentinel','command','swarm','brute']){const g=unitOf(kind),sz=c.ConquestSlots.items['par-'+kind].size,P=verts(g,m=>m.material===S.MAT.solid&&!g.userData.marker.children.includes(m));
+ const solidOf=g=>{const out=[];g.traverse(m=>{if(m.isMesh&&m.material===S.MAT.par&&!g.userData.marker.children.includes(m))out.push(m);});return out;};
+ for(const kind of ['raider','breacher','sentinel','command','swarm','brute']){const g=unitOf(kind),sz=c.ConquestSlots.items['par-'+kind].size,P=verts(g,m=>m.material===S.MAT.par);
   assert.equal(g.userData.unit,kind,q+' '+kind+' is drawn by its own unit');assert.equal(solidOf(g).length,2,q+' '+kind+': a hull draw and a gun draw');assert.ok(PU[kind]&&PU[kind].slot==='par-'+kind&&PU[kind].pivot.length===3,q+' '+kind+' lists its slot and gun pivot');
   const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];for(const v of P)for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],v[k]);hi[k]=Math.max(hi[k],v[k]);}
   assert.ok(lo[1]>-.02&&hi[1]<=sz[1]+.02&&lo[0]>=-sz[0]/2-.02&&hi[0]<=sz[0]/2+.02&&lo[2]>=-sz[2]/2-.02&&hi[2]<=sz[2]/2+.02,q+' '+kind+' stands on the ground inside its slot box '+JSON.stringify(sz)+': '+JSON.stringify([lo,hi].map(a=>a.map(n=>+n.toFixed(2)))));
@@ -71,8 +71,8 @@ for(const low of [false,true]){
  // the five generals: a distinct doctrine colour each, far from the Parasite red, and a standard above the plain unit
  {const cols=Object.values(S.PATTERN).map(h=>new T.Color(h)),red=new T.Color(S.PAR.red),far=(a,b)=>Math.hypot(a.r-b.r,a.g-b.g,a.b-b.b);assert.equal(cols.length,5,'five doctrines');
   for(let i=0;i<5;i++){assert.ok(far(cols[i],red)>.35,q+' doctrine '+i+' is not the Parasite red');for(let j=i+1;j<5;j++)assert.ok(far(cols[i],cols[j])>.3,q+' doctrines '+i+' and '+j+' differ');}
-  for(const kind of ['raider','command','sentinel']){const pg=unitOf(kind),plain=verts(pg,m=>m.material===S.MAT.solid&&!pg.userData.marker.children.includes(m)).reduce((h,v)=>Math.max(h,v[1]),0);
-   for(const pattern of Object.keys(S.PATTERN)){const g=unitOf(kind,{commander:true,pattern});assert.equal(g.userData.general,pattern,q+' '+kind+' general '+pattern);const top=verts(g,m=>m.material===S.MAT.solid&&!g.userData.marker.children.includes(m)).reduce((h,v)=>Math.max(h,v[1]),0);assert.ok(top>plain+.8,q+' the '+pattern+' '+kind+' general carries a standard above the plain unit ('+top.toFixed(2)+' vs '+plain.toFixed(2)+')');}}}
+  for(const kind of ['raider','command','sentinel']){const pg=unitOf(kind),plain=verts(pg,m=>m.material===S.MAT.par).reduce((h,v)=>Math.max(h,v[1]),0);
+   for(const pattern of Object.keys(S.PATTERN)){const g=unitOf(kind,{commander:true,pattern});assert.equal(g.userData.general,pattern,q+' '+kind+' general '+pattern);const top=verts(g,m=>m.material===S.MAT.par).reduce((h,v)=>Math.max(h,v[1]),0);assert.ok(top>plain+.8,q+' the '+pattern+' '+kind+' general carries a standard above the plain unit ('+top.toFixed(2)+' vs '+plain.toFixed(2)+')');}}}
  // The portal gate and the LDF posts (Session 5E-2d2): scenery only. No collision and no layout change: every one stands on
  // open ground (nothing solid, no road, lot, water or forest under its footprint), the portal beside a Parasite hive, each
  // post its own variant, and nothing in the world's rules knows about them (conquest-world-equivalence.mjs is untouched).

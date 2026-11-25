@@ -24,8 +24,8 @@ function create(view,panel){
   n.classList.toggle('cq-dmg-crit',!!slot.crit);n.classList.toggle('cq-dmg-still',reduced());n.hidden=false;n.style.animation='none';void n.offsetWidth;n.style.animation='';}
  // the hit flash: the hull's solid material swaps to the flash twin (same shaders, uFlash = 1) for 80 ms
  function flash(id,now){const g=view.enemyMeshes?.get(id),M=view.style?.MAT;if(!g||!M?.solidHit)return;let f=F.flash.get(id);
-  if(!f){f={list:[],until:0};g.traverse(o=>{if(o.isMesh&&o.material===M.solid){o.material=M.solidHit;f.list.push(o);}});F.flash.set(id,f);}f.until=now+80;}
- function unflash(now,all=false){const M=view.style?.MAT;for(const [id,f] of F.flash)if(all||f.until<=now){for(const o of f.list)if(M&&o.material===M.solidHit)o.material=M.solid;F.flash.delete(id);}}
+  if(!f){f={list:[],until:0};g.traverse(o=>{if(!o.isMesh)return;if(o.material===M.solid){o.material=M.solidHit;f.list.push(o);}else if(M.par&&o.material===M.par){o.material=M.parHit;f.list.push(o);}});   /* 5E-2d2: the Parasite machines have their own material (red rim) and its flash */F.flash.set(id,f);}f.until=now+80;}
+ function unflash(now,all=false){const M=view.style?.MAT;for(const [id,f] of F.flash)if(all||f.until<=now){for(const o of f.list)if(M&&o.material===M.solidHit)o.material=M.solid;else if(M&&o.material===M.parHit)o.material=M.par;F.flash.delete(id);}}
  function killPop(e,now){F.kills=F.kills.filter(k=>now-k.at<4000);const name=NAMES[e.kind]||'HOSTILE';F.kills.push({at:now,name});const n=F.kills.filter(k=>k.name===name).length;
   const t=panel.querySelector('.cq-reward-ticker');if(t){t.textContent='DESTROYED · '+name+(n>1?' ×'+n:'');t.__cqText=t.textContent;view.tickerUntil=Date.now()+2200;}snd('cqkill');}
  // a picked-up cache flies to the cargo line (or the hull bar) in its rarity colour, with its rarity sound

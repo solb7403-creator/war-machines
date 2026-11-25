@@ -90,7 +90,7 @@ function fx(view,B,F,dt){if(!B?.cit||!F?.thrustDust)return;const ox=view.origin.
   if(q.fire>0){F.hullFlame(q.x-ox,q.y+1.2,q.z-oz,4.2,q.fire);if(tick)F.hullSmoke(q.x-ox,q.y+2,q.z-oz,4);}else if(tick&&q.dust>.05)F.thrustDust(q.x-ox,Wd().groundAt(q.x,q.z),q.z-oz,7,q.dust);}}
 // the real hauler for a Citadel ship (null: the box stand-in): hull + bow ramp at its hinge + the wreck, in the fight's frame
 function shipModel(view,e){const S=view.style,DS=root.ConquestDropship,WK=root.ConquestWorldKit;if(!S?.MAT||!S.marker||!DS?.flight||!WK?.MODELS?.['par-hauler'])return null;
- const T=view.T,K=WK.kit(S),D=DS.dims('hauler'),v=1+(((e.ship?.n|0)%6)+6)%6,g=new T.Group(),body=new T.Group(),gun=new T.Group(),mesh=o=>new T.Mesh(K.geometry('par-hauler',Object.assign({seed:v},o)),S.MAT.solid),hull=mesh({part:'hull'}),ramp=mesh({part:'ramp'}),wreck=mesh({wreck:1});
+ const T=view.T,K=WK.kit(S),D=DS.dims('hauler'),v=1+(((e.ship?.n|0)%6)+6)%6,g=new T.Group(),body=new T.Group(),gun=new T.Group(),mesh=o=>new T.Mesh(K.geometry('par-hauler',Object.assign({seed:v},o)),S.MAT.par||S.MAT.solid),hull=mesh({part:'hull'}),ramp=mesh({part:'ramp'}),wreck=mesh({wreck:1});
  ramp.position.set(D.hinge[0],D.hinge[1],D.hinge[2]);ramp.rotation.x=D.closedAngle;wreck.visible=false;body.add(hull,ramp,wreck);g.add(body,gun);const mk=S.marker();mk.position.y=D.size[1]+2.5;g.add(mk);
  Object.assign(g.userData,{gun,marker:mk,slot:'par-hauler',hook:'dropship',ship:{body,hull,ramp,wreck,D}});view.scene.add(g);return g;}
 // a Citadel unit's stand-in model (null: the view's own). Shapes cached per view (shared, never disposed per unit), the view's own
