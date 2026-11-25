@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';import vm from 'node:vm';
 const ctx=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('../../js/conquest/catalog.js',import.meta.url),'utf8'),ctx);
 const C=ctx.ConquestCatalog;
-assert.equal(C.items.length,43);assert.equal(new Set(C.items.map(i=>i.id)).size,43);   // Session 7T decision 11 adds the return streak's 3 earn-only town decorations (40 before)
+assert.equal(C.items.length,46);assert.equal(new Set(C.items.map(i=>i.id)).size,46);   // Session 7T decision 11 adds the return streak's 3 earn-only town decorations (40 before); Session 7C STEP 4 the War Effort's 3 tier pieces (43 before)
+assert(C.items.filter(i=>i.id.startsWith('we-')).map(i=>i.id).join()==='we-standard,we-trail,we-monument'&&C.items.filter(i=>i.id.startsWith('we-')).every(i=>i.earnOnly&&i.proposedUsd===null&&i.priceStatus==='Earn-only: never sold'&&C.eligible(i,{wet:3})&&!C.eligible(i,{wet:0})),'the War Effort tier pieces are earn-only, never priced, earned by the tier reached');
 assert(C.items.filter(i=>i.id.startsWith('streak-')).every(i=>i.earnOnly&&i.proposedUsd===null&&i.priceStatus==='Earn-only: never sold'&&C.eligible(i,{stk:{best:365}})&&!C.eligible(i,{stk:{best:29}})),'the streak decorations are earn-only, never priced, earned by the streak');
 // Session 6: 20 milestone pieces + 20 earn-only fragment pieces (5 per pool), never priced and never auto-granted by eligibility
 const pieces=C.items.filter(i=>i.pool);assert.equal(pieces.length,20);for(const p of ['c','u','r','e'])assert.equal(C.pools[p].length,5,p);
@@ -23,7 +24,7 @@ const signatures=new Set;
 for(const i of C.items){const a=C.build(T,i.id,{low:true,reducedMotion:true}),b=C.build(T,i.id,{low:false});assert(a.children.length>=2,i.id+' actual geometry');let meshes=[];a.traverse(m=>{if(m.geometry)meshes.push(m)});assert(meshes.length<=32,'mobile draw budget '+i.id);signatures.add(JSON.stringify(meshes.map(m=>[m.geometry.type,m.geometry.args,m.position.values,m.rotation.values,m.material.color])));assert.equal(a.userData.cosmeticId,i.id);assert.equal(a.userData.competitive,false);assert.equal(b.userData.cosmeticId,i.id);
  const calls=[];const g=new Proxy({},{get:(_t,k)=>k==='save'||k==='restore'?()=>{}:(...a)=>calls.push([k,...a]),set:()=>true});C.draw2D(g,i.id,100,100,1);assert(calls.length>5,'2D actual preview '+i.id);
 }
-assert.equal(signatures.size,43,'all 43 products have distinct geometry or colour');   // Session 7T decision 11: 40 + the 3 streak decorations
+assert.equal(signatures.size,46,'all 46 products have distinct geometry or colour');   // Session 7T decision 11: 40 + the 3 streak decorations; Session 7C: + the 3 War Effort pieces
 console.log('PASS forty real distinct geometry/Canvas catalog previews, four slots, permanent earning definitions and disabled checkout');
 // Use the actual shipped slim THREE bundle; mocks above only make signature assertions readable.
 const real=vm.createContext({console});vm.runInContext(fs.readFileSync(new URL('../../js/vendor/three.lunar.min.js',import.meta.url),'utf8'),real);vm.runInContext(fs.readFileSync(new URL('../../js/conquest/catalog.js',import.meta.url),'utf8'),real);

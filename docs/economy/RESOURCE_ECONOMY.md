@@ -483,7 +483,10 @@ they pay salvage (once per spawn generation, once per UTC day per mission slot; 
 | Meteor Strike secured | 15% a research part · 10% a rare fragment · the Strike Core trophy at every 12th | Resonance |
 | Town / sector defense held | 6% two consumables · 4% an uncommon fragment | — |
 | War Orders (Part E) | each daily 1 consumable · the day's third 1 uncommon fragment · the weekly 1 Armalcolite + 1 rare fragment | — |
-| Hive Titan killed (Session 7C, once per slot) | always 2 Tranquillityite · 25% a research part · 20% 1 Selenite · 2% 1 Moonheart · 30% the Hive Titan trophy · 10% an epic fragment | at most 5 Titans without a Selenite |
+| Hive Titan killed (Session 7C, once per slot) | 25% a research part · 20% 1 Selenite · 2% 1 Moonheart · 30% the Hive Titan trophy · 10% an epic fragment | at most 5 Titans without a Selenite |
+
+The decided Titan row also guaranteed 2 Tranquillityite a kill; it is kept out because, counted in the fortress model, it failed the
+fortress guard (e) (Checkpoint 50, "Guards with everything on": a PROPOSAL for the owner).
 
 Minerals in a kill cache are cargo (half lost on death, banked to the wallet through the outbox). Consumables (Repair Kit 40%, Shield Cell
 25%, Scanner Charge 20%, Decoy Beacon 15%; cap 10 each), research parts (cap 50 each), fragments and trophies are account-bound the moment

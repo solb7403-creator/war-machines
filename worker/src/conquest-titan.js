@@ -4,7 +4,7 @@
 //    after this pilot extracted the slot's core, near the crater, and not once the slot's Titan is down (ConquestTitan.startWhy);
 //  - the kill, exactly once per slot (the reducer settles a victory only while s.settlement is empty, and the slot's k mark): 1,600 base
 //    points (RULES.CQ_PTS.titan, the Command Base multiplier, under the 50,000 shared cap and the hourly limit, like every operation),
-//    the LOOT.titan roll keyed by the slot (2 Tranquillityite, 25% a research part, 20% Selenite, 2% Moonheart, 30% the Hive Titan
+//    the LOOT.titan roll keyed by the slot (25% a research part, 20% Selenite, 2% Moonheart, 30% the Hive Titan
 //    trophy, 10% an epic fragment; pity: the 5th Titan without a Selenite pays one), minerals carried like a strike's;
 //  - every attempt (won, lost, a retreat or a destroyed tank): the pilot's own damage to the Titan, the slot's best kept (s.ttn.sl), the
 //    week's Titan board reads the sum of the week's slots (worker/src/conquest-boards.js).

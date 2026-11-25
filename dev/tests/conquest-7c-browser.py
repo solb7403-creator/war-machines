@@ -118,7 +118,7 @@ async def run(browser,w,h,mobile,shot_saved):
   await page.screenshot(path=str(OUT/f'boards-titan-{w}x{h}.png'));r['boards']=[t.strip() for t in tabs]
   names=await page.evaluate('(()=>{const o={};for(const b of document.querySelectorAll(".cq-boards-tab"))o[b.textContent]=1;return Object.keys(o);})()')
   async def tab(i):
-   t=page.locator('.cq-boards-tab').nth(i);await reach(page,t,'.cq-boards-tabs',mobile,h);await press(page,t,mobile);await page.wait_for_function(f'document.querySelectorAll(".cq-boards-tab")[{i}].getAttribute("aria-selected")==="true"',timeout=10000)
+   t=page.locator('.cq-boards-tab').nth(i);await reach(page,t,'.cq-boards',mobile,h);await press(page,t,mobile);await page.wait_for_function(f'document.querySelectorAll(".cq-boards-tab")[{i}].getAttribute("aria-selected")==="true"',timeout=10000)
    return await page.locator('.cq-boards-card').inner_text()
   ct=await tab(4)   # CAMPAIGN
   assert 'TOP 10% (UP TO 100) · 1,500 CP + 1 RARE FRAGMENT' in ct and 'YOUR PLACE #2' in ct and '1,500 CP + 1 RARE FRAGMENT IF IT HOLDS AT THE RESET' in ct,ct[:500]
@@ -129,19 +129,19 @@ async def run(browser,w,h,mobile,shot_saved):
   assert 'TOP 1% (UP TO 3) · 2 MOONHEART' in t30 and 'YOUR PLACE #7' in t30 and 'IF IT HOLDS' not in t30.split('YOUR PLACE #7')[1],t30[:500]
   await page.screenshot(path=str(OUT/f'boards-titan30-{w}x{h}.png'))
   await tab(4)
-  sh=page.locator('.cq-boards-share').first;await reach(page,sh,'.cq-boards-body',mobile,h);await press(page,sh,mobile)
+  sh=page.locator('.cq-boards-share').first;await reach(page,sh,'.cq-boards',mobile,h);await press(page,sh,mobile)
   img=page.locator('.cq-boards-sharebox img');await img.wait_for(timeout=10000)
   dims=await img.evaluate('i=>new Promise(ok=>{const f=()=>ok([i.naturalWidth,i.naturalHeight]);if(i.complete&&i.naturalWidth)f();else i.onload=f;})');assert dims==[720,900],('the share card is 720x900',dims)
   alt=await img.get_attribute('alt');assert alt.startswith('Top 10% on '),alt
   if not shot_saved.get('card'):
    src=await img.get_attribute('src');(OUT/'share-card-campaign.png').write_bytes(base64.b64decode(src.split(',',1)[1]));shot_saved['card']=1
-  sbtn=page.locator('.cq-boards-sharebox button');await reach(page,sbtn,'.cq-boards-body',mobile,h)
+  sbtn=page.locator('.cq-boards-sharebox button');await reach(page,sbtn,'.cq-boards',mobile,h)
   await page.screenshot(path=str(OUT/f'boards-share-{w}x{h}.png'));r['share']=alt
   if mobile:
-   cl=page.locator('.cq-boards-foot button');await reach(page,cl,'.cq-boards-foot',mobile,h);await cl.tap()
+   cl=page.locator('.cq-boards-foot button');await reach(page,cl,'.cq-boards',mobile,h);await cl.tap()
   elif w==1366:await page.keyboard.press('Escape');INPUT['keys']+=1   # a computer: Escape closes the screen (1366), CLOSE by the mouse (1920)
   else:
-   cl=page.locator('.cq-boards-foot button');await reach(page,cl,'.cq-boards-foot',mobile,h);await cl.click();INPUT['mouse']+=1
+   cl=page.locator('.cq-boards-foot button');await reach(page,cl,'.cq-boards',mobile,h);await cl.click();INPUT['mouse']+=1
   await page.wait_for_function('!document.querySelector(".cq-boards")',timeout=10000)
   # ---- 3. into the world at the Titan slot's crater: the strike won, THE HIVE TITAN RISES ----
   go=page.get_by_role('button',name='ENTER CONQUEST',exact=True);await press(page,go,mobile)
@@ -169,8 +169,10 @@ async def run(browser,w,h,mobile,shot_saved):
   # ---- 5. the kill: the result card (the Worker's settlement), once this slot ----
   j=await post('/fixture-titan-win',{'dmg':6800});assert j.get('ok'),j
   res=page.locator('.cq-titan-result');await res.wait_for(timeout=60000);await page.wait_for_function('!document.querySelector(".cq-titan-aar[data-pending]")',timeout=30000);rs=await res.inner_text()
-  for want_ in ['THE KILL OF THIS SLOT','THE HIVE TITAN FALLS','+1,600 base airdrop points (once this slot, inside the daily cap)','Loot: ','Your damage: 6,800 · YOUR BEST THIS SLOT · it counts on the weekly Titan board']:assert want_ in rs,(want_,rs)
+  for want_ in ['THE KILL OF THIS SLOT','THE HIVE TITAN FALLS','+1,600 base airdrop points (once this slot, inside the daily cap)','Your damage: 6,800 · YOUR BEST THIS SLOT · it counts on the weekly Titan board']:assert want_ in rs,(want_,rs)
   st=await inspect();S=st['settlement'];assert S['kind']=='titan' and S['first']==1 and S['ptsRaw']==1600 and S['dmg']==6800 and st['ttn']['sl'][str(slot)]['k']==1,('the Worker paid the kill once',S,st.get('ttn'))
+  dropped=await page.evaluate('(l=>!!ConquestLoot.text(l))',S.get('loot') or {});assert ('Loot: ' in rs)==dropped and ('No loot drop this time' in rs)==(not dropped),('the card shows the loot the Worker rolled, or says none dropped',S.get('loot'),rs)
+  assert 'Tranquillityite' not in rs,('the guaranteed Tranquillityite stays out (Checkpoint 50)',rs)
   back=page.locator('.cq-result button',has_text='RETURN TO EXPLORATION');await reach(page,back,'.cq-result',mobile,h)
   await page.screenshot(path=str(OUT/f'titan-result-{w}x{h}.png'));r['result']=' · '.join(l for l in rs.split('\n') if l.strip())[:180]
   await press(page,back,mobile);await page.wait_for_function('!Conquest.view.battle&&!Conquest.view.authority.state.mission',timeout=30000)

@@ -7647,6 +7647,8 @@ If your context was cleared, read docs/conquest/audit/SESSION_07C_BRIEF.md first
 - **Slice 5 (STEP 4):** the weekly War Effort bar on the shared warfront document, High Morale, the crate, the cosmetic tiers, squads
   and their banner (details under "STEP 4" below). Test: `wtest/conquest-wareffort` 22 (CI `conquest` job).
 - **Slice 6 (CI on PR #157):** four real failures fixed, the rest were the runner or the label (details under "CI fixes" below).
+- **Slice 7 (journeys, `f8fb9a4`):** `dev/tests/conquest-7c-browser.py` at five sizes (new CI job `boards-titan`), with the UI fixes it
+  found (details under "Journeys" below). Reviews round 1 started at `f8fb9a4` (two rule reviewers, one airdrop-integrity reviewer).
 - **Next:** every guard re-run with everything on (fortress, ladder, town-selenite, cap, bounties, boards, Titan, fingerprints), the
   CI Node suite, the browser journeys and captures (phone sizes + 1366x768 + 1920x1080, keyboard and mouse), then the reviews.
 
@@ -7826,6 +7828,8 @@ what each changed here:
   victory; the pilot keeps a best per layout (`s.rbest`) and the week's featured-raid best (`s.rtb`).
 - **The fortress model counts the Titan's ore** (`minerals()`): Titans met = strikes met / 6 x the measured kill rate by gear (common
   .2, rare .8, epic .95), each kill 2 Tranquillityite, 0.2975 Selenite (the pity-adjusted rate: 1 per 3.36 kills) and 0.02 Moonheart.
+  **Superseded by "Guards with everything on" below: the guaranteed 2 Tranquillityite failed guard (e) and is kept out of the game and
+  the model (a PROPOSAL); the Selenite with its pity and the Moonheart stay.**
 
 ### STEP 4 (lead's decisions, with reasons)
 - **The week on the shared warfront document** (`worker/src/conquest-warfront.js`, the blueprint: "it reuses the shared warfront
@@ -7877,4 +7881,73 @@ what each changed here:
   error while installing the browsers (`Unable to locate package fonts-unifont`): the runner, not the code.
 - Polish found on the way: the standing card says "NOT IN THE POOL YET" (was "OUTSIDE THE POOL") and "1 pt" in the singular; the
   BOARDS screen's field leaves out pilots under review that it can see (the payout counts the markers minus every held pilot).
+
+### Journeys (the shipped client, five sizes; `dev/tests/conquest-7c-browser.py`, CI job `boards-titan`)
+- **What it plays** (each size on its own local Worker, its clock shifted 45 s into the next Titan slot's strike window; the page shifts
+  its clock the same way): the hub's AIRDROP STANDING card (#842 in the pool, the points to #800, TODAY 12,840 / 50,000 and its bar,
+  VERIFIED PLAY 100%, the no-token note), the WARFRONT card's War Effort lines (the bar, TIER II won last week, High Morale, the top
+  squad's banner "YOUR SQUAD"), the LIVE EVENTS Titan line; the record's War Effort payment at the session open (the crate, the tier II
+  piece, the squad fragment: read back from the Worker); WEEKLY BOARDS from the standing card: six tabs, the Titan board (its bands,
+  FIELD 40, #3 inside TOP 10%), CAMPAIGN (#2: 1,500 CP + 1 rare fragment), RAID TIME-ATTACK (this week's course, a time), the 30-day
+  board (#7: outside its 1%-at-most-3 band, no reward line), SHARE MY FINISH (a 720x900 card, saved as
+  `docs/conquest/session7c/share-card-campaign.png`), CLOSE (a tap; Escape at 1366x768; the mouse at 1920x1080); ENTER CONQUEST; the
+  strike of that Titan slot started at the crater and won (`/fixture-op-clear`), THE HIVE TITAN RISES and its FIGHT button, the hunt
+  (the HUD: phase, hull bar with two marks, the clock; the arrow and distance lead to the Titan), the kill (`/fixture-titan-win`): THE
+  KILL OF THIS SLOT, +1,600 base points, the loot, the pilot's damage; the Worker's settlement read back; a second hunt in the slot
+  refused. Phones by touch (a real swipe to reach what is below), computers by the mouse and the keyboard in turns (at least 3 each).
+- **Fixed on the way (each seen in a capture first):** the BOARDS screen was translucent over the hub (now opaque); its CLOSE sat under
+  the hub's page nav at 390x844 (the screen now ends above the nav); at 320x568 the head and tabs left the list no room (the whole
+  screen is now one scroller, CLOSE sticky); the pilot's own place and SHARE MY FINISH came after the 100-row list (now first); the share
+  card's reward line overflowed and its name read "Pilot" (now wrapped, the account's call sign, the game's font, a moon and stars);
+  the hunt's NEXT arrow pointed 174 m away at the first strike site in the operation list (it follows the Titan now: 33 m); the Titan
+  HUD covered the carried-minerals and strike lines and the reward ticker (they make way during the hunt; the HUD now carries the next
+  marked impact's countdown, e.g. "SLAM · GET OUT OF THE RING · RING IN 1.2s"). The same clean-up applies to the Citadel's HUD
+  through a `:has()` rule (a browser without it keeps the old look).
+
+### Guards with everything on (the brief: "Name the test that fails if any of these breaks")
+- **The Titan's guaranteed Tranquillityite is kept out (the brief's rule: "If a decided reward makes an existing guard fail, keep that
+  reward out, ship the rest, and report the numbers as a PROPOSAL").** With the decided LOOT.titan row counted in the fortress model
+  (as the brief requires), `conquest-fortress` failed in CI at `57eb456`: guard (e) "the regular's hold rates stay within 5 points of
+  the 7T economy's at every measured day" moved 14.3 points (day 330: 76% with the cap-level Selenite against 62% without; limit 5).
+  Each part of the row measured alone on top of the pre-7C economy (`dev/tools/fortress-model.mjs` `KNOB.titanOre`, the test's own 21
+  raids a day): no Titan ore 4.8 points (pass); the 2 Tranquillityite alone 9.5 (FAIL); the Selenite with its pity alone 4.8 (pass);
+  the Moonheart alone 4.8 (pass); Selenite + Moonheart 4.8 (pass); Tranquillityite + Moonheart 9.5 (FAIL); Tranquillityite + Selenite
+  0.0 (pass; the measurement moves in whole raids of 21, so it is not monotonic). The part that fails the guard on its own is the
+  guaranteed Tranquillityite, so it is kept out of the game's row (`js/rules.js` LOOT.titan: 25% a research part, 20% Selenite, 2%
+  Moonheart, 30% its trophy, 10% an epic fragment; pity never 5 Titans without a Selenite) and out of the model (`TITAN_ORE.tq` 0); the
+  wiki, RESOURCE_ECONOMY §5.7, the LOOT screen, `conquest-loot` and `conquest-titan` follow the shipped row. A kill with no item now
+  says so ("No loot drop this time: every Titan counts toward the Selenite pity"). **PROPOSAL:** the decided 2 Tranquillityite a kill,
+  if the owner accepts guard (e) moving 9.5-14.3 points at day 330 (the regular's town meets the cap level sooner with the extra ore,
+  so the cap-level Selenite reaches it earlier), or a smaller guaranteed drop measured against the guard.
+- The numbers, every change on (local, Node 22; the shipped row):
+
+| Rule (the brief) | Guarding test | Result |
+|---|---|---|
+| the regular's ladder inside the Session 6 band | `conquest-ladder-check` | PASS: 101 pilots, median CC5 day 5.8 / CC10 day 26.8, mean 5.8 / 26.8 (band 5.4-6.6 / 25.9-31.7), 99% / 85% of pilots inside, CC10 range 18.8-29.8 |
+| conquest-fortress passes | `conquest-fortress` | PASS (all checks; (e) 4.8 points; the regular 76% along the year, the grinder 86% at day 330, the heavy player 81% late against 73% without the cap-level Selenite) |
+| conquest-town-selenite passes | `conquest-town-selenite` | PASS (16 checks) |
+| the 50,000 cap holds | `wtest/conquest-airdrop` (one cap shared with Arcade), `owner-rules` (DAILY_CAP pinned) | PASS 20; PASS 47 |
+| each Citadel bounty pays exactly once | `wtest/conquest-citadel-payout` | PASS 25 |
+| each board reward pays exactly once | `wtest/conquest-boards` | PASS 27 |
+| the Titan pays once per slot | `conquest-titan` (and the browser journey's second hunt refused) | PASS 30 |
+| no flag fires on the human-variance fixtures | `conquest-fingerprints` | PASS 19 |
+| the War Effort pays once, never CP, salvage or points | `wtest/conquest-wareffort` | PASS 22 |
+| the standing card's numbers | `wtest/conquest-standing` | PASS 19 |
+| collision lookups identical | `conquest-collision-identity` | PASS (1,619 requests identical; replay CPU 60.6% lower) |
+
+- **REPORT, the board CP at its worst (not a guard: the ladder guard's regular is not in a board's top 10%):** the ladder's own method
+  and 101 pilots, plus 1,500 CP for every CP board a pilot finishes in the top 10% each week, with the same CP split: all four boards
+  every week (6,000 CP a week): CC10 median day 16.8 (min 15.8), against 26.8 without; two boards a week (3,000 CP): median 17.8, mean
+  20.6; CC5 unchanged (5.8). A pilot who tops the CP boards every week builds its town about 10 days sooner (the boards reward the top
+  pilots, as decided; the rest of the field is unchanged).
+- **The CI Node suite, locally (all 99 commands of the `conquest` job, continuing past failures):** two tests pinned counts that STEP 4
+  changed and are updated, not loosened: `conquest-cosmetics` (the catalog's 43 items -> 46 with the three War Effort pieces, which it
+  now names and checks are earn-only and unpriced; 46 distinct looks) and `conquest-flagship-ui` (3 non-pool earn-only items -> 6, the
+  three War Effort ids named). Every other command passed.
+- **Every test changed in this session, none loosened:** `conquest-session6-loot.py` (STEP 1: the 90 s wait follows the stream; every
+  assertion kept), `conquest-hub-browser.py` (4 -> 5 hub cards, the standing card required by class and title: an added assertion),
+  `signup-browser.cjs` (the garage check starts after the loading screen hides: no assertion changed), `conquest-loot.mjs` and
+  `conquest-titan.mjs` (the pinned LOOT.titan row: the decided row at STEP 3, the shipped row now; exact both times),
+  `conquest-sortie-chain.mjs` (the pity fixture gained the Titan counter), `conquest-cosmetics.mjs` and `conquest-flagship-ui.mjs`
+  (counts with the new pieces named), `owner-rules.json` (CQ_PTS titan 1,600 and the boards' CP source: the brief's decisions).
 

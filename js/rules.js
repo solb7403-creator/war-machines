@@ -624,9 +624,10 @@ const LOOT={
  strike:{rows:[{p:0.15,part:1},{p:0.10,frag:'r'},{p:0.03,ward:1}]},                                      // Meteor Strike secured (its minerals and Resonance unchanged); Session 7T: a Peace Ward 3%
  defense:{rows:[{p:0.06,item:2},{p:0.04,frag:'u'},{p:0.05,ward:1}]},                                     // invasion / town defense held live (the defense cache unchanged); Session 7T: a Peace Ward 5%
  order:{daily:{item:1},third:{frag:'u'},weekly:{mn:{ar:1},frag:'r'}},                                    // War Orders (Part E): every daily, the day's third, the weekly
- // Session 7C (spec §4.1's Titan row, the old brief's D): the Hive Titan's kill, rolled once per slot: 2 Tranquillityite, 25% a research
- // part, 20% Selenite, 2% Moonheart, 30% its trophy, 10% an epic fragment; pity: never more than 5 Titans without a Selenite
- titan:{rows:[{p:1,mn:'tq'},{p:1,mn:'tq'},{p:0.25,part:1},{p:0.20,mn:'se'},{p:0.02,mn:'mh'},{p:0.30,trophy:1},{p:0.10,frag:'e'}],pity:{se:5}}};
+ // Session 7C (spec §4.1's Titan row, the old brief's D): the Hive Titan's kill, rolled once per slot: 25% a research part, 20% Selenite,
+ // 2% Moonheart, 30% its trophy, 10% an epic fragment; pity: never more than 5 Titans without a Selenite. The decided row's guaranteed
+ // 2 Tranquillityite is kept out: with it the fortress guard (e) fails (Checkpoint 50, "Guards with everything on"; a PROPOSAL)
+ titan:{rows:[{p:0.25,part:1},{p:0.20,mn:'se'},{p:0.02,mn:'mh'},{p:0.30,trophy:1},{p:0.10,frag:'e'}],pity:{se:5}}};
 // ---- Session 6 Part E (owner Decisions 2a, 3a; spec §6.1, §6.2) ----
 // Daily Base Yield points unlock in steps: each verified operation that UTC day unlocks 25% of the points part; a harvest (bio-flora
 // or a mineral pull) counts half, and harvests together unlock at most half (so 8 five-second pulls cannot open what 4 operations

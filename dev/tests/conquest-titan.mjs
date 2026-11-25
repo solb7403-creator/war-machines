@@ -22,7 +22,7 @@ let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;console.log('PASS '+m);};const
  ok(JSON.stringify(TT.TITAN.phases)===JSON.stringify([2/3,1/3])&&TT.PHASES[1]==='CHARGE + SLAM'&&TT.PHASES[2]==='BURROW + SWARM'&&TT.PHASES[3]==='PLASMA RAIN','three phases, marked at 2/3 and 1/3 of its hull');
  const a=TT.make(GEAR.common,{x:1000,z:1000,y:0,surface:'ground'},'hive-titan'),b=TT.make(GEAR.epic,{x:1000,z:1000,y:0,surface:'ground'},'hive-titan');const ta=a.titan(),tb=b.titan();
  ok(ta.hp===tb.hp&&ta.maxHp===9000&&JSON.stringify(ta.stats)===JSON.stringify(tb.stats)&&ta.kind===tb.kind,'fixed stats: the same Titan against a starter and a full Epic pilot (no scaling)');
- const L=R.LOOT.titan;ok(JSON.stringify(L.rows)===JSON.stringify([{p:1,mn:'tq'},{p:1,mn:'tq'},{p:.25,part:1},{p:.20,mn:'se'},{p:.02,mn:'mh'},{p:.30,trophy:1},{p:.10,frag:'e'}])&&L.pity.se===5,'LOOT.titan: 2 Tranquillityite, 25% a part, 20% Selenite, 2% Moonheart, 30% its trophy, 10% an epic fragment; pity 5 -> Selenite');
+ const L=R.LOOT.titan;ok(JSON.stringify(L.rows)===JSON.stringify([{p:.25,part:1},{p:.20,mn:'se'},{p:.02,mn:'mh'},{p:.30,trophy:1},{p:.10,frag:'e'}])&&L.pity.se===5,'LOOT.titan: 25% a part, 20% Selenite, 2% Moonheart, 30% its trophy, 10% an epic fragment; pity 5 -> Selenite');
  ok(R.CQ_TROPHY['hive-titan']&&R.CQ_TROPHY_ORDER.includes('hive-titan')&&!R.CQ_TROPHY_RESERVED.length,'its trophy joins the Trophy Hall (no longer reserved)');
  ok(TT.TITAN.allyMul===.25,'the Wing\'s fire counts a quarter on its hide (a fixed stat)');}
 // a pilot at a Titan slot with the strike core extracted (the strike's own steps: tested in conquest-minerals / economy)
@@ -61,7 +61,7 @@ const sit=()=>({x:0,z:0});
 {const {s}=atTitan();let x=start(s,T0+1000);const B=hydrate(x);const T=B.titan();T.hp=0;T.tp=6800;x.battle=JSON.parse(JSON.stringify(B));const mult=R.CQ_BASE_MULT[0];
  const req={seq:x.seq+1,commands:[{x:0,z:0}]},y=applyCommands(x,req,T0+2000);seal(y,T0+2000);const st=y.settlement,e=airdrop(y).out.at(-1);
  ok(st?.kind==='titan'&&st.first===1&&Math.abs(st.ptsRaw-1600*mult)<1e-6&&e&&e.op===1&&e.raw>=st.ptsRaw-1e-6,'4. the kill: '+st.ptsRaw+' base points (1,600 x the Command Base multiplier '+mult+') in an immutable outbox entry (the cap and hourly limit apply on the account)');
- ok(st.loot&&(y.ledger.mn.tq|0)>=2&&y.ttn.sl[y.strikeSlot].k===1&&y.ttn.sl[y.strikeSlot].d===6800&&y.ttn.kills===1,'the loot (2 Tranquillityite at least, carried) and the slot marked killed with the pilot\'s 6,800 damage');
+ ok(st.loot&&!st.loot.mn?.tq&&(y.ledger.mn.tq|0)===(x.ledger.mn?.tq|0)&&y.ttn.sl[y.strikeSlot].k===1&&y.ttn.sl[y.strikeSlot].d===6800&&y.ttn.kills===1,'the loot (the LOOT.titan roll: no Tranquillityite, Checkpoint 50) and the slot marked killed with the pilot\'s 6,800 damage');
  let threw='';try{applyCommands(y,req,T0+2500);}catch(err){threw=err.message;}const again=(()=>{try{return applyCommands(structuredClone(x),req,T0+2000);}catch(err){return null;}})();
  ok(/sequence|digest|replay|already/i.test(threw)||threw,'a replayed winning request is refused by the record\'s sequence ('+String(threw).slice(0,40)+')');
  const back=applyAction(y,{seq:y.seq+1,action:'return-exploration'},T0+3000);ok(refused(()=>start(back,T0+4000),/already brought down/),'a second hunt in the slot is refused once it is down');

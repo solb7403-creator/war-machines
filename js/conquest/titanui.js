@@ -25,7 +25,7 @@ function hud(panel,view,{el}){const B=view?.battle,c=B?.ttn;let h=panel.querySel
 // the result card (the Worker's receipt: s.settlement kind titan / titan-loss)
 function result(d,rec,{el}){if(!rec||!el)return null;const box=el('section','cq-titan-result',null,d),ul=el('ul','cq-cit-rewards',null,box);
  if(rec.kind==='titan'){el('p','cq-kicker',rec.first?'THE KILL OF THIS SLOT':'ALREADY DOWN THIS SLOT',box);el('h2','','THE HIVE TITAN FALLS',box);
-  if(rec.first){el('li','','+'+fmtN(rec.ptsRaw)+' base airdrop points (once this slot, inside the daily cap)',ul);if(rec.loot)el('li','','Loot: '+(root.ConquestLoot?.text?.(rec.loot)||'secured')+(rec.pity?' (the Selenite pity paid)':''),ul);}
+  if(rec.first){el('li','','+'+fmtN(rec.ptsRaw)+' base airdrop points (once this slot, inside the daily cap)',ul);const lt=rec.loot&&root.ConquestLoot?.text?.(rec.loot);el('li','',lt?'Loot: '+lt+(rec.pity?' (the Selenite pity paid)':''):'No loot drop this time: every Titan counts toward the Selenite pity (one at the latest every 5th)',ul);}
   else el('li','','This slot\'s Titan already paid: no second reward',ul);}
  else{el('p','cq-kicker','THE HUNT FAILED',box);el('h2','','THE TITAN '+(rec.why==='destroyed'?'STILL STANDS':'BURROWED AWAY'),box);el('li','',rec.why==='destroyed'?'Your War Machine was disabled: the LDF towed it back (no wreck, no cargo lost)':rec.why==='retreated'?'You withdrew from the hunt':'The 4-minute clock ran out',ul);}
  el('li','','Your damage: '+fmtN(rec.dmg)+(rec.best?' · YOUR BEST THIS SLOT':'')+' · it counts on the weekly Titan board',ul);box.insertBefore(ul,null);return box;}
