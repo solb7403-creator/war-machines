@@ -6613,6 +6613,27 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md fi
   complex, both viaduct ends, the Command Base approach, the frontier wall, the corridor pylon, the ice mine, the dam. No
   clear spot exists beside the east frontier wall (a cliff) or at the Refuge terminal (roads and lots): reported, not forced.
 - **The hit flash is white** (the addendum: "80 ms emissive white"; it was a warm orange that hid on red-lit units).
+- **The Parasites read red, in the game and not only in the model viewer** (first in-game line-up, Nov 25: under the barren
+  Moon's blue light the finished units read as BLUE human machines: grey steel and pale ceramic took the night's blue
+  ambient and the world's cyan rim light; the red was a few thin veins). Three changes, measured on the same capture:
+  (1) the Parasite machines have their own material, `MAT.par` / `MAT.parHit`: the same solid shaders (one program, uniform
+  values only) with a red rim light in place of the world's cyan one, anywhere on the map (`uSiteRim` 0: a friendly site's
+  cyan glow never paints them); the units, the battery, the drone, the town raiders, both ships and the Citadel's ship wear
+  it; (2) the Parasite steel is warm umber, the plundered plates bone / brick / oxide / tan / khaki (no teal, no pale blue),
+  the conquered LDF flags a dirty dark blue; (3) the red glows are pre-scaled for the shader's 2.3x glow gain, so the tone
+  mapper keeps them a deep red instead of coral (builder B's note). The first try at full rim strength turned every unit
+  into a flat red shape and hid the plunder; the rim is at 0.62 / pi, where the plates, the gold and the hazard paint show.
+- **The hostile site rim and the ground creep are red** (they were magenta in the solid and terrain shaders), the hostile
+  flag, the markers, the enemy shots (hot core, red glow), the hub's horizon, the town minimap's raid dots and the world
+  map's Parasite marks too. Not changed: the War Map screen's own pink for Parasite territory (`css/war.css`, a Session 7
+  screen colour, PROPOSAL: one red there too), the bio-flora pods (flora, not Parasite).
+- **The raid's centrepiece is the kit's `raid-spire`** wherever the style draws (it was the Blender raid art, a violet
+  crystal spire: the old alien look; that asset is drawn only by the pre-style fallback now).
+- **Each hive and mast has its own seed** (plates, flags, veins), so the four installations are not one model four times.
+- **A unit's geometry is prewarmed once** (three variants a kind, one kind every 90 calm frames); the old prewarm keyed on
+  the fallback's cache and, with the style on, rebuilt a spare unit every 90 frames for the whole session.
+- **The drill's ships**: `X.drillRate` (the replay speed, 1.6) and `X.dropshipHit` are the two knobs the capture tool
+  uses (hold a moment; show a ship shot down). Nothing shoots a ship in the drill and nothing sets them in play.
 
 ### Found on the way (Nov 21): Conquest on the website drew its pre-style fallback
 - `web/play.html` -> `web/boot.js` loads the game's scripts from a list. Session 5E-2d1 added `js/conquest/slots.js`,

@@ -196,8 +196,10 @@ class Run:
   try:await s.pg.wait_for_function('k=>k in __tank.cur',arg=surface,timeout=timeout);return True
   except Exception:
    cur=await s.pg.evaluate('({cur:__tank.cur,tab:typeof uiTab!=="undefined"?uiTab:null})');s.fails.append(f'{s.label} {what}: surface {surface} never drew ({json.dumps(cur)})');return False
+ KEEP=('low-wait-home','low-wait-world','low-wait-town','low-town','low-world','low-hub','low-garage','2d-wait-home','2d-home','2d-garage','2d-world','2d-town')
  async def shot(s,name):
-  try:await s.pg.screenshot(path=str(OUT/f'{s.label}-{name}.png'))
+  if name.startswith(('low-','2d-')) and name not in s.KEEP:return
+  try:await s.pg.screenshot(path=str(OUT/f'{s.label}-{name}.jpg'),type='jpeg',quality=74)   # JPEG: ~130 pictures a run stay near 6 MB
   except Exception:pass
  async def tab(s,t):
   await s.pg.evaluate('t=>{closeAll();setTab(t);if(typeof webUpdateMachine==="function")webUpdateMachine();}',t);await s.pg.wait_for_timeout(250)
