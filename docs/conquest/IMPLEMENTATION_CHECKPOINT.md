@@ -7954,3 +7954,34 @@ what each changed here:
   `conquest-sortie-chain.mjs` (the pity fixture gained the Titan counter), `conquest-cosmetics.mjs` and `conquest-flagship-ui.mjs`
   (counts with the new pieces named), `owner-rules.json` (CQ_PTS titan 1,600 and the boards' CP source: the brief's decisions).
 
+### Reviews, round 1 (at `f8fb9a4`: two rule reviewers and one airdrop-integrity reviewer, each in its own worktree)
+- **Airdrop integrity (reviewer 3): 22 PASS, 4 FAIL; all four handled in `b78b5a2`, each with a test that fails without its fix.**
+  - **C6 FAIL -> fixed:** the campaign board posted a zero gain, so every pilot with any Conquest request that week counted in the
+    field N (19 idle pilots + 1 scorer settled as a full field of 20 and paid the scorer). `scoresOf` now posts only a real gain
+    (`wtest/conquest-boards` 6: no row, no marker).
+  - **C3 FAIL -> fixed:** `applyGrants` kept the last 60 applied ids, so 70 grants at one session open paid 80 (the 10 oldest fell
+    out and were re-verified and paid again). Applied ids are now kept by period, not by count: every grant of the last 12 weeks (3
+    thirty-day periods for the Titan's 30-day board) stays remembered, at most 12 x 6 + 3 ids; an older grant expires unpaid and is
+    cleared (a pilot away from Conquest for about 3 months). Test: 72 grants at once paid once each, a second open pays nothing, an
+    expired grant cleared unpaid. The settlement records are read in parallel now (note 8).
+  - **B6 FAIL -> fixed:** when the cluster's main account changed (the farm keep follows the points), the new main account kept its old
+    cqalt and both accounts were held; and every non-main member was flagged, even one sharing no signal. The scan now clears the main
+    account's active cqalt and flags only accounts in a matching pair (`conquest-fingerprints` 5).
+  - **B2 FAIL -> kept by design (lead's decision):** a pilot who wins three operations with nobody on the controls (the Battalion does
+    the fighting) raises `cqnoinput`. The old brief's A defines the flag as "zero steering variance in 3 operations", so a hands-off win
+    is what it targets; the shipped rule is already narrower than that definition (no change on ANY control, including aim, trigger and
+    locks, in 3 won operations of 15 s or longer: a parked human who aims is never counted). Reasons: the airdrop rewards play, not
+    idle farming, and a hands-off Battalion win is the cheapest farm there is; the flag never bans and never blocks play (the pilot plays
+    and earns on, sits out boards and the snapshot until the owner's review), and the admin row shows the reason in plain words.
+  - **Notes acted on:** (1) a Strike Beacon on a Titan slot now opens the hunt in the slot's idle phase too (it was refused); (2) the
+    Titan record keeps 64 slots (a 30-day period holds 60; it kept 40, so the busiest hunters' 30-day total stopped growing); (3) flag
+    texts (with their measurements) are stripped from the outbox, the spill and the queue in `publicState` (they could reach the phone);
+    (4) a period settles 70 minutes after it ends, so the hourly cqalt scan has seen every cluster again and the held index includes
+    every flag raised by then; (5) a board post writes the field marker only once its row is written, and the isolate's memo only
+    records a post that went through. Tests: `conquest-titan` +2, `conquest-fingerprints` +2, `wtest/conquest-boards` +6.
+  - **Notes reported, not changed:** (6) the Titan's once-per-slot mark lives in the Conquest record (like every operation's), so a
+    server-side reset of a record inside a slot's window could pay that slot again, inside the daily cap (no live players; the Citadel
+    bounty, outside the cap, is per account); (7) the human fixtures hold no keyboard play: the reviewer's keyboard model (24 pilots x 12
+    honest runs a day) raised no flag, but cqrepeat rests on its 1 s and 2% checks there; part of the fixtures PROPOSAL (record real
+    phone and keyboard sessions once players exist).
+
