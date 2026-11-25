@@ -58,4 +58,17 @@ const wk=WE.weekOf(now);db.root.players={tg_2:{ref:'tg_1'},tg_3:{ref:'tg_1'},tg_
  now+=14*DAY;const P=41,pid='tg_41';await call(P,'/api/sync');await call(P,'/api/conquest/session');let st=cqLive(db,pid);st.wep={w:W-1,c:200};st.wkb={w:W+2,cs:st.campaignScore|0};delete st.wsq;db.root.conquest[pid]=st;
  const r=await call(P,'/api/conquest/session'),after=cqLive(db,pid);ok(r.status===200&&after.wep.paid===1&&(after.inv.it.scanner|0)>=1&&after.wet>=1&&r.state.warfront?.we?.past?.w===W-1&&r.state.warfront.we.last?.w!==W-1,'a pilot away the week after a won week, back a week later: its crate and tier are paid from the week kept on the document');
  const again=await call(P,'/api/conquest/session');ok((cqLive(db,pid).inv.it.scanner|0)===(after.inv.it.scanner|0),'... once');}
+// ---- 8. review round 2 (rule reviewer 1: rule 13 and note 1; each fails without its fix) ----
+{const {pilotWar}=await import('../../../worker/src/conquest-warfront.js');let t=now+21*DAY;const W=WE.weekOf(t);
+ db.root.players={...db.root.players,tg_51:{ref:'tg_50'},tg_52:{ref:'tg_51'},tg_54:{ref:'tg_53'},tg_55:{ref:'tg_53'},tg_56:{ref:'tg_51'}};
+ // tg_50 recruited tg_51; tg_51 recruited tg_52 (and tg_56, who does not play that week); tg_53 recruited tg_54 and tg_55
+ for(const [pid,total,squad] of [['tg_51',300,'tg_50'],['tg_52',100,'tg_51'],['tg_53',150,'tg_53'],['tg_54',150,'tg_53'],['tg_55',50,'tg_53']])await syncWarfront(env,pid,total,t,{squad});
+ const we=db.get('conquestWarfront/frontier-v1').we;ok(we.w===W&&we.sq.tg_51===400&&we.sqn.tg_51===2&&we.sq.tg_53===350&&WE.topSquad(we).id==='tg_51','8. a recruited leader counts in its own squad too: tg_51 (300) + its recruit (100) = 400 beats tg_53\'s 350 (it counted only in its recruiter\'s before)');
+ // nobody contributes the week after; two weeks later the document still holds week W open (it never rolled): it counts as finished
+ t+=14*DAY;const w0=await syncWarfront(env,'tg_99',0,t,{squad:'tg_99'});const mk=(wep)=>{const x=createState(R.STOCK_L,t);if(wep)x.wep=wep;return x;};
+ const a=mk({w:W,c:100}),ra=pilotWar(w0,'tg_52','tg_51',a,t);applyWarfront(a,ra,t);ok(ra.we.past?.w===W&&ra.we.past.won&&a.wep.paid===1&&(a.inv.it.scanner|0)===1&&(a.wsq||[]).includes(W),'a won week nobody rolled over (no contribution since) still settles: the crate and the squad fragment');
+ const L=mk({w:W,c:300}),rl=pilotWar(w0,'tg_51','tg_50',L,t);applyWarfront(L,rl,t);ok((L.inv.it.scanner|0)===1&&(L.wsq||[]).includes(W),'the leader whose banner flies: its crate and its squad\'s fragment');
+ const m=mk(null),fr0=m.inv.fr?.u|0,rm=pilotWar(w0,'tg_56','tg_51',m,t);applyWarfront(m,rm,t);ok((rm.we.sqw||[]).includes(W)&&(m.inv.fr.u|0)===fr0+1&&!(m.inv.it.scanner|0),'a member who played neither that week nor the week after: the fragment when it returns (no crate)');
+ const fr1=m.inv.fr.u|0;applyWarfront(m,pilotWar(w0,'tg_56','tg_51',m,t),t+1000);const o=mk({w:W,c:50});applyWarfront(o,pilotWar(w0,'tg_55','tg_53',o,t),t);
+ ok((m.inv.fr.u|0)===fr1&&(o.inv.it.scanner|0)===1&&!(o.wsq||[]).length,'... once; a contributor of the other squad gets the crate of the won week and no fragment');}
 console.log(JSON.stringify({test:'conquest-wareffort',pass}));
