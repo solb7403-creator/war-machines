@@ -108,10 +108,10 @@ void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float 
  // and moss on top; shell craters with scorched earth and mud, and tank ruts, scar it. Grit grows with distance from the core.
  float coreD=length(vW-vec2(1130.,1125.)),grit=smoothstep(110.,430.,coreD),n1=d1.a,n2=hi?va:n1;
  float gm=smoothstep(.3,.5,n1*.6+n2*.4+.12*(1.-grit)-.1*grit)*smoothstep(.06,.3,terra),regoP=smoothstep(.62,.8,n2*.7+n1*.3+grit*.2)*(1.-gm),zc=smoothstep(.06,.24,terra),sg=smoothstep(.3,.56,1.-vN.y),cr=(1.-zc*(1.-regoP*.85))*(1.-sg);grad*=cr;rim*=cr;bowl*=cr;
- tone=mix(tone,hi?.62+.55*st2:.9,sg);   // 5E-2d2: what is drawn from above (craters, the tone's mottling) stretches down a steep face into streaks: past about 50 degrees it gives way to the face's own layers
+ tone=mix(tone,hi?.4+1.05*st2:.9,sg);   // 5E-2d2: what is drawn from above (craters, the tone's mottling) stretches down a steep face into streaks: past about 50 degrees it gives way to the face's own layers
  vec3 rego=mix(vec3(.074,.078,.088),vec3(.055,.064,.082),massif)*tone;
  vec3 N=normalize(vN+vec3(-grad.x,0.,-grad.y));float steep=smoothstep(.28,.6,1.-N.y);
- if(hi)rego=mix(rego,rego*(.55+.5*st),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));
+ if(hi)rego=mix(rego,rego*(.7+.9*st),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));
  float zv=smoothstep(.05,.24,terra);
  // organic grass: patch colour from low-frequency noise (olive / dry straw / dark green), clump texture from warped noise
  // LOW: one patch fetch; its smooth channels stand in for the clump textures. HIGH samples three finer scales on top.
@@ -454,9 +454,16 @@ function create(T,opts={}){
  // A tank's own solid parts (trim strips, LOW hull) are never thinned with the building it is pressed against: the same program
  // with its own, always-off press uniforms. S.own(root) moves a vehicle's solid meshes onto it.
  // The Parasite machines (Session 5E-2d2; owner, Nov 21: "a hostile red read against the blue human world"): the same solid
- // shaders (one program, uniform values only) with a red rim light in place of the world's cyan one, wherever they are
- // (uSiteRim 0: a friendly site's cyan glow never paints them). parHit = their 80 ms hit flash.
- {const rim=()=>({value:lin(PAR.red).multiplyScalar(.62/Math.PI)});MAT.par=mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail},uRimCol:rim(),uSiteRim:{value:0}});MAT.parHit=mk(SOLID_VS,SOLID_FS,{uFlash:{value:1},uDetail:{value:tex.detail},uRimCol:rim(),uSiteRim:{value:0}});}
+ // shaders (one program, uniform values only) with their own light, wherever they are (uSiteRim 0: a friendly site's cyan
+ // glow never paints them). parHit = their 80 ms hit flash.
+ // Critic round 1 (Nov 25): under the barren Moon's light the units were DARKER THAN THE GROUND (median 15-29 of 255, the
+ // ground 31-44) and their red drifted to wine, plum and pink. Cause, measured: a face turned from the sun was lit by the
+ // night's blue sky light (0.02, 0.05, 0.16) plus a pure red rim (0.16, 0, 0): a magenta light on every neutral plate.
+ // So the Parasite material has (1) a warm ambient floor in place of the blue one (uAmbUp / uAmbDn: blue is always the
+ // lowest channel, so nothing on a unit can turn plum) and (2) a warm orange-red fill for a rim (green above blue), at a
+ // strength where bone, tan, khaki and hazard paint keep their own colour (full red strength made flat red shapes).
+ {const PL={uRimCol:{value:new T.Color().setRGB(.150,.034,.012)},uAmbUp:{value:new T.Color().setRGB(.300,.236,.180)},uAmbDn:{value:new T.Color().setRGB(.150,.112,.084)},uSiteRim:{value:0}};S.PARLIGHT=PL;
+  MAT.par=mk(SOLID_VS,SOLID_FS,Object.assign({uFlash:{value:0},uDetail:{value:tex.detail}},PL));MAT.parHit=mk(SOLID_VS,SOLID_FS,Object.assign({uFlash:{value:1},uDetail:{value:tex.detail}},PL));}
  MAT.own=mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail},uPress:{value:new T.Vector4(0,0,-1,-1)},uPressK:{value:0}});
  S.own=rt=>{rt?.traverse?.(o=>{if(o.isMesh&&o.material===MAT.solid)o.material=MAT.own;});return rt;};
  // Tighter view culling for the world's frame. The renderer tests one bounding sphere per mesh, and a ring wall, a road net or
@@ -1021,33 +1028,82 @@ function create(T,opts={}){
  // which unit draws a hostile: its kind (the six designs); an older record without one falls back on its hull class
  const UNIT_KINDS=['raider','breacher','sentinel','command','swarm','brute'],unitCache=new Map();
  S.unitKind=e=>UNIT_KINDS.includes(e.kind)?e.kind:e.cls==='titan'?(e.arch==='pulse'?'command':'sentinel'):e.cls==='vanguard'?'breacher':'raider';
- // how each unit dies (S.unitPose): roll onto a flank, pitch, the hop of the blast, how far it settles, the gun's slump
- const DEATH={raider:{roll:.62,pitch:.06,hop:.55,sink:.05,gun:.5},breacher:{roll:.2,pitch:-.16,hop:.3,sink:.18,gun:.6},sentinel:{roll:.07,pitch:.05,hop:.12,sink:.3,gun:.34},
-  command:{roll:-.26,pitch:-.1,hop:.2,sink:.22,gun:.7},swarm:{roll:1.35,pitch:.3,hop:.8,sink:0,gun:.2},brute:{roll:.1,pitch:.24,hop:.16,sink:.26,gun:.45}};
+ // how each unit dies (S.unitPose), one table: roll onto a flank, pitch, how far the blast slews it off its heading, the hop
+ // of the blast, how far it settles, dig = how much of its lowered side ends up in the dirt (0 = it rests on that edge), the
+ // gun's slump and roll, throw = where a turret blown off its ring comes to rest (body space; x mirrors with the unit's side).
+ // 5E-2d2 critic round 1 (wrecks read as tilted live units; the Hoard Fortress barely moved): every pose is a wreck at phone
+ // size: the Scavenger lies on its flank, the Siphon rears up on its tanks, the Hoard Fortress breaks down on one side with its
+ // turret blown off the ring, the Warlord topples backward, a Grabber lands on its back, the Wrecker buries its ram.
+ const DEATH={raider:{roll:1.3,pitch:.1,yaw:.5,hop:.9,sink:.1,dig:.12,gun:.7,gz:.5},breacher:{roll:.3,pitch:-.5,yaw:-.22,hop:.45,sink:.25,dig:.45,gun:.8,gz:.3},
+  sentinel:{roll:.26,pitch:.14,yaw:.18,hop:.25,sink:.3,dig:.6,gun:.55,gz:.9,throw:[1.5,-.8,-1.2]},command:{roll:-.36,pitch:-.36,yaw:-.3,hop:.3,sink:.25,dig:.5,gun:.85,gz:.4},
+  swarm:{roll:2.75,pitch:.25,yaw:.9,hop:1.1,sink:.04,dig:.1,gun:.3,gz:.2},brute:{roll:.18,pitch:.4,yaw:.22,hop:.25,sink:.3,dig:.6,gun:.6,gz:.35},
+  battery:{roll:.06,pitch:.05,yaw:0,hop:0,sink:0,dig:1,gun:.78,gz:.3}};
+ // A wreck is dark (5E-2d2 critic round 1: veins, vents and cupola bands stayed lit on the dead). The same solid program with
+ // its own light values (uniforms only, like MAT.par): no emission at all (uGlow 0: every vein, vent, band and lamp goes
+ // black) and well under half the light, grey in place of the Parasites' red rim, so the hull reads as char.
+ MAT.parDead=mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail},uGlow:{value:0},uSiteRim:{value:0},uRimCol:{value:new T.Color().setRGB(.022,.022,.028)},uAmbUp:{value:new T.Color().setRGB(.075,.075,.085)},uAmbDn:{value:new T.Color().setRGB(.034,.033,.036)},
+  uSunCol:{value:U.uSunCol.value.clone().multiplyScalar(.4)},uDaySun:{value:U.uDaySun.value.clone().multiplyScalar(.36)},uDayAmbUp:{value:U.uDayAmbUp.value.clone().multiplyScalar(.4)},uDayAmbDn:{value:U.uDayAmbDn.value.clone().multiplyScalar(.4)}});
  S.unit=e=>{const kind=S.unitKind(e),PU=(root.ConquestParUnits||{})[kind]||{},slot=PU.slot||'par-'+kind,cmd=e.commander&&PU.cmd!==false?(PATTERN[e.pattern]?e.pattern:'ambush'):null,seed=1+(((e.id|0)%3)+3)%3,key=kind+'|'+(cmd||'')+'|'+seed;
   let c=unitCache.get(key);
   if(!c){const o=Object.assign({seed},cmd?{cmd}:{}),Kk=KW(),box=root.ConquestSlots.items[slot].size,X=new Fx();
-   X.flat(0,.05,0,box[0]*.62,box[2]*.58,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,box[0]*.86,box[2]*.76,AT.BLOB,E(cmd?PATTERN[cmd]:PAR.red,cmd?.55:.5),0);
-   c={hull:Kk.geometry(slot,Object.assign({part:'hull'},o)),gun:Kk.geometry(slot,Object.assign({part:'gun'},o)),fx:keep(X.geometry()),pivot:PU.pivot||[0,box[1]*.6,0],box};unitCache.set(key,c);}
-  const g=new T.Group(),body=new T.Group(),gun=new T.Group(),mk=markers(),fx=low?null:fxMesh(c.fx);body.add(new T.Mesh(c.hull,MAT.par));gun.position.set(c.pivot[0],c.pivot[1],c.pivot[2]);gun.add(new T.Mesh(c.gun,MAT.par));body.add(gun);g.add(body);if(fx)g.add(fx);
-  mk.position.y=cmd?((root.ConquestParUnits?.standardTop||{})[kind]||c.box[1]+2.6)+.9:c.box[1]+1.3;g.add(mk);   // a general's marker floats clear of its standard
-  Object.assign(g.userData,{gun,body,marker:mk,glow:fx,unit:kind,slot,general:cmd,death:DEATH[kind],half:c.box[0]/2,side:(e.id|0)%2?-1:1});return g;};
- // the death animation: dead = seconds since the unit died (0 or less = alive). The blast hops the hull, it rolls onto a flank
- // and settles; the gun slumps; the ground glow goes out. The kill burst and the flying plates are FX3D's (killBurst, shatter).
- S.unitPose=(g,dead)=>{const u=g?.userData,b=u?.body,D=u?.death;if(!b||!D)return;const gun=u.gun;
-  if(!(dead>0)){if(u.posed){b.rotation.set(0,0,0);b.position.y=0;gun.rotation.x=0;gun.rotation.z=0;if(u.glow)u.glow.visible=true;u.posed=false;}return;}
-  const k=Math.min(1,dead/.6),e=1-(1-k)*(1-k)*(1-k),hop=Math.sin(Math.min(1,dead/.34)*Math.PI)*D.hop,roll=u.side*D.roll*e;
-  b.rotation.set(D.pitch*e,0,roll);b.position.y=hop+Math.abs(Math.sin(roll))*u.half*.9-D.sink*e;gun.rotation.x=D.gun*e;gun.rotation.z=-u.side*.22*e;if(u.glow)u.glow.visible=false;u.posed=true;};
+   X.flat(0,.05,0,box[0]*.62,box[2]*.58,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,box[0]*.86,box[2]*.76,AT.BLOB,E(cmd?PATTERN[cmd]:PAR.red,cmd?.55:.5),0);   // the contact shadow, then the ground glow (S.glowSync draws them)
+   c={hull:Kk.geometry(slot,Object.assign({part:'hull'},o)),gun:Kk.geometry(slot,Object.assign({part:'gun'},o)),fx:keep(X.geometry()),pivot:PU.pivot||[0,box[1]*.6,0],box};
+   for(const q of [c.hull,c.gun])if(!q.boundingBox)q.computeBoundingBox();c.top=Math.max(c.hull.boundingBox.max.y,c.pivot[1]+c.gun.boundingBox.max.y);unitCache.set(key,c);}   // top: the highest point of the model as built (a general's emblem included)
+  const g=new T.Group(),body=new T.Group(),gun=new T.Group(),mk=markers(),hm=new T.Mesh(c.hull,MAT.par),gm=new T.Mesh(c.gun,MAT.par);body.add(hm);gun.position.set(c.pivot[0],c.pivot[1],c.pivot[2]);gun.add(gm);body.add(gun);g.add(body);
+  // the marker (5E-2d2 critic round 1): a general's floats a clear gap above the top of its standard's emblem, measured on the
+  // model itself (it sat on the emblem); a Grabber's is half size and close over the buggy (it was as big as the buggy and
+  // brighter, and a pack is seven of them). Presentation only: what can be targeted is the hull, as before.
+  mk.position.y=cmd?Math.max(c.top,c.box[1])+1.15:kind==='swarm'?c.box[1]+.75:c.box[1]+1.3;if(kind==='swarm')mk.scale.setScalar(.5);g.add(mk);
+  Object.assign(g.userData,{gun,body,marker:mk,glowFx:c.fx,glowK:1,solids:[hm,gm],unit:kind,slot,general:cmd,death:DEATH[kind],half:c.box[0]/2,box:c.box,pivot:c.pivot,side:(e.id|0)%2?-1:1});return g;};
+ // the death animation: dead = seconds since the unit died (0 or less = alive). The blast hops the hull and slews it round,
+ // it rolls and pitches into its wreck pose and comes to rest on the lowest corner of its box as it now lies; the gun slumps
+ // (a Hoard Fortress's turret is blown off its ring and lands canted on the flank); after the killing blow's white flash the
+ // hull chars and every light on it goes out (MAT.parDead), and its ground glow fades (the contact shadow stays under the
+ // wreck). Two draws, as alive. The kill burst and the flying plates are FX3D's (killBurst, shatter).
+ S.unitPose=(g,dead)=>{const u=g?.userData,b=u?.body,D=u?.death;if(!b||!D)return;const gun=u.gun,pv=u.pivot||[0,0,0];
+  if(!(dead>0)){if(u.posed){b.rotation.set(0,0,0);b.position.y=0;gun.rotation.x=0;gun.rotation.z=0;gun.position.set(pv[0],pv[1],pv[2]);u.glowK=1;for(const m of u.solids||[])if(m.material===MAT.parDead)m.material=MAT.par;u.posed=false;}return;}
+  const k=Math.min(1,dead/.7),e=1-(1-k)*(1-k)*(1-k),hop=Math.sin(Math.min(1,dead/.4)*Math.PI)*D.hop,sd=u.side||1;
+  b.rotation.set(D.pitch*e,sd*(D.yaw||0)*e,sd*D.roll*e);b.updateMatrix();
+  const m=b.matrix.elements,bx=u.box||[u.half*2,2,u.half*2],dip=Math.abs(m[1])*bx[0]/2+Math.abs(m[9])*bx[2]/2-Math.min(0,m[5]*bx[1]*.8);   // how far the box's lowest corner now reaches under the body's origin
+  b.position.y=hop+dip*(1-(D.dig??.3))-D.sink*e;gun.rotation.x=D.gun*e;gun.rotation.z=-sd*(D.gz??.22)*e;
+  if(D.throw)gun.position.set(pv[0]+sd*D.throw[0]*e,pv[1]+D.throw[1]*e+Math.sin(k*Math.PI)*1.5,pv[2]+D.throw[2]*e);
+  u.glowK=Math.max(0,1-k*1.7);if(dead>.09)for(const q of u.solids||[])if(q.material!==MAT.parDead)q.material=MAT.parDead;u.posed=true;};
+ // ---------- one draw for every hostile's ground glow and every shot's glow (5E-2d2) ----------
+ // A hostile's contact shadow, ground glow and lamp glow were one draw per hostile on HIGH and nothing on LOW (critic round 1:
+ // on LOW nothing separated a unit from the ground); a shot's glow was one more draw per shot. Now a model only carries its
+ // glow as data (userData.glowFx: quads in the model's own frame; userData.glowK: 1 lit .. 0 out, the shadow always stays),
+ // and S.glowSync(scene, shots) writes every shown model's quads, moved by that model's world matrix, plus one camera-facing
+ // quad per shot ([x, y, z, half size, 0 pilot cyan | 1 Parasite red] five numbers a shot, emptied here), into ONE mesh on the
+ // fx material: the plain fx program, no instancing, the same quads, colours and mask as before, on HIGH and on LOW. It runs
+ // right before the world's frame, once the scene's matrices are current. Models are found among the scene's own children.
+ const GQ=224,shotCol=[E(0x5fe6ff,1),E(PAR.red,1)];
+ const glowMesh=scene=>{const g=new T.BufferGeometry(),I=new Uint16Array(GQ*6);for(let q=0;q<GQ;q++)I.set([q*4,q*4+1,q*4+2,q*4,q*4+2,q*4+3],q*6);
+  for(const [n,k] of [['position',3],['uv',2],['aCol',4],['aBill',3]]){const a=new T.BufferAttribute(new Float32Array(GQ*4*k),k);a.usage=35048;g.setAttribute(n,a);}   // 35048: DYNAMIC_DRAW
+  g.setIndex(new T.BufferAttribute(I,1));g.setDrawRange(0,0);const m=fxMesh(keep(g),3);m.frustumCulled=false;m.visible=false;m.name='cq-glows';m.userData.noOutline=true;scene.add(m);return scene.userData.cqGlows=m;};
+ S.glowSync=(scene,shots)=>{if(!scene)return;let M=scene.userData.cqGlows,n=0,dP=false,dO=false;const kids=scene.children,put=(arr,i,v)=>{if(arr[i]!==v){arr[i]=v;return true;}return false;};
+  let P,Uv,A,B;const open=()=>{if(!M)M=glowMesh(scene);const a=M.geometry.attributes;P=a.position.array;Uv=a.uv.array;A=a.aCol.array;B=a.aBill.array;};
+  for(let c=0;c<kids.length;c++){const g=kids[c],u=g.userData,geo=u.glowFx;if(!geo||!g.visible)continue;if(!P)open();
+   const s=geo.attributes,sp=s.position.array,su=s.uv.array,sa=s.aCol.array,sb=s.aBill.array,e=g.matrixWorld.elements,gk=u.glowK??1,bs=Math.hypot(e[0],e[1],e[2]),nq=sp.length/12;
+   for(let q=0;q<nq&&n<GQ;q++){if(gk<=.004&&sa[q*16+3]<=0)continue;   // a glow that is out is not drawn at all (the shadow has an alpha: it stays)
+    for(let v=0;v<4;v++){const i=q*4+v,o=n*4+v,x=sp[i*3],y=sp[i*3+1],z=sp[i*3+2],bz=sb[i*3+2],kb=bz?bs:1;
+     if(put(P,o*3,e[0]*x+e[4]*y+e[8]*z+e[12])|put(P,o*3+1,e[1]*x+e[5]*y+e[9]*z+e[13])|put(P,o*3+2,e[2]*x+e[6]*y+e[10]*z+e[14]))dP=true;
+     if(put(Uv,o*2,su[i*2])|put(Uv,o*2+1,su[i*2+1])|put(A,o*4,sa[i*4]*gk)|put(A,o*4+1,sa[i*4+1]*gk)|put(A,o*4+2,sa[i*4+2]*gk)|put(A,o*4+3,sa[i*4+3])|put(B,o*3,sb[i*3]*kb)|put(B,o*3+1,sb[i*3+1]*kb)|put(B,o*3+2,bz))dO=true;}n++;}}
+  if(shots&&shots.length){if(!P)open();const r=AT.BLOB;for(let k=0;k+4<shots.length&&n<GQ;k+=5,n++){const x=shots[k],y=shots[k+1],z=shots[k+2],sz=shots[k+3],col=shotCol[shots[k+4]?1:0];
+    for(let v=0;v<4;v++){const o=n*4+v,sx=v===1||v===2?1:-1,sy=v>1?1:-1;
+     if(put(P,o*3,x)|put(P,o*3+1,y)|put(P,o*3+2,z))dP=true;
+     if(put(Uv,o*2,sx>0?r[2]:r[0])|put(Uv,o*2+1,sy>0?r[3]:r[1])|put(A,o*4,col[0])|put(A,o*4+1,col[1])|put(A,o*4+2,col[2])|put(A,o*4+3,0)|put(B,o*3,sx*sz)|put(B,o*3+1,sy*sz)|put(B,o*3+2,1))dO=true;}}
+   shots.length=0;}
+  if(!M)return;M.visible=n>0;M.geometry.setDrawRange(0,n*6);if(n){const a=M.geometry.attributes;if(dP)a.position.needsUpdate=true;if(dO)a.uv.needsUpdate=a.aCol.needsUpdate=a.aBill.needsUpdate=true;}M.userData.quads=n;};
  // Immobile plasma battery (objective turret): a stolen anti-air mount, the kit's par-battery (base + the head that turns at 6.6 m)
  let batteryFx=null;
- S.battery=()=>{const Kk=KW();if(!batteryFx){const X=new Fx();X.bill(0,7,0,3.6,AT.BLOB,E(PAR.red,.5));X.bill(0,7,0,1.6,AT.BLOB,E(PAR.hot,.6));X.flat(0,.06,0,5.2,4.6,AT.BLOB,E(PAR.red,.45),0);X.flat(0,.05,0,4.6,4.2,AT.BLOB,[0,0,0],.7);batteryFx=keep(X.geometry());}
-  const g=new T.Group(),gun=new T.Group();gun.position.y=6.6;gun.add(new T.Mesh(Kk.geometry('par-battery',{part:'gun'}),MAT.par));g.add(new T.Mesh(Kk.geometry('par-battery',{part:'base'}),MAT.par),gun,fxMesh(batteryFx));
-  const mk=markers();mk.position.y=11;g.add(mk);g.userData.gun=gun;g.userData.marker=mk;g.userData.slot='par-battery';g.scale.setScalar(1.65);return g;};   // 1.65: the size the battery has always been drawn at (11 x 9.6 m on the ground)
+ S.battery=()=>{const Kk=KW();if(!batteryFx){const X=new Fx();X.flat(0,.05,0,4.6,4.2,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,5.2,4.6,AT.BLOB,E(PAR.red,.45),0);X.bill(0,5.95,0,1.2,AT.BLOB,E(PAR.red,.25));batteryFx=keep(X.geometry());}   // the contact shadow, the ground glow, and one small glow where the growth sits under the breech (5E-2d2 critic round 1: it was a 3.6 blob with a hot core over the whole head, which flattened it to pure red)
+  const g=new T.Group(),body=new T.Group(),gun=new T.Group(),bm=new T.Mesh(Kk.geometry('par-battery',{part:'base'}),MAT.par),hm=new T.Mesh(Kk.geometry('par-battery',{part:'gun'}),MAT.par);gun.position.y=6.6;gun.add(hm);body.add(bm,gun);g.add(body);
+  const mk=markers();mk.position.y=11;g.add(mk);Object.assign(g.userData,{gun,body,marker:mk,slot:'par-battery',glowFx:batteryFx,glowK:1,solids:[bm,hm],death:DEATH.battery,half:3.35,box:[6.7,11.6,5.8],pivot:[0,6.6,0],side:1});g.scale.setScalar(1.65);return g;};   // 1.65: the size the battery has always been drawn at (11 x 9.6 m on the ground)
  // Airborne drone: a stolen human quad-rotor (the kit's par-drone), the same footprint as before
  let droneFx=null;
  S.drone=()=>{const Kk=KW();if(!droneFx){const X=new Fx();X.bill(0,1.3,.9,.7,AT.BLOB,E(PAR.red,.9));X.flat(0,-1.2,0,1.6,1.7,AT.BLOB,E(PAR.red,.35),0);droneFx=keep(X.geometry());}
-  const g=new T.Group(),body=new T.Group();body.position.y=.75;body.add(new T.Mesh(Kk.geometry('par-drone',{}),MAT.par));g.add(body,fxMesh(droneFx));
-  const gun=new T.Group();g.add(gun);const mk=markers();mk.position.y=3;g.add(mk);g.userData.gun=gun;g.userData.marker=mk;g.userData.slot='par-drone';g.scale.setScalar(1.65);return g;};   // 1.65: today's drone footprint (4.6 x 4.9 m)
+  const g=new T.Group(),body=new T.Group();body.position.y=.75;body.add(new T.Mesh(Kk.geometry('par-drone',{}),MAT.par));g.add(body);
+  const gun=new T.Group();g.add(gun);const mk=markers();mk.position.y=3;g.add(mk);g.userData.gun=gun;g.userData.marker=mk;g.userData.slot='par-drone';g.userData.glowFx=droneFx;g.userData.glowK=1;g.scale.setScalar(1.65);return g;};   // 1.65: today's drone footprint (4.6 x 4.9 m)
 
  // ---------- player tank dressing (canonical geometry untouched): cyan fender strips, contact shadow, ring underglow ----------
  S.dressTank=(vehicle,o={})=>{const body=vehicle.userData.body,gun=vehicle.userData.gun;if(!body)return vehicle;   /* o (Session 6C allies): ring colour and alpha, no trim strips or lamp glow */vehicle.updateWorldMatrix(true,true);const inv=new T.Matrix4().copy(body.matrixWorld).invert(),pts=[];

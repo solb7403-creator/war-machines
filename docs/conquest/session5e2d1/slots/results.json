@@ -2,7 +2,7 @@
  "code": {
   "slots": [],
   "farm": 4401,
-  "programs": 11,
+  "programs": 8,
   "rebuilds": 0
  },
  "swapped": {
@@ -40,13 +40,13 @@
    }
   ],
   "farm": 1845,
-  "programs": 12,
-  "rebuilds": 3
+  "programs": 11,
+  "rebuilds": 4
  },
  "back": {
   "slots": [],
   "farm": 4401,
-  "programs": 12,
+  "programs": 11,
   "rebuilds": 5
  },
  "trees": {
@@ -328,13 +328,13 @@
    }
   ],
   "farm": 4401,
-  "programs": 12,
+  "programs": 11,
   "rebuilds": 9
  },
  "end": {
   "slots": [],
   "farm": 4401,
-  "programs": 14,
+  "programs": 11,
   "rebuilds": 10
  }
 }

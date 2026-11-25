@@ -333,6 +333,14 @@ WK.model('base-wall',(b,o)=>{const M=b.k.pal.mil,hi=b.hi,L=o.d||35,sink=o.sink??
   else qb(b,0,.7,t,5.3,3.6,.6,M.hull2,'b');}
  for(const e of [-1,1]){const t=e*(L/2-.47);b.bev(0,.6,t,5.3,4.3,1,M.hull2,{ch:.12});b.loft([rc(b,5.14,1,4.9,0,0,t),rc(b,5.14,1,5.04,0,0,t)],M.gold,{top:true,topMat:M.plate});
   for(const s of [-1,1])qb(b,s*2.66,2.7,t,.04,1.5,.66,M.plate,s>0?'l':'r');if(hi)qb(b,0,5.04,t,.6,.04,.4,M.white,'b');}
+ // 5E-2d2 (reviewer note: the wall was the plainest military piece; HIGH only, LOW's triangles are unchanged): a service
+ // conduit along the foot of both faces, clipped at every rib; an amber marker lamp in a dark housing on every other rib; a
+ // louvred vent in place of the plain slot on every third bay; hazard chevrons on the end posts. Both faces alike (symmetric).
+ if(hi){const amb=b.k.tint(M.amber,.8);
+  for(const s of [-1,1]){b.detail(()=>{b.tube([s*2.74,1.34,-L/2+1.1],[s*2.74,1.34,L/2-1.1],.085,M.dark,{n:5});for(let i=1;i<n;i++)qb(b,s*2.76,1.22,-L/2+i*bay,.2,.26,.22,M.trim,'b');});
+   for(let i=1;i<n;i+=2){const t=-L/2+i*bay;qb(b,s*2.62,3.36,t,.26,.4,.46,M.dark,s>0?'l':'r');b.quad([s*2.756,3.44,t-.15],[s*2.756,3.44,t+.15],[s*2.756,3.68,t+.15],[s*2.756,3.68,t-.15],amb,[0,3.5,t]);b.halo(s*2.9,3.56,t,.62,0xffb347,.5);}
+   b.detail(()=>{for(let i=2;i<n;i+=3){const t=-L/2+(i+.5)*bay;for(let k=0;k<3;k++)qb(b,s*2.33,2.94+k*.24,t,.06,.1,1.7,M.dark,s>0?'l':'r');}
+    for(const e of [-1,1]){const t=e*(L/2-.47);for(let k=0;k<4;k++)b.quad([s*2.672,.92,t-.3+k*.15],[s*2.672,.92,t-.15+k*.15],[s*2.672,1.5,t-.15+k*.15+.14],[s*2.672,1.5,t-.3+k*.15+.14],k%2?M.hazardD:M.hazard,[0,1.2,t]);}});}}
 },{aoH:3,aoMin:.6});
 
 // ------------------------------------------------------------------ base-gate -------------------------------------------
@@ -462,7 +470,16 @@ WK.model('base-tower',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,sink=o.sink
  b.tube([0,11.3,-1.3],[0,13.3,-1.3],.08,M.trim,{n:5});b.box(0,13.3,-1.3,.26,.26,.26,M.red);b.halo(0,13.45,-1.3,1.2,0xff3048,1);
  if(hi){b.bev(-.9,11.45,.2,.9,.36,.9,M.hull2,{ch:.06});qb(b,-.9,11.52,.67,.5,.2,.04,M.ice,'kb');b.cyl(.95,11.42,-.5,.34,.2,M.dark,{n:8});b.dome(.95,11.62,-.5,.3,.3,.3,M.plate,{n:8,rings:2});
   b.tube([.9,11.4,-1.5],[1.05,13.9,-1.6],.025,M.bare,{n:3});b.cyl(0,12.3,-1.3,.14,.16,M.gold,{n:6});
-  b.detail(()=>b.ladder([0,2,-2.98],[0,9.1,-2.86],M.bare,{w:.6}));b.at(0,0,-2.92,Math.PI,q=>{q.bev(0,2,.0,1.3,2.1,.16,M.hull2,{ch:.06});qb(q,0,4.14,.1,.9,.1,.05,M.ice,'kb');});}
+  b.detail(()=>b.ladder([0,2,-2.98],[0,9.1,-2.86],M.bare,{w:.6}));b.at(0,0,-2.92,Math.PI,q=>{q.bev(0,2,.0,1.3,2.1,.16,M.hull2,{ch:.06});qb(q,0,4.14,.1,.9,.1,.05,M.ice,'kb');});
+  // 5E-2d2 (reviewer note: the tower was the plainest military piece; HIGH only, LOW's triangles are unchanged): a lit
+  // observation slit in a dark frame on the three plain faces of the pale band, a hazard band round the foot of the shaft, a
+  // conduit down the right of every face from the cap to the base, and two floodlamps under the cap's front corners.
+  const lit=b.k.tint(M.ice,.75);
+  for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{
+   if(k)q.at(0,0,2.74,0,p=>{qb(p,0,7.1,.15,2.1,.52,.05,M.dark,'kb');qb(p,0,7.27,.19,1.8,.16,.03,lit,'kb');for(const x of [-1.14,1.14])qb(p,x,7.04,.17,.1,.64,.07,M.hull2,'kb');},-.028);
+   q.detail(()=>{for(let i=0;i<8;i++)q.quad([-2.8+i*.7,2.02,2.97],[-2.1+i*.7,2.02,2.97],[-2.1+i*.7+.2,2.34,2.955],[-2.8+i*.7+.2,2.34,2.955],i%2?M.hazardD:M.hazard,[0,2.2,0]);
+    q.tube([2.36,2.3,2.99],[2.36,5.3,2.86],.07,M.dark,{n:4});q.tube([2.36,5.74,2.84],[2.36,8.6,2.76],.07,M.dark,{n:4});for(const y of [3.2,4.6,6.6,7.9])qb(q,2.36,y,2.92-(y-2)*.03,.22,.12,.2,M.trim,'kb');});});
+  for(const s of [-1,1]){qb(b,s*2.9,9.34,3.06,.5,.3,.44,M.dark,'t');b.quad([s*2.9-.19,9.37,3.285],[s*2.9+.19,9.37,3.285],[s*2.9+.19,9.6,3.285],[s*2.9-.19,9.6,3.285],M.white,[s*2.9,9.5,3]);b.halo(s*2.9,9.46,3.42,.9,0xdff4ff,.55);}}
 },{aoH:3,aoMin:.6});
 
 // ------------------------------------------------------------------ base-module -----------------------------------------

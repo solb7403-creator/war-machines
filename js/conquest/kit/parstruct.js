@@ -246,30 +246,34 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
    if(hi&&k%2===0){const p=C(.42,1.12,2.75+.3*k);bulb(b,p[0],p[1],p[2],.34,sd+k,{lx:p[0]*.2,lz:p[2]*.2,sy:1.5,na:6,nr:4});}});
   if(hi)b.pool(0,.1,0,3.4,3,RED,.1);
  };
- const gun=()=>{
-  // the turntable and the two trunnion cheeks (red light in their vents)
+ const gun=()=>{const EL=.73,TY=.1,TZ=-.45,n8=hi?8:5;   // the cradle's elevation (42 degrees: the guns point at the sky) and the trunnion axis (y, z)
+  // the turntable and the yoke: two open A-frames that carry the trunnions (gold caps): a mount you can see through
   b.loft([oct(1.52,-1.3),oct(1.52,-1.06),oct(1.36,-1)],P.ironD,{topMat:P.iron});
-  for(const sx of [-1,1]){b.part();qb(b,sx*1.3,-1,.1,.42,1.72,2.1,P.iron,'b');qb(b,sx*1.3,.72,.1,.42,.24,1.5,P.ironD,'b');b.tube([sx*1.5,.16,.1],[sx*1.66,.16,.1],.44,P.gold,{n:hi?8:6,caps:true});
-   if(hi)for(let k=0;k<3;k++)b.quad([sx*1.515,-.8+k*.19,-.82],[sx*1.515,-.8+k*.19,-.5],[sx*1.515,-.7+k*.19,-.5],[sx*1.515,-.7+k*.19,-.82],P.redDim,[0,0,0]);}
-  // the twin guns: housing, collar, sleeve, barrel, a gold muzzle brake with a lit bore
-  for(const sx of [-1,1]){const x=sx*.7,y=.16;b.part();qb(b,x,-.5,0,.68,1.28,2.5,i=>i==='t'?P.ironL:P.iron,'b');
-   b.tube([x,y,1.25],[x,y,1.62],.37,P.ironD,{n:hi?8:6,caps:true});b.tube([x,y,1.62],[x,y,2.2],.25,P.ironL,{n:hi?8:5});b.tube([x,y,2.2],[x,y,2.6],.15,P.ironD,{n:hi?6:4});b.tube([x,y,2.52],[x,y,2.85],.25,P.gold,{n:hi?8:5,caps:true});
-   if(hi){b.tube([x,y,2.852],[x,y,2.86],.14,P.redHot,{n:6,caps:true});for(const z of [1.74,1.9,2.06])b.tube([x,y,z],[x,y,z+.06],.3,P.ironD,{n:8,caps:true});qb(b,x,.78,.5,.5,.05,1.4,P.gold,'b');}}
-  qb(b,0,-1,0,.8,.5,2.4,P.ironD,'b');
-  // over-armour: a mismatched plate welded outside each cheek, a visor plate over the guns
-  b.at(-1.52,0,0,-H2,q=>{slab(q,-1.35,1.6,-1.08,1.15,1.45,0,.16,P.plateMil,{bot:true,back:true});if(hi){dress(q,'mil',-1.35,1.6,-.95,1.1,.19,0);q.detail(()=>{for(const [u,v] of [[-1.15,.9],[1.4,1.0],[-1.15,-.85],[1.4,-.85]])tack(q,u,v,.195,.09,P.gold);});}},0,.06);
-  b.at(1.52,0,0,H2,q=>{slab(q,-1.55,1.25,-1.02,1.36,1.0,0,.16,P.hazard,{bot:true,back:true});if(hi){bars(q,-1.5,1.2,-.96,.96,.19,3,P.hazardD);q.detail(()=>{for(const [u,v] of [[-1.35,.75],[1.05,.62]])tack(q,u,v,.195,.09,P.weld);});}},0,-.09);
-  b.at(0,.84,1.28,0,q=>{slab(q,-1.25,1.25,0,.92,.74,0,.11,P.plateSet[1],{back:true,bot:true});if(hi)dress(q,'cont',-1.25,1.25,.05,.7,.14,1);},-.95);
-  // the bustle: an ammunition bin with loot strapped on top
-  b.part();qb(b,0,-.72,-1.77,2.0,1.2,1.04,P.rust,'b');crate(b,-.45,.48,-1.76,.84,.56,.7,.2,P.crate,{plain:!hi});
-  if(hi){crate(b,.5,.48,-1.82,.64,.44,.56,-.3,P.crateD);sack(b,.1,.48,-1.4,.28,sd+9);b.at(0,-.6,-2.3,Math.PI,q=>{slab(q,-.9,.94,0,.95,1.1,-.01,.1,P.plateSet[0],{bot:true});dress(q,'cont',-.9,.94,.05,.9,.12,0);},-.1);}
-  // the infection swelling out of the breech
-  bulb(b,0,-.5,-.22,.6,sd+2,{sy:3.3,sx:.95,sz:1.7,na:hi?10:6,nr:hi?6:3,lob:.17});
-  if(hi){bulb(b,-.66,.7,-.62,.34,sd+4,{sy:1.3,lx:-.1,core:false,na:6,nr:4});bulb(b,.7,.7,.1,.3,sd+6,{sy:1.2,lx:.1,core:false,na:6,nr:4});
-   for(const sx of [-1,1]){vein(b,[[sx*.3,.86,.2],[sx*.62,.86,.7],[sx*.7,.84,1.2],[sx*1.0,.3,1.58],[sx*.74,-.12,1.95],[sx*.5,.2,2.3],[sx*.7,.34,2.56]],.09,.03,{seg:2});
-    vein(b,[[sx*.3,.8,-.8],[sx*.7,.84,-1.2],[sx*.96,.5,-1.75],[sx*1.03,-.3,-2.2]],.075,.03,{seg:2});vein(b,[[sx*.4,.84,-.3],[sx*1.0,.84,-.2],[sx*1.3,.98,-.3],[sx*1.7,.5,-.6]],.065,.025,{seg:2});}
-   b.tube([-.9,.76,-1.0],[-1.1,3.9,-1.2],.03,P.ironL,{n:3,r2:.015});for(const sg of [1,-1])T3(b,[-1.09,3.8,-1.2],[-1.06,3.25,-1.18],[-1.06,3.55,-1.95],P.flagSet[3],[9*sg,3.5,-1.5]);
-   b.halo(0,1,-.2,2.2,RED,.14);}
+  for(const sx of [-1,1]){const x=sx*1.14;for(const dz of [-.95,.8]){b.part();beam(b,[x,-1.04,TZ+dz],[x,TY+.12,TZ],.24,.36,i=>i%2?P.ironL:P.iron,{w2:.2,d2:.3});}
+   b.tube([x-sx*.16,TY,TZ],[x+sx*.2,TY,TZ],.3,P.gold,{n:n8,caps:true});if(hi)qb(b,x,-1.02,TZ-.08,.3,.14,2.1,P.ironD,'b');}
+  // the cradle, raised to the sky: the receiver, the feed chests of two different guns outside the yoke, and FOUR LONG BARRELS
+  // (a recoil jacket, the barrel, a flared gold flash hider with a dark bore), the upper pair longer, tied by a clamp plate
+  b.at(0,TY,TZ,0,q=>{q.part();qb(q,0,-.44,-.35,1.72,.88,1.7,f=>f==='t'?P.ironL:f==='f'?P.ironD:P.iron);
+   qb(q,-1.56,-.4,-.2,.52,.8,1.0,P.crate,'r');qb(q,1.53,-.3,-.25,.46,.62,.84,P.rust,'l');
+   if(hi){qb(q,-1.56,.4,-.2,.56,.06,1.04,P.strap,'b');qb(q,-1.56,-.4,-.2,.56,.82,.14,P.strap,'br');for(const sx of [-1,1])q.quad([sx*.86,.1,-.1],[sx*1.3,.2,-.1],[sx*1.3,.2,.3],[sx*.86,.1,.3],P.gold,[0,-9,0]);}
+   [[-1,1],[1,1],[-1,-1],[1,-1]].forEach(([sx,sy],k)=>{const x=sx*(sy>0?.33:.72),y=sy*.3,zm=sy>0?4.4:3.85,zj=sy>0?2.0:1.65,jm=[P.plateMil,P.plateSet[3],P.plateSet[2],P.plateMil][k];q.part();
+    q.tube([x,y,.5],[x,y,zj],.24,jm,{n:n8});q.tube([x,y,zj],[x,y,zm-.34],.14,P.gold,{n:hi?6:4});q.tube([x,y,zm-.46],[x,y,zm],.15,P.gold,{n:n8,r2:.28});
+    for(let i=0;i<n8;i++){const a0=i/n8*TAU,a1=(i+1)/n8*TAU;T3(q,[x,y,zm-.03],[x+Math.cos(a0)*.25,y+Math.sin(a0)*.25,zm-.03],[x+Math.cos(a1)*.25,y+Math.sin(a1)*.25,zm-.03],P.weld,[x,y,0]);}   // the dark bore
+    if(hi)for(const z of [.56,zj-.1])q.tube([x,y,z],[x,y,z+.08],.29,P.ironD,{n:8});});
+   q.part();qb(q,0,-.37,2.5,1.5,.14,.1,P.ironD);qb(q,0,.23,2.5,.72,.14,.1,P.ironD);qb(q,0,-.42,2.5,.14,.84,.1,P.ironD);
+   if(hi){bulb(q,.5,.36,-.75,.3,sd+6,{sy:1.2,lz:-.1,core:false,na:6,nr:4});}},-EL);
+  // over-armour: two mismatched stolen plates bolted in front of the yoke as a gun shield, the guns in the gap between them
+  b.at(-1.72,-.98,.62,0,q=>{slab(q,-.66,.66,0,2.5,2.15,0,.14,P.plateMil,{bot:true,back:true});if(hi){dress(q,'mil',-.66,.66,.1,2.1,.17,0);q.detail(()=>{for(const [u,v] of [[-.5,2.0],[.5,1.85],[-.5,.25],[.5,.25]])tack(q,u,v,.175,.08,P.gold);});}},-.16,.05);
+  b.at(1.66,-.9,.7,0,q=>{slab(q,-.62,.62,0,1.55,1.9,0,.14,P.hazard,{bot:true,back:true});bars(q,-.58,.58,.08,1.5,.17,2,P.hazardD);if(hi)q.detail(()=>{for(const [u,v] of [[-.45,1.3],[.45,1.6]])tack(q,u,v,.175,.08,P.weld);});},-.22,-.08);
+  // the loot rack behind: crates and a sack strapped on, a whip aerial flying a looted pennant
+  b.part();qb(b,0,-1.3,-1.9,1.9,.3,.9,P.rust,'b');crate(b,-.42,-1,-1.95,.84,.56,.66,.2,P.crate,{plain:!hi});
+  if(hi){crate(b,.5,-1,-1.98,.62,.44,.56,-.3,P.crateD);sack(b,.1,-1,-1.62,.26,sd+9);b.at(0,-1.25,-2.36,Math.PI,q=>{slab(q,-.9,.94,0,.7,.84,-.01,.1,P.plateSet[0],{bot:true});dress(q,'cont',-.9,.94,.05,.66,.12,0);},-.1);}
+  b.tube([-.8,-1,-2.02],[-1,3.4,-2.2],.03,P.ironL,{n:3,r2:.015});for(const sg of [1,-1])T3(b,[-.99,3.3,-2.2],[-.97,2.75,-2.19],[-.2,3.05,-2.25],P.flagSet[3],[-.6,3,-2.2+9*sg]);
+  // the infection: the growth swells out from under the breech, between the yoke's legs, split by glowing fissures; thick
+  // roots climb the front legs to the trunnions and one runs out under the guns. The only glow on the head.
+  bulb(b,0,-1.04,-.72,.62,sd+2,{sy:1.4,sx:1.3,sz:1.1,na:hi?10:6,nr:hi?6:3,lob:.17});
+  for(const sx of [-1,1]){if(!hi&&sx>0)continue;vein(b,[[sx*.55,-.86,-.2],[sx*1.0,-.98,.34],[sx*1.3,-.5,.12],[sx*1.3,-.05,-.2],[sx*1.32,.42,-.42]],.1,.04,{seg:hi?2:1});}
+  if(hi){vein(b,[[.1,-.5,-.2],[.2,-.2,.16],[.3,.12,.5],[.46,.36,1.1]],.09,.035,{seg:2});b.halo(0,-.5,-.6,1,RED,.1);}
  };
  fit(b,o.w/6.7,o.h/11.6,o.d/5.8,()=>{if(part==='gun'){b.aoMin=1;gun();return;}base();if(part!=='base')b.at(0,6.6,0,0,gun);});
 },{aoH:3,aoMin:.6});

@@ -106,7 +106,11 @@ async def main(a):
     for i in range(len(spec)):
      await page.evaluate(HIDE,i);await page.screenshot(path=str(out/'hide'/f'{a.tag}-{name}-{a.size}-{a.quality}.{i}.png'),timeout=180000)
     await page.evaluate(HIDE,-1)
-   info[name]=dict(placed,**await page.evaluate('(()=>{const v=Conquest.view,i=v.renderer.info;return {calls:i.render.calls,tris:i.render.triangles,programs:i.programs?.length};})()'))
+   # boxes: each unit's rectangle in the picture (picture pixels: left, top, right, bottom), for crops and measurements
+   info[name]=dict(placed,**await page.evaluate('''(()=>{const v=Conquest.view,i=v.renderer.info,T=THREE,r=v.renderer.domElement.getBoundingClientRect(),k=window.devicePixelRatio||1,p=new T.Vector3();
+    const boxes=(v.__cap||[]).map(g=>{const b=new T.Box3();g.updateMatrixWorld(true);g.traverse(o=>{if(o.isMesh&&o.geometry&&(o.material===v.style?.MAT.par||o.material===v.style?.MAT.parHit)){if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();b.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}});if(b.isEmpty())return null;
+     let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(let c=0;c<8;c++){p.set(c&1?b.max.x:b.min.x,c&2?b.max.y:b.min.y,c&4?b.max.z:b.min.z).project(v.camera);const x=(r.left+(p.x+1)/2*r.width)*k,y=(r.top+(1-p.y)/2*r.height)*k;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}return [x0,y0,x1,y1].map(Math.round);});
+    return {calls:i.render.calls,tris:i.render.triangles,programs:i.programs?.length,boxes};})()'''))
    print(name,info[name],flush=True)
   (out/f'{a.tag}-units-{a.size}-{a.quality}.json').write_text(json.dumps({'errors':errors,'shots':info},indent=1))
   assert not errors,errors

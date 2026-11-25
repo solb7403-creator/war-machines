@@ -115,7 +115,7 @@ root.ConquestSlots={version:1,items:{
  //      town raid instances; o.cmd: a general's doctrine (shield | ambush | artillery | carrier | plasma). The sim owns every hitbox ----
  'par-raider':S('parasite','Scavenger (interceptor)',[2.9,2.6,5.4],'none (moving; the sim owns the hitbox)'),
  'par-breacher':S('parasite','Siphon (oxygen saboteur)',[4,4.3,6.2],'none (moving; the sim owns the hitbox)'),
- 'par-sentinel':S('parasite','Hoard Fortress (heavy)',[4.8,5.4,6],'none (moving; the sim owns the hitbox)'),
+ 'par-sentinel':S('parasite','Hoard Fortress (heavy)',[5.6,6,8.6],'none (moving; the sim owns the hitbox)'),
  'par-command':S('parasite','Warlord (fire coordinator)',[4.7,6.6,5.8],'none (moving; the sim owns the hitbox)'),
  'par-swarm':S('parasite','Grabber (swarm buggy)',[1.7,1.4,2.4],'none (moving; the sim owns the hitbox)'),
  'par-brute':S('parasite','Wrecker (wall breaker)',[5.4,4.6,8],'none (moving; the sim owns the hitbox)'),

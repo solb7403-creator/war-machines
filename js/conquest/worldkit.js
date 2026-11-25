@@ -16,7 +16,10 @@
 'use strict';
 const TAU=Math.PI*2,clamp01=v=>v<0?0:v>1?1:v;
 // The one Parasite red (owner, Nov 21): every Parasite glow, vein, marker, shot and burst reads from here.
-const PAR={red:0xff2030,hot:0xff7a5c,deep:0xa01018};
+// Critic round 1 (Nov 25): #ff2030 has more blue than green, so on the Moon's blue ground and through the tone mapper it
+// drifted to wine, plum and pink (the banned magenta's neighbours). It is an orange-red now: green always above blue, so
+// the worst it can drift to is orange. hot = its bright core, deep = its dim ember.
+const PAR={red:0xff3a1c,hot:0xff8a4a,deep:0xa81c0c};
 const MODELS={},MY3D=()=>typeof Meshy3D!=='undefined'?Meshy3D:root.Meshy3D;   // the Meshy loader is a top-level const in the page (not a window property)
 function model(id,build,o){MODELS[id]={build,o:o||{}};}
 // Surface codes ride in the vertex alpha below zero (0..2 stays "emission", as before): the solid shader paints the
@@ -198,10 +201,19 @@ function kit(S){if(S.worldKit)return S.worldKit;
   par:{iron:mat(0x40332e,'metal',.55),ironD:mat(0x241c1a,'metal',.4),ironL:mat(0x5e4c42,'metal',.5),rust:mat(0x7a3a1e,'scrap',.9),scrap:mat(0x5c5046,'scrap',.7),weld:mat(0x17161a,'metal',.8),
    plateMil:mat(0xa69c8e,'metal',.5),plateMilD:mat(0x574a41,'metal',.5),plateSet:[0x8f4f36,0x7a2f24,0xb39a66,0xc4b8a0,0x6f6a45].map(h=>mat(h,'paint',.7,.1)),hazard:mat(0xc9981f,'paint',.7),hazardD:mat(0x15171a,'paint',.4),
    gold:mat(0xc9a23f,'metal',0),goldD:mat(0x8a6a22,'metal',.2),crate:mat(0x7a5634,'timber',.4,.12),crateD:mat(0x4f3622,'timber',.5,.12),strap:mat(0x1c1a18,'flat',0),net:mat(0x2a2620,'cloth',0),sack:mat(0x8f8064,'cloth',0,.12),
-   tank:mat(0xd5d0c2,'paint',.5),tankBand:mat(0x8a3324,'paint',.4),flagLDF:mat(0x27465c,'cloth',0),flagLDF2:mat(0x9d968a,'cloth',0),flagSet:[0x8a4a5a,0xc9a04a,0x7a4a2a,0xb8553a,0x5b8f4e].map(h=>mat(h,'cloth',0,.06)),
+   tank:mat(0xd5d0c2,'paint',.5),tankBand:mat(0x8a3324,'paint',.4),flagLDF:mat(0x27465c,'cloth',0),flagLDF2:mat(0x9d968a,'cloth',0),flagSet:[0x4f8a6a,0xc9a04a,0x7a4a2a,0xb8553a,0x5b8f4e].map(h=>mat(h,'cloth',0,.06)),   // (round 1: the first was a dusty rose, 0x8a4a5a, which read plum under the red)
    glassDead:mat(0x0c1014,'glass',.1),tyre:mat(0x15181c,'flat',0),
-   flesh:mat(0x4a1016,'chitin',.3),fleshD:mat(0x2a080c,'chitin',.2),fleshL:mat(0x7a1c22,'chitin',.15),
+   flesh:mat(0x4a140c,'chitin',.3),fleshD:mat(0x2a0a06,'chitin',.2),fleshL:mat(0x7a2014,'chitin',.15),   // (round 1: green above blue, as the red; they were 0x4a1016 / 0x2a080c / 0x7a1c22)
    red:parGlow(PAR.red,.52,1.85),redHot:parGlow(PAR.hot,.62,1.95),redDim:parGlow(PAR.red,.34,1),redLow:parGlow(PAR.deep,.5,.6)},
+  // The Parasite UNITS' own values over pal.par (kit/parunits.js; critic round 1, Nov 25: the units were darker than the
+  // ground). A unit's big top and side faces are MID values (tan wreck steel, bone ceramic, khaki, oxide plate, hazard
+  // paint); dark steel (pal.par.ironD) only in recesses, tracks and frames. The stolen oxygen tanks are white with the
+  // humans' blue band; the conquered colonies' flags are bright enough to read as trophies. The hive, the masts and the
+  // ships keep pal.par as it was.
+  parUnit:{iron:mat(0x6e5e50,'metal',.55),ironL:mat(0x9a8872,'metal',.5),rust:mat(0xa85a2c,'scrap',.8),scrap:mat(0x8a7a66,'scrap',.6),wreck:mat(0xb8ae9c,'metal',.6),wreckD:mat(0x8e8474,'metal',.6),
+   plateMil:mat(0xd0c6b2,'metal',.45),plateMilD:mat(0x9c8e7a,'metal',.5),plateSet:[0xb86a3c,0xa8523a,0xc4a868,0xd6cab0,0x8e8a58].map(h=>mat(h,'paint',.6,.1)),hazard:mat(0xd8a622,'paint',.6),
+   gold:mat(0xd8b044,'metal',0),goldD:mat(0x9a7828,'metal',.2),crate:mat(0x9a6e40,'timber',.4,.12),crateD:mat(0x6a4a2c,'timber',.5,.12),sack:mat(0xb4a482,'cloth',0,.12),
+   tank:mat(0xe8e4da,'paint',.3),tankBand:mat(0x2f6fc0,'paint',.3),flagLDF:mat(0x3a6ea8,'cloth',0),flagLDF2:mat(0xc8c0b0,'cloth',0),flagSet:[0x4f9a6a,0xd0a848,0x3a6ea8,0xc86a34,0xd8d0bc].map(h=>mat(h,'cloth',0,.06)),tyre:mat(0x1c1e22,'flat',0)},
   wreck:{hull:mat(0x3a3530,'scrap',.7),rust:mat(0x6a3f26,'scrap',.95),track:mat(0x1e1c1a,'metal',.8),moss:mat(0x3e5a2e,'leaf',0,.2),bag:mat(0x8f8064,'dirt',0,.15),wire:mat(0x2a2a2a,'metal',.9),post:mat(0x4a4038,'timber',.8),mud:mat(0x2a2018,'dirt',0)}};
  const K={S,T,hi,KB,pal,emit,part,mat,glow,tint,mix,rect,circ,col,SURF,surfA,hash,rng,build,place,geometry,instanced,setAt,tris,swapMeshes,swapped,pendingSwap,unit,M:(x,y,z,ry=0,s=1)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(s,s,s));},clear(){cache.clear();geos.clear();}};
  S.worldKit=K;return K;}
