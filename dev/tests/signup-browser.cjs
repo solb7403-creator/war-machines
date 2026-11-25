@@ -158,6 +158,9 @@ async function leagueCheck(pg,label,name,touch){
     if(touch)await pg.locator('#li-go').click();else{await pg.locator('#li-pw').focus();await pg.keyboard.press('Enter');}
     await pg.waitForURL('**/web/play.html#play',{timeout:20000});
     await pg.waitForFunction(()=>typeof save!=='undefined'&&!!save&&!!save.lab,null,{timeout:45000});
+    // the game finished loading (its loading screen hidden) before the test leaves for the settings page: leaving mid-load cancels the
+    // boot's last scripts, which CI's WebKit once answered with "WebKit encountered an internal error" on the next navigation (Session 7C)
+    await pg.waitForFunction(()=>document.querySelector('#web-loading')?.hidden===true,null,{timeout:45000});
     // 5. settings page fits and works
     await pg.goto(BASE+'/web/account.html',LEAVE);await pg.waitForSelector('#settings:not([hidden])');
     assert(await pg.locator('#acct-cs').textContent()===cs,'settings shows the call sign');
