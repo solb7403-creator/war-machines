@@ -83,6 +83,13 @@ async def main(engine,journey_only=False,fallback=False,quality='auto'):
       assert info['state']=='active',(id,info)
       pick=info.get('pick')
       if pick and pick['visible'] and pick['id']!=info['selected'] and 130<pick['y']<height-230 and 10<pick['x']<width-10:await page.mouse.click(pick['x'],pick['y'])
+      elif info['live'] and info['canHit'] and not info['selected']:
+       # The bot only taps a hull between y 130 and height-230 (the HUD's controls fill the bottom band), so an enemy that stays low
+       # on screen (beside the tank on the camera's side) could never be locked: the bot then drove at it firing along a stale aim
+       # and could lose the tank (WebKit, PR #152: 'perimeter', defeat, live 1, the pick at y 685 of 844). Turn the camera to put
+       # the target straight ahead of the tank, as a pilot drags the camera, so its hull comes up into the tappable band; the tap,
+       # the lock and the fight stay the same real inputs. Deterministic: the camera always faces the chosen target.
+       await page.evaluate('t=>{const v=Conquest.view;v.yaw=Math.atan2(-(t.x-v.p.x),-(t.z-v.p.z));}',info['target'])
       target=info['target'];p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})')
       if id=='relay' and info['live'] and not info['canHit'] and p['z']>info['site']['z']-14:target={'x':info['site']['x']-25,'z':info['site']['z']-20}
       distance=math.hypot(target['x']-p['x'],target['z']-p['z'])
@@ -108,9 +115,16 @@ async def main(engine,journey_only=False,fallback=False,quality='auto'):
      async def path():
       return await page.evaluate('''target=>{const v=Conquest.view,W=ConquestWorld,K=ConquestControl,B=v.battle||v.encounter,start={...v.p},step=4,gx=Math.round((target.x-start.x)/step),gz=Math.round((target.z-start.z)/step),key=(x,z)=>x+':'+z,open=[{x:0,z:0,g:0,f:Math.hypot(gx,gz)}],best=new Map([[key(0,0),0]]),parent=new Map(),points=new Map([[key(0,0),start]]),closed=new Set();let end=null;for(let n=0;open.length&&n<4000;n++){open.sort((a,b)=>b.f-a.f);const c=open.pop(),ck=key(c.x,c.z);if(closed.has(ck))continue;closed.add(ck);if(Math.hypot(c.x-gx,c.z-gz)<1.5){end=ck;break;}const p=points.get(ck);for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const nx=c.x+dx,nz=c.z+dz,nk=key(nx,nz);if(closed.has(nk)||nx<Math.min(0,gx)-16||nx>Math.max(0,gx)+16||nz<Math.min(0,gz)-16||nz>Math.max(0,gz)+16)continue;const q=W.advance(p,dx*step,dz*step),x=start.x+nx*step,z=start.z+nz*step;if(Math.hypot(q.x-x,q.z-z)>.2||K.baseBlocked(B,q)||[[2,0],[-2,0],[0,2],[0,-2]].some(([a,b])=>W.solidAt(x+a,z+b)))continue;const g=c.g+Math.hypot(dx,dz);if(g>=(best.get(nk)??Infinity))continue;best.set(nk,g);parent.set(nk,ck);points.set(nk,q);open.push({x:nx,z:nz,g,f:g+Math.hypot(nx-gx,nz-gz)});}}if(!end)return [target];const out=[];for(let at=end;at;at=parent.get(at))out.push(points.get(at));out.reverse();out.push(target);return out;}''',{'x':x,'z':z})
      route=await path();index=1 if len(route)>1 else 0
+     # Session 7B (PR #155 CI, Chromium): the route is planned from where the tank stands; the keyboard drive drifts off its 4 m grid
+     # points, and from (1215.8, 1105.4) the game's own slope rule refuses every step toward the next point (a ledge), so the drive
+     # stalled for 100 s. With no progress for 3 s the route is planned again from where the tank really is (same A*, same rules).
+     last=None;still=0
      for step in range(1000):
       p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,hp:Conquest.view.authority.state.hp,verified:Conquest.view.authority.state.position})');assert p['hp']>0,p
       if math.hypot(p['x']-x,p['z']-z)<=6 and math.hypot(p['verified']['x']-x,p['verified']['z']-z)<8:break
+      still=still+1 if last and math.hypot(p['x']-last['x'],p['z']-last['z'])<.05 else 0;last=p
+      if still>=30:
+       await release_keys();route=await path();index=1 if len(route)>1 else 0;still=0
       while index<len(route)-1 and math.hypot(p['x']-route[index]['x'],p['z']-route[index]['z'])<2.8:index+=1
       goal={'x':x,'z':z} if math.hypot(p['x']-x,p['z']-z)<=6 else route[index]
       await steer(goal,stop=6 if goal['x']==x and goal['z']==z else 2)

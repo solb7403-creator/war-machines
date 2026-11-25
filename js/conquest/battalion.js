@@ -69,13 +69,23 @@ const fielded=(hangarLv,scale)=>Math.min(fieldCap(hangarLv),SCALE[scale]||SCALE.
 // account record only). own: the pilot's own loadout (its weapon and chassis are not spare). pilots: in the order to arm.
 const militia=role=>({w:{a:'pulse',t:0,q:1,s:false},c:{c:(C.ROLES[role]?.cls||['vanguard'])[0],t:0,q:1,s:false},mil:1});
 const WPREF=Object.freeze({lancer:['moon','siege','pulse','twin'],breacher:['twin','siege','pulse','moon'],'':['pulse','siege','twin','moon']});
-function autoArm(gear,own,pilots){const W=[...(gear?.w||[])],Ch=[...(gear?.c||[])],used=(list,it)=>list.splice(list.indexOf(it),1);
+// Session 7T (owner decision 8): an item's key (weapon or chassis, tier, salvaged), so a pilot's own pick can name it
+const keyOf=it=>it?String(it.k)+':'+(it.t|0)+(it.s?':s':''):'';
+function autoArm(gear,own,pilots,fixed){const W=[...(gear?.w||[])],Ch=[...(gear?.c||[])],used=(list,it)=>list.splice(list.indexOf(it),1);
  const same=(a,b)=>a&&b&&a.k===b.k&&(a.t|0)===(b.t|0)&&!!a.s===!!b.s;const ow=own?.w?{k:own.w.a,t:own.w.t,s:!!own.w.s}:null,oc=own?.c?{k:own.c.c,t:own.c.t,s:!!own.c.s}:null;
  {const i=W.findIndex(x=>same(x,ow));if(i>=0)W.splice(i,1);}{const i=Ch.findIndex(x=>same(x,oc));if(i>=0)Ch.splice(i,1);}   // the pilot's own tank keeps its items
- const kits={};for(const p of pilots){const role=p.r||'',cls=C.ROLES[role]?.cls||null,pref=WPREF[role]||WPREF[''];
-  const c=Ch.filter(x=>!cls||cls.includes(x.k)).sort((a,b)=>b.m-a.m||cls?.indexOf(a.k)-cls?.indexOf(b.k)||0)[0],w=W.slice().sort((a,b)=>b.m-a.m||pref.indexOf(a.k)-pref.indexOf(b.k))[0];
-  const M=militia(role),kit={w:w?{a:w.k,t:w.t,q:w.q,s:!!w.s}:M.w,c:c?{c:c.k,t:c.t,q:c.q,s:!!c.s}:M.c};if(w)used(W,w);if(c)used(Ch,c);if(!(kit.w.t>0||kit.w.s||kit.w.a==='moon'||kit.c.t>0||kit.c.s))kit.mil=1;kits[p.id]=kit;}   /* Session 6C review 2: an all-Common kit (Common, no cores) is a militia crew, spare or not */
+ // Session 7T: the pilots' own picks (fixed[id] = {w, c}: owned spare items) come off the lists first; AUTO-ARM fills the rest as before
+ const fx=fixed||{};for(const f of Object.values(fx)){if(f?.w&&W.includes(f.w))used(W,f.w);if(f?.c&&Ch.includes(f.c))used(Ch,f.c);}
+ const kits={};for(const p of pilots){const role=p.r||'',cls=C.ROLES[role]?.cls||null,pref=WPREF[role]||WPREF[''],mine=fx[p.id]||{};
+  const c=mine.c||Ch.filter(x=>!cls||cls.includes(x.k)).sort((a,b)=>b.m-a.m||cls?.indexOf(a.k)-cls?.indexOf(b.k)||0)[0],w=mine.w||W.slice().sort((a,b)=>b.m-a.m||pref.indexOf(a.k)-pref.indexOf(b.k))[0];
+  const M=militia(role),kit={w:w?{a:w.k,t:w.t,q:w.q,s:!!w.s}:M.w,c:c?{c:c.k,t:c.t,q:c.q,s:!!c.s}:M.c};if(w&&!mine.w)used(W,w);if(c&&!mine.c)used(Ch,c);if(!(kit.w.t>0||kit.w.s||kit.w.a==='moon'||kit.c.t>0||kit.c.s))kit.mil=1;kits[p.id]=kit;}   /* Session 6C review 2: an all-Common kit (Common, no cores) is a militia crew, spare or not */
  return kits;}
+// Session 7T (owner decision 8): your spare owned items (the account's gear minus what your own tank wears), for the picker
+function spare(gear,own){const W=[...(gear?.w||[])],Ch=[...(gear?.c||[])],same=(a,b)=>a&&b&&a.k===b.k&&(a.t|0)===(b.t|0)&&!!a.s===!!b.s,ow=own?.w?{k:own.w.a,t:own.w.t,s:!!own.w.s}:null,oc=own?.c?{k:own.c.c,t:own.c.t,s:!!own.c.s}:null;
+ {const i=W.findIndex(x=>same(x,ow));if(i>=0)W.splice(i,1);}{const i=Ch.findIndex(x=>same(x,oc));if(i>=0)Ch.splice(i,1);}return {w:W,c:Ch};}
+// what a kit makes of a pilot (the same tankOf() rules as your own tank): damage a second, hull, speed, POWER and the pilot's rating
+function kitStats(kit,rk=1){let t=null,L=null;try{L=C.allyLoadout(kit||{});t=tankOf(L,1);}catch(_){}if(!t)return null;let pw=0;try{pw=powerOf(L);}catch(_){}
+ return {dps:Math.round(t.wdps*(t.dmgM||1)),hp:t.mhp,spd:Math.round((t.spdM||1)*100),power:pw,rating:pw+4*((rk|0||1)-1),shot:t.wshot,cls:t.cls,type:t.wtype};}
 // ---- FORCE (the battalion rating, js/conquest/rating.js key 'force'): informational only, nothing reads it. The fielded pilots'
 // gear power (POWER of each ally's own kit) plus 4 a rank above 1 and 6 a Role Core level above 1.
 function force(pilots,rc){let n=0;for(const p of pilots||[]){const L=C.allyLoadout(p.kit||militia(p.r));n+=powerOf(L)+4*((p.rk|0||1)-1)+6*((p.r?Math.max(1,rc?.[p.r]|0):1)-1);}return Math.round(n);}
@@ -101,5 +111,5 @@ function enemyRoster(op){if(!op)return {units:[],hint:'',want:[]};const count={}
  const say=u=>u.n>1?u.n+' '+u.name+'s':(/^[aeiou]/.test(u.name)?'an ':'a ')+u.name,list=units.slice(0,4).map(say),line=list.length>1?list.slice(0,-1).join(', ')+' and '+list.at(-1):list[0]||'';
  const roles=want.slice(0,2).map(r=>(r==='frostline'?'':/^[aeiou]/.test(r)?'an ':'a ')+ROLE_INFO[r].n);
  return {units,want:want.slice(0,2),hint:line?line[0].toUpperCase()+line.slice(1)+'. Bring '+roles.join(' and ')+'.':''};}
-root.ConquestBattalion=Object.freeze({ROSTER_MAX,FIELD,SCALE,scaleOf,ROLES_AT,XP,FOUGHT_S,RANK_XP,RANK_NAMES,rankOf,sigTier,RC,strength,CHIP,RECRUIT,REPAIR,FORMATIONS,FORM_NAMES,PRESETS,ROLE_INFO,WINGMAN,identity,fieldCap,fielded,militia,autoArm,force,picked,enemyRoster,u32});
+root.ConquestBattalion=Object.freeze({ROSTER_MAX,FIELD,SCALE,scaleOf,ROLES_AT,XP,FOUGHT_S,RANK_XP,RANK_NAMES,rankOf,sigTier,RC,strength,CHIP,RECRUIT,REPAIR,FORMATIONS,FORM_NAMES,PRESETS,ROLE_INFO,WINGMAN,identity,fieldCap,fielded,militia,autoArm,keyOf,spare,kitStats,force,picked,enemyRoster,u32});
 })(globalThis);

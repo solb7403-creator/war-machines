@@ -7,20 +7,22 @@ import {orderEvent} from './conquest-orders.js';
 import {track,claimBucket,playMinutes} from './conquest-analytics.js';
 import {roll,bind,empty} from './conquest-loot.js';
 import {plotSync,legacyModule,upgrade as plotUpgrade} from './conquest-plot.js';
+import {warOutcome} from './conquest-war.js';
 const D=CONQUEST.Combat.baseDefinition,DAY=86400000;
 export const BASE_ACTIONS=['build-base','upgrade-base','base-module','base-claim','repair-base','defense-config'];
 export const REMOTE_BASE_ACTIONS=['upgrade-base','base-module'];
 export function campaign(s,now){
  s.campaignVersion=2;s.campaignScore=Math.max(0,Number.isSafeInteger(s.campaignScore)?s.campaignScore:0);s.raidProgress=s.raidProgress||{shards:0,clears:0,blueprint:false,eliteBlueprint:false};s.territory=s.territory||{};s.reputation=Math.max(0,Number.isSafeInteger(s.reputation)?s.reputation:0);s.achievements=s.achievements||{};
- for(const sector of CONQUEST.Combat.sectors||[])if(!s.territory[sector.id])s.territory[sector.id]={owner:sector.id==='refuge'?'humanity':'parasites',status:sector.id==='refuge'?'secured':'active-parasites',...(sector.id==='refuge'?{defenseAt:now+1800000}:{})};
- for(const t of Object.values(s.territory)){t.status=t.status||(t.owner==='humanity'?'secured':'active-parasites');if(t.capturedAt&&!t.defenseAt)t.defenseAt=t.capturedAt+1200000;}
- const ids=Object.keys(CONQUEST.Combat.operations).filter(id=>id!=='base-defense'&&!CONQUEST.Combat.operations[id].defense&&!CONQUEST.Combat.operations[id].strike&&!CONQUEST.Combat.operations[id].wingman),rotation=Math.floor(now/1800000);s.contracts={ids:[ids[rotation%ids.length],ids[(rotation+3)%ids.length]],until:(rotation+1)*1800000};
+ // Session 7 (owner brief decision 2 + "today's sector defense alerts become the war clock's assaults"): no fixed alert after a capture
+ // any more; a pending war assault on a sector's ground is its DEFENSE ALERT (worker/src/conquest-war.js frontSync)
+ for(const sector of CONQUEST.Combat.sectors||[])if(!s.territory[sector.id])s.territory[sector.id]={owner:sector.id==='refuge'?'humanity':'parasites',status:sector.id==='refuge'?'secured':'active-parasites'};
+ for(const t of Object.values(s.territory)){t.status=t.status||(t.owner==='humanity'?'secured':'active-parasites');}
+ const ids=Object.keys(CONQUEST.Combat.operations).filter(id=>id!=='base-defense'&&!CONQUEST.Combat.operations[id].defense&&!CONQUEST.Combat.operations[id].strike&&!CONQUEST.Combat.operations[id].wingman&&!CONQUEST.Combat.operations[id].citadel),rotation=Math.floor(now/1800000);s.contracts={ids:[ids[rotation%ids.length],ids[(rotation+3)%ids.length]],until:(rotation+1)*1800000};
  s.base=s.base||{tier:0,modules:{},builtAt:0,claimedAt:0};
  // Firebase drops empty maps: reconstruct this even when the base record already exists.
  s.base.modules=s.base.modules||{};s.base.pvpAvailable=false;if(s.base.tier&&!Number.isFinite(s.base.pointsAt))s.base.pointsAt=s.base.claimedAt||now;
  s.base.defense=s.base.defense||{config:'turret',damage:0,wins:0,alertAt:s.base.tier?now:0,nextAt:0,active:false};
  if(s.base.tier&&!s.base.defense.active&&now>=s.base.defense.nextAt&&!s.base.defense.alertAt)s.base.defense.alertAt=now;
- for(const t of Object.values(s.territory))if(t.owner==='humanity'&&t.defenseAt&&now>=t.defenseAt&&t.status!=='contested')t.status='defense-alert';
  if(s.base.pending&&now>=s.base.pending.readyAt){const p=s.base.pending;s.base.modules[p.module]=p.tier;delete s.base.pending;}
  plotSync(s,now);   // Session 5: the plot owns tier/modules from here on (derived, so every old formula is unchanged)
  const intel=CONQUEST.Combat.baseBenefits(s.base.tier,s.base.modules);s.radarContacts=intel.radar?Object.values(s.battle?.enemies||{}).filter(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<intel.radarRange).map(e=>({id:e.id,x:e.x,z:e.z,kind:e.kind})).slice(0,24):[];
@@ -56,7 +58,7 @@ export function baseAction(s,r,now,ctx={}){
   s.notice={kind:'base-production',...got,fill:Math.round(Y.fill*100),pointsHeld:Y.pts>0&&!points,unlock:Math.round(U*100)};return;}
  s.notice={kind:'base-updated'};
 }
-export function capture(s,site,now){campaign(s,now);s.territory[site]={...s.territory[site],owner:'humanity',status:'secured',capturedAt:s.territory[site]?.capturedAt||now,defenseAt:now+1200000,awaitingReinforcements:false};s.achievements['secured-'+site]=s.achievements['secured-'+site]||now;}
+export function capture(s,site,now){campaign(s,now);const was=s.territory[site]||{};s.territory[site]={...was,owner:'humanity',status:'secured',capturedAt:was.capturedAt||now,awaitingReinforcements:false};delete s.territory[site].defenseAt;s.achievements['secured-'+site]=s.achievements['secured-'+site]||now;}
 
 export function defenseOutcome(s,outcome,now){
  const d=s.base.defense;if(!d.active)return;d.active=false;d.alertAt=0;d.nextAt=now+1200000;
@@ -72,13 +74,6 @@ export function failedContest(s,site,now){const t=s.territory[site];if(!t||t.sta
 // Offensive sorties never hand an owned sector to an enemy merely for retreating.
 export function beginContest(s,ids){s.contestPrevious={};for(const id of ids.filter(Boolean)){s.contestPrevious[id]=s.territory[id]?JSON.parse(JSON.stringify(s.territory[id])):{absent:true};contest(s,id);}}
 export function restoreContest(s){for(const [id,t] of Object.entries(s.contestPrevious||{})){if(t&&!t.absent)s.territory[id]=t;else delete s.territory[id];}delete s.contestPrevious;}
-export function sectorDefenseOutcome(s,outcome,now){
- const active=s.sectorDefense;if(!active?.active)return s.territory[active?.sector]?.defenseReport;active.active=false;
- const sector=active.sector,t=s.territory[sector],won=outcome==='victory',reward=CONQUEST.Combat.operations['sector-defense-'+sector].reward;
- let ptsRaw=0;if(won){discardOpKills(s);ptsRaw=earn(s,'defense',RULES.CQ_PTS.defense,now,{op:true});}else settleOpKills(s,now);
- const links=won?chainWin(s,now):0,pay=chained(reward,links);if(won){orderEvent(s,'op');orderEvent(s,'defense');capture(s,sector,now);s.territory[sector].defenseWins=(t.defenseWins||0)+1;s.ledger.cp+=pay.cp;for(const k of ['alloy','biomass','helium'])s.ledger.cargo[k]+=pay[k]||0;s.reputation+=40;s.campaignScore+=12;s.achievements['defended-'+sector]=s.achievements['defended-'+sector]||now;}
- else failedContest(s,sector,now);
- const mn=won?cacheMinerals(s,'defense','sector-defense:'+sector+':'+(s.attempt||0)+':'+now):{};
- const loot=won?bind(s,roll(s,'defense','sector:'+sector+':'+(s.attempt|0)),now,{where:'sector defense'}):{};
- const receipt={kind:'sector-defense',sector,outcome,at:now,ptsRaw,...(Object.keys(mn).length?{mn}:{}),...(empty(loot)&&!loot.pieces?{}:{loot}),cp:won?pay.cp:0,alloy:won?pay.alloy:0,biomass:won?pay.biomass:0,helium:won?pay.helium:0,reputation:won?40:0,stolen:0,...(links?{chain:chainItem(s,'sector:'+sector+':'+(s.attempt|0),links,now)}:{})};s.territory[sector].defenseReport=receipt;s.notice=receipt;return receipt;
-}
+// Session 7: every war battle (a sector's INVASION DEFENSE, a Colony Defense, a Joint Operation, the Grand Offensive) settles in the war:
+// worker/src/conquest-war.js warOutcome (a win holds or retakes, a loss leaves it to the strength roll at landing; points only on a win)
+export function sectorDefenseOutcome(s,outcome,now){return warOutcome(s,outcome,now);}

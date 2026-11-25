@@ -1,0 +1,239 @@
+{
+ "about": "Session 7B STEP 3: the held unfought raid's defense cache, four options with every 7B change on (fortress-model ladderRun, 101 pilots, the coach's ring, 60 min a day; the heavy player's late fortress, days 300/330/365, 8 raids a site and day, two seed sets)",
+ "band": [
+  25.9,
+  31.7
+ ],
+ "order": [
+  "full",
+  "half",
+  "noCP",
+  "none"
+ ],
+ "pick": "noCP",
+ "summary": {
+  "full": {
+   "cache": {
+    "cp": 1,
+    "mat": 1
+   },
+   "citadel7B": true,
+   "raids": {
+    "held": 14.2,
+    "breached": 5.6,
+    "fallen": 6.6
+   },
+   "CC10": {
+    "median": 20.8,
+    "mean": 22.8,
+    "inBand": false
+   },
+   "repairCP": 635,
+   "heavyLate": {
+    "mean": 88.1,
+    "sets": [
+     {
+      "off": 0,
+      "late": 85.7,
+      "byDay": [
+       82.1,
+       85.7,
+       89.3
+      ]
+     },
+     {
+      "off": 500,
+      "late": 90.5,
+      "byDay": [
+       87.5,
+       89.3,
+       94.6
+      ]
+     }
+    ]
+   }
+  },
+  "half": {
+   "cache": {
+    "cp": 0.5,
+    "mat": 0.5
+   },
+   "citadel7B": true,
+   "raids": {
+    "held": 14.9,
+    "breached": 5.6,
+    "fallen": 7.6
+   },
+   "CC10": {
+    "median": 26.8,
+    "mean": 24.1,
+    "inBand": false
+   },
+   "repairCP": 630,
+   "heavyLate": {
+    "mean": 88.1,
+    "sets": [
+     {
+      "off": 0,
+      "late": 85.7,
+      "byDay": [
+       82.1,
+       85.7,
+       89.3
+      ]
+     },
+     {
+      "off": 500,
+      "late": 90.5,
+      "byDay": [
+       87.5,
+       89.3,
+       94.6
+      ]
+     }
+    ]
+   }
+  },
+  "noCP": {
+   "cache": {
+    "cp": 0,
+    "mat": 1
+   },
+   "citadel7B": true,
+   "raids": {
+    "held": 15.7,
+    "breached": 5.5,
+    "fallen": 9.9
+   },
+   "CC10": {
+    "median": 27.8,
+    "mean": 26.5,
+    "inBand": true
+   },
+   "repairCP": 629,
+   "heavyLate": {
+    "mean": 88.1,
+    "sets": [
+     {
+      "off": 0,
+      "late": 85.7,
+      "byDay": [
+       82.1,
+       85.7,
+       89.3
+      ]
+     },
+     {
+      "off": 500,
+      "late": 90.5,
+      "byDay": [
+       87.5,
+       89.3,
+       94.6
+      ]
+     }
+    ]
+   }
+  },
+  "none": {
+   "cache": {
+    "cp": 0,
+    "mat": 0
+   },
+   "citadel7B": true,
+   "raids": {
+    "held": 15.7,
+    "breached": 5.5,
+    "fallen": 9.9
+   },
+   "CC10": {
+    "median": 27.8,
+    "mean": 26.5,
+    "inBand": true
+   },
+   "repairCP": 629,
+   "heavyLate": {
+    "mean": 88.1,
+    "sets": [
+     {
+      "off": 0,
+      "late": 85.7,
+      "byDay": [
+       82.1,
+       85.7,
+       89.3
+      ]
+     },
+     {
+      "off": 500,
+      "late": 90.5,
+      "byDay": [
+       87.5,
+       89.3,
+       94.6
+      ]
+     }
+    ]
+   }
+  },
+  "noRaids": {
+   "cache": {
+    "cp": 1,
+    "mat": 1
+   },
+   "citadel7B": true,
+   "raids": {
+    "held": 0,
+    "breached": 0,
+    "fallen": 0
+   },
+   "CC10": {
+    "median": 26.8,
+    "mean": 26.8,
+    "inBand": true
+   },
+   "repairCP": 0
+  },
+  "full, 7B off": {
+   "cache": {
+    "cp": 1,
+    "mat": 1
+   },
+   "citadel7B": false,
+   "raids": {
+    "held": 17.9,
+    "breached": 5.9,
+    "fallen": 2.4
+   },
+   "CC10": {
+    "median": 20.8,
+    "mean": 22.7,
+    "inBand": false
+   },
+   "repairCP": 635,
+   "heavyLate": {
+    "mean": 88.1,
+    "sets": [
+     {
+      "off": 0,
+      "late": 85.7,
+      "byDay": [
+       82.1,
+       85.7,
+       89.3
+      ]
+     },
+     {
+      "off": 500,
+      "late": 90.5,
+      "byDay": [
+       87.5,
+       89.3,
+       94.6
+      ]
+     }
+    ]
+   }
+  }
+ }
+}

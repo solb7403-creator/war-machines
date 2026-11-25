@@ -4,6 +4,7 @@
 // Meteor Strikes, base and sector defenses). Nothing else: no CP, salvage, minerals, research parts, trophies, fragments or points.
 import assert from 'node:assert/strict';
 import {buildSim} from '../../worker/build-sim.mjs';buildSim();
+const WARH=await import('./lib/war-helpers.mjs'),{CONQUEST:CQ}=await import('../../worker/src/sim.gen.js');
 const {CONQUEST:{Combat:C},RULES:R}=await import('../../worker/src/sim.gen.js');
 const {createState}=await import('../../worker/src/conquest-sim.js');
 const {POLICY:P,missionReward}=await import('../../worker/src/conquest-economy.js');
@@ -25,10 +26,10 @@ const wins={
  raid:s=>{s.mission=C.raidIds[0];s.attempt=7;return missionReward(s,now);},
  strike:s=>{const M=C.meteorStrike(now);s.mission=M.site.id;s.strikeSlot=M.slot;s.strikes={[M.slot]:{roll:{tq:.9,se:.9,mh:.9}}};s.resonance=3;return missionReward(s,now);},
  base:s=>{s.base.tier=1;s.base.defense.active=true;s.attempt=7;defenseOutcome(s,'victory',now);return s.base.defense.report;},
- sector:s=>{const sector=C.sectors[0].id;s.territory[sector]={owner:'humanity',status:'contested'};s.sectorDefense={active:true,sector};s.attempt=7;return sectorDefenseOutcome(s,'victory',now);}};
+ sector:s=>{const sector=C.sectors[0].id;s.territory[sector]={owner:'humanity',status:'contested'};const e=WARH.warEvent(CQ,s,sector,now);s.attempt=7;e.tr=7;s.sectorDefense={active:true,sector,territory:sector,ev:e.id,kind:'a',attempt:7};return sectorDefenseOutcome(s,'victory',now);}};   // Session 7: a sector defense is fought against a pending war assault (the war clock)
 const items={};let granted=0;
 for(const [kind,win] of Object.entries(wins)){let hits=0;
- for(let seed=1;seed<=300;seed++){const s0=fresh();s0.lseed=seed*104729;s0.inv.pity={e:7,c:4,cf:{...s0.inv.pity.cf,[R.CQ_TROPHY_ORDER[0]]:2}};
+ for(let seed=1;seed<=300;seed++){const s0=fresh();s0.lseed=seed*104729;s0.inv.pity={e:7,c:4,cf:{...s0.inv.pity.cf,[R.CQ_TROPHY_ORDER[0]]:2},t:0};   // t: Session 7C's Titan Selenite counter (the record's normalized shape)
   const a=clone(s0),b=clone(s0);delete a.chain;b.chain={n:3,at:now-60000};const ra=win(a),rb=win(b);
   assert(!ra.chain,kind+': no chain, no chain record');assert.equal(rb.chain.links,3,kind+': three links found');assert.equal(+rb.chain.chance.toFixed(10),.3,kind+': 30% at three links');assert.equal(rb.chain.bonus,0,kind+': bonus 0');
   for(const k of ['cp','alloy','biomass','helium','ptsRaw'])assert.equal(rb[k],ra[k],kind+': receipt '+k+' identical');

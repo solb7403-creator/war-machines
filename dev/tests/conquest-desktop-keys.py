@@ -70,6 +70,13 @@ async def journey(b,width,height,label,results):
  assert fired and dashR,f'{label}: Space fire {fired}, right Shift dash {dashR}'
  assert s1['prompts']==0 or 'INPUT' not in s1['active'],f'{label}: a website prompt took the keyboard: {json.dumps(s1)}'
  assert hint0,f'{label}: desktop key hint not shown on a keyboard device right after the briefing'
+ # Session 7B: the Citadel on the real website build (web/boot.js loads its modules): the War Map's campaign card by mouse; a new pilot
+ # holds neither approach territory, so LAUNCH stays shut and says why
+ await pg.locator('.cq-world button',has_text='MAP').first.click();await pg.locator('.cq-warmap-open').click()
+ card=pg.locator('.cq-warmap .cq-cit-card');await card.wait_for(timeout=30000);ct=await card.inner_text()
+ assert 'CITADEL I · BREACH POINT' in ct and 'HOLD BOTH APPROACH TERRITORIES FIRST' in ct and not await card.locator('.cq-cit-launch').is_enabled(),f'{label}: the Citadel card on the website: {ct[:300]}'
+ assert await pg.evaluate('typeof ConquestCitadelUI!=="undefined"&&ConquestCutscene.SCRIPTS[1]().length===4&&ConquestCitadel.CIT.live===3'),f'{label}: the Citadel modules on the website'
+ await card.scroll_into_view_if_needed();await pg.screenshot(path=str(pathlib.Path('docs/conquest/session7b')/f'website-citadel-card-{label}.png'));results[-1]['citadel']=ct.split(chr(10))[0]
  assert not errs,errs
  await ctx.close()
 async def main():

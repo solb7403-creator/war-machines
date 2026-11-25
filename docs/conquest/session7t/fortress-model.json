@@ -1,0 +1,654 @@
+{
+ "ceiling": {
+  "threat": 16,
+  "level": 9,
+  "held": 50,
+  "n": 50,
+  "lostAny": 7,
+  "minCore": 92,
+  "bill": 527
+ },
+ "upgrades": {
+  "level": 9,
+  "seeds": 4,
+  "raids": 100,
+  "steps": {
+   "cannon 1->2": {
+    "held": 0,
+    "loss": -0.157,
+    "walls": 0,
+    "raids": 100
+   },
+   "cannon 2->3": {
+    "held": 0,
+    "loss": -0.108,
+    "walls": 0,
+    "raids": 100
+   },
+   "cannon 3->4": {
+    "held": 0,
+    "loss": -0.18,
+    "walls": 0.04,
+    "raids": 100
+   },
+   "cannon 4->5": {
+    "held": 0,
+    "loss": -0.248,
+    "walls": -0.08,
+    "raids": 100
+   },
+   "mg 1->2": {
+    "held": 0,
+    "loss": -0.051,
+    "walls": 0,
+    "raids": 100
+   },
+   "mg 2->3": {
+    "held": 0,
+    "loss": -0.071,
+    "walls": 0,
+    "raids": 100
+   },
+   "mg 3->4": {
+    "held": 0,
+    "loss": -0.054,
+    "walls": 0,
+    "raids": 100
+   },
+   "mg 4->5": {
+    "held": 0,
+    "loss": -0.078,
+    "walls": 0,
+    "raids": 100
+   },
+   "laser 1->2": {
+    "held": 0,
+    "loss": -0.068,
+    "walls": 0.04,
+    "raids": 100
+   },
+   "laser 2->3": {
+    "held": 0,
+    "loss": -0.124,
+    "walls": 0,
+    "raids": 100
+   },
+   "laser 3->4": {
+    "held": 0,
+    "loss": -0.094,
+    "walls": -0.01,
+    "raids": 100
+   },
+   "laser 4->5": {
+    "held": 1,
+    "loss": -0.121,
+    "walls": 0.02,
+    "raids": 100
+   },
+   "rocket 1->2": {
+    "held": 0,
+    "loss": -0.145,
+    "walls": 0.08,
+    "raids": 100
+   },
+   "rocket 2->3": {
+    "held": 0,
+    "loss": -0.198,
+    "walls": 0.16,
+    "raids": 100
+   },
+   "rocket 3->4": {
+    "held": 0,
+    "loss": -0.107,
+    "walls": -0.05,
+    "raids": 100
+   },
+   "rocket 4->5": {
+    "held": 0,
+    "loss": -0.218,
+    "walls": -0.09,
+    "raids": 100
+   },
+   "missile 1->2": {
+    "held": 0,
+    "loss": -0.422,
+    "walls": 0.1,
+    "raids": 100
+   },
+   "missile 2->3": {
+    "held": 0,
+    "loss": -0.328,
+    "walls": -0.03,
+    "raids": 100
+   },
+   "missile 3->4": {
+    "held": 4,
+    "loss": -0.626,
+    "walls": -0.03,
+    "raids": 100
+   },
+   "missile 4->5": {
+    "held": 2,
+    "loss": -0.521,
+    "walls": -0.2,
+    "raids": 100
+   },
+   "mortar 1->2": {
+    "held": 0,
+    "loss": -0.256,
+    "walls": 0.04,
+    "raids": 100
+   },
+   "mortar 2->3": {
+    "held": 0,
+    "loss": -0.195,
+    "walls": 0.15,
+    "raids": 100
+   },
+   "mortar 3->4": {
+    "held": 0,
+    "loss": -0.23,
+    "walls": -0.43,
+    "raids": 100
+   },
+   "mortar 4->5": {
+    "held": 1,
+    "loss": -0.352,
+    "walls": -0.11,
+    "raids": 100
+   },
+   "flame 1->2": {
+    "held": 0,
+    "loss": -0.01,
+    "walls": 0,
+    "raids": 200
+   },
+   "flame 2->3": {
+    "held": 0,
+    "loss": -0.066,
+    "walls": 0,
+    "raids": 100
+   },
+   "flame 3->4": {
+    "held": 0,
+    "loss": -0.042,
+    "walls": 0,
+    "raids": 100
+   },
+   "flame 4->5": {
+    "held": 0,
+    "loss": -0.177,
+    "walls": 0,
+    "raids": 100
+   },
+   "siege 1->2": {
+    "held": 0,
+    "loss": -0.212,
+    "walls": -0.03,
+    "raids": 100
+   },
+   "siege 2->3": {
+    "held": 0,
+    "loss": -0.277,
+    "walls": 0.1,
+    "raids": 100
+   },
+   "siege 3->4": {
+    "held": 0,
+    "loss": -0.045,
+    "walls": -0.1,
+    "raids": 100
+   },
+   "siege 4->5": {
+    "held": 3,
+    "loss": -0.307,
+    "walls": -0.06,
+    "raids": 100
+   },
+   "tesla 1->2": {
+    "held": 0,
+    "loss": -0.107,
+    "walls": 0.01,
+    "raids": 100
+   },
+   "tesla 2->3": {
+    "held": 0,
+    "loss": -0.071,
+    "walls": 0,
+    "raids": 100
+   },
+   "tesla 3->4": {
+    "held": 0,
+    "loss": -0.119,
+    "walls": 0,
+    "raids": 100
+   },
+   "tesla 4->5": {
+    "held": 1,
+    "loss": -0.044,
+    "walls": 0,
+    "raids": 100
+   },
+   "lasercannon 1->2": {
+    "held": 0,
+    "loss": -0.106,
+    "walls": 0,
+    "raids": 100
+   },
+   "lasercannon 2->3": {
+    "held": 0,
+    "loss": -0.087,
+    "walls": 0,
+    "raids": 100
+   },
+   "lasercannon 3->4": {
+    "held": 0,
+    "loss": -0.11,
+    "walls": 0,
+    "raids": 100
+   },
+   "lasercannon 4->5": {
+    "held": 0,
+    "loss": -0.145,
+    "walls": -0.03,
+    "raids": 100
+   },
+   "railgun 1->2": {
+    "held": 0,
+    "loss": -0.656,
+    "walls": 0.29,
+    "raids": 100
+   },
+   "railgun 2->3": {
+    "held": 0,
+    "loss": -0.665,
+    "walls": 0.3,
+    "raids": 100
+   },
+   "railgun 3->4": {
+    "held": 2,
+    "loss": -0.353,
+    "walls": -0.06,
+    "raids": 100
+   },
+   "railgun 4->5": {
+    "held": 1,
+    "loss": -0.393,
+    "walls": -0.31,
+    "raids": 100
+   },
+   "wall Composite -> Ferrite light": {
+    "held": 0,
+    "loss": -0.019,
+    "walls": -0.89,
+    "raids": 100
+   },
+   "wall Composite -> Ilmenite light": {
+    "held": 0,
+    "loss": -0.175,
+    "walls": -2.01,
+    "raids": 100
+   },
+   "wall Composite -> Armalcolite light": {
+    "held": 0,
+    "loss": -0.808,
+    "walls": -3.19,
+    "raids": 100
+   },
+   "wall Composite -> Tranquillityite light": {
+    "held": 0,
+    "loss": -0.885,
+    "walls": -3.62,
+    "raids": 100
+   },
+   "wall Composite -> Selenite light": {
+    "held": 0,
+    "loss": -0.995,
+    "walls": -4.82,
+    "raids": 100
+   },
+   "wall Composite -> Moonheart light": {
+    "held": 0,
+    "loss": -1.245,
+    "walls": -5.48,
+    "raids": 100
+   },
+   "wall Ferrite light -> Ferrite medium": {
+    "held": 0,
+    "loss": -0.151,
+    "walls": -1.12,
+    "raids": 100
+   },
+   "wall Ferrite medium -> Ferrite heavy": {
+    "held": 0,
+    "loss": -0.557,
+    "walls": -0.37,
+    "raids": 100
+   },
+   "wall Ilmenite light -> Ilmenite medium": {
+    "held": 0,
+    "loss": -0.621,
+    "walls": -1.27,
+    "raids": 100
+   },
+   "wall Ilmenite medium -> Ilmenite heavy": {
+    "held": 0,
+    "loss": -0.218,
+    "walls": -0.73,
+    "raids": 100
+   },
+   "wall Armalcolite light -> Armalcolite medium": {
+    "held": 0,
+    "loss": -0.264,
+    "walls": -0.99,
+    "raids": 100
+   },
+   "wall Armalcolite medium -> Armalcolite heavy": {
+    "held": 0,
+    "loss": -0.322,
+    "walls": -1.4,
+    "raids": 100
+   },
+   "wall Tranquillityite light -> Tranquillityite medium": {
+    "held": 0,
+    "loss": -0.509,
+    "walls": -1.96,
+    "raids": 100
+   },
+   "wall Tranquillityite medium -> Tranquillityite heavy": {
+    "held": 4,
+    "loss": -0.762,
+    "walls": -0.9,
+    "raids": 100
+   },
+   "wall Selenite light -> Selenite medium": {
+    "held": 4,
+    "loss": -1.015,
+    "walls": -1.62,
+    "raids": 100
+   },
+   "wall Selenite medium -> Selenite heavy": {
+    "held": 16,
+    "loss": -1.486,
+    "walls": -0.68,
+    "raids": 100
+   },
+   "wall Moonheart light -> Moonheart medium": {
+    "held": 17,
+    "loss": -1.582,
+    "walls": -1.33,
+    "raids": 100
+   },
+   "wall Moonheart medium -> Moonheart heavy": {
+    "held": 37,
+    "loss": -2.524,
+    "walls": -1.18,
+    "raids": 100
+   },
+   "wall Ferrite light -> Ilmenite light": {
+    "held": 0,
+    "loss": -0.157,
+    "walls": -1.12,
+    "raids": 100
+   },
+   "wall Ferrite medium -> Ilmenite medium": {
+    "held": 0,
+    "loss": -0.627,
+    "walls": -1.27,
+    "raids": 100
+   },
+   "wall Ferrite heavy -> Ilmenite heavy": {
+    "held": 0,
+    "loss": -0.289,
+    "walls": -1.63,
+    "raids": 100
+   },
+   "wall Ilmenite light -> Armalcolite light": {
+    "held": 0,
+    "loss": -0.633,
+    "walls": -1.18,
+    "raids": 100
+   },
+   "wall Ilmenite medium -> Armalcolite medium": {
+    "held": 0,
+    "loss": -0.276,
+    "walls": -0.9,
+    "raids": 100
+   },
+   "wall Ilmenite heavy -> Armalcolite heavy": {
+    "held": 0,
+    "loss": -0.379,
+    "walls": -1.57,
+    "raids": 100
+   },
+   "wall Armalcolite light -> Tranquillityite light": {
+    "held": 0,
+    "loss": -0.076,
+    "walls": -0.43,
+    "raids": 100
+   },
+   "wall Armalcolite medium -> Tranquillityite medium": {
+    "held": 0,
+    "loss": -0.322,
+    "walls": -1.4,
+    "raids": 100
+   },
+   "wall Armalcolite heavy -> Tranquillityite heavy": {
+    "held": 4,
+    "loss": -0.762,
+    "walls": -0.9,
+    "raids": 100
+   },
+   "wall Tranquillityite light -> Selenite light": {
+    "held": 0,
+    "loss": -0.11,
+    "walls": -1.2,
+    "raids": 100
+   },
+   "wall Tranquillityite medium -> Selenite medium": {
+    "held": 4,
+    "loss": -0.616,
+    "walls": -0.86,
+    "raids": 100
+   },
+   "wall Tranquillityite heavy -> Selenite heavy": {
+    "held": 16,
+    "loss": -1.34,
+    "walls": -0.64,
+    "raids": 100
+   },
+   "wall Selenite light -> Moonheart light": {
+    "held": 0,
+    "loss": -0.25,
+    "walls": -0.66,
+    "raids": 100
+   },
+   "wall Selenite medium -> Moonheart medium": {
+    "held": 13,
+    "loss": -0.817,
+    "walls": -0.37,
+    "raids": 100
+   },
+   "wall Selenite heavy -> Moonheart heavy": {
+    "held": 34,
+    "loss": -1.855,
+    "walls": -0.87,
+    "raids": 100
+   },
+   "shield 1->2": {
+    "held": 0,
+    "loss": -0.055,
+    "walls": 0.01,
+    "raids": 100
+   },
+   "shield 2->3": {
+    "held": 0,
+    "loss": -0.113,
+    "walls": 0.01,
+    "raids": 100
+   },
+   "shield 3->4": {
+    "held": 0,
+    "loss": -0.164,
+    "walls": 0,
+    "raids": 100
+   },
+   "shield 4->5": {
+    "held": 3,
+    "loss": -0.289,
+    "walls": 0,
+    "raids": 100
+   },
+   "garrison militia -> rare": {
+    "held": 0,
+    "loss": -0.053,
+    "walls": 0,
+    "raids": 100
+   },
+   "garrison rare -> epic": {
+    "held": 2,
+    "loss": -0.175,
+    "walls": 0,
+    "raids": 100
+   },
+   "garrison epic -> epic best roll": {
+    "held": 0,
+    "loss": -0.102,
+    "walls": 0,
+    "raids": 100
+   },
+   "garrison epic best roll -> epic + Moonbeam": {
+    "held": 0,
+    "loss": -0.017,
+    "walls": 0,
+    "raids": 100
+   }
+  }
+ },
+ "regular": {
+  "days": [
+   5,
+   8,
+   14,
+   30,
+   60,
+   120,
+   180,
+   330
+  ],
+  "p": [
+   0.6190476190476191,
+   0.6666666666666666,
+   0.8571428571428571,
+   0.8571428571428571,
+   0.8095238095238095,
+   0.6666666666666666,
+   1,
+   0.6190476190476191
+  ],
+  "mean": 0.7619047619047619
+ },
+ "variants": {
+  "days": [
+   60,
+   120,
+   180
+  ],
+  "ahead": [
+   0.9047619047619048,
+   0.9523809523809523,
+   1
+  ],
+  "base": [
+   0.8095238095238095,
+   0.6666666666666666,
+   1
+  ],
+  "push": [
+   0.19047619047619047,
+   0.7142857142857143,
+   0.47619047619047616
+  ]
+ },
+ "grinder": {
+  "p": [
+   1,
+   0.8095238095238095,
+   0.8571428571428571
+  ],
+  "wallQ365": 0.7999999999999993,
+  "regular": [
+   0.8095238095238095,
+   1,
+   0.6190476190476191
+  ]
+ },
+ "payer": {
+  "p": [
+   0.8095238095238095,
+   0.9047619047619048
+  ],
+  "wallQ365": 0.7999999999999993
+ },
+ "payerFullWithinYear": false,
+ "selenite": {
+  "rule": {
+   "from": 9,
+   "n": 8
+  },
+  "late": [
+   300,
+   330,
+   365
+  ],
+  "heavy": [
+   0.8095238095238095,
+   0.8095238095238095,
+   0.8095238095238095
+  ],
+  "heavy7T": [
+   0.7142857142857143,
+   0.7142857142857143,
+   0.7619047619047619
+  ],
+  "grinder": [
+   0.9047619047619048,
+   0.8571428571428571,
+   0.9523809523809523
+  ],
+  "grinder7T": [
+   0.8095238095238095,
+   0.8095238095238095,
+   0.8095238095238095
+  ],
+  "regular7T": [
+   0.6190476190476191,
+   0.6666666666666666,
+   0.8571428571428571,
+   0.8571428571428571,
+   0.8095238095238095,
+   0.6666666666666666,
+   1,
+   0.5714285714285714
+  ],
+  "regularMaxShift": 0.04761904761904767
+ },
+ "coach": {
+  "pilots": 21,
+  "noRaids": {
+   "CC10": 26.8
+  },
+  "undefended": {
+   "CC10": 200,
+   "repairCP": 432759
+  },
+  "coached": {
+   "CC10": 27.8,
+   "repairCP": 660
+  },
+  "coached7": {
+   "CC10": 27.8,
+   "repairCP": 1374
+  }
+ }
+}

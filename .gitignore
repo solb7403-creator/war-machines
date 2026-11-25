@@ -4,3 +4,4 @@ worker/site-assets/
 worker/node_modules/
 worker/package-lock.json
 *.blend1
+.claude/worktrees/

@@ -543,7 +543,7 @@ const DAILY_CAP=50000;   // max base points a pilot can bank per UTC day, one ca
 // Rookie. The account credit multiplies them by the league's base pay (LG_BASE_PAY, as Arcade) and pays the spendable bonus
 // (LG_MULT) on top, through ecoPlayAward: the same daily cap, boards, airdrop credit and squad bonus as a match.
 // Values = par minutes x 225 x danger (STANDARD 1, HARD 1.2, VETERAN 1.45): about Arcade's points a minute per league.
-const CQ_PTS={kill:{light:35,heavy:90},field:450,raid:{HARD:900,VETERAN:1300},defense:675,strike:1075,gather:{flora:80,fe:100,il:140,ar:240,tq:390},hourMax:120};
+const CQ_PTS={kill:{light:35,heavy:90},field:450,raid:{HARD:900,VETERAN:1300},defense:675,strike:1075,titan:1600,gather:{flora:80,fe:100,il:140,ar:240,tq:390},hourMax:120};   // titan: Session 7C (owner brief, the old brief's D): the Hive Titan's kill, once per slot
 const CQ_BASE_MULT=[1,1.05,1.10,1.15,1.20,1.25];   // Command Base tier (none, I..V): multiplies Conquest active-play points only
 // Daily Base Yield: one full 24 h fill by Command Base tier. CP keeps the base production formula (ConquestCombat.baseProduction).
 // It fills continuously, stops when full, is collected at the physical base (from min of a fill), and its points part
@@ -593,6 +593,9 @@ const CQ_ITEMS={repair:{n:'Repair Kit',w1:'REPAIR',d:'+40% hull over 6 s',w:40,c
  scanner:{n:'Scanner Charge',w1:'SCANNER',d:'A SCAN 100 m wider that also finds every vein in this sector',w:20,cdMs:30000,r:1,extra:100},
  decoy:{n:'Decoy Beacon',w1:'DECOY',d:'Pulls Parasites within 120 m to a beacon for 8 s',w:15,cdMs:45000,r:1,radius:120,s:8}};
 const CQ_ITEM_ORDER=['repair','shield','scanner','decoy'],CQ_ITEM_MAX=10;
+// Session 7T (owner brief decision 2): the Peace Ward, an earnable 24-hour shield for your town (rare loot rows 'ward' below: live town
+// defenses and Meteor Strikes; never sold, never in any store). Held in the town record (s.tw.ws, at most 10), used from the town.
+const CQ_WARD={n:'Peace Ward',w1:'PEACE WARD',d:'Shields your town from Parasite raids for 24 hours',r:2,max:10};
 // Research parts: the Science Lab's inputs (Session 6B). They drop and are stored now; 50 of each at most.
 const CQ_PARTS={thermal:{n:'Thermal Core',w1:'THERMAL'},coil:{n:'Ballistic Coil',w1:'COIL'},servo:{n:'Drive Servo',w1:'SERVO'},cap:{n:'Field Capacitor',w1:'CAPACITOR'}};
 const CQ_PART_ORDER=['thermal','coil','servo','cap'],CQ_PART_MAX=50,CQ_PART_R=2;
@@ -606,9 +609,10 @@ const CQ_PART_DAY=1,CQ_PART_SWAP=Object.freeze({elite:'u',commander:'r',strike:'
 // ornaments (the Titan's epic rows arrive in 7B).
 const CQ_FRAG={need:10,order:['c','u','r','e'],pools:{c:{n:'COMMON',r:0,slot:'armor'},u:{n:'UNCOMMON',r:1,slot:'commander'},r:{n:'RARE',r:2,slot:'trail'},e:{n:'EPIC',r:3,slot:'base'}}};
 // Trophies for the Trophy Hall: one per raid-commander doctrine and the Strike Core (every 12th secured Meteor Strike). Each
-// trophy type held adds +15 Town Score once; the full set unlocks the earn-only Hive banner emblem. 'hive-titan' is reserved (7B).
-const CQ_TROPHY={ambush:{n:'Ambush Commander',r:3},shield:{n:'Shield Commander',r:3},artillery:{n:'Artillery Commander',r:3},carrier:{n:'Carrier Commander',r:3},plasma:{n:'Plasma Siege General',r:3},core:{n:'Strike Core',r:4}};
-const CQ_TROPHY_ORDER=['ambush','shield','artillery','carrier','plasma','core'],CQ_TROPHY_SCORE=15,CQ_TROPHY_RESERVED=['hive-titan'];
+// trophy type held adds +15 Town Score once; the full set unlocks the earn-only Hive banner emblem. Session 7C: the Hive Titan's trophy
+// (30% a kill, LOOT.titan) joins the set, as reserved.
+const CQ_TROPHY={ambush:{n:'Ambush Commander',r:3},shield:{n:'Shield Commander',r:3},artillery:{n:'Artillery Commander',r:3},carrier:{n:'Carrier Commander',r:3},plasma:{n:'Plasma Siege General',r:3},core:{n:'Strike Core',r:4},'hive-titan':{n:'Hive Titan',r:4}};
+const CQ_TROPHY_ORDER=['ambush','shield','artillery','carrier','plasma','core','hive-titan'],CQ_TROPHY_SCORE=15,CQ_TROPHY_RESERVED=[];
 // The drop tables. rows: independent rolls (p = chance) of a mineral unit (mn), consumables (item = how many), a research part,
 // a fragment (frag = pool) or the commander's trophy. ring: extra rows from that ring outward (ConquestWorld.ringAt; a raid's
 // ring is its danger: HARD 3, VETERAN 4). always: paid every time. pity: hard pity, never more than that many rolls without.
@@ -617,10 +621,13 @@ const LOOT={
  elite:{rows:[{p:0.25,mn:'il'},{p:0.06,mn:'ar'},{p:0.08,item:1},{p:0.03,part:1},{p:0.01,frag:'u'}],pity:{part:20}},   // sentinel, fire coordinator
  commander:{rows:[{p:0.12,part:1},{p:0.10,trophy:1},{p:0.05,frag:'r'}],ring:{4:[{p:0.08,mn:'tq'}]},pity:{trophy:10}},   // the five raid commanders; +8% Tranquillityite at VETERAN
  chest:{always:{item:1},rows:[{p:0.08,frag:'r'}]},                                                       // raid completion chest (the 25-shard blueprint and 3.5% elite roll stay)
- strike:{rows:[{p:0.15,part:1},{p:0.10,frag:'r'}]},                                                      // Meteor Strike secured (its minerals and Resonance unchanged)
- defense:{rows:[{p:0.06,item:2},{p:0.04,frag:'u'}]},                                                     // invasion / town defense held live (the defense cache unchanged)
+ strike:{rows:[{p:0.15,part:1},{p:0.10,frag:'r'},{p:0.03,ward:1}]},                                      // Meteor Strike secured (its minerals and Resonance unchanged); Session 7T: a Peace Ward 3%
+ defense:{rows:[{p:0.06,item:2},{p:0.04,frag:'u'},{p:0.05,ward:1}]},                                     // invasion / town defense held live (the defense cache unchanged); Session 7T: a Peace Ward 5%
  order:{daily:{item:1},third:{frag:'u'},weekly:{mn:{ar:1},frag:'r'}},                                    // War Orders (Part E): every daily, the day's third, the weekly
- titan:null};                                                                                            // Hive Titan rows: Session 7B
+ // Session 7C (spec §4.1's Titan row, the old brief's D): the Hive Titan's kill, rolled once per slot: 25% a research part, 20% Selenite,
+ // 2% Moonheart, 30% its trophy, 10% an epic fragment; pity: never more than 5 Titans without a Selenite. The decided row's guaranteed
+ // 2 Tranquillityite is kept out: with it the fortress guard (e) fails (Checkpoint 50, "Guards with everything on"; a PROPOSAL)
+ titan:{rows:[{p:0.25,part:1},{p:0.20,mn:'se'},{p:0.02,mn:'mh'},{p:0.30,trophy:1},{p:0.10,frag:'e'}],pity:{se:5}}};
 // ---- Session 6 Part E (owner Decisions 2a, 3a; spec §6.1, §6.2) ----
 // Daily Base Yield points unlock in steps: each verified operation that UTC day unlocks 25% of the points part; a harvest (bio-flora
 // or a mineral pull) counts half, and harvests together unlock at most half (so 8 five-second pulls cannot open what 4 operations
@@ -950,6 +957,14 @@ function ecoLoadout(S,L0){
  const legal=f.weight<=FIT_BUDGET.weight&&f.power<=FIT_BUDGET.power;
  return {mods:legal?mods:fittingSelection(),looks:fittingValid(L0.looks,true)?{...(L0.looks||{})}:{},catalog:FIT_VERSION,w,c,up:{...chUp(S,c.c)},cores,gl:{...chGl(S,c.c)},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg),ap:apOf(S.ap)};   // vl: Vault level, looks only; ap: owned Hull Plating (never from the client)
 }
+// ---- Session 7B: the Citadel's first-clear airdrop bounties (owner, Nov 23: the blueprint's table x5; IV-IX for Session 11), base points,
+// once per account, outside the daily cap (a one-time progression milestone: ecoAward's free path). Index = tier. The Conquest record
+// sends a tier's bounty once, when that tier is first cleared (worker/src/conquest-citadel.js); the account credits each id once here,
+// by id (S.cbty), so a Conquest record reset, a replayed entry or a second entry with the same id can never pay twice
+const CIT_BOUNTY=Object.freeze([0,25000,37500,50000,75000,100000,150000,225000,325000,500000]);
+const CIT_LIVE=3;   // the Citadel tiers built (Act I); Session 11 raises it with tiers IV-IX (js/conquest/citadel.js CIT.live reads it)
+function ecoBounty(S,id,X){const m=/^cit([1-9])$/.exec(String(id||''));if(!m||+m[1]>CIT_LIVE)return 0;const n=CIT_BOUNTY[+m[1]]|0;if(!n)return 0;
+ if(!S.cbty||typeof S.cbty!=='object'||Array.isArray(S.cbty))S.cbty={};if(S.cbty[id])return 0;S.cbty[id]=Math.max(1,X.day|0);return ecoAward(S,n,X,true);}
 // ---- points ----
 function ecoRoll(S,X){if(S.dailyDay!==X.day){S.dailyDay=X.day;S.dailyPts=0;}if(S.weeklyNum!==X.week){S.weeklyNum=X.week;S.weeklyPts=0;}}
 // every point a pilot earns goes through here: the daily cap, the daily/weekly boards and days active

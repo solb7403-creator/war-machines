@@ -6,7 +6,7 @@ on:
 jobs:
   conquest:
     runs-on: ubuntu-24.04
-    timeout-minutes: 55
+    timeout-minutes: 65   # Session 7T: headroom: without the town screens (now their own job) the portrait journey still ends about 45 minutes in, before the desktop journey
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -82,6 +82,17 @@ jobs:
           node dev/tests/conquest-canvas-contract.mjs
           node dev/tests/wtest/conquest-war.mjs
           node dev/tests/conquest-replay-budget.mjs > docs/conquest-living-war/replay-current.json
+          # Session 7C STEP 1: the faster collision lookups give identical results (every operation replayed both ways)
+          node dev/tests/conquest-collision-identity.mjs
+          # Session 7C STEP 2: the airdrop standing and trust line (real routes), command fingerprints and their flags, cqalt
+          node dev/tests/wtest/conquest-standing.mjs
+          node dev/tests/conquest-fingerprints.mjs
+          # Session 7C STEP 3: the Hive Titan (rules, start, phases, the kill once per slot, pity) and the weekly boards (posting, held
+          # pilots, bands with the 20-pilot minimum, settlement and grants exactly once)
+          node dev/tests/conquest-titan.mjs
+          node dev/tests/wtest/conquest-boards.mjs
+          # Session 7C STEP 4: the weekly War Effort bar (population goal, zero pilots, squads, rewards once, High Morale)
+          node dev/tests/wtest/conquest-wareffort.mjs
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
           node dev/tests/conquest-earned-journey.mjs
@@ -102,6 +113,24 @@ jobs:
           # Session 6C: the Battalion rules through the Worker's HTTP routes (chips, Role Cores, recruits, field caps, the first Lab
           # grant, ally-only kills, store kinds refused, the cold-blob sweep)
           node dev/tests/wtest/conquest-battalion.mjs
+          # Session 7 Living Front: the war's rules decision by decision, the drift simulation, the year-long pace, the alerts
+          node dev/tests/conquest-war.mjs
+          node dev/tests/conquest-war-drift.mjs
+          node dev/tests/conquest-war-pace.mjs
+          node dev/tests/conquest-war-alerts.mjs
+          # Session 7T Living Town: the resumable raid engine, town attacks while away, defending in person, the customizable battalion
+          # gear, one alert budget for every notification, the Strike Beacon, the soft return streak (the fortress: its own job below)
+          node dev/tests/conquest-raid-engine.mjs
+          node dev/tests/conquest-away-raids.mjs
+          node dev/tests/conquest-live-defense.mjs
+          node dev/tests/conquest-gear.mjs
+          node dev/tests/conquest-alerts-unified.mjs
+          node dev/tests/conquest-beacon.mjs
+          node dev/tests/conquest-streak.mjs
+          # Session 7T-P: the first wall ring coach step (decision 3) and Selenite for the late fortress (decision 2); the welcome-back
+          # kits (decision 4) are in conquest-streak.mjs, the measurements in the fortress job
+          node dev/tests/conquest-coach-ring.mjs
+          node dev/tests/conquest-town-selenite.mjs
           node dev/tests/owner-rules.mjs
       - uses: actions/setup-python@v5
         with:
@@ -130,6 +159,7 @@ jobs:
           python dev/tests/conquest-seethrough-town.py
           python dev/tests/conquest-slots-browser.py
           python dev/tests/conquest-super-fx.py
+          python dev/tests/conquest-war-browser.py
       - name: Desktop keyboard journey (website build)
         run: python dev/tests/conquest-desktop-keys.py
 
@@ -150,6 +180,8 @@ jobs:
             docs/conquest/session5d
             docs/conquest/session5e2d1/slots
             docs/conquest/session5e2d1/town
+            docs/conquest/session7
+            docs/conquest/session7t
 
   # Session 6C guardrails (blueprint §12): 2 better gear always helps (every authored encounter and town tier, 3 kits x 4 seeds) and
   # 4 composition matters (a balanced Battalion vs each one-role Battalion). A job of its own: they are long simulations.
@@ -171,9 +203,124 @@ jobs:
           name: conquest-guardrails
           path: docs/conquest/session6c
 
+  # Session 7T fortress (owner decision 4): (a) the ceiling, (b) no dead upgrades, (c) the regular path, (d) the grinder and the paying
+  # pilot, across the seven town sites with the real income, builder and raid engine (dev/tools/fortress-model.mjs). A long simulation.
+  fortress:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - name: The fortress (decision 4 a-d)
+        run: node dev/tests/conquest-fortress.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-fortress
+          path: docs/conquest/session7t/fortress-model.json
+
+  # Session 7T screens (brief: phone and computer equal): the hub town card, the Beacon, the streak line, the gear picker, the replay,
+  # REPAIR, the live defense, the last chance and the alert switches at 390x844, 390x700, 320x568 (touch) and 1366x768, 1920x1080 (mouse,
+  # keyboard). A job of its own (about 10 minutes): in the conquest job it pushed that job past its time limit.
+  town-ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45   # Session 7T-P: + the coach ring step and the welcome-back kits at the five sizes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser dependencies
+        run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Session 7T town screens (5 sizes)
+        run: python dev/tests/conquest-town-ui.py
+      - name: Session 7T-P screens (the coach ring step, the welcome-back kits; 5 sizes)
+        run: python dev/tests/conquest-town-proposals.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-town-ui
+          path: |
+            docs/conquest/session7t
+            docs/conquest/session7tp
+
+  # Session 7B Citadel Act I (docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md): the rules, the Worker's settlement and the first-clear
+  # bounty paid exactly once (conquest-citadel), the pacing with the real assault (conquest-citadel-pace: the bot pilot on each profile's
+  # kit), and the screens at 390x844, 390x700, 320x568 (touch) and 1366x768, 1920x1080 (mouse, keyboard)
+  citadel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - name: Citadel rules, settlement and the bounty
+        run: |
+          node dev/tests/conquest-citadel.mjs
+          node dev/tests/wtest/conquest-citadel-payout.mjs
+      - name: Citadel pacing (the real assault, three profiles)
+        run: node dev/tests/conquest-citadel-pace.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser dependencies
+        run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Citadel screens (5 sizes)
+        run: python dev/tests/conquest-citadel.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-citadel
+          path: docs/conquest/session7b
+
+  # Session 7C Integrity & Boards (docs/conquest/audit/SESSION_07C_BRIEF.md): the hub's AIRDROP STANDING card and War Effort lines, the
+  # WEEKLY BOARDS screen and its share card, a Titan slot (the strike's THE HIVE TITAN RISES, the hunt HUD, the kill paid once) at
+  # 390x844, 390x700, 320x568 (touch) and 1366x768, 1920x1080 (mouse, keyboard). The rules themselves run in the conquest job
+  # (conquest-titan, wtest/conquest-boards, wtest/conquest-standing, conquest-fingerprints, wtest/conquest-wareffort)
+  boards-titan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser dependencies
+        run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Session 7C screens (5 sizes)
+        run: python dev/tests/conquest-7c-browser.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-7c
+          path: docs/conquest/session7c
+
   transmission:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 60   # Session 7B: the WebKit install (--with-deps, apt) took 23 and 28+ minutes on Nov 24 (2-10 before) and the 35-minute limit cancelled the tests
     strategy:
       fail-fast: false
       matrix:

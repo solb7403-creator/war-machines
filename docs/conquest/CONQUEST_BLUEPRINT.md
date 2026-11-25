@@ -319,17 +319,17 @@ Siege prep is how the existing raids and missions matter to the endgame.
 
 | Tier | Airdrop bounty (base points, once) | Production bonus so far |
 | --- | --- | --- |
-| I | 5,000 | +5% |
-| II | 7,500 | +10% |
-| III | 10,000 | +15% |
-| IV | 15,000 | +20% |
-| V | 20,000 | +25% |
-| VI | 30,000 | +30% |
-| VII | 45,000 | +35% |
-| VIII | 65,000 | +40% |
-| IX | 100,000 | +45% |
+| I | 25,000 | +5% |
+| II | 37,500 | +10% |
+| III | 50,000 | +15% |
+| IV | 75,000 | +20% |
+| V | 100,000 | +25% |
+| VI | 150,000 | +30% |
+| VII | 225,000 | +35% |
+| VIII | 325,000 | +40% |
+| IX | 500,000 | +45% |
 
-- Approved: bounties grow with each tier, are exempt from the 50,000 daily cap, server-verified and paid exactly once per account. Repeat clears pay loot and other rewards, never first-clear points. The values shown total 297,500 and are confirmed in the Citadel session. One-time progression milestones (for example first town, first general beaten, full battalion, each act completed) may also pay outside the cap. Each is proposed for your approval in the session that builds it.
+- Approved: bounties grow with each tier, are exempt from the 50,000 daily cap, server-verified and paid exactly once per account. Repeat clears pay loot and other rewards, never first-clear points. **Owner, Nov 23 (Session 7B): the table above is the earlier one x5** (it was 5,000 / 7,500 / 10,000 / 15,000 / 20,000 / 30,000 / 45,000 / 65,000 / 100,000, total 297,500); the nine tiers now total 1,487,500. Tiers I-III are live from Session 7B (js/rules.js `CIT_BOUNTY`, credited once per account by `ecoBounty`); IV-IX are recorded here for Session 11. One-time progression milestones (for example first town, first general beaten, full battalion, each act completed) may also pay outside the cap. Each is proposed for your approval in the session that builds it.
 - The production bonus applies to materials and Command Points only. Daily Base Yield points do not change, so the airdrop inflow stays as designed.
 - You also get the general's trophy. The Retaliation level rises by one. The next tier appears, already authored.
 - Territory, town, battalion and every record stay exactly as they were.

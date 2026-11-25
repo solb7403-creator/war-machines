@@ -23,7 +23,7 @@ export function inventory(s){
  if(!Number.isSafeInteger(s.lseed)||s.lseed<0)s.lseed=lootSeed();
  const v=record(s.inv)?s.inv:(s.inv={});v.v=1;
  v.it=fill(v.it,R.CQ_ITEM_ORDER);v.pt=fill(v.pt,R.CQ_PART_ORDER);v.fr=fill(v.fr,R.CQ_FRAG.order);v.tr=fill(v.tr,R.CQ_TROPHY_ORDER);
- const p=record(v.pity)?v.pity:{};v.pity={e:int(p.e),c:int(p.c),cf:fill(p.cf,R.CQ_TROPHY_ORDER.filter(k=>k!=='core'))};
+ const p=record(v.pity)?v.pity:{};v.pity={e:int(p.e),c:int(p.c),cf:fill(p.cf,R.CQ_TROPHY_ORDER.filter(k=>k!=='core'&&k!=='hive-titan')),t:int(p.t)};   // t: Session 7C, Titans killed since a Selenite
  v.cd=Object.fromEntries(Object.entries(record(v.cd)?v.cd:{}).filter(([k,t])=>R.CQ_ITEMS[k]&&Number(t)>0).map(([k,t])=>[k,Number(t)]));
  v.log=list(v.log).slice(-12);
  const pd=record(v.pd)?v.pd:{};v.pd={d:int(pd.d),n:int(pd.n)};
@@ -44,11 +44,13 @@ export function roll(s,src,key,{ring=1,commander=null,steps=0}={}){
   for(let j=0;j<(row.item|0);j++)add(out,'it',pickItem(base+':'+i+':it:'+j));
   if(row.part)add(out,'pt',R.CQ_PART_ORDER[u32(base+':'+i+':pt')%R.CQ_PART_ORDER.length]);
   if(row.frag)add(out,'fr',stepPool(row.frag,steps));
-  if(row.trophy&&R.CQ_TROPHY[commander])add(out,'tr',commander);});
+  if(row.trophy&&R.CQ_TROPHY[commander])add(out,'tr',commander);
+  if(row.ward)add(out,'wd','ward',row.ward|0||1);});   // Session 7T: the Peace Ward (a 24-hour town shield)
  if(src==='elite'&&T.pity?.part){if(out.pt)v.pity.e=0;else if(++v.pity.e>=T.pity.part){add(out,'pt',R.CQ_PART_ORDER[u32(base+':pity')%R.CQ_PART_ORDER.length]);out.pity='part';v.pity.e=0;}}
  if(src==='commander'&&T.pity?.trophy&&R.CQ_TROPHY[commander]&&commander!=='core'){v.pity.cf[commander]=(v.pity.cf[commander]|0)+1;
   if(out.tr){v.pity.c=0;v.pity.cf=fill({},Object.keys(v.pity.cf));}
   else if(++v.pity.c>=T.pity.trophy){const most=Object.entries(v.pity.cf).reduce((a,b)=>b[1]>a[1]?b:a,[commander,v.pity.cf[commander]])[0];add(out,'tr',most);out.pity='trophy';v.pity.c=0;v.pity.cf=fill({},Object.keys(v.pity.cf));}}
+ if(src==='titan'&&T.pity?.se){if(out.mn?.se)v.pity.t=0;else if(++v.pity.t>=T.pity.se){add(out,'mn','se');out.pity='selenite';v.pity.t=0;}}   // Session 7C: the 5th Titan without a Selenite pays one
  if(out.pt&&R.CQ_PART_SWAP[src])out.src=src;   // its source picks the fragment pool if the day's research part is already taken (bind); the pity part too
  return out;}
 // What a roll shows on the ground: the rarest find's rarity and its one-word label.
@@ -58,8 +60,9 @@ export function face(loot){let r=-1,label='SALVAGE';const see=(rar,w)=>{if(rar>r
  for(const k of Object.keys(loot?.pt||{}))see(R.CQ_PART_R,R.CQ_PARTS[k].w1);
  for(const k of Object.keys(loot?.fr||{}))see(R.CQ_FRAG.pools[k].r,'FRAGMENT');
  for(const k of Object.keys(loot?.tr||{}))see(R.CQ_TROPHY[k].r,'TROPHY');
+ for(const k of Object.keys(loot?.wd||{}))see(R.CQ_WARD.r,R.CQ_WARD.w1);
  return {r:Math.max(0,r),label};}
-export const empty=loot=>!loot||!['mn','it','pt','fr','tr'].some(g=>Object.keys(loot[g]||{}).length);
+export const empty=loot=>!loot||!['mn','it','pt','fr','tr','wd'].some(g=>Object.keys(loot[g]||{}).length);
 // The next piece of a fragment pool: one this pilot does not own yet, picked from the seed (no repeats until complete).
 function piece(s,pool,now){const ids=CAT.pools[pool]||[],c=s.cosmetics=record(s.cosmetics)?s.cosmetics:{v:1};c.owned=record(c.owned)?c.owned:{};c.equipped=record(c.equipped)?c.equipped:{};
  const left=ids.filter(id=>!c.owned[id]);if(!left.length)return null;const id=left[u32(s.lseed+':piece:'+pool+':'+(ids.length-left.length))%left.length];c.owned[id]={at:now,source:'fragments',pool};return id;}
@@ -78,6 +81,7 @@ export function bind(s,loot,now,{where=null}={}){const v=inventory(s),got={},ful
  for(const [k,n] of Object.entries(fr)){if(!R.CQ_FRAG.pools[k])continue;add(got,'fr',k,int(n));v.fr[k]+=int(n);
   while(v.fr[k]>=R.CQ_FRAG.need){const id=piece(s,k,now);if(!id){v.fr[k]=R.CQ_FRAG.need;break;}v.fr[k]-=R.CQ_FRAG.need;(got.pieces||(got.pieces=[])).push(id);}}
  for(const [k,n] of Object.entries(loot?.tr||{})){if(!R.CQ_TROPHY[k])continue;add(got,'tr',k,int(n));v.tr[k]+=int(n);}
+ {const n=int(loot?.wd?.ward);if(n){const t=record(s.tw)?s.tw:(s.tw={}),have=int(t.ws),a=Math.max(0,Math.min(n,R.CQ_WARD.max-have));t.ws=have+a;if(a)add(got,'wd','ward',a);if(a<n)full.push('ward');}}   // Session 7T: Peace Wards go to the town record
  if(full.length)got.full=full;
  if(!empty(got)||got.pieces)v.log=[...v.log,{at:now,...(where?{w:String(where).slice(0,24)}:{}),...got}].slice(-12);
  return got;}

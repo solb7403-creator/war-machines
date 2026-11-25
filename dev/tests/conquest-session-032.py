@@ -6,6 +6,8 @@ import re,asyncio,argparse,json,pathlib,shutil,math,statistics,os
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest-session-032';OUT.mkdir(exist_ok=True)
+# the terrain stream has settled at the tank's current cell: selection made for this cell, nothing pending, no stale chunk left
+SETTLED="""()=>{const v=Conquest.view;if(v.renderer.isConquestCanvas)return v.pending===0;const cell=Math.floor(v.p.x/128)+':'+Math.floor(v.p.z/128)+':'+v.detailRadius;return v.pending===0&&v.selectionKey===cell&&!!v.wanted&&v.chunks.size<=v.wanted.length;}"""
 async def main(engine,journey_only=False):
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
  ready=json.loads(await server.stdout.readline());base='http://127.0.0.1:'+str(ready['port'])
@@ -195,7 +197,11 @@ async def main(engine,journey_only=False):
      cleanup=[]
      for _ in range(3):
       await fixture([3000,3000]);await page.wait_for_function('Conquest.view.pending===0',timeout=60000);assert await page.evaluate('Conquest.view.enemyMeshes.size===0&&Conquest.view.lootMeshes.size===0')
-      await fixture([1240,893]);await page.wait_for_function('Conquest.view.pending===0',timeout=60000);cleanup.append(await page.evaluate('({geometry:Conquest.view.renderer.info.memory.geometries,hostiles:Conquest.view.enemyMeshes.size})'))
+      # Before each geometry reading the terrain stream must have settled where the tank now is: its chunk selection is for this
+      # cell, nothing is left to build (pending 0) and the chunks of the previous spot are gone. view.js drops one stale chunk per
+      # stream call and only on a call that builds nothing, and pending does not count those drops, so pending===0 alone could
+      # read a geometry count that still held some of the old spot's chunks (the Chromium flake of Checkpoint 48).
+      await fixture([1240,893]);await page.wait_for_function(SETTLED,timeout=60000);cleanup.append(await page.evaluate('({geometry:Conquest.view.renderer.info.memory.geometries,hostiles:Conquest.view.enemyMeshes.size,chunks:Conquest.view.chunks.size,wanted:Conquest.view.wanted.length})'))
      assert cleanup[-1]['geometry']<=cleanup[0]['geometry']+3,cleanup
      await fixture([1130,1080]);await page.evaluate('Conquest.view.yaw=-Math.PI/2');await drive('w','Conquest.view.authority.state.stuckMs>=1500',20000);before=await page.evaluate('({p:Conquest.view.p,version:Conquest.view.discovery.version})');await tap('#cq-recover')
      try:await page.wait_for_function('b=>Math.hypot(Conquest.view.p.x-b.x,Conquest.view.p.z-b.z)>=6',arg=before['p'],timeout=5000)   # the recover hop lands on the next authority round trip (a fixed 300 ms wait was a flake on a slow runner)

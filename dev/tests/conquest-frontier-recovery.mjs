@@ -14,21 +14,28 @@ function fight(s,now){let ticks=0,planned=[],stuck=0;while(s.battle.state==='act
  if(planned.length&&Math.hypot(planned[0].x-p.x,planned[0].z-p.z)<2)planned.shift();if(stuck>5||!planned.length&&e&&!K.visible(b,p,e)){planned=planRoute(p,target,b,!!e);stuck=0;}const steering=planned[0]||target,dx=steering.x-p.x,dz=steering.z-p.z,d=Math.hypot(dx,dz),move=planned.length?d>1:e?d>18||!K.visible(b,p,e):false,x=move?dx/(d||1):0,z=move?dz/(d||1):0,before={...p};
  const cpStep=s.ledger.cp;s=applyCommands(s,{seq:s.seq+1,commands:[{x,z,fire:!!e,lockId:e?.id||null,aimYaw:e?Math.atan2(e.x-p.x,e.z-p.z):0,shield:b.playerHp<b.playerMax*.8,super:b.charge>=1000||!!(b.superAttack&&b.superAttack.bar&&b.superAttack.oc===undefined&&b.superAttack.el>=b.superAttack.bar.z0+0.06)}]},now+=50);if(s.battle.state==='active'&&s.ledger.cp!==cpStep){const g=s.ledger.cp-cpStep,K=[0,7,18,45];assert(K.some(a=>K.some(b=>a+b===g&&g>0)),'mid-fight CP is only kill salvage: '+g);salvageCp+=g;}ticks++;stuck=move&&Math.hypot(s.position.x-before.x,s.position.z-before.z)<.03?stuck+1:0;}return {s,now};}
 
-// 1. Refuge: invasion alert -> abandoned defense hands it to the Parasites -> a physical retake restores it, rewarded once.
+// 1. Refuge (Session 7 owner brief, decision 1: the Heartland is never captured; decision 3: a defense lost in person counts as if
+// you hadn't come): a war assault is its alert -> an abandoned defense spends the one attempt and loses nothing now -> when it lands,
+// the strength roll (authored here to break through) raids the heartland (blight) but never captures it -> the next assault,
+// defended in person, pays its authored reward exactly once. (Before Session 7 an abandoned defense lost the Refuge and a retake
+// path brought it back: no retake is needed when it can never be captured.)
+const {warEvent,warQuiet}=await import('./lib/war-helpers.mjs'),{CONQUEST:CQ}=await import('../../worker/src/sim.gen.js');
 const L=structuredClone(R.STOCK_L);L.w={a:'moon',t:2,q:1,s:false};L.c={c:'titan',t:2,q:1,s:false};
 let now=1800000000000,s=createState(L,now);const op=C.operations['sector-defense-refuge'];assert.equal(s.territory.refuge.owner,'humanity');
-assert(!C.raidIds.some(id=>C.operations[id].sector==='refuge'),'Refuge has no raid objective, so a retake path is required');
-now+=1800001;s.position=point(op.x-20,op.z+15);refreshState(s,now);assert.equal(s.territory.refuge.status,'defense-alert');
+assert(!C.raidIds.some(id=>C.operations[id].sector==='refuge'),'Refuge has no raid objective');assert(!C.sectorDefenseOpen({owner:'parasites',status:'recaptured'},'western'),'raid sectors keep their raid recapture path');
+warQuiet(CQ,s,now);let ev=warEvent(CQ,s,'refuge',now,{roll:.999});
+now+=1000;s.position=point(op.x-20,op.z+15);refreshState(s,now);assert.equal(s.territory.refuge.status,'defense-alert','a pending war assault is the Refuge alert');
 s=applyAction(s,{seq:s.seq+1,action:'start-sector-defense',mission:op.id},now+=1000);s=applyAction(s,{seq:s.seq+1,action:'return-exploration'},now+=1000);
-assert.deepEqual([s.territory.refuge.owner,s.territory.refuge.status],['parasites','recaptured'],'abandoned defense is a real loss');
-assert(C.sectorDefenseOpen(s.territory.refuge,'refuge'),'home sector stays recoverable');assert(!C.sectorDefenseOpen({owner:'parasites',status:'recaptured'},'western'),'raid sectors keep their raid recapture path');
-now+=3*86400000;refreshState(s,now);assert(C.sectorDefenseOpen(s.territory.refuge,'refuge'),'still recoverable days later');
-s.position=point(op.x-20,op.z+15);const cp0=s.ledger.cp;salvageCp=0;s=applyAction(s,{seq:s.seq+1,action:'start-sector-defense',mission:op.id},now+=1000);assert.equal(s.mission,op.id,'retake starts the same physical defense');
-({s,now}=fight(s,now));assert.equal(s.battle.state,'victory','retake won through server inputs');
-assert.deepEqual([s.territory.refuge.owner,s.territory.refuge.status],['humanity','secured']);assert.equal(s.settlement.kind,'sector-defense');assert.equal(s.settlement.cp,op.reward.cp,'settlement is the authored reward');assert.equal(s.ledger.cp-cp0-salvageCp,s.settlement.cp,'one authored defense reward (plus only the salvage actually picked up)');
-const cp1=s.ledger.cp;s=applyCommands(structuredClone(s),{seq:s.seq+1,commands:[{x:0,z:0}]},now+50);assert.equal(s.ledger.cp,cp1,'reconnect cannot double the retake reward');
-s=applyAction(s,{seq:s.seq+1,action:'return-exploration'},now+=1000);assert.equal(s.mission,null);assert.throws(()=>applyAction(structuredClone(s),{seq:s.seq+1,action:'start-sector-defense',mission:op.id},now+1000),/unavailable/,'no defense while secured and not under alert');
-console.log('PASS Refuge home sector: real loss on abandoned invasion defense, physical retake restores ownership, one authored reward, no reconnect duplication');
+assert.deepEqual([s.territory.refuge.owner,s.territory.refuge.status],['humanity','defense-alert'],'an abandoned defense counts as if you had not come: nothing falls now');
+assert.throws(()=>applyAction(structuredClone(s),{seq:s.seq+1,action:'start-sector-defense',mission:op.id},now+1000),/no battle here/,'one attempt per assault');
+now=CQ.War.WAR.tickMs*ev.l+1000;refreshState(s,now);
+assert.equal(s.war.o.refuge,'h','the Heartland is never captured');assert.deepEqual([s.territory.refuge.owner,s.territory.refuge.status],['humanity','secured']);assert(s.war.log.some(x=>x.t==='refuge'&&x.r==='raided'),'a raid let through spreads the blight instead');
+ev=warEvent(CQ,s,'refuge',now);s.position=point(op.x-20,op.z+15);s.lastWall=now;const cp0=s.ledger.cp;salvageCp=0;s=applyAction(s,{seq:s.seq+1,action:'start-sector-defense',mission:op.id},now+=1000);assert.equal(s.mission,op.id,'the next assault starts the same physical defense');
+({s,now}=fight(s,now));assert.equal(s.battle.state,'victory','defense won through server inputs');
+assert.deepEqual([s.territory.refuge.owner,s.territory.refuge.status],['humanity','secured']);assert.equal(s.settlement.kind,'war-held');assert.equal(s.settlement.cp,op.reward.cp,'settlement is the authored reward');assert.equal(s.ledger.cp-cp0-salvageCp,s.settlement.cp,'one authored defense reward (plus only the salvage actually picked up)');
+const cp1=s.ledger.cp;s=applyCommands(structuredClone(s),{seq:s.seq+1,commands:[{x:0,z:0}]},now+50);assert.equal(s.ledger.cp,cp1,'reconnect cannot double the defense reward');
+s=applyAction(s,{seq:s.seq+1,action:'return-exploration'},now+=1000);assert.equal(s.mission,null);assert.throws(()=>applyAction(structuredClone(s),{seq:s.seq+1,action:'start-sector-defense',mission:op.id},now+1000),/no battle here/,'no defense while nothing is inbound');
+console.log('PASS Refuge (Heartland): a war assault is its alert, an abandoned defense spends the one attempt and loses nothing, a raid let through blights but never captures it, a defense won in person pays its authored reward once, no reconnect duplication');
 
 // 2. Captured sectors keep roaming patrols on their Session 1 refresh; captured garrisons stay down.
 now=1800000000000;s=createState(structuredClone(R.STOCK_L),now);

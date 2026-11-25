@@ -276,6 +276,28 @@ Conquest has its own Firebase record and CAS boundary (`conquest/<pid>`), separa
    **When credit runs:** at once when an operation completes, otherwise when the oldest pending entry is 20 s old or 8 entries are pending, and always on session open. This batches world kills into fewer account writes.
 4. **Late credit** counts on the day it is credited, like a late Arcade result.
 
+### 3.6 Citadel first-clear bounties (Session 7B; owner, Nov 23)
+
+A Citadel tier's **first clear** pays an airdrop bounty in base points, **once per account, outside the 50,000 daily cap**. The owner set
+the blueprint's table x5 (blueprint §6):
+
+| Tier | I | II | III | IV | V | VI | VII | VIII | IX |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Bounty (base points, once) | 25,000 | 37,500 | 50,000 | 75,000 | 100,000 | 150,000 | 225,000 | 325,000 | 500,000 |
+
+Tiers I-III are live from Session 7B; IV-IX are recorded for Session 11 (the nine total 1,487,500). How it is paid:
+
+1. **Conquest side.** The assault is replayed by the Worker from the pilot's verified commands; its victory settles once (the reducer
+   settles a victory only while no settlement is pending). Only the first clear of the pilot's next tier (`s.cit.t` rises by one and
+   never falls) adds `{id: 'cit<N>', pts}` to that request's immutable outbox entry (`e.bty`); owner dev records add nothing.
+2. **Account side.** `eco.js creditConquest` passes each bounty id to `rules.js ecoBounty`, which pays it only if the account has not
+   been paid that id before (`eco.cbty`, written in the same atomic account write as the watermark) and only for ids `cit1`-`cit9` at
+   the table's amount. It credits through `ecoAward`'s free path: the boards and airdrop credit, never the daily cap. A replayed request,
+   a second pilot record or a forged id cannot pay twice.
+3. The assault's own **battle points** (par 7 minutes x 225 x the Inner Ring's danger 1.45 = 2,284 raw) and every repeat clear
+   (Throne Runs) stay inside the cap and the hourly limit like any operation. Production +5% a tier cleared applies to materials and
+   CP only; Daily Base Yield points are unchanged.
+
 ---
 
 ## 4. Conquest materials: CP, Alloy, Biomass, Helium-3
@@ -417,10 +439,23 @@ These apply to server-verified results only: AI-match tickets (`matchEnd`) and l
 | Master | 6 Armalcolite + 1 Tranquillityite |
 | Lunar Legend | 8 Armalcolite + 2 Tranquillityite |
 
-**Top competitive rewards (proposal for the competitive session):**
-- weekly board top 100: 1 Selenite Glass;
-- weekly top 10: 1 Moonheart;
-- 30-day season top 3: 2 Moonheart.
+**Conquest board rewards (owner decision, Nov 24, 2026; Session 7C, `worker/src/conquest-boards.js` BOARD.bands).** Percent bands
+with a minimum field replace the old "top 100 / top 10 / top 3" proposal (with 40 players a "top 100" hands a rare mineral to
+everyone). Each board pays **once per period**, **only when at least 20 verified pilots are on it** (pilots under review are left
+off the board and out of the count), and **every band is rounded down** (and capped):
+
+| Board (period) | Band | Reward |
+|---|---|---|
+| Hive Titan damage (week) | top 10% (at most 100) | 1 Selenite |
+| Hive Titan damage (week) | top 1% (at most 10) | 1 Moonheart |
+| Hive Titan damage (30 days: fixed 30-day periods) | top 1% (at most 3) | 2 Moonheart |
+| Town Score gain, defense rating, raid time-attack, campaign score (week) | top 10% (at most 100) | 1,500 CP + 1 rare fragment |
+
+Examples: 19 verified pilots pay nothing; 20 pay the Titan's Selenite to 2 and no Moonheart; 100 pay 10 Selenite and 1 Moonheart;
+5,000 pay 100 and 10. Equal scores rank by who reached the score first. Weeks start Monday 00:00 UTC. The minerals are banked to the
+account wallet (never carried cargo); each reward is applied once by its grant id, and only if the period's settlement record lists
+the pilot in that band. Never sold; nothing here pays airdrop points. The Hive Titan's own kill: 1,600 base points once per slot
+(`RULES.CQ_PTS.titan`) and the `LOOT.titan` roll (§5.7).
 
 ### 5.6 Daily mineral income by player type (model)
 
@@ -448,6 +483,10 @@ they pay salvage (once per spawn generation, once per UTC day per mission slot; 
 | Meteor Strike secured | 15% a research part · 10% a rare fragment · the Strike Core trophy at every 12th | Resonance |
 | Town / sector defense held | 6% two consumables · 4% an uncommon fragment | — |
 | War Orders (Part E) | each daily 1 consumable · the day's third 1 uncommon fragment · the weekly 1 Armalcolite + 1 rare fragment | — |
+| Hive Titan killed (Session 7C, once per slot) | 25% a research part · 20% 1 Selenite · 2% 1 Moonheart · 30% the Hive Titan trophy · 10% an epic fragment | at most 5 Titans without a Selenite |
+
+The decided Titan row also guaranteed 2 Tranquillityite a kill; it is kept out because, counted in the fortress model, it failed the
+fortress guard (e) (Checkpoint 50, "Guards with everything on": a PROPOSAL for the owner).
 
 Minerals in a kill cache are cargo (half lost on death, banked to the wallet through the outbox). Consumables (Repair Kit 40%, Shield Cell
 25%, Scanner Charge 20%, Decoy Beacon 15%; cap 10 each), research parts (cap 50 each), fragments and trophies are account-bound the moment
@@ -1071,6 +1110,64 @@ The rank pace is kept as built (owner, Nov 18). Read with the goal rules: nobody
 months on the free path at any play time: chips are one a day), a payer gets there about seven weeks sooner with the weekly pack but
 never buys power directly (chips buy research time, not levels), and the Battalion stage (day 17 at an hour a day) gives the first
 month its big goal.
+
+## 16. Living Town (Session 7T, owner brief Nov 22; Session 7T-P, owner decisions Nov 23)
+
+Code: `js/conquest/townwar.js` (`ConquestTown.TOWN`, shared with the Worker), `worker/src/conquest-town.js`, `js/conquest/raid.js`.
+Record: Checkpoints 47 (7T) and 48 (7T-P). Tests: `dev/tests/conquest-away-raids.mjs`, `dev/tests/conquest-live-defense.mjs`,
+`dev/tests/conquest-fortress.mjs` (model `dev/tools/fortress-model.mjs`).
+
+### 16.1 Town attacks: strength and pace (owner-adopted Nov 23, Session 7T-P decision 1)
+- **THREAT -> raid level** (`TOWN.level`, index = THREAT rounded, 0..16; the cap 9): `1, 1, 2, 3, 4, 5, 6, 7, 8, 8, 8, 8, 8, 8, 8, 9, 9`.
+  THREAT is Session 7's `threatOf` on the town (the attacking general's stars, the portal while open, the Citadel tiers cleared, the
+  Grand Offensive surge), never Command Center level, gear or purchases. The cap 9 is where the fully built town holds every raid at
+  the top strength (THREAT 16) without a breach. The first attack on a town is a teaching raid (a one-star general at level 1).
+- **The tick chance** (`TOWN.chance`): an eligible war tick announces a town attack **60%** of the time (about 0.9 a day at CC2-5
+  and about 1.4 a day from CC6 under the pace limits (the real clock over a year: 1.36): at most 1 in any 24 hours through CC5 and 2 from CC6, at least 8 hours apart, none
+  in a town's first 3 days, under a shield or while the front is frozen).
+- Both were Session 7T PROPOSALS; the owner adopted them as shipped on Nov 23.
+
+### 16.2 Selenite for the late fortress (Session 7T-P decision 2 and the owner's addendum, Nov 23)
+- **Rule** (`TOWN.se`, `ConquestTown.seOf`): a town raid at the **cap level (9)** settled HELD with the pilot **really fighting** (the 675
+  defense points' own rule) drops **8 Selenite** into the pilot's cargo (banked at the Refuge like every mineral). None below the cap,
+  none for an unfought raid, none for a fight that did not hold. Selenite stays earn-only (never in the store).
+- **Ships inert until the Citadel's tiers VIII-IX (Session 11):** the town clock passes 0 Citadel tiers today, so a town attack is level
+  1-4 (the Grand Offensive's target up to 7); 7B's tiers I-III top out at level 8; the cap (THREAT 15) needs tiers VIII-IX (in the
+  fortress model the first cap raids come about day 110 for the grinder, 169 for the heavy player and 259 for the regular, most of them
+  later: from about day 135, 208 and 320). The session that passes the tiers to
+  the town passes them in all five places (the Worker's town clock, its settle, the town-defend start, the hub's preview and its
+  last-chance line).
+- **Measured** (`dev/tools/selenite-candidates.mjs`, the fortress model's real income, builder and raid engine, 56 raids a day on two seed
+  sets; `docs/conquest/session7tp/selenite-candidates.json`): late in the year (days 300, 330, 365) the 2-hour heavy player holds 88.1%
+  (77.1% before; 4 Selenite gave 81.3%, 12 gave 87.8%), the grinder 94.1% (85.7%), and the regular's hold rates stay within 3.6 points at
+  every measured day. The other candidate, Strike Resonance every 8 strikes instead of 12, moved the grinder by 0 to -1 points, the
+  heavy player +3, and the regular by up to 7 points (it fails the 5-point rule); in this economy model it would bring the regular's
+  Selenite plate set 24 days sooner (day 182 to 158) and leave the grinder's (day 38) unchanged.
+- Selenite a year (fortress model, half to the town, half to plating): regular 199 (61 before), heavy 1,208 (122), grinder 1,808 (206).
+  Wall strength after a year (1 = Moonheart heavy everywhere): heavy 0.67, grinder 0.80, the paying pilot 0.78: nobody is fully built
+  inside the year.
+
+### 16.3 The first wall ring (Session 7T-P decision 3)
+- The town coach's step 4 (before CC4): CLOSE YOUR WALL RING, with a red marker where the town is open, until the raiders' gathering
+  cells cannot reach the Command Center or a vital without breaking a wall (`ConquestTown.ringOf`). **SUGGEST A RING** drafts the closing
+  order in one tap (`ConquestTown.ringPlan`: an inner ring and, when the composite allows, an outer one; ICE BASIN's frozen shore sealed);
+  the pilot confirms it like any wall order (composite only, never a price change).
+- **REPAIR on the way to CC10** (`dev/tools/coach-ring-repairs.mjs`, the Nov 10 guard method: the 60-minute regular on the real reducers,
+  every raid decided unfought, REPAIR paid when damaged; 101 pilots): without walls 121,628 CP in 43 repairs on CRATER RIM (CC10 twice as
+  long) and 180,426 CP across the seven sites; with the coach's ring 635 CP and 1,421 CP, CC10 no longer delayed. No repair-price change
+  is needed. Held unfought raids paid the whole defense cache (Session 7T decision 5), so a walled regular reached CC10 sooner than with
+  no town attacks (CRATER median day 20.8 / mean 22.7 against 28.8 / 27.3).
+- **Owner decision (Session 7B STEP 3, Nov 24):** a held raid **nobody fought** pays the defense cache **without its CP**: 15 alloy,
+  10 biomass and 2 He-3 (`ConquestTown.TOWN.away`); a raid really fought in person (`live.fought`) keeps the whole cache (160 CP +
+  15 alloy + 10 biomass + 2 He-3). Measured with every 7B change on (`dev/tools/held-raid-cache.mjs`, 101 pilots): the walled regular's
+  CC10 median 27.8 / mean 26.5, inside the Session 6 band 25.9-31.7 (the whole cache 20.8 / 22.8, half 26.8 / 24.1); the heavy player's
+  late fortress 88.1%. conquest-fortress guard (f) checks the coached CC10 median (and the seven sites') inside that band.
+
+### 16.4 Welcome-back kits (Session 7T-P decision 4)
+- Back after **14 or more UTC days with no verified activity**, the streak's day-1 Repair Kit and day-3 Scanner Charge are given once
+  more, on that return's streak days 1 and 3 (once a return; only kits the pilot was given before are re-armed). Never points, minerals
+  or CP; consumables stop at their cap (10). A pilot who plays one day every 15 days gets 25 Repair Kits a year and no Scanner Charge; a
+  daily pilot's kill caches drop about one consumable a day.
 
 ## Appendix: model assumptions (`dev/tools/economy-model.mjs`)
 
