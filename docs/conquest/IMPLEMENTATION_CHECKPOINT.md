@@ -7633,6 +7633,95 @@ If your context was cleared, read docs/conquest/audit/SESSION_07C_BRIEF.md first
   `af852a8` when this session started). Its files (js/conquest/combat.js, hub.js, plot.js, plotview.js, slots.js, style.js,
   townkit.js, view.js, worldkit.js, kit/*, js/core.js, main.js, meshy3d.js, net.js, showroom.js, fx3d.js, web/boot.js) get only
   small hook-in edits here; 7C lives in new modules. One branch for every PR of this session (restarted from main after each merge).
-- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07C_BRIEF.md`; this checkpoint opened; research running.
-- **Next:** STEP 1 (fortress-model Citadel days, the loot test's world-load wait, the Citadel result card, world.js collision fast
-  paths with a replay-identity test).
+- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07C_BRIEF.md`; this checkpoint opened; research done
+  (below).
+- **Slice 2 (STEP 1):** all four items built and tested (details under "STEP 1" below). One PR for the whole session (draft), reviews at
+  the end, then ready + `auto-release`; a docs-only PR after the release.
+- **Next:** STEP 2 (the standing card, the trust line, the command fingerprints and their flags).
+
+### Research: the best comparable boards, raid bosses, anti-bot signals and community bars (before STEPs 2-4 were designed)
+One research agent, web search (gamedeveloper.com and docs.arbitrum.foundation fetches were blocked: search snippets used). Lessons and
+what each changed here:
+1. **Percent bands need a floor at small populations** (WoW Gladiator top 0.5% with a flat minimum at low population; fixed top-N
+   only at large scale: Diablo 4 top 1,000, Apex Predator top 750). -> The owner's bands with the 20-pilot minimum field (the brief:
+   rounded down, capped); a board under 20 verified pilots pays nothing that week and says so ("small field").
+2. **Count only active, verified entrants** (Duolingo leagues of ~30, Mario Kart Tour groups of 20, Battlegrounds percentiles of
+   players with 5+ games). -> N = the verified pilots on the board that week (pilots under review are left off before N is counted).
+3. **The server writes every score** (PlayFab: never post competitive stats from the client; Steam trusted boards). -> Every board
+   score is the Worker's own: verified receipts, the raid's server clock, the Titan's server-simulated damage.
+4. **Hide and hold, don't ban** (Google Play hides suspect scores; Fortnite vets winners after an event). -> Held pilots are left off
+   (as cqtop) and skipped at the payout; nothing bans.
+5. **A fixed weekly reset; ties broken fairly; spoiler-free bragging** (Destiny Tuesday reset; Wordle's spoiler-free grid). -> Monday
+   00:00 UTC (the game's week); equal scores rank by who reached the score first; the share card shows the band, the board and the
+   score, never a route.
+6. **Short boss clocks reward speed** (Pokemon GO raids 180-300 s, a speed bonus). -> The Titan's 4-minute clock; its board ranks
+   damage, the kill pays once.
+7. **Telegraph every phase; an enrage is the damage check** (Patchwerk's enrage; Destiny Final Stand HP-bar ticks; Kulve Taroth stage
+   timers). -> Phase marks at 2/3 and 1/3 of the 9,000 HP, adds in the burrow phase, telegraphed plasma rings, the clock is the check.
+8. **Exactly one payout per slot** (GW2 one chest per character per day; Genshin weekly bosses once a week). -> The kill pays 1,600
+   base points and loot once per Titan slot per pilot; retries in the slot play but never pay again.
+9. **Pity that cannot be farmed** (Destiny 2's per-account weekly exotic counter; Lost Ark's Artisan's Energy). -> The Titan's pity
+   rises once per slot (one Titan a slot), per account.
+10. **Flag, review, act late** (VACnet sends cases to reviewers; Jagex under 1% false positives; Riot delays bans). -> Flags only;
+    a flagged pilot plays on and sits out boards and the snapshot until cleared; thresholds stay server-side.
+11. **Repetition is the strongest bot signal** (NDSS 2016: repeated action sequences alone gave AUC 0.90-0.96). -> `cqrepeat`: three
+    near-identical operations in a day (same operation, same coarse path, same input histogram, about the same time).
+12. **Timing signals need volume and K consecutive runs** (Ragnarok Online regular intervals; autoclicker CV floors over ~150
+    clicks; small samples misfire). -> Fingerprints only above a minimum command count; `cqnoinput` needs 3 operations; the human
+    fixtures (variance) must never fire.
+13. **Alt clusters need two links and a soft penalty** (Arbitrum collapsed clusters to one recipient; sybil poisoning). -> `cqalt`
+    only inside an existing device / network cluster and only with two matching Conquest signals; the cluster's main account counts.
+14. **Review shrinks the list; keep criteria private** (LayerZero, Optimism). -> The admin sheet's one row per cluster with a clear.
+15. **Normalize community goals to population; cap each player** (Helldivers 2 impact scaling; Warframe clan-size research costs;
+    Clash of Clans per-player cap). -> The War Effort goal = active pilots x quota x 0.6; each pilot counts up to 2 quotas.
+16. **Tiers make failure graceful; pay everyone eligible on success** (Pokemon GO tiers; Helldivers pays all on success, nothing
+    lost on failure). -> Cosmetic tiers along the bar; every contributor gets the crate on a win; a loss takes nothing.
+
+### STEP 1 (lead's decisions, with reasons)
+- **The fortress model on the measured Citadel days** (`dev/tools/fortress-model.mjs` PROFILES.citadel): tiers I-III at the days 7B
+  measured with the real assault (regular 15 / 30 / 37, heavy 9 / 17 / 24, grinder 6 / 13 / 20); IV-IX unchanged: the planned knot at
+  the old tier III day stays (regular 49, heavy 32, grinder 21), so from that day the schedule is exactly the planned one (tier IV
+  regular day 77.75, V 106.5, VI 135, VII 196.75, VIII 258.5, IX 320: the same crossings as before, checked day by day). The paying
+  pilot keeps the grinder's schedule (the same play time; no measurement exists for it). **Both guards pass with the measured days, so
+  they stay in the model** (no PROPOSAL): `conquest-ladder-check` PASS (101 pilots: CC5 5.8, CC10 median 26.8 / mean 26.8; 85% of
+  pilots inside the band); `conquest-fortress` 14 checks PASS (1,150 s): (a) 50 / 50 at the cap, (b) 85 steps, (c) the regular 77%
+  along the year (7B: 79%), (d) the grinder 86% at day 330 (unchanged), (e) the heavy player 83% late (unchanged), the regular within
+  4.8 points of 7T, (f) the coached CC10 median 27.8 (seven sites 27.8) inside the band. Reported: the never-walled builder of guard
+  (f) now meets stronger raids sooner and pays 432,759 CP of REPAIR (7B: 368,938) and does not reach CC10 within 200 days (7B: 61.8);
+  not a guard (the coach's ring is), but it shows the first ring matters more.
+- **The loot test's world-load wait** (`dev/tests/conquest-session6-loot.py` `world_loaded`): no fixed 90 s deadline; the world must
+  still load completely (the authority connected and `Conquest.view.pending` 0, as before); the wait fails as soon as loading stops
+  progressing (no chunk, flora or horizon job finished and no change in the work still to do for 45 s) and has a 600 s budget cap
+  (the CI job's time); every reading is in the failure message, and the load time is printed per size. No assertion skipped, deleted
+  or weakened. Local: the world loaded at all three sizes; the 1366x768 run then failed at the long press on SHIELD, the step
+  Checkpoint 49 recorded as failing in this container on main too (CI passes it).
+- **The Citadel result card shows only what the account paid.** The cause: the settlement wrote the bounty it queued (`rec.bounty`),
+  and a reset Conquest record re-clearing a tier queues it again while the account pays 0 (S.cbty). Now `eco.js creditConquest`
+  returns `btyPaid` (each delivered bounty id: the amount paid now, or 0 when the account already held it), and the Worker writes
+  `rec.paid` into the settlement once, in the reply and in the stored record (`conquest.js paidBounty`, inside the prune CAS: the
+  settlement is in the hot part). The card shows "+25,000 airdrop bounty" only from `rec.paid`; with 0 "Airdrop bounty: already paid
+  to this account (each tier pays once per account)"; before the account answers (its write was down) "Airdrop bounty: crediting
+  your account..." and the card redraws when the answer arrives (`data-bq`, app.js). Tests: `conquest-citadel` 83 (the card's three
+  states on the real `citadelui.js`), `wtest/conquest-citadel-payout` 25 (the reply and the stored record: paid 25,000; the account
+  down: no number, then 25,000; a reset record re-clearing tier I: paid 0; its tier II: 37,500; a dev record: no line), and the
+  browser test `conquest-citadel.py` (the first size's clear shows +25,000; the later sizes fly the same account on a fresh record:
+  "already paid", no number).
+- **Faster collision lookups in `js/conquest/world.js`, exact.** Measured first (a CPU profile of a tier I assault with nine allies):
+  `blockedAt` 29% self (60% with what it calls), `raidSolidAt` 20%, `rockSolid` 6%, `structureSolidAt` 5%: a line of sight asks
+  `blockedAt` every 0.5 m (combat.js `lineClear`), and the steering asks up to 13 lines a decision. The fast paths only skip work whose
+  answer is already known; every comparison that decides a result is the original one: a cell index (32 m cells, a 1 m margin around
+  every footprint) for the raid cover, the installations' two footprints and the colony lots (the same cell objects, so `colonyLotAt`
+  returns the same first lot); the tops of fixed footprints cached on first use; rock chunks by number with each chunk's rock box (+1
+  m) and highest top; the slab test with each box's bounds computed once and no per-call arrays; bounding boxes before the towers,
+  domes, pylons and rail pylons; no closures or arrays per call. The original lookups stay beside them (`ConquestWorld.LOOKUPS.fast`
+  false runs them) for the proof. **Proof** (`dev/tests/conquest-collision-identity.mjs`, in the CI `conquest` job): (1) every lookup
+  on 852,978 point, segment and move checks identical (every footprint edge at +-1e-9 and +-0.5 m, every rock ellipse edge, NaN, far
+  away); (2) every operation (all 59: field missions, raids, Meteor Strikes, defenses, counterattacks, the town defense, Citadel I-III)
+  and the open world replayed through the real Worker reducer (`applyCommands`, 20 commands a request, a bot pilot with six allies)
+  both ways: the whole record identical after every one of 1,618 requests. `conquest-world-equivalence.mjs` against main's world.js:
+  0 differences. **Measured** (local Node 22, not Cloudflare's meter): the 1,618 requests cost 45.8 s with the original lookups and
+  17.6 s with the fast ones (61.6% less); a whole Citadel assault with nine allies: tier I 34-39 s -> 9.2 s, tier II 32-33 s -> 8.5 s,
+  tier III 27.5 s -> 8.0-8.8 s, with identical outcomes, clear times, hull and dropships downed. The brief's target was about a fifth.
+  Found on the way (unchanged, unreachable): the original `rockSolid` never returns for an infinite coordinate (positions are clamped
+  and commands validated), so the test never asks it one.
+

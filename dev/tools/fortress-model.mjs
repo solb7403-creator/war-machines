@@ -25,17 +25,21 @@ const {MODEL}=await import('./economy-model.mjs');const {GEAR}=await import('../
 const YEAR=400,DAY=86400000,HOUR=3600000,start=Date.UTC(2026,10,10,0),at=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'}),K=['cp','alloy','biomass','helium'];
 // ---- profiles (the audit's: the economy model's town ladder uses them) ----
 const AUDIT=JSON.parse(readFileSync(new URL('../../docs/conquest/audit/model/audit-economy.json',import.meta.url),'utf8')).profiles;
+// Session 7C STEP 1 (owner brief docs/conquest/audit/SESSION_07C_BRIEF.md): tiers I-III on the Citadel days Session 7B measured with the
+// real assault (docs/conquest/session7b/citadel-pace.json: regular 15 / 30 / 37, heavy 9 / 17 / 24, grinder 6 / 13 / 20); IV-IX unchanged:
+// the planned knot at the old tier III day (regular 49, heavy 32, grinder 21) is kept, so from that day on the schedule is the planned one
+// exactly (tier IV regular day 77.7, ... IX day 320). The paying pilot keeps the grinder's schedule (the same play time).
 export const PROFILES={
- regular:{label:'Regular (60 min a day, one session)',sessions:[[19,60]],ladder:'regular',share:.5,builders:1,citadel:[[0,0],[17,1],[49,3],[135,6],[320,9]],gear:[[0,0],[30,1],[150,2]]},
- grinder:{label:'Grinder (4 h a day, two sessions)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:1,citadel:[[0,0],[6,1],[21,3],[60,6],[135,9]],gear:[[0,0],[10,1],[60,2]]},
+ regular:{label:'Regular (60 min a day, one session)',sessions:[[19,60]],ladder:'regular',share:.5,builders:1,citadel:[[0,0],[15,1],[30,2],[37,3],[49,3],[135,6],[320,9]],gear:[[0,0],[30,1],[150,2]]},
+ grinder:{label:'Grinder (4 h a day, two sessions)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:1,citadel:[[0,0],[6,1],[13,2],[20,3],[21,3],[60,6],[135,9]],gear:[[0,0],[10,1],[60,2]]},
  // the paying pilot at the grinder's play time: the store's planned levers (docs/ROADMAP.md standing decisions: second builder, speed-ups,
  // wall extension packs, common / uncommon ore; checkout off until Session 8): two builders, the extension packs, Ferrite and Ilmenite
  // bought as needed, Epic gear from day 1 (crates); never CP, never rare-or-better ore (earn-only)
  // the heavy player (owner, Nov 23: "I'd be shocked if players played for more than 2 [hours a day]"; Session 7T-P decision 2 targets
  // them): 2 h a day in two sessions, the economy model's town ladder at 120 minutes (ladderOf: the log-midpoint of the regular's and the
  // grinder's), the Citadel and gear paced between the two; otherwise as the grinder
- heavy:{label:'Heavy (2 h a day, two sessions)',sessions:[[10,60],[19,60]],ladder:'heavy',share:.5,builders:1,citadel:[[0,0],[10,1],[32,3],[90,6],[208,9]],gear:[[0,0],[17,1],[95,2]]},
- payer:{label:'Paying pilot at the grinder\'s play time (store levers as planned)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:2,citadel:[[0,0],[6,1],[21,3],[60,6],[135,9]],gear:[[0,2]],buyFeIl:true,extPacks:true}};
+ heavy:{label:'Heavy (2 h a day, two sessions)',sessions:[[10,60],[19,60]],ladder:'heavy',share:.5,builders:1,citadel:[[0,0],[9,1],[17,2],[24,3],[32,3],[90,6],[208,9]],gear:[[0,0],[17,1],[95,2]]},
+ payer:{label:'Paying pilot at the grinder\'s play time (store levers as planned)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:2,citadel:[[0,0],[6,1],[13,2],[20,3],[21,3],[60,6],[135,9]],gear:[[0,2]],buyFeIl:true,extPacks:true}};
 const interp=(pts,d)=>{let v=pts[0][1];for(let i=0;i<pts.length;i++){if(d>=pts[i][0])v=pts[i][1];if(i+1<pts.length&&d>=pts[i][0]&&d<pts[i+1][0]){const [a,va]=pts[i],[b,vb]=pts[i+1];return va+(vb-va)*(d-a)/(b-a);}}return v;};
 export const tiersAt=(pr,d)=>Math.max(0,Math.min(9,Math.floor(interp(pr.citadel,d))));
 const HEAVY=MODEL.ladderOf(120),hitOf=pr=>pr.ladder==='heavy'?Object.fromEntries(Object.entries(HEAVY).map(([k,day])=>[k,{day}])):AUDIT[pr.ladder].base.hit;

@@ -21,7 +21,22 @@ const raidObstacles=Object.freeze([
  {id:'ridge-north',layout:'ridge-hook',x:1290,z:1190,width:6,depth:8,height:5},
  {id:'ridge-east',layout:'ridge-hook',x:1312,z:1228,width:6,depth:8,height:5}
 ].map(Object.freeze));
-function raidSolidAt(x,z,y=null){return raidObstacles.some(o=>Math.abs(x-o.x)<o.width/2&&Math.abs(z-o.z)<o.depth/2&&(y===null||y<groundAt(o.x,o.z)+o.height));}
+// Session 7C STEP 1 (owner brief docs/conquest/audit/SESSION_07C_BRIEF.md): exact fast paths for the collision lookups. The Worker replays
+// every command through them (a line of sight asks blockedAt every 0.5 m: about half of an operation's replay). Each index only skips
+// items whose answer is already known (a cell index with a 1 m margin around every footprint, the tops of fixed footprints cached on
+// first use, no per-call arrays or closures); every comparison that decides a result is the original one, so every result is identical.
+// LOOKUPS.fast=false runs the original lookups (dev/tests/conquest-collision-identity.mjs replays every operation both ways).
+const LOOKUPS={fast:true};
+// a cell index of boxes: box(item) -> [x0,x1,z0,z1] (the caller adds the margin); query: the items whose box touches the point's cell
+function cellIndex(items,box,cell){let i0=Infinity,i1=-Infinity,j0=Infinity,j1=-Infinity;const b=items.map(box);
+ for(const [x0,x1,z0,z1] of b){i0=Math.min(i0,Math.floor(x0/cell));i1=Math.max(i1,Math.floor(x1/cell));j0=Math.min(j0,Math.floor(z0/cell));j1=Math.max(j1,Math.floor(z1/cell));}
+ const w=j1-j0+1,cells=[];items.forEach((it,k)=>{const [x0,x1,z0,z1]=b[k];for(let i=Math.floor(x0/cell);i<=Math.floor(x1/cell);i++)for(let j=Math.floor(z0/cell);j<=Math.floor(z1/cell);j++){const c=(i-i0)*w+j-j0;(cells[c]||(cells[c]=[])).push(it);}});
+ return {cell,i0,i1,j0,j1,w,cells};}
+function cellAt(G,x,z){const i=Math.floor(x/G.cell),j=Math.floor(z/G.cell);return i>=G.i0&&i<=G.i1&&j>=G.j0&&j<=G.j1?G.cells[(i-G.i0)*G.w+j-G.j0]:undefined;}   // NaN or far away: undefined
+let RO_G=null;const RO_TOP=[];
+function raidSolidAt(x,z,y=null){if(!LOOKUPS.fast)return raidObstacles.some(o=>Math.abs(x-o.x)<o.width/2&&Math.abs(z-o.z)<o.depth/2&&(y===null||y<groundAt(o.x,o.z)+o.height));
+ const c=cellAt(RO_G||(RO_G=cellIndex(raidObstacles.map((o,k)=>k),k=>{const o=raidObstacles[k];return [o.x-o.width/2-1,o.x+o.width/2+1,o.z-o.depth/2-1,o.z+o.depth/2+1];},32)),x,z);if(!c)return false;
+ for(let n=0;n<c.length;n++){const k=c[n],o=raidObstacles[k];if(Math.abs(x-o.x)<o.width/2&&Math.abs(z-o.z)<o.depth/2){if(y===null)return true;let t=RO_TOP[k];if(t===undefined)t=RO_TOP[k]=groundAt(o.x,o.z)+o.height;if(y<t)return true;}}return false;}
 // Authored frontier geography; the wider Moon and legacy grid sectors stay intact.
 const sectors=Object.freeze([
  {id:'refuge',name:'REFUGE CORRIDOR',x:1010,z:1100,radius:115,threat:'interceptor patrols',architecture:'viaduct and supply bastions',reward:'safe banking approaches'},
@@ -155,10 +170,14 @@ const ROAD_FAST=1.15,colonyGrid=new Map(),cg=(x,z)=>Math.floor(x/32)+':'+Math.fl
  for(const r of COLONY.roads)for(let i=1;i<r.pts.length;i++){const [a,b]=[r.pts[i-1],r.pts[i]],m=r.w/2+3,v={a,b,hw:r.w/2,paved:!!r.p};addTo(Math.min(a[0],b[0])-m,Math.min(a[1],b[1])-m,Math.max(a[0],b[0])+m,Math.max(a[1],b[1])+m,{t:'roads',v});}}
 const inLot=(l,x,z,pad=0)=>{const dx=x-l.x,dz=z-l.z,u=dx*l.c+dz*l.sn,v=-dx*l.sn+dz*l.c;return Math.abs(u)<=l.w/2+pad&&Math.abs(v)<=l.d/2+pad;};
 const segD=(x,z,a,b)=>{const dx=b[0]-a[0],dz=b[1]-a[1],L=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/L));return Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t);};
-function colonyLotAt(x,z){const c=colonyGrid.get(cg(x,z));if(!c)return null;for(const l of c.lots)if(l.s&&inLot(l,x,z))return l;return null;}
+let COLONY_N=null;   // Session 7C STEP 1: colonyGrid's cells by number (the same cell objects, the same lot order: the same first lot)
+function colonyCell(x,z){if(!LOOKUPS.fast)return colonyGrid.get(cg(x,z));if(!COLONY_N){let i0=Infinity,i1=-Infinity,j0=Infinity,j1=-Infinity;const ks=[...colonyGrid.keys()].map(k=>k.split(':').map(Number));for(const [i,j] of ks){i0=Math.min(i0,i);i1=Math.max(i1,i);j0=Math.min(j0,j);j1=Math.max(j1,j);}
+  const w=j1-j0+1,cells=[];for(const [k,v] of colonyGrid){const [i,j]=k.split(':').map(Number);cells[(i-i0)*w+j-j0]=v;}COLONY_N={cell:32,i0,i1,j0,j1,w,cells};}return cellAt(COLONY_N,x,z);}
+function colonyLotAt(x,z){const c=colonyCell(x,z);if(!c)return null;for(const l of c.lots)if(l.s&&inLot(l,x,z))return l;return null;}
 function roadAt(x,z){const c=colonyGrid.get(cg(x,z));if(!c)return false;for(const r of c.roads)if(r.paved&&segD(x,z,r.a,r.b)<=r.hw)return true;return false;}   // paved roads only (dirt tracks are not faster)
 function clearedAt(x,z){const c=colonyGrid.get(cg(x,z));if(!c)return false;for(const l of c.cleared)if(inLot(l,x,z,3))return true;for(const r of c.roads)if(segD(x,z,r.a,r.b)<=r.hw+3)return true;return false;}
-const railPylonAt=(x,z)=>COLONY.railPylons.some(([px,pz])=>Math.abs(x-px)<1.5&&Math.abs(z-pz)<1.5&&Math.hypot(x-px,z-pz)<1.4);
+const RAIL_BOX=(()=>{let a=Infinity,b=-Infinity,c=Infinity,d=-Infinity;for(const [px,pz] of COLONY.railPylons){a=Math.min(a,px);b=Math.max(b,px);c=Math.min(c,pz);d=Math.max(d,pz);}return [a-2.5,b+2.5,c-2.5,d+2.5];})();
+const railPylonAt=(x,z)=>{if(LOOKUPS.fast){if(!(x>RAIL_BOX[0]&&x<RAIL_BOX[1]&&z>RAIL_BOX[2]&&z<RAIL_BOX[3]))return false;for(const [px,pz] of COLONY.railPylons)if(Math.abs(x-px)<1.5&&Math.abs(z-pz)<1.5&&Math.hypot(x-px,z-pz)<1.4)return true;return false;}return COLONY.railPylons.some(([px,pz])=>Math.abs(x-px)<1.5&&Math.abs(z-pz)<1.5&&Math.hypot(x-px,z-pz)<1.4);};
 function forestAt(x,z){if(x<810||x>1160||z<1190||z>1275)return null;for(const f of forests){const d=Math.hypot(x-f.x,z-f.z);if(d<f.r)return {...f,d,core:d<f.r-FOREST_EDGE};}return null;}
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),mix=(a,b,t)=>a+(b-a)*t,smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 function hash(x,z){let n=Math.imul(x^SEED,374761393)^Math.imul(z,668265263);n=Math.imul(n^(n>>>13),1274126177);return (n>>>0)/4294967295;}
@@ -193,16 +212,53 @@ function normalAt(x,z){const dx=(heightAt(x+.5,z)-heightAt(x-.5,z)),dz=(heightAt
 function biomeAt(x,z){if(terraformAt(x,z)>=TERRA.lichen)return 'terraformed';return noise(x,z,1500)>.54?'massif':'wasteland';}
 function deckAt(x,z){if(x<900||x>1140||Math.abs(z-1024)>9)return Math.abs(x-creekBridge.x)<13&&Math.abs(z-creekBridge.z)<13?creekBridgeDeck(x,z):null;return x<960?mix(groundAt(900,z),24,(x-900)/60):x>1080?mix(24,groundAt(1140,z),(x-1080)/60):24;}
 function surfacesAt(x,z){const a=[{id:'ground',y:groundAt(x,z)}],y=deckAt(x,z);if(y!==null)a.push({id:'bridge',y});return a;}
-function structureSolidAt(x,z){if(raidSolidAt(x,z))return true;if(installations.some(b=>Math.abs(x-b.x)<11&&Math.abs(z-b.z-8)<8||Math.hypot(x-b.x-14,z-b.z-10)<2))return true;for(let i=0;i<3;i++)if(Math.hypot(x-(1150+i*30),z-1080)<12)return true;for(let i=0;i<9;i++)if(Math.hypot(x-(1110+i%3*22),z-(1148+Math.floor(i/3)*25))<7.8)return true;const dm=water.dam;if(x>dm.x0&&x<dm.x1&&Math.abs(z-dm.z)<dm.depth/2)return true;for(const p of pylons)if(Math.abs(x-p.x)<2.2&&Math.abs(z-p.z)<2.2&&Math.hypot(x-p.x,z-p.z)<1.8)return true;if(colonyLotAt(x,z)||railPylonAt(x,z))return true;return false;}
+function structureSolidAt(x,z){if(!LOOKUPS.fast)return structureSolidAt0(x,z);if(raidSolidAt(x,z))return true;
+ {const c=cellAt(INST_S||(INST_S=cellIndex(installations.map((b,k)=>k),k=>{const b=installations[k];return [b.x-12,b.x+17,b.z-1,b.z+17];},32)),x,z);   // the footprint (x +-11, z+8 +-8) and the side post (x+14, z+10, r 2), +1 m
+  if(c)for(let n=0;n<c.length;n++){const b=installations[c[n]];if(Math.abs(x-b.x)<11&&Math.abs(z-b.z-8)<8||Math.hypot(x-b.x-14,z-b.z-10)<2)return true;}}
+ if(Math.abs(z-1080)<13&&x>1137&&x<1223)for(let i=0;i<3;i++)if(Math.hypot(x-(1150+i*30),z-1080)<12)return true;
+ if(x>1101&&x<1163&&z>1139&&z<1207)for(let i=0;i<9;i++)if(Math.hypot(x-(1110+i%3*22),z-(1148+Math.floor(i/3)*25))<7.8)return true;
+ const dm=water.dam;if(x>dm.x0&&x<dm.x1&&Math.abs(z-dm.z)<dm.depth/2)return true;for(const p of pylons)if(Math.abs(x-p.x)<2.2&&Math.abs(z-p.z)<2.2&&Math.hypot(x-p.x,z-p.z)<1.8)return true;if(colonyLotAt(x,z)||railPylonAt(x,z))return true;return false;}
+function structureSolidAt0(x,z){if(raidSolidAt(x,z))return true;if(installations.some(b=>Math.abs(x-b.x)<11&&Math.abs(z-b.z-8)<8||Math.hypot(x-b.x-14,z-b.z-10)<2))return true;for(let i=0;i<3;i++)if(Math.hypot(x-(1150+i*30),z-1080)<12)return true;for(let i=0;i<9;i++)if(Math.hypot(x-(1110+i%3*22),z-(1148+Math.floor(i/3)*25))<7.8)return true;const dm=water.dam;if(x>dm.x0&&x<dm.x1&&Math.abs(z-dm.z)<dm.depth/2)return true;for(const p of pylons)if(Math.abs(x-p.x)<2.2&&Math.abs(z-p.z)<2.2&&Math.hypot(x-p.x,z-p.z)<1.8)return true;if(colonyLotAt(x,z)||railPylonAt(x,z))return true;return false;}
+let INST_S=null,INST_B=null;const INST_TOP=[],PYLON_TOP=[],LOT_TOP=new Map();
 // Match the deterministic rendered boulders. Cache bounded chunk descriptors, not meshes.
 const rockCache=new Map();
-function rockSolid(x,z,y=null){for(let j=Math.floor((z-8)/128);j<=Math.floor((z+8)/128);j++)for(let i=Math.floor((x-8)/128);i<=Math.floor((x+8)/128);i++){const key=i+':'+j;let rocks=rockCache.get(key);if(!rocks){rocks=scenery(i,j).filter(p=>p.kind==='rock'&&p.variant>.45).map(p=>({...p,rx:p.size*1.6+1,rz:p.size+1,top:p.y+p.size*(.8+p.variant)}));if(rockCache.size>=128)rockCache.delete(rockCache.keys().next().value);rockCache.set(key,rocks);}for(const p of rocks){if(Math.abs(x-p.x)>=p.rx||Math.abs(z-p.z)>=p.rz||y!==null&&!(y<p.top))continue;if(Math.hypot((x-p.x)/p.rx,(z-p.z)/p.rz)<1)return true;}}return false;}
+// Session 7C STEP 1: the same chunk descriptors keyed by number, with each chunk's rock box (+1 m) and highest top; outside them no rock of
+// the chunk can answer, so the chunk is skipped (the same chunks as the original: the point +-8 m)
+const rockCacheN=new Map();
+function rockChunk(i,j){const key=(i+2048)*8192+j+2048;let c=rockCacheN.get(key);if(!c){const rocks=scenery(i,j).filter(p=>p.kind==='rock'&&p.variant>.45).map(p=>({...p,rx:p.size*1.6+1,rz:p.size+1,top:p.y+p.size*(.8+p.variant)}));
+  let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity,top=-Infinity;for(const p of rocks){x0=Math.min(x0,p.x-p.rx);x1=Math.max(x1,p.x+p.rx);z0=Math.min(z0,p.z-p.rz);z1=Math.max(z1,p.z+p.rz);top=Math.max(top,p.top);}
+  c={rocks,x0:x0-1,x1:x1+1,z0:z0-1,z1:z1+1,top};if(rockCacheN.size>=512)rockCacheN.delete(rockCacheN.keys().next().value);rockCacheN.set(key,c);}return c;}
+function rockSolid(x,z,y=null){if(!LOOKUPS.fast)return rockSolid0(x,z,y);const ja=Math.floor((z-8)/128),jb=Math.floor((z+8)/128),ia=Math.floor((x-8)/128),ib=Math.floor((x+8)/128);if(!(ia>=-2048&&ib<=6000&&ja>=-2048&&jb<=6000))return rockSolid0(x,z,y);   // NaN or far off the Moon: the original path
+ for(let j=ja;j<=jb;j++)for(let i=ia;i<=ib;i++){const c=rockChunk(i,j);if(!(x>c.x0&&x<c.x1&&z>c.z0&&z<c.z1)||y!==null&&!(y<c.top))continue;const R=c.rocks;
+  for(let n=0;n<R.length;n++){const p=R[n];if(Math.abs(x-p.x)>=p.rx||Math.abs(z-p.z)>=p.rz||y!==null&&!(y<p.top))continue;if(Math.hypot((x-p.x)/p.rx,(z-p.z)/p.rz)<1)return true;}}return false;}
+function rockSolid0(x,z,y=null){for(let j=Math.floor((z-8)/128);j<=Math.floor((z+8)/128);j++)for(let i=Math.floor((x-8)/128);i<=Math.floor((x+8)/128);i++){const key=i+':'+j;let rocks=rockCache.get(key);if(!rocks){rocks=scenery(i,j).filter(p=>p.kind==='rock'&&p.variant>.45).map(p=>({...p,rx:p.size*1.6+1,rz:p.size+1,top:p.y+p.size*(.8+p.variant)}));if(rockCache.size>=128)rockCache.delete(rockCache.keys().next().value);rockCache.set(key,rocks);}for(const p of rocks){if(Math.abs(x-p.x)>=p.rx||Math.abs(z-p.z)>=p.rz||y!==null&&!(y<p.top))continue;if(Math.hypot((x-p.x)/p.rx,(z-p.z)/p.rz)<1)return true;}}return false;}
 function solidAt(x,z){return structureSolidAt(x,z)||rockSolid(x,z);}
 // Exact slab intersection avoids a sampling gap at thin bunker corners.
 let coverOccluders;
-function installationOccludes(a,b){coverOccluders=coverOccluders||[...installations.map(site=>({x:site.x,z:site.z+8,width:18,depth:12,height:12,baseY:groundAt(site.x,site.z)})),...raidObstacles.map(site=>({...site,baseY:groundAt(site.x,site.z)}))];return coverOccluders.some(site=>{let lo=0,hi=1;for(const [axis,min,max] of [['x',site.x-site.width/2,site.x+site.width/2],['z',site.z-site.depth/2,site.z+site.depth/2],['y',-Infinity,(site.baseY??groundAt(site.x,site.z))+site.height]]){const delta=b[axis]-a[axis];if(Math.abs(delta)<1e-10){if(a[axis]<=min||a[axis]>=max)return false;continue;}const t0=(min-a[axis])/delta,t1=(max-a[axis])/delta;lo=Math.max(lo,Math.min(t0,t1));hi=Math.min(hi,Math.max(t0,t1));if(lo>=hi)return false;}return hi>1e-6&&lo<1-1e-6;});}
+// Session 7C STEP 1: the same slab test with each box's bounds computed once, no per-call arrays, and a box the segment cannot reach (both
+// ends beyond one face by 1 m) skipped
+let coverSlabs;
+function installationOccludes(a,b){if(!LOOKUPS.fast)return installationOccludes0(a,b);if(!coverSlabs)coverSlabs=occluders().map(site=>[site.x-site.width/2,site.x+site.width/2,site.z-site.depth/2,site.z+site.depth/2,(site.baseY??groundAt(site.x,site.z))+site.height]);
+ const ax=a.x,az=a.z,ay=a.y,bx=b.x,bz=b.z,by=b.y;
+ for(let k=0;k<coverSlabs.length;k++){const S=coverSlabs[k];if(ax<=S[0]-1&&bx<=S[0]-1||ax>=S[1]+1&&bx>=S[1]+1||az<=S[2]-1&&bz<=S[2]-1||az>=S[3]+1&&bz>=S[3]+1||ay>=S[4]+1&&by>=S[4]+1)continue;
+  let lo=0,hi=1,cut=false;for(let q=0;q<3;q++){const av=q===0?ax:q===1?az:ay,min=q===0?S[0]:q===1?S[2]:-Infinity,max=q===0?S[1]:q===1?S[3]:S[4],delta=(q===0?bx:q===1?bz:by)-av;
+   if(Math.abs(delta)<1e-10){if(av<=min||av>=max){cut=true;break;}continue;}const t0=(min-av)/delta,t1=(max-av)/delta;lo=Math.max(lo,Math.min(t0,t1));hi=Math.min(hi,Math.max(t0,t1));if(lo>=hi){cut=true;break;}}
+  if(!cut&&hi>1e-6&&lo<1-1e-6)return true;}return false;}
+const occluders=()=>coverOccluders=coverOccluders||[...installations.map(site=>({x:site.x,z:site.z+8,width:18,depth:12,height:12,baseY:groundAt(site.x,site.z)})),...raidObstacles.map(site=>({...site,baseY:groundAt(site.x,site.z)}))];
+function installationOccludes0(a,b){return occluders().some(site=>{let lo=0,hi=1;for(const [axis,min,max] of [['x',site.x-site.width/2,site.x+site.width/2],['z',site.z-site.depth/2,site.z+site.depth/2],['y',-Infinity,(site.baseY??groundAt(site.x,site.z))+site.height]]){const delta=b[axis]-a[axis];if(Math.abs(delta)<1e-10){if(a[axis]<=min||a[axis]>=max)return false;continue;}const t0=(min-a[axis])/delta,t1=(max-a[axis])/delta;lo=Math.max(lo,Math.min(t0,t1));hi=Math.min(hi,Math.max(t0,t1));if(lo>=hi)return false;}return hi>1e-6&&lo<1-1e-6;});}
 // Shared physical shot occlusion; structure footprints have finite heights, bridge has real underside.
-function blockedAt(x,y,z){if(raidSolidAt(x,z,y))return true;{const l=colonyLotAt(x,z);if(l&&y<groundAt(l.x,l.z)+l.h)return true;}if(installations.some(b=>Math.abs(x-b.x)<9&&Math.abs(z-b.z-8)<6&&y<groundAt(b.x,b.z)+12))return true;if(y<=groundAt(x,z)||rockSolid(x,z,y))return true;const deck=deckAt(x,z);if(deck!==null&&y>=deck-1.3&&y<=deck+.25)return true;
+function blockedAt(x,y,z){if(!LOOKUPS.fast)return blockedAt0(x,y,z);if(raidSolidAt(x,z,y))return true;
+ {const l=colonyLotAt(x,z);if(l){let t=LOT_TOP.get(l);if(t===undefined){t=groundAt(l.x,l.z)+l.h;LOT_TOP.set(l,t);}if(y<t)return true;}}
+ {const c=cellAt(INST_B||(INST_B=cellIndex(installations.map((b,k)=>k),k=>{const b=installations[k];return [b.x-10,b.x+10,b.z+1,b.z+15];},32)),x,z);   // the footprint x +-9, z+8 +-6, +1 m
+  if(c)for(let n=0;n<c.length;n++){const k=c[n],b=installations[k];if(Math.abs(x-b.x)<9&&Math.abs(z-b.z-8)<6){let t=INST_TOP[k];if(t===undefined)t=INST_TOP[k]=groundAt(b.x,b.z)+12;if(y<t)return true;}}}
+ const g=groundAt(x,z);if(y<=g||rockSolid(x,z,y))return true;const deck=deckAt(x,z);if(deck!==null&&y>=deck-1.3&&y<=deck+.25)return true;
+ if(z>1068&&z<1092&&x>1138&&x<1222)for(let i=0;i<3;i++){const a=1150+i*30;if(Math.hypot(x-a,z-1080)<12&&y<groundAt(a,1080)+108+i%2*38)return true;}
+ if(x>1102&&x<1162&&z>1140&&z<1206)for(let i=0;i<9;i++){const a=1110+i%3*22,b=1148+Math.floor(i/3)*25;if(Math.hypot(x-a,z-b)<8&&y<groundAt(a,b)+9)return true;}
+ if(x>dm0&&x<dm1&&Math.abs(z-water.dam.z)<water.dam.depth/2&&y<g+water.dam.height+6)return true;
+ if(x>=810&&x<=1160&&z>=1190&&z<=1275)for(const f of forests){const d=Math.hypot(x-f.x,z-f.z);if(d<f.r){if(d<f.r-FOREST_EDGE&&y<g+FOREST_CANOPY)return true;break;}}   // forestAt's first stand, its core
+ for(let k=0;k<pylons.length;k++){const p=pylons[k];if(Math.abs(x-p.x)<2&&Math.abs(z-p.z)<2&&Math.hypot(x-p.x,z-p.z)<1.8){let t=PYLON_TOP[k];if(t===undefined)t=PYLON_TOP[k]=groundAt(p.x,p.z)+14;if(y<t)return true;}}
+ return (Math.abs(x-970)<1.5||Math.abs(x-1070)<1.5)&&(Math.abs(z-1018)<1.5||Math.abs(z-1030)<1.5)&&y<24;}
+function blockedAt0(x,y,z){if(raidSolidAt(x,z,y))return true;{const l=colonyLotAt(x,z);if(l&&y<groundAt(l.x,l.z)+l.h)return true;}if(installations.some(b=>Math.abs(x-b.x)<9&&Math.abs(z-b.z-8)<6&&y<groundAt(b.x,b.z)+12))return true;if(y<=groundAt(x,z)||rockSolid(x,z,y))return true;const deck=deckAt(x,z);if(deck!==null&&y>=deck-1.3&&y<=deck+.25)return true;
  if(z>1068&&z<1092&&x>1138&&x<1222)for(let i=0;i<3;i++){const a=1150+i*30;if(Math.hypot(x-a,z-1080)<12&&y<groundAt(a,1080)+108+i%2*38)return true;}
  if(x>1102&&x<1162&&z>1140&&z<1206)for(let i=0;i<9;i++){const a=1110+i%3*22,b=1148+Math.floor(i/3)*25;if(Math.hypot(x-a,z-b)<8&&y<groundAt(a,b)+9)return true;}
  if(x>dm0&&x<dm1&&Math.abs(z-water.dam.z)<water.dam.depth/2&&y<groundAt(x,z)+water.dam.height+6)return true;
@@ -321,5 +377,5 @@ function route(from,to,opts){const job=routeJob(from,to,opts);while(!job.done)jo
 // The point the arrow should aim at: the farthest route point within 10 m that the tank can reach in a straight line.
 function routeAim(p,path,from=0){let best=from,bd=Infinity;for(let k=Math.max(0,from-3);k<Math.min(path.length,from+14);k++){const d=Math.hypot(path[k].x-p.x,path[k].z-p.z);if(d<bd){bd=d;best=k;}}
  let aim=Math.min(best+1,path.length-1);for(let k=best+1;k<path.length;k++){if(Math.hypot(path[k].x-p.x,path[k].z-p.z)>10)break;if(routeClear(p,path[k]))aim=k;}return {index:best,aim,off:bd,point:path[aim]};}
-root.ConquestWorld=Object.freeze({id:'moon',version:1,route,routeJob,routeAim,routeClear,knownOre,speedFactor,waterTopAt,baseHeight,floraNodes,HARVEST,deposits,COLONY,ROAD_FAST,colonyLotAt,roadAt,clearedAt,structureSolidAt,flora,forestTrees,legacyGreen,pylons,blightSources,terraformAt,terraZone,soundZone,blightAt,TERRA,water,waterAt,creekNearest,creekBridge,forests,forestAt,FOREST_CANOPY,raidObstacles,sectors,frontierSectorAt,spawn,zones,zoneAt,ringAt,RINGS,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,installations,surfaceNormal,solidAt,blockedAt,installationOccludes,horizon,scenery,travelSpeed,frameSeconds,advance,chunkJob,horizonJob,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
+root.ConquestWorld=Object.freeze({id:'moon',version:1,LOOKUPS,raidSolidAt,rockSolid,route,routeJob,routeAim,routeClear,knownOre,speedFactor,waterTopAt,baseHeight,floraNodes,HARVEST,deposits,COLONY,ROAD_FAST,colonyLotAt,roadAt,clearedAt,structureSolidAt,flora,forestTrees,legacyGreen,pylons,blightSources,terraformAt,terraZone,soundZone,blightAt,TERRA,water,waterAt,creekNearest,creekBridge,forests,forestAt,FOREST_CANOPY,raidObstacles,sectors,frontierSectorAt,spawn,zones,zoneAt,ringAt,RINGS,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,installations,surfaceNormal,solidAt,blockedAt,installationOccludes,horizon,scenery,travelSpeed,frameSeconds,advance,chunkJob,horizonJob,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
 })(globalThis);

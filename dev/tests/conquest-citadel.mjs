@@ -87,6 +87,12 @@ ok(JSON.stringify(R.CIT_BOUNTY)==='[0,25000,37500,50000,75000,100000,150000,2250
 // ---- 5. the first clear: exactly once per account, outside the daily cap ----
 {let s=act(pilot(),{action:'start-mission',mission:'citadel-1'},t0+1000);s=winNow(s,t0+2000);const rec=s.settlement;
  ok(rec?.kind==='citadel'&&rec.first===1&&rec.bounty===25000&&s.cit.t===1&&s.cit.fc[1]&&s.cit.tro[1],'the first clear of tier I: tier cleared, trophy, the 25,000 bounty');
+ ok(!('paid' in rec),'Session 7C: the settlement never says the account paid it (only the account\'s credit writes rec.paid: wtest/conquest-citadel-payout)');
+ {globalThis.ConquestCitadel=CI;globalThis.ConquestWar=WR;new Function(readFileSync(new URL('../../js/conquest/citadelui.js',import.meta.url),'utf8'))();const CU=globalThis.ConquestCitadelUI;{const mk=(t,c,x,p)=>{const n={tag:t,cls:c,text:typeof x==='string'?x:'',kids:[],dataset:{}};if(p)p.kids.push(n);return n;},txt=n=>[n.text,...n.kids.map(txt)].join(' '),card=r=>{const d=mk('div','cq-cit-aar');CU.result(d,r,{el:mk});return {d,t:txt(d)};};
+  const a=card(rec),b=card({...rec,paid:25000}),c=card({...rec,paid:0});
+  ok(!/\+25,000 airdrop bounty/.test(a.t)&&/crediting your account/.test(a.t)&&a.d.dataset.bq==='1','the result card shows no bounty number before the account answers (it redraws: data-bq)');
+  ok(/\+25,000 airdrop bounty/.test(b.t)&&!b.d.dataset.bq,'... +25,000 once the account paid it');
+  ok(!/25,000/.test(c.t)&&/already paid to this account/.test(c.t),'... and no number when the account already held it (a reset record re-clearing tier I)');}}
  const A=airdrop(s);seal(s,t0+2000);const e=A.out.at(-1);ok(Array.isArray(e?.bty)&&e.bty.length===1&&e.bty[0].id==='cit1'&&e.bty[0].pts===25000,'the bounty rides the request\'s immutable outbox entry (e.bty)');
  ok(!(e.raw>=25000),'it never joins the capped raw points');
  ok(rec.ptsRaw>0&&Math.abs(rec.ptsRaw-CI.battlePoints()*R.CQ_BASE_MULT[5])<1,'the assault pays its battle points (inside the cap and the hourly limit)');

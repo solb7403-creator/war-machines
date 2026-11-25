@@ -81,6 +81,8 @@ jobs:
           node dev/tests/conquest-canvas-contract.mjs
           node dev/tests/wtest/conquest-war.mjs
           node dev/tests/conquest-replay-budget.mjs > docs/conquest-living-war/replay-current.json
+          # Session 7C STEP 1: the faster collision lookups give identical results (every operation replayed both ways)
+          node dev/tests/conquest-collision-identity.mjs
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
           node dev/tests/conquest-earned-journey.mjs
