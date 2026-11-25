@@ -5,9 +5,12 @@ import {COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {BASE_ACTIONS} from './conquest-campaign.js';
 import {PLOT_ACTIONS,MINERAL_PLOT_ACTIONS,BIG_PLOT_ACTIONS} from './conquest-plot.js';
 import {readEco,readTag,writeIf,creditConquest} from './eco.js';
+import {weDue,pilotWar} from './conquest-warfront.js';
+import {altNote} from './conquest-alt.js';   // Session 7C STEP 2
+import {postBoards,pendingGrants,applyGrants,clearGrants} from './conquest-boards.js';   // Session 7C STEP 3
 import {seal,due,pending,acknowledge,airdrop} from './conquest-airdrop.js';
 import {RULES} from './sim.gen.js';
-import {hex} from './db.js';
+import {hex,dbGet} from './db.js';
 import {transaction as store,split as splitState,sweep,COLD_KEYS} from './conquest-store.js';
 import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS,LOOT_ACTIONS} from './conquest-sim.js';
 import {RESEARCH_ACTIONS,account as researchAccount} from './conquest-research.js';
@@ -49,7 +52,8 @@ export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.s
  s.notice={kind:'dev',action:r.action};s.seq=r.seq;return s;}
 // Server-only fields never leave the Worker: the vein seed and unscanned veins (s.lodes) become the scanned-only s.veins view.
 // lseed: the loot seed (Session 6) never leaves the Worker either.
-export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,tdu,twsd,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};   /* Session 7T: tdu, the unfought result held while you fight, stays on the Worker until the fight ends */
+export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,tdu,twsd,fp,fpa,fpf,gra,...out}=s;   /* Session 7C: command fingerprints stay on the Worker */
+ if(out.airdrop&&typeof out.airdrop==='object'){const {pfl,...A}=out.airdrop;if(Array.isArray(A.out))A.out=A.out.map(e=>e&&e.fl?(({fl,...x})=>x)(e):e);if(A.spill&&A.spill.fl){const {fl,...sp}=A.spill;A.spill=sp;}out.airdrop=A;}   /* review round 1: a flag's text and measurements stay on the Worker */if(s.base)out.base={...s.base,modules:s.base.modules||{}};   /* Session 7T: tdu, the unfought result held while you fight, stays on the Worker until the fight ends */
  if(s.war&&typeof s.war==='object'){const {ak,...w}=s.war;out.war={...w,ev:(Array.isArray(w.ev)?w.ev:Object.values(w.ev||{})).map(e=>{if(!e||typeof e!=='object')return e;const {sc,...x}=e;return x;})};}/* Session 7: an authored roll (the first war's) never reaches the phone */
  out.veins=publicVeins(s,s.lastWall||0);
  // Meteor Strike core rolls stay server-side until the strike is secured; the client only needs whether a slot is claimed.
@@ -72,8 +76,11 @@ function researchCtx(S,now){const prem=RULES.passResearch(passPremium(S,now));  
 // Session 6C: what the battalion reads from the account (eco record): its owned weapons and chassis (AUTO-ARM's spare gear), the
 // liveries it owns and the RECRUIT instant-finish credits (written only by a verified purchase; checkout is off until Session 8)
 function batCtx(S,loadout){return {gear:gearOf(S,loadout),liv:{...(S.liv||{})},rcx:{...(S.rcx||{})}};}   // lsm: the Legendary set mods bought (a bought one is never researched)
-async function projected(env,pid,r,now){if(r.state&&!r.error){try{const war=await syncWarfront(env,pid,r.state.campaignScore||0,now),key=war.id+':'+war.stage;
- if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;}}
+// Session 7C STEP 4: the pilot's referral squad (its recruiter's, or its own when it recruited nobody's way in), cached per isolate
+const SQUADS=new Map();
+async function squadOf(env,pid,now){const c=SQUADS.get(pid);if(c&&now-c.at<3600000)return c.id;const ref=await dbGet(env,'players/'+pid+'/ref').catch(()=>null),id=typeof ref==='string'&&/^[A-Za-z0-9_:-]{1,64}$/.test(ref)?ref:pid;SQUADS.set(pid,{id,at:now});if(SQUADS.size>20000)SQUADS.delete(SQUADS.keys().next().value);return id;}
+async function projected(env,pid,r,now){if(r.state&&!r.error){try{const squad=await squadOf(env,pid,now),w0=await syncWarfront(env,pid,r.state.campaignScore||0,now,{squad,name:r.state.plot?.nm||''}),war=pilotWar(w0,pid,squad,r.state,now),key=war.id+':'+war.stage;   // mine: this pilot's squad flies the banner, its leader included; past: an older week still to settle (per pilot: never cached)
+ if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]||war.we.w!==r.state.warfront?.we?.w||(war.we.hm|0)!==(r.state.warfront?.we?.hm|0)||weDue(r.state,war)){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;r.state.wep=saved.wep;r.state.wet=saved.wet;r.state.wsq=saved.wsq;r.state.inv=saved.inv;if(saved.notice?.kind==='war-effort')r.state.notice=saved.notice;}}   // the War Effort's rewards were paid in that write: the reply shows them, never twice
  applyWarfront(r.state,war,now);
  }catch{r.state.warfront={...r.state.warfront,pending:true};}}return result(r);}
 // Conquest airdrop points (docs/economy/RESOURCE_ECONOMY.md §3.5): the committed Conquest record's immutable outbox
@@ -84,16 +91,21 @@ async function settleAirdrop(env,pid,r,now,force=false){
  let c;try{c=await creditConquest(env,pid,pending(s),now);}catch{return r;}
  const view={d:c.day,dailyPts:c.dailyPts,cap:RULES.DAILY_CAP,cq:c.cqToday,lgi:c.lgi,pay:c.pay,at:now,mn:c.mn,ap:c.ap,pts:c.pts,rm:c.rm||[]};
  // Prune with its own CAS loop: server bookkeeping, not a pilot request (never counts against the request rate limit).
- for(let i=0;i<8;i++){const {v,tag}=await readTag(env,'conquest/'+pid);if(!v||v.v!==1)break;const cur=structuredClone(v);acknowledge(cur,c.cqw,view);if(await writeIf(env,'conquest/'+pid,cur,tag))break;}   // the outbox rides the hot part (conquest-store.js): this prune never touches the cold blob
- acknowledge(s,c.cqw,view);s.airdrop.credit={base:c.base,awarded:c.awarded,capped:c.capped,at:now,...(Object.keys(c.minerals||{}).length?{minerals:c.minerals}:{}),...(c.bounty?{bounty:c.bounty}:{})};return r;}
+ for(let i=0;i<8;i++){const {v,tag}=await readTag(env,'conquest/'+pid);if(!v||v.v!==1)break;const cur=structuredClone(v);acknowledge(cur,c.cqw,view);paidBounty(cur,c.btyPaid);if(await writeIf(env,'conquest/'+pid,cur,tag))break;}   // the outbox rides the hot part (conquest-store.js): this prune never touches the cold blob
+ acknowledge(s,c.cqw,view);paidBounty(s,c.btyPaid);s.airdrop.credit={base:c.base,awarded:c.awarded,capped:c.capped,at:now,...(Object.keys(c.minerals||{}).length?{minerals:c.minerals}:{}),...(c.bounty?{bounty:c.bounty}:{})};return r;}
+// Session 7C STEP 1: a Citadel first clear's result card shows only what the account paid (eco.js creditConquest btyPaid: the amount, or 0
+// when the account already held that tier's bounty, e.g. a Conquest record reset on the server re-clearing it). The settlement is in the
+// hot part; written once, by the credit that answered for its bounty id
+function paidBounty(s,bp){const st=s?.settlement;if(!st||st.kind!=='citadel'||!st.first||!st.bounty||'paid' in st||!bp)return;const id='cit'+st.tier;if(Object.prototype.hasOwnProperty.call(bp,id))st.paid=Math.max(0,Math.floor(Number(bp[id])||0));}
 function result(r){return r.error?response(r.status||409,r.error,r.state):{status:200,body:{ok:true,state:publicState(r.state),replayed:!!r.replayed}};}
 // Session 6C: an input reply carries the hot part only when nothing cold changed and the phone already holds this cold version
 // (it sends the cv it has); the phone keeps its cold fields (js/conquest/session.js). Every other reply is the whole state.
-export function publicHot(s){const {hot}=splitState(s),{lastDigest,rate,raidRoll,...out}=hot;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
+export function publicHot(s){const {hot}=splitState(s),{lastDigest,rate,raidRoll,fpa,...out}=hot;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData','tz'])||a.b.tz!==undefined&&!(Number.isSafeInteger(a.b.tz)&&Math.abs(a.b.tz)<=840))return response(400,'invalid conquest session');
- const {loadout:L,legacy,view,rsAcct,batAcct}=await canonical(env,a.pid,now);
- const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);researchAccount(state,rsAcct,now);batAccount(state,batAcct,now);if(!state.mission)batField(state,state.battle,state.position,'wing');refitState(state,L);reportTz(state,a.b.tz);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state),wal=alertChange(state,now);return {state,anq,wal};},now);
+ const {loadout:L,legacy,view,rsAcct,batAcct}=await canonical(env,a.pid,now);const grants=await pendingGrants(env,a.pid,now);   // Session 7C: board rewards waiting for this pilot
+ const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);researchAccount(state,rsAcct,now);batAccount(state,batAcct,now);if(!state.mission)batField(state,state.battle,state.position,'wing');refitState(state,L);reportTz(state,a.b.tz);applyGrants(state,grants.ok,now);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state),wal=alertChange(state,now);return {state,anq,wal};},now);
+ if(!r0.abort&&(Object.keys(grants.ok).length||grants.bad.length))await clearGrants(env,a.pid,[...Object.keys(grants.ok).filter(id=>(r0.state?.gra||[]).includes(id)),...grants.bad]);   // applied once by id (or not in its settlement: unpaid), then off the inbox
  if(!r0.abort&&r0.cv)await sweep(env,a.pid,r0.cv,r0.cvn,now);   // Session 6C: orphan cold blobs (an attempt that died between its blob and its CAS), throttled
  if(!r0.abort&&r0.anq?.length)await flush(env,r0.anq,r0.state?.an?.f,now);   // Session 6 analytics: entry, cohort and return, after the write
  if(!r0.abort&&r0.wal)await writeAlertDoc(env,a.pid,r0.wal);   // Session 7: the war alert schedule (only when it changed), after the write
@@ -107,7 +119,9 @@ async function submit(env,a,request,reduce,now,cv=null){
   if(previous?.v!==1)return {abort:true,error:'open conquest session first'};
   if(request.seq===previous.seq){if(digest===previous.lastDigest)return {abort:true,state:previous,replayed:true};return {abort:true,error:'sequence already used',state:previous};}
   try{const state=reduce(previous,request,now);seal(state,now);state.lastDigest=digest;const anq=takeQueue(state),wal=alertChange(state,now);return {state,anq,wal};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
- },now);if(!r.abort&&r.anq?.length)await flush(env,r.anq,r.state?.an?.f,now);if(!r.abort&&r.wal)await writeAlertDoc(env,a.pid,r.wal);   // Session 7: the war alert schedule, after the write   // Session 6 analytics: counted only after the CAS write
+ },now);if(!r.abort&&r.anq?.length)await flush(env,r.anq,r.state?.an?.f,now);if(!r.abort&&r.wal)await writeAlertDoc(env,a.pid,r.wal);
+ if(!r.abort&&r.state)await altNote(env,a.pid,r.state,now).catch(()=>{});   // Session 7C: the cqalt summary (only when something new appears)
+ if(!r.abort&&r.state)await postBoards(env,a.pid,cleanName(a.user),r.state,now).catch(()=>{});   // Session 7C: the weekly boards (the pilot's verified scores)   // Session 7: the war alert schedule, after the write   // Session 6 analytics: counted only after the CAS write
  const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r,now),now);
  if(out.status===200&&r.state&&r.cv)out.body.cv=r.cv;   // Session 6C review (reviewer 1 blocker): the phone always gets the whole state. A hot-only reply carried each unit's moving half only and the phone could not rebuild it (apply threw, inputs were lost, the session reopened); the storage split, where the Firebase savings are, stays
  return out;

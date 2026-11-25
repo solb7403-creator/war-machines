@@ -32,6 +32,7 @@ async function clear(P,tier,pre){now+=1000;let s=place(P);if(s.mission){now+=100
 // 1. the first clear: +25,000 once, outside the cap; the HUD's day counts only capped points (W3)
 {const P=7701;await fresh(P);const p0=pts(P);const {r,req}=await clear(P,1);
  ok(r.status===200&&r.state.settlement?.kind==='citadel'&&r.state.settlement.first===1,'the real routes: the assault launched, won and settled as the first clear of tier I');
+ ok(r.state.settlement.paid===25000&&cq(P).settlement?.paid===25000,'Session 7C: the result card\'s settlement carries what the account paid (25,000), in the reply and in the stored record');
  const e=eco(P);ok(e.cbty?.cit1>0&&e.fx?.n===25000,'the account was paid tier I\'s bounty once (eco.cbty) on the free path (outside the cap: eco.fx)');
  ok(pts(P)-p0>=25000,'+'+(pts(P)-p0)+' points: the 25,000 bounty plus the battle points');
  const v=r.state.airdrop?.view||{};ok(v.dailyPts===Math.max(0,(e.dailyPts||0)-25000),'the HUD\'s "AIRDROP TODAY" counts only capped points ('+v.dailyPts+' of '+v.cap+'): the bounty never reads as the cap used up');
@@ -45,7 +46,9 @@ async function clear(P,tier,pre){now+=1000;let s=place(P);if(s.mission){now+=100
 // 2. the account write down at the victory: the entry waits, then pays once
 {const P=7702;await fresh(P);const p0=pts(P);failEco=8;const {r}=await clear(P,1);failEco=0;const mid=pts(P);
  ok(r.status===200&&mid===p0&&(cq(P).airdrop.out||[]).some(e=>(e.bty||[]).some(b=>b.id==='cit1')),'the account write down at the victory: nothing paid yet, the bounty waits in the outbox');
- now+=100;const s=cq(P);await call(P,'/api/conquest/input',{seq:s.seq+1,commands:[{x:0,z:0}]});ok(eco(P).cbty?.cit1>0&&eco(P).fx?.n===25000&&!(cq(P).airdrop.out||[]).length,'the next request pays it once and the outbox empties');}
+ ok(r.state.settlement?.first===1&&!('paid' in r.state.settlement)&&!('paid' in cq(P).settlement),'Session 7C: ... and the card shows no bounty number yet (no rec.paid: "crediting your account")');
+ now+=100;const s=cq(P);const r2=await call(P,'/api/conquest/input',{seq:s.seq+1,commands:[{x:0,z:0}]});ok(eco(P).cbty?.cit1>0&&eco(P).fx?.n===25000&&!(cq(P).airdrop.out||[]).length,'the next request pays it once and the outbox empties');
+ ok(r2.state?.settlement?.paid===25000&&cq(P).settlement?.paid===25000,'Session 7C: ... and the card then shows the 25,000 the account paid');}
 // 3. the cap already reached: the bounty in full, the battle points capped, the day's cap room unchanged
 {const P=7703;await fresh(P);const E=db.root.eco['tg_'+P];E.dailyPts=R.DAILY_CAP;E.dailyDay=Math.floor(now/DAY);const p0=pts(P);const {r}=await clear(P,1);
  ok(r.status===200&&pts(P)-p0===25000&&eco(P).fx?.n===25000,'the cap already reached today: the 25,000 bounty paid in full, the battle points capped (+'+(pts(P)-p0)+')');
@@ -58,12 +61,15 @@ async function clear(P,tier,pre){now+=1000;let s=place(P);if(s.mission){now+=100
 {const P=7705;await fresh(P);await clear(P,1);now+=2*60*1000;await clear(P,1);now+=2*60*1000;await clear(P,1);const w=eco(P).cqw;
  db.root.conquest&&delete db.root.conquest['tg_'+P];for(const k of Object.keys(db.root))if(k.startsWith('conquest')&&db.root[k]&&db.root[k]['tg_'+P])delete db.root[k]['tg_'+P];
  await call(P,'/api/conquest/session');const f1=eco(P).fx?.n|0;const {r:r1}=await clear(P,1);ok(r1.status===200&&(eco(P).fx?.n|0)===f1,'a reset record re-clears tier I: the account pays 0 (watermark '+w+')');
+ ok(r1.state.settlement?.first===1&&r1.state.settlement.bounty===25000&&r1.state.settlement.paid===0&&cq(P).settlement?.paid===0,'Session 7C: ... and its result card shows no bounty number (rec.paid 0: "already paid to this account")');
  now+=8*DAY;const {r:r2,start:st2}=await clear(P,2);ok(r2.status===200&&r2.state.settlement?.first===1&&eco(P).cbty?.cit2>0,'... and its first clear of tier II still pays 37,500 although its outbox ids restarted below the watermark (review W1)');
+ ok(r2.state.settlement.paid===37500,'Session 7C: ... and its card shows the 37,500 the account paid');
  const f2=eco(P).fx?.n|0,{r:r3}=await clear(P,2);ok(r3.state?.settlement?.throne===1&&(eco(P).fx?.n|0)===f2,'... once');}
 // 6. review W2: ids beyond the live tiers pay nothing, even if something ever wrote one; the amount is always the table's
 {const P=7706;await fresh(P);const p0=pts(P),c=await creditConquest(env,'tg_'+P,[{id:1,raw:0,op:0,ms:0,bty:[4,5,6,7,8,9].map(n=>({id:'cit'+n,pts:500000}))}],now);
  ok(c.bounty===0&&pts(P)===p0&&R.CIT_LIVE===3,'cit4-cit9 pay 0 while the live tiers are I-III (rules.js CIT_LIVE)');
  const d=await creditConquest(env,'tg_'+P,[{id:2,raw:0,op:0,ms:0,bty:[{id:'cit2',pts:1}]}],now);ok(d.bounty===37500,'the amount is the table\'s, never the entry\'s (an entry claiming 1 paid 37,500)');}
 // 7. an owner dev record never earns airdrop points
-{const P=7707;await fresh(P);const p0=pts(P);const {r}=await clear(P,1,s=>{s.dev={on:0,used:1};});ok(r.status===200&&!eco(P).cbty?.cit1&&pts(P)===p0,'an owner dev record clears tier I and earns no bounty');}
+{const P=7707;await fresh(P);const p0=pts(P);const {r}=await clear(P,1,s=>{s.dev={on:0,used:1};});ok(r.status===200&&!eco(P).cbty?.cit1&&pts(P)===p0,'an owner dev record clears tier I and earns no bounty');
+ ok(!r.state.settlement?.bounty&&!('paid' in r.state.settlement),'Session 7C: ... and its card shows no bounty line');}
 console.log(JSON.stringify({test:'conquest-citadel-payout',pass}));

@@ -6,6 +6,9 @@ const checkout=freeze({enabled:false,blocker:'COMMERCE NOT YET AVAILABLE: Stars/
 const item=(id,name,slot,design,color,accent,earn,earnText,proposedUsd)=>({id,name,slot,design,color,accent,earn,earnText,proposedUsd,priceStatus:'Illustrative USD concept only; no live price or checkout',permanent:true,preview:true,competitive:false});
 const POOL_NAME={c:'COMMON',u:'UNCOMMON',r:'RARE',e:'EPIC'};
 const streakItem=(id,name,slot,design,color,accent,days)=>({id,name,slot,design,color,accent,earn:{streak:days},earnText:'A '+days+'-day return streak',earnOnly:true,proposedUsd:null,priceStatus:'Earn-only: never sold',permanent:true,preview:true,competitive:false});
+// Session 7C STEP 4: the War Effort's cosmetic reward tiers (earn-only): a contributor of a won week earns the tier the bar reached (s.wet:
+// I at 100% of the goal, II at 150%, III at 200%); stand-in looks from the existing designs until the Fable 7-V session draws them
+const weItem=(id,name,slot,design,color,accent,tier)=>({id,name,slot,design,color,accent,earn:{we:tier},earnText:'Contribute to a won War Effort week at tier '+['','I','II','III'][tier]+' ('+[0,100,150,200][tier]+'% of the goal)',earnOnly:true,proposedUsd:null,priceStatus:'Earn-only: never sold',permanent:true,preview:true,competitive:false});
 const frag=(id,name,slot,design,color,accent,pool)=>({id,name,slot,design,color,accent,earn:{frag:pool},earnText:'Ten '+POOL_NAME[pool].toLowerCase()+' blueprint fragments (loot drops)',pool,earnOnly:true,proposedUsd:null,priceStatus:'Earn-only: never sold',permanent:true,preview:true,competitive:false});
 const items=freeze([
  item('base-bastion','Bastion Ramparts','base',0,0x283b4b,0xd2aa55,{base:1},'Build Command Base I',7.99),
@@ -41,11 +44,12 @@ const items=freeze([
  // Session 7T decision 11: the return streak's town decorations (days 30, 100, 365). EARN-ONLY, never priced or sold; until row 7-V
  // draws their own art they stand in as existing town ornament designs (ConquestTown.STREAK_ART.decor names them)
  streakItem('streak-beacon30','Day-30 Signal Beacon','base',1,0x24384a,0x7fe8ff,30),streakItem('streak-monument100','Day-100 Monument','base',2,0x3a3446,0xffd36e,100),
- streakItem('streak-monolith365','Day-365 Monolith','base',4,0x14161f,0xfff1b8,365)
+ streakItem('streak-monolith365','Day-365 Monolith','base',4,0x14161f,0xfff1b8,365),
+ weItem('we-standard','War Effort Standard','commander',1,0x2a1838,0xc9a0ff,1),weItem('we-trail','War Effort Trail','trail',2,0x1d1430,0xffd96a,2),weItem('we-monument','War Effort Monument','base',3,0x251a35,0xffe9a8,3)
 ]);
 const byId=freeze(Object.fromEntries(items.map(i=>[i.id,i]))),slots=freeze(['base','trail','armor','commander']),pools=freeze(Object.fromEntries(['c','u','r','e'].map(p=>[p,items.filter(i=>i.pool===p).map(i=>i.id)])));
 function eligible(i,s){if(typeof i==='string')i=byId[i];if(!i||!s||i.pool)return false;   // fragment pieces are granted by the Worker's fragment rule only
- const e=i.earn,r=s.raidProgress||{};return Object.entries(e).every(([k,n])=>({base:s.base?.tier||0,clears:r.clears||0,blueprint:r.blueprint?1:0,eliteBlueprint:r.eliteBlueprint?1:0,reputation:s.reputation||0,defenses:s.base?.defense?.wins||0,campaign:s.campaignScore||0,streak:s.stk?.best|0}[k]||0)>=n);}
+ const e=i.earn,r=s.raidProgress||{};return Object.entries(e).every(([k,n])=>({base:s.base?.tier||0,clears:r.clears||0,blueprint:r.blueprint?1:0,eliteBlueprint:r.eliteBlueprint?1:0,reputation:s.reputation||0,defenses:s.base?.defense?.wins||0,campaign:s.campaignScore||0,streak:s.stk?.best|0,we:s.wet|0}[k]||0)>=n);}
 function state(s){const c=s?.cosmetics||{},owned=c.owned||{},equipped=c.equipped||{};return {owned,equipped,available:items.filter(i=>owned[i.id]||eligible(i,s)),checkout};}
 function build(T,id,options={}){
  const i=typeof id==='string'?byId[id]:id;if(!i||!byId[i.id])throw Error('unknown Conquest cosmetic');const g=new T.Group(),segments=options.low?6:12;

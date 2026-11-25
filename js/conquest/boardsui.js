@@ -1,0 +1,71 @@
+/* Session 7C STEP 3: the BOARDS screen and the share card (owner brief docs/conquest/audit/SESSION_07C_BRIEF.md). Five weekly boards
+   (Town Score gain, defense rating, raid time-attack on the week's featured course, Hive Titan damage, campaign score) and the Titan's
+   30-day board, as the Worker ranked them (POST /api/conquest/boards: names and scores only; pilots under review left off). Each board
+   shows its reward bands, its field against the 20-pilot minimum, the top 100 and the pilot's own place; a finish inside a reward band
+   gets a share card (the band, the board, the score: never a route). Opened from the hub's AIRDROP STANDING card. Draws only; phone and
+   computer alike (every row a real button; the screen fits or scrolls). */
+(function(root){
+'use strict';
+const fmtN=n=>Math.round(Number(n)||0).toLocaleString('en-US');
+const sec=s=>{s=Math.max(0,Number(s)||0);return Math.floor(s/60)+':'+(s%60).toFixed(1).padStart(4,'0');};
+const UNIT={town:n=>fmtN(n)+' TOWN SCORE',defense:n=>fmtN(n)+' DEFENSE',raid:sec,titan:n=>fmtN(n)+' DAMAGE',campaign:n=>fmtN(n)+' CAMPAIGN',titan30:n=>fmtN(n)+' DAMAGE'};
+const ORDER=['town','defense','raid','titan','campaign','titan30'];
+const left=ms=>{const h=Math.max(0,Math.floor(ms/3600000));return h>=48?Math.floor(h/24)+'D '+(h%24)+'H':h+'H '+Math.max(0,Math.floor(ms%3600000/60000))+'M';};
+const reward=b=>[b.cp?fmtN(b.cp)+' CP':'',b.fr?'1 RARE FRAGMENT':'',b.mn?.se?b.mn.se+' SELENITE':'',b.mn?.mh?b.mn.mh+' MOONHEART':''].filter(Boolean).join(' + ');
+// the band a place falls in (the smallest share first), from the field (none under the minimum)
+function bandOf(B,r){if(!B||!r||B.field<B.min)return null;let best=null;for(const b of B.bands){const k=Math.min(b.max,Math.floor(b.pct*B.field));if(r<=k&&(!best||b.pct<best.pct))best=b;}return best;}
+let S={data:null,at:0,k:'titan'};
+async function load(){if(typeof apiFetch!=='function')return null;try{const r=await apiFetch('/api/conquest/boards',{}),j=await r.json();if(r.ok&&j.boards){S.data=j;S.at=Date.now();return j;}}catch(e){}return null;}
+// the screen: a dialog in the given panel
+function open(panel,{el,button,dialog}={}){if(!panel||!el||!button)return null;const d=dialog?dialog():el('div','cq-dialog',null,panel);d.classList.add('cq-boards');d.setAttribute('role','dialog');d.setAttribute('aria-label','Weekly boards');d.tabIndex=-1;
+ const head=el('div','cq-boards-head',null,d);el('p','cq-kicker','CONQUEST · WEEKLY BOARDS',head);el('h2','','BOARDS',head);const sub=el('p','cq-boards-sub','Loading the boards…',head);
+ const tabs=el('div','cq-boards-tabs',null,d);tabs.setAttribute('role','tablist');const body=el('div','cq-boards-body',null,d);
+ const foot=el('div','cq-boards-foot',null,d);foot.append(button('CLOSE',()=>d.remove(),'cq-secondary'));d.onkeydown=e=>{if(e.key==='Escape'){d.remove();}};
+ const draw=()=>{const j=S.data;if(!j){sub.textContent='The boards are not reachable right now. Try again in a moment.';return;}
+  const B=j.boards[S.k],end=B?.ends||0;sub.textContent='Rewards need '+(B?.min||20)+'+ verified pilots on a board; each band rounds down. Pilots under review sit out. '+(S.k==='titan30'?'This 30-day board ends in ':'The week ends in ')+left(end-Date.now())+' (UTC).'+(j.held?' You are under review: you play on and sit out the boards until it clears.':'');
+  tabs.replaceChildren();for(const k of ORDER){const b=button(j.boards[k].name,()=>{S.k=k;draw();},'cq-boards-tab'+(k===S.k?' on':''));b.setAttribute('role','tab');b.setAttribute('aria-selected',k===S.k?'true':'false');tabs.append(b);}
+  body.replaceChildren();if(!B)return;const card=el('section','cq-boards-card',null,body);el('h3','',B.name,card);
+  if(S.k==='raid')el('p','cq-boards-course','THIS WEEK\'S COURSE · '+(root.ConquestCombat?.operations?.[j.raid]?.name||j.raid).toUpperCase()+' · the fastest verified clear',card);
+  for(const b of [...B.bands].sort((x,y)=>y.pct-x.pct))el('p','cq-boards-band','TOP '+Math.round(b.pct*100)+'% (UP TO '+b.max+') · '+reward(b),card);
+  el('p','cq-boards-field'+(B.field<B.min?' small':''),B.field<B.min?'SMALL FIELD · '+B.field+' OF '+B.min+' PILOTS · NO REWARDS UNTIL '+B.min+' VERIFIED PILOTS':'FIELD '+B.field+' PILOTS',card);
+  // the pilot's own place first (a phone reads it without scrolling past the list), then the top 100
+  if(B.me){const band=bandOf(B,B.me.r),mine=el('div','cq-boards-me',null,card);el('p','','YOUR PLACE #'+B.me.r+' · '+UNIT[S.k](B.me.s)+(band?' · TOP '+Math.round(band.pct*100)+'% · '+reward(band)+' IF IT HOLDS AT THE RESET':''),mine);
+   if(band)mine.append(button('SHARE MY FINISH',()=>{if(!mine.querySelector('.cq-boards-sharebox'))share(mine,{el,button,board:B,k:S.k,band});},'cq-boards-share'));}
+  else el('p','cq-boards-me','You are not on this board yet this '+(S.k==='titan30'?'period':'week')+'.',card);
+  const list=el('ol','cq-boards-list',null,card);if(!B.top.length)el('li','cq-boards-empty','Nobody on this board yet this '+(S.k==='titan30'?'period':'week')+'. Be the first.',list);
+  for(const r of B.top){const li=el('li','cq-boards-row'+(r.me?' me':''),null,list);el('b','','#'+r.r,li);const who=el('span','',r.n+(r.me?' (YOU)':''),li);const L=Number.isInteger(r.lg)&&typeof LEAGUE!=='undefined'?LEAGUE[r.lg]:null;if(L){const pill=el('small','cq-boards-pill',L.n.toUpperCase(),who);pill.style.color=L.c;}if(r.ts)el('small','cq-boards-ts','TOWN SCORE '+fmtN(r.ts),who);el('i','',UNIT[S.k](r.s),li);}};   /* the league pill and the Town Score (the old brief's B) */
+ draw();if(!S.data||Date.now()-S.at>60000)load().then(draw);setTimeout(()=>d.focus?.(),0);return d;}
+// the share card: the band, the board and the score (never a route)
+function share(host,{el,button,board,k,band}){const W=720,H=900,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),F=(w,px)=>w+' '+px+'px "Chakra Petch","Segoe UI",sans-serif';
+ const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#160a26');bg.addColorStop(.55,'#0a1020');bg.addColorStop(1,'#03060c');g.fillStyle=bg;g.fillRect(0,0,W,H);
+ let h=0x9e3779b9;const rnd=()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return ((h>>>0)%10000)/10000;};g.fillStyle='#ffffff';for(let i=0;i<110;i++){g.globalAlpha=.12+rnd()*.5;const r=rnd()<.15?2.2:1.3;g.fillRect(rnd()*W,rnd()*H*.62,r,r);}g.globalAlpha=1;   // a fixed star field: the same card every time
+ const mx=610,my=120,mr=110,mg=g.createRadialGradient(mx-38,my-40,8,mx,my,mr);mg.addColorStop(0,'#f1f5fa');mg.addColorStop(.68,'#9eabbb');mg.addColorStop(1,'#465163');g.fillStyle=mg;g.beginPath();g.arc(mx,my,mr,0,Math.PI*2);g.fill();
+ g.fillStyle='#1c243022';for(const [x,y,r] of [[585,92,17],[640,160,23],[622,72,9],[560,158,12],[662,104,8]]){g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();}
+ const wrap=(t,x,y,maxW,lh)=>{const words=String(t).split(' ');let line='';for(const w of words){const next=line?line+' '+w:w;if(g.measureText(next).width>maxW&&line){g.fillText(line,x,y);y+=lh;line=w;}else line=next;}if(line)g.fillText(line,x,y);return y+lh;};
+ const pilot=(()=>{try{if(typeof tgName==='function'&&typeof TG_USER!=='undefined'&&TG_USER)return tgName(TG_USER);}catch(e){}return (typeof save!=='undefined'&&(save.callsign||save.name))||'Pilot';})(),me=board.me;
+ g.fillStyle='#22e6ff';g.font=F('700',22);g.fillText('LUNAR · CONQUEST · WEEKLY BOARDS',40,64);
+ g.fillStyle='#ffd96a';g.font=F('800',100);g.fillText('TOP '+Math.round(band.pct*100)+'%',36,190);
+ g.fillStyle='#e8f6ff';g.font=F('800',42);wrap(board.name,40,252,640,48);
+ g.fillStyle='#b98cff';g.font=F('700',32);g.fillText('#'+me.r+' OF '+board.field+' PILOTS',40,322);
+ g.fillStyle='#e8f6ff';g.font=F('700',32);g.fillText(UNIT[k](me.s),40,370);
+ g.fillStyle='#c9d6e2';g.font=F('600',28);g.fillText(String(pilot).slice(0,24),40,420);
+ g.strokeStyle='#ffd96a88';g.lineWidth=3;g.strokeRect(30,456,660,200);g.fillStyle='#ffd96a14';g.fillRect(31,457,658,198);
+ g.fillStyle='#ffd96a';g.font=F('700',22);g.fillText('REWARD IF IT HOLDS AT THE RESET',56,500);
+ g.fillStyle='#fff3c4';g.font=F('800',32);let y=wrap(reward(band),56,548,608,40);
+ g.fillStyle='#b3c4d3';g.font=F('600',22);y=wrap('Server-verified score · one board, one week',56,Math.max(y+6,600),608,30);wrap('Bands need 20+ verified pilots · each rounds down',56,y,608,30);
+ const link=typeof refLink==='function'?refLink():null;g.fillStyle='#ffb347';g.font=F('800',32);g.fillText('JOIN THE WAR',40,800);g.fillStyle='#c9d6e2';g.font=F('500',24);g.fillText(link?link.replace(/^https?:\/\//,''):'LUNAR: War Machines · Telegram and web',40,846);
+ const url=c.toDataURL('image/png'),box=el('div','cq-boards-sharebox',null,host);const img=document.createElement('img');img.src=url;img.alt='Top '+Math.round(band.pct*100)+'% on '+board.name;img.className='cq-boards-shareimg';box.append(img);
+ const text='Top '+Math.round(band.pct*100)+'% on the LUNAR: War Machines '+board.name+' board this week (#'+me.r+' of '+board.field+'). Join the war.';
+ box.append(button(typeof IN_TG!=='undefined'&&IN_TG?'SHARE IN TELEGRAM':'SHARE',async()=>{if(typeof IN_TG!=='undefined'&&IN_TG&&typeof shareRef==='function'){shareRef(text);return;}try{const blob=await (await fetch(url)).blob(),file=new File([blob],'lunar-board.png',{type:'image/png'}),data={title:'LUNAR: War Machines',text,...(link?{url:link}:{})};if(navigator.canShare?.({files:[file]}))data.files=[file];if(navigator.share)await navigator.share(data);else if(typeof shareRef==='function')shareRef(text);}catch(e){}},'cq-boards-share'));
+ const a=document.createElement('a');a.href=url;a.download='lunar-board.png';a.textContent='DOWNLOAD IMAGE';a.className='cq-plot-dl';box.append(a);box.scrollIntoView?.({block:'nearest'});return box;}
+// the raid briefing's time-attack line (pure: the test reads it): your best on this layout; on this week's course, the week's top time
+const DAYMS=86400000,featured=now=>{const L=root.ConquestCombat?.raidIds||[],w=Math.floor((Number(now)-4*DAYMS)/(7*DAYMS));return L.length?L[((w%L.length)+L.length)%L.length]:null;};
+function raidText(o,state,data,now=Date.now()){if(!o?.raid)return '';const best=Number(state?.rbest?.[o.id])||0,course=data?.raid||featured(now),top=data?.boards?.raid?.top?.[0];
+ const mine=best>0?'TIME-ATTACK · YOUR BEST '+sec(best):'TIME-ATTACK · NO VERIFIED CLEAR YET';
+ if(o.id!==course)return mine+' · THIS WEEK\'S COURSE: '+String(root.ConquestCombat?.operations?.[course]?.name||course||'').toUpperCase();
+ return mine+' · THIS WEEK\'S COURSE'+(top?' · TOP '+sec(top.s)+' ('+top.n+')':' · NO TIME YET: SET THE FIRST');}
+function raidLine(d,o,state,{el}={}){if(!d||!el||!o?.raid)return null;const p=el('p','cq-boards-raid',raidText(o,state,S.data),d);if(!S.data||Date.now()-S.at>60000)load().then(()=>{if(p.isConnected)p.textContent=raidText(o,state,S.data);});return p;}
+// the ticker line for a board reward that arrived (js/conquest/app.js)
+function notice(n){const got=Array.isArray(n?.got)?n.got:[];return got.length?'BOARD REWARD · '+got.map(g=>'TOP '+Math.round(g.pct*100)+'% '+String(g.k).toUpperCase()+': '+reward(g)).join(' · '):'BOARD REWARD';}
+root.ConquestBoardsUI=Object.freeze({open,share,notice,bandOf,load,raidText,raidLine,featured});
+})(globalThis);

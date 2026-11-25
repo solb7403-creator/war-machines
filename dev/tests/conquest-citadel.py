@@ -79,6 +79,8 @@ async def main():
     c=await browser.new_context();resp=await c.request.post(base+'/inspect',data={});st=(await resp.json())['state'];await c.close();return st
    async def post(path,data={}):
     c=await browser.new_context();resp=await c.request.post(base+path,data=data);j=await resp.json();await c.close();return j
+   paid=False   # Session 7C STEP 1: every size flies the same account (tg 8301) on a fresh Conquest record (a server reset of the record):
+   # only the first clear pays the 25,000 bounty; on the later sizes the account already holds it and the card must say so, with no number
    for w,h,mobile in SIZES:
     r={};INPUT.update(mouse=0,keys=0)
     ctx,page,errors=await open_page(w,h,mobile,{'citadel':{'prep':['aa']},'battalion':{'hangar':5,'n':10,'rank':5},'baseFunds':True})
@@ -123,7 +125,10 @@ async def main():
     # ---- 4. the first clear's result card (the Worker's own settlement) ----
     j=await post('/fixture-citadel-win');assert j['ok'],j
     res=page.locator('.cq-cit-result');await res.wait_for(timeout=60000);rt=await res.inner_text()
-    assert 'FIRST CLEAR' in rt and 'CITADEL I · BREACH POINT BROKEN' in rt and '+25,000 airdrop bounty' in rt and 'Production +5%' in rt and 'Trophy: GATEWARDEN SKORVA' in rt and 'Retaliation I' in rt and 'CITADEL II · IRON RAIN' in rt,rt
+    assert 'FIRST CLEAR' in rt and 'CITADEL I · BREACH POINT BROKEN' in rt and 'Production +5%' in rt and 'Trophy: GATEWARDEN SKORVA' in rt and 'Retaliation I' in rt and 'CITADEL II · IRON RAIN' in rt,rt
+    if not paid:assert '+25,000 airdrop bounty' in rt and 'already paid' not in rt,('the account is paid the bounty once: the card shows it',rt)
+    else:assert 'already paid to this account' in rt and '25,000' not in rt,('the account already holds the bounty (a reset record): the card shows no number',rt)
+    r['bounty']='paid +25,000' if not paid else 'already paid (reset record)';paid=True
     st=await inspect();assert st['cit']['t']==1 and st['cit']['fc'].get('1'),('the Worker settled the first clear',st.get('cit'))
     dlg=page.locator('.cq-result');back=dlg.locator('button',has_text='RETURN TO EXPLORATION');await reach(page,back,'.cq-result',mobile,h)
     await page.screenshot(path=str(OUT/f'first-clear-{w}x{h}.png'));r['result']=' · '.join(l for l in rt.split('\n') if l.strip())[:160]

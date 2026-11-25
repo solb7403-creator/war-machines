@@ -34,10 +34,12 @@ function partDay(card,s,now){const L=root.ConquestLoot;if(!L||!s?.inv)return;con
 function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildren();const now=Date.now(),C=root.ConquestCombat;
  const card=(title,cls)=>{const c=el('section','cq-hub-card '+(cls||''),null,col);el('h3','',title,c);return c;};
  if(s)root.ConquestTownUI?.welcome?.(col,s,{el,now});   // Session 7T-P decision 4: a return after 14+ days away comes first
+ root.ConquestStanding?.card(col,{el,button:H.o.button,now});   // Session 7C: the airdrop standing, the trust line and the BOARDS (js/conquest/standing.js)
  // warfront
  const terr=s?.territory||{},secs=(root.ConquestWorld?.sectors||[]).map(x=>x.id),held=secs.filter(id=>terr[id]?.owner==='humanity').length,total=secs.length||6,alerts=Object.entries(terr).filter(([,t])=>t?.status==='defense-alert'||t?.status==='contested');
  const w=card('WARFRONT');if(s?.war&&root.ConquestWarMap)root.ConquestWarMap.hubLines(w,s,{el});else el('p','cq-hub-big',held+' / '+total+' SECTORS HELD',w);const bar=el('progress','cq-hub-bar',null,w);bar.max=total;bar.value=held;bar.setAttribute('aria-label','Frontline sectors held');if(H.o.war)w.append(H.warBtn||(H.warBtn=H.o.button('OPEN WAR MAP',()=>H.o.war(),'cq-hub-war')));   // Session 7: the Moon and the Frontline side by side; the War Map opens from its card (one persistent node, like OPEN HANGAR: the cards rebuild every second), so the hub keeps its four actions
  el('small','',s?.warfront?.stage?'Stage '+s.warfront.stage+' of the shared warfront'+(s.warfront.name?' · '+s.warfront.name:''):'Every operation you win pushes the shared warfront.',w);
+ root.ConquestWarEffort?.lines(w,s,{el,now});   // Session 7C: the weekly War Effort bar (js/conquest/wareffort.js)
  // your base
  if(root.ConquestHangar&&s){const bc=card('BATTALION','cq-hub-battalion');root.ConquestHangar.hubCard(bc,s,{el:H.o.el,button:H.o.button,now,btn:H.o.hangar?(H.hangarBtn||(H.hangarBtn=H.o.button('OPEN HANGAR',()=>H.o.hangar(),'cq-hub-hangar'))):null});}   /* one OPEN HANGAR node for the hub's life: status() rebuilds the cards every second */
  const b=card('YOUR BASE');const p=s?.plot,base=s?.base;
@@ -56,6 +58,7 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
  if(root.ConquestOrders){const o=card('WAR ORDERS','cq-hub-orders');root.ConquestOrders.card(o,s,{el});}
  // events
  const e=card('LIVE EVENTS');const M=C?.meteorStrike?.(now);if(s){root.ConquestTownUI?.streakLine(e,s,{el,now});root.ConquestTownUI?.beaconLine(e,s,{el,button:H.o.button,now,act:townAct,go:()=>H.o.enter?.('beacon')});}   // Session 7T: the return streak (one line) and the Strike Beacon
+ root.ConquestTitanUI?.hubLine(e,{el,now});   // Session 7C: the Hive Titan's slot (js/conquest/titanui.js)
  if(M&&M.phase!=='idle')el('p','cq-hub-big cq-hub-meteor','☄ METEOR STRIKE · '+M.site.name+' · '+(M.phase==='telegraph'?'IMPACT IN '+t2(M.impactAt-now):'OPEN · '+t2(M.closesAt-now)+' LEFT'),e);
  else if(M){const next=Math.ceil(now/7200000)*7200000;el('p','cq-hub-big','☄ NEXT METEOR STRIKE IN '+t2(next-now),e);}
  for(const [id] of alerts.slice(0,2))el('small','cq-hub-alert','⚠ INVASION · '+((root.ConquestWorld?.sectors||[]).find(x=>x.id===id)?.name||id.toUpperCase())+' NEEDS DEFENDERS',e);

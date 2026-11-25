@@ -166,7 +166,7 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
 async function mirror(env, pid, S, isNew, before, now) {
   const P = `players/${pid}`, up = {};
   const f = { pts: R.ecoBase(S), dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, d: S.dailyDay, w: S.weeklyNum, days: S.days, sk: S.sk, ld: S.ld, fd: S.fd,
-    wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs, ac: S.ac, vd: S.vd, vdl: S.vdl, rfe: S.rfe, rb: S.rb, rms: S.rms && S.rms.length ? S.rms : null, sg: Math.round((S.spendGram || 0) * 100) / 100, vg: S.vg || 0, gg: S.vgg || 0 };   // gg: Genesis Gold (deposited before $LUNAR launches)   // sg: verified spending (TON value of what was bought), for the snapshot
+    wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs, ac: S.ac, vd: S.vd, vdl: S.vdl, rfe: S.rfe, rb: S.rb, rms: S.rms && S.rms.length ? S.rms : null, sg: Math.round((S.spendGram || 0) * 100) / 100, vg: S.vg || 0, gg: S.vgg || 0, fxn: S.fx && S.fx.d === S.dailyDay ? S.fx.n | 0 : 0 };   // fxn: today's points outside the cap (the Citadel bounties): the standing card shows only capped points   // gg: Genesis Gold (deposited before $LUNAR launches)   // sg: verified spending (TON value of what was bought), for the snapshot
   for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== null) up[`${P}/${k}`] = v;
   const vl = R.vaultLevel(S.vg), vx = vl ? { v: vl } : {};   // the Vault badge shows on the daily and weekly boards too
   const lx = S.lg ? { l: S.lg } : {}, lgMoved = S.lg !== before.lg;   // and the league (its key), rewritten when it moves
@@ -543,31 +543,38 @@ export async function creditConquest(env, pid, out, now = Date.now()) {
     // Session 7B (payout review W1): a Citadel bounty in an entry at or below the watermark (a Conquest record reset or restored on the
     // server restarts its outbox ids) is still paid, once: S.cbty decides, never the watermark
     const late = []; for (const e of (Array.isArray(out) ? out : [])) if (e && Number.isSafeInteger(e.id) && e.id <= w) for (const b of R.listOf(e.bty)) if (b && typeof b.id === "string" && !(S.cbty && S.cbty[b.id])) late.push(b.id);
-    if (!fresh.length && !late.length) return { abort: true, ...view(), base: 0, awarded: 0, capped: false };
-    let base = 0, spend = 0, ms = 0, op = false;const mn = {}, rm = [], rsj = [], bty = [];
+    // Session 7C STEP 1: what the account did with each bounty id delivered here (the Citadel result card shows only this): the amount
+    // paid now, or 0 when the account already held it (a reset Conquest record re-clearing a tier); an id neither paid nor held is absent
+    const had = S.cbty && typeof S.cbty === "object" && !Array.isArray(S.cbty) ? { ...S.cbty } : {}, btyPaid = {};
+    for (const e of (Array.isArray(out) ? out : [])) if (e && Number.isSafeInteger(e.id)) for (const b of R.listOf(e.bty)) if (b && typeof b.id === "string" && had[b.id]) btyPaid[b.id] = 0;
+    if (!fresh.length && !late.length) return { abort: true, ...view(), base: 0, awarded: 0, capped: false, btyPaid };
+    let base = 0, spend = 0, ms = 0, op = false;const mn = {}, rm = [], rsj = [], bty = [], fpl = [];
     for (const e of fresh) {
       if (e.mn) { const m = R.mnOf(e.mn); for (const k of R.MN_ORDER) if (m[k] > 0 && m[k] <= 10000) mn[k] = (mn[k] || 0) + m[k]; }   // banked Conquest minerals (RESOURCE_ECONOMY.md §5.3): to the wallet, once, by entry id
       for (const id of R.listOf(e.rm)) { const x = R.rmodOf(String(id)); if (x) rm.push(x.id); }   // Session 6B: a mod the Science Lab finished (a Legendary set mod too: its free research path, Session 6B finish)
       for (const id of R.listOf(e.rsj)) { const x = R.rmodOf(String(id)); if (x && x.F.leg) rsj.push(x.id); }   // a Legendary set mod's research job started: it cannot be bought from now on
       for (const b of R.listOf(e.bty)) if (b && typeof b.id === "string") bty.push(b.id);   // Session 7B: a Citadel first-clear bounty (credited once per account below)
+      for (const f of R.listOf(e.fl)) if (f && CQ_FP_FLAGS.includes(f.k)) fpl.push(f);   // Session 7C: a command-fingerprint flag the Worker found (raised once per pilot below)
       const b = Math.max(0, Math.round(Math.min(1e6, Number(e.raw) || 0) * L.pay));
       base += b; spend += Math.round(b * L.mult); ms += Math.max(0, Math.min(36e5, Number(e.ms) || 0)); op = op || !!e.op;
     }
     const aw = R.ecoPlayAward(S, base, spend, X), got = R.ecoMinerals(S, mn);
     // Session 7B: each Citadel bounty id once per account, outside the daily cap (R.ecoBounty: S.cbty; the amount is the table's, by id)
-    let bounty = 0;for (const id of [...bty, ...late]) bounty += R.ecoBounty(S, id, X);
+    let bounty = 0;for (const id of [...bty, ...late]) { const n = R.ecoBounty(S, id, X); bounty += n; if (n) btyPaid[id] = n; }
     if (rsj.length) { S.rsj = S.rsj && typeof S.rsj === "object" && !Array.isArray(S.rsj) ? S.rsj : {}; for (const id of rsj) S.rsj[id] = 1; }
     if (rm.length) { S.rm = S.rm && typeof S.rm === "object" && !Array.isArray(S.rm) ? S.rm : {}; for (const id of rm) { S.rm[id] = 1; if (S.rsj) delete S.rsj[id]; } }   // researched: no longer "being researched"
     if (op) R.ecoPlayDay(S, X);
     if (fresh.length) S.cqw = fresh[fresh.length - 1].id;
     S.cqd = S.cqd && S.cqd.d === X.day ? S.cqd : { d: X.day, b: 0, ms: 0, n: 0 };
     S.cqd.b += aw.base; S.cqd.ms += ms; S.cqd.n += fresh.length;
-    flags = watchConquest(S, X, now);
-    return { ...view(), base: aw.base, awarded: aw.awarded, capped: aw.base < base, minerals: got, bounty };
+    flags = watchConquest(S, X, now);for (const f of fpl) raise(S, flags, f.k, String(f.v || "").slice(0, 90));
+    return { ...view(), base: aw.base, awarded: aw.awarded, capped: aw.base < base, minerals: got, bounty, btyPaid, flagged: flags.length > 0 };
   }, now);
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
-  return { cqw: t.cqw, day: t.day, dailyPts: t.dailyPts, cqToday: t.cqToday, lgi: t.lgi, pay: t.pay, base: t.base || 0, awarded: t.awarded || 0, capped: !!t.capped, mn: t.mn, ap: t.ap, pts: t.pts, minerals: t.minerals || {}, rm: t.rm || [], bounty: t.bounty || 0 };
+  return { cqw: t.cqw, day: t.day, dailyPts: t.dailyPts, cqToday: t.cqToday, lgi: t.lgi, pay: t.pay, base: t.base || 0, awarded: t.awarded || 0, capped: !!t.capped, mn: t.mn, ap: t.ap, pts: t.pts, minerals: t.minerals || {}, rm: t.rm || [], bounty: t.bounty || 0, btyPaid: t.btyPaid || {}, flagged: flags.length > 0, as: Number(t.S && t.S.as) || 0 };
 }
+// Session 7C: the command-fingerprint flags the Conquest record may deliver (worker/src/conquest-fingerprint.js); any other key is ignored
+const CQ_FP_FLAGS = ["cqrepeat", "cqnoinput"];
 // Conquest anomaly flags (flag only: a flagged pilot keeps playing and sits out the airdrop snapshot until cleared)
 function watchConquest(S, X, now) {
   const A = S.an && S.an.d === X.day ? S.an : { ...(S.an || {}), d: X.day, m: 0, h: 0, pf: 0, ni: 0 };

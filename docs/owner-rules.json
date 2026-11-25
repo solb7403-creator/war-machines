@@ -14,6 +14,7 @@
    },
    "defense": 675,
    "strike": 1075,
+   "titan": 1600,
    "gather": {
     "flora": 80,
     "fe": 100,
@@ -129,7 +130,7 @@
   }
  ],
  "cpSites": {
-  "about": "every line that adds to or takes from a pilot's CP (ledger.cp or ledger['cp'] with =, +=, -=, *=, /=, ++, --; .cp += / -= / ++ / --) and every debit( call. A new CP source or sink is an owner decision. Session 7 (owner brief Nov 21, 2026, decisions 6 and 10): Fortify's cost (decision 6), the war battles' spoils (decision 10) and the refund of a pilot's own Fortify spend when the territory falls before the job stands (a PROPOSAL: nothing is gained), in worker/src/conquest-war.js (a sector defense's pay moved there from conquest-campaign.js). Session 7T (owner brief Nov 22, 2026, decisions 5 and 6): a raid on your town held (unfought, or defended in person) pays the existing defense cache (the town defense's CP and materials), in worker/src/conquest-town.js.",
+  "about": "every line that adds to or takes from a pilot's CP (ledger.cp or ledger['cp'] with =, +=, -=, *=, /=, ++, --; .cp += / -= / ++ / --) and every debit( call. A new CP source or sink is an owner decision. Session 7 (owner brief Nov 21, 2026, decisions 6 and 10): Fortify's cost (decision 6), the war battles' spoils (decision 10) and the refund of a pilot's own Fortify spend when the territory falls before the job stands (a PROPOSAL: nothing is gained), in worker/src/conquest-war.js (a sector defense's pay moved there from conquest-campaign.js). Session 7T (owner brief Nov 22, 2026, decisions 5 and 6): a raid on your town held (unfought, or defended in person) pays the existing defense cache (the town defense's CP and materials), in worker/src/conquest-town.js. Session 7C (owner brief docs/conquest/audit/SESSION_07C_BRIEF.md, board rewards decided Nov 24): the weekly boards pay 1,500 CP (+ 1 rare fragment) to the top 10% (at most 100) of the Town Score gain, defense rating, raid time-attack and campaign boards, once per board per week and only with 20+ verified pilots, applied once per grant id in worker/src/conquest-boards.js; CQ_PTS.titan 1,600 (the Hive Titan's kill, once per slot).",
   "files": {
    "worker/src/conquest-campaign.js": 3,
    "worker/src/conquest-economy.js": 5,
@@ -138,7 +139,8 @@
    "worker/src/conquest-sim.js": 1,
    "worker/src/conquest-town.js": 1,
    "worker/src/conquest-war.js": 3,
-   "worker/src/conquest.js": 2
+   "worker/src/conquest.js": 2,
+   "worker/src/conquest-boards.js": 1
   },
   "debit": {
    "worker/src/conquest-campaign.js": 3,

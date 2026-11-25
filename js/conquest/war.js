@@ -190,7 +190,7 @@ function threatOf(w,ev,ctx={},go=false){const parts=[],add=(k,label,v)=>{if(v)pa
 // the Parasites' hold of a territory they took, and the LDF's strength against it (the same rule in reverse)
 function holdOf(w,id,ctx={}){const t=BY[id],parts=[],add=(k,label,v)=>{if(v)parts.push({k,label,v});};add('hold','Parasite hold',WAR.hold[t?.ring||0]);if(w.por?.at===id&&portalOpen(w,ctx.now))add('portal','The portal',WAR.portal.hold);add('tiers','Citadel tiers cleared',int(ctx.tiers));
  const q=w.wk[id];if(q&&q.until>ctx.now)add('weak','Weakened by your raids',-q.n);return {total:Math.max(0,parts.reduce((a,p)=>a+p.v,0)),parts};}
-function ldfOf(w,id,ctx={}){const t=BY[id],parts=[],add=(k,label,v)=>{if(v)parts.push({k,label,v:Math.round(v*100)/100});};add('ldf','LDF assault force',WAR.ldf[t?.ring||0]);add('station','Stationed pilots',stationValue(ctx.pilots,w.st[id]));add('morale','Shared-war morale',num(ctx.morale));
+function ldfOf(w,id,ctx={}){const t=BY[id],parts=[],add=(k,label,v)=>{if(v)parts.push({k,label,v:Math.round(v*100)/100});};add('ldf','LDF assault force',WAR.ldf[t?.ring||0]);add('station','Stationed pilots',stationValue(ctx.pilots,w.st[id]));0/* Session 7C: High Morale is +1 DEFENSE only (the brief); the LDF's assault strength does not read the shared-war morale */;
  return {total:Math.round(parts.reduce((a,p)=>a+p.v,0)*100)/100,parts};}
 // the line the card shows first ("DEFENSE 3 vs THREAT 2. Holds 70% if you're away.")
 function odds(w,ev,ctx={}){if(!ev)return null;if(ev.k==='c'){const A=ldfOf(w,ev.t,ctx),H=holdOf(w,ev.t,ctx),p=chance(A.total-H.total);return {kind:'c',a:A,h:H,p,line:'LDF '+fmt(A.total)+' vs HOLD '+fmt(H.total)+'. The LDF retakes it '+pct(p)+'% of the time without you.'};}

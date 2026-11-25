@@ -31,10 +31,10 @@ const seedOf=s=>String(s.lseed|0)+':war';
 // the Lunar Pass perks wait for the store (decision 8: live when the store opens in Session 8), like the Lab's research perks
 export const passLive=premium=>!!premium&&RULES.LAB_STORE_OPEN===true;
 export function war(s,now){s.war=WR.norm(s.war,now);return s.war;}
-export const ctxOf=s=>({pilots:Array.isArray(s.bat?.p)?s.bat.p:[],morale:0,tiers:CONQUEST.Citadel.tiersOf(s),titan:0});   // planning pick: shared-war morale counts 0 until a shared-war result exists; Session 7B: the Citadel tiers cleared (threatOf / holdOf ctx.tiers: the Retaliation level)
+export const ctxOf=(s,now=Date.now())=>({pilots:Array.isArray(s.bat?.p)?s.bat.p:[],morale:CONQUEST.WarEffort.weekOf(now)===s.warfront?.we?.w&&s.warfront?.we?.hm?1:0,tiers:CONQUEST.Citadel.tiersOf(s),titan:0});   // Session 7C: High Morale (+1 DEFENSE on every territory) the week after a won War Effort   // planning pick: shared-war morale counts 0 until a shared-war result exists; Session 7B: the Citadel tiers cleared (threatOf / holdOf ctx.tiers: the Retaliation level)
 // ---- the clock: every request (refreshState). seen: the pilot's last request before this one (s.lastWall) --------------------------
 export function warTick(s,now){const w=war(s,now),fighting=s.mission&&s.sectorDefense?.active?s.sectorDefense.ev:null;   // the event being fought waits; the rest of the clock runs (the freeze and the weekend calendar hold)
- const out=WR.advance(w,now,seedOf(s),{...ctxOf(s),fighting},Number(s.lastWall)||now);
+ const out=WR.advance(w,now,seedOf(s),{...ctxOf(s,now),fighting},Number(s.lastWall)||now);
  for(const r of out)effects(s,r,now);if(!s.mission)WR.scriptReturn(w,now);jobs(s,now);frontSync(s,now);supplySync(s);return out;}
 // what a tick's outcome does outside the war record: the Frontline sector and its camp fall with their territory; a fortification
 // being built on fallen ground is refunded (it never stood)
@@ -127,7 +127,7 @@ export function warRaid(s,op,now){const w=war(s,now),id=op?.sector&&WR.BY[op.sec
 // territory and landing are written; the rolls never leave the Conquest record.
 export function alertDoc(s,now){if(!s?.war)return null;const w=s.war=WR.norm(s.war,now),a=alertSettings(s);const live=a.on===1&&a.ask===1;
  const evs=live?WR.alertEvents(w):[],seen=new Set(evs.map(e=>e.id));
- if(live){const f=structuredClone(w),ctx=ctxOf(s),end=WR.tickOf(now+WAR.freezeMs-1);for(let k=f.k+1;k<=end;k++){WR.step(f,k,seedOf(s),{...ctx});for(const e of WR.alertEvents(f))if(!seen.has(e.id)){seen.add(e.id);evs.push(e);}}}
+ if(live){const f=structuredClone(w),ctx=ctxOf(s,now),end=WR.tickOf(now+WAR.freezeMs-1);for(let k=f.k+1;k<=end;k++){WR.step(f,k,seedOf(s),{...ctx});for(const e of WR.alertEvents(f))if(!seen.has(e.id)){seen.add(e.id);evs.push(e);}}}
  const ev=evs.filter(e=>e.until>now).map(e=>({id:e.id,k:e.kind,t:e.t,at:e.at,until:e.until,...(e.n?{n:e.n}:{})}));
  // Session 7T decision 9: the town's attacks (and the raids forecast to breach it) join the same schedule, ahead of the war's
  if(live){let tev=[];try{tev=townAlerts(s,now,now+WAR.freezeMs);}catch(_){}for(const e of tev)if(e.until>now&&!seen.has(e.id)){seen.add(e.id);ev.push(e);}}

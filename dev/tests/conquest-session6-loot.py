@@ -10,6 +10,22 @@ from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest/session6';OUT.mkdir(parents=True,exist_ok=True)
 POS=[1162,1130]   # the Refuge spawn: open road, widest view (Checkpoint 40 Decision 2)
+# Session 7C STEP 1: the world-load wait follows the stream instead of a fixed 90 s deadline. The world must still load completely
+# (the authority connected and Conquest.view.pending 0, as before); the wait fails as soon as loading stops progressing: no chunk, flora
+# or horizon job finished, no change in the work still to do, for STALL_S seconds (software GL on a busy CI runner streams the spawn
+# in 62-68 s, about 1-3 s a chunk: Checkpoint 49). CAP_S only bounds the job's time budget; every reading is in the failure message.
+STALL_S,CAP_S=45,600
+async def world_loaded(page,size):
+ sig='(()=>{const v=globalThis.Conquest?.view;if(!v)return null;return {c:!!v.authority?.connected,p:v.pending,b:v.builds|0,n:v.chunks?.size|0,f:v.floraJobs?.length|0,h:v.horizonKey??null,j:!!(v.chunkJob||v.horizonJob)};})()'
+ loop=asyncio.get_running_loop();t0=loop.time();last=None;moved=t0;seen=[]
+ while True:
+  r=await page.evaluate(sig);now=loop.time()
+  if r and r['c'] and r['p']==0:return {'s':round(now-t0,1),'builds':r['b']}
+  key=json.dumps(r,sort_keys=True)
+  if key!=last:last=key;moved=now;seen.append((round(now-t0,1),r));seen=seen[-6:]
+  assert now-moved<STALL_S,f'{size}: the world stopped loading: no progress for {STALL_S} s after {round(now-t0)} s (last readings {seen})'
+  assert now-t0<CAP_S,f'{size}: the world still loading after {CAP_S} s, still progressing (last readings {seen})'
+  await asyncio.sleep(1)
 async def run(pw,base,ready,w,h,mobile):
  opts={'headless':True,'args':['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader']}
  exe=shutil.which('chromium') or ('/opt/pw-browsers/chromium' if pathlib.Path('/opt/pw-browsers/chromium').exists() else None)
@@ -36,7 +52,7 @@ async def run(pw,base,ready,w,h,mobile):
  await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
  await page.request.post(base+'/fixture',data=fixture)
  await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
- await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=90000)
+ load=await world_loaded(page,f'{w}x{h}');print(json.dumps({'size':f'{w}x{h}','worldLoaded':load}),flush=True)
  st=lambda js:page.evaluate('(()=>{const s=Conquest.view.authority.state;return '+js+';})()')
  # the default chase camera: behind the tank, looking north (the spawn heading)
  # 1. the cache: rarity glow + label (3D tag over it), then drive over it
@@ -82,7 +98,7 @@ async def run(pw,base,ready,w,h,mobile):
  await page.screenshot(path=str(OUT/f'loot-screen-end-{w}x{h}.png'))
  assert not errors,errors
  await browser.close()
- return {'size':f'{w}x{h}','tag':tag,'card':card,'ticker':ticker,'slot':label,'slotCooldown':cd,'screen':reach}
+ return {'size':f'{w}x{h}','load':load,'tag':tag,'card':card,'ticker':ticker,'slot':label,'slotCooldown':cd,'screen':reach}
 async def main():
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
  ready=json.loads(await server.stdout.readline());base='http://127.0.0.1:'+str(ready['port'])

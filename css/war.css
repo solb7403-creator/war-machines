@@ -76,3 +76,32 @@
 .cq-cut-card{width:min(100%,640px);margin-bottom:14px;text-align:center;color:#f2f6fa;text-shadow:0 2px 6px #000}.cq-cut-card h2{margin:4px 0;font-size:clamp(20px,5.6vw,34px);letter-spacing:1px}.cq-cut-line{margin:0;font-size:clamp(13px,3.6vw,17px);line-height:1.45;color:#d8e6f2}
 .cq-cut-bar{width:min(100%,640px);height:4px;border-radius:2px;background:#ffffff22;overflow:hidden}.cq-cut-bar i{display:block;height:100%;width:0;background:#ffd36b}
 .cq-cut-skip{position:absolute;top:calc(max(10px,env(safe-area-inset-top,0px)) + 8px);right:12px;min-height:44px;min-width:88px;z-index:41}
+/* Session 7C STEP 3: the Hive Titan's HUD (the hull bar with its phase marks at 2/3 and 1/3) and result; the BOARDS screen and share card */
+.cq-titan-hud{position:absolute;left:12px;right:12px;top:calc(max(8px,env(safe-area-inset-top,0px)) + 158px);z-index:5;max-width:560px;margin:0 auto;padding:5px 10px;border:1px solid #b36bff88;border-radius:10px;background:#120a1cf2;color:#efe2ff;text-align:center;pointer-events:none}
+.cq-titan-hud p{margin:0;font-size:11px;line-height:1.3;font-weight:700;letter-spacing:.3px}.cq-titan-say{color:#ffd36b}
+.cq-titan-bar{position:relative;height:8px;margin:4px 0;border-radius:4px;background:#2a1838;overflow:hidden}.cq-titan-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#b36bff,#ff6bd5);transition:width .15s}
+.cq-titan-mark{position:absolute;top:0;bottom:0;width:2px;background:#ffffffcc}.cq-titan-m1{left:66.67%}.cq-titan-m2{left:33.33%}
+.cq-titan-hud.cq-titan-enraged{border-color:#ff6b78;box-shadow:0 0 12px #ff6b7855}
+.cq-titan-on .cq-mn,.cq-titan-on .cq-strike{display:none}   /* a boss HUD takes the place of the carried-minerals and strike lines (the cargo is kept) */
+.cq:has(.cq-cit-hud) .cq-mn,.cq:has(.cq-cit-hud) .cq-strike{display:none}   /* the Citadel's HUD too (its own rule: a browser without :has() drops only this one) */
+@media (orientation:portrait) and (max-width:600px){.cq-titan-on .cq-reward-ticker{top:calc(max(8px,env(safe-area-inset-top,0px)) + 232px)}}   /* the ticker below the boss HUD on a phone */
+@media (orientation:portrait) and (max-width:600px){.cq:has(.cq-cit-hud) .cq-reward-ticker{top:calc(max(8px,env(safe-area-inset-top,0px)) + 232px)}}
+@media(min-width:900px){.cq-titan-on .cq-keys{top:calc(max(8px,env(safe-area-inset-top,0px)) + 100px)}}   /* a computer: the keys strip below the boss HUD */
+@media(min-width:900px){.cq:has(.cq-cit-hud) .cq-keys{top:calc(max(8px,env(safe-area-inset-top,0px)) + 100px)}}
+@media(min-width:900px){.cq-titan-hud{top:calc(max(8px,env(safe-area-inset-top,0px)) + 12px);left:50%;right:auto;transform:translateX(-50%);width:min(46vw,620px)}.cq-titan-hud p{font-size:13px}}
+.cq-titan-rise{margin:8px 0;padding:10px;border:1px solid #b36bff99;border-radius:10px;background:#160b22e6}.cq-titan-rise h3{margin:2px 0 4px;color:#e3c8ff}.cq-titan-rise p{margin:0 0 8px;font-size:13px}
+.cq-titan-go{min-height:44px;width:100%}.cq-titan-result h2{color:#e3c8ff}
+.cq-hub-titan{color:#d7b4ff!important;font-weight:700}
+.cq-standing-boards{margin-top:6px;min-height:40px;width:100%}
+.cq-dialog.cq-boards{background:#0b1523;display:flex;flex-direction:column;max-height:calc(100% - 24px);min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:0;width:min(720px,calc(100% - 24px))}.cq-boards-head,.cq-boards-tabs,.cq-boards-body{flex:none}   /* one scroller (the whole screen): a short phone reaches every line */
+.cq.cq-with-nav .cq-dialog.cq-boards{bottom:calc(66px + env(safe-area-inset-bottom,0px));max-height:calc(100% - 78px - env(safe-area-inset-bottom,0px))}   /* the hub's page nav stays visible: CLOSE and the share sheet sit above it */
+.cq-boards-head h2{margin:0 0 4px}.cq-boards-sub{margin:0 0 8px;font-size:12px;color:#b3c4d3}
+.cq-boards-tabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px;margin-bottom:8px}.cq-boards-tab{min-height:44px;padding:6px 8px;font-size:11px;line-height:1.2;white-space:normal}   /* two a row on a 320 phone, one or two rows on a computer */.cq-boards-tab.on{border-color:#ffd96a;color:#ffd96a}
+.cq-boards-card h3{margin:0 0 6px;color:#ffd96a}
+.cq-boards-band,.cq-boards-course,.cq-boards-field{margin:0 0 4px;font-size:12px}.cq-boards-field.small{color:#ffb347}
+.cq-boards-list{list-style:none;margin:8px 0;padding:0}.cq-boards-row{display:grid;grid-template-columns:52px 1fr auto;gap:8px;padding:6px 4px;border-bottom:1px solid #22e6ff1f;font-size:13px}.cq-boards-row.me{background:#ffd96a1a;color:#ffe9a8;font-weight:700}
+.cq-boards-row i{font-style:normal;color:#b3c4d3}.cq-boards-pill{display:inline-block;margin-left:6px;padding:0 6px;border:1px solid currentColor;border-radius:8px;font-size:9px;line-height:15px;letter-spacing:.06em;vertical-align:1px}.cq-boards-ts{display:block;font-size:10px;color:#8fa3b5;font-weight:400}.cq-boards-raid{margin:6px 0;font-size:12px;color:#ffd96a}.cq-boards-empty{padding:8px 4px;color:#b3c4d3}
+.cq-boards-me{margin:8px 0}.cq-boards-share{min-height:44px;margin-top:6px}.cq-boards-sharebox{display:flex;flex-direction:column;gap:6px;margin-top:8px}.cq-boards-shareimg{width:100%;max-width:360px;border-radius:8px;border:1px solid #b36bff66}
+.cq-boards-foot{display:flex;justify-content:flex-end;position:sticky;bottom:0;margin-top:auto;padding:8px 0 12px;background:#0b1523;border-top:1px solid #22e6ff1f}   /* CLOSE always in reach */.cq-boards-foot button{min-height:44px}
+/* Session 7C STEP 4: the War Effort lines in the hub's WARFRONT card */
+.cq-we-head{margin:6px 0 2px;font-size:12px;font-weight:700;color:#d7b4ff}.cq-we-bar{accent-color:#b36bff}.cq-we-last{color:#7fe0a0!important}.cq-we-squad{color:#ffd96a!important}

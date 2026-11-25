@@ -25,17 +25,21 @@ const {MODEL}=await import('./economy-model.mjs');const {GEAR}=await import('../
 const YEAR=400,DAY=86400000,HOUR=3600000,start=Date.UTC(2026,10,10,0),at=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'}),K=['cp','alloy','biomass','helium'];
 // ---- profiles (the audit's: the economy model's town ladder uses them) ----
 const AUDIT=JSON.parse(readFileSync(new URL('../../docs/conquest/audit/model/audit-economy.json',import.meta.url),'utf8')).profiles;
+// Session 7C STEP 1 (owner brief docs/conquest/audit/SESSION_07C_BRIEF.md): tiers I-III on the Citadel days Session 7B measured with the
+// real assault (docs/conquest/session7b/citadel-pace.json: regular 15 / 30 / 37, heavy 9 / 17 / 24, grinder 6 / 13 / 20); IV-IX unchanged:
+// the planned knot at the old tier III day (regular 49, heavy 32, grinder 21) is kept, so from that day on the schedule is the planned one
+// exactly (tier IV regular day 77.7, ... IX day 320). The paying pilot keeps the grinder's schedule (the same play time).
 export const PROFILES={
- regular:{label:'Regular (60 min a day, one session)',sessions:[[19,60]],ladder:'regular',share:.5,builders:1,citadel:[[0,0],[17,1],[49,3],[135,6],[320,9]],gear:[[0,0],[30,1],[150,2]]},
- grinder:{label:'Grinder (4 h a day, two sessions)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:1,citadel:[[0,0],[6,1],[21,3],[60,6],[135,9]],gear:[[0,0],[10,1],[60,2]]},
+ regular:{label:'Regular (60 min a day, one session)',sessions:[[19,60]],ladder:'regular',share:.5,builders:1,citadel:[[0,0],[15,1],[30,2],[37,3],[49,3],[135,6],[320,9]],gear:[[0,0],[30,1],[150,2]]},
+ grinder:{label:'Grinder (4 h a day, two sessions)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:1,citadel:[[0,0],[6,1],[13,2],[20,3],[21,3],[60,6],[135,9]],gear:[[0,0],[10,1],[60,2]]},
  // the paying pilot at the grinder's play time: the store's planned levers (docs/ROADMAP.md standing decisions: second builder, speed-ups,
  // wall extension packs, common / uncommon ore; checkout off until Session 8): two builders, the extension packs, Ferrite and Ilmenite
  // bought as needed, Epic gear from day 1 (crates); never CP, never rare-or-better ore (earn-only)
  // the heavy player (owner, Nov 23: "I'd be shocked if players played for more than 2 [hours a day]"; Session 7T-P decision 2 targets
  // them): 2 h a day in two sessions, the economy model's town ladder at 120 minutes (ladderOf: the log-midpoint of the regular's and the
  // grinder's), the Citadel and gear paced between the two; otherwise as the grinder
- heavy:{label:'Heavy (2 h a day, two sessions)',sessions:[[10,60],[19,60]],ladder:'heavy',share:.5,builders:1,citadel:[[0,0],[10,1],[32,3],[90,6],[208,9]],gear:[[0,0],[17,1],[95,2]]},
- payer:{label:'Paying pilot at the grinder\'s play time (store levers as planned)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:2,citadel:[[0,0],[6,1],[21,3],[60,6],[135,9]],gear:[[0,2]],buyFeIl:true,extPacks:true}};
+ heavy:{label:'Heavy (2 h a day, two sessions)',sessions:[[10,60],[19,60]],ladder:'heavy',share:.5,builders:1,citadel:[[0,0],[9,1],[17,2],[24,3],[32,3],[90,6],[208,9]],gear:[[0,0],[17,1],[95,2]]},
+ payer:{label:'Paying pilot at the grinder\'s play time (store levers as planned)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:2,citadel:[[0,0],[6,1],[13,2],[20,3],[21,3],[60,6],[135,9]],gear:[[0,2]],buyFeIl:true,extPacks:true}};
 const interp=(pts,d)=>{let v=pts[0][1];for(let i=0;i<pts.length;i++){if(d>=pts[i][0])v=pts[i][1];if(i+1<pts.length&&d>=pts[i][0]&&d<pts[i+1][0]){const [a,va]=pts[i],[b,vb]=pts[i+1];return va+(vb-va)*(d-a)/(b-a);}}return v;};
 export const tiersAt=(pr,d)=>Math.max(0,Math.min(9,Math.floor(interp(pr.citadel,d))));
 const HEAVY=MODEL.ladderOf(120),hitOf=pr=>pr.ladder==='heavy'?Object.fromEntries(Object.entries(HEAVY).map(([k,day])=>[k,{day}])):AUDIT[pr.ladder].base.hit;
@@ -88,7 +92,18 @@ export function minerals(pr,d){const m=pr.sessions.reduce((a,x)=>a+x[1],0),n=pr.
  for(const [id,f] of Object.entries(mix)){const k=ops*(f/mt)/A[id].par,win=id==='raid_hard'?(d<7?.7:.9):id==='raid_veteran'?.8:1;add(Pm.opMinerals[id],k*win);}
  const strikes=Math.min(1440/Pm.strike.everyMin,n*(m/n+Pm.strike.windowMin)/Pm.strike.everyMin),okp=d<7?.6:d<21?.85:.95,st=strikes*okp;add(Pm.strike.guaranteed,st);inc.se+=st*(Pm.strike.se+1/(KNOB.resonanceSe||Pm.strike.resonance.se));inc.mh+=st*(Pm.strike.mh+1/Pm.strike.resonance.mh);
  if(!pr.noTownSe&&!KNOB.noTownSe)inc.se+=townSe(pr,d);
+ if(!KNOB.noTitan){const t=titansOf(pr,d,st),O=KNOB.titanOre||TITAN_ORE;inc.tq+=t*O.tq;inc.se+=t*O.se;inc.mh+=t*O.mh;}   // Session 7C: the Hive Titan's ore (below)
  return inc;}
+// Session 7C STEP 3 (owner brief: "Count the Titan's ore drops in the fortress model's income before the guards run"): every 6th strike slot
+// is a Titan slot, so the Titans a pilot meets are the strikes it meets / 6, times the kill rate of its gear (measured with the real hunt
+// and a careful bot: dev/tools/titan-model.mjs, docs/conquest/session7c/titan-model.json: common gear about 1 in 5, rare 4 in 5, epic
+// nearly all); a kill drops LOOT.titan: 20% Selenite with the pity (never 5 Titans without one: 1 per 3.36 kills on
+// average, 0.2975 a kill), 2% Moonheart. KNOB.noTitan turns it off (the measurement before 7C).
+// The guaranteed 2 Tranquillityite a kill is kept out of the game (Checkpoint 50, "Guards with everything on"): with it, guard (e) of
+// conquest-fortress fails (the regular's day-330 hold rate moves 14.3 points with the cap-level Selenite, limit 5; Tranquillityite alone
+// 9.5); the Selenite (with its pity) and the Moonheart stay (4.8 points, as without any Titan ore). The decided row is a PROPOSAL.
+const TITAN_ORE=Object.freeze({tq:0,se:1/3.3616,mh:.02}),TITAN_KILL=Object.freeze([.2,.8,.95]);
+function titansOf(pr,d,strikesMet){const tier=Math.max(0,Math.min(2,Math.round(interp(pr.gear,d))));return strikesMet/6*TITAN_KILL[tier];}
 // ---- Session 7T-P decision 2: Selenite from the town's defenses held in person (ConquestTown.TOWN.se: n Selenite for a raid at the cap
 // level held in person and really fought). A day's Selenite = the attacks that land that day and that the pilot's sessions can meet in
 // person (the real town clock, ConquestTown.step on Session 7's war clock, 24 pilot seeds: an attack can be fought from its announcement,

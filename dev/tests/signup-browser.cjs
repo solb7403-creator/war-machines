@@ -143,6 +143,9 @@ async function leagueCheck(pg,label,name,touch){
     assert(await pg.evaluate(c=>tgName(TG_USER)===c,cs),'the call sign is the player name');
     const cookies=await ctx.cookies(BASE);assert(cookies.some(c=>c.name==='__Host-lunar-session'&&c.httpOnly&&c.secure&&c.sameSite==='Lax'),'first-party HttpOnly session');
     assert(await pg.evaluate(()=>{try{return JSON.parse(localStorage.getItem('lunar-invite')).c==='abcd2345';}catch{return false;}}),'invite kept through signup');
+    // the game opens when the boot hides its loading screen (web/boot.js lunarWebReady sets the tab from the address): nobody can
+    // touch the page before that, so the garage check starts after it (Session 7C: it raced the boot's last scripts)
+    await pg.waitForFunction(()=>document.querySelector('#web-loading')?.hidden===true,null,{timeout:45000});
     await pg.waitForTimeout(600);await pg.screenshot({path:path.join(OUT,name+'-'+label+'-game.png')});
     await garageCheck(pg,label,name,touch,ctx);
     await leagueCheck(pg,label,name,touch);
@@ -155,6 +158,9 @@ async function leagueCheck(pg,label,name,touch){
     if(touch)await pg.locator('#li-go').click();else{await pg.locator('#li-pw').focus();await pg.keyboard.press('Enter');}
     await pg.waitForURL('**/web/play.html#play',{timeout:20000});
     await pg.waitForFunction(()=>typeof save!=='undefined'&&!!save&&!!save.lab,null,{timeout:45000});
+    // the game finished loading (its loading screen hidden) before the test leaves for the settings page: leaving mid-load cancels the
+    // boot's last scripts, which CI's WebKit once answered with "WebKit encountered an internal error" on the next navigation (Session 7C)
+    await pg.waitForFunction(()=>document.querySelector('#web-loading')?.hidden===true,null,{timeout:45000});
     // 5. settings page fits and works
     await pg.goto(BASE+'/web/account.html',LEAVE);await pg.waitForSelector('#settings:not([hidden])');
     assert(await pg.locator('#acct-cs').textContent()===cs,'settings shows the call sign');

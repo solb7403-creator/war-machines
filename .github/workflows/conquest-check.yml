@@ -81,6 +81,17 @@ jobs:
           node dev/tests/conquest-canvas-contract.mjs
           node dev/tests/wtest/conquest-war.mjs
           node dev/tests/conquest-replay-budget.mjs > docs/conquest-living-war/replay-current.json
+          # Session 7C STEP 1: the faster collision lookups give identical results (every operation replayed both ways)
+          node dev/tests/conquest-collision-identity.mjs
+          # Session 7C STEP 2: the airdrop standing and trust line (real routes), command fingerprints and their flags, cqalt
+          node dev/tests/wtest/conquest-standing.mjs
+          node dev/tests/conquest-fingerprints.mjs
+          # Session 7C STEP 3: the Hive Titan (rules, start, phases, the kill once per slot, pity) and the weekly boards (posting, held
+          # pilots, bands with the 20-pilot minimum, settlement and grants exactly once)
+          node dev/tests/conquest-titan.mjs
+          node dev/tests/wtest/conquest-boards.mjs
+          # Session 7C STEP 4: the weekly War Effort bar (population goal, zero pilots, squads, rewards once, High Morale)
+          node dev/tests/wtest/conquest-wareffort.mjs
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
           node dev/tests/conquest-earned-journey.mjs
@@ -276,6 +287,35 @@ jobs:
         with:
           name: conquest-citadel
           path: docs/conquest/session7b
+
+  # Session 7C Integrity & Boards (docs/conquest/audit/SESSION_07C_BRIEF.md): the hub's AIRDROP STANDING card and War Effort lines, the
+  # WEEKLY BOARDS screen and its share card, a Titan slot (the strike's THE HIVE TITAN RISES, the hunt HUD, the kill paid once) at
+  # 390x844, 390x700, 320x568 (touch) and 1366x768, 1920x1080 (mouse, keyboard). The rules themselves run in the conquest job
+  # (conquest-titan, wtest/conquest-boards, wtest/conquest-standing, conquest-fingerprints, wtest/conquest-wareffort)
+  boards-titan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser dependencies
+        run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Session 7C screens (5 sizes)
+        run: python dev/tests/conquest-7c-browser.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-7c
+          path: docs/conquest/session7c
 
   transmission:
     runs-on: ubuntu-24.04
