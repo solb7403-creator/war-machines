@@ -46,19 +46,22 @@ async def main(a):
       if u.netloc=='telegram.org':return await r.fulfill(body='',content_type='application/javascript')
       await r.abort()
      await page.route('**/*',route)
-     fixture={'position':[1080,1160],'plotFull':'crater','baseFunds':True}
-     await page.request.post(base+'/fixture',data=fixture)
-     await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
-     await page.request.post(base+'/fixture',data=fixture)
-     await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
-     if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
-     await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=180000)
-     await page.locator('#cq-base-access').click();await page.wait_for_selector('.cq-plot-tabs');await page.wait_for_timeout(2500)
+     async def enter(fixture):
+      await page.request.post(base+'/fixture',data=fixture)
+      await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
+      await page.request.post(base+'/fixture',data=fixture)
+      await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
+      if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
+      await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=180000)
+      await page.locator('#cq-base-access').click();await page.wait_for_selector('.cq-plot-tabs');await page.wait_for_timeout(2500)
+      if a.clean:await page.add_style_tag(content='.cq-sheet,.cq-plot-sheet,.cq-plot-panel{opacity:0!important;pointer-events:none!important}')
+     await enter({'position':[1080,1160],'plotFull':'crater','baseFunds':True})
      tag=f'{size}-{q}';res={}
-     if a.clean:await page.add_style_tag(content='.cq-sheet,.cq-plot-sheet,.cq-plot-panel{opacity:0!important;pointer-events:none!important}')
      async def drill(hit=None):
       await page.evaluate('h=>{const X=ConquestPlotView.state;X.dropshipHit=h;X.drillRate=1.6;}',hit)
-      await page.locator('.cq-plot-tabs button',has_text='DEFEND').click();await page.locator('button',has_text='START DEFENSE DRILL').click()
+      await page.locator('.cq-plot-tabs button',has_text='DEFEND').click();go=page.locator('button',has_text='START DEFENSE DRILL')
+      if a.clean:await go.evaluate('b=>b.click()')   # --clean hides the sheet the button sits in (pictures without the interface): a real press cannot reach it
+      else:await go.click()
       await page.wait_for_function('ConquestPlotView.state?.drill&&ConquestPlotView.state.drill.ships!==undefined',timeout=120000)
       await page.evaluate('ConquestPlotView.state.drillRate=0');return await page.evaluate(STATE)
      async def at(t,ship,name,dist=None,shot=True):
@@ -75,7 +78,7 @@ async def main(a):
       return s
      s0=await drill();assert s0 and s0['ships'],'the drill was planned into ships: '+json.dumps(s0)
      ships=s0['ships'];w2=[s for s in ships if s['at']==24];assert w2,'wave two (24 s) has ships: '+json.dumps(ships)
-     haul=next((s for s in w2 if s['kind']=='hauler'),None);shut=next((s for s in ships if s['kind']=='shuttle'),None);assert haul,'a hauler lands in wave two'
+     haul=next((s for s in w2 if s['kind']=='hauler'),None);assert haul,'a hauler lands in wave two'
      assert s0['mats'],'the ships are drawn with the style\'s own solid material'
      seq={}
      for name,t in [('approach',24-9.5),('flare',24-5.2),('landed',24-3.0),('unload',24-.9),('moment',24.05),('lift',24+5.0)]:
@@ -89,11 +92,6 @@ async def main(a):
      assert ph(seq['lift'])[haul['key']]['phase']=='leave',seq['lift']['now']
      worst=max(seq.values(),key=lambda s:s['info']['calls']);res['budget']={'calls':worst['info']['calls'],'programs':worst['info']['programs'],'ships':worst['n']}
      assert worst['info']['programs']<=16 and worst['info']['calls']<=150,'the raid view budget with the ships on screen (16 programs, 150 draw calls): '+json.dumps(worst['info'])
-     if shut:
-      sh={}
-      for name,t in [('hover',shut['at']-2.0),('drop',shut['at']-.5)]:sh[name]=await at(t,shut,'shuttle-'+name,dist=70 if touch else 60)
-      assert any(i['key']==shut['key'] and i['bay']>.5 for i in sh['hover']['now']) or any(i['key']==shut['key'] for i in sh['drop']['now']),sh
-      res['shuttle']={k:ph(v).get(shut['key']) for k,v in sh.items()}
      res['sequence']={k:{'t':v['t'],'ship':ph(v).get(haul['key']),'n':v['n'],'info':v['info']} for k,v in seq.items()}
      # ---- a ship shot down: finish this replay, then a second drill with the hauler of wave two hit in its approach ----
      await page.evaluate('()=>{const X=ConquestPlotView.state;X.drillRate=400;}');await page.wait_for_function('ConquestPlotView.state?.drillResult',timeout=180000)
@@ -111,11 +109,40 @@ async def main(a):
      await page.evaluate('()=>{const X=ConquestPlotView.state;X.drillRate=400;}');await page.wait_for_function('ConquestPlotView.state?.drillResult',timeout=180000)
      r2=await page.evaluate('(()=>{const r=ConquestPlotView.state.drillResult;let h=0;for(const c of JSON.stringify([r.frames,r.events]))h=(Math.imul(h,31)+c.charCodeAt(0))|0;return JSON.stringify([r.outcome,r.time,r.frames.length,h]);})()')
      assert r1==r2,'the simulation\'s result is the same with a ship shot down (the drill does not remove its wave today): '+r1+' / '+r2
-     res['shotDown']={k:ph(v).get(hk['key']) for k,v in down.items()};res['errors']=errors;assert not errors,errors
+     res['shotDown']={k:ph(v).get(hk['key']) for k,v in down.items()}
+     # ---- the light shuttle (owner, Nov 21: "a light scavenger shuttle for small waves (raiders, swarm) that drops the swarm from a
+     # hover"): a small town. At Command Center 1-3 a lane of wave two is raiders and swarm only, so a shuttle always flies; from
+     # CC 4 every lane carries a sentinel or drones and gets a hauler (60 seeds each, measured Nov 25) ----
+     await enter({'position':[1080,1160],'plotPlain':{'site':'crater','cc':2},'baseFunds':True})
+     s2=await drill();assert s2 and s2['ships'],'the small town\'s drill was planned into ships: '+json.dumps(s2)
+     shut=next((s for s in s2['ships'] if s['kind']=='shuttle' and s['at']==24),None);assert shut,'a shuttle flies in wave two of a CC 2 town: '+json.dumps(s2['ships'])
+     sh={}
+     for name,t in [('approach',24-9.5),('flare',24-4.2),('hover',24-2.85),('bay',24-1.6),('drop',24-.55),('moment',24.05),('lift',24+3.2)]:
+      sh[name]=await at(t,shut,'shuttle-'+name,dist=70 if touch else 60)
+     P2=lambda n:ph(sh[n])[shut['key']]
+     assert P2('approach')['phase']=='approach' and P2('flare')['phase']=='flare',[P2('approach'),P2('flare')]
+     gy=P2('moment')['y'];assert P2('hover')['phase']=='hover' and P2('hover')['ramp']==0 and P2('hover')['bay']<.05,'the shuttle hovers with its bay shut: '+json.dumps(P2('hover'))
+     assert P2('bay')['bay']>.99 and P2('bay')['phase']=='hover','the bay is open before the drop: '+json.dumps(P2('bay'))
+     assert P2('drop')['phase']=='unload' and P2('drop')['bay']>.99,'the drop: '+json.dumps(P2('drop'))
+     extra=sum(sh['drop']['drawn'].values())-sum(sh['drop']['alive'].values());assert extra>=shut['units'],f'the shuttle\'s units are shown dropping before their moment ({extra} drawn in the air, {shut["units"]} in this shuttle)'
+     assert sum(sh['moment']['drawn'].values())==sum(sh['moment']['alive'].values()),'at the wave\'s moment only the simulation\'s own units are drawn: '+json.dumps([sh['moment']['drawn'],sh['moment']['alive']])
+     assert P2('lift')['phase']=='leave' and sh['drop']['n']['shuttle']>=1,[P2('lift'),sh['drop']['n']]
+     worst=max(sh.values(),key=lambda s:s['info']['calls']);assert worst['info']['programs']<=16 and worst['info']['calls']<=150,'the raid view budget with the shuttles on screen: '+json.dumps(worst['info'])
+     res['shuttle']={k:ph(v).get(shut['key']) for k,v in sh.items()};res['shuttleBudget']={'calls':worst['info']['calls'],'programs':worst['info']['programs'],'ships':worst['n']}
+     # the shuttle shot down in its approach
+     await page.evaluate('()=>{const X=ConquestPlotView.state;X.drillRate=400;}');await page.wait_for_function('ConquestPlotView.state?.drillResult',timeout=180000)
+     await page.evaluate('h=>{const X=ConquestPlotView.state,r=X.drillResult;X.dropshipHit=h;X.drillRate=1.6;ConquestPlotView.playResult(r,r.log);}',{shut['key']:24-8.0})
+     await page.wait_for_function('ConquestPlotView.state?.drill&&ConquestPlotView.state.drill.ships!==undefined',timeout=120000);await page.evaluate('ConquestPlotView.state.drillRate=0');s3=await page.evaluate(STATE)
+     sk=next(s for s in s3['ships'] if s['key']==shut['key']);assert sk['hit'] is not None,'the plan marks the shuttle shot down'
+     sd={}
+     for name,t in [('hit',sk['hit']+.06),('falling',sk['hit']+.9),('wreck',24-1.0)]:sd[name]=await at(t,sk,'shuttle-shotdown-'+name,dist=90 if touch else 75)
+     assert ph(sd['hit'])[sk['key']]['flash']==1 and sd['hit']['n']['hitS']>=1,'the shuttle\'s hit flash: '+json.dumps(sd['hit']['n'])
+     assert ph(sd['wreck'])[sk['key']]['wreck']==1 and sd['wreck']['n']['wreckS']>=1,'the shuttle\'s wreck: '+json.dumps(sd['wreck']['n'])
+     res['shuttleDown']={k:ph(v).get(sk['key']) for k,v in sd.items()};res['errors']=errors;assert not errors,errors
      results[tag]=res;print('ok',tag,json.dumps(res['budget']),flush=True);await ctx.close()
    await browser.close()
   (out/'dropships.json').write_text(json.dumps(results,indent=1))
-  print('PASS conquest-dropship-browser: '+', '.join(results)+': the drill planned into ships, the hauler flies in, flares, lands, lowers its ramp and unloads (riders drawn before the moment, none after), lifts away; the raid view inside 16 programs / 150 draw calls; a ship shot down flashes, falls and lies as a wreck, its units never shown, the result unchanged')
+  print('PASS conquest-dropship-browser: '+', '.join(results)+': the drill planned into ships, the hauler flies in, flares, lands, lowers its ramp and unloads (riders drawn before the moment, none after), lifts away; the raid view inside 16 programs / 150 draw calls; a ship shot down flashes, falls and lies as a wreck, its units never shown, the result unchanged; in a small town (CC 2) the light shuttle flies in, hovers, opens its bay and drops its units (drawn in the air before the moment, none after), lifts away; shot down it flashes, falls and lies as a wreck')
  finally:
   server.terminate()
 ap=argparse.ArgumentParser();ap.add_argument('--sizes',default='390x844');ap.add_argument('--quality',default='high,low');ap.add_argument('--out',default=str(ROOT/'docs/conquest/session5e2d2/dropships'));ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=700);ap.add_argument('--clean',action='store_true')
