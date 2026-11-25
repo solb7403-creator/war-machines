@@ -34,6 +34,7 @@ function partDay(card,s,now){const L=root.ConquestLoot;if(!L||!s?.inv)return;con
 function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildren();const now=Date.now(),C=root.ConquestCombat;
  const card=(title,cls)=>{const c=el('section','cq-hub-card '+(cls||''),null,col);el('h3','',title,c);return c;};
  if(s)root.ConquestTownUI?.welcome?.(col,s,{el,now});   // Session 7T-P decision 4: a return after 14+ days away comes first
+ root.ConquestStanding?.card(col,{el,now});   // Session 7C: the airdrop standing and the trust line (js/conquest/standing.js)
  // warfront
  const terr=s?.territory||{},secs=(root.ConquestWorld?.sectors||[]).map(x=>x.id),held=secs.filter(id=>terr[id]?.owner==='humanity').length,total=secs.length||6,alerts=Object.entries(terr).filter(([,t])=>t?.status==='defense-alert'||t?.status==='contested');
  const w=card('WARFRONT');if(s?.war&&root.ConquestWarMap)root.ConquestWarMap.hubLines(w,s,{el});else el('p','cq-hub-big',held+' / '+total+' SECTORS HELD',w);const bar=el('progress','cq-hub-bar',null,w);bar.max=total;bar.value=held;bar.setAttribute('aria-label','Frontline sectors held');if(H.o.war)w.append(H.warBtn||(H.warBtn=H.o.button('OPEN WAR MAP',()=>H.o.war(),'cq-hub-war')));   // Session 7: the Moon and the Frontline side by side; the War Map opens from its card (one persistent node, like OPEN HANGAR: the cards rebuild every second), so the hub keeps its four actions

@@ -63,7 +63,7 @@ export async function buildClusters(env, names, fl, now = Date.now()) {
   for (const [a, bs] of Object.entries(lk)) for (const b of Object.keys(bs || {})) { const ra = find(a), rb = find(b); if (ra !== rb) par[ra] = rb; }
   const groups = {};
   for (const x of Object.keys(par)) (groups[find(x)] = groups[find(x)] || []).push(x);
-  const ok = (await dbGet(env, "lkok").catch(() => null)) || {};
+  const ok = (await dbGet(env, "lkok").catch(() => null)) || {}, cqa = (await dbGet(env, "cqa").catch(() => null)) || {};   // Session 7C: the Conquest hints (conquest-alt.js)
   const nm = (id) => (names[id] ? names[id][0] : (fl[id] && fl[id].n) || id), pts = (id) => (names[id] ? names[id][1] : 0);
   const clu = [], up = {};
   for (const m of Object.values(groups)) {
@@ -71,7 +71,7 @@ export async function buildClusters(env, names, fl, now = Date.now()) {
     m.sort();
     const sig = fnv(m.join(",")), why = [...new Set(m.flatMap((a) => Object.values(lk[a] || {})))].sort();
     const keep = m.slice().sort((a, b) => pts(b) - pts(a) || (a < b ? -1 : 1))[0];
-    clu.push({ sig, keep, why, ok: !!ok[sig], m: m.map((id) => [id, nm(id), pts(id)]) });
+    clu.push({ sig, keep, why, ok: !!ok[sig], m: m.map((id) => [id, nm(id), pts(id)]), ...(cqa[sig] && Array.isArray(cqa[sig].h) ? { cq: cqa[sig].h } : {}) });
     if (ok[sig]) continue;   // Jake cleared this cluster: every account counts
     const text = "one of " + m.length + " linked accounts (" + why.join(", ") + "), only " + nm(keep) + " counts";
     for (const id of m) {
@@ -91,7 +91,7 @@ export async function clearCluster(env, sig, now = Date.now()) {
   const c = (Array.isArray(clu) ? clu : Object.values(clu)).find((x) => x && x.sig === sig);
   if (!c) return false;
   const up = { [`lkok/${sig}`]: now };
-  for (const [id] of c.m) up[`flags/${id}/ok/cluster`] = now;
+  for (const [id] of c.m) { up[`flags/${id}/ok/cluster`] = now; up[`flags/${id}/ok/cqalt`] = now; }   // Session 7C: one clear for the row (the Conquest hint too)
   await dbPatch(env, "", up);
   return true;
 }

@@ -631,3 +631,7 @@
 .cq-alert-types{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.cq-alert-types .wm-kicker{flex:1 0 100%;margin:0}.cq .cq-alert-type{min-height:44px;font-size:11px}.cq .cq-alert-type:not(.cq-on){opacity:.75}
 .cq-plot.cq-town-live .cq-plot-drivehint,.cq-plot.cq-town-live .cq-plot-exit{display:none!important}
 .cq-plot-replay-head{margin:4px 0 8px;font-weight:800;color:#ffcf7a}
+/* Session 7C STEP 2: the airdrop standing card (js/conquest/standing.js): the pool rank in gold, the trust line in green, under review in amber */
+.cq-hub-standing{border-color:#ffd96a55}.cq-hub-standing h3{color:#ffd96a}.cq-hub-standing .cq-hub-big{color:#ffe9a8}
+.cq-standing-trust{color:#7fe0a0!important;font-weight:700}.cq-standing-note{opacity:.75}
+.cq-standing-held{border-color:#ffb34799}.cq-standing-held .cq-hub-big{color:#ffb347}

@@ -7637,7 +7637,9 @@ If your context was cleared, read docs/conquest/audit/SESSION_07C_BRIEF.md first
   (below).
 - **Slice 2 (STEP 1):** all four items built and tested (details under "STEP 1" below). One PR for the whole session (draft), reviews at
   the end, then ready + `auto-release`; a docs-only PR after the release.
-- **Next:** STEP 2 (the standing card, the trust line, the command fingerprints and their flags).
+- **Slice 3 (STEP 2):** the standing card, the trust line, the command fingerprints with cqrepeat / cqnoinput, the cqalt cluster hint
+  (details under "STEP 2" below). Tests: `wtest/conquest-standing` 19, `conquest-fingerprints` 19 (both in the CI `conquest` job).
+- **Next:** STEP 3 (the five weekly boards, their rewards, the BOARDS screen and share card, the raid time-attack stamp, the Hive Titan).
 
 ### Research: the best comparable boards, raid bosses, anti-bot signals and community bars (before STEPs 2-4 were designed)
 One research agent, web search (gamedeveloper.com and docs.arbitrum.foundation fetches were blocked: search snippets used). Lessons and
@@ -7724,4 +7726,47 @@ what each changed here:
   tier III 27.5 s -> 8.0-8.8 s, with identical outcomes, clear times, hull and dropships downed. The brief's target was about a fifth.
   Found on the way (unchanged, unreachable): the original `rockSolid` never returns for an infinite coordinate (positions are clamped
   and commands validated), so the test never asks it one.
+
+### STEP 2 (lead's decisions, with reasons)
+- **The standing card** (`js/conquest/standing.js`, one line in hub.js; style in conquest.css): AIRDROP STANDING · "#842 IN THE POINTS
+  POOL" · "1,200 pts to #800" · today's bar and "TODAY 12,840 / 50,000" (the cap message "CAP REACHED. Loot, minerals and CP still
+  drop." at the cap) · "VERIFIED PLAY 94% · LAST 30 DAYS" · "A research ranking of the top 1,000 by play score, updated every few
+  minutes. No token amount is promised." The numbers come from the Worker (`POST /api/conquest/standing`,
+  `worker/src/conquest-standing.js`): the pilot's own pool score live (`ads/<pid>`, the index the pool itself reads), ranked against
+  the pool as the 5-minute leaderboard cron last built it (`index.js airdropBoards` now also writes `adp`: the pool's 1,000 scores,
+  descending, pilots under review left off; cached a minute per isolate, never sent to the phone), the next mark (1,000, 900 ... 100,
+  75, 50, 25, 10, 5, 3, 2, 1) and the points to it, or the points to #1,000 outside the pool; today's points against the cap from the
+  account's mirror (`players/<pid>`, which now carries `fxn`, today's points outside the cap: a Citadel bounty never reads as the cap
+  used up). Read on the hub's open and every 60 s while it stays open; the last answer paints first (localStorage, guarded). Lead's
+  choice: a server read (two tiny reads and a cached board) instead of shipping the pool's scores to every phone.
+- **The trust line**: the share of the pilot's last 30 UTC days (a newer account: its own days) on which no flag was active (raised and
+  not yet cleared that day), from `flags/<pid>`. A pilot under review sees UNDER REVIEW and the rule: "You keep playing and earning. You
+  sit out the boards and the airdrop snapshot until the review clears you." No rank and no reason are shown (research lesson 14: the
+  criteria stay private).
+- **Command fingerprints** (`worker/src/conquest-fingerprint.js`, hooked in conquest-sim.js: one call per command while an operation
+  runs, one at its end): the steering entropy (17 stick directions with idle), the stick variance, the control changes, the firing
+  cadence (CV of the gaps between trigger presses), the completion time, a coarse path hash (8 m cells every 2 s from the start); 169
+  bytes at most measured across 55 operations (limit 200); the last 20 kept (`s.fp`, cold part), the running accumulator in the hot part
+  (`s.fpa`), none of them ever sent to the phone (publicState / publicHot strip them).
+- **The flags, calibrated on the recorded human-variance fixtures** (measured before setting the thresholds): the scripted bot repeats
+  every value exactly (path, time, control changes: 14 a run); four human runs of one raid differ in path and in control changes by
+  hundreds (348-441); parked defenders never leave their first cell and still change aim and trigger 260-900 times. So `cqrepeat` = 3
+  operations in a UTC day with the same operation, the same path through 3+ cells, times within 1 s, histograms within 6 points and
+  control changes within 2%; `cqnoinput` = 3 operations won (15 s or longer) among the last 20 with no control change at all (a
+  Battalion wins a sector defense in about 21 s with nobody driving). Each is queued once per pilot (`s.fpf`), rides the outbox entry
+  like a bounty (`e.fl`), and the account raises it once (eco.js `raise`, S.fl) through `addFlags`, like cqppm; any other key in an
+  entry is ignored. Flag only: nothing bans.
+- **The human-variance fixtures** (`dev/tests/fixtures/cq-human-variance.json.gz`, 43 KB): recorded from the human input model
+  `dev/tools/human-input-model.mjs` (no live players exist yet): re-decisions every 180-420 ms (log-normal), an Ornstein-Uhlenbeck
+  wobble on the heading, let-go moments, lagging aim, trigger bursts, delayed locks, a style per pilot; 12 runs by two pilots in one
+  day (the same raid four times, parked defenders, a colony defense, recon, the same siege three times, a strike). PROPOSAL: replace
+  them with real recordings once players exist.
+- **cqalt** (`worker/src/conquest-alt.js`): inside an existing farm-defense cluster (device, wallet, the same controls, starting
+  together on one network, traded live wins), two accounts that also share two Conquest signals: the same town layout (CC5+ and 15+
+  buildings: every building's type and cell and every wall cell), the same hours of play on 3+ shared days (2+ hours each), a Strike
+  Beacon in the same minute. Each pilot's summary (`cqx/<pid>`) is written after a Conquest request only when something new appears;
+  the leaderboard cron checks each cluster once an hour (12 slices of its 5-minute runs); the hint is kept at `cqa/<sig>` and shown on
+  the admin sheet's cluster row ("Conquest: the same town layout, the same hours of play"), the extra accounts (never the cluster's
+  main one) get the cqalt flag through `addFlags`, and the row's one Clear clears cluster and cqalt together (farm.js clearCluster).
+  A cluster the owner cleared is not flagged again.
 

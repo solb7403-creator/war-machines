@@ -4,6 +4,7 @@ import {cosmetics,cosmeticAction,COSMETIC_ACTIONS} from './conquest-cosmetics.js
 import {CONQUEST,RULES} from './sim.gen.js';
 import {POLICY,ledger,killLoot,pickups,death,missionReward,atTerminal,bank} from './conquest-economy.js';
 import {played,settleOpKills,discardOpKills,earn} from './conquest-airdrop.js';
+import {fpStep,fpEnd} from './conquest-fingerprint.js';   // Session 7C STEP 2
 import {veins,readyVeins,pull,reveal,revealSector} from './conquest-veins.js';
 import {inventory,itemReady,spend} from './conquest-loot.js';
 import {living,livingStep,ambushRoll,chainBreak} from './conquest-living.js';
@@ -11,7 +12,7 @@ import {orders,orderEvent,claimOrder,ORDER_ACTIONS} from './conquest-orders.js';
 import {track,played as anPlayed,secondsBucket,carryingOf} from './conquest-analytics.js';
 import {citadelSync,citadelPrep,citadelCheck,citadelBegin,citadelWon,citadelLost,citadelDown} from './conquest-citadel.js';   // Session 7B Citadel Act I
 // Session 6 analytics: one end event per operation attempt (victory, defeat or retreat), raids with a seconds bucket.
-function opEnd(s,B,outcome){if(!s.mission||s.anEnd===s.attempt)return;s.anEnd=s.attempt;const raid=!!C.operations[s.mission]?.raid;track(s,raid?'raid_end':'mission_end',s.mission,outcome,raid?secondsBucket(B.time):undefined);}
+function opEnd(s,B,outcome){if(!s.mission||s.anEnd===s.attempt)return;s.anEnd=s.attempt;const raid=!!C.operations[s.mission]?.raid;track(s,raid?'raid_end':'mission_end',s.mission,outcome,raid?secondsBucket(B.time):undefined);fpEnd(s,B,outcome);}   // Session 7C: the operation's command fingerprint
 import {PLOT_ACTIONS,REMOTE_PLOT_ACTIONS,plotAction} from './conquest-plot.js';
 import {research,researchAction,RESEARCH_ACTIONS} from './conquest-research.js';
 import {bat,field,sync,recover,regroup,outcome,tick as batTick,batAction,BAT_ACTIONS} from './conquest-battalion.js';
@@ -84,7 +85,8 @@ export function applyCommands(previous,request,now){
  const s=copy(previous);refreshState(s,now);
  if(s.td?.active){played(s,cost);anPlayed(s,cost);liveSteps(s,commands,now);streakSync(s,now);s.seq=request.seq;s.lastWall=now;s.creditMs=credit-cost;return s;}   // Session 7T: defending your town in person: these commands drive the town raid (worker/src/conquest-town.js), the world waits
  const B=hydrate(s);played(s,cost);anPlayed(s,cost);
- for(const input of commands){const running=B.state==='active',old=s.position,hpBefore=B.playerHp;s.position=K.advance(B,s.position,input,STEP_MS/1000,!s.mission);s.hp=B.playerHp;// Quiet time is simulated play since the last hit (a paused client earns none).
+ for(const input of commands){const running=B.state==='active',old=s.position,hpBefore=B.playerHp;s.position=K.advance(B,s.position,input,STEP_MS/1000,!s.mission);s.hp=B.playerHp;if(running)fpStep(s,input,s.position);   // Session 7C: command fingerprints (server-side, from these commands)
+// Quiet time is simulated play since the last hit (a paused client earns none).
  if(B.playerHp<hpBefore){s.lastHitAt=now;s.quietMs=0;}else if(s.lastHitAt)s.quietMs=Math.min(60000,(s.quietMs||0)+STEP_MS);if(s.recall){if(B.playerHp<hpBefore||s.mission||B.playerHp<=0){delete s.recall;s.notice={kind:'recall-broken'};}else if((s.recall.simMs=(s.recall.simMs||0)+STEP_MS)>=C.RECALL.channelMs)completeRecall(s,B,now);}
  if(!s.mission&&s.base?.tier&&Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)<18){const hangar=s.base.modules.hangar||0;if(hangar&&B.playerHp>0)B.playerHp=Math.min(B.playerMax,B.playerHp+B.playerMax*.002*hangar);s.hp=B.playerHp;}
  const wanted=running?Math.hypot(input.x,input.z):0,moved=Math.hypot(old.x-s.position.x,old.z-s.position.z);s.stuckMs=wanted>.1&&moved<B.combatSpeed*.05*.15?(s.stuckMs||0)+STEP_MS:wanted>.1?0:s.stuckMs||0;

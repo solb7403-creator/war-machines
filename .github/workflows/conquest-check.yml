@@ -83,6 +83,9 @@ jobs:
           node dev/tests/conquest-replay-budget.mjs > docs/conquest-living-war/replay-current.json
           # Session 7C STEP 1: the faster collision lookups give identical results (every operation replayed both ways)
           node dev/tests/conquest-collision-identity.mjs
+          # Session 7C STEP 2: the airdrop standing and trust line (real routes), command fingerprints and their flags, cqalt
+          node dev/tests/wtest/conquest-standing.mjs
+          node dev/tests/conquest-fingerprints.mjs
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
           node dev/tests/conquest-earned-journey.mjs

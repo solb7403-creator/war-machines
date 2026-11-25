@@ -13,6 +13,8 @@ import {accountAuth,googleAuth,apiCallsign,apiTelegramLink,csOf,funnelDays} from
 import {ACCOUNT_TYPES} from "./web-auth.js";
 import { ownerGemEpic, ownerCheck } from "./owner.js";
 import {conquestSession,conquestInput,conquestAction,conquestEvent} from "./conquest.js";
+import {conquestStanding} from "./conquest-standing.js";   // Session 7C STEP 2
+import {cqAltScan} from "./conquest-alt.js";
 import {analyticsDays} from "./conquest-analytics.js";
 import {conquestVisit} from "./conquest-visit.js";
 import {conquestCitadelBoard} from "./conquest-citadel-board.js";   // Session 7B: the Throne Run clear-time board (read only)
@@ -513,7 +515,8 @@ export async function buildLeaderboard(env, now = Date.now()) {
   const names = {};
   for (const [id, v] of Object.entries(top || {})) if (v) names[id] = [v.name || "Pilot", v.pts || 0];
   await processStarts(env, now).catch((e) => console.log("starts", e && e.message));
-  await buildClusters(env, names, fl || {}, now).catch((e) => console.log("clusters", e && e.message));
+  const clu = await buildClusters(env, names, fl || {}, now).catch((e) => { console.log("clusters", e && e.message); return []; });
+  await cqAltScan(env, clu, fl || {}, now).catch((e) => console.log("cqalt", e && e.message));   // Session 7C: the Conquest signals inside each cluster, once an hour each
   // housekeeping once an hour: drop daily/weekly score tables older than a few days/weeks
   if (new Date(now).getUTCMinutes() < 5) { await dbDel(env, `dly/${d - 3}`); await dbDel(env, `wly/${w - 3}`); }
   return lb;
@@ -539,6 +542,9 @@ export async function airdropBoards(env, now = Date.now(), fl = null, ok = () =>
   const adb = { t: now, d, ap: Number(ap) || 0, ph, dist: false, cfg: { refShare: A.refShare, refW: A.refW, refMin: A.refMin, qCap: A.qCap, refCap: A.refCap, ptsTop: A.ptsTop, refTop, expand: A.expand, walletCapPct: A.walletCapPct },
     pts: P.map((e, i) => [e[0], e[1], Math.round(pSh[i] * 1e6) / 1e6]), ref: Rr.map((e, i) => [e[0], e[1].nm || "Pilot", e[1].s, e[1].n, e[1].q, Math.round(rSh[i] * 1e6) / 1e6]) };
   await dbPut(env, "adb", adb);
+  // Session 7C STEP 2: the pool's scores alone (descending) for the hub's standing card (worker/src/conquest-standing.js), read by the
+  // Worker (cached a minute per isolate), never by the phone
+  await dbPut(env, "adp", { t: now, top: A.ptsTop, s: P.map((e) => Math.round(Number(e[1]) || 0)) });
   // what the Squad screen shows: the phase and the top 25 recruiters (a research ranking, not a guarantee)
   return { adb, pub: { ap: adb.ap, ph, x: RULES.refPhaseX(ph), top: adb.ref.slice(0, 25).map((r) => [r[0], r[1], r[2], r[3]]), n: adb.ref.length, min: A.refMin } };
 }
@@ -691,6 +697,7 @@ const ROUTES = {
   "/api/conquest/an": conquestEvent,
   "/api/conquest/visit": conquestVisit,
   "/api/conquest/citadel-board": conquestCitadelBoard,
+  "/api/conquest/standing": (env, a) => conquestStanding(env, a),   // Session 7C: the hub's airdrop standing and trust line
   "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
@@ -735,7 +742,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/conquest/visit": 30, "/api/conquest/citadel-board": 30, "/api/conquest/an": 12, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
+const PID_RL = { "/api/conquest/visit": 30, "/api/conquest/citadel-board": 30, "/api/conquest/standing": 12, "/api/conquest/an": 12, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)

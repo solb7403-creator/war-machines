@@ -5,6 +5,7 @@ import {COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {BASE_ACTIONS} from './conquest-campaign.js';
 import {PLOT_ACTIONS,MINERAL_PLOT_ACTIONS,BIG_PLOT_ACTIONS} from './conquest-plot.js';
 import {readEco,readTag,writeIf,creditConquest} from './eco.js';
+import {altNote} from './conquest-alt.js';   // Session 7C STEP 2
 import {seal,due,pending,acknowledge,airdrop} from './conquest-airdrop.js';
 import {RULES} from './sim.gen.js';
 import {hex} from './db.js';
@@ -49,7 +50,7 @@ export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.s
  s.notice={kind:'dev',action:r.action};s.seq=r.seq;return s;}
 // Server-only fields never leave the Worker: the vein seed and unscanned veins (s.lodes) become the scanned-only s.veins view.
 // lseed: the loot seed (Session 6) never leaves the Worker either.
-export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,tdu,twsd,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};   /* Session 7T: tdu, the unfought result held while you fight, stays on the Worker until the fight ends */
+export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,tdu,twsd,fp,fpa,fpf,...out}=s;   /* Session 7C: command fingerprints stay on the Worker */if(s.base)out.base={...s.base,modules:s.base.modules||{}};   /* Session 7T: tdu, the unfought result held while you fight, stays on the Worker until the fight ends */
  if(s.war&&typeof s.war==='object'){const {ak,...w}=s.war;out.war={...w,ev:(Array.isArray(w.ev)?w.ev:Object.values(w.ev||{})).map(e=>{if(!e||typeof e!=='object')return e;const {sc,...x}=e;return x;})};}/* Session 7: an authored roll (the first war's) never reaches the phone */
  out.veins=publicVeins(s,s.lastWall||0);
  // Meteor Strike core rolls stay server-side until the strike is secured; the client only needs whether a slot is claimed.
@@ -93,7 +94,7 @@ function paidBounty(s,bp){const st=s?.settlement;if(!st||st.kind!=='citadel'||!s
 function result(r){return r.error?response(r.status||409,r.error,r.state):{status:200,body:{ok:true,state:publicState(r.state),replayed:!!r.replayed}};}
 // Session 6C: an input reply carries the hot part only when nothing cold changed and the phone already holds this cold version
 // (it sends the cv it has); the phone keeps its cold fields (js/conquest/session.js). Every other reply is the whole state.
-export function publicHot(s){const {hot}=splitState(s),{lastDigest,rate,raidRoll,...out}=hot;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
+export function publicHot(s){const {hot}=splitState(s),{lastDigest,rate,raidRoll,fpa,...out}=hot;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData','tz'])||a.b.tz!==undefined&&!(Number.isSafeInteger(a.b.tz)&&Math.abs(a.b.tz)<=840))return response(400,'invalid conquest session');
  const {loadout:L,legacy,view,rsAcct,batAcct}=await canonical(env,a.pid,now);
@@ -111,7 +112,8 @@ async function submit(env,a,request,reduce,now,cv=null){
   if(previous?.v!==1)return {abort:true,error:'open conquest session first'};
   if(request.seq===previous.seq){if(digest===previous.lastDigest)return {abort:true,state:previous,replayed:true};return {abort:true,error:'sequence already used',state:previous};}
   try{const state=reduce(previous,request,now);seal(state,now);state.lastDigest=digest;const anq=takeQueue(state),wal=alertChange(state,now);return {state,anq,wal};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
- },now);if(!r.abort&&r.anq?.length)await flush(env,r.anq,r.state?.an?.f,now);if(!r.abort&&r.wal)await writeAlertDoc(env,a.pid,r.wal);   // Session 7: the war alert schedule, after the write   // Session 6 analytics: counted only after the CAS write
+ },now);if(!r.abort&&r.anq?.length)await flush(env,r.anq,r.state?.an?.f,now);if(!r.abort&&r.wal)await writeAlertDoc(env,a.pid,r.wal);
+ if(!r.abort&&r.state)await altNote(env,a.pid,r.state,now).catch(()=>{});   // Session 7C: the cqalt summary (only when something new appears)   // Session 7: the war alert schedule, after the write   // Session 6 analytics: counted only after the CAS write
  const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r,now),now);
  if(out.status===200&&r.state&&r.cv)out.body.cv=r.cv;   // Session 6C review (reviewer 1 blocker): the phone always gets the whole state. A hot-only reply carried each unit's moving half only and the phone could not rebuild it (apply threw, inputs were lost, the session reopened); the storage split, where the Firebase savings are, stays
  return out;
