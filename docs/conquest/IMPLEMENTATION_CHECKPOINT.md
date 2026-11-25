@@ -8024,4 +8024,17 @@ what each changed here:
   the hidden `_top` fell back to the week before's top squad, so its members were paid a fragment for a week their squad did not top.
   `_top` is now last week's own top squad or nothing (`wtest/conquest-wareffort` 9). Note 1 acted on: a notice paying two weeks'
   fragments says "+2 UNCOMMON FRAGMENTS".
+- **Rule reviewer 2 (one round, verdicts at the tip `6ae798c`): 18 PASS, 1 FAIL; fixed after it.**
+  - **Rule 11 FAIL -> fixed:** the War Effort counted each pilot up to two quotas (STEP 4's research lesson 15), but the brief says
+    "Every verified operation adds to it". Every verified campaign point now counts (bar and squad sums); the cap is a PROPOSAL (one
+    pilot could otherwise carry a small population's week: 5 pilots, goal 450, one at 400 + four at 20 wins it).
+  - **Notes acted on:** (1) High Morale is +1 DEFENSE only: the LDF's assault strength (`war.js ldfOf`) no longer reads the shared-war
+    morale (the brief decided DEFENSE); (4) the stored board documents keep 200 rows (100 shown), so pilots under review (dropped at
+    read and payout) cannot push verified pilots out of a band; (5) the Titan kill's campaign score and reputation are now the Meteor
+    Strike's own (+8, +40), not new numbers; (6) `conquest-collision-identity` replays the real Hive Titan hunt both ways now (it built
+    a plain operation): 1,648 requests identical, 60.8% less replay time.
+  - **Notes recorded for the owner (decisions, not decided by the brief):** (2) board grants expire unpaid after 12 weeks (3 thirty-day
+    periods for the Titan's 30-day board) and a War Effort week settles for 8 weeks: a pilot away from Conquest that long loses them;
+    (3) the human fixtures are synthetic (the existing PROPOSAL); (7) the squad banner and the monument growth are data and a hub line
+    until the 7-V session draws them (a call site in view.js, a 5E-2d2 file); a squad needs 2+ contributing members to rank.
 

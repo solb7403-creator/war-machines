@@ -19,7 +19,7 @@ import {readTag,writeIf} from './eco.js';
 import {CONQUEST,RULES as R} from './sim.gen.js';
 import {bankMinerals} from './conquest-airdrop.js';
 import {bind} from './conquest-loot.js';
-const DAY=86400000,TOP=120,SHOW=100;
+const DAY=86400000,TOP=200,SHOW=100;   // 200 stored: pilots under review stay in the document (dropped at read and payout), never pushing a verified one out
 export const BOARD=Object.freeze({min:20,top:TOP,show:SHOW,order:Object.freeze(['town','defense','raid','titan','campaign','titan30']),
  kinds:Object.freeze({town:{name:'TOWN SCORE GAIN',lo:false},defense:{name:'DEFENSE RATING',lo:false},raid:{name:'RAID TIME-ATTACK',lo:true},titan:{name:'HIVE TITAN DAMAGE',lo:false},campaign:{name:'CAMPAIGN SCORE',lo:false},titan30:{name:'HIVE TITAN · 30 DAYS',lo:false,days:30}}),
  bands:Object.freeze({titan:[{pct:.10,max:100,mn:{se:1}},{pct:.01,max:10,mn:{mh:1}}],titan30:[{pct:.01,max:3,mn:{mh:2}}],town:[{pct:.10,max:100,cp:1500,fr:{r:1}}],defense:[{pct:.10,max:100,cp:1500,fr:{r:1}}],raid:[{pct:.10,max:100,cp:1500,fr:{r:1}}],campaign:[{pct:.10,max:100,cp:1500,fr:{r:1}}]})});

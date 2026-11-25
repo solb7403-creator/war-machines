@@ -1,7 +1,7 @@
 /* Session 7C STEP 4 (owner brief docs/conquest/audit/SESSION_07C_BRIEF.md; blueprint §7 "The shared war"; owner, Nov 24): the weekly War
    Effort bar. Every verified operation adds its campaign score (the shared warfront document's own count, worker/src/conquest-warfront.js).
    The goal is population-normalized: the week's active pilots x a fixed personal quota x 0.6 (always winnable if 60% of pilots play an
-   ordinary week); each pilot counts up to two quotas (research lesson 15: one pilot cannot carry the week); with zero pilots it idles
+   ordinary week); every verified campaign point counts (the brief: a per-pilot cap of two quotas is a PROPOSAL); with zero pilots it idles
    and nothing breaks. A win: High Morale for everyone next week (+1 DEFENSE on every territory in every personal world: the war rules'
    "Shared-war morale" part), the cosmetic reward tiers (100% / 150% / 200% of the goal; earn-only; no CP or salvage bonus), and a War
    Effort crate (2 Repair Kits + 1 Scanner Charge) for every pilot who contributed. A loss takes nothing. Squads (the referral squads: a
@@ -11,12 +11,12 @@
 (function(root){
 'use strict';
 const WEEK=7*86400000,MONDAY0=4*86400000;
-const WE=Object.freeze({quota:150,share:.6,cap:2,tiers:Object.freeze([1,1.5,2]),crate:Object.freeze({repair:2,scanner:1}),squadMin:2,squadFrag:'u',maxPilots:10000,keepWeeks:8});   // keepWeeks: finished weeks a pilot can still settle (review round 1)
+const WE=Object.freeze({quota:150,share:.6,cap:0,tiers:Object.freeze([1,1.5,2]),crate:Object.freeze({repair:2,scanner:1}),squadMin:2,squadFrag:'u',maxPilots:10000,keepWeeks:8});   // keepWeeks: finished weeks a pilot can still settle (review round 1)
 const HOOKS=Object.freeze({monument:'we-monument-growth',frontier:'we-frontier-growth',banner:'we-squad-banner'});
 const weekOf=now=>Math.floor((Number(now)-MONDAY0)/WEEK),weekEnd=w=>(w+1)*WEEK+MONDAY0;
 const goalOf=n=>n>0?Math.round(n*WE.quota*WE.share):0;
 // what one pilot's week counts (two quotas at most)
-const counted=c=>Math.max(0,Math.min(WE.cap*WE.quota,Math.floor(Number(c)||0)));
+const counted=c=>Math.max(0,Math.floor(Number(c)||0));   // every verified campaign point counts (the brief); a per-pilot cap (WE.cap quotas) is a PROPOSAL, not applied
 // a finished or running week: its numbers (n active pilots, score counted), the goal, the share, the tier reached, won
 function weekOfDoc(x){const n=Math.max(0,x?.n|0),score=Math.max(0,Math.floor(Number(x?.score)||0)),goal=goalOf(n),pct=goal?score/goal:0,tier=goal?WE.tiers.filter(t=>pct>=t).length:0;return {w:x?.w??null,n,score,goal,pct:Math.round(pct*1000)/1000,tier,won:n>0&&score>=goal};}
 // the public view of the shared document at a moment: this week, last week (its result), High Morale this week, the top squad's banner

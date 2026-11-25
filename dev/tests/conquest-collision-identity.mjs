@@ -7,7 +7,7 @@
 //     20 commands a request, a deterministic bot pilot with a fielded Battalion): the whole record must be identical after every request.
 // It also reports the replay cost both ways (local Node, not Cloudflare's meter). Run: node dev/tests/conquest-collision-identity.mjs
 import assert from 'node:assert/strict';import {createHash} from 'node:crypto';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
-const {CONQUEST,RULES:R}=await import('../../worker/src/sim.gen.js');const {Combat:C,World:W,Control:K,Citadel:CI}=CONQUEST;
+const {CONQUEST,RULES:R}=await import('../../worker/src/sim.gen.js');const {Combat:C,World:W,Control:K,Citadel:CI,Titan:TT}=CONQUEST;
 const {createState,applyCommands}=await import('../../worker/src/conquest-sim.js');const {citadelBegin}=await import('../../worker/src/conquest-citadel.js');
 const {GEAR}=await import('./combat-sim.mjs');
 let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;console.log('PASS '+m);};
@@ -47,9 +47,10 @@ function opRecord(id,t0){const op=C.operations[id],L=structuredClone(GEAR.rare),
  if(op.raid)s.raidRoll={attempt:1,v:.5};
  if(id==='base-defense'){s.base={tier:5,modules:{hangar:3},builtAt:t0-30*DAY,claimedAt:t0-DAY,pointsAt:t0-DAY,defense:{config:'turret',damage:0,wins:0,alertAt:t0,nextAt:t0,active:true}};}
  if(op.defense&&op.war)s.sectorDefense={active:true,id,at:t0,go:false};
- const B=id==='oxygen-line'?new C.Battle(s.loadout,pos):cit?CI.make(s.loadout,pos,id):new C.Operation(s.loadout,pos,id);
+ const titan=TT.isTitan(id);if(titan){const M=C.meteorStrike(t0),slot=Math.ceil(M.slot/TT.TITAN.every)*TT.TITAN.every,site=C.strikeSites[((slot%C.strikeSites.length)+C.strikeSites.length)%C.strikeSites.length];s.strikeSlot=slot;s.strikes={[slot]:{claimed:1,roll:{tq:.5,se:.5,mh:.5}}};s.ttnRun={slot,attempt:1,at:t0};const a=TT.arenaOf(site);s.position=at(a.x-18,a.z+14);}   // Session 7C review: the Hive Titan's own hunt (its charge moves through the world's lookups too)
+ const B=id==='oxygen-line'?new C.Battle(s.loadout,s.position):cit?CI.make(s.loadout,pos,id):titan?TT.make(s.loadout,s.position,id).setup({slot:s.strikeSlot,site:C.strikeSites[((s.strikeSlot%C.strikeSites.length)+C.strikeSites.length)%C.strikeSites.length]}):new C.Operation(s.loadout,pos,id);
  if(cit){s.cit=CI.norm({v:1,t:Number(id.split('-')[1])-1});citadelBegin(s,B,op,t0);}
- B.squad={orders:1,f:'wedge',o:'follow',t:0};for(let i=0;i<6;i++){const sl=C.FORMS.wedge[i%C.FORMS.wedge.length];B.friends.push(C.friendUnit({id:800000001+i,side:'mine',pid:'p'+i,role:ROLES[i],kit:{w:{a:'pulse',t:1,q:1},c:{c:C.ROLES[ROLES[i]].cls[0],t:1,q:1}},m:1,x:pos.x+sl[0]*.5,z:pos.z+sl[1]*.5-4}));}
+ B.squad={orders:1,f:'wedge',o:'follow',t:0};for(let i=0;i<6;i++){const sl=C.FORMS.wedge[i%C.FORMS.wedge.length];B.friends.push(C.friendUnit({id:800000001+i,side:'mine',pid:'p'+i,role:ROLES[i],kit:{w:{a:'pulse',t:1,q:1},c:{c:C.ROLES[ROLES[i]].cls[0],t:1,q:1}},m:1,x:s.position.x+sl[0]*.5,z:s.position.z+sl[1]*.5-4}));}
  B.playerHp=Math.min(B.playerMax,s.hp);s.battle=copy(B);return s;}
 function exploreRecord(t0){const s=createState(GEAR.rare,t0);s.lseed=777;s.position=at(1162,1130);return s;}
 // a deterministic bot: the nearest live hostile it can see (else the nearest, else the objective), closes to 30 m, fires locked

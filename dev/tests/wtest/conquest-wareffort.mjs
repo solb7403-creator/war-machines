@@ -16,16 +16,16 @@ async function call(id,path,body={}){const r=await worker.fetch(new Request('htt
 const Q=WE.WE.quota;
 // ---- 1. the rules ----
 ok(WE.goalOf(0)===0&&WE.goalOf(1)===Math.round(Q*.6)&&WE.goalOf(40)===Math.round(40*Q*.6)&&WE.WE.share===.6,'1. the goal: active pilots x the quota ('+Q+') x 0.6; none with zero pilots');
-ok(WE.counted(10*Q)===2*Q&&WE.counted(37)===37,'a pilot counts up to two quotas');
+ok(WE.counted(10*Q)===10*Q&&WE.counted(37)===37&&WE.WE.cap===0,'every verified campaign point counts (the brief: "every verified operation adds to it"; a per-pilot cap is a PROPOSAL, review round 1)');
 {const v=WE.view(null,now);ok(v.now.n===0&&v.now.goal===0&&!v.now.won&&v.hm===0&&v.last===null,'zero pilots: the bar idles (no goal, never won, no High Morale), nothing throws');}
 ok(JSON.stringify(WE.WE.crate)==='{"repair":2,"scanner":1}'&&WE.WE.tiers.join()==='1,1.5,2','a won week: the crate 2 Repair Kits + 1 Scanner Charge; tiers at 100% / 150% / 200%');
 // ---- 2. the shared document's week ----
 const wk=WE.weekOf(now);db.root.players={tg_2:{ref:'tg_1'},tg_3:{ref:'tg_1'},tg_5:{ref:'tg_4'}};db.root.cqbase={tg_1:{n:'Squadleader',bn:{shape:'shield',colors:['#112233','#ffd96a']}},tg_4:{n:'Other'}};
 {const add=async(pid,total,squad)=>syncWarfront(env,pid,total,now,{squad});
  await add('tg_1',100,'tg_1');await add('tg_2',150,'tg_1');await add('tg_3',600,'tg_1');await add('tg_4',90,'tg_4');await add('tg_5',40,'tg_4');let v=await add('tg_6',20,'tg_6');
- const doc=db.get('conquestWarfront/frontier-v1'),W=doc.we;ok(W.w===wk&&W.n===6&&W.score===100+150+2*Q+90+40+20&&W.c.tg_3===600,'2. six pilots this week: counted '+W.score+' (tg_3\'s 600 counts two quotas, '+2*Q+')');
+ const doc=db.get('conquestWarfront/frontier-v1'),W=doc.we;ok(W.w===wk&&W.n===6&&W.score===100+150+600+90+40+20&&W.c.tg_3===600,'2. six pilots this week: counted '+W.score+' (tg_3\'s 600 counts in full)');
  ok(v.we.now.n===6&&v.we.now.goal===WE.goalOf(6)&&v.we.now.won===(W.score>=WE.goalOf(6)),'the view: '+v.we.now.score+' / '+v.we.now.goal+' with 6 pilots');
- ok(W.sq.tg_1===100+150+2*Q&&W.sqn.tg_1===3&&W.sq.tg_4===130&&W.sqn.tg_6===1,'squads sum their members\' counted contribution (tg_1\'s squad of 3: '+W.sq.tg_1+')');
+ ok(W.sq.tg_1===100+150+600&&W.sqn.tg_1===3&&W.sq.tg_4===130&&W.sqn.tg_6===1,'squads sum their members\' counted contribution (tg_1\'s squad of 3: '+W.sq.tg_1+')');
  await add('tg_2',150,'tg_1');ok(db.get('conquestWarfront/frontier-v1').we.score===W.score,'a pilot whose score did not rise adds nothing (the lifetime watermark)');
  // the next week: the old week becomes last week, with its result and the top squad's name and banner (no pilot id)
  now+=7*DAY;v=await add('tg_7',30,'tg_7');const d2=db.get('conquestWarfront/frontier-v1');

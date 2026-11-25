@@ -26,7 +26,7 @@ function record(s,B){const run=s.ttnRun&&s.ttnRun.attempt===(s.attempt|0)?s.ttnR
 export function titanWon(s,B,now){const x=record(s,B);if(!x)return null;const {run,r,d,best}=x,first=!r.k;
  discardOpKills(s);   // the hunt's points replace the kills it held (an operation's rule)
  const rec={kind:'titan',slot:run.slot,first:first?1:0,dmg:d,best:best?1:0,ms:Math.max(1,B?.ttn?.clear|0),phase:B?.ttn?.phase|0};
- if(first){r.k=1;const T=ttn(s);T.kills++;rec.ptsRaw=earn(s,'titan',R.CQ_PTS.titan,now,{op:true});s.campaignScore=(s.campaignScore||0)+12;s.reputation=(s.reputation||0)+40;orderEvent(s,'op');
+ if(first){r.k=1;const T=ttn(s);T.kills++;rec.ptsRaw=earn(s,'titan',R.CQ_PTS.titan,now,{op:true});s.campaignScore=(s.campaignScore||0)+8;s.reputation=(s.reputation||0)+40;   /* the Meteor Strike's own campaign score and reputation (no new numbers) */orderEvent(s,'op');
   const found=roll(s,'titan','slot:'+run.slot,{commander:'hive-titan'}),mn=found.mn||{};for(const [k,v] of Object.entries(mn)){s.ledger.mn=s.ledger.mn||{};s.ledger.mn[k]=(s.ledger.mn[k]||0)+Math.max(0,v|0);}   // minerals ride the cargo (banked at the Refuge), as a strike's do
   const got=bind(s,found,now,{where:'the hive titan'});if(Object.keys(mn).length)got.mn={...mn};rec.loot=got;if(found.pity)rec.pity=found.pity;}
  else rec.ptsRaw=0;   // a slot's Titan pays once (a second hunt cannot start; this is the guard behind that check)
