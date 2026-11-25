@@ -86,6 +86,10 @@ jobs:
           # Session 7C STEP 2: the airdrop standing and trust line (real routes), command fingerprints and their flags, cqalt
           node dev/tests/wtest/conquest-standing.mjs
           node dev/tests/conquest-fingerprints.mjs
+          # Session 7C STEP 3: the Hive Titan (rules, start, phases, the kill once per slot, pity) and the weekly boards (posting, held
+          # pilots, bands with the 20-pilot minimum, settlement and grants exactly once)
+          node dev/tests/conquest-titan.mjs
+          node dev/tests/wtest/conquest-boards.mjs
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
           node dev/tests/conquest-earned-journey.mjs

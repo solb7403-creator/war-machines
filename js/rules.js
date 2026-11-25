@@ -543,7 +543,7 @@ const DAILY_CAP=50000;   // max base points a pilot can bank per UTC day, one ca
 // Rookie. The account credit multiplies them by the league's base pay (LG_BASE_PAY, as Arcade) and pays the spendable bonus
 // (LG_MULT) on top, through ecoPlayAward: the same daily cap, boards, airdrop credit and squad bonus as a match.
 // Values = par minutes x 225 x danger (STANDARD 1, HARD 1.2, VETERAN 1.45): about Arcade's points a minute per league.
-const CQ_PTS={kill:{light:35,heavy:90},field:450,raid:{HARD:900,VETERAN:1300},defense:675,strike:1075,gather:{flora:80,fe:100,il:140,ar:240,tq:390},hourMax:120};
+const CQ_PTS={kill:{light:35,heavy:90},field:450,raid:{HARD:900,VETERAN:1300},defense:675,strike:1075,titan:1600,gather:{flora:80,fe:100,il:140,ar:240,tq:390},hourMax:120};   // titan: Session 7C (owner brief, the old brief's D): the Hive Titan's kill, once per slot
 const CQ_BASE_MULT=[1,1.05,1.10,1.15,1.20,1.25];   // Command Base tier (none, I..V): multiplies Conquest active-play points only
 // Daily Base Yield: one full 24 h fill by Command Base tier. CP keeps the base production formula (ConquestCombat.baseProduction).
 // It fills continuously, stops when full, is collected at the physical base (from min of a fill), and its points part
@@ -609,9 +609,10 @@ const CQ_PART_DAY=1,CQ_PART_SWAP=Object.freeze({elite:'u',commander:'r',strike:'
 // ornaments (the Titan's epic rows arrive in 7B).
 const CQ_FRAG={need:10,order:['c','u','r','e'],pools:{c:{n:'COMMON',r:0,slot:'armor'},u:{n:'UNCOMMON',r:1,slot:'commander'},r:{n:'RARE',r:2,slot:'trail'},e:{n:'EPIC',r:3,slot:'base'}}};
 // Trophies for the Trophy Hall: one per raid-commander doctrine and the Strike Core (every 12th secured Meteor Strike). Each
-// trophy type held adds +15 Town Score once; the full set unlocks the earn-only Hive banner emblem. 'hive-titan' is reserved (7B).
-const CQ_TROPHY={ambush:{n:'Ambush Commander',r:3},shield:{n:'Shield Commander',r:3},artillery:{n:'Artillery Commander',r:3},carrier:{n:'Carrier Commander',r:3},plasma:{n:'Plasma Siege General',r:3},core:{n:'Strike Core',r:4}};
-const CQ_TROPHY_ORDER=['ambush','shield','artillery','carrier','plasma','core'],CQ_TROPHY_SCORE=15,CQ_TROPHY_RESERVED=['hive-titan'];
+// trophy type held adds +15 Town Score once; the full set unlocks the earn-only Hive banner emblem. Session 7C: the Hive Titan's trophy
+// (30% a kill, LOOT.titan) joins the set, as reserved.
+const CQ_TROPHY={ambush:{n:'Ambush Commander',r:3},shield:{n:'Shield Commander',r:3},artillery:{n:'Artillery Commander',r:3},carrier:{n:'Carrier Commander',r:3},plasma:{n:'Plasma Siege General',r:3},core:{n:'Strike Core',r:4},'hive-titan':{n:'Hive Titan',r:4}};
+const CQ_TROPHY_ORDER=['ambush','shield','artillery','carrier','plasma','core','hive-titan'],CQ_TROPHY_SCORE=15,CQ_TROPHY_RESERVED=[];
 // The drop tables. rows: independent rolls (p = chance) of a mineral unit (mn), consumables (item = how many), a research part,
 // a fragment (frag = pool) or the commander's trophy. ring: extra rows from that ring outward (ConquestWorld.ringAt; a raid's
 // ring is its danger: HARD 3, VETERAN 4). always: paid every time. pity: hard pity, never more than that many rolls without.
@@ -623,7 +624,9 @@ const LOOT={
  strike:{rows:[{p:0.15,part:1},{p:0.10,frag:'r'},{p:0.03,ward:1}]},                                      // Meteor Strike secured (its minerals and Resonance unchanged); Session 7T: a Peace Ward 3%
  defense:{rows:[{p:0.06,item:2},{p:0.04,frag:'u'},{p:0.05,ward:1}]},                                     // invasion / town defense held live (the defense cache unchanged); Session 7T: a Peace Ward 5%
  order:{daily:{item:1},third:{frag:'u'},weekly:{mn:{ar:1},frag:'r'}},                                    // War Orders (Part E): every daily, the day's third, the weekly
- titan:null};                                                                                            // Hive Titan rows: Session 7B
+ // Session 7C (spec §4.1's Titan row, the old brief's D): the Hive Titan's kill, rolled once per slot: 2 Tranquillityite, 25% a research
+ // part, 20% Selenite, 2% Moonheart, 30% its trophy, 10% an epic fragment; pity: never more than 5 Titans without a Selenite
+ titan:{rows:[{p:1,mn:'tq'},{p:1,mn:'tq'},{p:0.25,part:1},{p:0.20,mn:'se'},{p:0.02,mn:'mh'},{p:0.30,trophy:1},{p:0.10,frag:'e'}],pity:{se:5}}};
 // ---- Session 6 Part E (owner Decisions 2a, 3a; spec §6.1, §6.2) ----
 // Daily Base Yield points unlock in steps: each verified operation that UTC day unlocks 25% of the points part; a harvest (bio-flora
 // or a mineral pull) counts half, and harvests together unlock at most half (so 8 five-second pulls cannot open what 4 operations

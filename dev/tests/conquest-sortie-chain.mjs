@@ -29,7 +29,7 @@ const wins={
  sector:s=>{const sector=C.sectors[0].id;s.territory[sector]={owner:'humanity',status:'contested'};const e=WARH.warEvent(CQ,s,sector,now);s.attempt=7;e.tr=7;s.sectorDefense={active:true,sector,territory:sector,ev:e.id,kind:'a',attempt:7};return sectorDefenseOutcome(s,'victory',now);}};   // Session 7: a sector defense is fought against a pending war assault (the war clock)
 const items={};let granted=0;
 for(const [kind,win] of Object.entries(wins)){let hits=0;
- for(let seed=1;seed<=300;seed++){const s0=fresh();s0.lseed=seed*104729;s0.inv.pity={e:7,c:4,cf:{...s0.inv.pity.cf,[R.CQ_TROPHY_ORDER[0]]:2}};
+ for(let seed=1;seed<=300;seed++){const s0=fresh();s0.lseed=seed*104729;s0.inv.pity={e:7,c:4,cf:{...s0.inv.pity.cf,[R.CQ_TROPHY_ORDER[0]]:2},t:0};   // t: Session 7C's Titan Selenite counter (the record's normalized shape)
   const a=clone(s0),b=clone(s0);delete a.chain;b.chain={n:3,at:now-60000};const ra=win(a),rb=win(b);
   assert(!ra.chain,kind+': no chain, no chain record');assert.equal(rb.chain.links,3,kind+': three links found');assert.equal(+rb.chain.chance.toFixed(10),.3,kind+': 30% at three links');assert.equal(rb.chain.bonus,0,kind+': bonus 0');
   for(const k of ['cp','alloy','biomass','helium','ptsRaw'])assert.equal(rb[k],ra[k],kind+': receipt '+k+' identical');

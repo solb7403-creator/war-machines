@@ -7639,7 +7639,13 @@ If your context was cleared, read docs/conquest/audit/SESSION_07C_BRIEF.md first
   the end, then ready + `auto-release`; a docs-only PR after the release.
 - **Slice 3 (STEP 2):** the standing card, the trust line, the command fingerprints with cqrepeat / cqnoinput, the cqalt cluster hint
   (details under "STEP 2" below). Tests: `wtest/conquest-standing` 19, `conquest-fingerprints` 19 (both in the CI `conquest` job).
-- **Next:** STEP 3 (the five weekly boards, their rewards, the BOARDS screen and share card, the raid time-attack stamp, the Hive Titan).
+- **Slice 4 (STEP 3):** the Hive Titan (rules, the hunt, the Worker's settlement, stand-in look, HUD, result card, telegraphs), the
+  five weekly boards + the Titan's 30-day board (posting, reading, settlement, grants), the BOARDS screen and share card, the raid
+  time-attack stamp, RESOURCE_ECONOMY §5.5 / §5.7, the wiki and the LOOT screen's published odds, the fortress model's Titan ore.
+  Tests: `conquest-titan` 30, `wtest/conquest-boards` 27 (CI `conquest` job); `conquest-loot` and `conquest-sortie-chain` updated to the
+  decided Titan row (see "STEP 3" below).
+- **Next:** STEP 4 (the weekly War Effort bar, High Morale, the crate, squads), then every guard re-run with everything on, the browser
+  journeys and captures, the reviews.
 
 ### Research: the best comparable boards, raid bosses, anti-bot signals and community bars (before STEPs 2-4 were designed)
 One research agent, web search (gamedeveloper.com and docs.arbitrum.foundation fetches were blocked: search snippets used). Lessons and
@@ -7769,4 +7775,52 @@ what each changed here:
   the admin sheet's cluster row ("Conquest: the same town layout, the same hours of play"), the extra accounts (never the cluster's
   main one) get the cqalt flag through `addFlags`, and the row's one Clear clears cluster and cqalt together (farm.js clearCluster).
   A cluster the owner cleared is not flagged again.
+
+### STEP 3 (lead's decisions, with reasons)
+- **The Hive Titan** (`js/conquest/titan.js`, shared; `worker/src/conquest-titan.js`; one-line hooks in combat.js, conquest-sim.js,
+  session.js, view.js, app.js, hub.js): exactly as the old brief's D: every 6th Meteor Strike slot (slot % 6 === 0: the 2-hour strike
+  clock puts them at 00:00 and 12:00 UTC), after this pilot extracted that slot's core, a per-pilot fight at the crater: 9,000 hull,
+  three phases (I CHARGE + SLAM: a marked charge lane 1.4 s before it charges, then a marked slam ring; II BURROW + SWARM at 2/3: it
+  burrows out of reach for 7 s under its crater while 6 swarmlings come, then erupts in a marked ring; III PLASMA RAIN at 1/3: four
+  rings marked 1.6 s ahead every 3.6 s, every 2.2 s from minute 3), the phase marks on its hull bar, a 4-minute clock, fixed stats
+  (the same Titan against a starter and a full Epic pilot: tested). The kill pays 1,600 base points once per slot (RULES.CQ_PTS.titan,
+  the Command Base multiplier, inside the cap and the hourly limit like every operation) and the LOOT.titan roll keyed by the slot
+  (spec §4.1: always 2 Tranquillityite, 25% a part, 20% Selenite, 2% Moonheart, 30% its trophy, 10% an epic fragment; pity: never
+  more than 5 Titans without a Selenite: 400 kills measured, 41 pity Selenites); the Strike Beacon counts only on the current Titan slot.
+  Every attempt keeps its damage (the slot's best) for the board. Stand-in look through named hooks (`ConquestTitan.HOOKS`; the view's
+  Parasite heavy at 2.4x with a violet halo; its rings and lanes are the battle's marked zones the view already draws).
+- **Lead's design 1: the Titan's hide takes a quarter of allied fire** (`TITAN.allyMul` .25, a fixed stat; combat.js one line).
+  Measured with the real hunt (`dev/tools/titan-model.mjs`): with the Platoon of four it fell in about 38 s, the pilot dealing about
+  2,000 of its 9,000 (its phases and clock meaningless, the board unreadable); with the Wing of two, still 40-158 s with the allies
+  dealing most. With the hide: common gear (the regular's days 1-15) kills it 0-1 times in 4 (the pilot deals 2,800-5,300 before the
+  clock or a wreck), rare gear (day 30) 4 of 4 in 84-207 s, later kits 1-4 of 4 (a bot: noisy). It is a goal to grow into; failed hunts
+  still score damage. The hunt fields the Wing (the strike's Platoon is not fielded: the blueprint's "solo instance first").
+- **Lead's design 2: a tank destroyed in the hunt leaves no wreck and loses no cargo** (the LDF tows it back with a quarter hull): the
+  Titan rises right after a strike whose rewards are carried, and a boss fight must not punish trying (the Citadel's rule, Session 7B).
+- **Not built (PROPOSAL): "it joins the next Grand Offensive if left alive"** (blueprint §2's mode table): not in the old brief's D;
+  it would add THREAT to the weekend offensive (war balance).
+- **The boards** (`worker/src/conquest-boards.js`): small CAS documents `cqb/<kind>/<period>` (the best 120 pilots; 100 shown), a
+  per-pilot marker `cqbp/<kind>/<period>/<pid>` (the field count), posted after a committed request from the pilot's verified record
+  only (the campaign gain from the week's first request, the Titan damage of the week's / the 30-day period's slots, the featured
+  raid's best server-timed clear; Town Score gain and defense rating from the town's public snapshot: conquest-visit.js), never by an
+  owner dev record; read through `POST /api/conquest/boards` (names and scores, pilots under review left off as on cqtop, pilot ids
+  never leave the Worker). Lead's decisions: the raid time-attack is one **featured raid layout a week** (rotating over the 25) so every
+  pilot races the same course and the reward count stays one board; "the Hive Titan over 30 days" is **fixed 30-day periods** from the
+  epoch, settled once each (a rolling window paid weekly would pay the same top pilots four times a month); equal scores rank by who
+  reached the score first (research lesson 5).
+- **The payout** (the 5-minute cron, `settleBoards`): each ended period once: the settlement record `cqbs/<kind>/<period>` is written
+  first, once (CAS: absent -> written), with the verified field (markers minus held pilots) and the final winner list (held pilots
+  skipped, bands rounded down and capped: RESOURCE_ECONOMY §5.5); then one grant per winner and band `cqgr/<pid>/<kind>-<period>-<pct>`
+  (idempotent paths), applied at the pilot's next session open only if the settlement record lists that pilot in that band, the amounts
+  always the table's, each id once (`s.gra`), then the inbox cleared. Minerals go through the outbox to the account wallet (never
+  carried); CP to the Conquest ledger (docs/owner-rules.json cpSites: conquest-boards.js 1, as decided); the rare fragment to the
+  fragment pool. The ticker says BOARD REWARD.
+- **The BOARDS screen and the share card** (`js/conquest/boardsui.js`; the WEEKLY BOARDS button on the standing card): six tabs, the
+  bands, the field against the 20-pilot minimum (SMALL FIELD below it), the top 100, the pilot's own place and, inside a band, SHARE MY
+  FINISH: a 720x900 card (the band, the board, the rank, the score; never a route) shared through Telegram or the system share sheet,
+  or downloaded.
+- **Raid time-attack:** the Worker stamps its own fight clock (`B.time`, from verified commands) as `sec` in the raid receipt at the
+  victory; the pilot keeps a best per layout (`s.rbest`) and the week's featured-raid best (`s.rtb`).
+- **The fortress model counts the Titan's ore** (`minerals()`): Titans met = strikes met / 6 x the measured kill rate by gear (common
+  .2, rare .8, epic .95), each kill 2 Tranquillityite, 0.2975 Selenite (the pity-adjusted rate: 1 per 3.36 kills) and 0.02 Moonheart.
 

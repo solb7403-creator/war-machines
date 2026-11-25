@@ -23,7 +23,7 @@ export function inventory(s){
  if(!Number.isSafeInteger(s.lseed)||s.lseed<0)s.lseed=lootSeed();
  const v=record(s.inv)?s.inv:(s.inv={});v.v=1;
  v.it=fill(v.it,R.CQ_ITEM_ORDER);v.pt=fill(v.pt,R.CQ_PART_ORDER);v.fr=fill(v.fr,R.CQ_FRAG.order);v.tr=fill(v.tr,R.CQ_TROPHY_ORDER);
- const p=record(v.pity)?v.pity:{};v.pity={e:int(p.e),c:int(p.c),cf:fill(p.cf,R.CQ_TROPHY_ORDER.filter(k=>k!=='core'))};
+ const p=record(v.pity)?v.pity:{};v.pity={e:int(p.e),c:int(p.c),cf:fill(p.cf,R.CQ_TROPHY_ORDER.filter(k=>k!=='core'&&k!=='hive-titan')),t:int(p.t)};   // t: Session 7C, Titans killed since a Selenite
  v.cd=Object.fromEntries(Object.entries(record(v.cd)?v.cd:{}).filter(([k,t])=>R.CQ_ITEMS[k]&&Number(t)>0).map(([k,t])=>[k,Number(t)]));
  v.log=list(v.log).slice(-12);
  const pd=record(v.pd)?v.pd:{};v.pd={d:int(pd.d),n:int(pd.n)};
@@ -50,6 +50,7 @@ export function roll(s,src,key,{ring=1,commander=null,steps=0}={}){
  if(src==='commander'&&T.pity?.trophy&&R.CQ_TROPHY[commander]&&commander!=='core'){v.pity.cf[commander]=(v.pity.cf[commander]|0)+1;
   if(out.tr){v.pity.c=0;v.pity.cf=fill({},Object.keys(v.pity.cf));}
   else if(++v.pity.c>=T.pity.trophy){const most=Object.entries(v.pity.cf).reduce((a,b)=>b[1]>a[1]?b:a,[commander,v.pity.cf[commander]])[0];add(out,'tr',most);out.pity='trophy';v.pity.c=0;v.pity.cf=fill({},Object.keys(v.pity.cf));}}
+ if(src==='titan'&&T.pity?.se){if(out.mn?.se)v.pity.t=0;else if(++v.pity.t>=T.pity.se){add(out,'mn','se');out.pity='selenite';v.pity.t=0;}}   // Session 7C: the 5th Titan without a Selenite pays one
  if(out.pt&&R.CQ_PART_SWAP[src])out.src=src;   // its source picks the fragment pool if the day's research part is already taken (bind); the pity part too
  return out;}
 // What a roll shows on the ground: the rarest find's rarity and its one-word label.

@@ -92,7 +92,15 @@ export function minerals(pr,d){const m=pr.sessions.reduce((a,x)=>a+x[1],0),n=pr.
  for(const [id,f] of Object.entries(mix)){const k=ops*(f/mt)/A[id].par,win=id==='raid_hard'?(d<7?.7:.9):id==='raid_veteran'?.8:1;add(Pm.opMinerals[id],k*win);}
  const strikes=Math.min(1440/Pm.strike.everyMin,n*(m/n+Pm.strike.windowMin)/Pm.strike.everyMin),okp=d<7?.6:d<21?.85:.95,st=strikes*okp;add(Pm.strike.guaranteed,st);inc.se+=st*(Pm.strike.se+1/(KNOB.resonanceSe||Pm.strike.resonance.se));inc.mh+=st*(Pm.strike.mh+1/Pm.strike.resonance.mh);
  if(!pr.noTownSe&&!KNOB.noTownSe)inc.se+=townSe(pr,d);
+ if(!KNOB.noTitan){const t=titansOf(pr,d,st);inc.tq+=t*TITAN_ORE.tq;inc.se+=t*TITAN_ORE.se;inc.mh+=t*TITAN_ORE.mh;}   // Session 7C: the Hive Titan's ore (below)
  return inc;}
+// Session 7C STEP 3 (owner brief: "Count the Titan's ore drops in the fortress model's income before the guards run"): every 6th strike slot
+// is a Titan slot, so the Titans a pilot meets are the strikes it meets / 6, times the kill rate of its gear (measured with the real hunt
+// and a careful bot: dev/tools/titan-model.mjs, docs/conquest/session7c/titan-model.json: common gear about 1 in 5, rare 4 in 5, epic
+// nearly all); a kill drops LOOT.titan: 2 Tranquillityite, 20% Selenite with the pity (never 5 Titans without one: 1 per 3.36 kills on
+// average, 0.2975 a kill), 2% Moonheart. KNOB.noTitan turns it off (the measurement before 7C).
+const TITAN_ORE=Object.freeze({tq:2,se:1/3.3616,mh:.02}),TITAN_KILL=Object.freeze([.2,.8,.95]);
+function titansOf(pr,d,strikesMet){const tier=Math.max(0,Math.min(2,Math.round(interp(pr.gear,d))));return strikesMet/6*TITAN_KILL[tier];}
 // ---- Session 7T-P decision 2: Selenite from the town's defenses held in person (ConquestTown.TOWN.se: n Selenite for a raid at the cap
 // level held in person and really fought). A day's Selenite = the attacks that land that day and that the pilot's sessions can meet in
 // person (the real town clock, ConquestTown.step on Session 7's war clock, 24 pilot seeds: an attack can be fought from its announcement,

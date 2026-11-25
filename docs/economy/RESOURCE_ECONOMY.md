@@ -439,10 +439,23 @@ These apply to server-verified results only: AI-match tickets (`matchEnd`) and l
 | Master | 6 Armalcolite + 1 Tranquillityite |
 | Lunar Legend | 8 Armalcolite + 2 Tranquillityite |
 
-**Top competitive rewards (proposal for the competitive session):**
-- weekly board top 100: 1 Selenite Glass;
-- weekly top 10: 1 Moonheart;
-- 30-day season top 3: 2 Moonheart.
+**Conquest board rewards (owner decision, Nov 24, 2026; Session 7C, `worker/src/conquest-boards.js` BOARD.bands).** Percent bands
+with a minimum field replace the old "top 100 / top 10 / top 3" proposal (with 40 players a "top 100" hands a rare mineral to
+everyone). Each board pays **once per period**, **only when at least 20 verified pilots are on it** (pilots under review are left
+off the board and out of the count), and **every band is rounded down** (and capped):
+
+| Board (period) | Band | Reward |
+|---|---|---|
+| Hive Titan damage (week) | top 10% (at most 100) | 1 Selenite |
+| Hive Titan damage (week) | top 1% (at most 10) | 1 Moonheart |
+| Hive Titan damage (30 days: fixed 30-day periods) | top 1% (at most 3) | 2 Moonheart |
+| Town Score gain, defense rating, raid time-attack, campaign score (week) | top 10% (at most 100) | 1,500 CP + 1 rare fragment |
+
+Examples: 19 verified pilots pay nothing; 20 pay the Titan's Selenite to 2 and no Moonheart; 100 pay 10 Selenite and 1 Moonheart;
+5,000 pay 100 and 10. Equal scores rank by who reached the score first. Weeks start Monday 00:00 UTC. The minerals are banked to the
+account wallet (never carried cargo); each reward is applied once by its grant id, and only if the period's settlement record lists
+the pilot in that band. Never sold; nothing here pays airdrop points. The Hive Titan's own kill: 1,600 base points once per slot
+(`RULES.CQ_PTS.titan`) and the `LOOT.titan` roll (§5.7).
 
 ### 5.6 Daily mineral income by player type (model)
 
@@ -470,6 +483,7 @@ they pay salvage (once per spawn generation, once per UTC day per mission slot; 
 | Meteor Strike secured | 15% a research part · 10% a rare fragment · the Strike Core trophy at every 12th | Resonance |
 | Town / sector defense held | 6% two consumables · 4% an uncommon fragment | — |
 | War Orders (Part E) | each daily 1 consumable · the day's third 1 uncommon fragment · the weekly 1 Armalcolite + 1 rare fragment | — |
+| Hive Titan killed (Session 7C, once per slot) | always 2 Tranquillityite · 25% a research part · 20% 1 Selenite · 2% 1 Moonheart · 30% the Hive Titan trophy · 10% an epic fragment | at most 5 Titans without a Selenite |
 
 Minerals in a kill cache are cargo (half lost on death, banked to the wallet through the outbox). Consumables (Repair Kit 40%, Shield Cell
 25%, Scanner Charge 20%, Decoy Beacon 15%; cap 10 each), research parts (cap 50 each), fragments and trophies are account-bound the moment

@@ -15,6 +15,7 @@ import { ownerGemEpic, ownerCheck } from "./owner.js";
 import {conquestSession,conquestInput,conquestAction,conquestEvent} from "./conquest.js";
 import {conquestStanding} from "./conquest-standing.js";   // Session 7C STEP 2
 import {cqAltScan} from "./conquest-alt.js";
+import {conquestBoards,settleBoards} from "./conquest-boards.js";
 import {analyticsDays} from "./conquest-analytics.js";
 import {conquestVisit} from "./conquest-visit.js";
 import {conquestCitadelBoard} from "./conquest-citadel-board.js";   // Session 7B: the Throne Run clear-time board (read only)
@@ -516,7 +517,8 @@ export async function buildLeaderboard(env, now = Date.now()) {
   for (const [id, v] of Object.entries(top || {})) if (v) names[id] = [v.name || "Pilot", v.pts || 0];
   await processStarts(env, now).catch((e) => console.log("starts", e && e.message));
   const clu = await buildClusters(env, names, fl || {}, now).catch((e) => { console.log("clusters", e && e.message); return []; });
-  await cqAltScan(env, clu, fl || {}, now).catch((e) => console.log("cqalt", e && e.message));   // Session 7C: the Conquest signals inside each cluster, once an hour each
+  await cqAltScan(env, clu, fl || {}, now).catch((e) => console.log("cqalt", e && e.message));
+  await settleBoards(env, now).catch((e) => console.log("boards", e && e.message));   // Session 7C: every board period that ended, paid once   // Session 7C: the Conquest signals inside each cluster, once an hour each
   // housekeeping once an hour: drop daily/weekly score tables older than a few days/weeks
   if (new Date(now).getUTCMinutes() < 5) { await dbDel(env, `dly/${d - 3}`); await dbDel(env, `wly/${w - 3}`); }
   return lb;
@@ -698,6 +700,7 @@ const ROUTES = {
   "/api/conquest/visit": conquestVisit,
   "/api/conquest/citadel-board": conquestCitadelBoard,
   "/api/conquest/standing": (env, a) => conquestStanding(env, a),   // Session 7C: the hub's airdrop standing and trust line
+  "/api/conquest/boards": (env, a) => conquestBoards(env, a),   // Session 7C: the weekly boards (read only)
   "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
@@ -742,7 +745,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/conquest/visit": 30, "/api/conquest/citadel-board": 30, "/api/conquest/standing": 12, "/api/conquest/an": 12, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
+const PID_RL = { "/api/conquest/visit": 30, "/api/conquest/citadel-board": 30, "/api/conquest/standing": 12, "/api/conquest/boards": 20, "/api/conquest/an": 12, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)

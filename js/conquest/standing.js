@@ -19,12 +19,13 @@ function lines(st){if(!st)return {big:'CHECKING YOUR STANDING…',sub:'',today:'
   trust=st.trust?.held||st.held?'':'VERIFIED PLAY '+Math.max(0,Math.min(100,st.trust?.p??100))+'%'+(st.trust?.days&&st.trust.days<30?' · '+st.trust.days+' day'+(st.trust.days>1?'s':''):' · LAST 30 DAYS');
  return {big,sub,today,trust,held:!!st.held};}
 // the hub calls this every second while it is open (js/conquest/hub.js status)
-function card(col,{el,now=Date.now()}={}){if(!el||!col)return null;if(now-S.seen>5000||now-S.at>=EVERY)refresh();S.seen=now;
+function card(col,{el,button,now=Date.now()}={}){if(!el||!col)return null;if(now-S.seen>5000||now-S.at>=EVERY)refresh();S.seen=now;
  const st=S.st,L=lines(st),c=el('section','cq-hub-card cq-hub-standing'+(L.held?' cq-standing-held':''),null,col);el('h3','','AIRDROP STANDING',c);
  el('p','cq-hub-big',L.big,c);if(L.sub)el('small','cq-standing-sub',L.sub,c);
  if(st){const bar=el('progress','cq-hub-bar cq-standing-day',null,c);bar.max=Math.max(1,st.cap|0);bar.value=Math.min(bar.max,Math.max(0,st.today|0));bar.setAttribute('aria-label','Points today against the daily cap');el('small','cq-standing-today',L.today,c);}
  if(L.trust)el('small','cq-standing-trust',L.trust,c);
  el('small','cq-standing-note','A research ranking of the top '+fmt(st?.top||1000)+' by play score, updated every few minutes. No token amount is promised.',c);
+ if(button&&root.ConquestBoardsUI){const host=col.closest?.('.cq')||col.parentElement||col;if(!S.btn||S.btnHost!==host){S.btnHost=host;S.btn=button('WEEKLY BOARDS',()=>{if(!host.querySelector('.cq-boards'))root.ConquestBoardsUI.open(host,{el,button});},'cq-standing-boards');}c.append(S.btn);}   /* one node for the hub's life (the card is rebuilt every second); Session 7C STEP 3 */
  return c;}
 root.ConquestStanding=Object.freeze({card,lines,refresh,EVERY,state:()=>S.st});
 })(globalThis);
