@@ -327,7 +327,7 @@ function guidance(){
  // a cleared FIELD mission in range (a replay) never takes the chip from the coach or the board (its ACT button still offers the
  // replay); Meteor Strikes and sector defenses reuse their ids for every new event, so an open one always does
  const nop=view.nearOperation,near=!B&&nop&&!contractWait(s,nop)&&!raidLock(s,nop)&&!secured(s,nop)?nop:null;
- const m=B?(B.operation||C.mission):(view.routeTarget||near||nextOrder(s));if(!m)return;
+ const tt=B?.ttn?(B.enemies||[]).find(e=>e.titan&&e.hp>0):null,m=B?(tt?{...B.operation,x:tt.x,z:tt.z}:(B.operation||C.mission)):(view.routeTarget||near||nextOrder(s));if(!m)return;   // Session 7C: the hunt's arrow and distance follow the Titan (it rises at this slot's crater, not at the operation's listed site)
  const p=view.p,isBase=m.kind==='base',isRefuge=m.kind==='refuge',completed=!m.coach&&(secured(s,m)||!!m.raid&&!!(s?.completed?.[m.id]||view.progress?.completed(m.id))),radius=m.activationRadius||m.radius||45;
  let target=m,route=m.line||(isBase?'Follow the arrow and the gold beacon · enter through the gate':isRefuge?'Follow the cyan beacon to the Refuge supply terminal · bank salvage and repair':'Follow the objective beacon');if(m.kind==='resource'&&!m.line)route='Drive onto the ore, stop, then HOLD GATHER';
  // a defense (the Oxygen Line, a sector or base defense): the arrow leads to the nearest living attacker

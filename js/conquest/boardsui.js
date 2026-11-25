@@ -28,19 +28,32 @@ function open(panel,{el,button,dialog}={}){if(!panel||!el||!button)return null;c
   if(S.k==='raid')el('p','cq-boards-course','THIS WEEK\'S COURSE · '+(root.ConquestCombat?.operations?.[j.raid]?.name||j.raid).toUpperCase()+' · the fastest verified clear',card);
   for(const b of [...B.bands].sort((x,y)=>y.pct-x.pct))el('p','cq-boards-band','TOP '+Math.round(b.pct*100)+'% (UP TO '+b.max+') · '+reward(b),card);
   el('p','cq-boards-field'+(B.field<B.min?' small':''),B.field<B.min?'SMALL FIELD · '+B.field+' OF '+B.min+' PILOTS · NO REWARDS UNTIL '+B.min+' VERIFIED PILOTS':'FIELD '+B.field+' PILOTS',card);
-  const list=el('ol','cq-boards-list',null,card);if(!B.top.length)el('li','cq-boards-empty','Nobody on this board yet this '+(S.k==='titan30'?'period':'week')+'. Be the first.',list);
-  for(const r of B.top){const li=el('li','cq-boards-row'+(r.me?' me':''),null,list);el('b','','#'+r.r,li);el('span','',r.n+(r.me?' (YOU)':''),li);el('i','',UNIT[S.k](r.s),li);}
+  // the pilot's own place first (a phone reads it without scrolling past the list), then the top 100
   if(B.me){const band=bandOf(B,B.me.r),mine=el('div','cq-boards-me',null,card);el('p','','YOUR PLACE #'+B.me.r+' · '+UNIT[S.k](B.me.s)+(band?' · TOP '+Math.round(band.pct*100)+'% · '+reward(band)+' IF IT HOLDS AT THE RESET':''),mine);
-   if(band)mine.append(button('SHARE MY FINISH',()=>share(card,{el,button,board:B,k:S.k,band}),'cq-boards-share'));}
-  else el('p','cq-boards-me','You are not on this board yet this '+(S.k==='titan30'?'period':'week')+'.',card);};
+   if(band)mine.append(button('SHARE MY FINISH',()=>{if(!mine.querySelector('.cq-boards-sharebox'))share(mine,{el,button,board:B,k:S.k,band});},'cq-boards-share'));}
+  else el('p','cq-boards-me','You are not on this board yet this '+(S.k==='titan30'?'period':'week')+'.',card);
+  const list=el('ol','cq-boards-list',null,card);if(!B.top.length)el('li','cq-boards-empty','Nobody on this board yet this '+(S.k==='titan30'?'period':'week')+'. Be the first.',list);
+  for(const r of B.top){const li=el('li','cq-boards-row'+(r.me?' me':''),null,list);el('b','','#'+r.r,li);el('span','',r.n+(r.me?' (YOU)':''),li);el('i','',UNIT[S.k](r.s),li);}};
  draw();if(!S.data||Date.now()-S.at>60000)load().then(draw);setTimeout(()=>d.focus?.(),0);return d;}
 // the share card: the band, the board and the score (never a route)
-function share(host,{el,button,board,k,band}){const c=document.createElement('canvas');c.width=720;c.height=900;const g=c.getContext('2d'),grad=g.createLinearGradient(0,0,0,900);grad.addColorStop(0,'#160a26');grad.addColorStop(1,'#03060c');g.fillStyle=grad;g.fillRect(0,0,720,900);
- const pilot=(typeof save!=='undefined'&&(save.callsign||save.name))||'Pilot',me=board.me;g.fillStyle='#ffd96a';g.font='800 64px sans-serif';g.fillText('TOP '+Math.round(band.pct*100)+'%',40,130);
- g.fillStyle='#e8f6ff';g.font='800 38px sans-serif';g.fillText(board.name,40,200);g.fillStyle='#b98cff';g.font='700 30px sans-serif';g.fillText('#'+me.r+' OF '+board.field+' · '+UNIT[k](me.s),40,262);
- g.fillStyle='#c9d6e2';g.font='600 28px sans-serif';g.fillText(String(pilot).slice(0,22),40,330);g.strokeStyle='#ffd96a66';g.lineWidth=3;g.strokeRect(30,380,660,300);g.fillStyle='#ffd96a';g.font='700 26px sans-serif';g.fillText('REWARD IF IT HOLDS: '+reward(band),56,440);
- g.fillStyle='#e8f6ff';g.font='600 24px sans-serif';g.fillText('Server-verified score · one board, one week',56,490);g.fillText('Bands need 20+ verified pilots',56,530);
- const link=typeof refLink==='function'?refLink():null;g.fillStyle='#ffb347';g.font='700 26px sans-serif';g.fillText('LUNAR: WAR MACHINES · JOIN THE WAR',40,818);g.fillStyle='#c9d6e2';g.font='500 24px sans-serif';g.fillText(link?link.replace(/^https?:\/\//,''):'Telegram and web',40,858);
+function share(host,{el,button,board,k,band}){const W=720,H=900,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),F=(w,px)=>w+' '+px+'px "Chakra Petch","Segoe UI",sans-serif';
+ const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#160a26');bg.addColorStop(.55,'#0a1020');bg.addColorStop(1,'#03060c');g.fillStyle=bg;g.fillRect(0,0,W,H);
+ let h=0x9e3779b9;const rnd=()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return ((h>>>0)%10000)/10000;};g.fillStyle='#ffffff';for(let i=0;i<110;i++){g.globalAlpha=.12+rnd()*.5;const r=rnd()<.15?2.2:1.3;g.fillRect(rnd()*W,rnd()*H*.62,r,r);}g.globalAlpha=1;   // a fixed star field: the same card every time
+ const mx=610,my=120,mr=110,mg=g.createRadialGradient(mx-38,my-40,8,mx,my,mr);mg.addColorStop(0,'#f1f5fa');mg.addColorStop(.68,'#9eabbb');mg.addColorStop(1,'#465163');g.fillStyle=mg;g.beginPath();g.arc(mx,my,mr,0,Math.PI*2);g.fill();
+ g.fillStyle='#1c243022';for(const [x,y,r] of [[585,92,17],[640,160,23],[622,72,9],[560,158,12],[662,104,8]]){g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();}
+ const wrap=(t,x,y,maxW,lh)=>{const words=String(t).split(' ');let line='';for(const w of words){const next=line?line+' '+w:w;if(g.measureText(next).width>maxW&&line){g.fillText(line,x,y);y+=lh;line=w;}else line=next;}if(line)g.fillText(line,x,y);return y+lh;};
+ const pilot=(()=>{try{if(typeof tgName==='function'&&typeof TG_USER!=='undefined'&&TG_USER)return tgName(TG_USER);}catch(e){}return (typeof save!=='undefined'&&(save.callsign||save.name))||'Pilot';})(),me=board.me;
+ g.fillStyle='#22e6ff';g.font=F('700',22);g.fillText('LUNAR · CONQUEST · WEEKLY BOARDS',40,64);
+ g.fillStyle='#ffd96a';g.font=F('800',100);g.fillText('TOP '+Math.round(band.pct*100)+'%',36,190);
+ g.fillStyle='#e8f6ff';g.font=F('800',42);wrap(board.name,40,252,640,48);
+ g.fillStyle='#b98cff';g.font=F('700',32);g.fillText('#'+me.r+' OF '+board.field+' PILOTS',40,322);
+ g.fillStyle='#e8f6ff';g.font=F('700',32);g.fillText(UNIT[k](me.s),40,370);
+ g.fillStyle='#c9d6e2';g.font=F('600',28);g.fillText(String(pilot).slice(0,24),40,420);
+ g.strokeStyle='#ffd96a88';g.lineWidth=3;g.strokeRect(30,456,660,200);g.fillStyle='#ffd96a14';g.fillRect(31,457,658,198);
+ g.fillStyle='#ffd96a';g.font=F('700',22);g.fillText('REWARD IF IT HOLDS AT THE RESET',56,500);
+ g.fillStyle='#fff3c4';g.font=F('800',32);let y=wrap(reward(band),56,548,608,40);
+ g.fillStyle='#b3c4d3';g.font=F('600',22);y=wrap('Server-verified score · one board, one week',56,Math.max(y+6,600),608,30);wrap('Bands need 20+ verified pilots · each rounds down',56,y,608,30);
+ const link=typeof refLink==='function'?refLink():null;g.fillStyle='#ffb347';g.font=F('800',32);g.fillText('JOIN THE WAR',40,800);g.fillStyle='#c9d6e2';g.font=F('500',24);g.fillText(link?link.replace(/^https?:\/\//,''):'LUNAR: War Machines · Telegram and web',40,846);
  const url=c.toDataURL('image/png'),box=el('div','cq-boards-sharebox',null,host);const img=document.createElement('img');img.src=url;img.alt='Top '+Math.round(band.pct*100)+'% on '+board.name;img.className='cq-boards-shareimg';box.append(img);
  const text='Top '+Math.round(band.pct*100)+'% on the LUNAR: War Machines '+board.name+' board this week (#'+me.r+' of '+board.field+'). Join the war.';
  box.append(button(typeof IN_TG!=='undefined'&&IN_TG?'SHARE IN TELEGRAM':'SHARE',async()=>{if(typeof IN_TG!=='undefined'&&IN_TG&&typeof shareRef==='function'){shareRef(text);return;}try{const blob=await (await fetch(url)).blob(),file=new File([blob],'lunar-board.png',{type:'image/png'}),data={title:'LUNAR: War Machines',text,...(link?{url:link}:{})};if(navigator.canShare?.({files:[file]}))data.files=[file];if(navigator.share)await navigator.share(data);else if(typeof shareRef==='function')shareRef(text);}catch(e){}},'cq-boards-share'));

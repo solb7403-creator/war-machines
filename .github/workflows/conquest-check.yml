@@ -288,6 +288,35 @@ jobs:
           name: conquest-citadel
           path: docs/conquest/session7b
 
+  # Session 7C Integrity & Boards (docs/conquest/audit/SESSION_07C_BRIEF.md): the hub's AIRDROP STANDING card and War Effort lines, the
+  # WEEKLY BOARDS screen and its share card, a Titan slot (the strike's THE HIVE TITAN RISES, the hunt HUD, the kill paid once) at
+  # 390x844, 390x700, 320x568 (touch) and 1366x768, 1920x1080 (mouse, keyboard). The rules themselves run in the conquest job
+  # (conquest-titan, wtest/conquest-boards, wtest/conquest-standing, conquest-fingerprints, wtest/conquest-wareffort)
+  boards-titan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser dependencies
+        run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Session 7C screens (5 sizes)
+        run: python dev/tests/conquest-7c-browser.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-7c
+          path: docs/conquest/session7c
+
   transmission:
     runs-on: ubuntu-24.04
     timeout-minutes: 60   # Session 7B: the WebKit install (--with-deps, apt) took 23 and 28+ minutes on Nov 24 (2-10 before) and the 35-minute limit cancelled the tests

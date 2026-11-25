@@ -16,12 +16,12 @@ function strikeButton(box,state,{el,button,start}){const st=state?.settlement;if
  const w=el('div','cq-titan-rise',null,box);el('p','cq-kicker','A TITAN SLOT',w);el('h3','','THE HIVE TITAN RISES',w);el('p','','9,000 hull · three phases · 4 minutes before it burrows away. Your Wing draws its fire and burns the swarm; your tank does the damage. The kill pays once this slot; your damage counts on the weekly Titan board, won or lost.',w);
  w.append(button(why?String(why).toUpperCase():'FIGHT THE HIVE TITAN',()=>start?.(),'cq-titan-go'));if(why)w.lastChild.disabled=true;return w;}
 // the hunt's HUD (js/conquest/app.js calls it every frame, like the Citadel's)
-function hud(panel,view,{el}){const B=view?.battle,c=B?.ttn;let h=panel.querySelector('.cq-titan-hud');if(!c||!el){if(h)h.remove();return null;}
+function hud(panel,view,{el}){const B=view?.battle,c=B?.ttn;let h=panel.querySelector('.cq-titan-hud');if(panel.classList.contains('cq-titan-on')!==!!(c&&el))panel.classList.toggle('cq-titan-on',!!(c&&el));if(!c||!el){if(h)h.remove();return null;}   /* cq-titan-on: the HUD takes the place of the carried-minerals and strike lines (css/war.css) */
  if(!h){h=el('div','cq-titan-hud',null,panel);h.setAttribute('role','status');el('p','cq-titan-head','',h);const bar=el('div','cq-titan-bar',null,h);el('i','cq-titan-fill',null,bar);el('b','cq-titan-mark cq-titan-m1',null,bar);el('b','cq-titan-mark cq-titan-m2',null,bar);el('p','cq-titan-say','',h);}
  const T=(B.enemies||[]).find(e=>e.titan),P=TT()?.PHASES||[],hp=T?Math.max(0,T.hp)/T.maxHp:0,clock=Math.max(0,(TT()?.TITAN.clockS||240)-(B.time||0));
  const head='THE HIVE TITAN · PHASE '+['','I','II','III'][c.phase|0]+' · '+(P[c.phase|0]||'')+' · '+mmss(clock)+(T?.dormant?' · BURROWED':'')+' · YOUR DAMAGE '+fmtN(T?.tp||0);
  if(h.children[0].textContent!==head)h.children[0].textContent=head;h.querySelector('.cq-titan-fill').style.width=Math.round(hp*1000)/10+'%';
- const say=c.say?.t||'';if(h.children[2].textContent!==say)h.children[2].textContent=say;h.classList.toggle('cq-titan-enraged',!!c.enraged);return h;}
+ const hz=(B.hazards||[]).reduce((a,x)=>x&&x.remaining>0&&(!a||x.remaining<a.remaining)?x:a,null),say=(c.say?.t||'')+(hz?' · '+String(hz.kind).toUpperCase()+' IN '+hz.remaining.toFixed(1)+'s':'');if(h.children[2].textContent!==say)h.children[2].textContent=say;h.classList.toggle('cq-titan-enraged',!!c.enraged);return h;}   /* the next marked impact's countdown (the HUD covers the wave line that carried it) */
 // the result card (the Worker's receipt: s.settlement kind titan / titan-loss)
 function result(d,rec,{el}){if(!rec||!el)return null;const box=el('section','cq-titan-result',null,d),ul=el('ul','cq-cit-rewards',null,box);
  if(rec.kind==='titan'){el('p','cq-kicker',rec.first?'THE KILL OF THIS SLOT':'ALREADY DOWN THIS SLOT',box);el('h2','','THE HIVE TITAN FALLS',box);
