@@ -6546,6 +6546,168 @@ Not worth credits: rocks, grass, ferns, ore, fences, lamps, pipes, poles (small,
 people and livestock (many instances each: a Meshy model there costs triangles on LOW, the open item above); the viaduct,
 rail and dam (long repeating hard-surface pieces, which code builds well).
 
+## Checkpoint 45 — Session 5E-2d2: Conquest models + addendum (branch `claude/parasite-units-dropships-8y7kby`, from main `d61d259`) — IN PROGRESS
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md first; it governs everything.
+- **State on Nov 25, 15:00 UTC (the session resumed after Sessions 7, 7T, 7T-P, 7B and 7C shipped; the context was cleared
+  once more on Nov 25 and this section was rebuilt from the tree, the tests and the builders' logs):** main `ae22fcb` is
+  merged into this branch (merge `de4c9bd`; both sides kept in `web/boot.js` and this file). The owner approved merging this
+  session's PRs into main once every check passes (said again on Nov 25): open it as a DRAFT, and when the work, the reviews and this checkpoint are finished mark it ready
+  and add the `auto-release` label (the workflow merges and deploys it), then verify the deploy.
+- **Done and pushed before the pause (Nov 21):** the brief saved; the website fix (`web/boot.js` loads the world kit); the
+  TURRET cheek plate anchors; the dropship flight / unload logic and its spawn-identity test (`js/conquest/dropship.js`,
+  `dev/tests/conquest-dropship.mjs`); the kill burst and the Parasite break-up preset (`js/fx3d.js`).
+- **Integrated by the lead on Nov 25 (in the tree; see "Integration" below for each choice):** the six units, the battery
+  and the drone drawn from their slots (`style.js` `S.unit`, `S.unitPose`, `S.battery`, `S.drone`; `view.js` `enemyModel`
+  and the enemy loop); the five generals' colours; the one Parasite red in place of every magenta (hull, markers, shots,
+  ground creep, the infection's vein shader, the hostile flag, the hub horizon, the town minimap); the town raiders from
+  the units' town models (`townkit.js` `foe`); the old alien hive / mast / wall / spire deleted from `kit/nature.js`; the
+  new kit files and `dropship.js` loaded by `index.html` and `web/boot.js`; the dropships drawn in the Defense Drill
+  (`plotview.js` `drillShips*`, `fx3d.js` `thrustDust` / `hullSmoke` / `hullFlame`); the Citadel's tier III ship drawn as the
+  real hauler flown by `ConquestDropship.flight()` (`citadelview.js`); the dormant portal and nine LDF posts as scenery
+  (`style.js` `S.warScenery`); the consumables' icons in the HUD slot, the picker, the LOOT screen, the loot card and the
+  after-action drops; the hit flash white; `S.killBurst` and the `parasite` break-up called when a hostile dies.
+- **The four builders finished (Nov 25, all in the tree and pushed, head `a8bb53d`):** (A) `kit/parunits.js`: swarm, brute,
+  drone, the town models, the five generals, `ConquestParUnits`; (B) `kit/parstruct.js`: the hive (the raid spire inside its
+  2,000 budget); (C) `kit/warmodels.js`: the LDF post, the ships' and the portal's checks, the slot boxes; (D) the login flash
+  and the real tank in the town view (`core.js`, `main.js`, `net.js`, `showroom.js`, `meshy3d.js`, `ui.js`, `web/game.js`,
+  `hub.js`, the pilot's vehicle in `view.js`, `tankModel` in `plotview.js`, `dev/tests/login-tank-browser.py`,
+  `dev/tests/login-tank-server.mjs`). **`login-tank-browser.py` full run: PASS** (website and Telegram, phone and computer:
+  fresh, changed, failed, offline, late, LOW, 2D; pictures and `login-tank.json` in `docs/conquest/session5e2d2/login/`).
+- **Green at this commit:** the whole node list of `conquest-check.yml` (101 of 101, with `conquest-slots.mjs` 149 slots,
+  `conquest-style.mjs`, `conquest-dropship.mjs` 161,474 checks, `conquest-regression.sh`, `conquest-plot.mjs`). Nothing known red.
+- **Cut off with no edits in the tree (restart them; nothing to recover):** builder E (the colony on LOW back to at most
+  197,849 triangles) and builder F (the ten reviewer notes of Checkpoint 44). Their scratch measurements are gone with the
+  container; only what is in this file counts.
+- **No PR is open yet** for this branch (checked Nov 25): open it as a DRAFT at the next tested slice.
+- **Next, in order:** (1) captures at the five sizes on HIGH and LOW (`dev/tests/conquest-parasite-captures.py`,
+  `conquest-warscenery-captures.py`, `conquest-dropship-browser.py`, `conquest-citadel-ship.py`: the town drill with both
+  ships and a ship shot down; the Citadel tier III ship: flight, ramp, the wave stepping off, a ship shot down; the portal's
+  three states; the LDF posts; the town view with the real tank); (2) the raid-view budget at CC10 (16 programs, 150 draw
+  calls: `conquest-base-builder.py`) and the relay fight (80 draw calls at 320 wide); (3) the 5E-2d1 leftovers (builders E
+  and F above); (4) three critic rounds; (5) the whole test list of the brief; (6) two independent reviewers; (7) release
+  (`dev/bump.sh`, the draft PR marked ready with the `auto-release` label, verify the deploy, ROADMAP row, release record).
+- **Environment notes for a fresh context:** Python Playwright is not in the image (`pip install playwright==1.55.0`;
+  Chromium is `/opt/pw-browsers/chromium`, linked to `/usr/bin/chromium` for the tests that look there); the website
+  fixture needs `cd worker && npm install` (`@simplewebauthn/server`). The pre-session tree for before / after captures:
+  `git archive d61d259` into a scratch folder, then `--root` on the capture tool.
+
+### Integration (Nov 25): the choices made while wiring the models in (each with its reason)
+- **Size on screen is unchanged.** Measured in the client before the change (HIGH, metres, width x height x length): raider
+  2.67 x 1.39 x 4.53, breacher 4.01 x 2.18 x 5.32, sentinel 4.52 x 2.38 x 5.58, command 4.52 x 2.10 x 5.57, drone 4.59 x
+  1.11 x 4.92, battery 11.05 x 15.41 x 9.59 (10,480 to 15,764 triangles a unit). The units' slot boxes are those
+  footprints (taller: the new silhouettes rise); the drone and the battery slots hold the model at its authored size and
+  are drawn at 1.65, as they always were. The view no longer forces 1.65 on every hostile: a model keeps the scale it was
+  built at. **Found on the way:** the Hive Titan stand-in (7C) asked for 2.4x and the loop reset it every frame, so the
+  Titan was drawn at a sentinel's size; it now is 2.4x, as its own file says.
+- **A unit is two draws** (hull, gun at the model's pivot) on the solid material plus its ground glow, as before; the
+  marker stays in the one instanced marker draw. Three seed variants a kind (trophies and plate colours differ).
+- **Death:** `S.unitPose(g, seconds dead)`, one animation per unit from one table (the Scavenger rolls onto its side, the
+  Siphon rears back on its tanks, the Hoard Fortress sinks and its turret slumps, the Warlord topples backward, a Grabber
+  tumbles over, the Wrecker noses down on its ram); the blast, the flying plundered plates (`shatter('parasite')`) and the
+  kill burst in the Parasite red are FX3D's. The old squash to 60% height stays only for the pre-style fallback.
+- **The Citadel's tier III ship** (`citadelview.js`; Checkpoint 49's contract kept: `ConquestDropship.flight(spec)` with
+  `ConquestCitadel.dropshipSpec(e)`, the pose applied after the ground orientation): the fight keeps the ship's place, hit
+  box and timing; the hull follows the fight's ship until its bow ramp's foot is over the pad, sets down there (2.6 s
+  before the wave's moment), lowers the ramp, and the wave the fight spawns at that moment is shown rolling off the ramp
+  to its own spots for its first 1.1 s (the fight already holds those units' fire for 1.2 s); when the fight sends the
+  ship away the ramp shuts and the flight's lift-away plays; shot down, the flight's fall and wreck play from where it
+  was hit. The Swarm is the Grabber. The gate, guns, mortars and the warden stay the 7B stand-ins (their own session).
+- **The portal and the LDF posts are scenery with no collision** (the brief: no collision or layout change): the dormant
+  portal on the flat west of the OXYGEN SPEAR hive (1196, 987), facing the Refuge; nine posts on open ground found by a
+  search (flat within 2.6 m, clear of solids, roads, lots, fields, water, forest, ore and flora): the Refuge, the oxygen
+  complex, both viaduct ends, the Command Base approach, the frontier wall, the corridor pylon, the ice mine, the dam. No
+  clear spot exists beside the east frontier wall (a cliff) or at the Refuge terminal (roads and lots): reported, not forced.
+- **The hit flash is white** (the addendum: "80 ms emissive white"; it was a warm orange that hid on red-lit units).
+- **The Parasites read red, in the game and not only in the model viewer** (first in-game line-up, Nov 25: under the barren
+  Moon's blue light the finished units read as BLUE human machines: grey steel and pale ceramic took the night's blue
+  ambient and the world's cyan rim light; the red was a few thin veins). Three changes, measured on the same capture:
+  (1) the Parasite machines have their own material, `MAT.par` / `MAT.parHit`: the same solid shaders (one program, uniform
+  values only) with a red rim light in place of the world's cyan one, anywhere on the map (`uSiteRim` 0: a friendly site's
+  cyan glow never paints them); the units, the battery, the drone, the town raiders, both ships and the Citadel's ship wear
+  it; (2) the Parasite steel is warm umber, the plundered plates bone / brick / oxide / tan / khaki (no teal, no pale blue),
+  the conquered LDF flags a dirty dark blue; (3) the red glows are pre-scaled for the shader's 2.3x glow gain, so the tone
+  mapper keeps them a deep red instead of coral (builder B's note). The first try at full rim strength turned every unit
+  into a flat red shape and hid the plunder; the rim is at 0.62 / pi, where the plates, the gold and the hazard paint show.
+- **The hostile site rim and the ground creep are red** (they were magenta in the solid and terrain shaders), the hostile
+  flag, the markers, the enemy shots (hot core, red glow), the hub's horizon, the town minimap's raid dots and the world
+  map's Parasite marks too. Not changed: the War Map screen's own pink for Parasite territory (`css/war.css`, a Session 7
+  screen colour, PROPOSAL: one red there too), the bio-flora pods (flora, not Parasite).
+- **The raid's centrepiece is the kit's `raid-spire`** wherever the style draws (it was the Blender raid art, a violet
+  crystal spire: the old alien look; that asset is drawn only by the pre-style fallback now).
+- **Each hive and mast has its own seed** (plates, flags, veins), so the four installations are not one model four times.
+- **A unit's geometry is prewarmed once** (three variants a kind, one kind every 90 calm frames); the old prewarm keyed on
+  the fallback's cache and, with the style on, rebuilt a spare unit every 90 frames for the whole session.
+- **The drill's ships**: `X.drillRate` (the replay speed, 1.6) and `X.dropshipHit` are the two knobs the capture tool
+  uses (hold a moment; show a ship shot down). Nothing shoots a ship in the drill and nothing sets them in play.
+
+### Found on the way (Nov 21): Conquest on the website drew its pre-style fallback
+- `web/play.html` -> `web/boot.js` loads the game's scripts from a list. Session 5E-2d1 added `js/conquest/slots.js`,
+  `worldkit.js` and `kit/*.js` to `index.html` (the Mini App page) but not to that list. On the website, the main way to play,
+  `ConquestStyle.create` threw (caught in `view.js`), `Conquest.view.style` was null and Conquest was drawn by the old
+  fallback (flat boxes, no kit, no Neon Frontline look). Reproduced on the website build with the real Worker fixture
+  (`ConquestWorldKit` undefined, `style: false`, 8 programs; picture in the session scratch, to be re-taken for the record).
+  `conquest-desktop-keys.py`, the one website test that enters Conquest, only drove the tank, so it passed.
+- Fixed in the first code commit of this session: the six scripts are in `web/boot.js`; `conquest-slots.mjs` now compares the
+  Conquest script lists of `index.html` and `web/boot.js` (same set, the kit between `worldkit` and `style`);
+  `conquest-desktop-keys.py` asserts the style and the kit on the website build. **Not hot-fixed to production on its own:**
+  the release pre-approval covers this session's release ("when every check passes"), there are no live players, so it ships
+  with this session. It means the website has not shown the 5E-2d1 world since Nov 20.
+
+### Research: the best comparable games (before the first draft)
+Sources: gamedeveloper.com on visual confusion and on colour as identity; Unity's Tempest Tower enemy-visuals case study
+(Half Past Yellow); bugnet.io on readable enemies; dotesports / gamerguides / videogamer on Helldivers 2 dropships; the Boom
+Beach wiki (Landing Craft); Unreal's dropship matinee notes; screenrant on World of Tanks Blitz "Mad Games" (Peter Pound, the
+Fury Road vehicle designer, drew its Scavenger and Gravedigger tanks); Crossout's Scavengers faction page. What they do
+that this session copies:
+- **Silhouette first, colour second.** Units are checked as black shapes before colour; on a phone the outline carries more
+  than surface detail. Each enemy type exaggerates ONE feature (Tempest Tower). -> every Parasite unit has one oversized
+  feature (engine, tank stack and spike, armour pile and gaudy turret, cupola and banners, claws and sack, ram), judged on a
+  black silhouette line-up at 390 and 320 wide.
+- **A value chart per faction** keeps enemy types consistent (Tempest Tower). -> one shared Parasite palette (`pal.par`) and
+  ONE red for every glow (`ConquestWorldKit.PAR`), dark steel bodies so the red and the pale plundered plates carry.
+- **Colour is a secondary cue; shape and behaviour say it first** (Roche Fusion). -> the five generals differ by emblem SHAPE
+  as well as colour.
+- **Scavenger machines** (Blitz "Mad Games", Crossout, Mad Max): jury-rigged, over-reinforced, storage and loot strapped on,
+  mismatched panels, worn. That is the owner's greedy-human look; the red infection is the one thing that is ours.
+- **Dropships** (Helldivers 2): a warning names the drop ("Bot Drop Detected"); the ship is fast and only slows just before
+  it unloads, which is the window to shoot it; a destroyed ship takes its cargo with it, and players complained loudly when
+  survivors walked out of the wreck. -> fly in fast, a long readable flare, the unload only after touchdown; a shot-down ship
+  never shows its units. Boom Beach's landing craft (a platform with armoured sides, a bow ramp, a cabin with a flag and a
+  light; troops gather at the ramp's flag first) is the read every phone player already knows: the heavy hauler is a flying
+  landing barge with a bow ramp. Unreal's dropship notes: start the landing about 3 s before touchdown with the engines
+  already pointing down. -> the flare is 2.2 s (hauler), the nozzles are down in it.
+
+### Design choices so far (each with its reason)
+- **One Parasite red, `#ff2030`** (hot core `#ff7a5c`, deep `#a01018`), in `ConquestWorldKit.PAR`: a pure signal red, far from
+  the player's cyan and from every doctrine colour. The old magenta `#ff2bd6` goes everywhere.
+- **The generals' colours** (`style.js` PATTERN). Artillery was red-orange `#ff5a3c`, which is the new Parasite red's
+  neighbour, and the carrier's teal sat next to the shield's cyan. Now: shield cyan `#48d8ff`, ambush amber `#ffb347`,
+  artillery white `#f2f4ff`, carrier lime `#8dff3a`, plasma violet `#b07bff`; and each general carries a tall standard with
+  an emblem unique in shape (hex shield, crossed blades, a trio of shells, a winged drone, an orb in a cage). Reason: the
+  brief's rule that each pattern is distinct from the others and from the Parasite red, on a phone.
+- **Units are slots** (`par-raider`, `par-breacher`, `par-sentinel`, `par-command`, `par-swarm`, `par-brute`, `par-drone`):
+  `o.part` hull / gun (one draw each, as today), `o.town` the light model the town raid instances, `o.cmd` a general.
+  Budget 5,000 triangles on HIGH against today's 10,484 to 15,768 for the tinted player kits (measured in the client).
+- **The hauler has a bow ramp and the shuttle never lands** (Boom Beach's read; the owner's "lands and drops a ramp" /
+  "drops the swarm from a hover"). **Which ship a lane gets:** the hauler where the lane's share of the wave has a
+  sentinel, a brute or drones (planning pick: the drones fly out of the hauler), the shuttle where it is raiders and swarm
+  only. Measured over 30 drills: 108 haulers, 28 shuttles; shuttles are common at low Command Center levels.
+- **You see them get off:** from the ramp opening until the wave's moment the wave's own units are drawn riding the ship
+  (the heavy ones at the bow), rolling down the ramp (or dropping from the shuttle's bay) so that each one is exactly on
+  its recorded spawn spot at the wave's moment; from that moment the drill's recorded positions are drawn as before.
+  `conquest-dropship.mjs`: 30 drills byte-identical with the module on; 1,136 units land within 0.001 m of their spot.
+- **Each raid's ships are patched from its seed** (6 looks) and each lane has its own approach side, distance, height and
+  exit (hashed from the seed and the lane).
+- **Shot down** is part of the same flight (`spec.hitAt`): a hit flash, a burning ballistic fall, a skid and the wreck; its
+  units are never shown. Nothing shoots in the drill; Session 7 and the Citadel only choose `hitAt`.
+- **Plate anchors:** `plateSockets.turret` (pivot, left, right on the ring) on every chassis and `cheeks` on every weapon, in
+  `manifest.json`. The 38 built GLBs are not rewritten (75 MB of repository history for six numbers an item); `build.py`
+  writes the same anchors into the GLB at the next real rebuild.
+- **The kill burst** (`FX3D.killBurst`): 23 quads and at most 14 sparks in the Parasite red with a white core flash; the
+  break-up preset `parasite` throws plundered steel and gold rivets (the old `chitin` preset split a carapace).
+
 ## Checkpoint 46 — Session 7: Living Front, logic and screens (branch `claude/living-front-logic-screens-o5ppmn`, from main `d61d259`) — RELEASED Nov 22, 2026
 
 ### Resume here (kept current after every slice)

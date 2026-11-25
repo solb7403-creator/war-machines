@@ -1,7 +1,7 @@
-/* LUNAR Conquest world kit — NATURE, PARASITE structures and field props (Session 5E-2d1).
+/* LUNAR Conquest world kit — NATURE and field props (Session 5E-2d1; the Parasite structures moved to kit/parstruct.js in 5E-2d2).
  * NATURE: a rugged frontier under a terraformed sky (hardy, wind-bent, olive / dry straw / dark green — never a lush park);
  * on the barren Moon grey regolith rock and glowing alien growths. Rocks are cut like jewels: big flat planes, lighter top
- * facets. PARASITE: dark violet chitin, bone ribs, magenta glow; hostile, organic, asymmetric — nothing human.
+ * facets.
  * Most of these models are instanced hundreds of times, so every one is built triangle by triangle (T3 / facets / sweep
  * below make exactly the triangles they are asked for) and the per-slot caps in the comments are hard.
  * Unit shapes (rock, rock-moss, crystal-growth, fungus-growth) fit their stated unit envelope and are scaled per instance.
@@ -250,8 +250,8 @@ WK.model('moss-cushion',(b,o)=>{const hi=b.hi,sd=o.seed|0,w=o.w/2,d=o.d/1.6,h=o.
  lobe(b,.5*w,-.02,.3*d,.46*w,h*.72,.44*d,hi?5:4,M2,{prof:P2,seed:sd+2,yaw:.6});
  if(hi)lobe(b,-.56*w,-.02,-.5*d,.38*w,h*.5,.26*d,5,M2,{prof:P2,seed:sd+3});
 },{aoH:.25,aoMin:.75});
-// burnt-stump (.6 x 1.2 x .6): a charred stump, its top split in two prongs, one magenta blight vein. HIGH <= 80 / LOW <= 40.
-WK.model('burnt-stump',(b,o)=>{const {pal,tint,mix,mat,glow}=b.k,N=pal.nat,hi=b.hi,r=Math.min(o.w,o.d)/.6,h=o.h/1.2,ash=mix(N.burnt,mat(0x6a645c,'bark',.9),.6),char=shade(tint(N.burnt,1.7,.01),ash,tint(N.burnt,1.2)),vein=glow(0xff2bd6,.9),n=hi?6:4;
+// burnt-stump (.6 x 1.2 x .6): a charred stump, its top split in two prongs, one red blight vein (the Parasite red). HIGH <= 80 / LOW <= 40.
+WK.model('burnt-stump',(b,o)=>{const {pal,tint,mix,mat,glow}=b.k,N=pal.nat,hi=b.hi,r=Math.min(o.w,o.d)/.6,h=o.h/1.2,ash=mix(N.burnt,mat(0x6a645c,'bark',.9),.6),char=shade(tint(N.burnt,1.7,.01),ash,tint(N.burnt,1.2)),vein=glow(WK.PAR.red,.9),n=hi?6:4;
  sweep(b,[[0,-.05,0],[0,.2*h,0],[.02*r,.72*h,0]],[.29*r,.2*r,.17*r],n,char,{tip:[.02*r,.6*h,0],tipM:tint(N.burnt,.7),apexIns:[0,2,0]});
  sweep(b,[[.07*r,.66*h,.03*r],[.13*r,.95*h,.04*r]],[.09*r,.05*r],3,char,{tip:[.2*r,1.18*h,.05*r]});
  if(hi){sweep(b,[[-.08*r,.66*h,-.04*r],[-.12*r,.82*h,-.05*r]],[.08*r,.045*r],3,char,{tip:[-.1*r,.98*h,-.08*r]});
@@ -412,149 +412,6 @@ WK.model('hopper',(b,o)=>{const {mat,tint}=b.k,sd=o.seed|0,w=o.w/.6,h=o.h/.7,d=o
  spike(b,[0,.24*h,-.16*d],[0,.37*h,-.28*d],.05*w,furD);gem8(b,0,.335*h,-.25*d,.042*w,.045*h,.042*d,tuft,.3,4);
 },{aoH:.6,aoMin:.7});
 
-// ------------------------------------------------------------------ PARASITE --------------------------------------------
-// a curved horn / claw / root along base -> control -> tip; o.glow lights the tip (o.ringM = the flat colour it fades from)
-function horn(b,p0,p1,p2,r,n,m,o={}){const segs=Math.max(2,o.segs||(b.hi?3:2)),pts=[],rad=[];for(let k=0;k<segs;k++){const t=k/segs,u=1-t;pts.push([u*u*p0[0]+2*u*t*p1[0]+t*t*p2[0],u*u*p0[1]+2*u*t*p1[1]+t*t*p2[1],u*u*p0[2]+2*u*t*p1[2]+t*t*p2[2]]);rad.push(r*(1-t*(o.taper??.7)));}
- return sweep(b,pts,rad,n,m,{rot:o.rot,sq:o.sq,ref:o.ref,tip:o.glow?pt(p2,o.glow):p2,tipRingM:o.glow?o.ringM:null});}
-const sgnPow=(v,e)=>Math.sign(v)*Math.pow(Math.abs(v),e);
-// hive (22 x 13.6 x 16; all art inside |x| <= 11, |z| <= 8): the Parasite hive on a captured installation. A swollen chitin
-// dome of eight lobes on a spreading root mat; a glowing vein in every groove from foot to crown, two ring veins, bone ribs
-// on the lobes ending in horns, the pulsing eye low on the -x end inside a collar of fangs, a horned maw on the crown,
-// egg-sacs and vents, root spikes at the box corners. o.sink (default .6) = how far the root mat runs below y = 0.
-// HIGH <= 7000 / LOW <= 2500.
-WK.model('hive',(b,o)=>{const {pal,tint,glow}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0,W=o.w/22,D=o.d/16,H=o.h/13.6,U=Math.min(W,D,H),ax=9*W,az=6*D,ay=12.4*H,sink=o.sink??.6,
-  NA=hi?48:24,NR=hi?12:6,per=NA/8,PH0=Math.PI/8,Q=Math.PI/4,chit=b.k.mat(0x2f1836,'chitin',.1),dark=b.k.mat(0x170b1c,'chitin',.05),bone=tint(P.bone,1.6,.02),boneM=shade(bone,tint(P.bone,2.1,.03),tint(P.bone,1.0)),boneF=flatOf(bone),darkF=flatOf(dark),vein=P.mag,ringV=glow(0xff2bd6,1.5);
- const swell=k=>1+.11*(hz(sd,((k%8)+8)%8+300)-.5)*2;
- // a point of the lobed shell: ph = azimuth, t = 0 foot .. 1 crown, k = how far proud of the shell
- const shell=(ph,t,k=1)=>{const th=t*Math.PI/2*.965,q=(ph-PH0)/Q,li=Math.floor(q),u=q-li,dd=Math.min(u,1-u)*2,sA=swell(li),sB=swell(u<.5?li-1:li+1),s=sA+(sB-sA)*.5*(1-dd),
-   f=(1-.11*(1-Math.pow(dd,.55))*(1-t*t*t)+.025*dd)*s,rad=Math.pow(Math.cos(th),.8)*(1-.1*Math.pow(1-t,5))*f*k;return [Math.cos(ph)*ax*rad+.5*W*t*t,ay*Math.sin(th),Math.sin(ph)*az*rad];};
- const out=p=>{const x=p[0]/(ax*ax),y=p[1]/(ay*ay)*.6,z=p[2]/(az*az),l=Math.hypot(x,y,z)||1;return [x/l,y/l,z/l];},add=(p,n,k,up=0)=>[p[0]+n[0]*k,p[1]+n[1]*k+up,p[2]+n[2]*k];
- // ---- the root mat: a lobed skirt that fills the footprint, lapping up the shell ----
- {const A=[],B=[],C=[];for(let i=0;i<NA;i++){const a=PH0+i/NA*TAU,ca=Math.cos(a),sa=Math.sin(a),lobe=1-.1*(.5+.5*Math.cos(i/NA*TAU*12+1)),ex=sgnPow(ca,.5),ez=sgnPow(sa,.5);
-   A.push([ex*10.75*W*lobe,-sink,ez*7.75*D*lobe]);B.push([ex*9.9*W*(lobe*.5+.5)*(.95+.05*hz(sd,i)),.3*H+.3*hz(sd,i+60),ez*7.0*D*(lobe*.5+.5)*(.95+.05*hz(sd,i))]);C.push(shell(a,.06,1.05));}
-  facets(b,[A,B,C],shade(dark,tint(chit,.9),dark));}
- // ---- the shell ----
- const G=[];for(let r=0;r<=NR;r++){const ring=[];for(let i=0;i<NA;i++)ring.push(shell(PH0+i/NA*TAU,r/NR));G.push(ring);}
- skin(b,G,(r,i)=>i%per===0?dark:(i%per===per/2&&hi?tint(chit,1.22):chit),{c:[0,ay*.3,0]});
- // ---- a glowing vein in every groove, foot to crown; two ring veins ----
- for(let k=0;k<8;k++){const ph=PH0+k*Q,n=hi?11:6,pts=[];for(let j=0;j<n;j++)pts.push(shell(ph,.03+.92*j/(n-1),1.012));sweep(b,pts,t=>(.21-.09*t)*U,3,vein,{ref:[-Math.sin(ph),0,Math.cos(ph)],rot:Math.PI/2});}
- for(const f of [.25,.55]){const t=Math.asin(f)/(Math.PI/2*.965),pts=[];for(let i=0;i<NA;i++)pts.push(shell(PH0+i/NA*TAU,t,1.014));sweep(b,pts,.115*U,3,ringV,{closed:true,ref:[0,1,0],rot:Math.PI/6});}
- // ---- bone ribs up the lobes, each ending in a horn (the eye's lobe has none) ----
- [.78,.6,.7,.52,0,.56,.72,.62].forEach((te,k)=>{if(!te)return;const ph=k*Q,n=hi?7:3,pts=[];for(let j=0;j<n;j++)pts.push(shell(ph,.02+(te-.02)*j/(n-1),1.03));const e=shell(ph,te+.05,1.1);pts.push(e);
-  const nrm=out(e),tip=add(shell(ph,te+.1,1.2),nrm,(1.5+.5*(k%3))*U,(1.1+.3*(k%2))*U);tip[1]=Math.min(tip[1],o.h-.1);sweep(b,pts,t=>(.5-.2*t)*U,4,boneM,{ref:[-Math.sin(ph),0,Math.cos(ph)],sq:.62,tip:pt(tip,P.magDim),tipRingM:boneF});});
- // ---- the eye: a pulsing core low on the -x end, a slit pupil, a lumpy collar and a ring of fangs ----
- {const ex=-8.1*W,ey=4.4*H,re=2.1*U,cx=ex+.4*W,rc=2.65*U;b.ball(ex,ey,0,re,P.magHot,!hi);gem8(b,ex-re*.86,ey,0,.5*U,1.6*U,.44*U,darkF,0,4);
-  const N=hi?14:8,pts=[];for(let k=0;k<N;k++){const q=k/N*TAU;pts.push([cx+.75*W*Math.sin(q)*Math.sin(q),ey+Math.cos(q)*rc,Math.sin(q)*rc]);}
-  sweep(b,pts,(t,k)=>(.52+.14*(k%2))*U,hi?5:4,boneM,{closed:true,ref:[1,0,0]});
-  const nf=hi?9:5;for(let k=0;k<nf;k++){const q=k/nf*TAU+.35,c=Math.cos(q),sn=Math.sin(q),bx=cx+.75*W*sn*sn;horn(b,[bx-.2,ey+c*rc,sn*rc],[bx-1.9*U,ey+c*rc*1.22,sn*rc*1.22],[bx-2.55*U,ey+c*rc*.62,sn*rc*.62],.44*U,4,k%3?dark:boneM,{segs:hi?3:2,glow:P.magDim,ringM:k%3?darkF:boneF});}
-  if(hi){b.halo(ex-1.2,ey,0,6*U,0xff2bd6,.28);b.pool(ex-2.6,.15,0,3.5,3.5,0xff2bd6,.09);}}
- // ---- the crown: a glowing maw ringed by lips and horns ----
- {const top=G[NR],tc=cen(top),lip=[],pit=[];for(let i=0;i<12;i++){const p=top[Math.round(i*NA/12)%NA];lip.push([tc[0]+(p[0]-tc[0])*1.45,tc[1]+.12*H,tc[2]+(p[2]-tc[2])*1.75]);pit.push([tc[0]+(p[0]-tc[0])*1.2,tc[1]+.2*H,tc[2]+(p[2]-tc[2])*1.4]);}
-  sweep(b,lip,.34*U,hi?4:3,boneM,{closed:true,ref:[0,1,0]});facets(b,[pit],vein,{apex:pt([tc[0],tc[1]-.35*H,tc[2]],P.magHot),apexIns:[tc[0],tc[1]+9,tc[2]]});
-  for(let k=0;k<5;k++){const a=k*TAU/5+.5,p0=shell(a,.86,1),nrm=out(p0),p1=add(p0,nrm,1.7*U,.1*H),tip=[tc[0]+Math.cos(a)*1.1*W,Math.min(o.h-.08,ay+(1.0+.12*(k%2))*H),tc[2]+Math.sin(a)*.9*D];
-   horn(b,p0,p1,tip,.4*U,4,boneM,{segs:hi?4:2,glow:P.magDim,ringM:boneF});}
-  if(hi)b.halo(tc[0],tc[1]+.4,tc[2],3*U,0xff2bd6,.2);}
- // ---- roots run from the shell to the footprint's edge and turn up into spikes ----
- [[-9.7,-6.5,2.2],[9.5,-6.6,2.6],[-9.6,6.5,2.4],[9.7,6.3,2],[.3,-7.3,1.6],[-3.4,7.3,1.8],[4.4,7.25,1.5],[-10.2,3.1,1.7],[-10.2,-3.0,1.5],[10.3,-.6,1.9],[-5.6,-7.2,1.3],[6.6,-7.1,1.2]].slice(0,hi?12:10).forEach(([sx,sz,hh],k)=>{
-  const X=sx*W,Z=sz*D,a=Math.atan2(sz/az,sx/ax),f=shell(a,.13,1.0),g=[X*.9,-.15,Z*.9];
-  horn(b,f,[(f[0]+g[0])/2,.95*H,(f[2]+g[2])/2],g,.56*U,4,shade(dark,tint(chit,.95),dark),{segs:hi?4:2,taper:.5});
-  horn(b,[X*.88,-.25,Z*.88],[X*1.02,hh*H*.45,Z*1.02],[X*.97,hh*H,Z*.97],.46*U,hi?4:3,dark,{segs:hi?3:2,glow:P.magDim,ringM:darkF});});
- // ---- egg-sacs between the roots, vents on the upper shell (HIGH) ----
- if(hi){const eg=[glow(0x8a2a86,.35),glow(0xff5fd2,.55),glow(0xffa0ee,.6)];
-  [[8.3,2.9],[2.2,-6.5],[-6.8,5.6]].forEach(([cx,cz],c)=>{for(let k=0;k<4;k++){const a=k*1.7+c,r=k?.85:0,s=(k?.62:.85)*U;blob(b,cx*W+Math.cos(a)*r,-.1,cz*D+Math.sin(a)*r,s*.72,s*1.7,s*.72,{n:6,prof:[[.12,.8],[.55,.95]],seed:sd+c*9+k,m:eg[1],vm:r2=>eg[r2],apexV:eg[2],jit:.08,lx:Math.cos(a)*.15,lz:Math.sin(a)*.15});}
-   spike(b,[cx*W+1.1,-.1,cz*D+.4],[cx*W+1.5,1.5*H,cz*D+.7],.2*U,dark,3);spike(b,[cx*W-.9,-.1,cz*D-.8],[cx*W-1.3,1.2*H,cz*D-1.2],.18*U,dark,3);});
-  // swellings on the upper shell, each with a glowing vent
-  [[.62,.52,2.5],[-.85,.66,1.8],[2.25,.74,1.5],[-2.1,.4,1.9]].forEach(([ph,t,r],k)=>{const p=shell(ph,t,1),nrm=out(p),c=add(p,nrm,-r*.42*U),e=add(c,nrm,r*1.22*U,.1*U);b.ball(c[0],c[1],c[2],r*U,k%2?chit:tint(chit,1.15));
-   sweep(b,[add(c,nrm,r*.82*U),e],[r*.42*U,r*.3*U],6,shade(dark,tint(chit,1.2),dark),{rot:k,tip:pt(add(c,nrm,r*.9*U),vein),tipRingM:P.magDim,tipIns:add(p,nrm,9)});});}
-},{aoH:8,aoMin:.5});
-
-// hive-mast (4.2 x 20.4 x 4.2, all inside r 2.2): the hive's spire. A twisted chitin column of thin shanks between four
-// swollen knuckles (each ringed with thorns), its six edges three glowing veins and three thick bone ribs, three claw
-// buttresses gripping its foot, and the glowing orb at 18.8 m in a flared cup, caged by five big claws of unequal height.
-// o.sink (default 1) = how far the foot runs below y = 0. HIGH <= 1500 / LOW <= 500.
-WK.model('hive-mast',(b,o)=>{const {pal,tint,mat}=b.k,P=pal.par,hi=b.hi,rs=Math.min(o.w,o.d)/4.2,H=o.h/20.4,sink=o.sink??1,top=17.5*H,dark=P.chitinD,bone=tint(P.bone,2.0,.03),boneM=shade(bone,tint(P.bone,2.7,.04),tint(P.bone,1.2)),boneF=flatOf(bone),
-  ch=mat(0x2f1836,'chitin',.1),chL=mat(0x54305f,'chitin',.1),chD=tint(ch,.7);
- // the column's stations [t, radius, 1 = a knuckle's swollen edge]: a root flare, then shanks and knuckles, thinner upward
- const ST=hi?[[0,1.7],[.07,1.42],[.15,1.05],[.2,1.5,1],[.26,1.55,1],[.31,1.0],[.39,.95],[.435,1.38,1],[.485,1.42,1],[.525,.9],[.6,.84],[.64,1.26,1],[.68,1.28,1],[.715,.8],[.79,.74],[.825,1.12,1],[.865,1.14,1],[.895,.7],[1,.72]]
-  :[[0,1.7],[.12,1.05],[.23,1.52,1],[.32,.98],[.46,1.4,1],[.54,.88],[.66,1.27,1],[.73,.78],[.845,1.13,1],[.9,.7],[1,.72]],NS=ST.length;
- const axis=t=>{const e=Math.sin(Math.PI*t);return [.14*rs*Math.sin(t*5.2)*e,-sink+(top+sink)*t,.12*rs*Math.sin(t*4.1+1)*e];};
- const E=(k,i,f=1,up=0)=>{const t=ST[k][0],c=axis(t),a=4.2*t+i*TAU/6,r=ST[k][1]*rs*f;return [c[0]+Math.cos(a)*r,c[1]+up,c[2]+Math.sin(a)*r];};
- const R=[];for(let k=0;k<NS;k++){const g=[];for(let i=0;i<6;i++)g.push(E(k,i));R.push(g);}
- facets(b,R,ch,{bandM:r=>ST[r][2]?(hi&&!ST[r+1][2]?ch:chL):chD});
- for(let j=0;j<3;j++){const pts=[],pb=[];for(let k=0;k<NS;k++){pts.push(E(k,2*j,1.03));pb.push(E(k,2*j+1,1.02));}
-  sweep(b,pts,t=>(.22-.07*t)*rs,3,P.mag,{});
-  // the bone ribs: thick tubes on HIGH, raised straps on LOW
-  if(hi)sweep(b,pb,t=>(.34-.14*t)*rs,4,boneM,{sq:.7});
-  else for(let k=0;k<NS-1;k++){const a0=E(k,2*j+.76,1.07),a1=E(k,2*j+1.24,1.07),b0=E(k+1,2*j+.76,1.07),b1=E(k+1,2*j+1.24,1.07),ins=axis((ST[k][0]+ST[k+1][0])/2);T3(b,a0,a1,b1,boneM,ins);T3(b,a0,b1,b0,boneM,ins);}}
- // claw buttresses grip the foot
- [[.9,5.5],[2.9,4.2],[4.9,6.2]].forEach(([a,hh])=>{const c=Math.cos(a),sn=Math.sin(a);horn(b,[c*1.6*rs,-sink*.5,sn*1.6*rs],[c*1.94*rs,hh*H*.6,sn*1.94*rs],[c*1.2*rs,hh*H,sn*1.2*rs],.5*rs,4,boneM,{segs:hi?4:2,glow:P.magDim,ringM:boneF});});
- // thorns ring the top of every knuckle (HIGH)
- if(hi)for(let k=1;k<NS-1;k++)if(ST[k][2]&&!ST[k+1][2])for(const i of [1,3,5])spike(b,E(k,i,.92,-.25*H),E(k,i,Math.min(1.3,1.85/ST[k][1]),.85*H),.16*rs,dark,3);
- // the orb in its cup, caged by five claws
- const c1=axis(1);b.cyl(c1[0],top-.45*H,c1[2],.72*rs,1.15*H,dark,{n:6,r2:1.25*rs,top:true});b.ball(c1[0],18.8*H,c1[2],1.25*rs,P.magHot,!hi);
- for(let k=0;k<5;k++){const a=k*TAU/5+.4,c=Math.cos(a),sn=Math.sin(a),sh=k%2;
-  horn(b,[c1[0]+c*1.0*rs,top+.2*H,c1[2]+sn*1.0*rs],[c1[0]+c*(sh?2.6:2.75)*rs,(sh?18.6:19.0)*H,c1[2]+sn*(sh?2.6:2.75)*rs],[c1[0]+c*(sh?1.05:.7)*rs,Math.min(o.h-.04,(sh?19.75:20.34)*H),c1[2]+sn*(sh?1.05:.7)*rs],.42*rs,4,boneM,{segs:hi?4:2,glow:P.magDim,ringM:boneF});
-  if(hi){const a2=a+TAU/10;spike(b,[c1[0]+Math.cos(a2)*1.0*rs,top+.45*H,c1[2]+Math.sin(a2)*1.0*rs],[c1[0]+Math.cos(a2)*1.8*rs,top+1.1*H,c1[2]+Math.sin(a2)*1.8*rs],.16*rs,dark,3);}}
- if(hi)b.halo(c1[0],18.8*H,c1[2],5*rs,0xff2bd6,.4);
-},{aoH:8,aoMin:.5});
-
-// cover-wall (EXACT box o.w x o.h x o.d, default 18 x 5 x 3; art inside the box in plan): a Parasite-grown wall the player
-// fights around. Three or four bulging humps of glossy black-violet chitin with glowing vein lines (the hive's own shell),
-// of unequal length along the long axis, darkest at the foot and a little paler toward
-// the crest (the tallest reaches o.h), a ridge of bone spikes on top (to o.h + .55) and a glowing magenta vein in every
-// groove between the humps. HIGH cuts the grooves as glowing clefts with bone fangs beside them; LOW keeps the humps, the
-// spike ridge and a vein wedge in each groove. The long axis is x when w >= d, else z.
-// o.sink (default 1.2) = how far the humps run below y = 0. HIGH <= 400 / LOW <= 100.
-WK.model('cover-wall',(b,o)=>{const {pal,tint,glow,mat}=b.k,P=pal.par,hi=b.hi,long=o.w>=o.d,L=long?o.w:o.d,T=long?o.d:o.w,h=o.h,sink=o.sink??1.2,hw=T/2,n=L>=14?4:3,sd=(o.seed|0)*7+Math.round(L*3+T*5),mid=hi?3:2,
-  C4=(hi?[0x0c0612,0x1a0f2a,0x2a1840,0x432a5a]:[0x140b20,0x21122f,0x301c44,0x48305e]).map((c,i)=>mat(c,'chitin',.6,i?.1:.06)),vHot=glow(0xff4fe0,1.85),vDim=glow(0x9a1880,1.85),bone=mat(0x9484a2,'flat',0,.06),boneT=P.magDim;
- b.at(0,0,0,long?0:Math.PI/2,()=>{
-  // hump k runs X[k] .. X[k+1]: lengths, crest heights and crest lines all differ
-  const wt=[],X=[-L/2];let sum=0;for(let k=0;k<n;k++){wt.push(1+.36*(hz(sd,k)-.5));sum+=wt[k];}for(let k=0;k<n;k++)X.push(k===n-1?L/2:X[k]+L*wt[k]/sum);
-  const tall=sd%n,gw=hi?Math.min(.36,L/n*.09):0,EDGE=[.8,h*.78,.78],END=[.66,h*.6,.72],sc=Math.min(1.5,Math.max(1,T/3.2));
-  // one cross-section (an open line foot .. crest .. foot): half-width factor, crest height, foot factor, crest offset
-  const sec=(x,fw,yc,ff,zc,M)=>hi?[[x,-sink,-hw*ff,M[0]],[x,h*.3,-hw*fw,M[1]],[x,yc*.8,-hw*fw*.62+zc*.5,M[2]],[x,yc,zc,M[3]],[x,yc*.8,hw*fw*.62+zc*.5,M[2]],[x,h*.3,hw*fw,M[1]],[x,-sink,hw*ff,M[0]]]
-   :[[x,-sink,-hw*ff,M[0]],[x,yc*.66,-hw*fw*.84,M[2]],[x,yc,zc,M[3]],[x,yc*.66,hw*fw*.84,M[2]],[x,-sink,hw*ff,M[0]]];
-  const HS=[],S=[],FL=[];
-  for(let k=0;k<n;k++){const a=X[k]+(k?gw:0),c=X[k+1]-(k<n-1?gw:0),hk=k===tall?h:h*(.86+.12*hz(sd,k+10)),zc=hw*.3*(hz(sd,k+20)-.5),pk=.38+.24*hz(sd,k+30),f=k%2?1:.84,M=[C4[0],tint(C4[1],f),tint(C4[2],f),tint(C4[3],f)],e0=k?EDGE:END,e1=k<n-1?EDGE:END,
-    U=hi?[[0,...e0,0],[pk*.45,.95,e0[1]+(hk-e0[1])*.82,.84,zc*.7],[pk,1,hk,.86,zc],[pk+(1-pk)*.55,.95,e1[1]+(hk-e1[1])*.82,.84,zc*.7],[1,...e1,0]]:[[0,...e0,0],[pk,1,hk,.86,zc],[1,...e1,0]];
-   HS.push(U.map(([u,fw,yc,ff,z])=>({u,p:sec(a+(c-a)*u,fw,yc,ff,z,M)})));HS[k].forEach((q,i)=>{if(hi||!k||i)S.push(q);});
-   if(hi&&k<n-1){FL[k+1]=sec(X[k+1],.7,h*.68,.74,0,M);S.push({v:1,p:FL[k+1]});}}
-  // the skin; a groove's two walls glow, hottest along its floor
-  const glw=(Q,m)=>Q.map((p,i)=>[p[0],p[1],p[2],i&&i<Q.length-1?m:vDim]);
-  for(let i=1;i<S.length;i++){const g=S[i-1].v||S[i].v,A=g?glw(S[i-1].p,S[i-1].v?vHot:vDim):S[i-1].p,B=g?glw(S[i].p,S[i].v?vHot:vDim):S[i].p,ins=[(A[0][0]+B[0][0])/2,h*.2,0];
-   for(let j=0;j<A.length-1;j++){if((i+j)&1){T3(b,A[j],A[j+1],B[j+1],C4[1],ins);T3(b,A[j],B[j+1],B[j],C4[1],ins);}else{T3(b,A[j],A[j+1],B[j],C4[1],ins);T3(b,A[j+1],B[j+1],B[j],C4[1],ins);}}}
-  for(const Q of [S[0].p,S[S.length-1].p]){const c=[Q[0][0],Q[mid][1]*.45,0,Q[1][3]];for(let j=0;j<Q.length-1;j++)T3(b,Q[j],Q[j+1],c,C4[1],[0,h*.3,0]);}
-  // the ridge of spikes: dark at the root, bone-pale at the point, leaning one way
-  const crest=(k,u)=>{const Q=HS[k];let i=1;while(i<Q.length-1&&u>Q[i].u)i++;return lerp3(Q[i-1].p[mid],Q[i].p[mid],(u-Q[i-1].u)/(Q[i].u-Q[i-1].u));};
-  for(let k=0;k<n;k++){const pk=HS[k][hi?2:1].u,us=hi?[[pk*.5,.66],[pk,1],[pk+(1-pk)*.5,.74]]:k===n-1&&n>3?[[pk,1]]:[[pk*.8,.85],[pk+(1-pk)*.55,.6]];
-   us.forEach(([u,f],j)=>{const p=crest(k,u),len=(.95+.5*hz(sd,k*5+j+40))*f*sc,r=Math.min((hi?.36:.4)*sc*(.7+.3*f),hw*.34),x=Math.max(-L/2+r,Math.min(L/2-r,p[0]));
-    spike(b,[x,p[1]-.18,p[2]],[Math.min(L/2-.05,x+len*.28),Math.min(h+.55,p[1]+len),p[2]+hw*.16*(hz(sd,k*5+j+60)-.5),boneT],r,bone,hi?4:3,k+j);});}
-  for(let k=1;k<n;k++){
-   if(hi)for(const sg of [-1,1])for(const e of [-1,1])spike(b,[X[k]+e*(gw+.35),h*.42,sg*hw*.62],[X[k]+e*gw*.2,h*(.82+.06*((k+e)&1)),sg*(hw-.04),boneT],.22*sc,bone,3,k+e);   // fangs either side of the cleft
-   else{const G=HS[k][0].p,A=HS[k-1][1].p,C=HS[k][1].p;   // the vein wedge in the groove, on both faces
-    for(const [f,sh,sg] of [[0,1,-1],[4,3,1]]){const on=(Q,t)=>{const r=lerp3(lerp3(G[f],G[sh],.42),lerp3(Q[f],Q[sh],.42),t);return [r[0],r[1],r[2]+sg*.07,vDim];};
-     T3(b,on(A,.5/(G[0][0]-A[0][0])),on(C,.5/(C[0][0]-G[0][0])),[G[sh][0],G[sh][1]+.1,G[sh][2]+sg*.1,vHot],vHot,[G[0][0],h*.2,0]);}}}
- });
-},{aoH:4,aoMin:.55});
-
-// raid-spire (8.8 x 7.4 x 7.6): a crystal spire cluster on a chitin root: five leaning magenta-violet shards, dark at the
-// foot, hot at the tip, the tallest 7.2 m, in a nest of roots, claws and crystal buds. HIGH <= 2000 / LOW <= 700.
-WK.model('raid-spire',(b,o)=>{const {pal,tint,mat,glow}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0,W=o.w/8.8,D=o.d/7.6,H=o.h/7.4,U=Math.min(W,D),dark=P.chitinD,darkF=flatOf(dark),
-  M=[mat(0x3a1450,'metal',.2),mat(0x2a0e3c,'flat'),glow(0x8a1eb0,.4),glow(0xff7ae8,1.95)],M2=[M[0],M[1],glow(0x6a1890,.3),glow(0xe04ad0,.9)];
- const m=shade(dark,tint(P.chitin,1.1),dark);
- blob(b,0,-.5,0,4.3*W,2.0,3.7*D,{n:hi?14:8,prof:hi?[[0,1],[.4,.8],[.74,.5]]:[[0,1],[.55,.62]],seed:sd+1,m,zig:.22,jit:.1,at:.96});
- const S=[[0,0,7.2,0,0,1],[1.6,.8,5,.35,.2,.8],[-1.4,1.1,4.3,-.3,.3,.75],[.6,-1.6,3.8,.15,-.4,.7],[-1,-1.2,3.2,-.25,-.3,.6]];
- S.forEach(([dx,dz,hh,tx,tz,r],k)=>{const x=dx*W,z=dz*D,L=hh*H,p=[x,.3,z],tip=[x+Math.sin(tx)*L*.95,L,z+Math.sin(tz)*L*.95],rr=r*.5*U;
-  crystal(b,p,tip,rr,hi?6:4,M,{rot:k*.7,sq:.78,sh:.8});
-  if(hi){for(let j=0;j<2;j++){const a=k*1.3+j*2.6+.4,c=Math.cos(a),sn=Math.sin(a),q=[x+c*rr*1.5,.5,z+sn*rr*1.5];crystal(b,q,[q[0]+c*L*.14+Math.sin(tx)*L*.2,.5+L*(.2+.07*j),q[2]+sn*L*.14+Math.sin(tz)*L*.2],rr*.42,4,M2,{rot:a,lite:true,sh:.6});
-    horn(b,[x+Math.cos(a+1)*rr*2.3,.4,z+Math.sin(a+1)*rr*2.3],[x+Math.cos(a+1)*rr*2.6,.4+L*.14,z+Math.sin(a+1)*rr*2.6],[x+Math.cos(a+1)*rr*1.25,.4+L*.22,z+Math.sin(a+1)*rr*1.25],.2*U,3,dark,{segs:2});}}});
- // roots crawl out to the edge of the box and end in claws
- const nr=hi?9:5;for(let k=0;k<nr;k++){const a=k/nr*TAU+.3,c=Math.cos(a),sn=Math.sin(a),f=[c*1.9*W,1.15,sn*1.6*D],g=[c*4.15*W,-.15,sn*3.55*D];
-  horn(b,f,[c*3.2*W,1.0,sn*2.7*D],g,.4*U,hi?4:3,m,{segs:hi?4:2,taper:.55});
-  if(hi)horn(b,[c*3.9*W,-.1,sn*3.3*D],[c*4.3*W,.6,sn*3.7*D],[c*4.1*W,1.25+.3*(k%2),sn*3.5*D],.22*U,3,dark,{segs:2,glow:P.magDim,ringM:darkF});}
- if(hi){b.halo(0,5.4*H,0,4.5*U,0xff2bd6,.22);b.pool(0,.12,0,6*W,6*D,0xff2bd6,.1);}
-},{aoH:3,aoMin:.6});
-
 // ------------------------------------------------------------------ field props ------------------------------------------
 const RARITY={'-1':0xffb347,0:0xb8c0c8,1:0x4dff88,2:0x22e6ff,3:0xa07bff,4:0xffd36b};
 // loot-cache (2.4 x 1.6 x 1.8): a supply crate dropped on the ground, a little tilted: armoured body, corner posts, two
@@ -589,10 +446,10 @@ WK.model('wreck-cache',(b,o)=>{const {pal,tint,glow}=b.k,Wk=pal.wreck,hi=b.hi,s=
 },{aoH:1.4,aoMin:.6});
 // sector-flag (2.6 x 8 x 1): the sector's flag mast: a heavy stepped foot (long under the banner) with four braces, a stout
 // mast, a crossbar with gold knobs, a horned gold finial holding the top light, and a broad banner that glows in the owner's
-// colour on both faces inside a bright rim. o.owner: 'owned' (teal, default) | 'friendly' (cyan) | 'hostile' (magenta; its
+// colour on both faces inside a bright rim. o.owner: 'owned' (teal, default) | 'friendly' (cyan) | 'hostile' (the Parasite red; its
 // banner hangs torn in three fangs). The banner faces +z and -z; its centre is where the game draws the sector's sign.
 // HIGH <= 300 / LOW <= 100.
-WK.model('sector-flag',(b,o)=>{const {pal,glow,tint}=b.k,M=pal.mil,hi=b.hi,hostile=o.owner==='hostile',hex=hostile?0xff2bd6:o.owner==='friendly'?0x22e6ff:0x2dffc4,c=tint(glow(hex,.8),.26),cRim=tint(glow(hex,.8),.8),cHot=glow(hex,1.2),h=o.h,bw=Math.min(o.w-.24,3.2),fx=Math.min(o.w*.32,1.1),fz=o.d*.47;
+WK.model('sector-flag',(b,o)=>{const {pal,glow,tint}=b.k,M=pal.mil,hi=b.hi,hostile=o.owner==='hostile',hex=hostile?WK.PAR.red:o.owner==='friendly'?0x22e6ff:0x2dffc4,c=tint(glow(hex,.8),.26),cRim=tint(glow(hex,.8),.8),cHot=glow(hex,1.2),h=o.h,bw=Math.min(o.w-.24,3.2),fx=Math.min(o.w*.32,1.1),fz=o.d*.47;
  // the foot: a long stepped plinth, a socket, four braces up to the mast
  b.cyl(0,-.1,0,fx,.44,M.hull2,{n:6,bev:.07,rz:fz,r2:fx*.9});b.cyl(0,.34,0,fx*.6,.46,M.hull,{n:6,bev:.05,rz:fz*.68,r2:fx*.44});
  if(hi){b.cyl(0,.8,0,.24,.5,M.dark,{n:6,r2:.18});

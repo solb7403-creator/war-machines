@@ -11,8 +11,19 @@ function apiFetch(path,body,signal,keepalive){   // keepalive: the request outli
 function api(path,body){
  return apiFetch(path,body).then(r=>r.json().then(j=>{if(!r.ok){if(j.error==='update'){const q=new URLSearchParams(location.search);q.set('v',j.build||Date.now());location.replace(location.pathname+'?'+q.toString()+location.hash);}if(IN_WEB&&r.status===401)window.dispatchEvent(new Event('lunar-session-expired'));throw new Error(j.error||('http '+r.status));}return j;}));
 }
+// The launch sync. In Telegram it goes out the moment the game starts (main.js boot), beside the Telegram cloud read and not
+// after it, so the pilot's real loadout is here as early as it can be (owner, Nov 20); its answer is applied once the cloud
+// copy has been compared (doSync), exactly where it was applied before. Only a device that has not moved its progress to the
+// server yet (no migOk) asks after the cloud read, because that sync carries the copy to move.
+let bootSynced=false;
+function bootSync(early){
+ if(bootSynced||!ACCOUNT_OK)return;
+ if(early&&!(IN_TG&&SRV_ECO&&save.migOk))return;
+ bootSynced=true;doSync(true);
+ if(IN_TG&&SRV_ECO)setTimeout(()=>loadoutProve('late'),LOADOUT_WAIT_MS);
+}
 function initBackend(){
- if(ACCOUNT_OK){doSync(true);setTimeout(()=>loadSquad(),3000);}   // the invite link is ready before the first win
+ if(ACCOUNT_OK){bootSync(false);setTimeout(()=>loadSquad(),3000);}   // the invite link is ready before the first win
  if(IN_WEB)return;
  checkPendingPurchase();checkPendingSol();
  if(SRV_ECO)setTimeout(payResumeQueue,4000);
@@ -39,17 +50,20 @@ async function doSync(boot){
  if(IN_TG&&SRV_ECO&&!save.migOk)body.mig=ecoCopy();
  try{
   const r=await api('/api/sync',body);
+  if(boot)await cloudCompared;   // the launch sync was asked before the Telegram cloud copy came (bootSync): the newer of device and cloud is chosen first, the server's answer goes on top
   if(/^(?:tg|ln)_\d{3,15}$/.test(String(r.pid||'')))VERIFIED_PID=r.pid; // Authenticated, server-owned player ID.
   if('cs' in r&&typeof setCallsign==='function'){setCallsign(r.cs);if(!r.cs&&boot)setTimeout(()=>askCallsign(false),1200);}
   srvOff=r.now-Date.now();srv=r.rec;syncFails=0;lastCredit=r;
   if(r.rec){save.refBy=r.rec.ref||null;if(r.rec.ref||(r.rec.days||0)>1)inviteDone();}   // the server's binding is the only one
   if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}
+  if(boot&&typeof Meshy3D!=='undefined'&&typeof want3D==='function'&&want3D())Meshy3D.prefetch(myLoadout());   // a tank changed on another device: its model files start now
+  loadoutProve('server');   // the server has spoken: what the save holds now is the pilot's current tank
   if(r.stars&&r.stars.length)recoverStars(r.stars);
   if(ghAck&&save.ghAck===ghAck)save.ghAck=0;
   if(r.ghost&&r.ghost.m&&typeof showGhostReport==='function'){save.ghAck=r.ghost.last||Date.now();showGhostReport(r.ghost);}
   store();
   if(typeof wikiDone==='function')setTimeout(wikiDone,300);   // opened from the wiki's end-of-page button
- }catch(e){starsAckQ.unshift(...ack);syncFails++;}
+ }catch(e){starsAckQ.unshift(...ack);syncFails++;loadoutProve('unreachable');}   // no answer: the newest copy on hand shows
  syncBusy=false;
  if(syncWant){syncWant=false;syncPlayer();return;}
  if(syncFails&&syncFails<6)setTimeout(syncPlayer,10000*syncFails);

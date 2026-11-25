@@ -1,9 +1,9 @@
 {
  "engine": "chromium",
  "status": "PASS",
- "programs": 14,
- "outlinePixelsOpen": 25,
- "outlinePixelsBehind": 317,
+ "programs": 10,
+ "outlinePixelsOpen": 0,
+ "outlinePixelsBehind": 330,
  "cameraOpen": 45.306166904823606,
  "cameraBehind": 45.306166904823606,
  "pressed": {
@@ -13,7 +13,7 @@
    9,
    9
   ],
-  "k": 0.78,
+  "k": 0.7313086404000013,
   "cam": 40.98688631256012
  },
  "physicalDeviceVerified": false

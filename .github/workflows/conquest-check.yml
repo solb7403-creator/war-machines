@@ -1,7 +1,7 @@
 name: Conquest regression
 on:
   pull_request:
-    paths: ['web/account-prompts.js', 'web/play.html', 'worker/sim-api.js', 'js/conquest/**', 'js/fx3d.js', 'worker/src/conquest*.js', 'worker/src/eco.js', 'worker/src/pvp.js', 'js/rules.js', 'js/game.js', 'js/models3d.js', 'js/render3d.js', 'js/ui.js', 'wiki.html', 'worker/build-sim.mjs', 'dev/tests/wtest/conquest*', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml', 'js/fx.js', 'js/net.js', 'js/core.js', 'js/main.js', 'js/match.js', 'js/render.js', 'js/pvp.js', 'worker/src/index.js', 'worker/src/proof.js', 'dev/tests/mod-behaviors.mjs', 'dev/tests/wtest/research-economy.mjs', 'worker/src/conquest-research.js', 'worker/src/conquest-loot.js', 'dev/tests/lab-store-ui.mjs', 'dev/tests/wtest/lab-store.mjs', 'dev/tests/owner-rules.mjs', 'docs/owner-rules.json', 'dev/tools/economy-model.mjs', 'dev/tools/chassis-kit-model.mjs', 'dev/tests/lib/**', 'js/conquest/battalion.js']
+    paths: ['web/account-prompts.js', 'web/play.html', 'worker/sim-api.js', 'js/conquest/**', 'js/fx3d.js', 'worker/src/conquest*.js', 'worker/src/eco.js', 'worker/src/pvp.js', 'js/rules.js', 'js/game.js', 'js/models3d.js', 'js/render3d.js', 'js/ui.js', 'wiki.html', 'worker/build-sim.mjs', 'dev/tests/wtest/conquest*', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml', 'js/fx.js', 'js/net.js', 'js/core.js', 'js/main.js', 'js/match.js', 'js/render.js', 'js/pvp.js', 'worker/src/index.js', 'worker/src/proof.js', 'dev/tests/mod-behaviors.mjs', 'dev/tests/wtest/research-economy.mjs', 'worker/src/conquest-research.js', 'worker/src/conquest-loot.js', 'dev/tests/lab-store-ui.mjs', 'dev/tests/wtest/lab-store.mjs', 'dev/tests/owner-rules.mjs', 'docs/owner-rules.json', 'dev/tools/economy-model.mjs', 'dev/tools/chassis-kit-model.mjs', 'dev/tests/lib/**', 'js/conquest/battalion.js', 'js/meshy3d.js', 'js/showroom.js', 'web/boot.js', 'web/game.js', 'index.html', 'dev/tests/login-tank*']
   workflow_dispatch:
 jobs:
   conquest:
@@ -77,6 +77,7 @@ jobs:
           node dev/tests/conquest-style.mjs
           # Session 5E-2d1: the one model list of the code-built world (every slot code-built on HIGH and LOW inside its box, swap to a model and back)
           node dev/tests/conquest-slots.mjs
+          node dev/tests/conquest-dropship.mjs
           node dev/tests/conquest-flagship-ui.mjs
           node dev/tests/conquest-canvas-contract.mjs
           node dev/tests/wtest/conquest-war.mjs
@@ -316,6 +317,38 @@ jobs:
         with:
           name: conquest-7c
           path: docs/conquest/session7c
+
+  # Session 5E-2d2 Conquest models (docs/conquest/audit/SESSION_05E2D2_BRIEF.md): the Parasite dropships in the town's Defense
+  # Drill (fly in, flare, land or hover, unload, lift away; a ship shot down; the raid view's budget with the ships on screen),
+  # the Citadel's tier III ship drawn as the real hauler flown by ConquestDropship.flight(dropshipSpec), and the pilot's real
+  # tank at login (no frame shows another chassis, weapon or a stand-in: website and Mini App, phone and computer). The rules
+  # themselves (every raid unit spawns where and when the simulation says) run in the conquest job (conquest-dropship.mjs)
+  parasites:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Worker dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser dependencies
+        run: |
+          pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Dropships in the Defense Drill (HIGH, LOW)
+        run: python dev/tests/conquest-dropship-browser.py
+      - name: The Citadel's tier III ship (HIGH, LOW)
+        run: python dev/tests/conquest-citadel-ship.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-5e2d2
+          path: docs/conquest/session5e2d2
 
   transmission:
     runs-on: ubuntu-24.04

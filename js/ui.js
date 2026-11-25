@@ -211,17 +211,18 @@ function battleRosterHtml(){
  const ids=Object.values(lab.slots).filter(id=>lab.machines[id]).slice(0,2);
  if(ids.length!==2)return '';
  return '<section class="battle-roster" aria-label="Your battle machines"><div class="battle-roster-title"><b>YOUR BATTLE MACHINES</b><small>Choose which bay deploys in your next match</small></div><div class="battle-roster-grid">'+ids.map((id,i)=>{
-  const M=lab.machines[id],L=ecoLoadout(save,M.spec),active=id===lab.active;
+  const M=lab.machines[id],L=ecoLoadout(save,M.spec),active=id===lab.active,sure=typeof loadoutProven!=='function'||loadoutProven();   // not sure yet (Telegram, before the server's answer): the card names no chassis or weapon, as its picture draws none
   const chassis=(L.c.s?'Salvaged ':'')+((CNAMES[L.c.c]||[])[Math.max(0,L.c.t)]||CH[L.c.c].n);
   const weapon=L.w.a==='moon'?'Moonbeam':(L.w.s?'Salvaged ':'')+((WNAMES[L.w.a]||[])[Math.max(0,L.w.t)]||WEAPONS[L.w.a].n);
-  return '<div class="battle-roster-card'+(active?' selected':'')+'"><div class="battle-roster-bay">BAY '+(i+1)+(active?' · DEPLOYING':' · READY')+'</div><canvas data-art="lab:'+esc(id)+'" aria-label="'+esc(M.name)+' preview"></canvas><b class="battle-roster-name">'+esc(M.name)+'</b><div class="battle-roster-items">'+esc(chassis)+' · '+esc(weapon)+'</div><div class="battle-roster-power">POWER '+powerOf(L)+'</div><button class="btn '+(active?'btn-quiet':'btn-go')+'" data-act="labequip" data-arg="'+esc(id)+'"'+(active?' disabled':'')+'>'+(active?'Selected':'Deploy this machine')+'</button></div>';
+  return '<div class="battle-roster-card'+(active?' selected':'')+'"><div class="battle-roster-bay">BAY '+(i+1)+(active?' · DEPLOYING':' · READY')+'</div><canvas data-art="lab:'+esc(id)+'" aria-label="'+esc(M.name)+' preview"></canvas><b class="battle-roster-name">'+esc(M.name)+'</b><div class="battle-roster-items">'+(sure?esc(chassis)+' · '+esc(weapon):'Checking with Command…')+'</div><div class="battle-roster-power">'+(sure?'POWER '+powerOf(L):'&nbsp;')+'</div><button class="btn '+(active?'btn-quiet':'btn-go')+'" data-act="labequip" data-arg="'+esc(id)+'"'+(active?' disabled':'')+'>'+(active?'Selected':'Deploy this machine')+'</button></div>';
  }).join('')+'</div><p class="battle-roster-rule">Edit either build in the Garage.</p></section>';
 }
 function renderPlay(){
  const W0=getW(save.weapon),C0=getC(save.chassis),pw=calcPower(),brk=myLeague(pw);
  const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),n=playNudge(),wr=winRange(gk,mk);
+ const sure=typeof loadoutProven!=='function'||loadoutProven();   // Telegram, before the server's answer: the tank on this device may be an old one (js/core.js), so the hero names none, as its picture draws none
  return '<div class="hero"><canvas data-art="hero"></canvas>'+
-   '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+esc(C0.name)+'</span><span class="sub">'+esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league</span></button></div>'+
+   '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+(sure?esc(C0.name):'Your war machine')+'</span><span class="sub">'+(sure?esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league':'Checking your loadout with Command…')+'</span></button></div>'+
   '<div class="lobby">'+
   (n?'<button class="nudge" data-act="'+n.act+'" data-arg="'+(n.arg||'')+'"><span class="gem">'+(n.svg||n.gem)+'</span><span><b>'+n.b+'</b><br><span>'+esc(n.s)+'</span></span><span class="chev">›</span></button>':'')+
   '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+(IN_TG&&(save.mp||0)>=1&&isLiveMode(gk)?' <span class="livechip">Live</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
@@ -533,9 +534,9 @@ function gMountStage(){
   gShowroom.setContext('garage');gShowroom.setLoadout(L);
  }else{
   if(gShowroom)gStageRelease();
-  const key=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,gfxMode(),typeof R3!=='undefined'&&R3.ready]);
+  const key=JSON.stringify([tankShow(L),L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,gfxMode(),typeof R3!=='undefined'&&R3.ready]);   // tankShow: the empty pad until this bay's tank may be drawn (js/meshy3d.js)
   if(key!==gStaticKey||!scene.querySelector('canvas')){gStaticKey=key;const c=document.createElement('canvas');scene.replaceChildren(c);
-   const w=scene.clientWidth||320,h=scene.clientHeight||220;c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);try{drawMachinePreview(ctx,w,h,L);}catch(e){}}
+   const w=scene.clientWidth||320,h=scene.clientHeight||220;c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);try{tankPicture(ctx,w,h,L);}catch(e){}}
  }
  gStageEl.classList.toggle('static',!(gShowroom&&gShowroom.renderer));
 }
@@ -895,9 +896,10 @@ function renderRanks(){
 const SCREENS={play:renderPlay,garage:renderGarage,shop:renderShop,quests:renderQuests,ranks:renderRanks};
 
 // ---------- canvases inside the menus ----------
-// a Meshy model that just arrived replaces its procedural stand-in in the menu pictures too (one repaint per burst)
+// a Meshy model that just arrived shows in the menu pictures (one repaint per burst): item icons swap their code-built picture
+// for it; a picture of the pilot's own tank stood empty until now (tankPicture, heroPaint)
 let meshyArtTimer=0;
-if(typeof addEventListener==='function')addEventListener('lunar-meshy-ready',()=>{clearTimeout(meshyArtTimer);meshyArtTimer=setTimeout(()=>{try{if(typeof inGame==='undefined'||!inGame)paintArt(document);}catch(e){}},150);});
+if(typeof addEventListener==='function')addEventListener('lunar-meshy-ready',()=>{clearTimeout(meshyArtTimer);meshyArtTimer=setTimeout(()=>{try{if(typeof inGame==='undefined'||!inGame){paintArt(document);if(uiTab==='garage'&&gStageEl&&gStageEl.isConnected&&!gShowroom)gMountStage();}}catch(e){}},150);});   // the garage's static picture too: it waits for its models like every picture of the pilot's tank
 function paintArt(root){
  for(const c of root.querySelectorAll('canvas[data-art]')){
   const w=c.clientWidth,h=c.clientHeight;if(!w||!h)continue;
@@ -906,12 +908,15 @@ function paintArt(root){
   const a=c.dataset.art.split(':');
   try{
    if(c.dataset.locked)ctx.globalAlpha=0.45;
-   if(a[0]==='lab'){const M=save.lab&&save.lab.machines[a[1]];if(M)drawMachinePreview(ctx,w,h,ecoLoadout(save,M.spec));continue;}
-   if(a[0]==='hero')heroCv=c;
-   if(typeof art3D==='function'&&art3D(ctx,w,h,a)){ctx.globalAlpha=1;continue;}   // 3D pictures when the 3D view is on
+   if(a[0]==='lab'){const M=save.lab&&save.lab.machines[a[1]];if(M)tankPicture(ctx,w,h,ecoLoadout(save,M.spec));continue;}
+   if(a[0]==='hero'){heroCv=c;heroPaint(c,ctx,w,h,performance.now()/1000);continue;}
+   if(a[0]==='tank'){   // the pilot's tank in a finish (paint tiles, the welcome screen): the same rule as every picture of it
+    const L=myLoadout(),show=tankShow(L);c.dataset.tank=tankTag(L,show);
+    if(show==='wait'){tankWait2D(ctx,w/2,h*.64,Math.min(w*.36,h*.62));continue;}
+    if(show!=='2d'&&(show==='kit'?Meshy3D.withDetail('none',()=>art3D(ctx,w,h,a)):art3D(ctx,w,h,a))){ctx.globalAlpha=1;continue;}}
+   else if(typeof art3D==='function'&&art3D(ctx,w,h,a)){ctx.globalAlpha=1;continue;}   // 3D pictures when the 3D view is on
    ctx.globalAlpha=1;
-   if(a[0]==='hero'){drawHeroScene(ctx,w,h,performance.now()/1000);}
-   else if(a[0]==='map')drawMapThumb(ctx,w,h,a[1]);
+   if(a[0]==='map')drawMapThumb(ctx,w,h,a[1]);
    else if(a[0]==='crate'){const cw=Math.min(w*0.78,h*1.3),ch=cw*0.74;drawCrateArt(ctx,(w-cw)/2,(h-ch)/2,cw,ch,a[1],+a[2]);}
    else if(a[0]==='gear'){const isW=a[1]==='w',k=a[2];
     const it=k==='moon'?getW('moon'):a[3]===undefined?(isW?getW(save.weapon):getC(save.chassis)):(isW?getW(k,+a[3],a[4]==='1'):getC(k,+a[3],a[4]==='1'));
@@ -919,7 +924,7 @@ function paintArt(root){
    else if(a[0]==='gem')drawGemArt(ctx,w,h,a[1]);
    else if(a[0]==='vault')drawVaultArt(ctx,w,h,+a[1]||0);
    else if(a[0]==='unit')drawUnitArt(ctx,w,h,units[+a[1]]);
-   else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,TC[0],null,'pulse',null,3,a[1]==='paint'?PAINTS[a[2]]:a[1]==='me'||a[1]==='lunar'?myPaint():null,null,a[1]==='lunar'?'lunar':a[1]==='me'||a[1]==='paint'?save.skin:'default');}
+   else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,TC[0],null,myLoadout().w.a,null,3,a[1]==='paint'?PAINTS[a[2]]:a[1]==='me'||a[1]==='lunar'?myPaint():null,null,a[1]==='lunar'?'lunar':a[1]==='me'||a[1]==='paint'?save.skin:'default');}
   }catch(e){}
  }
 }
@@ -927,9 +932,15 @@ let heroLast=0;
 function tickHero(now){   // the hero tank idles at ~30fps while the Play tab is open
  if(uiTab!=='play'||!heroCv||!heroCv.isConnected||inBattle()||document.hidden||now-heroLast<33)return;
  heroLast=now;const w=heroCv.clientWidth,h=heroCv.clientHeight;if(!w)return;
- const ctx=heroCv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
- if(typeof use3D==='function'&&use3D()){try{heroArt(ctx,w,h,now/1000);return;}catch(e){}}
- drawHeroScene(ctx,w,h,now/1000);
+ const ctx=heroCv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);heroPaint(heroCv,ctx,w,h,now/1000);
+}
+// The home screen's hero is the pilot's CURRENT tank or the empty pad (owner, Nov 20-21; js/meshy3d.js tankShow): never an
+// older loadout, never the code-built tank first and the real one a moment later. The canvas says what it shows (dataset.tank).
+function heroPaint(c,ctx,w,h,t){
+ const L=myLoadout(),show=tankShow(L);c.dataset.tank=tankTag(L,show);
+ if(show==='wait'){drawHeroScene(ctx,w,h,t,true);const room=h-58,r=Math.max(16,Math.min(w*0.12,room*0.2));tankWait2D(ctx,w/2,room*0.62+r*0.5,r*1.75,t);return;}
+ if(show!=='2d'){try{if(show==='kit')Meshy3D.withDetail('none',()=>heroArt(ctx,w,h,t));else heroArt(ctx,w,h,t);return;}catch(e){}}
+ drawHeroScene(ctx,w,h,t);
 }
 
 // ---------- overlays: sheets, modals, full screens ----------

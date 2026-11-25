@@ -32,6 +32,10 @@ async def journey(b,width,height,label,results):
   diag=await pg.evaluate('''()=>({view:!!Conquest.view,auth:!!Conquest.view?.authority,status:Conquest.view?.authority?.status,error:Conquest.view?.authority?.error,connected:Conquest.view?.authority?.connected,pending:Conquest.view?.pending,net:document.querySelector('.cq-net')?.textContent,load:document.querySelector('.cq-load')?.textContent,account:typeof ACCOUNT_OK!=='undefined'&&ACCOUNT_OK,session:typeof ConquestSession})''')
   await pg.screenshot(path=str(OUT/f'desktop-keys-{label}-stuck.png'));raise AssertionError('Conquest authority never connected on the website: '+json.dumps(diag)+' errors '+json.dumps(errs[:3])) from e
  await pg.wait_for_timeout(600)
+ # the website draws Conquest with the Neon Frontline style and the world kit, like the Mini App page (Nov 21: web/boot.js did
+ # not load slots.js / worldkit.js / kit/*.js, so the style failed to build and the website drew the pre-style fallback)
+ st=await pg.evaluate('({style:!!Conquest.view.style,kit:typeof ConquestWorldKit!=="undefined",slots:typeof ConquestSlots!=="undefined",canvas:!!Conquest.view.renderer?.isConquestCanvas})')
+ assert st['canvas'] or (st['style'] and st['kit'] and st['slots']),f'{label}: Conquest on the website has no style / world kit: {json.dumps(st)}'
  STATE='''()=>({active:document.activeElement?.tagName+(document.activeElement?.className?'.'+document.activeElement.className:''),dialogs:document.querySelectorAll(".cq .cq-dialog").length,prompts:document.querySelectorAll(".lw-prompt-wrap").length,connected:!!Conquest.view.authority.connected,keys:Object.keys(Conquest.view.keys),p:{x:Conquest.view.p.x,z:Conquest.view.p.z},hint:!!document.querySelector(".cq-keys")})'''
  state=lambda:pg.evaluate(STATE)
  held={}

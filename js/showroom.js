@@ -3,6 +3,9 @@
 // the game's procedural parts; no physics, gear grants or economy. Touch: a sideways drag that starts on the stage spins it,
 // an up/down drag scrolls the page (touch-action: pan-y), two fingers zoom. Mouse: drag spins and tilts, the wheel zooms.
 // Keyboard: arrow keys turn and tilt, + and - zoom.
+// The tank on the stage is the loadout it was given or nothing (owner, Nov 20-21; js/meshy3d.js tankShow): while that loadout's
+// model files are landing (or the device's copy is not yet proven to be the pilot's current tank) the stage stands empty with a
+// slow scan ring over the pad, and the tank appears once, as itself. this.model.userData.tankId says what is on the stage.
 window.LunarShowroom=class {
  constructor(container,opts){   // opts (garage): maxPR caps the pixel ratio, idleMs paces the auto-rotate (the website passes none)
   this.maxPR=(opts&&opts.maxPR)||0;   // 0: the shared ceiling (js/graphics.js GraphicsResolution: phone up to 2.5x, desktop full)
@@ -49,7 +52,8 @@ window.LunarShowroom=class {
   this.listen(container,'wheel',e=>{this.wake=performance.now();if(!e.ctrlKey&&Math.abs(e.deltaY)<80){e.preventDefault();this.setZoom(this.zoom-e.deltaY*.002);}},{passive:false});
   this.observer=new IntersectionObserver(es=>{this.visible=es[0].isIntersecting;if(this.visible)this.wake=performance.now();this.motionLast=0;this.run();});this.observer.observe(container);
   this.listen(window,'lunar-graphics-ready',()=>{if(this.L&&!this.disposed)this.setLoadout(this.L,this.parts||3);});
-  this.listen(window,'lunar-meshy-ready',()=>{if(this.L&&!this.disposed)this.setLoadout(this.L,this.parts||3);});   // the Meshy model (LIGHT first, then FULL) swaps in when its file lands
+  this.listen(window,'lunar-meshy-ready',()=>{if(this.L&&!this.disposed)this.setLoadout(this.L,this.parts||3);});   // the tank appears when its Meshy files have landed (LIGHT), and sharpens to FULL when that lands
+  this.listen(window,'lunar-loadout-ready',()=>{if(this.L&&!this.disposed)this.setLoadout(this.L,this.parts||3);});   // Telegram: the server has confirmed the loadout
   this.onVisibility=()=>this.run();this.listen(document,'visibilitychange',this.onVisibility);this.run();
  }
  size(){if(!this.renderer)return;const w=this.el.clientWidth,h=this.el.clientHeight;if(w&&h){this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.draw();}}
@@ -66,18 +70,27 @@ window.LunarShowroom=class {
   if(this.contactShadow)this.contactShadow.position.y=on?-.012:-.025;
   if(typeof Environment3D!=='undefined')Environment3D.refresh();
  }
+ // the wait state: a ring on the pad, a scan ring that climbs through where the tank will stand, a faint column of light
+ waiting(on){
+  if(on&&!this.waitFx){const g=new THREE.Group(),mat=o=>new THREE.MeshBasicMaterial({color:0x8fdcf2,transparent:true,opacity:o,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}),flat=m=>{m.rotation.x=-Math.PI/2;return m;};
+   const pad=flat(new THREE.Mesh(new THREE.RingGeometry(2.3,2.36,96),mat(.5))),inner=flat(new THREE.Mesh(new THREE.RingGeometry(1.55,1.58,96),mat(.22))),scan=flat(new THREE.Mesh(new THREE.RingGeometry(2.02,2.3,96),mat(.3))),beam=new THREE.Mesh(new THREE.CylinderGeometry(2.3,2.3,1.9,64,1,true),mat(.045));
+   pad.position.y=inner.position.y=.02;beam.position.y=.97;g.add(pad,inner,scan,beam);g.userData={pad,scan};this.waitFx=g;this.scene.add(g);}
+  if(this.waitFx)this.waitFx.visible=on;
+ }
  setLoadout(L,parts=3){
-  const next=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,L.vl,this.context,parts,typeof Environment3D!=='undefined'?Environment3D.key():'legacy',typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.generation:0,typeof Meshy3D!=='undefined'?Meshy3D.stamp(L.c.c,L.c.t,L.w.a,L.w.t,this.detail()):'']);if(this.key===next)return;this.key=next;this.wake=performance.now();this.L=L;
+  const show=typeof tankShow==='function'?tankShow(L,parts,!!this.renderer):'kit';   // 'wait': no tank yet; 'kit': the code-built tank (a model download failed, or the models are off)
+  const next=JSON.stringify([show,L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,L.vl,this.context,parts,typeof Environment3D!=='undefined'?Environment3D.key():'legacy',typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.generation:0,typeof Meshy3D!=='undefined'?Meshy3D.stamp(L.c.c,L.c.t,L.w.a,L.w.t,this.detail()):'']);if(this.key===next)return;this.key=next;this.wake=performance.now();this.L=L;
   if(!this.renderer){this.fallback();return;}
-  if(this.model){this.scene.remove(this.model);this.disposeGeometry(this.model);}
-  this.setEnvironment();
+  if(this.model){this.scene.remove(this.model);this.disposeGeometry(this.model);this.model=null;this.motion=null;}
+  this.setEnvironment();this.waiting(show==='wait');
+  if(show==='wait'){this.parts=parts;this.bounds=null;this.animations=[];this.contactShadow.visible=false;this.size();return;}
   // All approved kits use restrained lighting, contact and geometry-aware phone framing.
   this.defender=true;this.legendary=L.skin==='lunar'||L.w.a==='moon';this.animations=[];this.parts=parts;
   const env=!!this.envStage;this.hemi.intensity=env?.62:this.defender?.85:2.1;this.lights.forEach((l,i)=>l.intensity=(env?[2.8,.65,1.8]:this.defender?[2.5,.65,2.0]:[3,1.25,2.3])[i]);
   this.mats.shine.shininess=this.defender?48:100;this.mats.shine.specular.setHex(this.defender?0x253746:0xc2d9e4);
   this.contactShadow.visible=this.defender&&parts!==2;
   const root=new THREE.Group(),body=new THREE.Group();root.add(body);const team='#88cbdc',P=PAINTS[L.paint]||PAINTS.stock;
-  const full=f=>typeof Meshy3D!=='undefined'?Meshy3D.withDetail(this.detail(),f):f();   // close-up: the FULL Meshy model (fetched only now), LIGHT until it lands
+  const full=f=>typeof Meshy3D!=='undefined'?Meshy3D.withDetail(show==='kit'?'none':this.detail(),f):f();   // close-up: the FULL Meshy model (fetched only now), the same model's LIGHT file until it lands
   const H=parts===2?{meta:{ty:0}}:full(()=>M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar'));const hullB=parts!==2?this.kit(H,body):null;
   const turret=new THREE.Group();turret.position.y=H.meta.ty;body.add(turret);
   // same per-class Moonbeam scale as the game's buildTank(): one scaled child group, the cached kit stays unscaled
@@ -87,6 +100,7 @@ window.LunarShowroom=class {
   const fits=fittingVisuals(L),context={cls:L.c.c,ct:L.c.t,arch:L.w.a,wt:L.w.t,lunar:L.skin==='lunar'};if(parts!==2)body.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'body',context).k),null,this.mats));if(parts!==1)gun.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'mount',context).k),null,this.mats));
   if(parts!==2&&L.vl>0&&typeof vaultParts==='function'){const v={body};vaultParts(v,{b:hullB},{vl:L.vl,vt:typeof vtOf==='function'?vtOf(L.vl):L.vl>=10?2:1},this.mats);root.userData.vaultTooth=v.tooth;}
   if(typeof GraphicsMotion!=='undefined'&&(typeof Equipment3D!=='undefined'&&Equipment3D.active()||H.meta.meshy))this.motion=GraphicsMotion.attach(root,H.meta.track);
+  if(typeof Meshy3D!=='undefined')root.userData.tankId=Meshy3D.label(L,(parts===2||H.meta.meshy)&&(parts===1||Wkit.meta.meshy)?'meshy':'kit');
   root.scale.setScalar(1.65);this.model=root;this.scene.add(root);
   this.bounds=null;
   if(this.defender){
@@ -97,8 +111,11 @@ window.LunarShowroom=class {
   }
   root.rotation.y=this.yaw;this.size();
  }
- draw(){if(!this.renderer||!this.camera||!this.model)return;this.model.rotation.y=this.yaw;const quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),now=performance.now()/1000,dt=Math.min(.05,Math.max(0,now-(this.motionLast||now)));this.motionLast=now;if(this.motion){this.motion.step(dt,{},quiet);this.motion.uniforms.uCharge.value=quiet?0:.12+.10*Math.sin(now*2);}if(this.defender&&!quiet)for(const a of this.animations||[])a.m.rotation[a.axis]=performance.now()/1000*a.spd;const narrow=Math.min(1,Math.max(.65,this.camera.aspect));const viewZoom=this.zoom*(this.legendary?1.15:1),d=11.2/viewZoom/narrow;this.camera.position.set(5.5/viewZoom,(3.5+this.tilt*5)/(this.legendary?Math.sqrt(viewZoom):1),d);this.camera.lookAt(0,.65,0);
-  if(this.bounds){
+ draw(){const wait=!this.model&&this.waitFx&&this.waitFx.visible;if(!this.renderer||!this.camera||!this.model&&!wait)return;const quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),now=performance.now()/1000,dt=Math.min(.05,Math.max(0,now-(this.motionLast||now)));this.motionLast=now;
+  if(wait){const k=quiet?.5:(now*.42)%1,W=this.waitFx.userData;W.scan.position.y=.06+k*1.86;W.scan.scale.setScalar(1-.14*k);W.scan.material.opacity=.46*Math.sin(k*Math.PI);W.pad.material.opacity=quiet?.5:.42+.16*Math.sin(now*2.2);}
+  else this.model.rotation.y=this.yaw;
+  if(this.motion){this.motion.step(dt,{},quiet);this.motion.uniforms.uCharge.value=quiet?0:.12+.10*Math.sin(now*2);}if(this.defender&&!quiet)for(const a of this.animations||[])a.m.rotation[a.axis]=performance.now()/1000*a.spd;const narrow=Math.min(1,Math.max(.65,this.camera.aspect));const viewZoom=this.zoom*(this.legendary?1.15:1),d=11.2/viewZoom/narrow;this.camera.position.set(5.5/viewZoom,(3.5+this.tilt*5)/(this.legendary?Math.sqrt(viewZoom):1),d);this.camera.lookAt(0,.65,0);
+  if(this.bounds&&this.model){
    const co=Math.cos(this.yaw),si=Math.sin(this.yaw),c=this.center,focus=new THREE.Vector3(c[0]*co+c[2]*si,c[1],-c[0]*si+c[2]*co);
    this.camera.position.add(focus);this.camera.lookAt(focus);this.camera.updateMatrixWorld(true);
    const v=new THREE.Vector3();let fit=1;
@@ -110,8 +127,10 @@ window.LunarShowroom=class {
  view(kind){this.wake=performance.now();const v={front:[-1.02,.14],quarter:[-.20,.20],side:[.55,.12],rear:[1.60,.20]}[kind];if(v){this.userView=true;this.auto=false;this.yaw=v[0];this.tilt=v[1];this.draw();}}
  rotate(n){this.wake=performance.now();this.userView=true;this.auto=false;this.yaw+=n*.32;this.draw();}
  setZoom(v){this.wake=performance.now();this.userView=true;this.zoom=Math.max(.72,Math.min(this.parts===2&&this.defender?2.1:1.6,v));this.draw();}
- fallback(){cancelAnimationFrame(this.raf);this.raf=0;const panel=this.el.closest('.web-stage,.hero-machine,.g-stage');panel?.querySelectorAll('[data-stage-rotate],[data-stage-zoom],[data-stage-view],[data-rotate],[data-zoom]').forEach(b=>b.disabled=true);const note=panel?.querySelector('.scene-footnote');if(note)note.textContent='2D preview · 3D inspection is unavailable on this device.';if(this.renderer){this.renderer.dispose();this.renderer.domElement.remove();this.renderer=null;}if(this.L&&typeof drawMachinePreview==='function'){
-  this.el.innerHTML='';const c=document.createElement('canvas'),w=this.el.clientWidth||320,h=this.el.clientHeight||260;c.width=w;c.height=h;this.el.append(c);drawMachinePreview(c.getContext('2d'),w,h,this.L);return;
+ fallback(){cancelAnimationFrame(this.raf);this.raf=0;const panel=this.el.closest('.web-stage,.hero-machine,.g-stage');panel?.querySelectorAll('[data-stage-rotate],[data-stage-zoom],[data-stage-view],[data-rotate],[data-zoom]').forEach(b=>b.disabled=true);const note=panel?.querySelector('.scene-footnote');if(note)note.textContent='2D preview · 3D inspection is unavailable on this device.';if(this.renderer){this.renderer.dispose();this.renderer.domElement.remove();this.renderer=null;}if(typeof drawMachinePreview==='function'){   // the game page: the picture of this loadout (it waits like every other picture: js/meshy3d.js tankPicture), or the empty pad before any loadout is set
+  this.el.innerHTML='';const c=document.createElement('canvas'),w=this.el.clientWidth||320,h=this.el.clientHeight||260;c.width=w;c.height=h;this.el.append(c);
+  if(this.L&&typeof tankPicture==='function')tankPicture(c.getContext('2d'),w,h,this.L);else if(this.L)drawMachinePreview(c.getContext('2d'),w,h,this.L);else{c.dataset.tank='wait';if(typeof tankWait2D==='function')tankWait2D(c.getContext('2d'),w/2,h*.64,Math.min(w*.36,h*.62));}
+  return;
  }const C=this.L?.c.c||'vanguard';this.el.innerHTML=`<div class="scene-fallback"><svg viewBox="0 0 600 390" role="img" aria-label="${C} machine, 2D inspection fallback"><defs><linearGradient id="wm-metal" x2=".7" y2="1"><stop stop-color="#8098a8"/><stop offset=".5" stop-color="#304a5d"/><stop offset="1" stop-color="#102333"/></linearGradient></defs><ellipse cx="300" cy="300" rx="235" ry="55" fill="#0c141c" stroke="#465f70"/><g transform="translate(300 190) rotate(-18)"><path d="M-165-35h330v125h-330z" fill="#101922" stroke="#5d849a" stroke-width="4"/><path d="M-135-100h270v55h-270zM-135 65h270v55h-270z" fill="#14212d" stroke="#467386" stroke-width="5"/><path d="M-100-80h140l90 65v85H-100L-140 30v-65z" fill="url(#wm-metal)" stroke="#7797a8" stroke-width="3"/><path d="M-25-40h72l38 50-38 45h-72l-25-45z" fill="#618092" stroke="#b3d8df" stroke-width="3"/><path d="M40-9h170v28H40z" fill="#263f51" stroke="#a2c2d0" stroke-width="3"/><path d="M-110-65h110M-110 50h100" stroke="#ff9459" stroke-width="4"/></g></svg></div>`;}
  disposeGeometry(root){if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(root);const seen=new Set();root.traverse(o=>{if(o.geometry&&!o.geometry.userData.hfShared&&!seen.has(o.geometry)){seen.add(o.geometry);o.geometry.dispose();}});}
  dispose(){this.listeners?.forEach(fn=>fn());this.listeners=[];if(this.envStage){this.scene.remove(this.envStage.group);this.envStage.dispose();this.envStage=null;}this.hfRelease?.();this.hfRelease=null;this.disposed=true;cancelAnimationFrame(this.raf);this.resize.disconnect();this.observer.disconnect();document.removeEventListener('visibilitychange',this.onVisibility);if(this.scene){this.disposeGeometry(this.scene);this.scene.traverse(o=>{for(const m of [].concat(o.material||[]))if(!m.userData.hfShared)m.dispose();});}this.contactTexture?.dispose();this.renderer?.dispose();}

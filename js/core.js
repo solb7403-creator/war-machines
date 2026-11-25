@@ -189,6 +189,27 @@ function store(){save._ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stri
 // record from each reply (applyEco). Outside Telegram (or with LUNAR_LOCAL_ECO, used by the older tests) the phone runs
 // the same rules from rules.js on its own save, instantly.
 const SRV_ECO=WEB_EDITION||(IN_TG&&!window.LUNAR_LOCAL_ECO);
+// ---- is the tank this device holds the pilot's CURRENT tank? (owner, Nov 20: no old chassis or gun at login) ----
+// Proven means the server said so in this launch. The website builds its save from the server's answer before the game
+// starts (web/boot.js), and where the device runs the economy itself nothing can be newer: proven from the first frame.
+// In Telegram the copy on the device, and the copy in Telegram's cloud, may be older than a change made on another phone or
+// on the website, and nothing kept on the device can prove otherwise (a revision it remembers only says what the server held
+// last time). So the tank waits for this launch's first /api/sync answer: main.js asks for it the moment the game starts,
+// beside the Telegram cloud read, and js/net.js doSync applies the answer once the cloud copy has been compared (cloudCompared).
+// If the server cannot be reached, or has not answered LOADOUT_WAIT_MS after it was asked, the newest copy on hand shows
+// instead (device or Telegram cloud, whichever is newer: main.js boot). tankShow (js/meshy3d.js) reads this.
+// LUNAR_LOADOUT_WAIT_MS: a test holds the server's answer longer than that on purpose.
+const LOADOUT_WAIT_MS=Number(window.LUNAR_LOADOUT_WAIT_MS)||6000;
+let loadoutOk=!(IN_TG&&SRV_ECO),loadoutServer=false,loadoutCloud=!CLOUD_OK,cloudDone=null;
+const cloudCompared=loadoutCloud?Promise.resolve():new Promise(r=>{cloudDone=r;});
+const loadoutProven=()=>loadoutOk;
+// how: 'cloud' the Telegram cloud copy has been compared; 'server' the answer is in; 'unreachable' the request failed; 'late' no answer in time
+function loadoutProve(how){
+ if(how==='cloud'){loadoutCloud=true;if(cloudDone){cloudDone();cloudDone=null;}}else loadoutServer=true;
+ if(loadoutOk||!loadoutServer||!loadoutCloud)return;
+ loadoutOk=true;try{dispatchEvent(new Event('lunar-loadout-ready'));}catch(e){}
+ if(typeof uiDirty==='function')uiDirty();
+}
 function dayId(d){return d.toISOString().slice(0,10);}
 const dayNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0))/864e5);
 const weekNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0)-4*864e5)/(7*864e5));

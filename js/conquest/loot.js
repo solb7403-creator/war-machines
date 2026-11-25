@@ -16,10 +16,13 @@ function lines(loot){if(!loot)return [];const out=[],I=G.ITEMS,P=G.PARTS,F=G.FRA
  for(const [k,n] of Object.entries(loot.swap||{}))out.push({t:String(P[k]?.n||k).toUpperCase()+x(n)+' · TODAY\'S RESEARCH PART ALREADY FOUND: AS A FRAGMENT',r:1});   // the daily limit (rules.js CQ_PART_DAY); the fragment shows on its own line
  for(const [k,n] of Object.entries(loot.fr||{}))out.push({t:(F[k]?.n||k)+' FRAGMENT'+x(n),r:F[k]?.r??0});
  for(const [k,n] of Object.entries(loot.mn||{}))out.push({t:'+'+(n|0)+' '+String(M[k]?.s||k).toUpperCase()+' (CARRIED)',r:MR[k]|0});
- for(const [k,n] of Object.entries(loot.it||{}))out.push({t:String(I[k]?.n||k).toUpperCase()+x(n),r:I[k]?.r??1});
+ for(const [k,n] of Object.entries(loot.it||{}))out.push({t:String(I[k]?.n||k).toUpperCase()+x(n),r:I[k]?.r??1,ico:k});   // ico: the consumable's drop sprite (5E-2d2; img/conquest/item-*.png, rendered from js/conquest/kit/items.js)
  for(const k of loot.full||[])out.push({t:String(I[k]?.n||P[k]?.n||k).toUpperCase()+' · FULL',r:0});
  return out.sort((a,b)=>b.r-a.r);}
 const best=loot=>lines(loot)[0]||null;
+// The drop sprite of a consumable (Session 5E-2d2, the 5E addendum's hook): one <i> the stylesheet paints with the item's 64 px icon.
+// It carries no text, so every label reads exactly as before. null without a document (the node tests).
+function icon(k){if(typeof document==='undefined'||!G.ITEMS[k])return null;const i=document.createElement('i');i.className='cq-ico';i.dataset.item=k;i.setAttribute('aria-hidden','true');return i;}
 // today's earned research parts (the Worker's count, rules.js CQ_PART_DAY: one a day per account, the UTC day)
 const DAY=()=>typeof CQ_PART_DAY!=='undefined'?CQ_PART_DAY:1;
 function partDay(s,now=Date.now()){const pd=s?.inv?.pd,d=Math.floor(now/864e5);return {n:pd&&(pd.d|0)===d?Math.min(DAY(),pd.n|0):0,of:DAY()};}
@@ -47,7 +50,7 @@ function screen(d,s,{el,button,use,pick,picked}){
  if(!v){el('p','','Online verification required: loot is rolled and kept by Command.',d);return;}
  const sec=t=>{const x=el('section','cq-loot-sec',null,d);el('h3','',t,x);return x;};
  const c=sec('CONSUMABLES · CONQUEST ONLY · MAX '+(typeof CQ_ITEM_MAX!=='undefined'?CQ_ITEM_MAX:10)+' EACH');
- for(const k of CQ_ITEM_ORDER){const I=CQ_ITEMS[k],n=v.it?.[k]|0,cd=cooldown(s,k),row=el('div','cq-loot-row',null,c);el('b','',I.n.toUpperCase()+' ×'+n,row);el('small','',I.d+(cd?' · RECHARGING '+cd+'s':''),row);
+ for(const k of CQ_ITEM_ORDER){const I=CQ_ITEMS[k],n=v.it?.[k]|0,cd=cooldown(s,k),row=el('div','cq-loot-row cq-loot-item',null,c);{const ic=icon(k);if(ic)row.append(ic);}el('b','',I.n.toUpperCase()+' ×'+n,row);el('small','',I.d+(cd?' · RECHARGING '+cd+'s':''),row);
   if(use){const u=button('USE',()=>use(k),'cq-loot-use');u.disabled=!n||cd>0;row.append(u);}if(pick){const p=button(picked===k?'IN SLOT':'SET SLOT',()=>pick(k),'cq-loot-pick');p.disabled=!n||picked===k;row.append(p);}}
  el('small','cq-loot-note','Use them in the field or in an operation (never inside your town, Arcade or PvP). SHIELD long-press or Q opens / uses the slot; keys 1-4 use each one.',c);
  const p=sec('RESEARCH PARTS · FOR THE SCIENCE LAB');el('p','',CQ_PART_ORDER.map(k=>CQ_PARTS[k].n+' '+(v.pt?.[k]|0)+'/'+CQ_PART_MAX).join(' · '),p);
@@ -61,5 +64,5 @@ function screen(d,s,{el,button,use,pick,picked}){
  const o=sec('PUBLISHED ODDS');for(const r of table())el('p','',r.label.toUpperCase()+' · '+r.t,o);
  if(v.log?.length){const g=sec('RECENT FINDS');for(const e of v.log.slice().reverse().slice(0,6))el('p','',text(e)||'—',g);}
 }
-root.ConquestLoot=Object.freeze({COLORS,lines,best,text,slotItem,owns,cooldown,pity,table,screen,partDay,limitText});
+root.ConquestLoot=Object.freeze({COLORS,lines,best,text,slotItem,owns,cooldown,pity,table,screen,partDay,limitText,icon});
 })(globalThis);

@@ -1,0 +1,96 @@
+{
+ "errors": [],
+ "shots": {
+  "hive-redoubt-01": {
+   "from": [
+    1256.838071024064,
+    968.6506994304966
+   ],
+   "look": [
+    1240,
+    928
+   ],
+   "calls": 54,
+   "tris": 211318,
+   "programs": 11
+  },
+  "hive-staging-01": {
+   "from": [
+    1230,
+    1047
+   ],
+   "look": [
+    1230,
+    1003
+   ],
+   "calls": 69,
+   "tris": 327072,
+   "programs": 14
+  },
+  "hive-west-depot": {
+   "from": [
+    994,
+    996
+   ],
+   "look": [
+    994,
+    952
+   ],
+   "calls": 45,
+   "tris": 142399,
+   "programs": 14
+  },
+  "hive-crossroads": {
+   "from": [
+    1116.838071024064,
+    1002.6506994304966
+   ],
+   "look": [
+    1100,
+    962
+   ],
+   "calls": 60,
+   "tris": 295057,
+   "programs": 14
+  },
+  "cover-dust-switchback": {
+   "from": [
+    892.2836140246613,
+    956.4805029709527
+   ],
+   "look": [
+    920,
+    945
+   ],
+   "calls": 42,
+   "tris": 87957,
+   "programs": 14
+  },
+  "cover-basin-crescent": {
+   "from": [
+    1052.7867965644036,
+    870.2132034355964
+   ],
+   "look": [
+    1074,
+    849
+   ],
+   "calls": 34,
+   "tris": 81434,
+   "programs": 14
+  },
+  "cover-ash-approach": {
+   "from": [
+    1252.7867965644036,
+    828.7867965644035
+   ],
+   "look": [
+    1274,
+    850
+   ],
+   "calls": 30,
+   "tris": 121807,
+   "programs": 14
+  }
+ }
+}

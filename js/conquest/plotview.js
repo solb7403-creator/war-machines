@@ -64,7 +64,7 @@ function scene3d(view){const S=view.style,T=view.T;if(!S||view.renderer.isConque
  const cam=new T.PerspectiveCamera(50,1,.5,2000);const g={terrain:new T.Group(),build:new T.Group(),walls:new T.Group(),turrets:new T.Group(),homes:new T.Group(),holo:new T.Group(),grid:new T.Group(),fx:new T.Group(),actors:new T.Group()};for(const v of Object.values(g))sc.add(v);
  const im=(geo,n)=>{const m=new T.InstancedMesh(geo,S.MAT.solid,n);m.count=0;m.frustumCulled=false;m.visible=false;return m;};
  const crewN=S.low?8:16,crew=new T.InstancedMesh(k.person(),S.MAT.solid,crewN),rovers=new T.InstancedMesh(k.rover(),S.MAT.solid,S.low?2:4);crew.frustumCulled=rovers.frustumCulled=false;g.actors.add(crew,rovers);
- const foes={r:im(k.foe('r'),80),s:im(k.foe('s'),48),d:im(k.foe('d'),40),w:im(k.foe('w'),160),b:im(k.foe('b'),16)};for(const m of Object.values(foes))g.actors.add(m);
+ const foes={r:im(k.foe('r'),80),s:im(k.foe('s'),48),d:im(k.foe('d'),40),w:im(k.foe('w'),160),b:im(k.foe('b'),16)};for(const m of Object.values(foes)){if(S.MAT.par)m.material=S.MAT.par;g.actors.add(m);}   /* the raiders wear the Parasite material (red rim) */
  const fx={};for(const [n,[col,w,em]] of Object.entries(FX_LOOK)){const b=new S.Bld();if(n==='flame')b.add(S.G.cone6,k.M(0,0,.5,Math.PI/2,0,0,.5,1,.5),new T.Color(col),em);else b.box(0,0,.5,w,w,1,new T.Color(col),em);fx[n]=im(b.geometry(),48);g.actors.add(fx[n]);}
  return {S,T,k,sc,cam,g,crew,rovers,foes,fx,meshes:new Map(),tur:new Map(),wim:new Map(),him:new Map(),wgeo:new Map(),hgeo:new Map(),tgeo:new Map(),keys:{},anim:[]};}
 // Dispose a group's own geometries before clearing it (shared style geometries and cached kit geometries are kept).
@@ -410,7 +410,7 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  const R=X.R;if(!R){if(X.drill)drillStep(dt);draw2d();return;}const {view}=X.ctx,T=R.T,c=X.cam,host=view.host;
  // Draw only inside the visible stage with its own aspect, so cellAt() (stage rect) matches the picture exactly.
  const hr=host.getBoundingClientRect(),sr=X.stage.getBoundingClientRect(),w=Math.max(1,sr.width||390),h=Math.max(1,sr.height||400);if(R.cam.aspect!==w/h){R.cam.aspect=w/h;R.cam.updateProjectionMatrix();}
- if(X.view==='drive'&&X.drive&&!X.tour){driveStep(dt);if(!X)return;}if(X.live)liveStep(dt);placeCam(dt);driveSee(R,dt);driveUi();if(X.tank&&!X.visit&&s?.plot&&s.plot!==X.flagPlot){X.flagPlot=s.plot;tankFlag(R,s.plot);}
+ if(X.view==='drive'&&X.drive&&!X.tour){driveStep(dt);if(!X)return;}if(X.live)liveStep(dt);placeCam(dt);tankSync(R);driveSee(R,dt);driveUi();if(X.tank&&!X.visit&&s?.plot&&s.plot!==X.flagPlot){X.flagPlot=s.plot;tankFlag(R,s.plot);}
  for(const o of R.meshes.values()){const hd=o.o.userData.head;if(hd)hd.rotation.y=hd.userData.aim??(X.clock*(o.o.userData.radar?1:.4))%(Math.PI*2);}
  const M4=R._fm||(R._fm=new T.Matrix4()),_q=R._fq||(R._fq=new T.Quaternion()),_v=R._fv||(R._fv=new T.Vector3()),_s=R._fs||(R._fs=new T.Vector3()),up=R._up||(R._up=new T.Vector3(0,1,0));
  for(const t of R.tur.values()){for(const it of t.items){const a=it.aim??(X.clock*.4+it.spin)%(Math.PI*2);if(it.kick)it.kick=Math.max(0,it.kick-dt*5);
@@ -437,9 +437,22 @@ function crewStep(R,p){if(!p)return;const T=R.T,mt=R._m||(R._m=new T.Matrix4()),
 // Leaving through the gate pad (or LEAVE) returns to the shared world at the pad. Drills replay here too.
 const TOUR_KEY='lunar-cq-town-tour-v1',SPEED=15,TANK_R=2.1;
 const reduced=()=>!!root.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-function tankModel(R){const v=X.ctx.view.vehicle;let t=null;try{if(v&&v.children.length){const ud=v.userData;v.userData={};try{t=v.clone(true);}finally{v.userData=ud;}const ob=t.getObjectByName('cq-tank-banner');if(ob)ob.parent.remove(ob);t.position.set(0,0,0);t.rotation.set(0,0,0);t.quaternion.identity();t.scale.copy(v.scale);}}catch(_){t=null;}
- if(!t){const b=new R.S.Bld();b.box(0,1.1,0,3.4,1.4,5.2,R.k.C.mid);b.box(0,2.2,-.3,2.2,.9,2.4,R.k.C.dark);b.box(0,2.3,2.2,.35,.35,3,R.k.C.dark);t=b.mesh();}
- t.traverse(o=>{o.frustumCulled=false;o.userData.noPick=true;});return t;}
+// The town's tank is the pilot's real tank (owner, Nov 11): a copy of the world view's vehicle (chassis, weapon, paint, plates,
+// fittings), kept in step with it. X.tank is a holder that stays for the visit; tankSync refills it whenever the world rebuilds
+// its vehicle (a model file that lands while the pilot stands in the town: the world does not tick under this screen, so the
+// town asks it), and while that vehicle waits (js/meshy3d.js tankShow: the loadout or its model files are still on their way)
+// the holder is hidden and a holo marker stands in its place. Never a box, never a stand-in. Geometry and materials stay the
+// world vehicle's own (nothing here disposes them); each mesh keeps its Meshy render hook, which a plain clone() drops.
+function tankModel(R){const t=new R.T.Group();t.userData.build=-1;X.tankWait=null;tankSync(R,t);return t;}
+function tankSync(R,t=X.tank){const view=X.ctx.view,v=view.vehicle;if(!t||!v)return;
+ const gen=typeof Meshy3D!=='undefined'?Meshy3D.generation:0,now=performance.now();if(gen!==X.tankGen||now>=(X.tankDue||0)){X.tankGen=gen;X.tankDue=now+500;try{view.syncLoadout();}catch(_){}}
+ const wait=view.vehicleShow==='wait'||!v.children.length;
+ if(t.userData.build!==view.vehicleBuild){t.userData.build=view.vehicleBuild;for(const c of t.children.slice())if(c.name!=='cq-town-tank-banner')t.remove(c);t.scale.copy(v.scale);delete t.userData.tankId;
+  if(!wait)try{const dup=o=>{const ud=o.userData;o.userData={};let c;try{c=o.clone(false);}finally{o.userData=ud;}c.userData={noPick:true};if(ud.meshy)c.userData.meshy={asset:ud.meshy.asset,U:ud.meshy.U,kind:ud.meshy.kind};if(ud.meshyGroup)c.userData.meshyGroup=true;if(Object.prototype.hasOwnProperty.call(o,'onBeforeRender'))c.onBeforeRender=o.onBeforeRender;c.frustumCulled=false;for(const k of o.children)if(k.name!=='cq-tank-banner')c.add(dup(k));return c;};
+   for(const k of v.children)if(k.name!=='cq-tank-banner')t.add(dup(k));if(v.userData.tankId)t.userData.tankId=v.userData.tankId;}catch(_){for(const c of t.children.slice())if(c.name!=='cq-town-tank-banner')t.remove(c);}}
+ t.visible=!wait;
+ if(wait&&!X.tankWait&&R.S.holoMarker){const m=R.S.holoMarker(0x8fdcf2,{height:4.6,radius:2.3,icon:false});m.userData.tankWait=true;m.traverse(o=>{o.userData.noPick=true;o.frustumCulled=false;});R.g.actors.add(m);X.tankWait=m;}
+ if(X.tankWait){X.tankWait.visible=wait;X.tankWait.position.copy(t.position);}}
 // the town tank's own banner (built from the plot, kept in sync; the world tank's banner geometry is never shared)
 function tankFlag(R,p){if(!X.tank||!p)return;const key=p.banner?JSON.stringify(p.banner):'';if(X.tankFlagKey===key)return;X.tankFlagKey=key;const old=X.tank.getObjectByName('cq-town-tank-banner');if(old){X.tank.remove(old);old.geometry?.dispose?.();}if(!p.banner)return;const m=R.k.banner(p.banner,.42).mesh();m.name='cq-town-tank-banner';m.position.set(-2.1,1.1,-.9);m.rotation.y=Math.PI;m.frustumCulled=false;X.tank.add(m);}
 // what blocks a 4 m cell for the tank: off the plot, blocked terrain (rim, water, cliffs, rocks, vents, crevasses), walls
@@ -460,7 +473,14 @@ function padOf(p,block){const C0=TK.ccCenter(p),c=P.GRID.cell,ci=cellOf(C0.x),cj
 function startDrive(){const R=X?.R,p=plotOf();if(!R||!p)return;const owner=!X.visit,block=blockMap(p,owner),pad=padOf(p,block),C0=TK.ccCenter(p);
  if(!X.tank){X.tank=tankModel(R);R.g.actors.add(X.tank);}X.tankFlagKey=null;if(!X.visit)tankFlag(R,p);
  const h=Math.atan2(C0.x-pad.x,C0.z-pad.z);   // 5D: face the Command Center (along the road, or from the fallback pad south of it; the old fixed heading looked into the reactors at CC10)
- X.drive={x:pad.x,z:pad.z,h,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,plot:p,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};X.chase={dist:31,yaw:h+Math.PI};
+ X.drive={x:pad.x,z:pad.z,h,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,plot:p,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};
+ // 5E-2d2 (reviewer note: the drive view opened with the tank behind a roof): the camera opens straight behind the hull only when
+ // nothing stands on its line to the tank (three lines a hull's width apart; a wall counts when it is close enough to rise into the
+ // line, a home out to 16 m, a building all the way); otherwise it opens from the nearest side that is clear, or the clearest one.
+ // The hull still faces the Command Center, and the camera is the pilot's to turn from there, as before.
+ let cy=h+Math.PI;{const occ=P.occupancy(p),sight=yaw=>{let n=0;for(let d=4;d<=26;d+=2)for(const o of [-2.4,0,2.4]){const x=pad.x+Math.sin(yaw)*d+Math.cos(yaw)*o,z=pad.z+Math.cos(yaw)*d-Math.sin(yaw)*o,i=cellOf(x),j=cellOf(z);if(!block(i,j))continue;const k=occ.get(P.key(i,j));if(d<=(k==='wall'?8:k?26:16))n+=d<14?3:1;}return n;};
+  let best=sight(cy);for(const a of [.42,-.42,.84,-.84,1.26,-1.26,1.68,-1.68,2.2,-2.2]){if(!best)break;const n=sight(h+Math.PI+a);if(n<best){best=n;cy=h+Math.PI+a;}}}
+ X.chase={dist:31,yaw:cy};
  // the gate pad: a lit ring you drive back onto to leave (the shared world's Command Gate on this side)
  if(X.padMesh){X.padMesh.parent?.remove(X.padMesh);X.padMesh.traverse(o=>o.geometry?.dispose?.());}{const S=R.S,y=P.heightAt(p.site,pad.x,pad.z),b=new S.Bld(),fx=new S.Fx(),grp=new R.T.Group();b.add(S.G.hex,R.k.M(pad.x,y,pad.z,0,0,0,5.2,.25,5.2),R.k.C.dark2);b.add(S.G.hex,R.k.M(pad.x,y+.27,pad.z,0,0,0,4.6,.05,4.6),R.k.C.dark);b.add(S.G.hex,R.k.M(pad.x,y+.3,pad.z,0,0,0,4.75,.03,4.75),R.k.C.cyan,.3);b.add(S.G.hex,R.k.M(pad.x,y+.31,pad.z,0,0,0,4.45,.04,4.45),R.k.C.dark);for(const sx of [-1,1]){b.box(pad.x+sx*6,y+2.2,pad.z,.6,4.4,.9,R.k.C.dark);b.box(pad.x+sx*6,y+4.6,pad.z,.9,.3,1.2,R.k.C.cyan,1);}fx.ringGlow(pad.x,pad.z,y+.7,4.8,1,[.012,.1,.13],32);grp.add(b.mesh(),fx.mesh());X.padMesh=grp;R.g.actors.add(grp);}
  if(!X.visit&&!reduced()){let seen=false;try{seen=localStorage.getItem(TOUR_KEY)==='1';}catch(_){seen=true;}if(!seen){X.tour={t:0,dur:6};try{localStorage.setItem(TOUR_KEY,'1');}catch(_){}}}}
@@ -548,6 +568,7 @@ function structBox(id,p,R){const c=P.GRID.cell;
 function townFxStep(R,dt){const D=X.drill,F=D?townFx(R):R.dfx;if(!F)return;const p=plotOf();if(D&&R.dbox?.d!==D)R.dbox={d:D,m:new Map()};F.begin(dt);
  if(D&&p){const fr=D.r.frames[D.fi],list=fr&&fr.s||[],cap=R.S.low?12:36,M=R.dbox.m;let n=0;   // damage stages on standing damaged structures (36 a frame, 12 on LOW; FX3D also caps wear's share of the batch)
   for(let i=0;i<list.length&&n<cap;i++){const s2=list[i],id=s2[0],hp=s2[1];if(hp>=70||hp<=0||D.gone.has(id))continue;let b=M.get(id);if(b===undefined){b=structBox(id,p,R);if(b){let h=0;for(let q=0;q<id.length;q++)h=(h*31+id.charCodeAt(q))|0;b.seed=h;}M.set(id,b);}if(!b)continue;n++;F.wear(b.mat,b.x,b.y+b.hh,b.z,b.hw,b.hh,b.hd,0,hp/100,b.seed);}}   // a structure's box is worked out once a replay
+ if(D?.ships&&F.thrustDust)drillShipsFx(D,F,dt);
  F.end();}
 function startReplay(){const s=X?.ctx.view.authority?.state,p=s?.plot,e=p?.log?.[0];if(!e||X.simulating)return;const g=P.drillGen(p,e.seed,{threat:e.threat,yieldEvery:25}),t0=performance.now();let cpu=0;X.simulating=true;
  const pump=()=>{if(!X){return;}const a=performance.now();let r;do{r=g.next();}while(!r.done&&performance.now()-a<8);cpu+=performance.now()-a;
@@ -558,10 +579,26 @@ function hideStruct(id,p){const R=X.R;if(!R)return;if(id.startsWith('w:')){const
  const he=R.hcell?.get(id);if(he){he[0].setMatrixAt(he[1],new R.T.Matrix4().makeScale(0,0,0));he[0].instanceMatrix.needsUpdate=true;return;}
  for(const t of R.tur.values())for(const it of t.items)if(it.id===id){it.dead=true;t.base.setMatrixAt(it.n,new R.T.Matrix4().makeScale(0,0,0));t.base.instanceMatrix.needsUpdate=true;return;}
  const e=R.meshes.get(id);if(e)e.o.visible=false;}
-function drillStep(dt){const D=X.drill,R=X.R,p=plotOf();D.t+=dt*1.6;const fr=D.r.frames;while(D.fi<fr.length-1&&fr[D.fi+1].t<=D.t)D.fi++;const a=fr[D.fi]||{f:[],s:[]},b=fr[Math.min(fr.length-1,D.fi+1)]||a,f=b.t>a.t?Math.max(0,Math.min(1,(D.t-a.t)/(b.t-a.t))):0;
+// Session 5E-2d2 (owner, Nov 14 + Nov 21): the Parasite dropships of a recorded raid (js/conquest/dropship.js). The plan is made
+// from the finished recording and never read back: every unit still appears at the time and the place the simulation gave it;
+// before that moment it is only shown riding its ship to that exact place. Each raid's ships are patched from its seed.
+function drillShips(D,R,p){D.ships=null;const DS=root.ConquestDropship,WK=root.ConquestWorldKit;if(!DS||!WK||!R||!p)return;
+ try{const plan=DS.planDrill(P,p,D.r,{seed:(D.log?.seed|0)||(D.r.seed|0)||1,hit:X.dropshipHit||null});   /* X.dropshipHit {shipKey: time}: nothing shoots a ship in the drill today; the capture tool (and a later session) shows one shot down with it */if(!plan.ships.length)return;
+  if(!R.ships||R.ships.variant!==plan.variant){if(R.ships)R.ships.stage.dispose();R.ships={variant:plan.variant,stage:DS.stage(R.S,WK.kit(R.S),{variant:plan.variant,max:8})};R.g.actors.add(R.ships.stage.group);}
+  R.ships.stage.clear();D.ships=plan;D.shipEv=[];D.shipFx=0;}catch(e){D.ships=null;}}
+function drillShipsDraw(D,R,cnt,m){const pl=D.ships,DS=root.ConquestDropship,list=[];D.shipNow=list;
+ for(const s of pl.ships){const q=s.flight.pose(D.t);if(!q.vis)continue;list.push({key:s.key,pose:q,ship:s});
+  if(D.t<s.at&&s.flight.hitAt===null)for(const u of s.units){const im=R.foes[u.k];if(!im||cnt[u.k]>=im.instanceMatrix.count)continue;const o=DS.unitPose(pl,u.id,D.t);if(!o)continue;m.makeRotationY(o.yaw);m.setPosition(o.x,o.y,o.z);im.setMatrixAt(cnt[u.k]++,m);}}
+ for(const e of R.ships.stage.draw(list))D.shipEv.push(e);}
+// the ships' dust, hit, crash and fire (between the town effects' begin and end)
+function drillShipsFx(D,F,dt){const tick=(D.shipFx+=dt)>=.12;if(tick)D.shipFx=0;
+ for(const e of D.shipEv.splice(0)){const big=e.kind==='hauler'?1:.6;if(e.k==='down')F.thrustDust(e.x,e.y,e.z,9*big,1.4);else if(e.k==='hit'){F.blast(e.x,e.y+1,e.z,4*big,1);F.killBurst(e.x,e.y+1.5,e.z,4*big);}else if(e.k==='crash'){F.blast(e.x,e.y+.5,e.z,7*big,1);F.shatter('parasite',e.x,e.y,e.z,5*big,5*big,0,0);}}
+ for(const it of D.shipNow||[]){const q=it.pose,big=q.kind==='hauler'?1:.6,gy=it.ship.flight.pad.y;if(q.fire>0){F.hullFlame(q.x,q.y+1.2*big,q.z,4.2*big,q.fire);if(tick)F.hullSmoke(q.x,q.y+2*big,q.z,4*big);}
+  else if(tick&&q.dust>.05&&q.y-gy<16)F.thrustDust(q.x,gy,q.z,7*big,q.dust);}}
+function drillStep(dt){const D=X.drill,R=X.R,p=plotOf();D.t+=dt*(X.drillRate??1.6);if(R&&D.ships===undefined)drillShips(D,R,p);   /* X.drillRate: the replay's speed (1.6; the capture tool holds a moment with 0) */const fr=D.r.frames;while(D.fi<fr.length-1&&fr[D.fi+1].t<=D.t)D.fi++;const a=fr[D.fi]||{f:[],s:[]},b=fr[Math.min(fr.length-1,D.fi+1)]||a,f=b.t>a.t?Math.max(0,Math.min(1,(D.t-a.t)/(b.t-a.t))):0;
  const bm=new Map(b.f.map(q=>[q[0],q]));D.now=a.f.map(q=>{const n=bm.get(q[0]);return n?[q[0],q[1],q[2]+(n[2]-q[2])*f,q[3]+(n[3]-q[3])*f]:q;});
  const ev=D.r.events;while(D.ei<ev.length&&ev[D.ei].t<=D.t){const e=ev[D.ei++];if(e.k==='shot')D.shots.push({...e,life:e.ty==='flame'?.35:.25});else if(e.k==='destroyed'){D.gone.add(e.id);const F=R&&townFx(R),b=F&&(R.dbox?.m.get(e.id)||structBox(e.id,p,R));if(b){F.shatter(b.mat,b.x,b.y,b.z,b.size,b.hh*2,0,0);if(b.hot)F.blast(b.x,b.y,b.z,b.size,1);}hideStruct(e.id,p);}}D.shots=D.shots.filter(x=>(x.life-=dt)>0);
- if(R){const T=R.T,m=R._d||(R._d=new T.Matrix4()),sv=R._dv||(R._dv=new T.Vector3()),cnt={r:0,s:0,d:0,w:0,b:0};for(const [,kind,x,z] of D.now){const im=R.foes[kind];if(!im||cnt[kind]>=im.instanceMatrix.count)continue;m.makeRotationY(Math.atan2(-x,-z));m.setPosition(x,(kind==='d'?7:0)+P.heightAt(p.site,x,z),z);im.setMatrixAt(cnt[kind]++,m);}for(const [kk,im] of Object.entries(R.foes)){im.count=cnt[kk];im.visible=cnt[kk]>0;im.instanceMatrix.needsUpdate=true;}
+ if(R){const T=R.T,m=R._d||(R._d=new T.Matrix4()),sv=R._dv||(R._dv=new T.Vector3()),cnt={r:0,s:0,d:0,w:0,b:0};for(const [,kind,x,z] of D.now){const im=R.foes[kind];if(!im||cnt[kind]>=im.instanceMatrix.count)continue;m.makeRotationY(Math.atan2(-x,-z));m.setPosition(x,(kind==='d'?7:0)+P.heightAt(p.site,x,z),z);im.setMatrixAt(cnt[kind]++,m);}if(D.ships)drillShipsDraw(D,R,cnt,m);for(const [kk,im] of Object.entries(R.foes)){im.count=cnt[kk];im.visible=cnt[kk]>0;im.instanceMatrix.needsUpdate=true;}
   const fc={};for(const k2 of Object.keys(R.fx))fc[k2]=0;const from=id=>{const bb=p.b[id];return bb?[P.cellX(bb.i),P.groundY(p.site,bb.i,bb.j)+2,P.cellZ(bb.j)]:null;};
   const put=(kind,x0,y0,z0,x1,z1,scale=1)=>{const im=R.fx[kind];if(fc[kind]>=im.instanceMatrix.count)return;const dx=x1-x0,dz=z1-z0,L=Math.hypot(dx,dz)||1;m.makeRotationY(Math.atan2(dx,dz));m.scale(sv.set(scale,scale,L));m.setPosition(x0,y0,z0);im.setMatrixAt(fc[kind]++,m);};
   for(const sh of D.shots){const o=from(sh.from);if(!o)continue;const kind=FX_OF[sh.ty]||'tracer';
@@ -571,7 +608,7 @@ function drillStep(dt){const D=X.drill,R=X.R,p=plotOf();D.t+=dt*1.6;const fr=D.r
    else put(kind,o[0],o[1],o[2],sh.x,sh.z,kind==='burst'||kind==='rail'?1.6:1);
    for(const t of R.tur.values())for(const it of t.items)if(it.id===sh.from){it.aim=Math.atan2(sh.x-it.x,sh.z-it.z);it.kick=1;}const e=R.meshes.get(sh.from);if(e?.o.userData.head)e.o.userData.head.userData.aim=Math.atan2(sh.x-o[0],sh.z-o[2])+(e.o.rotation.y||0);}
   for(const [k2,im] of Object.entries(R.fx)){im.count=fc[k2];im.visible=fc[k2]>0;im.instanceMatrix.needsUpdate=true;}}
- if(D.t>=D.r.time+1){X.drillResult={...D.r,log:D.log};X.drill=null;if(R){for(const im of [...Object.values(R.foes),...Object.values(R.fx)]){im.count=0;im.visible=false;}for(const e of R.meshes.values()){e.o.visible=true;if(e.o.userData.head)delete e.o.userData.head.userData.aim;}for(const t of R.tur.values())for(const it of t.items){delete it.aim;}R.keys.walls=R.keys.homes=R.keys.tur=null;}render();}}
+ if(D.t>=D.r.time+1){X.drillResult={...D.r,log:D.log};X.drill=null;if(R){R.ships?.stage.clear();for(const im of [...Object.values(R.foes),...Object.values(R.fx)]){im.count=0;im.visible=false;}for(const e of R.meshes.values()){e.o.visible=true;if(e.o.userData.head)delete e.o.userData.head.userData.aim;}for(const t of R.tur.values())for(const it of t.items){delete it.aim;}R.keys.walls=R.keys.homes=R.keys.tur=null;}render();}}
 
 // ------------------------------------------------------------------- 2D fallback ---------------------------------------
 // One pixel per cell in an offscreen canvas (terrain, walls by blend, homes), drawn scaled with no smoothing; buildings,
@@ -587,7 +624,7 @@ function draw2d(){if(!X?.cv)return;const cv=X.cv,p=plotOf();if(!p)return;const r
  if(X.mode==='walls'){for(const d of X.draft)box(P.shapeCells(d.sec)||[],'#ffb347');if(X.draw?.cells)box(X.draw.cells,'#2dff8a');if(X.erase)box(X.erase.keys.map(k=>k.split(',').map(Number)),'#ff3048');}
  if(X.place&&P.BUILDINGS[X.place.type]?.turret){g.strokeStyle='#22e6ff';g.beginPath();g.arc(X0(X.place.i)+cs/2,Y0(X.place.j)+cs/2,P.BUILDINGS[X.place.type].turret.range*P.SITES[p.site].range/P.GRID.cell*cs,0,7);g.stroke();}
  if(X.drill?.gone){g.fillStyle='#05070d';for(const id of X.drill.gone)if(id.startsWith('w:')){const [i,j]=id.slice(2).split(',').map(Number);g.fillRect(X0(i),Y0(j),cs,cs);}}
- if(X.drill?.now){for(const [,kind,x,z] of X.drill.now){g.fillStyle=kind==='d'?'#ff7ae8':kind==='b'?'#ff5a2a':'#ff2bd6';g.beginPath();g.arc(ox+x/P.GRID.cell*cs,oy+z/P.GRID.cell*cs,kind==='s'||kind==='b'?cs*.5:kind==='w'?cs*.2:cs*.3,0,7);g.fill();}}
+ if(X.drill?.now){for(const [,kind,x,z] of X.drill.now){g.fillStyle=kind==='d'?'#ff7a5c':kind==='b'?'#ffb347':'#ff2030';g.beginPath();g.arc(ox+x/P.GRID.cell*cs,oy+z/P.GRID.cell*cs,kind==='s'||kind==='b'?cs*.5:kind==='w'?cs*.2:cs*.3,0,7);g.fill();}}
  if(X.mode==='defend'&&X.drillResult&&!X.drill){g.strokeStyle='#ff3048';g.lineWidth=3;for(const [i,j,k] of X.drillResult.breaches){g.beginPath();g.arc(X0(i)+cs/2,Y0(j)+cs/2,cs*(1.4+Math.min(3,k*.3)),0,7);g.stroke();}}
  if(X.coachStep?.gap&&!X.visit&&!X.drill&&!X.place){const [i,j]=X.coachStep.gap;g.strokeStyle='#ff3048';g.lineWidth=3;g.beginPath();g.arc(X0(i)+cs/2,Y0(j)+cs/2,cs*2,0,7);g.stroke();}}   // Session 7T-P decision 3: the open ring's marker (2D)
 // ------------------------------------------------------------------- personal & social (Phase 2) ---------------------

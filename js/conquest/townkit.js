@@ -21,7 +21,7 @@ const ORE_LOOK=[[0x8a8f92,0x6a6f72,0],[0x8a8f92,0xa0522d,.15],[0x4a4f58,0xcfe6f0
 function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternion(),_e=new T.Euler(),_p=new T.Vector3(),_s=new T.Vector3();
  const M=(x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>{_e.set(rx,ry,rz);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(sx,sy,sz));};
  const C={rust:lin(0x7a4a2c),sand:lin(0x8f7c62),moss:lin(0x3f5a2a),plant:lin(0x3fae4a),glass:lin(0x78aed0),furnace:lin(0xff8a3d),steel:lin(0x6d7884),timber:lin(0x6a4a2e),timberD:lin(0x4a3220),comp:lin(0x8a8676),warm:lin(0xffc47a),
-  paint:[lin(0x9a5a3a),lin(0x5a7a8a),lin(0xc9a04a),lin(0x6a8a4a),lin(0x7a6a52),lin(0xbcae8c)],gold:K.gold,cyan:K.cyan,amber:K.amber,dark:lin(0x353d49),dark2:lin(0x404a57),apron:lin(0x7d848d),mid:K.mid,panel:K.panelA,panelB:K.panelB,roof:K.roof,violet:K.violet,red:K.red,teal:K.teal,ice:K.ice,mag:K.mag};
+  paint:[lin(0x9a5a3a),lin(0x5a7a8a),lin(0xc9a04a),lin(0x6a8a4a),lin(0x7a6a52),lin(0xbcae8c)],gold:K.gold,cyan:K.cyan,amber:K.amber,dark:lin(0x353d49),dark2:lin(0x404a57),apron:lin(0x7d848d),mid:K.mid,panel:K.panelA,panelB:K.panelB,roof:K.roof,violet:K.violet,red:K.red,teal:K.teal,ice:K.ice,par:K.par};
  const LIGHT={cyan:K.cyan,amber:K.amber,violet:K.violet,green:K.teal,red:K.red};let themeLight=null;
  const accent=l=>l>=5?C.gold:themeLight||(l>=3?C.teal:C.cyan);
 // Session 5E-2d1 (owner, Nov 11 + Nov 19): every town model is a slot of the world kit (js/conquest/slots.js, kit/town.js,
@@ -52,10 +52,11 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
  function home(kind,low){return kb('town-home-'+(['dome','block','tower','green'].includes(kind)?kind:'shop'),{lod:low?1:0,seed:kind.length}).geometry();}
  function person(){return kb('town-person',{}).geometry();}
  function rover(){return kb('town-rover',{}).geometry();}
- function foe(kind){const b=new S.Bld();if(kind==='d'){b.add(G.blob1,M(0,0,0,0,0,0,1.3,.55,1.3),K.chitin);b.box(0,0,0,3.4,.1,.4,K.mag,2.2);b.add(G.octa,M(0,.5,0,0,0,0,.4,.4,.4),K.magHot,2.4);}
-  else if(kind==='w'){b.add(G.blob1,M(0,.5,0,0,0,0,.8,.55,1.1),K.chitin);b.box(0,.6,.8,.5,.12,.12,K.mag,2.4);}
-  else if(kind==='b'){b.add(G.blob1,M(0,2.2,0,0,0,0,3.4,2.4,3.8),K.chitinD||K.chitin);for(const sx of [-1,1])b.box(sx*2.4,2.4,.6,.9,2.6,2.8,K.dark2);b.box(0,3.2,3.4,2.2,.4,.3,K.mag,2.4);b.add(G.octa,M(0,4.8,0,0,0,0,.7,.9,.7),K.magHot,2.2);}
-  else{const s=kind==='s'?2.6:1.7;b.add(G.blob1,M(0,s*.7,0,0,0,0,s,s*.7,s*1.3),K.chitin);b.box(0,s*.95,s*1.15,s*.6,s*.18,.18,K.mag,2.4);b.add(G.octa,M(0,s*1.6,0,0,0,0,.35*s,.45*s,.35*s),K.magHot,2.2);}return b.geometry();}
+ // The town raiders (Session 5E-2d2; owner, Nov 21): the light town models of the Parasite units (js/conquest/kit/parunits.js,
+ // o.town): r the Scavenger, s the Hoard Fortress, d the stolen drone, w the Grabber, b the Wrecker. One instanced draw per
+ // kind in the town view; the front faces +z; the same footprints as before.
+ const FOE={r:'par-raider',s:'par-sentinel',d:'par-drone',w:'par-swarm',b:'par-brute'};
+ function foe(kind){return kb(FOE[kind]||FOE.r,{town:1}).geometry();}
  // Banner: mast + two-colour flag in the chosen shape, emblem as a small lit mark. Shared by the base and the tank.
  function banner(bn,scale=1){const b=new S.Bld(),c1=new T.Color(bn.colors[0]),c2=new T.Color(bn.colors[1]),h=6*scale,w=2.6*scale,fh=1.7*scale;b.box(0,h/2,0,.16*scale,h,.16*scale,C.dark);
   if(bn.shape==='pennant'){b.add(G.cone5,M(w/2,h-fh/2,0,0,0,-Math.PI/2,fh/2,w,.08*scale),c1);b.box(w*.25,h-fh/2,0,w*.5,fh*.18,.1*scale,c2);}
@@ -158,7 +159,9 @@ const cached=(m,key,make)=>{let g=m.get(key);if(!g){g=make();m.set(key,g);}retur
 function inst(R,geo,n){const m=new R.T.InstancedMesh(geo,R.S.MAT.solid,Math.max(1,n));m.count=n;m.frustumCulled=false;return m;}
 // R: {T,S,k,wgeo,hgeo,tgeo} (geometry caches kept across rebuilds). Each returns what the caller needs to hide or animate.
 function walls(R,p,pl,low,group,mini){const {T,k}=R,M4=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_s=new T.Vector3(),wim=new Map(),wcell=new Map(),wpost=new Map();
- for(const [c,keys] of pl.walls){const geo=mini?cached(R.wgeo,'mini:'+c,()=>k.wallMini(c)):cached(R.wgeo,c+':'+low,()=>k.wallGeo(c,low)),m=inst(R,geo,keys.length);const wv=R.wv||1;keys.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number);if(wv===1)M4.makeTranslation(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j));else M4.compose(_v.set(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j)),_q.identity(),_s.set(1,wv,1));m.setMatrixAt(n,M4);wcell.set(kk,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);wim.set(c,m);}
+ for(const [c,keys] of pl.walls){const geo=mini==='hero'?cached(R.wgeo,'hero:'+c,()=>{const b=new R.S.Bld(),s=P.GRID.cell,h=wallH(c);b.box(0,h*.5,0,s,h,s,k.C.dark2);b.box(0,h+.1,0,s,.2,s,k.C.cyan,.2);return b.geometry();}):mini?cached(R.wgeo,'mini:'+c,()=>k.wallMini(c)):cached(R.wgeo,c+':'+low,()=>k.wallGeo(c,low)),m=inst(R,geo,keys.length);   /* 'hero' (5E-2d2, the pad's model): one plain block a cell with a lit top, so the wall reads as one clean band */
+  const wv=R.wv||1;keys.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number);if(wv===1)M4.makeTranslation(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j));else M4.compose(_v.set(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j)),_q.identity(),_s.set(1,wv,1));m.setMatrixAt(n,M4);wcell.set(kk,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);wim.set(c,m);}
+ if(mini==='hero')return {wim,wcell,wpost};   // no posts, no rubble: at the pad's scale they are specks
  if(pl.posts.length){const m=inst(R,mini?cached(R.wgeo,'post:mini',()=>k.postMini()):cached(R.wgeo,'post:'+low,()=>k.post(low)),pl.posts.length);pl.posts.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number),h=wallH(p.w[kk]|0);M4.compose(_v.set(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j)),_q.identity(),_s.set(1,(h+1.2)/5.2*(R.wv||1),1));m.setMatrixAt(n,M4);wpost.set(kk,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);}
  if(pl.rubble.length){const m=inst(R,cached(R.wgeo,'rubble',()=>k.rubble()),pl.rubble.length);pl.rubble.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number);_q.setFromAxisAngle(_s.set(0,1,0),(i*7+j*3)%4*Math.PI/2);M4.compose(_v.set(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j)),_q,_s.set(1,1,1));m.setMatrixAt(n,M4);});m.instanceMatrix.needsUpdate=true;group.add(m);}
  return {wim,wcell,wpost};}
@@ -205,9 +208,16 @@ function standIn(S,k,t,lvl){const T=S.T,b=new S.Bld();if(t==='home'){b.box(0,1.4
  const z=P.sizeOf(t,0),W=z.w*P.GRID.cell-1,D=z.d*P.GRID.cell-1,H=2.4+Math.max(1,lvl)*1.1;b.box(0,H/2,0,W,H,D,k.C.mid);b.box(0,H+.1,0,W*.86,.2,D*.86,P.VITALS[t]?k.C.gold:k.C.cyan,P.VITALS[t]?1.3:.8);return b.geometry();}
 // 5D: a generator, so the shared world can build the model in slices across idle time (iPhone: 65-106 ms in one task before);
 // diorama() drains it in one go (the same output, used by the hub, the tests and the Home Sector thumbnail)
-function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,R={T,S,k,wv:o.wv||1,ymin:o.floor??-6,wgeo:o.cache?.wgeo||new Map(),hgeo:o.cache?.hgeo||new Map(),tgeo:o.cache?.tgeo||new Map()},g=new T.Group(),town=new T.Group(),pl=plan(p),h=P.townH(p.cc),c=P.GRID.cell,half=Math.min((h+2.5)*c,P.GRID.n*c/2);   // never past the site grid (its edge row took the off-grid heights)
+// o.hero (5E-2d2; owner, Nov 21: "hero pieces only: it is noise at phone size"; the world's pad passes it, the hub does not): the
+// board, the walls as one clean lit band, the Command Center and up to nine more buildings (one of each kind, the vital and
+// the largest first), the banner and the halo. The buildings keep their places round the Command Center but are drawn larger
+// (up to 2.3x, as far as the innermost wall allows), since the homes, turrets, lamps and rocks that stood between them are not
+// drawn: about ten pieces that read at phone size instead of several hundred specks. counts stays the town's own plan.
+function heroPick(pl){const sc=e=>{const z=P.sizeOf(e[1].t,0);return (e[1].t==='cc'?1e9:0)+(P.VITALS[e[1].t]?1e6:0)+z.w*z.d*1e3+e[2]*10;},seen=new Set(),out=[];
+ for(const e of pl.builds.slice().sort((a,b)=>sc(b)-sc(a))){if(out.length>=10)break;const t=e[1].t;if(t==='gate'||seen.has(t))continue;seen.add(t);out.push(e);}return out;}
+function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,hero=!!o.hero,R={T,S,k,wv:o.wv||1,ymin:o.floor??-6,wgeo:o.cache?.wgeo||new Map(),hgeo:o.cache?.hgeo||new Map(),tgeo:o.cache?.tgeo||new Map()},g=new T.Group(),town=new T.Group(),pl=plan(p),h=P.townH(p.cc),c=P.GRID.cell,half=Math.min((h+2.5)*c,P.GRID.n*c/2);   // never past the site grid (its edge row took the off-grid heights)
  g.add(town);const sc=o.scale||1,vy=o.vy||1,bv=o.bv||1;town.scale.set(sc,sc*vy,sc);   // bv: buildings, turrets and homes stretched upward about their own base (walls keep vy)
- const tm=terrain(S,p.site,p.cc,p,{step:low?12:8,clip:half,props:!low,glow:!low,far:false,floor:R.ymin});for(const m of tm){const a=m.geometry?.attributes?.aCol;if(a&&m.material===S.MAT.solid&&a.count>500){for(let i=0;i<a.count;i++)a.setW(i,Math.max(a.getW(i),.32));a.needsUpdate=true;}town.add(m);}   // owner gate: the board is self-lit (the courtyard is dark)
+ const tm=terrain(S,p.site,p.cc,p,{step:low?12:8,clip:half,props:!low&&!hero,glow:!low,far:false,floor:R.ymin});for(const m of tm){const a=m.geometry?.attributes?.aCol;if(a&&m.material===S.MAT.solid&&a.count>500){for(let i=0;i<a.count;i++)a.setW(i,Math.max(a.getW(i),.32));a.needsUpdate=true;}town.add(m);}   // owner gate: the board is self-lit (the courtyard is dark)
  yield;   // terrain done
  // The board is a cut block of the site: skirts from the ground's edge down to a base plate under its lowest point (the old
  // plinth top sat at height 0, buried ridge terraces and the crater bowl under it and z-fought with flat ground).
@@ -219,24 +229,28 @@ function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,R={T,S,k,wv:o
   const g2=new T.BufferGeometry();g2.setAttribute('position',new T.Float32BufferAttribute(Pp,3));g2.setAttribute('normal',new T.Float32BufferAttribute(Nn,3));g2.setAttribute('aCol',new T.Float32BufferAttribute(A,4));g2.setIndex(I);g2.computeBoundingSphere();town.add(new T.Mesh(g2,S.MAT.solid));}
  {const b=new S.Bld();b.box(0,base-.2,0,2*half+2,.4,2*half+2,k.C.dark2);for(const [x,z,w,d] of [[0,-half-1,2*half+2.4,.5],[0,half+1,2*half+2.4,.5],[-half-1,0,.5,2*half+2.4],[half+1,0,.5,2*half+2.4]])b.box(x,base-.1,z,w,.3,d,k.C.cyan,.5);town.add(b.mesh());}
  yield;   // terrain, skirts and plinth done
- const hY=(x,z)=>Math.max(R.ymin,P.heightAt(p.site,x,z)),gY2=(i,j)=>Math.max(R.ymin,P.groundY(p.site,i,j)),W=walls(R,p,pl,true,town,true),mg=Merge(T),M4=new T.Matrix4(),NM=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_z=new T.Vector3(),_one=new T.Vector3(1,bv,1),_nv=new T.Vector3(1,1/bv,1),up=new T.Vector3(0,1,0),theme=p.theme||null;let nT=0,nH=0,nB=0;
+ const hY=(x,z)=>Math.max(R.ymin,P.heightAt(p.site,x,z)),gY2=(i,j)=>Math.max(R.ymin,P.groundY(p.site,i,j)),W=walls(R,p,pl,true,town,hero?'hero':true),mg=Merge(T),M4=new T.Matrix4(),NM=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_z=new T.Vector3(),_one=new T.Vector3(1,bv,1),_nv=new T.Vector3(1,1/bv,1),up=new T.Vector3(0,1,0),theme=p.theme||null;let nT=0,nH=0,nB=0;
  yield;   // walls done
- let yc=0;
- for(const [id,b,lvl,building] of pl.builds){if(++yc%40===0)yield;const f=fp(b),y=hY(f.x,f.z);_q.setFromAxisAngle(up,-(b.r|0)*Math.PI/2);M4.compose(_v.set(f.x,y,f.z),_q,_one);NM.compose(_z,_q,_nv);mg.add(low&&b.t!=='cc'?cached(R.tgeo,'si:'+b.t+':'+Math.max(1,lvl),()=>standIn(S,k,b.t,lvl)):cached(R.tgeo,'d:'+b.t+':'+Math.max(1,lvl)+':'+(theme?.finish||'')+(theme?.light||''),()=>k.building(b.t,Math.max(1,lvl),theme).geometry()),M4,NM);nB++;
+ let yc=0,hz=1;const Cc=ccCenter(p),blds=hero?heroPick(pl):pl.builds;
+ if(hero){let rm=0,lim=half-c;for(const e of blds){const f=fp(e[1]),z=P.sizeOf(e[1].t,e[1].r|0);rm=Math.max(rm,Math.max(Math.abs(f.x-Cc.x),Math.abs(f.z-Cc.z))+Math.max(z.w,z.d)*c*.6);}
+  for(const kk of Object.keys(p.w||{})){const [i,j]=kk.split(',').map(Number);lim=Math.min(lim,Math.max(Math.abs(P.cellX(i)-Cc.x),Math.abs(P.cellZ(j)-Cc.z))-c);}
+  hz=Math.max(1,Math.min(2.3,lim*.9/Math.max(1,rm)));_one.set(hz,bv,hz);_nv.set(1/hz,1/bv,1/hz);}
+ for(const [id,b,lvl,building] of blds){if(++yc%40===0)yield;const f=fp(b);f.x=Cc.x+(f.x-Cc.x)*hz;f.z=Cc.z+(f.z-Cc.z)*hz;const y=hY(f.x,f.z);_q.setFromAxisAngle(up,-(b.r|0)*Math.PI/2);M4.compose(_v.set(f.x,y,f.z),_q,_one);NM.compose(_z,_q,_nv);mg.add(low&&b.t!=='cc'?cached(R.tgeo,'si:'+b.t+':'+Math.max(1,lvl),()=>standIn(S,k,b.t,lvl)):cached(R.tgeo,'d:'+b.t+':'+Math.max(1,lvl)+':'+(theme?.finish||'')+(theme?.light||''),()=>k.building(b.t,Math.max(1,lvl),theme).geometry()),M4,NM);nB++;
   if(b.t==='radar'&&!low){M4.compose(_v.set(f.x,y+k.headY('radar',lvl)*bv,f.z),_q.setFromAxisAngle(up,.7),_one);NM.compose(_z,_q,_nv);mg.add(cached(R.tgeo,'dh:radar:'+Math.max(1,lvl),()=>k.head('radar',Math.max(1,lvl)).geometry()),M4,NM);}}
  yield;   // buildings done
- for(const [kk,list] of pl.turrets){const [t,l]=kk.split(':'),bg=low?cached(R.tgeo,'si:'+t,()=>standIn(S,k,t,1)):cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':b',()=>k.building(t,+l,theme).geometry()),hg=low?null:cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':h',()=>k.head(t,+l).geometry());
+ if(!hero)for(const [kk,list] of pl.turrets){const [t,l]=kk.split(':'),bg=low?cached(R.tgeo,'si:'+t,()=>standIn(S,k,t,1)):cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':b',()=>k.building(t,+l,theme).geometry()),hg=low?null:cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':h',()=>k.head(t,+l).geometry());
   for(const [,b] of list){if(++yc%40===0)yield;const x=P.cellX(b.i),z=P.cellZ(b.j),y=gY2(b.i,b.j);_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6);M4.compose(_v.set(x,y,z),low?_q:_q.identity(),_one);NM.compose(_z,_q,_nv);mg.add(bg,M4,NM);if(hg){M4.compose(_v.set(x,y+k.headY(t,+l)*bv,z),_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6),_one);NM.compose(_z,_q,_nv);mg.add(hg,M4,NM);}nT++;}}
  yield;   // turrets done
- for(const [kind,list] of pl.homes){const geo=low?cached(R.hgeo,'si:'+kind,()=>standIn(S,k,'home',kind.length)):cached(R.hgeo,kind+true,()=>k.home(kind,true));for(const hm of list){if(++yc%40===0)yield;const x=P.cellX(hm.i)+c/2,z=P.cellZ(hm.j)+c/2;M4.compose(_v.set(x,hY(x,z),z),_q.setFromAxisAngle(up,(hm.seed%4)*Math.PI/2),_one);NM.compose(_z,_q,_nv);mg.add(geo,M4,NM);nH++;}}
+ if(!hero)for(const [kind,list] of pl.homes){const geo=low?cached(R.hgeo,'si:'+kind,()=>standIn(S,k,'home',kind.length)):cached(R.hgeo,kind+true,()=>k.home(kind,true));for(const hm of list){if(++yc%40===0)yield;const x=P.cellX(hm.i)+c/2,z=P.cellZ(hm.j)+c/2;M4.compose(_v.set(x,hY(x,z),z),_q.setFromAxisAngle(up,(hm.seed%4)*Math.PI/2),_one);NM.compose(_z,_q,_nv);mg.add(geo,M4,NM);nH++;}}
  const C0=ccCenter(p),cy=hY(C0.x,C0.z);
- {const hb=new S.Bld(),r2=Math.max(C0.w,C0.d)*c;hb.add(S.G.cyl,k.M(0,0,0,0,0,0,r2,.1,r2),p.cc>=9?k.C.gold:k.C.cyan,.7);const hg=hb.geometry();M4.makeTranslation(C0.x,cy+.16,C0.z);mg.add(hg,M4);hg.dispose();}   // owner gate: a halo under the Command Center (gold from CC9) so the eye finds it on the model
- if(p.banner){const bg=k.banner(p.banner,3.2).geometry();M4.compose(_v.set(C0.x+C0.w*c/2+3,cy,C0.z-C0.d*c/2-2),_q.identity(),_one);NM.compose(_z,_q,_nv);mg.add(bg,M4,NM);bg.dispose();}
- if(p.theme?.decor?.length){const dg=k.decor(p.theme.decor,C0.x,C0.z,C0.w*c+6,C0.d*c+6,p.theme.light).geometry();M4.identity();if(dg.attributes.position.count)mg.add(dg,M4);dg.dispose();}
+ {const hb=new S.Bld(),r2=Math.max(C0.w,C0.d)*c*hz;hb.add(S.G.cyl,k.M(0,0,0,0,0,0,r2,.1,r2),p.cc>=9?k.C.gold:k.C.cyan,.7);const hg=hb.geometry();M4.makeTranslation(C0.x,cy+.16,C0.z);mg.add(hg,M4);hg.dispose();}   // owner gate: a halo under the Command Center (gold from CC9) so the eye finds it on the model
+ if(p.banner){const bg=k.banner(p.banner,3.2).geometry();M4.compose(_v.set(C0.x+(C0.w*c/2+3)*hz,cy,C0.z-(C0.d*c/2+2)*hz),_q.identity(),_one);NM.compose(_z,_q,_nv);mg.add(bg,M4,NM);bg.dispose();}
+ if(p.theme?.decor?.length&&!hero){const dg=k.decor(p.theme.decor,C0.x,C0.z,C0.w*c+6,C0.d*c+6,p.theme.light).geometry();M4.identity();if(dg.attributes.position.count)mg.add(dg,M4);dg.dispose();}
  yield;   // before the merge (one big Float32 build)
  if(mg.n){const m=new T.Mesh(mg.geometry(),S.MAT.solid);m.userData.merged=true;town.add(m);}
- damageFx(R,p,town);
- g.userData={lift:(.4-base)*sc*vy,counts:{walls:[...W.wim.values()].reduce((a,m)=>a+m.count,0),posts:W.wpost.size,rubble:pl.rubble.length,turrets:nT,homes:nH,builds:nB},kit:!low,plan:pl,R,half:half*sc,ccY:cy*sc};
+ if(!hero)damageFx(R,p,town);
+ const shown={walls:[...W.wim.values()].reduce((a,m)=>a+m.count,0),posts:W.wpost.size,rubble:hero?0:pl.rubble.length,turrets:nT,homes:nH,builds:nB};
+ g.userData={lift:(.4-base)*sc*vy,counts:hero?counts(pl):shown,shown,hero,kit:!low,plan:pl,R,half:half*sc,ccY:cy*sc};
  return g;}
 function diorama(S,p,o={}){const it=dioramaGen(S,p,o);let r;do r=it.next();while(!r.done);return r.value;}
 

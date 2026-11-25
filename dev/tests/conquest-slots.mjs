@@ -62,5 +62,16 @@ for(const id of ids){const H=stats[id].high,L=stats[id].low;assert.ok(L.n<=H.n,i
  // 3. cleared: the code-built model is back, vertex for vertex
  WK.swap(id,null);const back=run();assert.equal(back.swaps.size,0);assert.equal(back.main.n,code.main.n);assert.deepEqual(back.main.P,code.main.P,'swapping back restores the code-built model exactly');
  delete c.Meshy3D;S.dispose();}
+// The website (web/play.html -> web/boot.js) must load every Conquest script the Mini App page (index.html) loads, with the
+// world kit before the style that draws with it. Found Nov 21 (Session 5E-2d2): boot.js never listed slots.js, worldkit.js or
+// kit/*.js, so ConquestStyle.create threw on the website and Conquest drew its pre-style fallback there since 5E-2d1.
+{const page=[...fs.readFileSync('index.html','utf8').matchAll(/<script src="js\/(conquest\/[a-z0-9\/-]+)\.js/g)].map(m=>m[1]),boot=fs.readFileSync('web/boot.js','utf8'),
+  web=[...boot.matchAll(/'(conquest\/[a-z0-9\/-]+)'/g)].map(m=>m[1]);   // every Conquest script boot.js names: the list before the game starts and the Citadel / Titan batch after it (Sessions 7B, 7C)
+ assert.ok(page.length>30,'index.html lists the Conquest scripts');
+ for(const f of page)assert.ok(web.includes(f),'web/boot.js loads '+f+'.js (index.html does)');
+ for(const f of web)assert.ok(page.includes(f),'index.html loads '+f+'.js (web/boot.js does)');
+ for(const f of KIT.map(k=>k.replace(/^js\//,'').replace(/\.js$/,'')))assert.ok(page.includes(f)&&web.includes(f),'kit file '+f+' is loaded by both pages');
+ for(const L of [page,web]){const st=L.indexOf('conquest/style');assert.ok(L.indexOf('conquest/slots')<L.indexOf('conquest/worldkit')&&L.indexOf('conquest/worldkit')<st,'slots, then the kit, before the style');
+  for(const f of L.filter(x=>x.startsWith('conquest/kit/')))assert.ok(L.indexOf(f)>L.indexOf('conquest/worldkit')&&L.indexOf(f)<st,f+' loads between the kit and the style');}}
 const heavy=ids.map(id=>[id,stats[id].high.n,stats[id].low.n]).sort((a,b)=>b[1]-a[1]).slice(0,8).map(r=>r.join(':')).join(' ');
 console.log('PASS conquest-slots: '+ids.length+' slots, every one code-built on HIGH and LOW inside its box ('+total.high+' / '+total.low+' triangles for one of each), swap to a model and back; heaviest '+heavy);

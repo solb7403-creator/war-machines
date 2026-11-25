@@ -20,9 +20,15 @@ function frame(now){
 }
 function boot(){
  loadSave();rollPeriods();captureRef();
+ // The pilot's tank, as early as possible (owner, Nov 20): ask the server for the real loadout now, and start downloading the
+ // model files of the tank this device holds (nearly always the same tank; if the server says otherwise its files are fetched then).
+ if(typeof bootSync==='function')bootSync(true);
+ if(typeof Meshy3D!=='undefined'&&typeof want3D==='function'&&want3D()&&webglOK())Meshy3D.prefetch(myLoadout());
  initUI();
- if(typeof load3D==='function')load3D();   // the 3D view loads in the background; until it's ready (or without WebGL) the game draws in 2D
+ if(typeof load3D==='function')load3D();   // the 3D view loads in the background; without WebGL (or on the 2D setting) the game draws in 2D
  const afterCloud=()=>{
+  // the Telegram cloud copy has been compared: the launch sync's answer (asked for above, held until now: js/net.js doSync) may land
+  if(typeof loadoutProve==='function')loadoutProve('cloud');
   initBackend();loadLB();if(ACCOUNT_OK)loadSquad();
   if(!IN_WEB&&save.payCur==='sol')fetchPrices();
   if(!save.welcomed&&(save.mp||0)===0)showWelcome();

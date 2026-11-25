@@ -1,0 +1,85 @@
+{
+ "errors": [],
+ "shots": {
+  "lineup-a": {
+   "at": [
+    1560,
+    820
+   ],
+   "placed": [
+    "raider",
+    "breacher",
+    "sentinel"
+   ],
+   "style": true,
+   "calls": 32,
+   "tris": 101313,
+   "programs": 13
+  },
+  "lineup-b": {
+   "at": [
+    1560,
+    820
+   ],
+   "placed": [
+    "command",
+    "swarm",
+    "brute"
+   ],
+   "style": true,
+   "calls": 32,
+   "tris": 88305,
+   "programs": 14
+  },
+  "generals": {
+   "at": [
+    1560,
+    820
+   ],
+   "placed": [
+    "command:shield",
+    "command:ambush",
+    "command:artillery",
+    "command:carrier",
+    "command:plasma"
+   ],
+   "style": true,
+   "calls": 40,
+   "tris": 134115,
+   "programs": 14
+  },
+  "air": {
+   "at": [
+    1560,
+    820
+   ],
+   "placed": [
+    "raider",
+    "command",
+    "raider"
+   ],
+   "style": true,
+   "calls": 30,
+   "tris": 65889,
+   "programs": 14
+  },
+  "dead": {
+   "at": [
+    1560,
+    820
+   ],
+   "placed": [
+    "raider",
+    "breacher",
+    "sentinel",
+    "command",
+    "swarm",
+    "brute"
+   ],
+   "style": true,
+   "calls": 39,
+   "tris": 119205,
+   "programs": 14
+  }
+ }
+}
