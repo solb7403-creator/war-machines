@@ -52,4 +52,16 @@ async function seed(kind,per,n,{held=[],tie=false}={}){const top=[],mk={};for(le
  db.root.cqgr[pidC]={['campaign-'+per+'-001']:{k:'campaign',per,pct:0.01,cp:999999},['town-w'+(wk-1)+'-01']:{k:'town',per:'w'+(wk-1),pct:0.1,cp:1500},junk:{k:'x'}};await call(70000,'/api/conquest/session');
  ok(cqLive(db,pidC).ledger.cp===cp0&&!Object.keys(db.get('cqgr/'+pidC)||{}).length,'grants not in a settlement record (a band it did not win, a board where it is not listed, junk): unpaid and cleared');
  const P2='tg_70001',g2='titan-w'+(wk-2)+'-01';ok((cqLive(db,P2).gra||[]).includes(g2),'a Titan winner\'s grant was verified against the settlement record and applied');}
+// ---- 6. review round 1 (the airdrop-integrity reviewer's blockers C6 and C3, note 4; each fails without its fix) ----
+{const z={v:1,campaignScore:300,wkb:{w:wk,cs:300},ttn:{v:1,sl:{}}},per=BD.periodOf('campaign',now),n0=Object.keys(db.get('cqbp/campaign/'+per)||{}).length;
+ ok(!('campaign' in BD.scoresOf(z,now)),'6. a zero campaign gain posts nothing (a zero row counted an idle pilot in the field N)');
+ await BD.postBoards(env,'tg_9500','Idle',z,now);ok(Object.keys(db.get('cqbp/campaign/'+per)||{}).length===n0,'... and writes no field marker');
+ const s={v:1,ledger:{cp:0,banked:{alloy:0,biomass:0,helium:0},mn:{}},inv:{it:{},pt:{},fr:{}}},G={};
+ for(let w=wk-12;w<=wk-1;w++)for(const [k,pct] of [['town',.1],['defense',.1],['raid',.1],['campaign',.1],['titan',.1],['titan',.01]])G[k+'-w'+w+'-'+String(pct).replace('.','')]={k,per:'w'+w,pct};
+ const n=Object.keys(G).length,got=BD.applyGrants(s,G,now),cp=s.ledger.cp,again=BD.applyGrants(s,G,now);
+ ok(n===72&&got.length===72&&cp===4*12*1500&&again.length===0&&s.ledger.cp===cp&&(s.gra||[]).length===72,'72 grants at once (12 weeks of six): each paid once, every id remembered, a second open pays nothing (a cap of 60 ids paid 70 as 80)');
+ const old={['town-w'+(wk-13)+'-01']:{k:'town',per:'w'+(wk-13),pct:.1}},c0=s.ledger.cp;ok(BD.applyGrants(s,old,now).length===0&&s.ledger.cp===c0&&!BD.grantLive('w'+(wk-13),now)&&BD.grantLive('w'+(wk-12),now),'a grant older than 12 weeks expires unpaid (the window every applied id is kept)');
+ db.root.cqgr={...(db.root.cqgr||{}),tg_9600:old};const pg=await BD.pendingGrants(env,'tg_9600',now);ok(!Object.keys(pg.ok).length&&pg.bad.length===1,'... and the session open clears it from the inbox unpaid');
+ const end=BD.periodEnd('w'+wk),early=await BD.settleBoards(env,end+60*60000),notYet=!db.get('cqbs/town/w'+wk);await BD.settleBoards(env,end+BD.SETTLE_AFTER+60000);
+ ok(BD.SETTLE_AFTER===70*60000&&notYet&&!!db.get('cqbs/town/w'+wk),'a period settles 70 minutes after it ends (every flag raised by then is in the held index): not at +60 min, at +71 min');}
 console.log(JSON.stringify({test:'conquest-boards',pass}));

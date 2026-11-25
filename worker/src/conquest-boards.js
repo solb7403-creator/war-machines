@@ -36,20 +36,20 @@ export function bandsOf(kind,n){if(n<BOARD.min)return [];return BOARD.bands[kind
 // ---- the pilot's scores, from its verified record ----
 const sumSlots=(sl,from,to)=>Object.entries(sl||{}).reduce((a,[k,x])=>{const t=Number(k)*R.STRIKE.everyMs;return t>=from&&t<to?a+(Number(x?.d)||0):a;},0);   // a slot's time: its impact
 export function scoresOf(s,now){const out={},wk=weekOf(now),w0=wk*7*DAY+4*DAY,p0=Math.floor(now/DAY/30)*30*DAY,T=CONQUEST.Titan.norm(s?.ttn);
- const b=s?.wkb;if(b&&b.w===wk)out.campaign=Math.max(0,(s.campaignScore|0)-(b.cs|0));
+ const b=s?.wkb;if(b&&b.w===wk){const g=(s.campaignScore|0)-(b.cs|0);if(g>0)out.campaign=g;}   // only a real gain posts (review round 1: a zero row counted an idle pilot in the field)
  const td=sumSlots(T.sl,w0,w0+7*DAY),t30=sumSlots(T.sl,p0,p0+30*DAY);if(td>0)out.titan=td;if(t30>0)out.titan30=t30;
  const rt=s?.rtb;if(rt&&rt.w===wk&&rt.id===featuredRaid(now)&&rt.sec>0)out.raid=rt.sec;return out;}
 // ---- posting (after a committed request; best effort, never fails the pilot's action) ----
 // a pilot's first post of the period also counts it in the board's field (n: shown; the payout counts the verified field exactly)
 async function post(env,pid,name,kind,score,now,extra){const per=periodOf(kind,now),path='cqb/'+kind+'/'+per,mk='cqbp/'+kind+'/'+per+'/'+pid;
  const had=await dbGet(env,mk).catch(()=>null),fresh=had===null||had===undefined;if(!fresh&&!better(kind,score,Number(had)))return;
- for(let n=0;n<8;n++){const {v,tag}=await readTag(env,path),rows=rowsOf(v),old=rows.find(r=>r.p===pid),up=!old||better(kind,score,old.s);if(!up&&!fresh)break;
+ let done=false;for(let n=0;n<8;n++){const {v,tag}=await readTag(env,path),rows=rowsOf(v),old=rows.find(r=>r.p===pid),up=!old||better(kind,score,old.s);if(!up&&!fresh){done=true;break;}
   const next=up?rank(kind,[...rows.filter(r=>r.p!==pid),{p:pid,n:String(name||'PILOT').slice(0,16),s:score,at:now,...extra}]).slice(0,TOP):rows;
-  if(await writeIf(env,path,{v:1,k:kind,per,top:next,n:(Number(v?.n)||0)+(fresh?1:0),at:now},tag))break;}
- await dbPatch(env,'',{[mk]:score});}
+  if(await writeIf(env,path,{v:1,k:kind,per,top:next,n:(Number(v?.n)||0)+(fresh?1:0),at:now},tag)){done=true;break;}}
+ if(!done)return false;await dbPatch(env,'',{[mk]:score});return true;}   // the marker (the field) only with the row written: a lost race posts again next time
 const MEMO=new Map();
 export async function postBoards(env,pid,name,s,now,{town=null,defense=null}={}){if(!s||s.dev?.used||typeof pid!=='string'||/[.#$\[\]/]/.test(pid))return;const sc=scoresOf(s,now);if(town!==null&&town>0)sc.town=town;if(defense!==null&&defense>0)sc.defense=defense;
- const m=MEMO.get(pid)||{},extra={...(s.plot?.cc?{cc:s.plot.cc|0}:{})};for(const [k,v] of Object.entries(sc)){const key=k+':'+periodOf(k,now);if(m[key]!==undefined&&!better(k,v,m[key]))continue;await post(env,pid,name,k,v,now,extra).catch(()=>{});m[key]=v;}
+ const m=MEMO.get(pid)||{},extra={...(s.plot?.cc?{cc:s.plot.cc|0}:{})};for(const [k,v] of Object.entries(sc)){const key=k+':'+periodOf(k,now);if(m[key]!==undefined&&!better(k,v,m[key]))continue;if(await post(env,pid,name,k,v,now,extra).catch(()=>false))m[key]=v;}
  MEMO.delete(pid);MEMO.set(pid,m);if(MEMO.size>20000)MEMO.delete(MEMO.keys().next().value);}
 // ---- reading (POST /api/conquest/boards): every board this period, names and scores, the pilot's own place, the field and the bands ----
 export async function conquestBoards(env,a,now=Date.now()){const b=a.b||{};if(Object.keys(b).some(k=>!['gv','initData'].includes(k)))return {status:400,body:{error:'invalid boards'}};
@@ -66,21 +66,30 @@ export async function settleBoard(env,kind,per,now){const sp='cqbs/'+kind+'/'+pe
   const rec={v:1,k:kind,per,n,small:n<BOARD.min?1:0,w:w.map(x=>[x.p,x.r,x.s,x.pct]),at:now,granted:0};if(!(await writeIf(env,sp,rec,tag))){({v}=await readTag(env,sp));if(!v)return null;}else v=rec;}   // a second run reads the one written
  if(v.granted)return v;const up={};for(const [p,r,s,pct] of (Array.isArray(v.w)?v.w:[])){const b=BOARD.bands[kind].find(x=>x.pct===pct);if(!b||typeof p!=='string')continue;const gid=kind+'-'+per+'-'+String(pct).replace('.','');up['cqgr/'+p+'/'+gid]={k:kind,per,r,s,pct,...(b.cp?{cp:b.cp}:{}),...(b.fr?{fr:b.fr}:{}),...(b.mn?{mn:b.mn}:{}),at:now};}
  if(Object.keys(up).length)await dbPatch(env,'',up);await dbPatch(env,sp,{granted:now});return {...v,granted:now};}
+// a period settles 70 minutes after its end: the hourly cqalt scan has seen every cluster once more and the held index (fh) was rebuilt
+// with every flag raised by then (review round 1: a flag raised in the settling cron run itself was not yet in fh)
+export const SETTLE_AFTER=70*60000;
 export async function settleBoards(env,now=Date.now()){let n=0;for(const kind of BOARD.order){const per=periodOf(kind,now),prev=kind==='titan30'?'p'+(Number(per.slice(1))-1):'w'+(Number(per.slice(1))-1);
-  if(now<periodEnd(prev))continue;const done=await dbGet(env,'cqbs/'+kind+'/'+prev+'/granted').catch(()=>null);if(done)continue;await settleBoard(env,kind,prev,now);n++;}
+  if(now<periodEnd(prev)+SETTLE_AFTER)continue;const done=await dbGet(env,'cqbs/'+kind+'/'+prev+'/granted').catch(()=>null);if(done)continue;await settleBoard(env,kind,prev,now);n++;}
  return n;}
 // ---- the grants, at the session open: each applied once by id (s.gra keeps the applied ids), then deleted ----
 // a grant counts only if its period's settlement record lists this pilot in that band (the winners list written once by the cron):
 // anything else in the inbox is cleared unpaid
-export async function pendingGrants(env,pid){const g=await dbGet(env,'cqgr/'+pid).catch(()=>null);if(!record(g))return {ok:{},bad:[]};const recs=new Map(),ok={},bad=[];
- for(const [gid,x] of Object.entries(g)){if(!record(x)||!BOARD.kinds[x.k]||typeof x.per!=='string'||!/^[wp]-?\d{1,7}$/.test(x.per)){bad.push(gid);continue;}const key=x.k+'/'+x.per;if(!recs.has(key))recs.set(key,await dbGet(env,'cqbs/'+key).catch(()=>null));
+// a grant (and the record of having applied it) lives GRANT_KEEP periods: 12 weeks for a weekly board, 3 thirty-day periods for the Titan's
+// 30-day board. Older grants expire unpaid (the pilot did not open Conquest for about 3 months); within that window every applied id is
+// kept (s.gra), so a grant can never pay twice however many arrive at once (review round 1: a count cap of 60 paid 70 grants as 80)
+export const GRANT_KEEP=Object.freeze({w:12,p:3});
+export function grantLive(per,now){if(typeof per!=='string'||!/^[wp]-?\d{1,7}$/.test(per))return false;const age=(per[0]==='p'?Math.floor(now/DAY/30):weekOf(now))-Number(per.slice(1));return age>=0&&age<=GRANT_KEEP[per[0]];}
+export async function pendingGrants(env,pid,now=Date.now()){const g=await dbGet(env,'cqgr/'+pid).catch(()=>null);if(!record(g))return {ok:{},bad:[]};const ok={},bad=[];
+ const keys=[...new Set(Object.values(g).filter(x=>record(x)&&BOARD.kinds[x.k]&&grantLive(x.per,now)).map(x=>x.k+'/'+x.per))],recs=new Map(await Promise.all(keys.map(async k=>[k,await dbGet(env,'cqbs/'+k).catch(()=>null)])));
+ for(const [gid,x] of Object.entries(g)){if(!record(x)||!BOARD.kinds[x.k]||!grantLive(x.per,now)){bad.push(gid);continue;}const key=x.k+'/'+x.per;
   const rec=recs.get(key),hit=Array.isArray(rec?.w)&&rec.w.some(w=>Array.isArray(w)&&w[0]===pid&&w[3]===x.pct)&&gid===x.k+'-'+x.per+'-'+String(x.pct).replace('.','');if(hit)ok[gid]=x;else bad.push(gid);}
  return {ok,bad};}
-export function applyGrants(s,grants,now){const done=new Set(Array.isArray(s.gra)?s.gra:[]),got=[];
- for(const [gid,g] of Object.entries(grants||{})){if(done.has(gid)||!record(g)||!BOARD.kinds[g.k])continue;const b=BOARD.bands[g.k].find(x=>x.pct===g.pct);if(!b)continue;   // the amounts are the table's, never the grant's
+export function applyGrants(s,grants,now){const done=new Set((Array.isArray(s.gra)?s.gra:[]).filter(id=>grantLive(String(id).split('-')[1],now))),got=[];
+ for(const [gid,g] of Object.entries(grants||{})){if(done.has(gid)||!record(g)||!BOARD.kinds[g.k]||!grantLive(g.per,now))continue;const b=BOARD.bands[g.k].find(x=>x.pct===g.pct);if(!b)continue;   // the amounts are the table's, never the grant's
   if(!s.dev?.used){if(b.cp){s.ledger.cp+=b.cp;}if(b.fr)bind(s,{fr:{...b.fr}},now,{where:'weekly board'});if(b.mn)bankMinerals(s,b.mn);}
   done.add(gid);got.push({k:g.k,r:g.r|0,pct:g.pct,...(b.cp?{cp:b.cp}:{}),...(b.fr?{fr:b.fr}:{}),...(b.mn?{mn:b.mn}:{})});}
- if(got.length){s.gra=[...done].slice(-60);s.notice={kind:'board-reward',got};}return got;}
+ s.gra=[...done];if(got.length)s.notice={kind:'board-reward',got};return got;}   // every id inside the window (at most 12 x 6 + 3)
 export async function clearGrants(env,pid,ids){if(!ids.length)return;const up={};for(const id of ids)up['cqgr/'+pid+'/'+id]=null;await dbPatch(env,'',up).catch(()=>{});}
 // ---- the reducer's part (worker/src/conquest-sim.js) ----
 // every request: the week's starting campaign score (the campaign board's baseline), set at the pilot's first request of the week

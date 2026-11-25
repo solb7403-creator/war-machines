@@ -69,11 +69,11 @@ function segDist(px,pz,ax,az,bx,bz){const dx=bx-ax,dz=bz-az,l2=dx*dx+dz*dz||1,k=
 const make=(loadout,p,id)=>new Hunt(loadout,p,id);
 // the pilot's Titan record (s.ttn on the Worker): per slot {k: killed, d: the best damage of the slot's attempts, a: attempts}; pity: kills since a Selenite
 function norm(v){const o=v&&typeof v==='object'&&!Array.isArray(v)?v:{};const sl={};for(const [k,x] of Object.entries(o.sl||{}))if(isTitanSlot(k)&&x&&typeof x==='object')sl[k]={k:x.k?1:0,d:Math.max(0,Math.round(Number(x.d)||0)),a:Math.max(0,x.a|0)};
- const keep=Object.keys(sl).map(Number).sort((a,b)=>b-a).slice(0,40);return {v:1,sl:Object.fromEntries(keep.map(k=>[k,sl[k]])),kills:Math.max(0,o.kills|0)};}   // the Selenite pity lives with the loot pity (conquest-loot.js inventory pity.t)
+ const keep=Object.keys(sl).map(Number).sort((a,b)=>b-a).slice(0,64);   /* 64: a 30-day board period holds 60 Titan slots (review round 1) */return {v:1,sl:Object.fromEntries(keep.map(k=>[k,sl[k]])),kills:Math.max(0,o.kills|0)};}   // the Selenite pity lives with the loot pity (conquest-loot.js inventory pity.t)
 // why a Titan hunt cannot start now ('' = it can): this slot is a Titan slot, its core extracted by this pilot, its window open, not yet killed
 function startWhy(s,now){const M=slotNow(now),slot=Number(s?.strikeSlot);if(!isTitanSlot(slot))return 'the Hive Titan rises only in a Titan slot (every 6th Meteor Strike)';
  if(!s?.strikes?.[slot]?.claimed)return 'extract this strike\'s core first: the Titan rises after it';
- const open=slot===M.slot?now<M.closesAt:s?.bcn&&Number(s.bcn.slot)===slot&&Number(s.bcn.until)>now;if(!open)return 'this Titan slot has closed';
+ const open=slot===M.slot&&now<M.closesAt||!!(s?.bcn&&Number(s.bcn.slot)===slot&&Number(s.bcn.until)>now);if(!open)return 'this Titan slot has closed';   /* the beacon on this slot counts in its idle phase too (review round 1) */
  if(norm(s?.ttn).sl[slot]?.k)return 'you already brought down this slot\'s Titan';return '';}
 root.ConquestTitan=Object.freeze({TITAN,PHASES,HOOKS,Hunt,make,norm,isTitan,isTitanSlot,nextTitan,startWhy,arenaOf,hhmm,slotNow});
 })(globalThis);

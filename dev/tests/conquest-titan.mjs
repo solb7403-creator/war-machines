@@ -75,4 +75,8 @@ const sit=()=>({x:0,z:0});
 {const s=createState(R.STOCK_L,T0);s.lseed=1;inventory(s);let drought=0,maxDrought=0,pityPaid=0,se=0;
  for(let k=1;k<=400;k++){const o=roll(s,'titan','slot:'+(k*6));if(o.mn?.se){se++;maxDrought=Math.max(maxDrought,drought);drought=0;if(o.pity)pityPaid++;}else drought++;}
  ok(maxDrought<=4&&pityPaid>0,'5. 400 Titans: never more than 4 in a row without a Selenite (the 5th pays it: '+pityPaid+' pity Selenites; '+se+' Selenite in all)');}
+// ---- review round 1 (airdrop integrity, notes 1 and 2) ----
+{const M=TT.slotNow(T0),slot=M.slot,late=M.closesAt+11*60000,s={strikeSlot:slot,strikes:{[slot]:{claimed:1}},ttn:{v:1,sl:{}}};
+ ok(TT.isTitanSlot(slot)&&TT.startWhy(s,late)==='this Titan slot has closed'&&TT.startWhy({...s,bcn:{slot,until:late+30*60000}},late)==='','a Strike Beacon on this Titan slot opens the hunt in the slot\'s idle phase (without it the slot is closed)');
+ const many={};for(let i=1;i<=70;i++)many[i*6]={k:0,d:i,a:1};const kept=Object.keys(TT.norm({sl:many}).sl).length;ok(kept===64,'the Titan record keeps 64 slots: a 30-day board period holds 60 ('+kept+')');}
 console.log(JSON.stringify({test:'conquest-titan',pass}));

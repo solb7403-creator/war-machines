@@ -53,5 +53,13 @@ let botRec=null;
  ok(f.tg_2?.r?.cqalt&&!f.tg_1?.r?.cqalt&&db.get('cqa/'+clu[0].sig)?.h?.join()==='town,hours','two signals in a linked cluster: the extra account gets cqalt, the main one counts, the admin row gets the hint');
  ok(!f.tg_4?.r?.cqalt&&!db.get('cqa/'+clu[1].sig),'one signal (the same hours alone): nothing');
  ok(!f.tg_6?.r?.cqalt,'a cluster the owner cleared: nothing (the hint is still shown)');
- db.root.clu=[clu[0]];await clearCluster(env,clu[0].sig,now+1000);ok(db.get('flags/tg_2/ok/cqalt')>=f.tg_2.r.cqalt.t,'the row\'s clear clears cqalt too');}
+ db.root.clu=[clu[0]];await clearCluster(env,clu[0].sig,now+1000);ok(db.get('flags/tg_2/ok/cqalt')>=f.tg_2.r.cqalt.t,'the row\'s clear clears cqalt too');
+ // review round 1 (airdrop integrity, B6): the main account moves to whoever holds the most points; its old cqalt is cleared, and only an
+ // account that shares two signals with another one is flagged (a third member who shares nothing stays clear)
+ db.root.flags={tg_8:{r:{cqalt:{v:'old',t:now-5000}}}};db.root.lkok={};db.root.cqx={...db.root.cqx,tg_7:A,tg_8:Bsame,tg_9:Bbeacon};const c4={sig:sigOf('400'),keep:'tg_8',m:[['tg_8','NowMain',1500],['tg_7','WasMain',900],['tg_9','Flatmate',40]]};
+ await cqAltScan(env,[c4],db.root.flags,now+2000);const g=db.root.flags;
+ ok(db.get('flags/tg_8/ok/cqalt')>=g.tg_8.r.cqalt.t&&g.tg_7?.r?.cqalt&&!g.tg_9?.r?.cqalt,'the new main account\'s old cqalt is cleared, the other account of the matching pair is flagged, a member who shares no two signals is not');}
+// review round 1 (airdrop integrity, note 3): a flag's text and measurements never reach the phone (the outbox entry, the spill, the queue)
+{const {publicState}=await import('../../worker/src/conquest.js');const s={v:1,airdrop:{out:[{id:1,raw:10,fl:[['cqrepeat','3 near-identical raid operations in one day (the same route, 19.2 s)']]}],spill:{raw:5,fl:[['cqnoinput','x']]},pfl:[{k:'cqrepeat',v:'y'}]}};const out=publicState(s);
+ ok(!JSON.stringify(out).includes('cqrepeat')&&!JSON.stringify(out).includes('cqnoinput')&&out.airdrop.out[0].raw===10&&out.airdrop.spill.raw===5,'flag texts stay on the Worker: publicState strips them from the outbox, the spill and the queue (the points stay)');}
 console.log(JSON.stringify({test:'conquest-fingerprints',pass}));

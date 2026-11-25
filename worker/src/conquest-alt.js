@@ -28,8 +28,10 @@ const TEXT={town:'the same town layout',hours:'the same hours of play',beacon:'a
 // the cron: clusters (farm.js buildClusters' rows) checked once an hour each (12 slices of 5 minutes)
 export async function cqAltScan(env,clu,fl,now){const slice=Math.floor(now/300000)%ALT.every,lkok=(await dbGet(env,'lkok').catch(()=>null))||{};let n=0;
  for(const c of (clu||[]).filter(c=>c&&c.sig&&parseInt(c.sig,16)%ALT.every===slice)){const ids=c.m.map(x=>x[0]).slice(0,ALT.members),xs=await Promise.all(ids.map(id=>dbGet(env,'cqx/'+id).catch(()=>null)));
-  let hint=[];for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const s=shared(xs[i],xs[j],now);if(s.length>=ALT.need&&s.length>hint.length)hint=s;}
+  let hint=[];const pair=new Set();for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const s=shared(xs[i],xs[j],now);if(s.length>=ALT.need){pair.add(ids[i]);pair.add(ids[j]);if(s.length>hint.length)hint=s;}}
+  // the main account (the cluster's keep moves to whoever holds the most points) never keeps a cqalt: review round 1 found both held
+  const kf=fl?.[c.keep],kt=Number(kf?.r?.cqalt?.t)||0;if(kt&&kt>(Number(kf?.ok?.cqalt)||0))await dbPatch(env,'',{['flags/'+c.keep+'/ok/cqalt']:now}).catch(()=>{});
   await dbPatch(env,'',{['cqa/'+c.sig]:hint.length?{h:hint,t:now}:null});if(!hint.length||lkok[c.sig])continue;
   const text='Conquest: '+hint.map(k=>TEXT[k]).join(', ')+' as a linked account; only '+(c.m.find(x=>x[0]===c.keep)?.[1]||c.keep)+' counts';
-  for(const [id,name] of c.m){if(id===c.keep)continue;const cur=fl?.[id]?.r?.cqalt;if(cur&&cur.v===text)continue;await addFlags(env,id,name,[['cqalt',text]],now).catch(()=>{});n++;}}
+  for(const [id,name] of c.m){if(id===c.keep||!pair.has(id))continue;const cur=fl?.[id]?.r?.cqalt;if(cur&&cur.v===text)continue;await addFlags(env,id,name,[['cqalt',text]],now).catch(()=>{});n++;}}
  return n;}
