@@ -318,7 +318,8 @@ class Run:
   await s.pg.wait_for_timeout(500);await s.shot(f'{name}-home')
   await s.tab('garage');await s.until(gk,tank(to,kind),what=f'{name}: garage');await s.pg.wait_for_timeout(700);await s.shot(f'{name}-garage')
   d=await s.collect(name,lambda k:tank(SPARE,kind) if k=='card:m_spare' else tank(to,kind))
-  for k in home+[gk]:s.need(name,d,k,tank(to,kind),*(['wait'] if s.platform=='tg' or not flat else []))
+  for k in home:s.need(name,d,k,tank(to,kind),*(['wait'] if s.platform=='tg' or not flat else []))
+  s.need(name,d,gk,tank(to,kind),*([] if flat else ['wait']))   # 2D: the garage is opened after the server has answered, and there is no model to wait for
   if flat:
    drawn=[k for k in ('hub','world','town') if d['seen'].get(k)]
    if drawn:s.fails.append(f'{s.label} [{name}] on the 2D setting Conquest draws no tank model, yet these surfaces held one: {drawn}')
