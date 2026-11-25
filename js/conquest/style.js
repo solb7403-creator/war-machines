@@ -95,13 +95,20 @@ void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float 
  vec4 d1=texture2D(uDetail,vW*(1./96.));float h1=d1.r-.5;vec2 grad=(d1.gb-.5)*.9;float rim=max(h1,0.)*1.6,bowl=max(-h1,0.)*1.5,tone=.7+.42*d1.a,na=d1.a,va=d1.a,vb=.5,st=.5,st2=.5;
  if(hi){vec4 d2=texture2D(uDetail,vec2(vW.y,-vW.x)*(1./29.)+.31),d3=texture2D(uDetail,vW*(1./8.7)+.67);float h2=(d2.r-.5)*lod2,h3=(d3.r-.5)*lod;
   grad+=vec2(-(d2.b-.5),d2.g-.5)*1.25*lod2+(d3.gb-.5)*1.4*lod;rim+=max(h2,0.)*1.8+max(h3,0.)*1.6;bowl+=max(-h2,0.)*1.3+max(-h3,0.)*1.2;tone+=.24*(d2.a-.5)+.16*(d3.a-.5)*lod;na=d2.a*.62+d1.a*.38;
-  va=texture2D(uDetail,vW*(1./73.)+.13).a;vb=texture2D(uDetail,vW*(1./24.)+.71).a;st=texture2D(uDetail,vec2(vY*.032,(vW.x+vW.y)*.0018)).a;st2=texture2D(uDetail,vec2(vY*.21,(vW.x+vW.y)*.004)).a;}
+  va=texture2D(uDetail,vW*(1./73.)+.13).a;vb=texture2D(uDetail,vW*(1./24.)+.71).a;
+  // 5E-2d2 (reviewer note: steep banks smeared the ground texture): a bank's layers are read from the side, not from above. Two
+  // lookups in place of the two the strata used (which ran one row of the noise 250 m along the bank: long streaks): the noise laid
+  // on the bank's own upright face (across it and up it, two and a half times as long as it is thick, like rough bedding), from the east-west and the north-south side,
+  // mixed by which way the bank faces. The broad bands follow the same wobbling height.
+  float wx=vN.x*vN.x/(vN.x*vN.x+vN.z*vN.z+1e-4);st2=mix(texture2D(uDetail,vec2(vW.x*(1./13.)+.13,vY*.19)).a,texture2D(uDetail,vec2(vW.y*(1./13.)+.47,vY*.19)).a,wx);
+  st=clamp(.5+.34*sin((vY+(st2-.5)*3.2)*1.25)+(va-.5)*.5,0.,1.);}
  else{vec4 d2=texture2D(uDetail,vec2(vW.y,-vW.x)*(1./19.)+.31);float h2=(d2.r-.5)*lod;grad+=vec2(-(d2.b-.5),d2.g-.5)*1.3*lod;rim+=max(h2,0.)*1.7;bowl+=max(-h2,0.)*1.25;tone+=.2*(d2.a-.5)*lod;}   // LOW (5E-2d1): one layer of small craters near the camera (the barren Moon was flat navy up close: critic round 3)
  // Rugged frontier (owner art direction): the colonists clawed this ground out of the Moon. Grass grows in clumps of olive,
  // dry straw and dark green; bare dirt, gravel and grey regolith (its craters) show through; steep ground is rock with strata
  // and moss on top; shell craters with scorched earth and mud, and tank ruts, scar it. Grit grows with distance from the core.
  float coreD=length(vW-vec2(1130.,1125.)),grit=smoothstep(110.,430.,coreD),n1=d1.a,n2=hi?va:n1;
- float gm=smoothstep(.3,.5,n1*.6+n2*.4+.12*(1.-grit)-.1*grit)*smoothstep(.06,.3,terra),regoP=smoothstep(.62,.8,n2*.7+n1*.3+grit*.2)*(1.-gm),zc=smoothstep(.06,.24,terra),cr=1.-zc*(1.-regoP*.85);grad*=cr;rim*=cr;bowl*=cr;
+ float gm=smoothstep(.3,.5,n1*.6+n2*.4+.12*(1.-grit)-.1*grit)*smoothstep(.06,.3,terra),regoP=smoothstep(.62,.8,n2*.7+n1*.3+grit*.2)*(1.-gm),zc=smoothstep(.06,.24,terra),sg=smoothstep(.3,.56,1.-vN.y),cr=(1.-zc*(1.-regoP*.85))*(1.-sg);grad*=cr;rim*=cr;bowl*=cr;
+ tone=mix(tone,hi?.62+.55*st2:.9,sg);   // 5E-2d2: what is drawn from above (craters, the tone's mottling) stretches down a steep face into streaks: past about 50 degrees it gives way to the face's own layers
  vec3 rego=mix(vec3(.074,.078,.088),vec3(.055,.064,.082),massif)*tone;
  vec3 N=normalize(vN+vec3(-grad.x,0.,-grad.y));float steep=smoothstep(.28,.6,1.-N.y);
  if(hi)rego=mix(rego,rego*(.55+.5*st),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));
@@ -213,7 +220,11 @@ void main(){
    float st=sin(wp.y*4.6+nA*9.)*.5+.5,crack=1.-smoothstep(0.,.014,abs(nB-.5));base*=(.78+.34*nA)*(.9+.16*st)*(1.-.45*crack);
    float ms=wear*smoothstep(.15,.6,vNW.y)*smoothstep(.38,.6,nB);base=mix(base,vec3(.075,.105,.04)*(.7+.6*nA),ms);bump=(tA.gb-.5)*1.1;spec=.05;}
   else if(code<11.5){  // soil, sandbags, gravel
-   base*=(.74+.5*nB)*(.9+.2*nA);bump=(tB.gb-.5)*.8;spec=0.;}
+   // 5E-2d2 (reviewer note: the town's ground repeated its pock pattern on a visible grid, one copy every 4.3 m): the pocks now
+   // come in patches set by a slow noise that never repeats (four hashes, no lookup); between the patches the ground carries the
+   // large map's few wide dents and the slower grain instead, so no two stretches of ground are alike
+   vec2 pq=uv*.083,pc=floor(pq),pf=fract(pq);pf=pf*pf*(3.-2.*pf);float pk=smoothstep(.34,.66,mix(mix(sh1(pc),sh1(pc+vec2(1.,0.)),pf.x),mix(sh1(pc+vec2(0.,1.)),sh1(pc+vec2(1.,1.)),pf.x),pf.y)*.72+nA*.28);
+   base*=(.74+.5*mix(nA,nB,.3+.7*pk))*(.9+.2*nA);bump=(tB.gb-.5)*.8*pk+(tA.gb-.5)*.4*(1.-pk);spec=0.;}
   else if(code<12.5){  // solar cells: a cell grid under glass
    vec2 fp=fract(uv/vec2(.62,.62));float ed=min(min(fp.x,1.-fp.x),min(fp.y,1.-fp.y)),ln=1.-smoothstep(.02,.06,ed);base=mix(base*(.85+.3*nB),vec3(.07,.145,.35),ln*.75);spec=.4;shin=70.;glassK=.14;}
   else if(code<13.5){  // bark: upright grooves that wander, a tone per ridge; wear = cracks (it was timber boards, which read as brick on a trunk)
@@ -299,11 +310,13 @@ void main(){vec3 d=normalize(vDir);vec3 col;
 // Energy shell: additive fresnel rim + moving hex scan, transparent, never writes depth.
 const SHIELD_VS=`varying vec3 vN;varying vec3 vV;varying vec3 vP;
 void main(){vP=position;vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=-mv.xyz;gl_Position=projectionMatrix*mv;}`;
-const SHIELD_FS=`uniform vec3 uColor;uniform float uTime,uOpacity,uHex;varying vec3 vN;varying vec3 vV;varying vec3 vP;
+const SHIELD_FS=`uniform vec3 uColor;uniform float uTime,uOpacity,uHex,uNear;varying vec3 vN;varying vec3 vV;varying vec3 vP;
 void main(){float fr=pow(1.-abs(dot(normalize(vN),normalize(vV))),2.4);vec2 p=vec2(atan(vP.z,vP.x)*3.2,vP.y*5.5);
  vec2 r=vec2(1.,1.7320508),h=r*.5,a=mod(p,r)-h,b=mod(p-h,r)-h,g=dot(a,a)<dot(b,b)?a:b,q=abs(g);float edge=.5-max(dot(q,vec2(.5,.8660254)),q.x);
  float hex=1.-smoothstep(0.,.06,edge);float scan=smoothstep(.85,1.,fract(vP.y*.6-uTime*.6));
- vec3 col=uColor*(fr*.9+hex*(.12*uHex+.5*fr)+scan*.25*fr)*uOpacity;gl_FragColor=vec4(col,0.);
+ vec3 col=uColor*(fr*.9+hex*(.12*uHex+.5*fr)+scan*.25*fr)*uOpacity;
+ if(uNear>0.)col*=.1+.9*smoothstep(uNear*.3,uNear,length(vV));   // 5E-2d2: an atmosphere pylon's dome thins out near the camera, as the boundary veil does (beside the pylon it drew a hard blue sheet across the settler block behind it: reviewer note)
+ gl_FragColor=vec4(col,0.);
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 }`;
@@ -426,8 +439,8 @@ function create(T,opts={}){
    {transparent:true,premultipliedAlpha:true,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-8}),
   sky:mk(SKY_VS,SKY_FS,{uEarth:{value:tex.earth},uEarthDir:{value:V3(.86,.15,.48).normalize()},uEarthSize:{value:.068},uEarthL:{value:V3(-.62,.34,.7).normalize()},uSpin:{value:2.2},
    uZenith:{value:V3(.0002,.0003,.0009)},uBandA:{value:V3(0,.2,.19)},uBandB:{value:V3(.045,.012,.11)},uFogC:{value:V3(.0018,.0021,.0048)}},{fog:false,depthWrite:false,side:T.DoubleSide})};
- const shieldMat=(color,opacity,hexK=1,side=T.DoubleSide)=>{const m=new T.ShaderMaterial({uniforms:{uColor:{value:lin(color)},uTime:U.uTime,uOpacity:{value:opacity},uHex:{value:hexK}},vertexShader:SHIELD_VS,fragmentShader:SHIELD_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,blending:T.AdditiveBlending,side});m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
- MAT.shield=shieldMat(0x48d8ff,.85);MAT.field=shieldMat(0x2dd4ff,.32,.12,T.FrontSide);
+ const shieldMat=(color,opacity,hexK=1,side=T.DoubleSide,near=0)=>{const m=new T.ShaderMaterial({uniforms:{uColor:{value:lin(color)},uTime:U.uTime,uOpacity:{value:opacity},uHex:{value:hexK},uNear:{value:near}},vertexShader:SHIELD_VS,fragmentShader:SHIELD_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,blending:T.AdditiveBlending,side});m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
+ MAT.shield=shieldMat(0x48d8ff,.85);MAT.field=shieldMat(0x2dd4ff,.32,.12,T.FrontSide,64);
  // Additive glow/decal draws are never tap targets (view pick() and the browser bots skip userData.noPick).
  const fxMesh=(geo,order=2)=>{const m=new T.Mesh(geo,MAT.fx);m.renderOrder=order;m.userData.noPick=true;return m;};
  const S={id:'neon-frontline',version:1,low,high,software,T,U,MAT,G,AT,SIGN,K,tex,footprints:F,shared:[],ground};
@@ -475,35 +488,43 @@ function create(T,opts={}){
  // Without WebGL2 queries, without a camera, or when an answer never comes back, the twins are always drawn, as before.
  MAT.outlineProbe=mk(SOLID_VS,SOLID_FS,{uOutline:{value:.51},uDetail:{value:tex.detail}},{colorWrite:false,depthFunc:6,depthWrite:false});
  const PROBE_I=[0,2,3,0,3,1,4,5,7,4,7,6,0,1,5,0,5,4,2,6,7,2,7,3,0,4,6,0,6,2,1,3,7,1,7,5];   // a box's 12 triangles, corners numbered x + 2y + 4z, wound outward
- S.outliner=scene=>{const g=new T.Group();g.name='cq-outline';scene.add(g);const sets=new Map();let frame=0;const _pv=V3(),_pc=V3(),_pm=new T.Matrix4(),_pi=new T.Matrix4();
+ S.outliner=scene=>{const g=new T.Group();g.name='cq-outline';scene.add(g);const sets=new Map();let frame=0;const _pv=V3(),_pc=V3(),_pm=new T.Matrix4(),_pi=new T.Matrix4(),_pr=new Float32Array(16);
   const drop=set=>{for(const t of set.tw){g.remove(t[0]);g.remove(t[1]);}if(set.probe){g.remove(set.probe);set.probe.geometry.dispose();if(set.q&&set.gl)try{set.gl.deleteQuery(set.q);}catch(_){}set.q=null;set.probe=null;}};
   const probe=set=>{const geo=new T.BufferGeometry(),N=new Float32Array(24);for(let i=0;i<8;i++)N[i*3+1]=1;
    geo.setAttribute('position',new T.BufferAttribute(new Float32Array(24),3));geo.setAttribute('normal',new T.BufferAttribute(N,3));geo.setAttribute('aCol',new T.BufferAttribute(new Float32Array(32),4));geo.setIndex(PROBE_I.slice());set.flip=false;
    const m=new T.Mesh(geo,MAT.outlineProbe);m.renderOrder=8999;m.matrixAutoUpdate=false;m.frustumCulled=false;m.userData.noPick=true;m.userData.noOutline=true;m.userData.outlineProbe=true;set.pend=0;set.busy=false;set.hot=0;set.lost=0;set.ph=0;set.cur=0;set.nh=0;set.whole=false;set.ok=true;
-   m.onBeforeRender=rd=>{MAT.outlineProbe.depthFunc=set.cur?3:6;/* 0: behind anything (greater); 1..: in sight (less or equal). The state is applied after this call */if(set.pend||set.busy||!set.ok)return;const gl=rd.getContext();if(!gl||!gl.beginQuery||gl.ANY_SAMPLES_PASSED_CONSERVATIVE===undefined){set.ok=false;return;}try{if(!set.q||set.gl!==gl){set.gl=gl;set.q=gl.createQuery();}set.tgt=set.cur?gl.ANY_SAMPLES_PASSED:gl.ANY_SAMPLES_PASSED_CONSERVATIVE;gl.beginQuery(set.tgt,set.q);set.busy=true;}catch(_){set.ok=false;}};
+   m.onBeforeRender=rd=>{MAT.outlineProbe.depthFunc=set.cur?3:6;/* 0: behind anything (greater); 1..: in sight (less or equal). The state is applied after this call */if(set.pend||set.busy||!set.ok)return;const gl=rd.getContext();if(!gl||!gl.beginQuery||gl.ANY_SAMPLES_PASSED_CONSERVATIVE===undefined){set.ok=false;return;}try{if(!set.q||set.gl!==gl){set.gl=gl;set.q=gl.createQuery();}set.tgt=gl.ANY_SAMPLES_PASSED;/* one target for every question: a query object cannot change its target (WebGL answers INVALID_OPERATION and the old answer stays, which read as "always in sight") */gl.beginQuery(set.tgt,set.q);set.busy=true;}catch(_){set.ok=false;}};
    m.onAfterRender=()=>{if(!set.busy)return;set.busy=false;try{set.gl.endQuery(set.tgt);set.pend=frame;}catch(_){set.ok=false;}};g.add(m);return m;};
   // true = draw this tank's twins this frame
   // 5E-2d2 (reviewer note: behind a thin thing, a pole or a lattice leg, the outline was two stray dashes on it, "a ragged
   // bracket"): the outline is the WHOLE silhouette or nothing. One probe a frame, as before, in turn: (0) the box, is any of it
   // behind something? no: no outline. (1) the box, is any of it still in sight? no: wholly hidden, the whole outline. Else
-  // (2..9) the box cut into 4 columns across the view by 2 rows, each asked "is any of it in sight?": the whole outline comes
-  // on once 3 of the 8 are wholly hidden (about a third of the tank) and stays until fewer than 2 are; under that nothing is
-  // drawn (the tank reads on its own). The twins then draw the full ring, in front of everything (set.whole).
-  const CELLS=8,ask=(set,rt,cam)=>{if(!set.probe||!set.ok||!cam){set.whole=false;return true;}const P=set.probe.geometry.attributes.position,A=P.array,cp=cam.position;let x0=1e9,y0=1e9,z0=1e9,x1=-1e9,y1=-1e9,z1=-1e9;_pi.copy(rt.matrixWorld).invert();
+  // (2..13) the tank as the camera sees it, cut into 6 columns across the screen by 2 rows (each cell an upright plate facing
+  // the camera, standing at the nearest point of the tank's box in its column, so the cells never overlap on screen whichever
+  // way the tank is turned), each asked "is any of it in sight?": the whole outline comes on once 3 of the 12 are wholly hidden
+  // (with the cells hidden in part beside them, about a third of the tank) and stays until fewer than 2 are; under that nothing is drawn (the tank reads on its own; a pole or a
+  // lattice leg is narrower than a cell and never hides one). The twins then draw the full ring, in front of everything (set.whole).
+  const COLS=6,CELLS=COLS*2,ask=(set,rt,cam)=>{if(!set.probe||!set.ok||!cam){set.whole=false;return true;}const P=set.probe.geometry.attributes.position,A=P.array,cp=cam.position;let x0=1e9,y0=1e9,z0=1e9,x1=-1e9,y1=-1e9,z1=-1e9;_pi.copy(rt.matrixWorld).invert();
    if(set.pend){let done=false,hit=true;try{done=!!set.gl.getQueryParameter(set.q,set.gl.QUERY_RESULT_AVAILABLE);if(done)hit=!!set.gl.getQueryParameter(set.q,set.gl.QUERY_RESULT);}catch(_){set.ok=false;set.whole=false;return true;}
     if(done){set.pend=0;const ph=set.cur;
      if(ph===0){if(hit)set.ph=1;else{set.ph=0;set.hot=Math.min(set.hot,frame+4);}}
-     else if(ph===1){if(hit){set.ph=2;set.nh=0;}else{set.ph=0;set.whole=true;set.hot=frame+14;}}
-     else{if(!hit)set.nh++;const need=set.whole&&frame<=set.hot?2:3,left=CELLS+1-ph;if(set.nh>=need){set.ph=0;set.whole=true;set.hot=frame+14;}else if(set.nh+left<need){set.ph=0;set.hot=Math.min(set.hot,frame+2);}else set.ph=ph+1;}}
+     else if(ph===1){if(hit){set.ph=2;set.nh=0;}else{set.ph=0;set.whole=true;set.hot=frame+CELLS+8;}}
+     else{if(!hit)set.nh++;const need=set.whole&&frame<=set.hot?2:3,left=CELLS+1-ph;if(set.nh>=need){set.ph=0;set.whole=true;set.hot=frame+CELLS+8;}else if(set.nh+left<need){set.ph=0;set.hot=Math.min(set.hot,frame+2);}else set.ph=ph+1;}}
     else if(frame-set.pend>40){set.pend=0;set.lost=frame+40;try{set.gl.deleteQuery(set.q);}catch(_){}set.q=null;}}   // an answer that never comes (a lost context): draw the twins as they were drawn before and ask again
    if(!set.pend){   // the next question's box (the one in flight keeps its own)
     for(const o of set.src){const b=o.geometry.boundingBox||(o.geometry.computeBoundingBox(),o.geometry.boundingBox);_pm.multiplyMatrices(_pi,o.matrixWorld);for(let i=0;i<8;i++){_pv.set(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z).applyMatrix4(_pm);x0=Math.min(x0,_pv.x);x1=Math.max(x1,_pv.x);y0=Math.min(y0,_pv.y);y1=Math.max(y1,_pv.y);z0=Math.min(z0,_pv.z);z1=Math.max(z1,_pv.z);}}
     const px=(x1-x0)*.04,pz=(z1-z0)*.04,h=y1-y0;x0-=px;x1+=px;z0-=pz;z1+=pz;y0+=h*.3;y1+=h*.06;_pc.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2).applyMatrix4(rt.matrixWorld);
     const dx=_pc.x-cp.x,dy=_pc.y-cp.y,dz=_pc.z-cp.z,dl=Math.hypot(dx,dy,dz)||1,sh=1/dl;   // the shader brings the box 1.3 m nearer in depth (as it does the outline); 1 m back here leaves it .3 m nearer than it stands
-    if(set.ph>1){const k=set.ph-2,col=k>>1,row=k&1,ym=(y0+y1)/2;_pv.copy(cp).applyMatrix4(_pi);   // a cell: the columns run along whichever of the tank's own axes lies across the view
-     if(Math.abs(_pv.z-(z0+z1)/2)>=Math.abs(_pv.x-(x0+x1)/2)){const w=(x1-x0)/4;x0+=col*w;x1=x0+w;}else{const w=(z1-z0)/4;z0+=col*w;z1=z0+w;}if(row)y0=ym;else y1=ym;}
-    for(let i=0;i<8;i++){_pv.set(i&1?x1:x0,i&2?y1:y0,i&4?z1:z0).applyMatrix4(rt.matrixWorld);A[i*3]=_pv.x+dx*sh;A[i*3+1]=_pv.y+dy*sh;A[i*3+2]=_pv.z+dz*sh;}P.needsUpdate=true;set.cur=set.ph;
-    const e=rt.matrixWorld.elements,flip=(e[0]*(e[5]*e[10]-e[6]*e[9])-e[4]*(e[1]*e[10]-e[2]*e[9])+e[8]*(e[1]*e[6]-e[2]*e[5]))<0;
+    for(let i=0;i<8;i++){_pv.set(i&1?x1:x0,i&2?y1:y0,i&4?z1:z0).applyMatrix4(rt.matrixWorld);A[i*3]=_pv.x;A[i*3+1]=_pv.y;A[i*3+2]=_pv.z;}
+    const e=rt.matrixWorld.elements,hl=Math.hypot(dx,dz);let flip=(e[0]*(e[5]*e[10]-e[6]*e[9])-e[4]*(e[1]*e[10]-e[2]*e[9])+e[8]*(e[1]*e[6]-e[2]*e[5]))<0;
+    if(set.ph>1&&hl>1e-3){const k=set.ph-2,col=k>>1,row=k&1,fx=dx/hl,fz=dz/hl,rx=fz,rz=-fx;let r0=1e9,r1=-1e9,ya=1e9,yb=-1e9,f=1e9;   // a cell: across the view (r), up (y), away from the camera (f); right x up = away, so the box keeps its winding
+     for(let i=0;i<8;i++){const ax=A[i*3]-_pc.x,az=A[i*3+2]-_pc.z,r=_pr[i*2]=ax*rx+az*rz;_pr[i*2+1]=ax*fx+az*fz;r0=Math.min(r0,r);r1=Math.max(r1,r);ya=Math.min(ya,A[i*3+1]);yb=Math.max(yb,A[i*3+1]);}
+     const w=(r1-r0)/COLS,ra=r0+col*w,rb=ra+w,ym=(ya+yb)/2;
+     for(let i=0;i<8;i++){const r=_pr[i*2],d=_pr[i*2+1];if(r>=ra&&r<=rb)f=Math.min(f,d);   // the nearest point of the tank's box inside this column: a corner, or where one of its 12 edges crosses the column's side
+      for(let b=1;b<8;b<<=1){const j=i|b;if(j===i)continue;const rj=_pr[j*2];for(let q=0;q<2;q++){const c=q?rb:ra;if((r-c)*(rj-c)<0)f=Math.min(f,d+(_pr[j*2+1]-d)*(c-r)/(rj-r));}}}
+     if(f>1e8)f=0;if(row)ya=ym;else yb=ym;
+     for(let i=0;i<8;i++){const r=i&1?rb:ra,d=f+(i&4?.12:0);A[i*3]=_pc.x+rx*r+fx*d;A[i*3+1]=i&2?yb:ya;A[i*3+2]=_pc.z+rz*r+fz*d;}flip=false;}
+    for(let i=0;i<24;i+=3){A[i]+=dx*sh;A[i+1]+=dy*sh;A[i+2]+=dz*sh;}P.needsUpdate=true;set.cur=set.ph;
     if(flip!==set.flip){set.flip=flip;const I=set.probe.geometry.index.array;for(let t=0;t<36;t+=3){I[t+1]=PROBE_I[t+(flip?2:1)];I[t+2]=PROBE_I[t+(flip?1:2)];}set.probe.geometry.index.needsUpdate=true;}}
    if(frame<=set.lost){set.whole=false;return true;}if(frame>set.hot)set.whole=false;return set.whole;};
   const ok=o=>o.isMesh&&!o.isInstancedMesh&&o.material&&!Array.isArray(o.material)&&!o.material.transparent&&o.material.colorWrite!==false&&o.geometry?.attributes?.normal&&!o.userData.noOutline;
@@ -556,6 +577,11 @@ function create(T,opts={}){
    for(let j=0;j<seg;j++)for(let i=0;i<seg;i++){const a=base+j*(seg+1)+i;this.q4(a,a+1,a+seg+2,a+seg+1);}}
   band(x,z,y0,r0,r1,h,e0,e1,seg=16){const base=this.n,Sg=AT.SOLID,u=(Sg[0]+Sg[2])/2,v=(Sg[1]+Sg[3])/2;for(let k=0;k<=seg;k++){const a=k/seg*TAU,c=Math.cos(a),s=Math.sin(a);this.v(x+c*r0,y0,z+s*r0,u,v,e0,0);this.v(x+c*r1,y0+h,z+s*r1,u,v,e1,0);}
    for(let k=0;k<seg;k++){const a=base+k*2;this.q4(a,a+2,a+3,a+1);}}
+  // 5E-2d2 (reviewer note: an objective beam was a wide flat slab at monitor size): a light shaft. A strip of quads up its own
+  // axis that turns about that axis to face the camera, lit across its width by the BLOB mask's middle row (a bright core that
+  // falls off softly to nothing at both edges), so it reads as a beam of light at any screen size. w = full width in metres.
+  shaft(x,z,y0,w0,w1,h,e0,e1,seg=3){const r=AT.BLOB,vm=(r[1]+r[3])/2,base=this.n;for(let k=0;k<=seg;k++){const t=k/seg,f=t*t,w=(w0+(w1-w0)*t)/2,e=[e0[0]+(e1[0]-e0[0])*f,e0[1]+(e1[1]-e0[1])*f,e0[2]+(e1[2]-e0[2])*f];this.v(x,y0+h*t,z,r[0],vm,e,0,-w,0,1);this.v(x,y0+h*t,z,r[2],vm,e,0,w,0,1);}
+   for(let k=0;k<seg;k++){const a=base+k*2;this.q4(a,a+1,a+3,a+2);}}
   ringGlow(x,z,y,R,h,e,seg){const z0=[0,0,0];this.band(x,z,y-h/2,R,R,h/2,z0,e,seg);this.band(x,z,y,R,R,h/2,e,z0,seg);}
   geometry(){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(this.P,3));g.setAttribute('uv',new T.Float32BufferAttribute(this.U,2));
    g.setAttribute('aCol',new T.Float32BufferAttribute(this.A,4));g.setAttribute('aBill',new T.Float32BufferAttribute(this.B,3));g.setIndex(this.I);g.computeBoundingSphere();
@@ -858,7 +884,7 @@ function create(T,opts={}){
  function terminal(tk,X,t){const {x,z}=t,g=ground(x,z);
   X.decal(x,z,6.4,6.4,0,AT.HEX,E(0x22e6ff,.2),0,low?8:12,.14);X.decal(x,z,12.65,12.65,0,AT.DASH,E(0x22e6ff,.14),0,low?12:18,.18);X.decal(x,z,8,8,0,AT.BLOB,E(0x22e6ff,.07),0,8,.1);   // dimmed (5E-2d1): in daylight the pad was a saturated cyan slab that swamped the terminal
   KW().place('refuge-terminal',tk,KM(x,g,z),{});
-  X.band(x,z,g+3.3,1.05,.7,6.5,E(0x2dffc4,.45),[0,0,0],14);X.quadV(x,g+7.3,z,3.4,3.4,0,AT.ICON,E(0x2dffc4,1.4));X.quadV(x,g+7.3,z,3.4,3.4,Math.PI/2,AT.ICON,E(0x2dffc4,.9));
+  X.shaft(x,z,g+3.3,2.4,1.3,6.5,E(0x2dffc4,.3),[0,0,0]);X.shaft(x,z,g+3.3,.66,.4,6.5,E(0x2dffc4,.95),E(0x2dffc4,.1));X.quadV(x,g+7.3,z,3.4,3.4,0,AT.ICON,E(0x2dffc4,1.4));X.quadV(x,g+7.3,z,3.4,3.4,Math.PI/2,AT.ICON,E(0x2dffc4,.9));
   X.quadV(x,g+5.05,z+.3,3.8,.95,0,AT[SIGN.SUPPLY],E(0x22e6ff,1.6));}
  function solar(tk,X,p){const {x,z,w,d,tilt}=p,g=ground(x,z);let lo=g;for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]])lo=Math.min(lo,ground(x+sx*(w/2-.6),z+sz*(d/2-.6)));
   KW().place('refuge-solar',tk,KM(x,g,z),{w,d,tilt,sink:r2(g-lo+.5)});}
@@ -893,7 +919,7 @@ function create(T,opts={}){
  function hive(tk,X,inst){const cx=inst.solid.x,cz=inst.solid.z,g=ground(cx,cz);let lo=g;for(const [sx,sz] of [[-11,-8],[11,-8],[11,8],[-11,8]])lo=Math.min(lo,ground(cx+sx,cz+sz));
   KW().place('hive',tk,KM(cx,g,cz),{sink:r2(Math.min(4,g-lo+.6)),seed:1+F.installations.indexOf(inst)});   // each hive its own plundered plates, flags and veins
   const mx=inst.mast.x,mz=inst.mast.z,mg=ground(mx,mz);KW().place('hive-mast',tk,KM(mx,mg,mz),{seed:1+F.installations.indexOf(inst)});
-  X.band(mx,mz,mg+19.5,.9,.4,14,E(PAR.red,.5),[0,0,0],12);
+  X.shaft(mx,mz,mg+19.5,2.1,.9,14,E(PAR.red,.32),[0,0,0]);X.shaft(mx,mz,mg+19.5,.56,.26,14,E(PAR.red,1.05),E(PAR.red,.1));
   X.decal(cx,cz,15,12,0,AT.BLOB,[0,0,0],.6,low?6:10,.12);X.decal(cx,cz,21,18,0,AT.BLOB,E(PAR.red,.35),0,low?6:10,.16);}
  S.installations=()=>F.installations.map(inst=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);hive(tk,X,inst);const g=kdone(pair(Sb,X),tk);g.name='cq-style-hive-'+inst.id;g.userData.site={x:inst.solid.x,z:inst.solid.z,range:1100};return g;});
  S.cover=()=>{const groups=new Map();for(const o of F.obstacles){let e=groups.get(o.layout);if(!e){e={Sb:new Bld(),X:new Fx(),x:0,z:0,n:0};e.tk=kt(e.Sb,e.X);groups.set(o.layout,e);}coverWall(e.tk,e.X,o);e.x+=o.x;e.z+=o.z;e.n++;}
@@ -1038,13 +1064,13 @@ function create(T,opts={}){
  const ringCache=new Map();
  S.groundRing=(color,region='RING')=>{const k=color+region;let g=ringCache.get(k);if(!g){const X=new Fx();X.flat(0,0,0,1,1,AT[region],E(color,1),0);g=keep(X.geometry());ringCache.set(k,g);}return fxMesh(g);};
  // Holo pillar marker (mission beacon, objectives, caches): ground hex + light band + icon.
- S.holoMarker=(color,{height=10,radius=1.4,icon=true}={})=>{const X=new Fx();X.flat(0,.15,0,radius*2.2,radius*2.2,AT.HEX,E(color,.9),0);X.band(0,0,.2,radius,radius*.55,height,E(color,.55),[0,0,0],12);if(icon){X.quadV(0,height+1.6,0,2.6,2.6,0,AT.ICON,E(color,1.2));X.quadV(0,height+1.6,0,2.6,2.6,Math.PI/2,AT.ICON,E(color,.8));}
+ S.holoMarker=(color,{height=10,radius=1.4,icon=true}={})=>{const X=new Fx();X.flat(0,.15,0,radius*2.2,radius*2.2,AT.HEX,E(color,.9),0);X.shaft(0,0,.2,radius*2.3,radius*1.1,height,E(color,.34),[0,0,0]);X.shaft(0,0,.2,radius*.62,radius*.34,height,E(color,1.15),E(color,.12));if(icon){X.quadV(0,height+1.6,0,2.6,2.6,0,AT.ICON,E(color,1.2));X.quadV(0,height+1.6,0,2.6,2.6,Math.PI/2,AT.ICON,E(color,.8));}
   const m=X.mesh();m.renderOrder=2;return m;};
  const cacheGeo={};
  // Session 6 loot v1: a cache holding loot glows in its rarity colour (grey, green, cyan, violet, gold); plain salvage stays amber.
  const LOOT_GLOW=[0xc9d2dc,0x5fe08a,0x46d9ff,0xc18cff,0xffc94a];
  S.cache=(wreck,rarity=-1)=>{const r=wreck?-1:Math.max(-1,Math.min(4,rarity|0)),key=(wreck?'w':'l'+r)+':'+root.ConquestWorldKit.generation+(KW().swapped(wreck?'wreck-cache':'loot-cache')&&typeof Meshy3D!=='undefined'?':'+Meshy3D.generation:'');if(!cacheGeo[key]){const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X),col=wreck?0x8ee6ef:r>=0?LOOT_GLOW[r]:0xffd58a;
-   KW().place(wreck?'wreck-cache':'loot-cache',tk,KM(0,0,0,.35),wreck?{}:{rarity:r});X.band(0,0,1.5,.5,.2,5,E(col,.6),[0,0,0],10);cacheGeo[key]={s:keep(Sb.geometry()),f:keep(X.geometry()),tk};}
+   KW().place(wreck?'wreck-cache':'loot-cache',tk,KM(0,0,0,.35),wreck?{}:{rarity:r});X.shaft(0,0,1.5,1.2,.5,5,E(col,.36),[0,0,0]);X.shaft(0,0,1.5,.34,.16,5,E(col,1.2),E(col,.1));cacheGeo[key]={s:keep(Sb.geometry()),f:keep(X.geometry()),tk};}
   const g=new T.Group();g.add(new T.Mesh(cacheGeo[key].s,MAT.solid),fxMesh(cacheGeo[key].f));return kdone(g,cacheGeo[key].tk);};
  S.flag=(owned,friendly)=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X),col=owned?0x2dffc4:friendly?0x22e6ff:PAR.red;
   KW().place('sector-flag',tk,KM(0,0,0),{w:3.4,h:12,d:1.4,owner:owned?'owned':friendly?'friendly':'hostile'});X.quadV(0,9.6,.14,2.2,.55,0,AT[owned||friendly?SIGN.SECURED:SIGN.HOSTILE],E(col,1.3));return kdone(pair(Sb,X),tk);};
@@ -1169,13 +1195,13 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
  for(const w of S.wrecks||[])if(d.has(w.x,w.z))add(w.x,w.z,'◇','#8ee6ef','YOUR WRECK',8);add(Cb.refuge.x,Cb.refuge.z,'●','#3fe9ff','REFUGE',10);
  for(const k of marks){if(k.p.x<-12||k.p.x>372||k.p.y<-12||k.p.y>432)continue;if(k.dot){ctx.fillStyle=k.c;ctx.beginPath();ctx.arc(k.p.x,k.p.y,2,0,TAU);ctx.fill();}else if(k.big){ctx.save();ctx.strokeStyle=k.c;ctx.globalAlpha=.55+.35*Math.sin((m.time||0)*3);ctx.lineWidth=2;ctx.beginPath();ctx.arc(k.p.x,k.p.y,17,0,TAU);ctx.stroke();ctx.restore();ctx.drawImage(glyph(k.g,k.c),k.p.x-18,k.p.y-18,36,36);}else ctx.drawImage(glyph(k.g,k.c),k.p.x-12,k.p.y-12,24,24);}   // Find My Base: the base is the one big, pulsing marker
  const ys=label(['YOU'],'#ffffff',false),obst=[{x:0,y:403,w:360,h:17},{x:you.x-13,y:you.y-13,w:26,h:26},{x:you.x-ys.w/2,y:you.y-16-ys.h,w:ys.w,h:ys.h}];
- for(const k of marks)if(!k.dot)obst.push(k.big?{x:k.p.x-17,y:k.p.y-17,w:34,h:34}:{x:k.p.x-7,y:k.p.y-7,w:14,h:14});
+ for(const k of marks)if(!k.dot)obst.push(k.big?{x:k.p.x-17,y:k.p.y-17,w:34,h:34}:{x:k.p.x-9,y:k.p.y-9,w:18,h:18});   // 5E-2d2: a marker keeps its whole glyph clear (labels sat on the glyphs' edges and on each other: reviewer note)
  const items=[];for(const k of marks){if(!k.t||k.p.x<-10||k.p.x>370||k.p.y<-10||k.p.y>430)continue;items.push({p:k.p,s:label(wrap(k.t),k.c,k.dim),pri:k.pri,c:k.c,left:k.left});}
  items.sort((a,b)=>b.pri-a.pri||(Math.hypot(a.p.x-you.x,a.p.y-you.y)-Math.hypot(b.p.x-you.x,b.p.y-you.y)));
- const placed=obst.slice(),fits=r=>r.x>=13&&r.y>=13&&r.x+r.w<=358&&r.y+r.h<=402&&!placed.some(o=>r.x<o.x+o.w&&r.x+r.w>o.x&&r.y<o.y+o.h&&r.y+r.h>o.y);
+ const placed=obst.slice(),fits=r=>r.x>=13&&r.y>=13&&r.x+r.w<=358&&r.y+r.h<=402&&!placed.some(o=>r.x<o.x+o.w+2&&r.x+r.w+2>o.x&&r.y<o.y+o.h+1&&r.y+r.h+1>o.y);   // labels keep 2 px between them
  for(const it of items){const w=it.s.w,h=it.s.h;let cands;
   if(it.ring){cands=[];for(const deg of [-90,-66,-114,-42,-138,-18,-162,90,66,114]){const a=deg*Math.PI/180;cands.push([Math.cos(a)*it.ring.r-w/2,Math.sin(a)*it.ring.r-h/2,0]);}}
-  else{const near=[[9,-h/2,0],[-9-w,-h/2,0],[-w/2,-10-h,0],[-w/2,10,0]];if(it.left)near.unshift(near.splice(1,1)[0]);cands=near.concat([[16,-h-8,1],[16,8,1],[-16-w,-h-8,1],[-16-w,8,1],[-w/2,-22-h,1],[-w/2,22,1],[30,-h/2,1],[-30-w,-h/2,1],[26,-h-22,1],[-26-w,-h-22,1],[26,20,1],[-26-w,20,1],[-w/2,-36-h,1],[-w/2,36,1],[46,-h-6,1],[-46-w,-h-6,1],[44,14,1],[-44-w,14,1]]);}
+  else{const near=[[11,-h/2,0],[-11-w,-h/2,0],[-w/2,-11-h,0],[-w/2,11,0]];if(it.left)near.unshift(near.splice(1,1)[0]);cands=near.concat([[16,-h-8,1],[16,8,1],[-16-w,-h-8,1],[-16-w,8,1],[-w/2,-22-h,1],[-w/2,22,1],[30,-h/2,1],[-30-w,-h/2,1],[26,-h-22,1],[-26-w,-h-22,1],[26,20,1],[-26-w,20,1],[-w/2,-36-h,1],[-w/2,36,1],[46,-h-6,1],[-46-w,-h-6,1],[44,14,1],[-44-w,14,1]]);}
   for(const [dx,dy,lead] of cands){const r={x:it.p.x+dx,y:it.p.y+dy,w,h};if(fits(r)){placed.push(r);it.at={r,lead};break;}}}
  for(const it of items){if(!it.at)continue;const r=it.at.r;if(it.at.lead){const nx=Math.max(r.x,Math.min(it.p.x,r.x+r.w)),ny=Math.max(r.y,Math.min(it.p.y,r.y+r.h)),dx=nx-it.p.x,dy=ny-it.p.y,l=Math.hypot(dx,dy)||1;
    ctx.globalAlpha=.65;ctx.strokeStyle=it.c;ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(it.p.x+dx/l*8,it.p.y+dy/l*8);ctx.lineTo(nx,ny);ctx.stroke();ctx.globalAlpha=1;ctx.fillStyle=it.c;ctx.fillRect(nx-1.2,ny-1.2,2.4,2.4);}

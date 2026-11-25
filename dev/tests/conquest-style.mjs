@@ -126,6 +126,14 @@ for(const low of [false,true]){
    const draws=mw.children[0].children.length,t=visTris(mw);assert.ok(draws<=6&&t<=(low?30000:40000),q+' every deposit discovered: '+draws+' draws, '+t+' triangles');
    assert.ok(mw.children[2].visible&&!mw.children[1].visible,q+' an open strike shows the crater and core');mw.userData.update(all,Date.UTC(2026,10,9,17,57));assert.ok(mw.children[1].visible&&mw.children[1].position.y>W.groundAt(mw.children[1].position.x,mw.children[1].position.z)+100,q+' a telegraphed strike shows the meteor high in the sky');}
   console.log('PASS',q,'terraform: tree',tri(TP.tree),'far',tri(TP.treeFar),'plant',tri(TP.plant),'world worst',worst,'densest chunk',flora,'trees',trees);}
+ // The colony and its frontier dressing (5E-2d2; owner, Nov 21: "the colony on LOW back to at most its count before 5E-2d1"):
+ // both are built whole at both qualities from the style's materials. As built (every mesh, before the camera culls any of it)
+ // the two together weigh no more on LOW than on main before 5E-2d1 (0e681aa: 35,060 + 24,758 = 59,818 triangles; today the
+ // colony alone is 41,447 against 35,060 and the frontier 12,096 against 24,758). What a phone draws in a real view is the
+ // number conquest-session6c.py holds to its own count before 5E-2d1.
+ {const col=S.colonyWorld(),fr=S.frontierWorld(),nc=tris(col),nf=tris(fr);for(const g of [col,fr])g.traverse(m=>{if(m.isMesh)assert.ok(allowed.has(m.material),q+' colony only style materials: '+(m.name||m.parent?.name));});
+  assert.ok(nc>5000&&nf>2000,q+' the colony and its frontier are drawn: '+nc+' / '+nf);if(low)assert.ok(nc+nf<=59818,'LOW colony + frontier as built '+(nc+nf)+' triangles <= 59818 (main before 5E-2d1)');
+  console.log('PASS',q,'colony',nc,'frontier',nf);}
  S.dispose();
  console.log('PASS',q,'refuge',tris(parts.refuge),'viaduct',tris(parts.viaduct),'hive',tris(parts.installs[0]),'base T5',tris(parts.base[5]),'battery',tris(parts.battery),'chunks',chunks.length);
 }

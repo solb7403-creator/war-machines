@@ -191,7 +191,7 @@ async def steps(browser,base,ready,w,h,R):
  # 5E-2d1: the sample is 240 frames or 16 s, whichever comes first (at least 60 frames). On the software renderer a frame of the
  # rebuilt world takes about a third longer; 240 frames outlasted the raid (the Platoon won it), and units fielded after a
  # victory are not drawn, so the Battalion step never saw its nine views. The checks below are unchanged.
- FRAMES='''()=>new Promise(done=>{const iv=[];let last=performance.now(),n=0;const t00=last;const f=t=>{iv.push(t-last);last=t;if(++n<240&&!(n>=60&&performance.now()-t00>16000))requestAnimationFrame(f);else{const x=iv.slice(20).sort((a,b)=>a-b),q=p=>+x[Math.min(x.length-1,Math.floor(x.length*p))].toFixed(1),v=Conquest.view;done({median:q(.5),p95:q(.95),worst:+x.at(-1).toFixed(1),calls:v.renderer.info?.render?.calls,tris:v.renderer.info?.render?.triangles,programs:v.renderer.info?.programs?.length,friends:(v.battle?.friends||[]).length,views:v.friendViews?v.friendViews.size:0,hostiles:(v.battle?.enemies||[]).filter(e=>e.hp>0&&Math.hypot(e.x-v.p.x,e.z-v.p.z)<120).length,dist:(v.battle?.friends||[]).map(f=>Math.round(Math.hypot(f.x-v.p.x,f.z-v.p.z))),low:gfxMode()});}};requestAnimationFrame(f);})'''
+ FRAMES='''()=>new Promise(done=>{const iv=[];let last=performance.now(),n=0;const t00=last;const f=t=>{iv.push(t-last);last=t;if(++n<240&&!(n>=60&&performance.now()-t00>16000))requestAnimationFrame(f);else{const x=iv.slice(20).sort((a,b)=>a-b),q=p=>+x[Math.min(x.length-1,Math.floor(x.length*p))].toFixed(1),v=Conquest.view;done({median:q(.5),p95:q(.95),worst:+x.at(-1).toFixed(1),calls:v.renderer.info?.render?.calls,tris:v.renderer.info?.render?.triangles,outline:(v.outline?.group?.children||[]).reduce((n,m)=>n+(m.visible&&m.userData.outlineTwin?(m.geometry.index?m.geometry.index.count:m.geometry.attributes.position.count)/3:0),0),programs:v.renderer.info?.programs?.length,friends:(v.battle?.friends||[]).length,views:v.friendViews?v.friendViews.size:0,hostiles:(v.battle?.enemies||[]).filter(e=>e.hp>0&&Math.hypot(e.x-v.p.x,e.z-v.p.z)<120).length,dist:(v.battle?.friends||[]).map(f=>Math.round(Math.hypot(f.x-v.p.x,f.z-v.p.z))),low:gfxMode()});}};requestAnimationFrame(f);})'''
  R['perfPlatoon']=await page.evaluate(FRAMES)
  fl=await page.request.post(base+'/fixture-field',data={'scale':'battalion'});R['fielded']=(await fl.json()).get('fielded')
  await page.evaluate('Conquest.view.authority.connect()')   # a unit fielded on the server mid-fight (test helper) reaches the phone with the next sync
@@ -228,6 +228,12 @@ def verdict(R):
  pp,pb=R.get('perfPlatoon') or {},R.get('perfBattalion') or {}
  e(R.get('fielded')==9 and pb.get('friends')==9 and pb.get('views')==9 and pb.get('low')=='low' and (pb.get('programs') or 99)<=16,'a full Battalion of 9 drawn on LOW within the 16-program budget: '+json.dumps(pb))
  e((pb.get('median') or 1e9)<=max(1.75*(pp.get('median') or 0),40),'Battalion frame median within 1.75x the Platoon in the same raid (software GL, relative only): '+json.dumps([pp.get('median'),pb.get('median')]))
+ # 5E-2d2 (owner, Nov 21): "the colony on LOW back to at most 197,849 triangles (its count before 5E-2d1)". The cap at each phone
+ # size is this very sample on main before 5E-2d1 (0e681aa, docs/conquest/session6c/journey.json: perfPlatoon.tris; 390x844 is
+ # the owner's figure). The see-through outline's twin draws (owner, Nov 17: two more draws of a tank, only while that tank is
+ # wholly hidden) are not the colony and come and go with the fight: they are counted apart (outline) and left out of the cap.
+ cap={'390x844':197849,'390x700':253306,'320x568':203797}.get(R['size']);drawn=(pp.get('tris') or 0)-(pp.get('outline') or 0)
+ e(cap is None or 0<drawn<=cap,'LOW draws at most its triangles before 5E-2d1 in this raid ('+str(cap)+'): '+json.dumps([pp.get('tris'),pp.get('outline')]))
  e(not R.get('errors'),'no page errors: '+json.dumps((R.get('errors') or [])[:3]))
  return bad
 async def main():
