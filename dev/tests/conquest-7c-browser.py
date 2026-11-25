@@ -107,7 +107,7 @@ async def run(browser,w,h,mobile,shot_saved):
   tl=page.locator('.cq-hub-titan');await reach(page,tl,'.cq-hub-scroll',mobile,h);tt=await tl.inner_text()
   assert tt.startswith('☄ THE HIVE TITAN · ') and 'EXTRACT THE CORE, THEN FIGHT IT' in tt and 'LEFT' in tt,tt
   await page.screenshot(path=str(OUT/f'hub-titan-{w}x{h}.png'));r['titanLine']=tt
-  st=await inspect();assert st['wep'].get('paid')==1 and st['wep'].get('sq')==1 and st.get('wet')==2 and (st['inv']['it'].get('scanner') or 0)>=1 and (st['inv'].get('fr',{}).get('u') or 0)>=1,('the record paid last week\'s War Effort at the session open (crate, tier II piece, squad fragment)',st.get('wep'),st.get('wet'),st['inv'])
+  st=await inspect();assert st['wep'].get('paid')==1 and len(st.get('wsq') or [])==1 and st.get('wet')==2 and (st['inv']['it'].get('scanner') or 0)>=1 and (st['inv'].get('fr',{}).get('u') or 0)>=1,('the record paid last week\'s War Effort at the session open (crate, tier II piece, squad fragment)',st.get('wep'),st.get('wet'),st['inv'])
   # ---- 2. WEEKLY BOARDS from the standing card; the share card ----
   bb=page.locator('.cq-standing-boards');await reach(page,bb,'.cq-hub-scroll',mobile,h);await press(page,bb,mobile)
   d=page.locator('.cq-boards');await d.wait_for(timeout=20000);await page.wait_for_function('!!document.querySelector(".cq-boards .cq-boards-row.me")',timeout=30000)

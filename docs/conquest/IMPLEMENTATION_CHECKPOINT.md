@@ -7984,4 +7984,26 @@ what each changed here:
     bounty, outside the cap, is per account); (7) the human fixtures hold no keyboard play: the reviewer's keyboard model (24 pilots x 12
     honest runs a day) raised no flag, but cqrepeat rests on its 1 s and 2% checks there; part of the fixtures PROPOSAL (record real
     phone and keyboard sessions once players exist).
+- **Rule reviewer 1 (verdicts at `0a1d760`): 15 PASS, 3 FAIL (rules 9, 12, 13); all handled in `b78b5a2` and `7e479b3`.**
+  - Rows 16 and 18 failed at `f8fb9a4` (fortress guard (e); the catalog counts; 320x568 SHARE and CLOSE out of reach) and pass at
+    `0a1d760` (the Tranquillityite kept out; the counts; the BOARDS screen as one scroller).
+  - **Rule 9 FAIL -> fixed** (the same two findings as the airdrop reviewer's C6 and note 2): the campaign board's zero rows (fixed in
+    `b78b5a2`) and the 30-day Titan total truncated at 40 slots (64 kept, `b78b5a2`).
+  - **Rule 12 FAIL -> fixed:** a pilot who contributed to a won week, made no request the week after and came back a week later never
+    got its crate (the document kept one past week). The document now keeps every finished week for 8 weeks (`hist`: the pilot count,
+    the score, the top squad, Worker-only), the pilot's shared view carries the result of the week its record still has to settle
+    (`we.past`, no ids), and the record settles it once (`wtest/conquest-wareffort` 7: away a week, back a week later: paid, once).
+  - **Rule 13 FAIL -> fixed:** the squad's leader (its name and banner fly) was not counted as its own squad's member, and members who
+    had not contributed got nothing. Membership is now the pilots the leader recruited and the leader itself; every member gets the
+    uncommon fragment once a week (`s.wsq`, the weeks paid), contributor or not (the brief: "each member gets a fragment"); the crate
+    and the tier piece stay for contributors of a won week. A pilot's points still count once, in its recruiter's squad. Tests: the
+    leader and the recruits are members, nobody else; a non-contributing member gets the fragment, once.
+  - **Notes acted on:** (2) the old brief's B, built now: each board row shows the pilot's league pill and Town Score (stored with the row
+    at its best post), and the raid briefing shows "TIME-ATTACK · YOUR BEST m:ss" and, on this week's course, its top time and pilot
+    (other raids name this week's course); one featured course a week stays (lead's decision, STEP 3); (4) an allied siege shot's splash
+    on the Titan now takes the hide's quarter too (it took 30%, more than a direct hit's 25%; `conquest-titan` +1).
+  - **Notes kept:** (1) cqnoinput as decided above; (3) each pilot counts at most two quotas a week (research lesson 15, the blueprint's
+    "capped"): every verified operation still adds until then; (5) the web boot's one-line change downloads the late scripts together
+    (5E-2d2 should keep it when it edits that file); (6) the board-CP report is the top pilots, not the guarded regular; (7) the
+    Tranquillityite PROPOSAL names the smaller-drop option; (8) the hub's five-card fix ran in CI's `conquest` job at `0a1d760` (green).
 
