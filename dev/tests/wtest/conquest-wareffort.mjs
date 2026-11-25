@@ -35,10 +35,11 @@ const wk=WE.weekOf(now);db.root.players={tg_2:{ref:'tg_1'},tg_3:{ref:'tg_1'},tg_
 // ---- 4. the rewards, once, through the record ----
 {const v=await syncWarfront(env,'tg_8',0,now,{squad:'tg_8'});const s=createState(R.STOCK_L,now);s.wep={w:wk,c:250};s.inv.it.repair=9;const cp=s.ledger.cp,bank=JSON.stringify(s.ledger.banked);
  const war={...v,we:{...v.we,mine:1}};ok(weDue(s,war),'4. a contributor of the won week is due its rewards');
- applyWarfront(s,war,now);ok(s.inv.it.repair===10&&s.inv.it.scanner===1&&s.wet===v.we.last.tier&&s.wep.paid===1&&s.wep.sq===1&&(s.inv.fr.u|0)>=1&&s.notice?.kind==='war-effort','the crate (Repair Kits up to the cap of 10, the Scanner Charge), the tier\'s cosmetic (tier '+s.wet+'), the squad\'s uncommon fragment, a notice');
+ applyWarfront(s,war,now);ok(s.inv.it.repair===10&&s.inv.it.scanner===1&&s.wet===v.we.last.tier&&s.wep.paid===1&&(s.wsq||[]).includes(wk)&&(s.inv.fr.u|0)>=1&&s.notice?.kind==='war-effort','the crate (Repair Kits up to the cap of 10, the Scanner Charge), the tier\'s cosmetic (tier '+s.wet+'), the squad\'s uncommon fragment, a notice');
  ok(s.ledger.cp===cp&&JSON.stringify(s.ledger.banked)===bank&&!(s.airdrop?.pend?.raw>0),'never CP, salvage or points');
  const inv=JSON.stringify(s.inv);applyWarfront(s,war,now+1000);ok(JSON.stringify(s.inv)===inv&&!weDue(s,war),'once: a second application pays nothing');
- const t=createState(R.STOCK_L,now);t.wep={w:wk,c:0};applyWarfront(t,war,now);ok(!(t.inv.it.scanner|0)&&!t.wet,'a pilot who did not contribute that week: nothing');
+ const t=createState(R.STOCK_L,now);t.wep={w:wk,c:0};const fr0=t.inv.fr?.u|0;applyWarfront(t,war,now);ok(!(t.inv.it.scanner|0)&&!t.wet&&(t.inv.fr.u|0)===fr0+1,'a member of the top squad who did not contribute: no crate and no tier, but the squad\'s fragment (the brief: "each member gets a fragment"; review round 1)');
+ const fr1=t.inv.fr.u|0;applyWarfront(t,war,now+1000);ok((t.inv.fr.u|0)===fr1,'... once a week');
  const lost={...war,we:{...war.we,last:{...war.we.last,won:false,tier:0},hm:0,mine:0}},u=createState(R.STOCK_L,now);u.wep={w:wk,c:300};const before=JSON.stringify(u.inv);applyWarfront(u,lost,now);ok(JSON.stringify(u.inv)===before&&!u.wet,'a lost week takes nothing and pays no crate');
  ok(CAT.items.filter(i=>i.earn?.we).map(i=>i.id).join()==='we-standard,we-trail,we-monument'&&CAT.eligible('we-trail',{wet:2})&&!CAT.eligible('we-monument',{wet:2}),'the cosmetic reward tiers: three earn-only pieces, unlocked by the tier reached');}
 // ---- 5. High Morale: +1 DEFENSE on every territory, only the week after a win ----
@@ -49,4 +50,12 @@ const wk=WE.weekOf(now);db.root.players={tg_2:{ref:'tg_1'},tg_3:{ref:'tg_1'},tg_
 {const P=31,pid='tg_31';await call(P,'/api/sync');await call(P,'/api/conquest/session');const st=cqLive(db,pid);st.wep={w:wk,c:180};st.wkb={w:wk+1,cs:st.campaignScore|0};db.root.conquest[pid]=st;
  const r=await call(P,'/api/conquest/session'),after=cqLive(db,pid);ok(r.status===200&&after.wep.paid===1&&(after.inv.it.scanner|0)>=1&&r.state.notice?.kind==='war-effort'&&r.state.warfront?.we?.hm===1,'6. the session open: the record pays the won week\'s crate through the route (persisted), the reply shows it and High Morale');
  const r2=await call(P,'/api/conquest/session'),again=cqLive(db,pid);ok(again.inv.it.scanner===after.inv.it.scanner&&again.inv.it.repair===after.inv.it.repair,'... once (the next session open pays nothing)');}
+// ---- 7. review round 1 (rule reviewer 1, rules 12 and 13; each fails without its fix) ----
+{const {pilotWar}=await import('../../../worker/src/conquest-warfront.js');const w0=await syncWarfront(env,'tg_40',0,now,{squad:'tg_40'}),top=w0._top;
+ ok(pilotWar(w0,top,'tg_99',null).we.mine===1&&pilotWar(w0,'tg_2',top,null).we.mine===1&&pilotWar(w0,'tg_41','tg_41',null).we.mine===0,'7. the top squad\'s leader is a member of its own squad (its banner flies; it was counted in its recruiter\'s), its recruits too, nobody else');
+ // a pilot who contributed to a won week, made no request the week after and returns the week after that still settles it
+ const W=WE.weekOf(now),doc=db.get('conquestWarfront/frontier-v1');ok(doc.hist&&doc.hist[W-1]&&doc.hist[W-1].top?.id===top,'every finished week is kept on the document (8 weeks) with its top squad');
+ now+=14*DAY;const P=41,pid='tg_41';await call(P,'/api/sync');await call(P,'/api/conquest/session');let st=cqLive(db,pid);st.wep={w:W-1,c:200};st.wkb={w:W+2,cs:st.campaignScore|0};delete st.wsq;db.root.conquest[pid]=st;
+ const r=await call(P,'/api/conquest/session'),after=cqLive(db,pid);ok(r.status===200&&after.wep.paid===1&&(after.inv.it.scanner|0)>=1&&after.wet>=1&&r.state.warfront?.we?.past?.w===W-1&&r.state.warfront.we.last?.w!==W-1,'a pilot away the week after a won week, back a week later: its crate and tier are paid from the week kept on the document');
+ const again=await call(P,'/api/conquest/session');ok((cqLive(db,pid).inv.it.scanner|0)===(after.inv.it.scanner|0),'... once');}
 console.log(JSON.stringify({test:'conquest-wareffort',pass}));

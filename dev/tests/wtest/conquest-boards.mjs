@@ -64,4 +64,11 @@ async function seed(kind,per,n,{held=[],tie=false}={}){const top=[],mk={};for(le
  db.root.cqgr={...(db.root.cqgr||{}),tg_9600:old};const pg=await BD.pendingGrants(env,'tg_9600',now);ok(!Object.keys(pg.ok).length&&pg.bad.length===1,'... and the session open clears it from the inbox unpaid');
  const end=BD.periodEnd('w'+wk),early=await BD.settleBoards(env,end+60*60000),notYet=!db.get('cqbs/town/w'+wk);await BD.settleBoards(env,end+BD.SETTLE_AFTER+60000);
  ok(BD.SETTLE_AFTER===70*60000&&notYet&&!!db.get('cqbs/town/w'+wk),'a period settles 70 minutes after it ends (every flag raised by then is in the held index): not at +60 min, at +71 min');}
+// ---- 7. review round 1 (rule reviewer 1, note 2: the old brief's B) ----
+{const t=Date.UTC(2026,10,26,12),z={v:1,campaignScore:90,wkb:{w:BD.periodOf('campaign',t).slice(1)|0,cs:10},ttn:{v:1,sl:{}},plot:{cc:7,power:4210},airdrop:{view:{lgi:3}}};z.wkb.w=Number(BD.periodOf('campaign',t).slice(1));
+ await BD.postBoards(env,'tg_9700','Pill',z,t);const rd=await BD.conquestBoards(env,{pid:'tg_9700',b:{}},t),row=rd.body.boards.campaign.top.find(r=>r.me);
+ ok(row&&row.ts===4210&&row.lg===3&&row.cc===7,'7. a board row carries the pilot\'s league (its pill) and Town Score (the old brief\'s B)');
+ const vm=await import('node:vm'),fs=await import('node:fs');const ctx=vm.createContext({ConquestCombat:CONQUEST.Combat});vm.runInContext(fs.readFileSync(new URL('../../../js/conquest/boardsui.js',import.meta.url),'utf8'),ctx);const UI=ctx.ConquestBoardsUI;
+ const id=UI.featured(t),o=CONQUEST.Combat.operations[id],other=CONQUEST.Combat.raidIds.find(x=>x!==id);
+ ok(id===BD.featuredRaid(t)&&UI.raidText(o,{rbest:{[id]:72.4}},{raid:id,boards:{raid:{top:[{n:'Vexa',s:58}]}}},t)==="TIME-ATTACK · YOUR BEST 1:12.4 · THIS WEEK'S COURSE · TOP 0:58.0 (Vexa)"&&UI.raidText(CONQUEST.Combat.operations[other],{},null,t).startsWith("TIME-ATTACK · NO VERIFIED CLEAR YET · THIS WEEK'S COURSE: "),'the raid briefing: your best on this layout; on this week\'s course its top time; elsewhere the week\'s course by name');}
 console.log(JSON.stringify({test:'conquest-boards',pass}));

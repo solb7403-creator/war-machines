@@ -33,7 +33,7 @@ function open(panel,{el,button,dialog}={}){if(!panel||!el||!button)return null;c
    if(band)mine.append(button('SHARE MY FINISH',()=>{if(!mine.querySelector('.cq-boards-sharebox'))share(mine,{el,button,board:B,k:S.k,band});},'cq-boards-share'));}
   else el('p','cq-boards-me','You are not on this board yet this '+(S.k==='titan30'?'period':'week')+'.',card);
   const list=el('ol','cq-boards-list',null,card);if(!B.top.length)el('li','cq-boards-empty','Nobody on this board yet this '+(S.k==='titan30'?'period':'week')+'. Be the first.',list);
-  for(const r of B.top){const li=el('li','cq-boards-row'+(r.me?' me':''),null,list);el('b','','#'+r.r,li);el('span','',r.n+(r.me?' (YOU)':''),li);el('i','',UNIT[S.k](r.s),li);}};
+  for(const r of B.top){const li=el('li','cq-boards-row'+(r.me?' me':''),null,list);el('b','','#'+r.r,li);const who=el('span','',r.n+(r.me?' (YOU)':''),li);const L=Number.isInteger(r.lg)&&typeof LEAGUE!=='undefined'?LEAGUE[r.lg]:null;if(L){const pill=el('small','cq-boards-pill',L.n.toUpperCase(),who);pill.style.color=L.c;}if(r.ts)el('small','cq-boards-ts','TOWN SCORE '+fmtN(r.ts),who);el('i','',UNIT[S.k](r.s),li);}};   /* the league pill and the Town Score (the old brief's B) */
  draw();if(!S.data||Date.now()-S.at>60000)load().then(draw);setTimeout(()=>d.focus?.(),0);return d;}
 // the share card: the band, the board and the score (never a route)
 function share(host,{el,button,board,k,band}){const W=720,H=900,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),F=(w,px)=>w+' '+px+'px "Chakra Petch","Segoe UI",sans-serif';
@@ -58,7 +58,14 @@ function share(host,{el,button,board,k,band}){const W=720,H=900,c=document.creat
  const text='Top '+Math.round(band.pct*100)+'% on the LUNAR: War Machines '+board.name+' board this week (#'+me.r+' of '+board.field+'). Join the war.';
  box.append(button(typeof IN_TG!=='undefined'&&IN_TG?'SHARE IN TELEGRAM':'SHARE',async()=>{if(typeof IN_TG!=='undefined'&&IN_TG&&typeof shareRef==='function'){shareRef(text);return;}try{const blob=await (await fetch(url)).blob(),file=new File([blob],'lunar-board.png',{type:'image/png'}),data={title:'LUNAR: War Machines',text,...(link?{url:link}:{})};if(navigator.canShare?.({files:[file]}))data.files=[file];if(navigator.share)await navigator.share(data);else if(typeof shareRef==='function')shareRef(text);}catch(e){}},'cq-boards-share'));
  const a=document.createElement('a');a.href=url;a.download='lunar-board.png';a.textContent='DOWNLOAD IMAGE';a.className='cq-plot-dl';box.append(a);box.scrollIntoView?.({block:'nearest'});return box;}
+// the raid briefing's time-attack line (pure: the test reads it): your best on this layout; on this week's course, the week's top time
+const DAYMS=86400000,featured=now=>{const L=root.ConquestCombat?.raidIds||[],w=Math.floor((Number(now)-4*DAYMS)/(7*DAYMS));return L.length?L[((w%L.length)+L.length)%L.length]:null;};
+function raidText(o,state,data,now=Date.now()){if(!o?.raid)return '';const best=Number(state?.rbest?.[o.id])||0,course=data?.raid||featured(now),top=data?.boards?.raid?.top?.[0];
+ const mine=best>0?'TIME-ATTACK · YOUR BEST '+sec(best):'TIME-ATTACK · NO VERIFIED CLEAR YET';
+ if(o.id!==course)return mine+' · THIS WEEK\'S COURSE: '+String(root.ConquestCombat?.operations?.[course]?.name||course||'').toUpperCase();
+ return mine+' · THIS WEEK\'S COURSE'+(top?' · TOP '+sec(top.s)+' ('+top.n+')':' · NO TIME YET: SET THE FIRST');}
+function raidLine(d,o,state,{el}={}){if(!d||!el||!o?.raid)return null;const p=el('p','cq-boards-raid',raidText(o,state,S.data),d);if(!S.data||Date.now()-S.at>60000)load().then(()=>{if(p.isConnected)p.textContent=raidText(o,state,S.data);});return p;}
 // the ticker line for a board reward that arrived (js/conquest/app.js)
 function notice(n){const got=Array.isArray(n?.got)?n.got:[];return got.length?'BOARD REWARD · '+got.map(g=>'TOP '+Math.round(g.pct*100)+'% '+String(g.k).toUpperCase()+': '+reward(g)).join(' · '):'BOARD REWARD';}
-root.ConquestBoardsUI=Object.freeze({open,share,notice,bandOf,load});
+root.ConquestBoardsUI=Object.freeze({open,share,notice,bandOf,load,raidText,raidLine,featured});
 })(globalThis);

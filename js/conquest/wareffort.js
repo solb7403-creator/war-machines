@@ -11,7 +11,7 @@
 (function(root){
 'use strict';
 const WEEK=7*86400000,MONDAY0=4*86400000;
-const WE=Object.freeze({quota:150,share:.6,cap:2,tiers:Object.freeze([1,1.5,2]),crate:Object.freeze({repair:2,scanner:1}),squadMin:2,squadFrag:'u',maxPilots:10000});
+const WE=Object.freeze({quota:150,share:.6,cap:2,tiers:Object.freeze([1,1.5,2]),crate:Object.freeze({repair:2,scanner:1}),squadMin:2,squadFrag:'u',maxPilots:10000,keepWeeks:8});   // keepWeeks: finished weeks a pilot can still settle (review round 1)
 const HOOKS=Object.freeze({monument:'we-monument-growth',frontier:'we-frontier-growth',banner:'we-squad-banner'});
 const weekOf=now=>Math.floor((Number(now)-MONDAY0)/WEEK),weekEnd=w=>(w+1)*WEEK+MONDAY0;
 const goalOf=n=>n>0?Math.round(n*WE.quota*WE.share):0;

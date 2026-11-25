@@ -12,11 +12,17 @@ const PATH='conquestWarfront/frontier-v1',GOAL=1000;
 // numbers, the top squad's name and banner, never a pilot id (the top squad's leader id is a hidden property for the Worker: _top)
 function view(v,pending=false,now=Date.now()){const score=v?.score||0,we=WEF.view(v,now),out={id:'frontier-v1',score,participants:v?.participants||0,goal:GOAL,stage:Math.floor(score/GOAL),monument:{unlocked:score>=GOAL,x:1030,z:1120,stage:Math.floor(score/GOAL),banner:we.banner,grown:we.hm,hook:WEF.HOOKS.monument},updatedAt:v?.updatedAt||0,pending,worldBossAvailable:false,worldBossBlocker:'Coordinated human multiplayer is not authenticated or load-certified.',
   we:{...we,last:we.last?{...we.last,top:we.last.top?{n:we.last.top.n||'',bn:we.last.top.bn||null,s:we.last.top.s|0,k:we.last.top.k|0}:null}:null}};
- const top=we.last?.top?.id||v?.prev?.top?.id||null;Object.defineProperty(out,'_top',{value:top,enumerable:false});return out;}
+ const top=we.last?.top?.id||v?.prev?.top?.id||null;Object.defineProperty(out,'_top',{value:top,enumerable:false});Object.defineProperty(out,'_hist',{value:v?.hist&&typeof v.hist==='object'?v.hist:{},enumerable:false});return out;}   // _hist: the finished weeks kept on the document (Worker only: their top squads carry ids)
+// the shared view for one pilot: its squad's place (the top squad's members: the pilots its leader recruited, and the leader itself), and
+// the result of the week its record still has to settle when that is older than last week (a pilot away the week after: review round 1)
+export function pilotWar(w0,pid,squad,s){const member=id=>!!id&&(id===squad||id===pid),P=s?.wep,h=P&&w0?._hist?.[P.w],lw=w0?.we?.last?.w;
+ const past=h&&P.w!==lw?{...WEF.weekOfDoc({...h,w:P.w}),w:P.w,mine:member(h.top?.id)?1:0}:null;return {...w0,we:{...w0.we,mine:member(w0?._top)?1:0,...(past?{past}:{})}};}
 // the week's count: every verified campaign point, each pilot up to two quotas, by squad too; a new week moves the old one to prev
 async function weekly(env,s,pid,delta,now,squad,name){const cur=WEF.weekOf(now);
- if(!s.we||s.we.w!==cur){if(s.we&&s.we.w===cur-1){const top=WEF.topSquad(s.we);let pub=null;if(top){const b=await dbGet(env,'cqbase/'+top.id).catch(()=>null);pub={id:top.id,n:String(b?.n||top.n||'').slice(0,24),bn:b?.bn||null,s:top.s,k:top.k};}s.prev={w:s.we.w,n:s.we.n|0,score:s.we.score|0,top:pub};}
-  else if(s.we)s.prev={w:s.we.w,n:s.we.n|0,score:s.we.score|0,top:null};s.we={w:cur,n:0,score:0,c:{},sq:{},sqn:{}};}
+ if(!s.we||s.we.w!==cur){if(s.we){const top=WEF.topSquad(s.we);let pub=null;if(top){const b=await dbGet(env,'cqbase/'+top.id).catch(()=>null);pub={id:top.id,n:String(b?.n||top.n||'').slice(0,24),bn:b?.bn||null,s:top.s,k:top.k};}
+   s.prev={w:s.we.w,n:s.we.n|0,score:s.we.score|0,top:s.we.w===cur-1?pub:null};
+   const H=s.hist&&typeof s.hist==='object'?{...s.hist}:{};H[s.we.w]={n:s.we.n|0,score:s.we.score|0,top:pub};for(const k of Object.keys(H))if(Number(k)<cur-WEF.WE.keepWeeks)delete H[k];s.hist=H;}   // every finished week kept 8 weeks (review round 1)
+  s.we={w:cur,n:0,score:0,c:{},sq:{},sqn:{}};}
  const W=s.we;W.c=W.c||{};W.sq=W.sq||{};W.sqn=W.sqn||{};if(!(pid in W.c)&&Object.keys(W.c).length>=WEF.WE.maxPilots)return;
  const before=Number(W.c[pid])||0,raw=before+Math.max(0,delta),cd=WEF.counted(raw)-WEF.counted(before);W.c[pid]=raw;if(!before&&raw>0){W.n=(W.n|0)+1;if(squad)W.sqn[squad]=(W.sqn[squad]|0)+1;}
  W.score=(W.score|0)+cd;if(squad)W.sq[squad]=(W.sq[squad]|0)+cd;if(name&&squad===pid){W.sqnm=W.sqnm||{};W.sqnm[squad]=String(name).slice(0,24);}}
@@ -57,8 +63,16 @@ export async function persistWarfront(env,pid,war,now){
 // worker/src/conquest-boards.js boardWeek at the pilot's first request of a week): a won week's crate (2 Repair Kits + 1 Scanner
 // Charge) and its cosmetic tier (s.wet: the earn-only War Effort pieces, js/conquest/catalog.js), the top squad's uncommon fragment
 // (whether or not the bar was won). Never CP, salvage or points.
-export function weDue(s,war){const L=war?.we?.last,P=s?.wep;return !!(L&&P&&P.w===L.w&&P.c>0&&(L.won&&!P.paid||war.we.mine&&!P.sq));}
-function weRewards(s,war,now){const L=war?.we?.last,P=s.wep;if(!L||!P||P.w!==L.w||!(P.c>0)||s.dev?.used)return;const got={};
- if(L.won&&!P.paid){P.paid=1;const v=inventory(s);for(const [k,n] of Object.entries(WEF.WE.crate)){const add=Math.max(0,Math.min(n,R.CQ_ITEM_MAX-(v.it[k]|0)));v.it[k]=(v.it[k]|0)+add;got[k]=add;}s.wet=Math.max(s.wet|0,L.tier|0);got.tier=L.tier|0;}
- if(war.we.mine&&!P.sq){P.sq=1;const f=bind(s,{fr:{[WEF.WE.squadFrag]:1}},now,{where:'squad banner'});got.fr=f.fr||{[WEF.WE.squadFrag]:1};}
- if(Object.keys(got).length)s.notice={kind:'war-effort',w:L.w,won:L.won?1:0,tier:L.tier|0,got};}
+// the result of a finished week this pilot can still settle: last week (the shared view), or an older one kept on the document (we.past)
+function weekResult(war,w){const L=war?.we?.last;if(L&&L.w===w)return {...L,mine:war.we.mine|0};const X=war?.we?.past;return X&&X.w===w?X:null;}
+const sqPaid=s=>Array.isArray(s?.wsq)?s.wsq.map(Number):[];   // the weeks whose squad fragment this pilot has (s.wsq: once a week)
+// what is due: the crate and tier of a won week the pilot contributed to (once: wep.paid), and the fragment of every week its squad
+// topped (once a week: s.wsq), whether or not the pilot itself contributed (the brief: "each member gets a fragment")
+function dues(s,war){const P=s?.wep,R0=P?weekResult(war,P.w):null,L=war?.we?.last?{...war.we.last,mine:war.we.mine|0}:null,out=[];
+ if(R0&&P.c>0&&R0.won&&!P.paid)out.push(['crate',R0]);for(const X of [L,R0])if(X&&X.mine&&!sqPaid(s).includes(X.w)&&!out.some(([k,y])=>k==='fr'&&y.w===X.w))out.push(['fr',X]);return out;}
+export function weDue(s,war){return dues(s,war).length>0;}
+function weRewards(s,war,now){if(s.dev?.used)return;const due=dues(s,war);if(!due.length)return;const got={};let head=null;
+ for(const [k,X] of due){head=head||X;
+  if(k==='crate'){s.wep.paid=1;const v=inventory(s);for(const [it,n] of Object.entries(WEF.WE.crate)){const add=Math.max(0,Math.min(n,R.CQ_ITEM_MAX-(v.it[it]|0)));v.it[it]=(v.it[it]|0)+add;got[it]=(got[it]|0)+add;}s.wet=Math.max(s.wet|0,X.tier|0);got.tier=X.tier|0;head=X;}
+  else{s.wsq=[...sqPaid(s),X.w].slice(-WEF.WE.keepWeeks);const f=bind(s,{fr:{[WEF.WE.squadFrag]:1}},now,{where:'squad banner'});got.fr=f.fr||{[WEF.WE.squadFrag]:1};}}
+ s.notice={kind:'war-effort',w:head.w,won:head.won?1:0,tier:head.tier|0,got};}

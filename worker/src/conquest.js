@@ -5,7 +5,7 @@ import {COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {BASE_ACTIONS} from './conquest-campaign.js';
 import {PLOT_ACTIONS,MINERAL_PLOT_ACTIONS,BIG_PLOT_ACTIONS} from './conquest-plot.js';
 import {readEco,readTag,writeIf,creditConquest} from './eco.js';
-import {weDue} from './conquest-warfront.js';
+import {weDue,pilotWar} from './conquest-warfront.js';
 import {altNote} from './conquest-alt.js';   // Session 7C STEP 2
 import {postBoards,pendingGrants,applyGrants,clearGrants} from './conquest-boards.js';   // Session 7C STEP 3
 import {seal,due,pending,acknowledge,airdrop} from './conquest-airdrop.js';
@@ -79,8 +79,8 @@ function batCtx(S,loadout){return {gear:gearOf(S,loadout),liv:{...(S.liv||{})},r
 // Session 7C STEP 4: the pilot's referral squad (its recruiter's, or its own when it recruited nobody's way in), cached per isolate
 const SQUADS=new Map();
 async function squadOf(env,pid,now){const c=SQUADS.get(pid);if(c&&now-c.at<3600000)return c.id;const ref=await dbGet(env,'players/'+pid+'/ref').catch(()=>null),id=typeof ref==='string'&&/^[A-Za-z0-9_:-]{1,64}$/.test(ref)?ref:pid;SQUADS.set(pid,{id,at:now});if(SQUADS.size>20000)SQUADS.delete(SQUADS.keys().next().value);return id;}
-async function projected(env,pid,r,now){if(r.state&&!r.error){try{const squad=await squadOf(env,pid,now),w0=await syncWarfront(env,pid,r.state.campaignScore||0,now,{squad,name:r.state.plot?.nm||''}),war={...w0,we:{...w0.we,mine:w0._top&&w0._top===squad?1:0}},key=war.id+':'+war.stage;   // mine: this pilot's squad flies the banner (per pilot: never cached)
- if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]||war.we.w!==r.state.warfront?.we?.w||(war.we.hm|0)!==(r.state.warfront?.we?.hm|0)||weDue(r.state,war)){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;r.state.wep=saved.wep;r.state.wet=saved.wet;r.state.inv=saved.inv;if(saved.notice?.kind==='war-effort')r.state.notice=saved.notice;}}   // the War Effort's rewards were paid in that write: the reply shows them, never twice
+async function projected(env,pid,r,now){if(r.state&&!r.error){try{const squad=await squadOf(env,pid,now),w0=await syncWarfront(env,pid,r.state.campaignScore||0,now,{squad,name:r.state.plot?.nm||''}),war=pilotWar(w0,pid,squad,r.state),key=war.id+':'+war.stage;   // mine: this pilot's squad flies the banner, its leader included; past: an older week still to settle (per pilot: never cached)
+ if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]||war.we.w!==r.state.warfront?.we?.w||(war.we.hm|0)!==(r.state.warfront?.we?.hm|0)||weDue(r.state,war)){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;r.state.wep=saved.wep;r.state.wet=saved.wet;r.state.wsq=saved.wsq;r.state.inv=saved.inv;if(saved.notice?.kind==='war-effort')r.state.notice=saved.notice;}}   // the War Effort's rewards were paid in that write: the reply shows them, never twice
  applyWarfront(r.state,war,now);
  }catch{r.state.warfront={...r.state.warfront,pending:true};}}return result(r);}
 // Conquest airdrop points (docs/economy/RESOURCE_ECONOMY.md §3.5): the committed Conquest record's immutable outbox

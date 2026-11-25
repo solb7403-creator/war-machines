@@ -90,8 +90,8 @@ const server=http.createServer(async(req,res)=>{try{if(previewFile(req,res))retu
   const NAMES=['Vexa','Korrin','Tamsin','Odile','Brannoc','Ysolde','Hadrik','Mirel','Saffa','Quill','Torvak','Elowen','Jessamy','Dorran','Kestrel','Nimue','Galen','Riva','Ozric','Pell'];
   const place={town:6,defense:9,raid:4,titan:3,campaign:2,titan30:7},base={town:5200,defense:940,titan:8800,campaign:620,titan30:31000};db.root.cqb=db.root.cqb||{};db.root.cqbp=db.root.cqbp||{};
   for(const k of BD.BOARD.order){const per=BD.periodOf(k,now),lo=!!BD.BOARD.kinds[k].lo,rows=[];
-   for(let i=0;i<39;i++)rows.push({p:'tg_'+(9100+i),n:NAMES[i%20]+(i>=20?' II':''),s:lo?Math.round((58+i*3.7)*10)/10:Math.round(base[k]*Math.pow(.94,i)),at:now-7200000+i*1000});
-   const at=place[k],a=rows[at-2],c=rows[at-1];rows.push({p:pid,n:'BrowserPilot',s:lo?Math.round((a.s+c.s)/2*10)/10:Math.round((a.s+c.s)/2),at:now-60000});
+   for(let i=0;i<39;i++)rows.push({p:'tg_'+(9100+i),n:NAMES[i%20]+(i>=20?' II':''),s:lo?Math.round((58+i*3.7)*10)/10:Math.round(base[k]*Math.pow(.94,i)),at:now-7200000+i*1000,lg:(i*3+1)%7,ts:Math.round(6400*Math.pow(.97,i)),cc:Math.max(3,10-(i>>2))});
+   const at=place[k],a=rows[at-2],c=rows[at-1];rows.push({p:pid,n:'BrowserPilot',s:lo?Math.round((a.s+c.s)/2*10)/10:Math.round((a.s+c.s)/2),at:now-60000,lg:2,ts:4210,cc:7});
    const ranked=BD.rank(k,rows);db.root.cqb[k]={...(db.root.cqb[k]||{}),[per]:{v:1,k,per,top:ranked,n:ranked.length,at:now}};db.root.cqbp[k]={...(db.root.cqbp[k]||{}),[per]:Object.fromEntries(ranked.map(r=>[r.p,r.s]))};}
   const cur=WEF.weekOf(now),Q=WEF.WE.quota,wf=db.root.conquestWarfront=db.root.conquestWarfront||{},doc=wf['frontier-v1']||{v:1,score:0,participants:0,contributions:{},updatedAt:now};
   doc.prev={w:cur-1,n:40,score:Math.round(40*Q*.6*1.62),top:{id:pid,n:'BrowserPilot',bn:{shape:'shield',colors:['#1d3b66','#ffd96a']},s:2280,k:4}};doc.we={w:cur,n:31,score:Math.round(31*Q*.6*.58),c:{},sq:{},sqn:{}};wf['frontier-v1']=doc;
