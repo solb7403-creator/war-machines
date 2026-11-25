@@ -3,99 +3,2743 @@
   "fresh": {
    "seen": {
     "hero": {
-     "chassis-titan-2+weapon-siege-2+2d": 11,
-     "wait": 2,
-     "chassis-titan-2+weapon-siege-2+kit": 122,
-     "chassis-titan-2+weapon-siege-2+meshy": 26
+     "wait": 267,
+     "chassis-titan-2+weapon-siege-2+meshy": 58
     },
     "card:m_legacy": {
-     "chassis-titan-2+weapon-siege-2+2d": 11,
-     "chassis-titan-2+weapon-siege-2+kit": 123,
-     "chassis-titan-2+weapon-siege-2+meshy": 63
+     "wait": 272,
+     "chassis-titan-2+weapon-siege-2+meshy": 95
     },
     "card:m_spare": {
-     "chassis-vanguard-1+weapon-pulse-1+2d": 11,
-     "chassis-vanguard-1+weapon-pulse-1+kit": 123,
-     "chassis-vanguard-1+weapon-pulse-1+meshy": 63
+     "wait": 272,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 95
     },
     "showroom:garage": {
-     "chassis-titan-2+weapon-siege-2+meshy": 31
+     "chassis-titan-2+weapon-siege-2+meshy": 40
     }
    },
-   "frames": 121,
+   "frames": 236,
    "log": [
     {
      "s": "hero",
-     "v": "chassis-titan-2+weapon-siege-2+2d",
-     "t": 732,
-     "f": 37
-    },
-    {
-     "s": "card:m_legacy",
-     "v": "chassis-titan-2+weapon-siege-2+2d",
-     "t": 732,
-     "f": 37
-    },
-    {
-     "s": "card:m_spare",
-     "v": "chassis-vanguard-1+weapon-pulse-1+2d",
-     "t": 732,
-     "f": 37
-    },
-    {
-     "s": "hero",
      "v": "wait",
-     "t": 819,
-     "f": 41
+     "t": 1511,
+     "f": 77
     },
     {
      "s": "card:m_legacy",
-     "v": "chassis-titan-2+weapon-siege-2+kit",
-     "t": 819,
-     "f": 41
+     "v": "wait",
+     "t": 1511,
+     "f": 77
     },
     {
      "s": "card:m_spare",
-     "v": "chassis-vanguard-1+weapon-pulse-1+kit",
-     "t": 819,
-     "f": 41
+     "v": "wait",
+     "t": 1511,
+     "f": 77
     },
     {
      "s": "hero",
-     "v": "chassis-titan-2+weapon-siege-2+kit",
-     "t": 2153,
-     "f": 41
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 8882,
+     "f": 195
     },
     {
      "s": "card:m_legacy",
      "v": "chassis-titan-2+weapon-siege-2+meshy",
-     "t": 6355,
-     "f": 97
+     "t": 9161,
+     "f": 197
     },
     {
      "s": "card:m_spare",
      "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
-     "t": 6355,
-     "f": 97
-    },
-    {
-     "s": "hero",
-     "v": "chassis-titan-2+weapon-siege-2+meshy",
-     "t": 6691,
-     "f": 97
+     "t": 9161,
+     "f": 197
     },
     {
      "s": "showroom:garage",
      "v": "chassis-titan-2+weapon-siege-2+meshy",
-     "t": 9605,
-     "f": 112
+     "t": 13479,
+     "f": 224
+    }
+   ]
+  },
+  "programs": {
+   "changed hub, waiting": {
+    "hub": 6,
+    "world": null
+   },
+   "changed town, waiting": {
+    "hub": null,
+    "world": 9
+   },
+   "changed town": {
+    "hub": null,
+    "world": 10
+   },
+   "changed world": {
+    "hub": null,
+    "world": 10
+   },
+   "changed hub": {
+    "hub": 10,
+    "world": null
+   },
+   "failed hub": {
+    "hub": 11,
+    "world": null
+   },
+   "failed world": {
+    "hub": null,
+    "world": 14
+   },
+   "failed town": {
+    "hub": null,
+    "world": 14
+   },
+   "low hub, waiting": {
+    "hub": 7,
+    "world": null
+   },
+   "low town, waiting": {
+    "hub": null,
+    "world": 9
+   },
+   "low town": {
+    "hub": null,
+    "world": 10
+   },
+   "low world": {
+    "hub": null,
+    "world": 10
+   },
+   "low hub": {
+    "hub": 8,
+    "world": null
+   },
+   "2d hub, waiting": {
+    "hub": null,
+    "world": null
+   },
+   "2d town, waiting": {
+    "hub": null,
+    "world": null
+   },
+   "2d town": {
+    "hub": null,
+    "world": null
+   },
+   "2d world": {
+    "hub": null,
+    "world": null
+   },
+   "2d hub": {
+    "hub": null,
+    "world": null
+   }
+  },
+  "changed": {
+   "seen": {
+    "hero": {
+     "wait": 144,
+     "chassis-scout-1+weapon-twin-1+meshy": 63
+    },
+    "card:m_legacy": {
+     "wait": 213,
+     "chassis-scout-1+weapon-twin-1+meshy": 115
+    },
+    "card:m_spare": {
+     "wait": 213,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 115
+    },
+    "showroom:garage": {
+     "wait": 64,
+     "chassis-scout-1+weapon-twin-1+meshy": 45
+    },
+    "hub": {
+     "wait": 273,
+     "chassis-scout-1+weapon-twin-1+meshy": 265
+    },
+    "world": {
+     "wait": 219,
+     "chassis-scout-1+weapon-twin-1+meshy": 75
+    },
+    "town": {
+     "wait": 205,
+     "chassis-scout-1+weapon-twin-1+meshy": 42
+    }
+   },
+   "frames": 590,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 2410,
+     "f": 67
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 2411,
+     "f": 67
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 2411,
+     "f": 67
+    },
+    {
+     "s": "showroom:garage",
+     "v": "wait",
+     "t": 7470,
+     "f": 116
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 8561,
+     "f": 137
+    },
+    {
+     "s": "hub",
+     "v": "wait",
+     "t": 9081,
+     "f": 160
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 11990,
+     "f": 251
+    },
+    {
+     "s": "town",
+     "v": "wait",
+     "t": 19940,
+     "f": 349
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 22636,
+     "f": 447
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 25155,
+     "f": 468
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 28312,
+     "f": 507
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 31887,
+     "f": 557
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 31887,
+     "f": 557
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 31887,
+     "f": 557
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 34297,
+     "f": 580
+    }
+   ]
+  },
+  "failed": {
+   "seen": {
+    "hero": {
+     "wait": 24,
+     "chassis-scout-1+weapon-twin-1+kit": 85
+    },
+    "card:m_legacy": {
+     "wait": 26,
+     "chassis-scout-1+weapon-twin-1+kit": 110
+    },
+    "card:m_spare": {
+     "wait": 58,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 78
+    },
+    "showroom:garage": {
+     "chassis-scout-1+weapon-twin-1+kit": 25
+    },
+    "hub": {
+     "chassis-scout-1+weapon-twin-1+kit": 120
+    },
+    "world": {
+     "wait": 6,
+     "chassis-scout-1+weapon-twin-1+kit": 209
+    },
+    "town": {
+     "chassis-scout-1+weapon-twin-1+kit": 142
+    }
+   },
+   "frames": 327,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 1863,
+     "f": 65
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 1863,
+     "f": 65
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 1863,
+     "f": 65
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 4277,
+     "f": 72
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 4293,
+     "f": 72
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 6103,
+     "f": 87
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 8293,
+     "f": 96
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 8928,
+     "f": 104
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 9425,
+     "f": 124
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 12312,
+     "f": 164
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 13977,
+     "f": 167
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 21681,
+     "f": 257
     }
    ]
   },
   "offline": {
    "seen": {},
-   "frames": 50,
+   "frames": 54,
    "log": []
+  },
+  "low": {
+   "seen": {
+    "hero": {
+     "wait": 157,
+     "chassis-scout-1+weapon-twin-1+meshy": 75
+    },
+    "card:m_legacy": {
+     "wait": 294,
+     "chassis-scout-1+weapon-twin-1+meshy": 190
+    },
+    "card:m_spare": {
+     "wait": 294,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 190
+    },
+    "showroom:garage": {
+     "wait": 135,
+     "chassis-scout-1+weapon-twin-1+meshy": 109
+    },
+    "hub": {
+     "wait": 190,
+     "chassis-scout-1+weapon-twin-1+meshy": 445
+    },
+    "world": {
+     "wait": 208,
+     "chassis-scout-1+weapon-twin-1+meshy": 89
+    },
+    "town": {
+     "wait": 207,
+     "chassis-scout-1+weapon-twin-1+meshy": 74
+    }
+   },
+   "frames": 663,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 2306,
+     "f": 60
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 2306,
+     "f": 60
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 2306,
+     "f": 60
+    },
+    {
+     "s": "showroom:garage",
+     "v": "wait",
+     "t": 6251,
+     "f": 116
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 7006,
+     "f": 161
+    },
+    {
+     "s": "hub",
+     "v": "wait",
+     "t": 7420,
+     "f": 184
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 9213,
+     "f": 247
+    },
+    {
+     "s": "town",
+     "v": "wait",
+     "t": 16616,
+     "f": 342
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 19161,
+     "f": 441
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 21100,
+     "f": 478
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 24403,
+     "f": 525
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 27146,
+     "f": 610
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 27146,
+     "f": 610
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 27146,
+     "f": 610
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 28251,
+     "f": 637
+    }
+   ]
+  },
+  "2d": {
+   "seen": {
+    "hero": {
+     "chassis-vanguard-2+weapon-pulse-2+2d": 488
+    },
+    "card:m_legacy": {
+     "chassis-vanguard-2+weapon-pulse-2+2d": 728
+    },
+    "card:m_spare": {
+     "chassis-vanguard-1+weapon-pulse-1+2d": 728
+    },
+    "showroom:garage": {
+     "chassis-vanguard-2+weapon-pulse-2+2d": 234
+    }
+   },
+   "frames": 1086,
+   "log": [
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 1026,
+     "f": 55
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 1026,
+     "f": 55
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+2d",
+     "t": 1026,
+     "f": 55
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 4200,
+     "f": 245
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 5138,
+     "f": 301
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 16834,
+     "f": 990
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 16834,
+     "f": 990
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+2d",
+     "t": 16834,
+     "f": 990
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 17435,
+     "f": 1026
+    }
+   ]
+  }
+ },
+ "web-desktop": {
+  "fresh": {
+   "seen": {
+    "hero": {
+     "wait": 219,
+     "chassis-titan-2+weapon-siege-2+meshy": 47
+    },
+    "card:m_legacy": {
+     "wait": 226,
+     "chassis-titan-2+weapon-siege-2+meshy": 91
+    },
+    "card:m_spare": {
+     "wait": 226,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 91
+    },
+    "showroom:home": {
+     "wait": 201,
+     "chassis-titan-2+weapon-siege-2+meshy": 48
+    },
+    "showroom:garage": {
+     "chassis-titan-2+weapon-siege-2+meshy": 51
+    }
+   },
+   "frames": 152,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 1100,
+     "f": 50
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 1100,
+     "f": 50
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 1100,
+     "f": 50
+    },
+    {
+     "s": "showroom:home",
+     "v": "wait",
+     "t": 3030,
+     "f": 57
+    },
+    {
+     "s": "showroom:home",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 6628,
+     "f": 121
+    },
+    {
+     "s": "hero",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 7922,
+     "f": 121
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 8263,
+     "f": 123
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 8263,
+     "f": 123
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 11749,
+     "f": 136
+    }
+   ]
+  },
+  "programs": {
+   "changed hub, waiting": {
+    "hub": 6,
+    "world": null
+   },
+   "changed town, waiting": {
+    "hub": null,
+    "world": 9
+   },
+   "changed town": {
+    "hub": null,
+    "world": 10
+   },
+   "changed world": {
+    "hub": null,
+    "world": 10
+   },
+   "changed hub": {
+    "hub": 10,
+    "world": null
+   },
+   "failed hub": {
+    "hub": 11,
+    "world": null
+   },
+   "failed world": {
+    "hub": null,
+    "world": 14
+   },
+   "failed town": {
+    "hub": null,
+    "world": 14
+   },
+   "low hub, waiting": {
+    "hub": 7,
+    "world": null
+   },
+   "low town, waiting": {
+    "hub": null,
+    "world": 9
+   },
+   "low town": {
+    "hub": null,
+    "world": 10
+   },
+   "low world": {
+    "hub": null,
+    "world": 10
+   },
+   "low hub": {
+    "hub": 8,
+    "world": null
+   },
+   "2d hub, waiting": {
+    "hub": null,
+    "world": null
+   },
+   "2d town, waiting": {
+    "hub": null,
+    "world": null
+   },
+   "2d town": {
+    "hub": null,
+    "world": null
+   },
+   "2d world": {
+    "hub": null,
+    "world": null
+   },
+   "2d hub": {
+    "hub": null,
+    "world": null
+   }
+  },
+  "changed": {
+   "seen": {
+    "hero": {
+     "wait": 111,
+     "chassis-scout-1+weapon-twin-1+meshy": 72
+    },
+    "card:m_legacy": {
+     "wait": 225,
+     "chassis-scout-1+weapon-twin-1+meshy": 128
+    },
+    "card:m_spare": {
+     "wait": 225,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 128
+    },
+    "showroom:home": {
+     "wait": 94,
+     "chassis-scout-1+weapon-twin-1+meshy": 72
+    },
+    "showroom:garage": {
+     "wait": 114,
+     "chassis-scout-1+weapon-twin-1+meshy": 56
+    },
+    "hub": {
+     "wait": 165,
+     "chassis-scout-1+weapon-twin-1+meshy": 236
+    },
+    "world": {
+     "wait": 750,
+     "chassis-scout-1+weapon-twin-1+meshy": 60
+    },
+    "town": {
+     "wait": 127,
+     "chassis-scout-1+weapon-twin-1+meshy": 42
+    }
+   },
+   "frames": 647,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 2693,
+     "f": 65
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 2693,
+     "f": 65
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 2693,
+     "f": 65
+    },
+    {
+     "s": "showroom:home",
+     "v": "wait",
+     "t": 4621,
+     "f": 72
+    },
+    {
+     "s": "showroom:garage",
+     "v": "wait",
+     "t": 7549,
+     "f": 91
+    },
+    {
+     "s": "showroom:home",
+     "v": "wait",
+     "t": 8917,
+     "f": 129
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 8917,
+     "f": 129
+    },
+    {
+     "s": "hub",
+     "v": "wait",
+     "t": 9563,
+     "f": 144
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 12819,
+     "f": 199
+    },
+    {
+     "s": "town",
+     "v": "wait",
+     "t": 57147,
+     "f": 465
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 60627,
+     "f": 525
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 65202,
+     "f": 546
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 70625,
+     "f": 580
+    },
+    {
+     "s": "showroom:home",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 75159,
+     "f": 616
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 75159,
+     "f": 616
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 75159,
+     "f": 616
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 75159,
+     "f": 616
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 78942,
+     "f": 634
+    }
+   ]
+  },
+  "failed": {
+   "seen": {
+    "hero": {
+     "wait": 81,
+     "chassis-scout-1+weapon-twin-1+kit": 87
+    },
+    "card:m_legacy": {
+     "wait": 84,
+     "chassis-scout-1+weapon-twin-1+kit": 123
+    },
+    "card:m_spare": {
+     "wait": 75,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 132
+    },
+    "showroom:home": {
+     "wait": 67,
+     "chassis-scout-1+weapon-twin-1+kit": 88
+    },
+    "showroom:garage": {
+     "chassis-scout-1+weapon-twin-1+kit": 39
+    },
+    "hub": {
+     "chassis-scout-1+weapon-twin-1+kit": 93
+    },
+    "world": {
+     "wait": 6,
+     "chassis-scout-1+weapon-twin-1+kit": 727
+    },
+    "town": {
+     "chassis-scout-1+weapon-twin-1+kit": 88
+    }
+   },
+   "frames": 469,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 3364,
+     "f": 71
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 3364,
+     "f": 71
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 3364,
+     "f": 71
+    },
+    {
+     "s": "showroom:home",
+     "v": "wait",
+     "t": 5681,
+     "f": 75
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 8103,
+     "f": 89
+    },
+    {
+     "s": "showroom:home",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 8410,
+     "f": 91
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 9262,
+     "f": 91
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 9787,
+     "f": 92
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 12497,
+     "f": 109
+    },
+    {
+     "s": "showroom:home",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 13413,
+     "f": 122
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 13413,
+     "f": 122
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 14614,
+     "f": 135
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 18530,
+     "f": 166
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 20552,
+     "f": 169
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 62269,
+     "f": 426
+    }
+   ]
+  },
+  "offline": {
+   "seen": {},
+   "frames": 51,
+   "log": []
+  },
+  "low": {
+   "seen": {
+    "hero": {
+     "wait": 203,
+     "chassis-scout-1+weapon-twin-1+meshy": 60
+    },
+    "card:m_legacy": {
+     "wait": 380,
+     "chassis-scout-1+weapon-twin-1+meshy": 176
+    },
+    "card:m_spare": {
+     "wait": 380,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 176
+    },
+    "showroom:home": {
+     "wait": 187,
+     "chassis-scout-1+weapon-twin-1+meshy": 60
+    },
+    "showroom:garage": {
+     "wait": 177,
+     "chassis-scout-1+weapon-twin-1+meshy": 116
+    },
+    "hub": {
+     "wait": 225,
+     "chassis-scout-1+weapon-twin-1+meshy": 386
+    },
+    "world": {
+     "wait": 669,
+     "chassis-scout-1+weapon-twin-1+meshy": 58
+    },
+    "town": {
+     "wait": 127,
+     "chassis-scout-1+weapon-twin-1+meshy": 62
+    }
+   },
+   "frames": 734,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 1634,
+     "f": 56
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 1634,
+     "f": 56
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 1634,
+     "f": 56
+    },
+    {
+     "s": "showroom:home",
+     "v": "wait",
+     "t": 3608,
+     "f": 62
+    },
+    {
+     "s": "showroom:garage",
+     "v": "wait",
+     "t": 5409,
+     "f": 103
+    },
+    {
+     "s": "showroom:home",
+     "v": "wait",
+     "t": 6393,
+     "f": 162
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 6393,
+     "f": 162
+    },
+    {
+     "s": "hub",
+     "v": "wait",
+     "t": 6783,
+     "f": 184
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 9286,
+     "f": 259
+    },
+    {
+     "s": "town",
+     "v": "wait",
+     "t": 46748,
+     "f": 499
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 49569,
+     "f": 559
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 51873,
+     "f": 590
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 56666,
+     "f": 621
+    },
+    {
+     "s": "showroom:home",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 59275,
+     "f": 691
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 59275,
+     "f": 691
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 59275,
+     "f": 691
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 59275,
+     "f": 691
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 60728,
+     "f": 706
+    }
+   ]
+  },
+  "2d": {
+   "seen": {
+    "hero": {
+     "chassis-vanguard-2+weapon-pulse-2+2d": 485
+    },
+    "card:m_legacy": {
+     "chassis-vanguard-2+weapon-pulse-2+2d": 729
+    },
+    "card:m_spare": {
+     "chassis-vanguard-1+weapon-pulse-1+2d": 729
+    },
+    "showroom:home": {
+     "chassis-vanguard-2+weapon-pulse-2+2d": 476
+    },
+    "showroom:garage": {
+     "chassis-vanguard-2+weapon-pulse-2+2d": 244
+    }
+   },
+   "frames": 1077,
+   "log": [
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 997,
+     "f": 53
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 997,
+     "f": 53
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+2d",
+     "t": 997,
+     "f": 53
+    },
+    {
+     "s": "showroom:home",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 1062,
+     "f": 56
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 4122,
+     "f": 239
+    },
+    {
+     "s": "showroom:home",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 5090,
+     "f": 298
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 5090,
+     "f": 298
+    },
+    {
+     "s": "showroom:home",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 16573,
+     "f": 978
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 16573,
+     "f": 978
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 16573,
+     "f": 978
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+2d",
+     "t": 16573,
+     "f": 978
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 17191,
+     "f": 1015
+    }
+   ]
+  }
+ },
+ "tg-phone": {
+  "fresh": {
+   "seen": {
+    "hero": {
+     "wait": 527,
+     "chassis-titan-2+weapon-siege-2+meshy": 104
+    },
+    "card:m_legacy": {
+     "wait": 193,
+     "chassis-titan-2+weapon-siege-2+meshy": 148
+    },
+    "card:m_spare": {
+     "wait": 193,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 148
+    },
+    "showroom:garage": {
+     "chassis-titan-2+weapon-siege-2+meshy": 48
+    }
+   },
+   "frames": 330,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 351,
+     "f": 11
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 4597,
+     "f": 176
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 4597,
+     "f": 176
+    },
+    {
+     "s": "hero",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 6915,
+     "f": 263
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 7183,
+     "f": 265
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 7183,
+     "f": 265
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 8616,
+     "f": 315
+    }
+   ]
+  },
+  "programs": {
+   "changed hub, waiting": {
+    "hub": 6,
+    "world": null
+   },
+   "changed town, waiting": {
+    "hub": null,
+    "world": 9
+   },
+   "changed town": {
+    "hub": null,
+    "world": 10
+   },
+   "changed world": {
+    "hub": null,
+    "world": 10
+   },
+   "changed hub": {
+    "hub": 10,
+    "world": null
+   },
+   "failed hub": {
+    "hub": 11,
+    "world": null
+   },
+   "failed world": {
+    "hub": null,
+    "world": 14
+   },
+   "failed town": {
+    "hub": null,
+    "world": 14
+   },
+   "low hub, waiting": {
+    "hub": 7,
+    "world": null
+   },
+   "low town, waiting": {
+    "hub": null,
+    "world": 9
+   },
+   "low town": {
+    "hub": null,
+    "world": 10
+   },
+   "low world": {
+    "hub": null,
+    "world": 10
+   },
+   "low hub": {
+    "hub": 8,
+    "world": null
+   },
+   "2d hub, waiting": {
+    "hub": null,
+    "world": null
+   },
+   "2d town, waiting": {
+    "hub": null,
+    "world": null
+   },
+   "2d town": {
+    "hub": null,
+    "world": null
+   },
+   "2d world": {
+    "hub": null,
+    "world": null
+   },
+   "2d hub": {
+    "hub": null,
+    "world": null
+   }
+  },
+  "changed": {
+   "seen": {
+    "hero": {
+     "wait": 534,
+     "chassis-scout-1+weapon-twin-1+meshy": 78
+    },
+    "card:m_legacy": {
+     "wait": 678,
+     "chassis-scout-1+weapon-twin-1+meshy": 134
+    },
+    "card:m_spare": {
+     "wait": 678,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 134
+    },
+    "showroom:garage": {
+     "wait": 144,
+     "chassis-scout-1+weapon-twin-1+meshy": 49
+    },
+    "hub": {
+     "wait": 339,
+     "chassis-scout-1+weapon-twin-1+meshy": 290
+    },
+    "world": {
+     "wait": 213,
+     "chassis-scout-1+weapon-twin-1+meshy": 85
+    },
+    "town": {
+     "wait": 234,
+     "chassis-scout-1+weapon-twin-1+meshy": 52
+    }
+   },
+   "frames": 803,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 262,
+     "f": 6
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 262,
+     "f": 6
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 262,
+     "f": 6
+    },
+    {
+     "s": "showroom:garage",
+     "v": "wait",
+     "t": 7110,
+     "f": 250
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 8379,
+     "f": 298
+    },
+    {
+     "s": "hub",
+     "v": "wait",
+     "t": 8772,
+     "f": 319
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 11254,
+     "f": 432
+    },
+    {
+     "s": "town",
+     "v": "wait",
+     "t": 17866,
+     "f": 532
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 20347,
+     "f": 642
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 22668,
+     "f": 668
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 25657,
+     "f": 712
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 28937,
+     "f": 764
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 28937,
+     "f": 764
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 28937,
+     "f": 764
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 30963,
+     "f": 792
+    }
+   ]
+  },
+  "failed": {
+   "seen": {
+    "hero": {
+     "wait": 39,
+     "chassis-scout-1+weapon-twin-1+kit": 56
+    },
+    "card:m_legacy": {
+     "wait": 39,
+     "chassis-scout-1+weapon-twin-1+kit": 89
+    },
+    "card:m_spare": {
+     "wait": 64,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 64
+    },
+    "showroom:garage": {
+     "chassis-scout-1+weapon-twin-1+kit": 33
+    },
+    "hub": {
+     "chassis-scout-1+weapon-twin-1+kit": 120
+    },
+    "world": {
+     "wait": 6,
+     "chassis-scout-1+weapon-twin-1+kit": 197
+    },
+    "town": {
+     "chassis-scout-1+weapon-twin-1+kit": 132
+    }
+   },
+   "frames": 260,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 321,
+     "f": 9
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 321,
+     "f": 9
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 321,
+     "f": 9
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 2918,
+     "f": 23
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 2918,
+     "f": 23
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 5100,
+     "f": 35
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 5100,
+     "f": 35
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 6436,
+     "f": 46
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 6850,
+     "f": 63
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 9434,
+     "f": 103
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 10773,
+     "f": 106
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 16770,
+     "f": 195
+    }
+   ]
+  },
+  "offline": {
+   "seen": {
+    "hero": {
+     "wait": 55,
+     "chassis-scout-1+weapon-twin-1+meshy": 82
+    },
+    "card:m_legacy": {
+     "wait": 59,
+     "chassis-scout-1+weapon-twin-1+meshy": 90
+    },
+    "card:m_spare": {
+     "wait": 90,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 59
+    },
+    "showroom:garage": {
+     "chassis-scout-1+weapon-twin-1+meshy": 12
+    },
+    "hub": {
+     "chassis-scout-1+weapon-twin-1+meshy": 28
+    }
+   },
+   "frames": 83,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 298,
+     "f": 7
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 298,
+     "f": 7
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 298,
+     "f": 7
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 3095,
+     "f": 27
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 3212,
+     "f": 29
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 3657,
+     "f": 44
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 4431,
+     "f": 56
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 5482,
+     "f": 60
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 5995,
+     "f": 75
+    }
+   ]
+  },
+  "late": {
+   "seen": {
+    "hero": {
+     "wait": 454,
+     "chassis-vanguard-2+weapon-pulse-2+meshy": 56,
+     "chassis-titan-2+weapon-siege-2+meshy": 71
+    },
+    "card:m_legacy": {
+     "wait": 460,
+     "chassis-vanguard-2+weapon-pulse-2+meshy": 54,
+     "chassis-titan-2+weapon-siege-2+meshy": 67
+    },
+    "card:m_spare": {
+     "wait": 459,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 122
+    }
+   },
+   "frames": 221,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 328,
+     "f": 9
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 328,
+     "f": 9
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 328,
+     "f": 9
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+meshy",
+     "t": 5258,
+     "f": 154
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+meshy",
+     "t": 5401,
+     "f": 156
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 5780,
+     "f": 167
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 6045,
+     "f": 180
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 6050,
+     "f": 180
+    },
+    {
+     "s": "hero",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 6484,
+     "f": 187
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 6605,
+     "f": 189
+    }
+   ]
+  },
+  "low": {
+   "seen": {
+    "hero": {
+     "wait": 531,
+     "chassis-scout-1+weapon-twin-1+meshy": 75
+    },
+    "card:m_legacy": {
+     "wait": 651,
+     "chassis-scout-1+weapon-twin-1+meshy": 261
+    },
+    "card:m_spare": {
+     "wait": 651,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 261
+    },
+    "garage-picture": {
+     "wait": 120,
+     "chassis-scout-1+weapon-twin-1+meshy": 186
+    },
+    "hub": {
+     "wait": 300,
+     "chassis-scout-1+weapon-twin-1+meshy": 546
+    },
+    "world": {
+     "wait": 207,
+     "chassis-scout-1+weapon-twin-1+meshy": 90
+    },
+    "town": {
+     "wait": 249,
+     "chassis-scout-1+weapon-twin-1+meshy": 106
+    }
+   },
+   "frames": 931,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 355,
+     "f": 11
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 355,
+     "f": 11
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 355,
+     "f": 11
+    },
+    {
+     "s": "garage-picture",
+     "v": "wait",
+     "t": 6483,
+     "f": 255
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 7457,
+     "f": 315
+    },
+    {
+     "s": "hub",
+     "v": "wait",
+     "t": 7797,
+     "f": 334
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 9952,
+     "f": 434
+    },
+    {
+     "s": "town",
+     "v": "wait",
+     "t": 16045,
+     "f": 532
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 18405,
+     "f": 650
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 20320,
+     "f": 703
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 23243,
+     "f": 750
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 25706,
+     "f": 845
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 25706,
+     "f": 845
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 25706,
+     "f": 845
+    },
+    {
+     "s": "garage-picture",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 26738,
+     "f": 870
+    }
+   ]
+  },
+  "2d": {
+   "seen": {
+    "hero": {
+     "wait": 385,
+     "chassis-vanguard-2+weapon-pulse-2+2d": 207
+    },
+    "card:m_legacy": {
+     "wait": 385,
+     "chassis-vanguard-2+weapon-pulse-2+2d": 445
+    },
+    "card:m_spare": {
+     "wait": 385,
+     "chassis-vanguard-1+weapon-pulse-1+2d": 445
+    },
+    "garage-picture": {
+     "chassis-vanguard-2+weapon-pulse-2+2d": 238
+    }
+   },
+   "frames": 1085,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 249,
+     "f": 9
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 249,
+     "f": 9
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 249,
+     "f": 9
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 3401,
+     "f": 199
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 3401,
+     "f": 199
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+2d",
+     "t": 3401,
+     "f": 199
+    },
+    {
+     "s": "garage-picture",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 4216,
+     "f": 248
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 5179,
+     "f": 306
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 16629,
+     "f": 989
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 16629,
+     "f": 989
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+2d",
+     "t": 16629,
+     "f": 989
+    },
+    {
+     "s": "garage-picture",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 17232,
+     "f": 1025
+    }
+   ]
+  }
+ },
+ "tg-desktop": {
+  "fresh": {
+   "seen": {
+    "hero": {
+     "wait": 516,
+     "chassis-titan-2+weapon-siege-2+meshy": 94
+    },
+    "card:m_legacy": {
+     "wait": 182,
+     "chassis-titan-2+weapon-siege-2+meshy": 138
+    },
+    "card:m_spare": {
+     "wait": 182,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 138
+    },
+    "showroom:garage": {
+     "chassis-titan-2+weapon-siege-2+meshy": 48
+    }
+   },
+   "frames": 317,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 305,
+     "f": 7
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 4474,
+     "f": 172
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 4474,
+     "f": 172
+    },
+    {
+     "s": "hero",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 6741,
+     "f": 255
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 7014,
+     "f": 257
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 7014,
+     "f": 257
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 8392,
+     "f": 302
+    }
+   ]
+  },
+  "programs": {
+   "changed hub, waiting": {
+    "hub": 6,
+    "world": null
+   },
+   "changed town, waiting": {
+    "hub": null,
+    "world": 9
+   },
+   "changed town": {
+    "hub": null,
+    "world": 10
+   },
+   "changed world": {
+    "hub": null,
+    "world": 10
+   },
+   "changed hub": {
+    "hub": 10,
+    "world": null
+   },
+   "failed hub": {
+    "hub": 11,
+    "world": null
+   },
+   "failed world": {
+    "hub": null,
+    "world": 14
+   },
+   "failed town": {
+    "hub": null,
+    "world": 14
+   },
+   "low hub, waiting": {
+    "hub": 7,
+    "world": null
+   },
+   "low town, waiting": {
+    "hub": null,
+    "world": 9
+   },
+   "low town": {
+    "hub": null,
+    "world": 10
+   },
+   "low world": {
+    "hub": null,
+    "world": 10
+   },
+   "low hub": {
+    "hub": 8,
+    "world": null
+   },
+   "2d hub, waiting": {
+    "hub": null,
+    "world": null
+   },
+   "2d town, waiting": {
+    "hub": null,
+    "world": null
+   },
+   "2d town": {
+    "hub": null,
+    "world": null
+   },
+   "2d world": {
+    "hub": null,
+    "world": null
+   },
+   "2d hub": {
+    "hub": null,
+    "world": null
+   }
+  },
+  "changed": {
+   "seen": {
+    "hero": {
+     "wait": 535,
+     "chassis-scout-1+weapon-twin-1+meshy": 63
+    },
+    "card:m_legacy": {
+     "wait": 622,
+     "chassis-scout-1+weapon-twin-1+meshy": 115
+    },
+    "card:m_spare": {
+     "wait": 622,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 115
+    },
+    "showroom:garage": {
+     "wait": 87,
+     "chassis-scout-1+weapon-twin-1+meshy": 49
+    },
+    "hub": {
+     "wait": 216,
+     "chassis-scout-1+weapon-twin-1+meshy": 247
+    },
+    "world": {
+     "wait": 739,
+     "chassis-scout-1+weapon-twin-1+meshy": 62
+    },
+    "town": {
+     "wait": 145,
+     "chassis-scout-1+weapon-twin-1+meshy": 48
+    }
+   },
+   "frames": 840,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 362,
+     "f": 9
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 362,
+     "f": 9
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 362,
+     "f": 9
+    },
+    {
+     "s": "showroom:garage",
+     "v": "wait",
+     "t": 7044,
+     "f": 253
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 8509,
+     "f": 282
+    },
+    {
+     "s": "hub",
+     "v": "wait",
+     "t": 8903,
+     "f": 303
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 11664,
+     "f": 375
+    },
+    {
+     "s": "town",
+     "v": "wait",
+     "t": 48773,
+     "f": 638
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 51584,
+     "f": 706
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 54153,
+     "f": 730
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 58639,
+     "f": 763
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 62114,
+     "f": 807
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 62114,
+     "f": 807
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 62114,
+     "f": 807
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 64409,
+     "f": 829
+    }
+   ]
+  },
+  "failed": {
+   "seen": {
+    "hero": {
+     "wait": 41,
+     "chassis-scout-1+weapon-twin-1+kit": 58
+    },
+    "card:m_legacy": {
+     "wait": 41,
+     "chassis-scout-1+weapon-twin-1+kit": 88
+    },
+    "card:m_spare": {
+     "wait": 74,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 55
+    },
+    "showroom:garage": {
+     "chassis-scout-1+weapon-twin-1+kit": 30
+    },
+    "hub": {
+     "chassis-scout-1+weapon-twin-1+kit": 96
+    },
+    "world": {
+     "wait": 6,
+     "chassis-scout-1+weapon-twin-1+kit": 721
+    },
+    "town": {
+     "chassis-scout-1+weapon-twin-1+kit": 96
+    }
+   },
+   "frames": 403,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 341,
+     "f": 10
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 341,
+     "f": 10
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 341,
+     "f": 10
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 3244,
+     "f": 25
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 3244,
+     "f": 25
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 5401,
+     "f": 41
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 5401,
+     "f": 41
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 7334,
+     "f": 51
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 7756,
+     "f": 65
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 10829,
+     "f": 97
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 12315,
+     "f": 100
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+kit",
+     "t": 49033,
+     "f": 356
+    }
+   ]
+  },
+  "offline": {
+   "seen": {
+    "hero": {
+     "wait": 70,
+     "chassis-titan-2+weapon-siege-2+meshy": 138
+    },
+    "card:m_legacy": {
+     "wait": 98,
+     "chassis-titan-2+weapon-siege-2+meshy": 122
+    },
+    "card:m_spare": {
+     "wait": 98,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 122
+    },
+    "showroom:garage": {
+     "chassis-titan-2+weapon-siege-2+meshy": 12
+    },
+    "hub": {
+     "chassis-titan-2+weapon-siege-2+meshy": 57
+    }
+   },
+   "frames": 119,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 290,
+     "f": 7
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 290,
+     "f": 7
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 290,
+     "f": 7
+    },
+    {
+     "s": "hero",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 3177,
+     "f": 31
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 3514,
+     "f": 41
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 3514,
+     "f": 41
+    },
+    {
+     "s": "showroom:garage",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 4728,
+     "f": 80
+    },
+    {
+     "s": "hero",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 5919,
+     "f": 84
+    },
+    {
+     "s": "hub",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 6530,
+     "f": 101
+    }
+   ]
+  },
+  "late": {
+   "seen": {
+    "hero": {
+     "wait": 462,
+     "chassis-vanguard-2+weapon-pulse-2+meshy": 53,
+     "chassis-titan-2+weapon-siege-2+meshy": 68
+    },
+    "card:m_legacy": {
+     "wait": 468,
+     "chassis-vanguard-2+weapon-pulse-2+meshy": 51,
+     "chassis-titan-2+weapon-siege-2+meshy": 64
+    },
+    "card:m_spare": {
+     "wait": 463,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 120
+    }
+   },
+   "frames": 222,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 301,
+     "f": 9
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 301,
+     "f": 9
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 301,
+     "f": 9
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+meshy",
+     "t": 5262,
+     "f": 156
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+meshy",
+     "t": 5393,
+     "f": 158
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 5806,
+     "f": 169
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 6098,
+     "f": 181
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 6104,
+     "f": 181
+    },
+    {
+     "s": "hero",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 6648,
+     "f": 189
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-titan-2+weapon-siege-2+meshy",
+     "t": 6795,
+     "f": 191
+    }
+   ]
+  },
+  "low": {
+   "seen": {
+    "hero": {
+     "wait": 531,
+     "chassis-scout-1+weapon-twin-1+meshy": 66
+    },
+    "card:m_legacy": {
+     "wait": 651,
+     "chassis-scout-1+weapon-twin-1+meshy": 261
+    },
+    "card:m_spare": {
+     "wait": 651,
+     "chassis-vanguard-1+weapon-pulse-1+meshy": 261
+    },
+    "garage-picture": {
+     "wait": 120,
+     "chassis-scout-1+weapon-twin-1+meshy": 195
+    },
+    "hub": {
+     "wait": 246,
+     "chassis-scout-1+weapon-twin-1+meshy": 475
+    },
+    "world": {
+     "wait": 649,
+     "chassis-scout-1+weapon-twin-1+meshy": 60
+    },
+    "town": {
+     "wait": 141,
+     "chassis-scout-1+weapon-twin-1+meshy": 62
+    }
+   },
+   "frames": 935,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 328,
+     "f": 9
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 328,
+     "f": 9
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 328,
+     "f": 9
+    },
+    {
+     "s": "garage-picture",
+     "v": "wait",
+     "t": 6676,
+     "f": 253
+    },
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 7649,
+     "f": 313
+    },
+    {
+     "s": "hub",
+     "v": "wait",
+     "t": 7998,
+     "f": 332
+    },
+    {
+     "s": "world",
+     "v": "wait",
+     "t": 10449,
+     "f": 414
+    },
+    {
+     "s": "town",
+     "v": "wait",
+     "t": 45671,
+     "f": 648
+    },
+    {
+     "s": "town",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 48598,
+     "f": 714
+    },
+    {
+     "s": "world",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 50832,
+     "f": 745
+    },
+    {
+     "s": "hub",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 55422,
+     "f": 778
+    },
+    {
+     "s": "hero",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 58233,
+     "f": 849
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 58233,
+     "f": 849
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+meshy",
+     "t": 58233,
+     "f": 849
+    },
+    {
+     "s": "garage-picture",
+     "v": "chassis-scout-1+weapon-twin-1+meshy",
+     "t": 59447,
+     "f": 871
+    }
+   ]
+  },
+  "2d": {
+   "seen": {
+    "hero": {
+     "wait": 387,
+     "chassis-vanguard-2+weapon-pulse-2+2d": 210
+    },
+    "card:m_legacy": {
+     "wait": 389,
+     "chassis-vanguard-2+weapon-pulse-2+2d": 450
+    },
+    "card:m_spare": {
+     "wait": 389,
+     "chassis-vanguard-1+weapon-pulse-1+2d": 450
+    },
+    "garage-picture": {
+     "chassis-vanguard-2+weapon-pulse-2+2d": 242
+    }
+   },
+   "frames": 1090,
+   "log": [
+    {
+     "s": "hero",
+     "v": "wait",
+     "t": 254,
+     "f": 9
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "wait",
+     "t": 254,
+     "f": 9
+    },
+    {
+     "s": "card:m_spare",
+     "v": "wait",
+     "t": 254,
+     "f": 9
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 3421,
+     "f": 200
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 3425,
+     "f": 200
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+2d",
+     "t": 3425,
+     "f": 200
+    },
+    {
+     "s": "garage-picture",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 4247,
+     "f": 249
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 5209,
+     "f": 307
+    },
+    {
+     "s": "hero",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 16755,
+     "f": 992
+    },
+    {
+     "s": "card:m_legacy",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 16755,
+     "f": 992
+    },
+    {
+     "s": "card:m_spare",
+     "v": "chassis-vanguard-1+weapon-pulse-1+2d",
+     "t": 16755,
+     "f": 992
+    },
+    {
+     "s": "garage-picture",
+     "v": "chassis-vanguard-2+weapon-pulse-2+2d",
+     "t": 17356,
+     "f": 1028
+    }
+   ]
   }
  }
 }

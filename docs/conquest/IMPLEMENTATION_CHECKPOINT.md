@@ -6550,9 +6550,10 @@ rail and dam (long repeating hard-surface pieces, which code builds well).
 
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md first; it governs everything.
-- **State on Nov 25 (the session resumed after Sessions 7, 7T, 7T-P, 7B and 7C shipped):** main `ae22fcb` is merged into this
-  branch (merge `de4c9bd`; both sides kept in `web/boot.js` and this file). The owner approved merging this session's PR
-  once every check passes: open it as a DRAFT, and when the work, the reviews and this checkpoint are finished mark it ready
+- **State on Nov 25, 15:00 UTC (the session resumed after Sessions 7, 7T, 7T-P, 7B and 7C shipped; the context was cleared
+  once more on Nov 25 and this section was rebuilt from the tree, the tests and the builders' logs):** main `ae22fcb` is
+  merged into this branch (merge `de4c9bd`; both sides kept in `web/boot.js` and this file). The owner approved merging this
+  session's PRs into main once every check passes (said again on Nov 25): open it as a DRAFT, and when the work, the reviews and this checkpoint are finished mark it ready
   and add the `auto-release` label (the workflow merges and deploys it), then verify the deploy.
 - **Done and pushed before the pause (Nov 21):** the brief saved; the website fix (`web/boot.js` loads the world kit); the
   TURRET cheek plate anchors; the dropship flight / unload logic and its spawn-identity test (`js/conquest/dropship.js`,
@@ -6567,20 +6568,26 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md fi
   real hauler flown by `ConquestDropship.flight()` (`citadelview.js`); the dormant portal and nine LDF posts as scenery
   (`style.js` `S.warScenery`); the consumables' icons in the HUD slot, the picker, the LOOT screen, the loot card and the
   after-action drops; the hit flash white; `S.killBurst` and the `parasite` break-up called when a hostile dies.
-- **Four builders (each owns its own files; they were cut off by a usage limit on Nov 25 and resumed):** (A) `kit/parunits.js`:
-  swarm, brute, drone, the town models, the five generals, `ConquestParUnits`; (B) `kit/parstruct.js`: the hive; (C)
-  `kit/warmodels.js`: the LDF post, the ships' and the portal's checks; (D) the login flash and the real tank in the town
-  view (`core.js`, `main.js`, `net.js`, `showroom.js`, `meshy3d.js`, `ui.js`, `web/game.js`, `hub.js`, the pilot's vehicle in
-  `view.js`, `tankModel` in `plotview.js`, `dev/tests/login-tank-browser.py`).
-- **Known red at this commit (work in progress, not a tested slice):** `conquest-slots.mjs` (the hauler's slot box is
-  smaller than the model: set it from builder C's report), `conquest-style.mjs` (the raid spire is 14 triangles over its
-  2,000 budget: builder B), `conquest-regression.sh` (`conquest-discovery.mjs`, "mine is not defined": builder D).
-- **Next, in order:** (1) take each builder's report, set the slot boxes, run the node list; (2) captures at the five
-  sizes on HIGH and LOW (`dev/tests/conquest-parasite-captures.py`; the town drill with both ships and a ship shot down; the
-  Citadel tier III ship: flight, ramp, the wave stepping off, a ship shot down; the portal's three states; the LDF posts;
-  the town view with the real tank); (3) the raid-view budget at CC10 (16 programs, 150 draw calls) and the relay fight
-  (80 draw calls at 320 wide); (4) the 5E-2d1 leftovers (ten reviewer notes; the colony on LOW at most 197,849
-  triangles); (5) three critic rounds; (6) the whole test list of the brief; (7) two independent reviewers; (8) release.
+- **The four builders finished (Nov 25, all in the tree and pushed, head `a8bb53d`):** (A) `kit/parunits.js`: swarm, brute,
+  drone, the town models, the five generals, `ConquestParUnits`; (B) `kit/parstruct.js`: the hive (the raid spire inside its
+  2,000 budget); (C) `kit/warmodels.js`: the LDF post, the ships' and the portal's checks, the slot boxes; (D) the login flash
+  and the real tank in the town view (`core.js`, `main.js`, `net.js`, `showroom.js`, `meshy3d.js`, `ui.js`, `web/game.js`,
+  `hub.js`, the pilot's vehicle in `view.js`, `tankModel` in `plotview.js`, `dev/tests/login-tank-browser.py`,
+  `dev/tests/login-tank-server.mjs`). **`login-tank-browser.py` full run: PASS** (website and Telegram, phone and computer:
+  fresh, changed, failed, offline, late, LOW, 2D; pictures and `login-tank.json` in `docs/conquest/session5e2d2/login/`).
+- **Green at this commit:** the whole node list of `conquest-check.yml` (101 of 101, with `conquest-slots.mjs` 149 slots,
+  `conquest-style.mjs`, `conquest-dropship.mjs` 161,474 checks, `conquest-regression.sh`, `conquest-plot.mjs`). Nothing known red.
+- **Cut off with no edits in the tree (restart them; nothing to recover):** builder E (the colony on LOW back to at most
+  197,849 triangles) and builder F (the ten reviewer notes of Checkpoint 44). Their scratch measurements are gone with the
+  container; only what is in this file counts.
+- **No PR is open yet** for this branch (checked Nov 25): open it as a DRAFT at the next tested slice.
+- **Next, in order:** (1) captures at the five sizes on HIGH and LOW (`dev/tests/conquest-parasite-captures.py`,
+  `conquest-warscenery-captures.py`, `conquest-dropship-browser.py`, `conquest-citadel-ship.py`: the town drill with both
+  ships and a ship shot down; the Citadel tier III ship: flight, ramp, the wave stepping off, a ship shot down; the portal's
+  three states; the LDF posts; the town view with the real tank); (2) the raid-view budget at CC10 (16 programs, 150 draw
+  calls: `conquest-base-builder.py`) and the relay fight (80 draw calls at 320 wide); (3) the 5E-2d1 leftovers (builders E
+  and F above); (4) three critic rounds; (5) the whole test list of the brief; (6) two independent reviewers; (7) release
+  (`dev/bump.sh`, the draft PR marked ready with the `auto-release` label, verify the deploy, ROADMAP row, release record).
 - **Environment notes for a fresh context:** Python Playwright is not in the image (`pip install playwright==1.55.0`;
   Chromium is `/opt/pw-browsers/chromium`, linked to `/usr/bin/chromium` for the tests that look there); the website
   fixture needs `cd worker && npm install` (`@simplewebauthn/server`). The pre-session tree for before / after captures:
