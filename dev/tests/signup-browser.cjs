@@ -143,6 +143,9 @@ async function leagueCheck(pg,label,name,touch){
     assert(await pg.evaluate(c=>tgName(TG_USER)===c,cs),'the call sign is the player name');
     const cookies=await ctx.cookies(BASE);assert(cookies.some(c=>c.name==='__Host-lunar-session'&&c.httpOnly&&c.secure&&c.sameSite==='Lax'),'first-party HttpOnly session');
     assert(await pg.evaluate(()=>{try{return JSON.parse(localStorage.getItem('lunar-invite')).c==='abcd2345';}catch{return false;}}),'invite kept through signup');
+    // the game opens when the boot hides its loading screen (web/boot.js lunarWebReady sets the tab from the address): nobody can
+    // touch the page before that, so the garage check starts after it (Session 7C: it raced the boot's last scripts)
+    await pg.waitForFunction(()=>document.querySelector('#web-loading')?.hidden===true,null,{timeout:45000});
     await pg.waitForTimeout(600);await pg.screenshot({path:path.join(OUT,name+'-'+label+'-game.png')});
     await garageCheck(pg,label,name,touch,ctx);
     await leagueCheck(pg,label,name,touch);

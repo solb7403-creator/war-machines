@@ -7646,6 +7646,7 @@ If your context was cleared, read docs/conquest/audit/SESSION_07C_BRIEF.md first
   decided Titan row (see "STEP 3" below).
 - **Slice 5 (STEP 4):** the weekly War Effort bar on the shared warfront document, High Morale, the crate, the cosmetic tiers, squads
   and their banner (details under "STEP 4" below). Test: `wtest/conquest-wareffort` 22 (CI `conquest` job).
+- **Slice 6 (CI on PR #157):** four real failures fixed, the rest were the runner or the label (details under "CI fixes" below).
 - **Next:** every guard re-run with everything on (fortress, ladder, town-selenite, cap, bounties, boards, Titan, fingerprints), the
   CI Node suite, the browser journeys and captures (phone sizes + 1366x768 + 1920x1080, keyboard and mouse), then the reviews.
 
@@ -7853,4 +7854,27 @@ what each changed here:
 - Reported (scale, Session 9's load test): the shared warfront document already holds every contributor's lifetime count (up to
   10,000); the week adds one entry per active pilot. Every operation's campaign point is a compare-and-swap on it: shard it before
   public launch (PROPOSAL).
+
+### CI fixes (PR #157, after STEPs 1-4)
+- **owner-rules** failed on the label gate only (`docs/owner-rules.json` changed without the `owner-rules-change` label): the file
+  changes are the brief's decisions (CQ_PTS `titan` 1,600; the CP source `worker/src/conquest-boards.js` 1 for the boards' 1,500 CP),
+  so the label was added to the PR (the owner's prompt is the decision, as in Sessions 6B, 6C and 7B). The test itself passed.
+- **conquest-hub-browser.py** (CI `conquest` job, from STEP 2): the first-paint check counted exactly 4 hub cards; the brief adds the
+  AIRDROP STANDING card, so the hub paints 5. The check now counts 5 and requires the standing card by its class, and the live status
+  must contain "AIRDROP STANDING" (an added assertion; nothing removed).
+- **signup-browser.cjs garage check** (CI `signup-browsers`, from STEP 3; seen before at `710f113`, Checkpoint 49): the web boot
+  loaded the Citadel's and 7C's 10 scripts one after another after main.js, and its last step (`lunarWebReady`) sets the tab from the
+  address (#play): the garage check, which starts when `save.lab` exists, was switched back to Play mid-check. Two fixes: (1)
+  `web/boot.js` downloads those 10 scripts together and runs them in order (`async=false`): one round trip instead of ten before the
+  game opens (faster for every web player, not only the test); (2) the test starts the garage check after the loading screen hides
+  (nobody can touch the page before it). Chromium passed at all 4 sizes locally.
+- **conquest-session6-loot.py long press** (`a long press on SHIELD opens the item picker`, one CI run): the 500 ms hold timer starts
+  in the pointerdown handler, so a long software-GL frame delayed it past the release. `js/conquest/app.js` now measures the hold from
+  the touch itself (the event's time) and opens the picker at a release after 500 ms: a busy frame on a slow phone no longer turns a
+  held SHIELD into a tap. The test is unchanged and passed at all 3 sizes.
+- **transmission (chromium)** lost `raid-battery-1` once (`4714b95`) and passed at `a7eff0e` on the same world code (the flagship
+  bot's known environmental flake, Checkpoints 31 and 49); **citadel** and **signup-browsers** at `c643c34` also hit an apt mirror
+  error while installing the browsers (`Unable to locate package fonts-unifont`): the runner, not the code.
+- Polish found on the way: the standing card says "NOT IN THE POOL YET" (was "OUTSIDE THE POOL") and "1 pt" in the singular; the
+  BOARDS screen's field leaves out pilots under review that it can see (the payout counts the markers minus every held pilot).
 

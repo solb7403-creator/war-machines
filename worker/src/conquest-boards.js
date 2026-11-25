@@ -55,7 +55,7 @@ export async function postBoards(env,pid,name,s,now,{town=null,defense=null}={})
 export async function conquestBoards(env,a,now=Date.now()){const b=a.b||{};if(Object.keys(b).some(k=>!['gv','initData'].includes(k)))return {status:400,body:{error:'invalid boards'}};
  const kinds=BOARD.order,[fh,...docs]=await Promise.all([dbGet(env,'fh').catch(()=>null),...kinds.map(k=>dbGet(env,'cqb/'+k+'/'+periodOf(k,now)).catch(()=>null))]),held=id=>!!(fh&&fh[id]);
  const boards={};kinds.forEach((k,i)=>{const all=rank(k,rowsOf(docs[i]).filter(r=>!held(r.p))),me=all.findIndex(r=>r.p===a.pid);
-  boards[k]={name:BOARD.kinds[k].name,per:periodOf(k,now),ends:periodEnd(periodOf(k,now)),lo:!!BOARD.kinds[k].lo,top:all.slice(0,SHOW).map((r,j)=>({r:j+1,n:r.n,s:r.s,...(r.cc?{cc:r.cc}:{}),...(r.p===a.pid?{me:1}:{})})),me:me>=0?{r:me+1,s:all[me].s}:null,field:Math.max(all.length,Number(docs[i]?.n)||0),
+  boards[k]={name:BOARD.kinds[k].name,per:periodOf(k,now),ends:periodEnd(periodOf(k,now)),lo:!!BOARD.kinds[k].lo,top:all.slice(0,SHOW).map((r,j)=>({r:j+1,n:r.n,s:r.s,...(r.cc?{cc:r.cc}:{}),...(r.p===a.pid?{me:1}:{})})),me:me>=0?{r:me+1,s:all[me].s}:null,field:Math.max(all.length,(Number(docs[i]?.n)||0)-rowsOf(docs[i]).filter(r=>held(r.p)).length),   /* pilots under review leave the shown field too (the payout counts the markers minus every held pilot) */
    bands:BOARD.bands[k].map(x=>({pct:x.pct,max:x.max,...(x.cp?{cp:x.cp}:{}),...(x.fr?{fr:x.fr}:{}),...(x.mn?{mn:x.mn}:{})})),min:BOARD.min};});
  const mine=held(a.pid);return {status:200,body:{ok:true,boards,raid:featuredRaid(now),held:mine,t:now}};}
 // ---- the payout (the 5-minute cron): every period that has ended, once ----
