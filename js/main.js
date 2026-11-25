@@ -20,7 +20,6 @@ function frame(now){
 }
 function boot(){
  loadSave();rollPeriods();captureRef();
- const mine={ts:save._ts||0,earned:save.earned||0};   // this device's copy as it was found: the Telegram cloud copy is compared with this, whenever it arrives
  // The pilot's tank, as early as possible (owner, Nov 20): ask the server for the real loadout now, and start downloading the
  // model files of the tank this device holds (nearly always the same tank; if the server says otherwise its files are fetched then).
  if(typeof bootSync==='function')bootSync(true);
@@ -28,6 +27,8 @@ function boot(){
  initUI();
  if(typeof load3D==='function')load3D();   // the 3D view loads in the background; without WebGL (or on the 2D setting) the game draws in 2D
  const afterCloud=()=>{
+  // the Telegram cloud copy has been compared: the launch sync's answer (asked for above, held until now: js/net.js doSync) may land
+  if(typeof loadoutProve==='function')loadoutProve('cloud');
   initBackend();loadLB();if(ACCOUNT_OK)loadSquad();
   if(!IN_WEB&&save.payCur==='sol')fetchPrices();
   if(!save.welcomed&&(save.mp||0)===0)showWelcome();
@@ -43,13 +44,8 @@ function boot(){
   missionProgress?.merge(cs?.conquestProgress);
   if(typeof ConquestProgress!=='undefined')ConquestProgress.markReady();
   // the newer copy wins: Telegram cloud (follows the account) or this device
-  if(cs&&typeof cs.pts==='number'&&((cs._ts||0)>mine.ts||(cs.earned||cs.pts)>mine.earned)){
-   const was=save;loadSave(cs);rollPeriods();
-   // the launch sync may have answered before the cloud copy came: what the server said (and what that answer wrote) stays on top
-   if(SRV_ECO&&typeof lastCredit!=='undefined'&&lastCredit){for(const k of ['refBy','ghAck','starsDone'])if(was[k]!==undefined)save[k]=was[k];if(lastCredit.migOk)save.migOk=1;if(lastCredit.E&&!(save.mq&&save.mq.length))applyEco(lastCredit.E);}
-   try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}}
+  if(cs&&typeof cs.pts==='number'&&((cs._ts||0)>(save._ts||0)||(cs.earned||cs.pts)>(save.earned||0))){loadSave(cs);rollPeriods();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}}
   else cloudSave();
-  loadoutProve('cloud');
   discovery?.flush();
   missionProgress?.flush();
   afterCloud();

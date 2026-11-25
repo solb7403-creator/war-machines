@@ -6550,34 +6550,69 @@ rail and dam (long repeating hard-surface pieces, which code builds well).
 
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md first; it governs everything.
-- **Done and pushed:** slice 1 (the brief saved word for word; this checkpoint opened); the website fix (`web/boot.js` loads the
-  world kit, see "Found on the way"); the TURRET cheek plate anchors (`dev/assets/meshy/build.py`, `resocket.py`,
-  `manifest.json`, `meshy.mjs`); the dropship flight / unload logic and its spawn-identity test (`js/conquest/dropship.js`,
-  `dev/tests/conquest-dropship.mjs`, in the CI list); the kill burst and the Parasite break-up preset (`js/fx3d.js`).
-- **WIP snapshot commit (Nov 21, "wip: builders' work in progress"):** a safety copy of work that is NOT finished or tested:
-  the shared Parasite palette (`worldkit.js` `pal.par`, `ConquestWorldKit.PAR`), the new slots (`slots.js`), the builders'
-  half-built files (`kit/parunits.js`, `kit/parstruct.js`, `kit/warmodels.js`, D's edits to `core.js`, `main.js`, `net.js`,
-  `meshy3d.js`, `showroom.js`, `login-tank-browser.py`), the four consumables (`kit/items.js`, `img/conquest/item-*.png`,
-  `dev/tests/conquest-item-sprites.py`) and the unit capture tool (`dev/tests/conquest-parasite-captures.py`). At this commit
-  `conquest-slots.mjs` FAILS on purpose-built checks (the new kit files are not in `index.html` / `web/boot.js` yet and not
-  every new slot has its model): the lead wires them in when the builders report.
-- **Running (four parallel builders, each owns its own files; the lead integrates):** (A) the six Parasite units and the drone
-  -> `js/conquest/kit/parunits.js`; (B) the hive, hive mast, cover wall, raid spire and plasma battery in the new look ->
-  `js/conquest/kit/parstruct.js` (the old ones in `kit/nature.js` are deleted by the lead when it lands); (C) the two
-  dropships, the portal gate and the LDF post -> `js/conquest/kit/warmodels.js`; (D) the login flash and the real tank in
-  the town view -> `js/core.js`, `js/main.js`, `js/net.js`, `js/showroom.js`, `js/meshy3d.js`, `js/ui.js`, `web/boot.js`,
-  `web/game.js`, `js/conquest/hub.js`, the vehicle part of `js/conquest/view.js`, `tankModel` in `js/conquest/plotview.js`,
-  and the new `dev/tests/login-tank-browser.py`. **Until D reports, the lead does not edit `view.js` or `plotview.js`.**
-- **Next, in order:** (1) integrate A and B: `style.js` (units behind slots, the battery, the drone, the commander
-  patterns, one red in place of the magenta), `view.js` `enemyModel` and the death animations, `townkit.js` `foe()`,
-  the kit files in `index.html` and `web/boot.js`; (2) the dropships drawn in the Defense Drill (`plotview.js`
-  `drillStep`), the raid-view budget at CC10; (3) the portal and the LDF posts placed as scenery; (4) the consumable
-  drop sprites and the white hit flash (the two Session 6 hooks still missing); (5) the 5E-2d1 leftovers (ten reviewer
-  notes; the colony on LOW at most 197,849 triangles: profile running); (6) three critic rounds with captures at the five
-  sizes, the whole test list, two reviewers, release.
+- **State on Nov 25 (the session resumed after Sessions 7, 7T, 7T-P, 7B and 7C shipped):** main `ae22fcb` is merged into this
+  branch (merge `de4c9bd`; both sides kept in `web/boot.js` and this file). The owner approved merging this session's PR
+  once every check passes: open it as a DRAFT, and when the work, the reviews and this checkpoint are finished mark it ready
+  and add the `auto-release` label (the workflow merges and deploys it), then verify the deploy.
+- **Done and pushed before the pause (Nov 21):** the brief saved; the website fix (`web/boot.js` loads the world kit); the
+  TURRET cheek plate anchors; the dropship flight / unload logic and its spawn-identity test (`js/conquest/dropship.js`,
+  `dev/tests/conquest-dropship.mjs`); the kill burst and the Parasite break-up preset (`js/fx3d.js`).
+- **Integrated by the lead on Nov 25 (in the tree; see "Integration" below for each choice):** the six units, the battery
+  and the drone drawn from their slots (`style.js` `S.unit`, `S.unitPose`, `S.battery`, `S.drone`; `view.js` `enemyModel`
+  and the enemy loop); the five generals' colours; the one Parasite red in place of every magenta (hull, markers, shots,
+  ground creep, the infection's vein shader, the hostile flag, the hub horizon, the town minimap); the town raiders from
+  the units' town models (`townkit.js` `foe`); the old alien hive / mast / wall / spire deleted from `kit/nature.js`; the
+  new kit files and `dropship.js` loaded by `index.html` and `web/boot.js`; the dropships drawn in the Defense Drill
+  (`plotview.js` `drillShips*`, `fx3d.js` `thrustDust` / `hullSmoke` / `hullFlame`); the Citadel's tier III ship drawn as the
+  real hauler flown by `ConquestDropship.flight()` (`citadelview.js`); the dormant portal and nine LDF posts as scenery
+  (`style.js` `S.warScenery`); the consumables' icons in the HUD slot, the picker, the LOOT screen, the loot card and the
+  after-action drops; the hit flash white; `S.killBurst` and the `parasite` break-up called when a hostile dies.
+- **Four builders (each owns its own files; they were cut off by a usage limit on Nov 25 and resumed):** (A) `kit/parunits.js`:
+  swarm, brute, drone, the town models, the five generals, `ConquestParUnits`; (B) `kit/parstruct.js`: the hive; (C)
+  `kit/warmodels.js`: the LDF post, the ships' and the portal's checks; (D) the login flash and the real tank in the town
+  view (`core.js`, `main.js`, `net.js`, `showroom.js`, `meshy3d.js`, `ui.js`, `web/game.js`, `hub.js`, the pilot's vehicle in
+  `view.js`, `tankModel` in `plotview.js`, `dev/tests/login-tank-browser.py`).
+- **Known red at this commit (work in progress, not a tested slice):** `conquest-slots.mjs` (the hauler's slot box is
+  smaller than the model: set it from builder C's report), `conquest-style.mjs` (the raid spire is 14 triangles over its
+  2,000 budget: builder B), `conquest-regression.sh` (`conquest-discovery.mjs`, "mine is not defined": builder D).
+- **Next, in order:** (1) take each builder's report, set the slot boxes, run the node list; (2) captures at the five
+  sizes on HIGH and LOW (`dev/tests/conquest-parasite-captures.py`; the town drill with both ships and a ship shot down; the
+  Citadel tier III ship: flight, ramp, the wave stepping off, a ship shot down; the portal's three states; the LDF posts;
+  the town view with the real tank); (3) the raid-view budget at CC10 (16 programs, 150 draw calls) and the relay fight
+  (80 draw calls at 320 wide); (4) the 5E-2d1 leftovers (ten reviewer notes; the colony on LOW at most 197,849
+  triangles); (5) three critic rounds; (6) the whole test list of the brief; (7) two independent reviewers; (8) release.
 - **Environment notes for a fresh context:** Python Playwright is not in the image (`pip install playwright==1.55.0`;
-  Chromium is `/opt/pw-browsers/chromium`, linked to `/usr/bin/chromium` for the four tests that look there); the website
-  fixture needs `cd worker && npm install` (`@simplewebauthn/server`).
+  Chromium is `/opt/pw-browsers/chromium`, linked to `/usr/bin/chromium` for the tests that look there); the website
+  fixture needs `cd worker && npm install` (`@simplewebauthn/server`). The pre-session tree for before / after captures:
+  `git archive d61d259` into a scratch folder, then `--root` on the capture tool.
+
+### Integration (Nov 25): the choices made while wiring the models in (each with its reason)
+- **Size on screen is unchanged.** Measured in the client before the change (HIGH, metres, width x height x length): raider
+  2.67 x 1.39 x 4.53, breacher 4.01 x 2.18 x 5.32, sentinel 4.52 x 2.38 x 5.58, command 4.52 x 2.10 x 5.57, drone 4.59 x
+  1.11 x 4.92, battery 11.05 x 15.41 x 9.59 (10,480 to 15,764 triangles a unit). The units' slot boxes are those
+  footprints (taller: the new silhouettes rise); the drone and the battery slots hold the model at its authored size and
+  are drawn at 1.65, as they always were. The view no longer forces 1.65 on every hostile: a model keeps the scale it was
+  built at. **Found on the way:** the Hive Titan stand-in (7C) asked for 2.4x and the loop reset it every frame, so the
+  Titan was drawn at a sentinel's size; it now is 2.4x, as its own file says.
+- **A unit is two draws** (hull, gun at the model's pivot) on the solid material plus its ground glow, as before; the
+  marker stays in the one instanced marker draw. Three seed variants a kind (trophies and plate colours differ).
+- **Death:** `S.unitPose(g, seconds dead)`, one animation per unit from one table (the Scavenger rolls onto its side, the
+  Siphon rears back on its tanks, the Hoard Fortress sinks and its turret slumps, the Warlord topples backward, a Grabber
+  tumbles over, the Wrecker noses down on its ram); the blast, the flying plundered plates (`shatter('parasite')`) and the
+  kill burst in the Parasite red are FX3D's. The old squash to 60% height stays only for the pre-style fallback.
+- **The Citadel's tier III ship** (`citadelview.js`; Checkpoint 49's contract kept: `ConquestDropship.flight(spec)` with
+  `ConquestCitadel.dropshipSpec(e)`, the pose applied after the ground orientation): the fight keeps the ship's place, hit
+  box and timing; the hull follows the fight's ship until its bow ramp's foot is over the pad, sets down there (2.6 s
+  before the wave's moment), lowers the ramp, and the wave the fight spawns at that moment is shown rolling off the ramp
+  to its own spots for its first 1.1 s (the fight already holds those units' fire for 1.2 s); when the fight sends the
+  ship away the ramp shuts and the flight's lift-away plays; shot down, the flight's fall and wreck play from where it
+  was hit. The Swarm is the Grabber. The gate, guns, mortars and the warden stay the 7B stand-ins (their own session).
+- **The portal and the LDF posts are scenery with no collision** (the brief: no collision or layout change): the dormant
+  portal on the flat west of the OXYGEN SPEAR hive (1196, 987), facing the Refuge; nine posts on open ground found by a
+  search (flat within 2.6 m, clear of solids, roads, lots, fields, water, forest, ore and flora): the Refuge, the oxygen
+  complex, both viaduct ends, the Command Base approach, the frontier wall, the corridor pylon, the ice mine, the dam. No
+  clear spot exists beside the east frontier wall (a cliff) or at the Refuge terminal (roads and lots): reported, not forced.
+- **The hit flash is white** (the addendum: "80 ms emissive white"; it was a warm orange that hid on red-lit units).
 
 ### Found on the way (Nov 21): Conquest on the website drew its pre-style fallback
 - `web/play.html` -> `web/boot.js` loads the game's scripts from a list. Session 5E-2d1 added `js/conquest/slots.js`,

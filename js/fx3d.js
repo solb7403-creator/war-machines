@@ -845,6 +845,11 @@ function create(T,host){
  // of at most 24 quads (a ground flash, two core sprites, a 16-step ring and four star rays = 23) in the Parasite accent colour, plus at
  // most 14 pooled sparks; the white core is the short light flash (0.26 s).
  function killBurst(x,y,z,r,hex){const h=hex||'#ff2030';spawn(fxKill,.26,x,y,z,rnd()*TAU,r||2,0,1,'',1).P={a:h};sparks(x,y+.3,z,Math.min(14,6+(r||2)*3),4+(r||2)*2,col(h),.24,.5,1.6,y-(r||2));}
+ // Session 5E-2d2: a dropship's effects (js/conquest/dropship.js; the town raid and the Citadel call them). thrustDust and
+ // hullSmoke spawn pooled particles: call them a few times a second while they last. hullFlame is immediate: every frame.
+ function thrustDust(x,y,z,r,k){if(!(k>.03))return;smoke(x,y+.2,z,2+3*k,r,col('#8b8275'),.9+.7*k,1.1,.5);}
+ function hullSmoke(x,y,z,r){smoke(x,y+r*.3,z,2,r*.4,col('#1d1a18'),1+.25*r,1.8,2.4);sparks(x,y+r*.2,z,2,3,col('#ffb35a'),.16,.5,1.6,y-r);}
+ function hullFlame(x,y,z,r,k){if(!(k>.02))return;const f=.75+.25*rnd();sprite(x,y+r*.35,z,r*(.8+.2*rnd()),col('#c9300f'),.55*k*f);sprite(x+(rnd()-.5)*r*.3,y+r*.45,z+(rnd()-.5)*r*.3,r*.5*f,col('#ff8a2a'),.8*k*f);sprite(x,y+r*.5,z,r*.24*f,col('#fff1c4'),.8*k);}
  function fxKill(e){const k=e.t/e.d,f=1-k,c=col(e.P.a),w=col('#ffffff'),R=e.a;disc(e.x,e.y-R*.45,e.z,R*(1.4+1.2*k),c,.5*f);sprite(e.x,e.y,e.z,R*(.5+1.3*k),c,.9*f*f);sprite(e.x,e.y,e.z,R*.5*(1-.6*k),w,.85*f*f);ring(e.x,e.y-R*.4,e.z,R*(.5+1.9*k),.12*R*f+.03,c,f,16);star(e.x,e.y,e.z,R*(.9+k),2,e.ang,w,f*.8,.05);}
  function fxGlowBurst(e){const k=e.t/e.d,f=1-k,c=col(e.P.a),w=col('#ffffff');disc(e.x,e.y-.3,e.z,e.a*(1+k),c,.6*f);sprite(e.x,e.y,e.z,e.a*(.4+.7*k),c,.9*f*f);ring(e.x,e.y-.3,e.z,e.a*(.3+1.6*k),.1,w,f,30);if(e.b)star(e.x,e.y,e.z,e.a*(.8+k),4,e.ang,w,f,.06);}
  // damage stages on a box-shaped object (called every frame it is damaged; frac = health left 0..1).
@@ -889,7 +894,7 @@ function create(T,host){
  function dispose(){host.scene.remove(qMesh);host.scene.remove(dMesh);qg.dispose();dg.dispose();}
  const stats=()=>({quads:qn,debrisVerts:dn,particles:pn,chunks:cn,effects:E.filter(e=>e.on).length,marks:S.filter(s=>s.on).length,caps:{quads:QMAX,verts:VMAX,particles:pcap(),chunks:dcap()}});
  const SUP_API=CQO?{superCharge:superChargeO,superLock:superLockO,superBeam:superBeamO,superNova:superNovaO,superShell:superShellO,superBlast:superBlastO,superImpact:superImpactO}:{superCharge,superLock,superBeam,superNova,superShell,superBlast,superImpact};
- return {begin,end,clear,dispose,stats,shift,...SUP_API,blast,shatter,killBurst,wear,
+ return {begin,end,clear,dispose,stats,shift,...SUP_API,blast,shatter,killBurst,thrustDust,hullSmoke,hullFlame,wear,
   quad,seg,segc,cap,flow,disc,sprite,puff,churn,shock,ring,bolt:CQO?boltO:bolt,star,crack,part,sparks,smoke,chunk,mark,glow:qMesh,debris:dMesh};
 }
 root.FX3D={create,PAL,KIND,MATS};

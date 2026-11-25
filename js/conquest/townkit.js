@@ -21,7 +21,7 @@ const ORE_LOOK=[[0x8a8f92,0x6a6f72,0],[0x8a8f92,0xa0522d,.15],[0x4a4f58,0xcfe6f0
 function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternion(),_e=new T.Euler(),_p=new T.Vector3(),_s=new T.Vector3();
  const M=(x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>{_e.set(rx,ry,rz);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(sx,sy,sz));};
  const C={rust:lin(0x7a4a2c),sand:lin(0x8f7c62),moss:lin(0x3f5a2a),plant:lin(0x3fae4a),glass:lin(0x78aed0),furnace:lin(0xff8a3d),steel:lin(0x6d7884),timber:lin(0x6a4a2e),timberD:lin(0x4a3220),comp:lin(0x8a8676),warm:lin(0xffc47a),
-  paint:[lin(0x9a5a3a),lin(0x5a7a8a),lin(0xc9a04a),lin(0x6a8a4a),lin(0x7a6a52),lin(0xbcae8c)],gold:K.gold,cyan:K.cyan,amber:K.amber,dark:lin(0x353d49),dark2:lin(0x404a57),apron:lin(0x7d848d),mid:K.mid,panel:K.panelA,panelB:K.panelB,roof:K.roof,violet:K.violet,red:K.red,teal:K.teal,ice:K.ice,mag:K.mag};
+  paint:[lin(0x9a5a3a),lin(0x5a7a8a),lin(0xc9a04a),lin(0x6a8a4a),lin(0x7a6a52),lin(0xbcae8c)],gold:K.gold,cyan:K.cyan,amber:K.amber,dark:lin(0x353d49),dark2:lin(0x404a57),apron:lin(0x7d848d),mid:K.mid,panel:K.panelA,panelB:K.panelB,roof:K.roof,violet:K.violet,red:K.red,teal:K.teal,ice:K.ice,par:K.par};
  const LIGHT={cyan:K.cyan,amber:K.amber,violet:K.violet,green:K.teal,red:K.red};let themeLight=null;
  const accent=l=>l>=5?C.gold:themeLight||(l>=3?C.teal:C.cyan);
 // Session 5E-2d1 (owner, Nov 11 + Nov 19): every town model is a slot of the world kit (js/conquest/slots.js, kit/town.js,
@@ -52,10 +52,11 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
  function home(kind,low){return kb('town-home-'+(['dome','block','tower','green'].includes(kind)?kind:'shop'),{lod:low?1:0,seed:kind.length}).geometry();}
  function person(){return kb('town-person',{}).geometry();}
  function rover(){return kb('town-rover',{}).geometry();}
- function foe(kind){const b=new S.Bld();if(kind==='d'){b.add(G.blob1,M(0,0,0,0,0,0,1.3,.55,1.3),K.chitin);b.box(0,0,0,3.4,.1,.4,K.mag,2.2);b.add(G.octa,M(0,.5,0,0,0,0,.4,.4,.4),K.magHot,2.4);}
-  else if(kind==='w'){b.add(G.blob1,M(0,.5,0,0,0,0,.8,.55,1.1),K.chitin);b.box(0,.6,.8,.5,.12,.12,K.mag,2.4);}
-  else if(kind==='b'){b.add(G.blob1,M(0,2.2,0,0,0,0,3.4,2.4,3.8),K.chitinD||K.chitin);for(const sx of [-1,1])b.box(sx*2.4,2.4,.6,.9,2.6,2.8,K.dark2);b.box(0,3.2,3.4,2.2,.4,.3,K.mag,2.4);b.add(G.octa,M(0,4.8,0,0,0,0,.7,.9,.7),K.magHot,2.2);}
-  else{const s=kind==='s'?2.6:1.7;b.add(G.blob1,M(0,s*.7,0,0,0,0,s,s*.7,s*1.3),K.chitin);b.box(0,s*.95,s*1.15,s*.6,s*.18,.18,K.mag,2.4);b.add(G.octa,M(0,s*1.6,0,0,0,0,.35*s,.45*s,.35*s),K.magHot,2.2);}return b.geometry();}
+ // The town raiders (Session 5E-2d2; owner, Nov 21): the light town models of the Parasite units (js/conquest/kit/parunits.js,
+ // o.town): r the Scavenger, s the Hoard Fortress, d the stolen drone, w the Grabber, b the Wrecker. One instanced draw per
+ // kind in the town view; the front faces +z; the same footprints as before.
+ const FOE={r:'par-raider',s:'par-sentinel',d:'par-drone',w:'par-swarm',b:'par-brute'};
+ function foe(kind){return kb(FOE[kind]||FOE.r,{town:1}).geometry();}
  // Banner: mast + two-colour flag in the chosen shape, emblem as a small lit mark. Shared by the base and the tank.
  function banner(bn,scale=1){const b=new S.Bld(),c1=new T.Color(bn.colors[0]),c2=new T.Color(bn.colors[1]),h=6*scale,w=2.6*scale,fh=1.7*scale;b.box(0,h/2,0,.16*scale,h,.16*scale,C.dark);
   if(bn.shape==='pennant'){b.add(G.cone5,M(w/2,h-fh/2,0,0,0,-Math.PI/2,fh/2,w,.08*scale),c1);b.box(w*.25,h-fh/2,0,w*.5,fh*.18,.1*scale,c2);}

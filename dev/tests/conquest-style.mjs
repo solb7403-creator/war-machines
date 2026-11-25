@@ -8,7 +8,7 @@ const ctx2d=new Proxy({},{get:(o,k)=>k in o?o[k]:k==='createImageData'?(w,h)=>({
 let canvases=0;const document={createElement:()=>(canvases++,{width:0,height:0,style:{},getContext:()=>ctx2d}),fonts:{check:()=>true}};
 class ImageData{constructor(w,h){this.width=w;this.height=h;this.data=new Uint8ClampedArray(w*h*4);}}class Path2D{moveTo(){}lineTo(){}rect(){}}
 const c=vm.createContext({console,document,performance:{now:()=>0},ImageData,Path2D});
-for(const f of ['js/vendor/three.lunar.min.js','js/rules.js','js/conquest/world.js','js/conquest/combat.js','js/conquest/slots.js','js/conquest/worldkit.js','js/conquest/kit/settler.js','js/conquest/kit/military.js','js/conquest/kit/nature.js','js/conquest/kit/town.js','js/conquest/style.js'])vm.runInContext(fs.readFileSync(f,'utf8'),c,{filename:f});
+for(const f of ['js/vendor/three.lunar.min.js','js/rules.js','js/conquest/world.js','js/conquest/combat.js','js/conquest/slots.js','js/conquest/worldkit.js','js/conquest/kit/settler.js','js/conquest/kit/military.js','js/conquest/kit/nature.js','js/conquest/kit/town.js','js/conquest/kit/items.js','js/conquest/kit/parunits.js','js/conquest/kit/parstruct.js','js/conquest/kit/warmodels.js','js/conquest/style.js'])vm.runInContext(fs.readFileSync(f,'utf8'),c,{filename:f});
 const {THREE:T,ConquestStyle:CS,ConquestWorld:W,ConquestCombat:C}=c;
 const Box3=(()=>{const g=new T.BoxGeometry(1,1,1);g.computeBoundingBox();return g.boundingBox.constructor;})(); // not exported by the slim build
 assert.ok(CS&&typeof CS.create==='function','style module loads without THREE at boot and exposes create()');
@@ -55,17 +55,31 @@ for(const low of [false,true]){
    if(im.geometry===S.P.rock){const pa=im.geometry.attributes.position,vv=new T.Vector3();let top=-1e9,rx=0,rz=0;for(let j=0;j<pa.count;j++){vv.fromBufferAttribute(pa,j).applyMatrix4(m4);top=Math.max(top,vv.y);rx=Math.max(rx,Math.abs(vv.x+g.position.x-item.x));rz=Math.max(rz,Math.abs(vv.z+g.position.z-item.z));}
     assert.ok(top<=item.y+item.size*(.8+item.variant)+.12*item.size,q+' rock top inside envelope');assert.ok(rx<=item.size*1.6+1&&rz<=item.size+1,q+' rock footprint inside the solid ellipse box');}
    if(im.geometry===S.P.crystal||im.geometry===S.P.fungus)assert.ok(box.max.y-item.y<=1.5,q+' tree replacement stays passable-low: '+(box.max.y-item.y).toFixed(2));}}
- // Enemy hull dressing keeps the canonical silhouette (bbox within ±15 % of today's merged hull).
- const hullGeo=()=>{const g=new T.BoxGeometry(2.6,1,1.6);const n=g.attributes.position.count,col=new Float32Array(n*3).fill(.4);g.setAttribute('color',new T.BufferAttribute(col,3));return g;};
- const cached={body:hullGeo(),gun:hullGeo(),ty:.8,scale:1},hm=S.hullMeshes(cached,{kind:'raider',cls:'scout',arch:'twin'}),hb=new Box3().setFromObject(hm.body),cb=new Box3().setFromObject(new T.Mesh(cached.body));
- assert.equal(hm.dress,null,q+' hull dressing rides in the hull draw');assert.ok(tris(hm.body)>tris(new T.Mesh(cached.body)),q+' merged hull carries the dressing');
+ // The Parasite units (Session 5E-2d2; owner, Nov 21). The rule changed with the brief: a hostile is no longer the player's
+ // hull with dressing (the old check: "dressing within the hull's silhouette") but its own slot of the world kit. Each of the
+ // six: a hull draw and a gun draw on the solid material, standing on the ground inside its slot box (the sim owns the hit
+ // box), at most 5,000 triangles on HIGH; a general keeps its doctrine colour, never the Parasite red.
+ const A=C.archetypes,PU=c.ConquestParUnits,unitOf=(kind,o)=>S.unit(Object.assign({id:7,kind,cls:(A[kind]||A.raider).cls,arch:(A[kind]||A.raider).arch},o||{}));
+ const solidOf=g=>{const out=[];g.traverse(m=>{if(m.isMesh&&m.material===S.MAT.solid&&!g.userData.marker.children.includes(m))out.push(m);});return out;};
+ for(const kind of ['raider','breacher','sentinel','command','swarm','brute']){const g=unitOf(kind),sz=c.ConquestSlots.items['par-'+kind].size,P=verts(g,m=>m.material===S.MAT.solid&&!g.userData.marker.children.includes(m));
+  assert.equal(g.userData.unit,kind,q+' '+kind+' is drawn by its own unit');assert.equal(solidOf(g).length,2,q+' '+kind+': a hull draw and a gun draw');assert.ok(PU[kind]&&PU[kind].slot==='par-'+kind&&PU[kind].pivot.length===3,q+' '+kind+' lists its slot and gun pivot');
+  const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];for(const v of P)for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],v[k]);hi[k]=Math.max(hi[k],v[k]);}
+  assert.ok(lo[1]>-.02&&hi[1]<=sz[1]+.02&&lo[0]>=-sz[0]/2-.02&&hi[0]<=sz[0]/2+.02&&lo[2]>=-sz[2]/2-.02&&hi[2]<=sz[2]/2+.02,q+' '+kind+' stands on the ground inside its slot box '+JSON.stringify(sz)+': '+JSON.stringify([lo,hi].map(a=>a.map(n=>+n.toFixed(2)))));
+  if(!low)assert.ok(solidOf(g).reduce((n,m)=>n+tris(m),0)<=5000,q+' '+kind+' at most 5,000 triangles');
+  // the death animation moves the unit's own parts only and comes back
+  S.unitPose(g,2);assert.ok(Math.abs(g.userData.body.rotation.z)>.05||Math.abs(g.userData.body.rotation.x)>.05,q+' '+kind+' has a death pose');S.unitPose(g,0);assert.equal(g.userData.body.rotation.z,0,q+' '+kind+' stands again when alive');}
+ // the five generals: a distinct doctrine colour each, far from the Parasite red, and a standard above the plain unit
+ {const cols=Object.values(S.PATTERN).map(h=>new T.Color(h)),red=new T.Color(S.PAR.red),far=(a,b)=>Math.hypot(a.r-b.r,a.g-b.g,a.b-b.b);assert.equal(cols.length,5,'five doctrines');
+  for(let i=0;i<5;i++){assert.ok(far(cols[i],red)>.35,q+' doctrine '+i+' is not the Parasite red');for(let j=i+1;j<5;j++)assert.ok(far(cols[i],cols[j])>.3,q+' doctrines '+i+' and '+j+' differ');}
+  for(const kind of ['raider','command','sentinel']){const plain=verts(unitOf(kind),m=>m.material===S.MAT.solid).reduce((h,v)=>Math.max(h,v[1]),0);
+   for(const pattern of Object.keys(S.PATTERN)){const g=unitOf(kind,{commander:true,pattern});assert.equal(g.userData.general,pattern,q+' '+kind+' general '+pattern);const top=verts(g,m=>m.material===S.MAT.solid&&!g.userData.marker.children.includes(m)).reduce((h,v)=>Math.max(h,v[1]),0);assert.ok(top>plain+.8,q+' the '+pattern+' '+kind+' general carries a standard above the plain unit ('+top.toFixed(2)+' vs '+plain.toFixed(2)+')');}}}
  // Tap-to-lock (the view's pick() steers the authoritative turret lock): only solid hull meshes are pickable — never the
- // ground underglow, decals or the floating target marker. Assembled exactly like view.enemyModel().
- {const g=new T.Group(),body=new T.Group();body.rotation.y=-Math.PI/2;g.add(body);body.add(hm.body);const gun=new T.Group();gun.position.y=cached.ty;gun.add(hm.gun);body.add(gun);if(hm.fx)g.add(hm.fx);hm.marker.position.y=5;g.add(hm.marker);g.userData.marker=hm.marker;g.scale.setScalar(1.65);g.updateMatrixWorld(true);
+ // ground underglow, decals or the floating target marker.
+ {const g=unitOf('raider');g.updateMatrixWorld(true);
   const pickable=[];g.traverse(m=>{if(m.isMesh&&!m.userData.noPick&&m!==g.userData.marker)pickable.push(m);});const ray=new T.Raycaster(),hit=(o,dir)=>{ray.set(o,dir);return ray.intersectObjects(pickable,false).length>0;},down=new T.Vector3(0,-1,0);
   assert.ok(hit(new T.Vector3(0,30,0),down),q+' a tap on the hull locks it');
   for(const [x,z] of [[2.3,0],[-2.3,0],[0,3.4],[0,-3.4],[2.4,2.6]])assert.ok(!hit(new T.Vector3(x,30,z),down),q+' bare ground beside the hull is not a lock target at '+[x,z]);
-  assert.ok(!hit(new T.Vector3(-20,5*1.65,0),new T.Vector3(1,0,0)),q+' the floating target marker is not a lock target');
+  assert.ok(!hit(new T.Vector3(-20,g.userData.marker.position.y,0),new T.Vector3(1,0,0)),q+' the floating target marker is not a lock target');
   assert.ok(fs.readFileSync('js/conquest/view.js','utf8').includes('m.isMesh&&!m.userData.noPick&&m!==g.userData.marker'),'view pick() honours noPick');}
  for(const g of [parts.battery,parts.drone])g.traverse(m=>{if(m.isMesh&&(m.material===S.MAT.fx||g.userData.marker.children.includes(m)))assert.ok(m.userData.noPick,q+' battery/drone glow and marker are not tap targets');});
  // Pooled shot glows are frustum-culled with their real billboard extent (off-screen glows cost no draw call).
@@ -74,7 +88,6 @@ for(const low of [false,true]){
  S.setHigh(false);assert.equal(S.U.uHigh.value,0,q+' adaptive LOW shading');S.setHigh(true);assert.equal(S.U.uHigh.value,low?0:1,q+' shading back to the created quality');
  assert.equal(S.MAT.field.side,T.FrontSide,q+' base field draws front faces only (live-build fill)');
  {const S2=CS.create(T,{low});assert.ok(S2.tex.atlas!==S.tex.atlas&&S2.tex.atlas.source===S.tex.atlas.source&&S2.tex.detail.source===S.tex.detail.source,q+' generated textures reused across views');S2.dispose();}
- for(const k of ['x','y','z'])assert.ok((hb.max[k]-hb.min[k])<=(cb.max[k]-cb.min[k])*1.15+.3,q+' hull dressing within silhouette on '+k);
  // Warm list covers every program variant (static + instanced solid/fx, shields).
  assert.ok(fs.readFileSync('js/conquest/view.js','utf8').includes('warm.add(new T.Mesh(this.box,this.archMaterial))'),'style warm item compiles the architecture program');
  const warm=S.warmObjects();assert.ok(warm.some(o=>o.isInstancedMesh&&o.material===S.MAT.solid)&&warm.some(o=>o.isInstancedMesh&&o.material===S.MAT.fx)&&warm.some(o=>o.material===S.MAT.shield),q+' warm set covers instanced and shield programs');

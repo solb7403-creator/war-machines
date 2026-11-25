@@ -35,7 +35,7 @@ function create(view,panel){
   requestAnimationFrame(()=>requestAnimationFrame(go));setTimeout(()=>chip.remove(),950);snd('loot',rarity);}
  // rare and above (Session 6 loot v1): a card in the rarity colour holds the ticker for 2.4 s (fx('loot') adds the haptic)
  function card(d){const L=root.ConquestLoot,top=L?.best(d.loot);if(!top||top.r<2)return;panel.querySelector('.cq-loot-card')?.remove();const c=document.createElement('div');c.className='cq-loot-card';c.setAttribute('role','status');c.style.color=RARITY_COLORS[top.r]||RARITY_COLORS[2];
-  const k=document.createElement('small');k.textContent=(['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'][top.r]||'RARE')+' FIND';c.append(k,document.createTextNode(top.t.replace(/^RARE · /,'')));panel.append(c);setTimeout(()=>c.remove(),2400);
+  const k=document.createElement('small');k.textContent=(['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'][top.r]||'RARE')+' FIND';c.append(k);{const ic=top.ico&&L.icon?.(top.ico);if(ic)c.append(ic);}c.append(document.createTextNode(top.t.replace(/^RARE · /,'')));panel.append(c);setTimeout(()=>c.remove(),2400);
   const t=panel.querySelector('.cq-reward-ticker');if(t){t.textContent=L.text(d.loot);t.__cqText=t.textContent;view.tickerUntil=Date.now()+2600;}}
  return {flyout,card,
   frame(B,state){const now=performance.now();unflash(now);F.rect=null;if(!B)return;F.rect=view.host?.getBoundingClientRect?.()||null;

@@ -121,15 +121,21 @@ const Meshy3D=(()=>{
  }
  function loadManifest(){
   if(manifestPromise)return manifestPromise;
-  manifestPromise=pull(baseUrl+'manifest.json',true,{cache:'no-cache'}).then(m=>{if(m.version!==VERSION)fail('manifest version');manifest=m;emit();return m;}).catch(e=>{manifest={version:VERSION,items:{},error:String(e.message||e)};emit();return manifest;});
+  const E=early();   // the website asked for it before the game's scripts (web/boot.js)
+  manifestPromise=(E?E.manifest.catch(()=>pull(baseUrl+'manifest.json',true,{cache:'no-cache'})):pull(baseUrl+'manifest.json',true,{cache:'no-cache'})).then(m=>{if(m.version!==VERSION)fail('manifest version');manifest=m;emit();return m;}).catch(e=>{manifest={version:VERSION,items:{},error:String(e.message||e)};emit();return manifest;});
   return manifestPromise;
  }
  // the bytes of one file. Needs no 3D engine, so the pilot's own two files start with the page (prefetch) and the 3D
  // engine finds them already here; bytes nobody decoded within a minute are dropped (the browser's cache keeps them)
  const bytes=new Map();
- function download(id,q){
+ // LUNAR_MESHY_EARLY: the website's boot script (web/boot.js) starts the pilot's own files the moment the server's loadout
+ // is in, before any game script has loaded; they are taken over here (a miss there is simply fetched again)
+ const early=()=>{const E=typeof globalThis!=='undefined'&&globalThis.LUNAR_MESHY_EARLY;return E&&E.base===baseUrl&&E.manifest&&E.files?E:null;};
+ function download(id,q,first){   // first: the pilot's own tank, ahead of every other file
   const key=id+'|'+q;let p=bytes.get(key);if(p)return p;
-  p=loadManifest().then(m=>{const rec=m.items[id];return rec&&rec[q]?pull(baseUrl+id+'-'+q+'.glb?h='+(rec[q].hash||m.build||'')).then(buf=>({buf,rec})):null;});
+  p=loadManifest().then(m=>{const rec=m.items[id];if(!rec||!rec[q])return null;
+   const get=()=>pull(baseUrl+id+'-'+q+'.glb?h='+(rec[q].hash||m.build||''),false,first?{priority:'high'}:undefined),E=early(),e=E&&E.files[key];
+   return (e?e.then(buf=>buf||get(),get):get()).then(buf=>({buf,rec}));});
   bytes.set(key,p);p.catch(()=>{}).then(()=>setTimeout(()=>{if(bytes.get(key)===p)bytes.delete(key);},60000));return p;
  }
  // phones keep FULL maps at 1024 (a 2048 set is ~90 MB of GPU memory); desktops get the whole thing
@@ -480,7 +486,7 @@ const Meshy3D=(()=>{
  // free the per-mesh materials of a removed tree (geometry and maps are shared and stay cached)
  function release(root){if(!root||!root.traverse)return;root.traverse(o=>{if(o.userData.meshyTownRelease){o.userData.meshyTownRelease();delete o.userData.meshyTownRelease;}const om=o.isMesh&&(o.userData.fadeOrig||o.material);if(om&&om.userData&&om.userData.meshyOwned&&!o.userData.meshyReleased){o.userData.meshyReleased=true;om.dispose();if(om!==o.material&&o.material)o.material.dispose();o.onBeforeRender=()=>{};const a=o.userData.meshy&&o.userData.meshy.asset;if(a)a.refs=Math.max(0,(a.refs||0)-1);}});}
  // the pilot's own two files (LIGHT) start downloading now: called the moment a loadout is known, before the 3D engine is up
- function prefetch(L){if(!L||!enabled||typeof fetch!=='function'||typeof document==='undefined')return;try{const t=x=>Math.max(0,Math.min(2,x|0));if(L.c)download(itemId.chassis(L.c.c,t(L.c.t)),'light');if(L.w)download(itemId.weapon(L.w.a,t(L.w.t)),'light');decoder().catch(()=>{});}catch(e){}}
+ function prefetch(L){if(!L||!enabled||typeof fetch!=='function'||typeof document==='undefined')return;try{const t=x=>Math.max(0,Math.min(2,x|0));if(L.c)download(itemId.chassis(L.c.c,t(L.c.t)),'light',true);if(L.w)download(itemId.weapon(L.w.a,t(L.w.t)),'light',true);decoder().catch(()=>{});}catch(e){}}
  function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();bytes.clear();generation++;}
  return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get fit(){return fitOn;},set fit(v){if(fitOn!==!!v){fitOn=!!v;generation++;}},weaponFit,get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;bytes.clear();},
   decode,container,request,peek,best,withDetail,pending,stamp,tank,label,itemId,loadManifest,GLOW,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,slotAsset,slotSet,slotScale,townStep,townStamp,townAsset,TOWN_YAW,hostRenderer,releaseHost,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
@@ -500,6 +506,15 @@ function tankShow(L,parts,own){
  if(!own&&typeof want3D==='function'){if(!want3D()||R3.failed)return '2d';if(!R3.ready)return 'wait';}
  if(typeof THREE==='undefined')return own?'wait':'2d';
  return Meshy3D.tank(L.c.c,L.c.t,L.w.a,L.w.t,parts);
+}
+// one menu picture of a tank on a 2D canvas (home cards, the garage picture, the bay editor): the empty pad while it waits,
+// else the picture js/render.js drawMachinePreview makes (the 3D picture, or the 2D one on the 2D setting); the canvas says
+// what it shows (dataset.tank). A failed download draws BOTH parts code-built.
+function tankPicture(ctx,w,h,L,t){
+ const show=tankShow(L),c=ctx.canvas;if(c&&c.dataset)c.dataset.tank=tankTag(L,show);
+ if(show==='wait'){ctx.clearRect(0,0,w,h);tankWait2D(ctx,w/2,h*.64,Math.min(w*.36,h*.62),t);return show;}
+ if(show==='kit')Meshy3D.withDetail('none',()=>drawMachinePreview(ctx,w,h,L));else drawMachinePreview(ctx,w,h,L);
+ return show;
 }
 // the label a 2D picture carries (canvas.dataset.tank): 'wait', or model ids + kind, as Meshy3D.label(...).s
 const tankTag=(L,show)=>show==='wait'||!L?'wait':Meshy3D.label(L,show).s;

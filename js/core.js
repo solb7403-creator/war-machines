@@ -194,15 +194,18 @@ const SRV_ECO=WEB_EDITION||(IN_TG&&!window.LUNAR_LOCAL_ECO);
 // starts (web/boot.js), and where the device runs the economy itself nothing can be newer: proven from the first frame.
 // In Telegram the copy on the device, and the copy in Telegram's cloud, may be older than a change made on another phone or
 // on the website, and nothing kept on the device can prove otherwise (a revision it remembers only says what the server held
-// last time). So the tank waits for this launch's first /api/sync answer (js/net.js doSync; main.js asks for it the moment
-// the game starts). If the server cannot be reached, or has not answered LOADOUT_WAIT_MS after the game started, the newest
-// copy on hand shows instead (device or Telegram cloud, whichever is newer: main.js boot). tankShow (js/meshy3d.js) reads this.
-const LOADOUT_WAIT_MS=6000;
-let loadoutOk=!(IN_TG&&SRV_ECO),loadoutServer=false,loadoutCloud=!CLOUD_OK;
+// last time). So the tank waits for this launch's first /api/sync answer: main.js asks for it the moment the game starts,
+// beside the Telegram cloud read, and js/net.js doSync applies the answer once the cloud copy has been compared (cloudCompared).
+// If the server cannot be reached, or has not answered LOADOUT_WAIT_MS after it was asked, the newest copy on hand shows
+// instead (device or Telegram cloud, whichever is newer: main.js boot). tankShow (js/meshy3d.js) reads this.
+// LUNAR_LOADOUT_WAIT_MS: a test holds the server's answer longer than that on purpose.
+const LOADOUT_WAIT_MS=Number(window.LUNAR_LOADOUT_WAIT_MS)||6000;
+let loadoutOk=!(IN_TG&&SRV_ECO),loadoutServer=false,loadoutCloud=!CLOUD_OK,cloudDone=null;
+const cloudCompared=loadoutCloud?Promise.resolve():new Promise(r=>{cloudDone=r;});
 const loadoutProven=()=>loadoutOk;
-// how: 'server' the answer is in; 'cloud' the Telegram cloud copy has been compared; 'unreachable' the request failed; 'late' no answer in time
+// how: 'cloud' the Telegram cloud copy has been compared; 'server' the answer is in; 'unreachable' the request failed; 'late' no answer in time
 function loadoutProve(how){
- if(how==='cloud')loadoutCloud=true;else if(how==='server'){loadoutServer=true;loadoutCloud=true;}else loadoutServer=true;   // an answer from the server needs no cloud copy; a fallback waits for it (the newest of the two)
+ if(how==='cloud'){loadoutCloud=true;if(cloudDone){cloudDone();cloudDone=null;}}else loadoutServer=true;
  if(loadoutOk||!loadoutServer||!loadoutCloud)return;
  loadoutOk=true;try{dispatchEvent(new Event('lunar-loadout-ready'));}catch(e){}
  if(typeof uiDirty==='function')uiDirty();

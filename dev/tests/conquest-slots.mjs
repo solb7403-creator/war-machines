@@ -66,7 +66,7 @@ for(const id of ids){const H=stats[id].high,L=stats[id].low;assert.ok(L.n<=H.n,i
 // world kit before the style that draws with it. Found Nov 21 (Session 5E-2d2): boot.js never listed slots.js, worldkit.js or
 // kit/*.js, so ConquestStyle.create threw on the website and Conquest drew its pre-style fallback there since 5E-2d1.
 {const page=[...fs.readFileSync('index.html','utf8').matchAll(/<script src="js\/(conquest\/[a-z0-9\/-]+)\.js/g)].map(m=>m[1]),boot=fs.readFileSync('web/boot.js','utf8'),
-  web=[...(/for\(const src of \[([^\]]*)\]/.exec(boot)||[,''])[1].matchAll(/'([^']+)'/g)].map(m=>m[1]).filter(x=>x.startsWith('conquest/'));
+  web=[...boot.matchAll(/'(conquest\/[a-z0-9\/-]+)'/g)].map(m=>m[1]);   // every Conquest script boot.js names: the list before the game starts and the Citadel / Titan batch after it (Sessions 7B, 7C)
  assert.ok(page.length>30,'index.html lists the Conquest scripts');
  for(const f of page)assert.ok(web.includes(f),'web/boot.js loads '+f+'.js (index.html does)');
  for(const f of web)assert.ok(page.includes(f),'index.html loads '+f+'.js (web/boot.js does)');

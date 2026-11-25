@@ -91,16 +91,17 @@ function creep(b,a,c,r,sd,o={}){const dx=c[0]-a[0],dz=c[2]-a[2],L=Math.hypot(dx,
  return b;}
 // the growth: a swollen, lumpy mass of dark red flesh (smooth skin), paler on its swellings, darkest in its folds.
 // c = centre, r = radii. t0 .. t1 = the part of the body kept, from the underside (0) to the crown (1). o.lx / o.lz lean
-// its crown. Returns surf(ph, t, k) = a point on it (k = how far proud): veins and bulbs ride on the surface.
-function mass(b,c,r,sd,o={}){const P=b.k.pal.par,na=o.na||(b.hi?18:10),nr=o.nr||(b.hi?9:5),t0=o.t0??0,t1=o.t1??1,lob=o.lob??.16,lx=o.lx||0,lz=o.lz||0,M=o.M||[P.fleshD,P.flesh,P.fleshL];
- const f=(ph,th)=>1+lob*(Math.sin(ph*3+sd)*Math.sin(th*3+sd*.7)+.55*Math.sin(ph*5+sd*2.1+th*2)*Math.sin(th*4+1.3)+.3*Math.sin(ph*2-th*5+sd));
+// its crown. o.pole (0 .. 1) calms the lobes toward the crown and the underside, so a big mass has a rounded top instead
+// of a jagged peak. Returns surf(ph, t, k) = a point on it (k = how far proud): veins and bulbs ride on the surface.
+function mass(b,c,r,sd,o={}){const P=b.k.pal.par,na=o.na||(b.hi?18:10),nr=o.nr||(b.hi?9:5),t0=o.t0??0,t1=o.t1??1,lob=o.lob??.16,lx=o.lx||0,lz=o.lz||0,M=o.M||[P.fleshD,P.flesh,P.fleshL],pole=o.pole||0;
+ const f=(ph,th)=>1+lob*(pole?Math.min(1,Math.sin(th)/pole):1)*(Math.sin(ph*3+sd)*Math.sin(th*3+sd*.7)+.55*Math.sin(ph*5+sd*2.1+th*2)*Math.sin(th*4+1.3)+.3*Math.sin(ph*2-th*5+sd));
  const surf=(ph,t,k=1)=>{const th=(t0+(t1-t0)*t)*Math.PI,s=Math.sin(th),up=-Math.cos(th),q=f(ph,th)*k,h=(up+1)/2;return [c[0]+Math.cos(ph)*r[0]*s*q+lx*h*h,c[1]+up*r[1]*q,c[2]+Math.sin(ph)*r[2]*s*q+lz*h*h];};
  const G=[];for(let j=0;j<=nr;j++){const ring=[];for(let i=0;i<na;i++){const ph=i/na*TAU,th=(t0+(t1-t0)*j/nr)*Math.PI,v=f(ph,th),p=surf(ph,j/nr);p[3]=v<1-lob*.4?M[0]:v>1+lob*.45?M[2]:M[1];ring.push(p);}G.push(ring);}
  skin(b,G,M[1],{c:[c[0]+lx*.25,c[1],c[2]+lz*.25]});return surf;}
 // a heaving bulb: a swelling of the growth, split at its crown by glowing fissures (the hot core showing through).
 // (x, y, z) = the middle of its foot, r = its radius, o.sy its height in radii, o.lx / o.lz how far its crown leans.
 function bulb(b,x,y,z,r,sd,o={}){const P=b.k.pal.par,sy=o.sy||1.5,lx=o.lx||0,lz=o.lz||0,hi=b.hi;
- const S=mass(b,[x,y+r*sy*.5,z],[r*(o.sx||1),r*sy*.5,r*(o.sz||1)],sd,{na:o.na||(hi?8:6),nr:o.nr||(hi?5:3),lob:o.lob??.2,lx,lz,t0:o.t0??.12});
+ const S=mass(b,[x,y+r*sy*.5,z],[r*(o.sx||1),r*sy*.5,r*(o.sz||1)],sd,{na:o.na||(hi?8:6),nr:o.nr||(hi?5:3),lob:o.lob??.2,lx,lz,t0:o.t0??.12,pole:o.pole});
  if(o.core!==false){const n=hi?3:2,a0=hz(sd,7)*TAU;for(let k=0;k<n;k++){const ph=a0+k*TAU/n+(hz(sd,k+9)-.5)*.6,pts=[];for(let j=0;j<=(hi?3:2);j++){const t=.985-.18*j*(hi?1:1.5);pts.push(S(ph+.28*Math.sin(j*2+k),t,1.05));}
    vein(b,pts,r*.13,r*.03,{raw:true,m:P.redHot,swell:0});}}
  return S;}
@@ -118,10 +119,12 @@ function beam(b,p,q,w,d,m,o={}){let dx=q[0]-p[0],dy=q[1]-p[1],dz=q[2]-p[2];const
  for(let i=0;i<4;i++){const j=(i+1)%4;b.quad(A[i],A[j],B[j],B[i],typeof m==='function'?m(i):m,mid);}
  if(o.caps){const cm=o.capM||(typeof m==='function'?m(0):m);b.quad(B[0],B[1],B[2],B[3],cm,mid);if(o.caps>1)b.quad(A[0],A[1],A[2],A[3],cm,mid);}return b;}
 // an armour plate welded on a wall that faces +z of the current frame: x0 .. x1, from y0 up to yL (at x0) and yR (at x1),
-// the wall at z, the plate proud of it by p. HIGH gives it its thickness (top and both ends).
+// the wall at z, the plate proud of it by p. HIGH gives it its thickness (top and both ends); o.back = it can be seen from
+// behind (a leaned or overhanging plate).
 function slab(b,x0,x1,y0,yL,yR,z,p,m,o={}){const zf=z+p,tk=b.k.tint;b.part();b.quad([x0,y0,zf],[x1,y0,zf],[x1,yR,zf],[x0,yL,zf],m,[(x0+x1)/2,y0,z-9]);
  if(b.hi&&!o.thin){const e=o.edge||tk(m,.6),mid=[(x0+x1)/2,(y0+Math.min(yL,yR))/2,z];b.quad([x0,yL,zf],[x1,yR,zf],[x1,yR,z],[x0,yL,z],o.top||tk(m,1.18,.01),mid);b.quad([x0,y0,zf],[x0,yL,zf],[x0,yL,z],[x0,y0,z],e,mid);b.quad([x1,y0,zf],[x1,yR,zf],[x1,yR,z],[x1,y0,z],e,mid);
-  if(o.bot)b.quad([x0,y0,zf],[x1,y0,zf],[x1,y0,z],[x0,y0,z],e,mid);if(o.back)b.quad([x0,y0,z],[x1,y0,z],[x1,yR,z],[x0,yL,z],e,[mid[0],mid[1],z+9]);}return b;}
+  if(o.bot)b.quad([x0,y0,zf],[x1,y0,zf],[x1,y0,z],[x0,y0,z],e,mid);if(o.back)b.quad([x0,y0,z],[x1,y0,z],[x1,yR,z],[x0,yL,z],e,[mid[0],mid[1],z+9]);}
+ else if(o.back)b.quad([x0,y0,zf],[x1,y0,zf],[x1,yR,zf],[x0,yL,zf],tk(m,.6),[(x0+x1)/2,y0,z+9]);return b;}
 // n slanted warning bars over x0 .. x1, y0 .. y1 on a face looking along +z (the yellow goes under them)
 function bars(b,x0,x1,y0,y1,z,n,m){const bw=(x1-x0)/(2*n);for(let k=0;k<n;k++){const a=x0+2*k*bw;b.quad([a,y0,z],[a+bw,y0,z],[a+2*bw,y1,z],[a+bw,y1,z],m,[a,y0,z-9]);}return b;}
 // a bolt head / weld tack on a face looking along +z
@@ -153,27 +156,27 @@ function flag(b,a,c,h,m,m2,o={}){const dx=c[0]-a[0],dz=c[2]-a[2],L=Math.hypot(dx
 // run fn in a frame scaled to the placement's own size (the models are drawn at their slot size)
 function fit(b,sx,sy,sz,fn){const T=b.k.T;b.st.push(new T.Matrix4().multiplyMatrices(b.M,new T.Matrix4().makeScale(sx,sy,sz)));try{fn();}finally{b.st.pop();}}
 // ------------------------------------------------------------------ cover-wall ------------------------------------------
-// cover-wall (EXACT box o.w x o.h x o.d, default 18 x 5 x 3; all art inside the box in plan): a barricade welded from
-// plundered armour, the collision box of a raid obstacle, so it FILLS its box: a dark steel bulkhead between four corner
-// posts, every face plated with big mismatched plates (LDF ceramic with its blue band, settler container sides with faded
+// cover-wall (EXACT box o.w x o.h x o.d, default 18 x 5 x 3; all art inside the box, in plan and in height): a barricade
+// welded from plundered armour, the collision box of a raid obstacle, so it FILLS its box: a dark steel bulkhead between
+// four corner posts that reach the box height (the bulkhead top is a lip lower, so the loot on it stays inside the box), every face plated with big mismatched plates (LDF ceramic with its blue band, settler container sides with faded
 // paint, hazard panels, tank hull sections, rust sheet) of unequal width and height, strongback girders on the long faces,
 // loot crates and a sack lashed on its flat top, a looted flag draped over one face, and a thin red vein glowing in the
 // seams between the plates (the only glow: the wall reads as steel). Plates, loot and flag change with o.seed and the size.
 // The long axis is x when w >= d, else z. o.sink (default 1.2) = how far it runs below y = 0.
 // HIGH <= 400 / LOW <= 100.
 WK.model('cover-wall',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,long=o.w>=o.d,L=long?o.w:o.d,T=long?o.d:o.w,h=o.h,sink=o.sink??1.2,sd=(o.seed|0)*7+Math.round(L*3+T*5);
- const PW=clamp(T*.2,.5,.8),REC=.32,area=2*(L+T),rich=area<=44;   // corner post width; how far the bulkhead stands behind the box planes
+ const PW=clamp(T*.2,.5,.8),REC=.32,area=2*(L+T),rich=area<=44,lip=Math.min(clamp(T*.2,.55,.9),h*.14),top=h-lip;   // corner post width; how far the bulkhead stands behind the box planes
  b.at(0,0,0,long?0:Math.PI/2,()=>{
   // the bulkhead and the four corner posts (they stand a little proud of the top)
-  qb(b,0,-sink,0,L-2*REC,h+sink,T-2*REC,o2=>o2==='t'?P.iron:P.weld,'b');
-  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz],k)=>{const ph=h+.12+.26*hz(sd,k+70);b.part();qb(b,sx*(L-PW)/2,-sink,sz*(T-PW)/2,PW,ph+sink,PW,P.ironD,hi?'b':'b'+(sx>0?'l':'r')+(sz>0?'k':'f'));});
+  qb(b,0,-sink,0,L-2*REC,top+sink,T-2*REC,o2=>o2==='t'?P.iron:P.weld,'b');
+  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz],k)=>{const ph=h-.3*hz(sd,k+70);b.part();qb(b,sx*(L-PW)/2,-sink,sz*(T-PW)/2,PW,ph+sink,PW,P.ironD,hi?'b':'b'+(sx>0?'l':'r')+(sz>0?'k':'f'));});
   // the four faces: bays of plates between the posts
   let pi=0,last=-1;
   for(let f=0;f<4;f++){const Lf=f%2?T:L,half=(f%2?L:T)/2,zc=half-REC,x0=-Lf/2+PW,x1=Lf/2-PW,span=x1-x0;if(span<.6)continue;
    b.at(0,0,0,f*Math.PI/2,q=>{const np=Math.max(1,Math.round(span/(hi?3.1:3.6))),wt=[],X=[x0];let sum=0;for(let k=0;k<np;k++){wt.push(1+.5*(hz(sd,f*20+k)-.5));sum+=wt[k];}for(let k=0;k<np;k++)X.push(k===np-1?x1:X[k]+span*wt[k]/sum);
     const g=hi?.07:.08,tops=[];
     for(let k=0;k<np;k++){let ki=(hz(sd,f*31+k*7+5)*KINDS.length)|0;if(ki===last)ki=(ki+1)%KINDS.length;last=ki;const kind=KINDS[ki],ci=(hz(sd,f*13+k*3)*5)|0,m=plateMat(q,kind,ci),p=.09+.17*hz(sd,f*17+k+90);
-     const xa=X[k]+(k?g:.03),xb=X[k+1]-(k<np-1?g:.03),drop=.1+.75*hz(sd,f*11+k+33),tl=h-drop*(hi?1:.5),tr=hi?clamp(tl+(hz(sd,f*19+k+7)-.5)*.5,h-.95,h-.06):tl;tops.push(Math.min(tl,tr));
+     const xa=X[k]+(k?g:.03),xb=X[k+1]-(k<np-1?g:.03),drop=.1+.75*hz(sd,f*11+k+33),tl=top-drop*(hi?1:.5),tr=hi?clamp(tl+(hz(sd,f*19+k+7)-.5)*.5,top-.95,top-.06):tl;tops.push(Math.min(tl,tr));
      slab(q,xa,xb,-sink,tl,tr,zc,p,m);
      if(hi){dress(q,kind,xa,xb,.12,Math.min(tl,tr)-.08,zc+p+.03,ci);
       // a smaller patch welded over a big plate, tack welds on the others
@@ -184,15 +187,15 @@ WK.model('cover-wall',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,long=o.w>=o
     for(let k=1;k<np;k++){const x=X[k],y1=Math.min(tops[k-1],tops[k])-.15,z=zc+.04,w=hi?.055:.075,K=hi?[[0,-.2],[.04,.33],[-.035,.68],[.02,1]]:[[0,-.2],[0,1]];
      for(let j=1;j<K.length;j++){const a=K[j-1],c=K[j],ya=-.2+(y1+.2)*Math.max(0,a[1]),yb=-.2+(y1+.2)*c[1];q.quad([x+a[0]-w,j===1?-sink*.3:ya,z],[x+a[0]+w,j===1?-sink*.3:ya,z],[x+c[0]+w,yb,z],[x+c[0]-w,yb,z],P.red,[x,ya,z-9]);}}
     // strongback girders on the long faces (HIGH): a rusty I-beam welded upright across the plates, short of the top
-    if(hi&&Lf>=11){const ng=Lf>=20?2:1;for(let k=0;k<ng;k++){const x=x0+span*(ng===1?.5+.16*(hz(sd,f+44)-.5):(.3+.4*k)),gh=h-.5-.5*hz(sd,f*3+k);q.part();qb(q,x,-sink,half-.17,.3,gh+sink,.34,k%2?P.rust:P.iron,'bk');}}
+    if(hi&&Lf>=11){const ng=Lf>=20?2:1;for(let k=0;k<ng;k++){const x=x0+span*(ng===1?.5+.16*(hz(sd,f+44)-.5):(.3+.4*k)),gh=top-.3-.5*hz(sd,f*3+k);q.part();qb(q,x,-sink,half-.17,.3,gh+sink,.34,k%2?P.rust:P.iron,'bk');}}
    });}
   // the loot on the flat top and the flag over one face
   {const nl=hi?(rich?3:2):1,along=L-2*PW-1.2;for(let k=0;k<nl;k++){const x=-along/2+along*(nl===1?.3:(k+.15+.7*hz(sd,k+120))/nl),z=(T-2*REC-1.1)*(hz(sd,k+130)-.5)*.8,s=clamp(T*.26,.62,1.05)*(.85+.3*hz(sd,k+140));
-    if(k===1&&hi){sack(b,x,h,z,s*.52,sd+k);sack(b,x+s*.8,h,z+.1,s*.42,sd+k+3,tint(P.sack,.8));}else crate(b,x,h,z,s*1.25,s*.72,s*.9,(hz(sd,k+150)-.5)*.9,k%2?P.crateD:P.crate,{plain:!hi});}
+    if(k===1&&hi){sack(b,x,top,z,Math.min(s*.52,(lip-.04)/1.15),sd+k);sack(b,x+s*.8,top,z+.1,Math.min(s*.42,(lip-.04)/1.15),sd+k+3,tint(P.sack,.8));}else crate(b,x,top,z,s*1.25,Math.min(s*.72,lip-.06),s*.9,(hz(sd,k+150)-.5)*.9,k%2?P.crateD:P.crate,{plain:!hi});}
    const fx=(L/2-PW-1.5)*(hz(sd,160)<.5?-1:1)*(.3+.5*hz(sd,161)),fz=T/2-.02,fm=hz(sd,162)<.5?P.flagLDF:P.flagSet[(hz(sd,163)*5)|0],fw=Math.min(1.9,L*.14);
-   b.quad([fx-fw/2,h+.02,fz-REC-.5],[fx+fw/2,h+.02,fz-REC-.5],[fx+fw/2,h+.02,fz],[fx-fw/2,h+.02,fz],fm,[fx,h-9,fz]);
-   b.quad([fx-fw/2,h+.02,fz],[fx+fw/2,h+.02,fz],[fx+fw/2,h-h*.42,fz],[fx-fw/2,h-h*.36,fz],fm,[fx,h,fz-9]);
-   if(hi)b.quad([fx-fw/2,h-h*.12,fz+.012],[fx+fw/2,h-h*.12,fz+.012],[fx+fw/2,h-h*.22,fz+.012],[fx-fw/2,h-h*.2,fz+.012],fm===P.flagLDF?P.flagLDF2:P.strap,[fx,h,fz-9]);}
+   b.quad([fx-fw/2,top+.02,fz-REC-.5],[fx+fw/2,top+.02,fz-REC-.5],[fx+fw/2,top+.02,fz],[fx-fw/2,top+.02,fz],fm,[fx,top-9,fz]);
+   b.quad([fx-fw/2,top+.02,fz],[fx+fw/2,top+.02,fz],[fx+fw/2,top-h*.42,fz],[fx-fw/2,top-h*.36,fz],fm,[fx,top,fz-9]);
+   if(hi)b.quad([fx-fw/2,top-h*.12,fz+.012],[fx+fw/2,top-h*.12,fz+.012],[fx+fw/2,top-h*.22,fz+.012],[fx-fw/2,top-h*.2,fz+.012],fm===P.flagLDF?P.flagLDF2:P.strap,[fx,top,fz-9]);}
  });
 },{aoH:4,aoMin:.55});
 // a frame at angle a (from +x toward +z) and radius r whose +z looks outward; rx < 0 leans its top inward
@@ -254,8 +257,8 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
    if(hi){b.tube([x,y,2.852],[x,y,2.86],.14,P.redHot,{n:6,caps:true});for(const z of [1.74,1.9,2.06])b.tube([x,y,z],[x,y,z+.06],.3,P.ironD,{n:8,caps:true});qb(b,x,.78,.5,.5,.05,1.4,P.gold,'b');}}
   qb(b,0,-1,0,.8,.5,2.4,P.ironD,'b');
   // over-armour: a mismatched plate welded outside each cheek, a visor plate over the guns
-  b.at(-1.52,0,0,-H2,q=>{slab(q,-1.35,1.6,-1.08,1.15,1.45,0,.16,P.plateMil,{bot:true});if(hi){dress(q,'mil',-1.35,1.6,-.95,1.1,.19,0);q.detail(()=>{for(const [u,v] of [[-1.15,.9],[1.4,1.0],[-1.15,-.85],[1.4,-.85]])tack(q,u,v,.195,.09,P.gold);});}},0,.06);
-  b.at(1.52,0,0,H2,q=>{slab(q,-1.55,1.25,-1.02,1.36,1.0,0,.16,P.hazard,{bot:true});if(hi){bars(q,-1.5,1.2,-.96,.96,.19,3,P.hazardD);q.detail(()=>{for(const [u,v] of [[-1.35,.75],[1.05,.62]])tack(q,u,v,.195,.09,P.weld);});}},0,-.09);
+  b.at(-1.52,0,0,-H2,q=>{slab(q,-1.35,1.6,-1.08,1.15,1.45,0,.16,P.plateMil,{bot:true,back:true});if(hi){dress(q,'mil',-1.35,1.6,-.95,1.1,.19,0);q.detail(()=>{for(const [u,v] of [[-1.15,.9],[1.4,1.0],[-1.15,-.85],[1.4,-.85]])tack(q,u,v,.195,.09,P.gold);});}},0,.06);
+  b.at(1.52,0,0,H2,q=>{slab(q,-1.55,1.25,-1.02,1.36,1.0,0,.16,P.hazard,{bot:true,back:true});if(hi){bars(q,-1.5,1.2,-.96,.96,.19,3,P.hazardD);q.detail(()=>{for(const [u,v] of [[-1.35,.75],[1.05,.62]])tack(q,u,v,.195,.09,P.weld);});}},0,-.09);
   b.at(0,.84,1.28,0,q=>{slab(q,-1.25,1.25,0,.92,.74,0,.11,P.plateSet[1],{back:true,bot:true});if(hi)dress(q,'cont',-1.25,1.25,.05,.7,.14,1);},-.95);
   // the bustle: an ammunition bin with loot strapped on top
   b.part();qb(b,0,-.72,-1.77,2.0,1.2,1.04,P.rust,'b');crate(b,-.45,.48,-1.76,.84,.56,.7,.2,P.crate,{plain:!hi});
@@ -303,7 +306,7 @@ WK.model('raid-spire',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0
   // veins down the legs and out over the ground to the edge of the box
   FEET.forEach(([fx,fz],k)=>{const pts=[S(Math.atan2(fz,fx),.6,1)],n=hi?6:3;for(let j=0;j<=n;j++){const t=.5-.5*j/n,p=leg(k,t),a=j*1.25+k*2;pts.push([p[0]+Math.cos(a)*.22,p[1]+.05,p[2]+Math.sin(a)*.22]);}vein(b,pts,.11,.06,{seg:hi?2:1,open:true});
    const a=Math.atan2(fz,fx)+(k?.5:-.6);if(hi)creep(b,[fx,.1,fz],[fx+Math.cos(a)*1.1,.03,fz+Math.sin(a)*.6],.07,sd+k+30,{n:2,fork:false});});
-  const lim=q=>Math.abs(q[0])<4.2&&Math.abs(q[2])<3.6,NG=hi?7:4;for(let k=0;k<NG;k++){const a=k*TAU/NG+.5+.35*hz(sd,k),c=Math.cos(a),s=Math.sin(a),f=.8+.2*hz(sd,k+20);creep(b,[c*1.25,.42,s*1.2],[c*4.2*f,.03,s*3.6*f],.12,sd+k*3,{lim,seg:2});}
+  const lim=q=>Math.abs(q[0])<4.2&&Math.abs(q[2])<3.6,NG=hi?6:4;for(let k=0;k<NG;k++){const a=k*TAU/NG+.5+.35*hz(sd,k),c=Math.cos(a),s=Math.sin(a),f=.8+.2*hz(sd,k+20);creep(b,[c*1.25,.42,s*1.2],[c*4.2*f,.03,s*3.6*f],.12,sd+k*3,{lim,seg:2});}
   // the loot they brought
   crate(b,2.55,0,1.25,1.2,.8,.95,.35,P.crate,{plain:!hi});crate(b,-2.5,0,1.5,.9,.7,.8,-.5,P.crateD,{plain:!hi});
   if(hi){crate(b,2.5,.8,1.3,.8,.6,.7,-.25,P.crateD);crate(b,3.3,0,.3,.7,.6,.7,1.1,P.crateD,{plain:true});sack(b,1.75,0,2.1,.42,sd+1);sack(b,2.35,0,2.25,.34,sd+2,tint(P.sack,.8));sack(b,-3.2,0,.9,.4,sd+6);
@@ -352,4 +355,137 @@ WK.model('hive-mast',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0,
   if(hi){crate(b,.55,Y0,-.6,.7,.5,.6,.4,P.crateD);sack(b,-.6,Y0,.55,.3,sd+8);}
  });
 },{aoH:8,aoMin:.55});
+
+// ------------------------------------------------------------------ hive ------------------------------------------------
+// a stolen shipping container, its long axis along x, standing on y (10 triangles; HIGH: corrugation and a faded stencil on
+// both long sides, door leaves and lock bars on the +x end)
+function cont(b,x,y,z,w,h,d,ry,ci,o={}){const P=b.k.pal.par,m=P.plateSet[ci%P.plateSet.length],tk=b.k.tint;
+ return b.at(x,y,z,ry,q=>{q.part();qb(q,0,0,0,w,h,d,f=>f==='t'?tk(m,.8):m,'b');
+  if(q.hi){for(const s of [0,Math.PI])q.at(0,0,0,s,r=>dress(r,'cont',-w/2+.1,w/2-.1,.08,h-.08,d/2+.02,ci));
+   const ins=[0,h/2,0],X=w/2+.02;for(const sz of [-1,1]){q.quad([X,.12,sz*.05],[X,.12,sz*(d/2-.1)],[X,h-.12,sz*(d/2-.1)],[X,h-.12,sz*.05],tk(m,.72),ins);
+    q.quad([X+.012,.2,sz*d*.25-.045],[X+.012,.2,sz*d*.25+.045],[X+.012,h-.2,sz*d*.25+.045],[X+.012,h-.2,sz*d*.25-.045],P.ironL,ins);}}
+ },o.rx||0,o.rz||0);}
+// plundered plates welded side by side on a wall that faces +z of the frame: x0 .. x1, from y0 up to about yt, the wall at
+// z. Every plate its own kind, width, height and stand-off; a red vein in every seam between two plates.
+function plating(q,x0,x1,y0,yt,z,sd,o={}){const P=q.k.pal.par,hi=q.hi,span=x1-x0;if(span<.8)return q;const np=Math.max(1,Math.round(span/(o.pw||2.7))),X=[x0],wt=[],tops=[],H=yt-y0;let sum=0,last=-1;
+ for(let k=0;k<np;k++){wt.push(1+.5*(hz(sd,k)-.5));sum+=wt[k];}for(let k=0;k<np;k++)X.push(k===np-1?x1:X[k]+span*wt[k]/sum);
+ for(let k=0;k<np;k++){let ki=(hz(sd,k*7+5)*KINDS.length)|0;if(ki===last)ki=(ki+1)%KINDS.length;last=ki;const kind=KINDS[ki],ci=(hz(sd,k*3+13)*5)|0,m=plateMat(q,kind,ci),p=.1+.16*hz(sd,k+90),g=.08;
+  const xa=X[k]+(k?g:0),xb=X[k+1]-(k<np-1?g:0),tl=yt-H*.3*hz(sd,k+33)*(hi?1:.6),tr=hi?clamp(tl+(hz(sd,k+7)-.5)*.7,y0+H*.55,yt):tl,top=Math.min(tl,tr);tops.push(top);
+  slab(q,xa,xb,y0,tl,tr,z,p,m);
+  if(hi){dress(q,kind,xa,xb,y0+.15,top-.1,z+p+.03,ci);q.detail(()=>{for(const [u,v] of [[.08,.94],[.92,.94],[.08,.06],[.92,.06]])tack(q,xa+(xb-xa)*u,y0+(top-y0)*v,z+p+.035,.1,P.weld);});}}
+ for(let k=1;k<np;k++){const x=X[k],y1=Math.min(tops[k-1],tops[k])-.2,w=hi?.075:.1,K=hi?[[0,0],[.06,.3],[-.05,.66],[.03,1]]:[[0,0],[0,1]];
+  for(let j=1;j<K.length;j++){const a=K[j-1],c=K[j],ya=y0+(y1-y0)*a[1],yb=y0+(y1-y0)*c[1];q.quad([x+a[0]-w,ya,z+.05],[x+a[0]+w,ya,z+.05],[x+c[0]+w,yb,z+.05],[x+c[0]-w,yb,z+.05],P.red,[x,ya,z-9]);}}
+ return q;}
+// hive (22 x 13.6 x 16; all art inside |x| <= 11, |z| <= 8, the collision box of the installation): the Parasites' nest in
+// a CAPTURED colony depot. The depot is human: a steel pad that fills the footprint, a long armoured hall with a gold
+// cornice and a bay gate on the front (+z), and the depot's command tower at its -x back corner (pale LDF ceramic with the
+// colony's blue band and a window strip). The raiders made it theirs: mismatched plundered plates welded over every wall,
+// their black flag on the tower (13.5 m), a line of conquered colonies' flags strung across the gate, stolen containers
+// stacked on the apron, oxygen tanks, crates, chests and sacks hoarded against the walls. The infection nests in it: the
+// growth has burst the hall roof (torn roof plates stand round it) and swollen 12 m high, a second swelling climbs the
+// tower, a third pushes out under the jammed gate shutter and a fourth through a breach in the back wall; glowing fissures
+// split its crown and its bulbs, thick veins pour over the cornice down the walls and creep across the pad to the edge of
+// the box, the tower's windows burn red. o.sink (default .6) = how far the pad's skirt runs below y = 0 (sloped ground);
+// o.seed varies plates, flags and veins; o.w / o.h / o.d scale the whole model to its placement.
+// HIGH <= 7000 / LOW <= 2500.
+WK.model('hive',(b,o)=>{const {pal,tint,rect}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0,H2=Math.PI/2,SY=o.h/13.6,sink=(o.sink??.6)/SY;
+ fit(b,o.w/22,SY,o.d/16,()=>{
+  const PY=.42,HX=.6,HZ=-1.3,HW=6.5,HD=4.5,HT=6.1,RY=6.95,TX=-7.3,TZ=-3.9,TT=10.35,GX=1.2,GW=2.2,GH=4.3,FZ=HZ+HD;
+  const Q=(q,xa,xb,ya,yb,z,m)=>q.quad([xa,ya,z],[xb,ya,z],[xb,yb,z],[xa,yb,z],m,[(xa+xb)/2,ya,z-9]);
+  // a wall frame of a block centred on (cx, cz): side k = 0 +z, 1 +x, 2 -z, 3 -x; the frame's +z looks out of the wall
+  const side=(cx,cz,k,fn)=>b.at(cx,0,cz,k*H2,fn);
+  // a point of a hall wall in model space: side k, u along the wall, v out from the hall's centre line
+  const AX=[[1,0],[0,-1],[-1,0],[0,1]],NX=[[0,1],[1,0],[0,-1],[-1,0]],HV=k=>k%2?HW:HD,W=(k,u,y,v)=>[HX+AX[k][0]*u+NX[k][0]*v,y,HZ+AX[k][1]*u+NX[k][1]*v];
+  const lim=q=>Math.abs(q[0])<10.45&&Math.abs(q[2])<7.45;
+  // ---- the depot: pad, hall, tower ----
+  b.loft([{p:rect(21.7,15.7,1.5),y:-sink},{p:rect(21.7,15.7,1.5),y:.22},{p:rect(21.3,15.3,1.4),y:PY}],(r,i)=>r?(i===0||i===4?P.hazard:P.iron):P.ironD,{topMat:P.scrap});
+  {const R=(w,d,c)=>({p:rect(w,d,c,HX,HZ)});b.part();
+   if(hi)b.loft([[13.3,9.3,.95,PY],[13.3,9.3,.95,1.12],[13,9,.8,1.3],[13,9,.8,HT],[13.5,9.5,1,HT+.2],[13.5,9.5,1,HT+.55],[13.2,9.2,.9,HT+.62],[13.2,9.2,.9,RY]].map(([w,d,c,y])=>Object.assign(R(w,d,c),{y})),(r,i)=>[P.ironD,P.ironD,i%2?P.ironL:P.iron,P.ironD,P.gold,P.weld,P.ironD][r],{topMat:P.ironD});
+   else b.loft([[13,9,.8,PY],[13,9,.8,HT],[13.5,9.5,1,HT+.2],[13.5,9.5,1,HT+.55],[13.2,9.2,.9,RY]].map(([w,d,c,y])=>Object.assign(R(w,d,c),{y})),(r,i)=>[i%2?P.ironL:P.iron,P.ironD,P.gold,P.ironD][r],{topMat:P.ironD});}
+  {const R=(w,d,c)=>({p:rect(w,d,c,TX,TZ)});b.part();
+   if(hi)b.loft([[6.2,6,.75,PY],[6.2,6,.75,1.12],[6,5.8,.65,1.3],[6,5.8,.65,6.3],[5.5,5.3,.5,6.6],[5.5,5.3,.5,9.5],[6,5.8,.7,9.7],[6,5.8,.7,10.05],[5.8,5.6,.62,10.12],[5.8,5.6,.62,TT]].map(([w,d,c,y])=>Object.assign(R(w,d,c),{y})),(r,i)=>[P.ironD,P.ironD,i%2?P.ironL:P.iron,P.ironL,P.plateMil,P.plateMilD,P.gold,P.weld,P.ironD][r],{topMat:P.ironD});
+   else b.loft([[6,5.8,.65,PY],[6,5.8,.65,6.3],[5.5,5.3,.5,6.6],[5.5,5.3,.5,9.5],[6,5.8,.7,9.7],[6,5.8,.7,10.05],[5.8,5.6,.62,TT]].map(([w,d,c,y])=>Object.assign(R(w,d,c),{y})),(r,i)=>[i%2?P.ironL:P.iron,P.ironL,P.plateMil,P.plateMilD,P.gold,P.ironD][r],{topMat:P.ironD});}
+  // the tower's upper storey: the colony's blue band, the window strip (dark, the infection's light behind some panes)
+  for(let k=0;k<4;k++){if(!hi&&k===1)continue;side(TX,TZ,k,q=>{const hf=k%2?2.1:2.2,z=(k%2?2.75:2.65)+.025;Q(q,-hf,hf,8.76,9.2,z,P.tankBand);Q(q,-hf+.2,hf-.2,7.32,8.22,z,P.glassDead);
+    const pw=(2*hf-.4)/4,pane=(j,m)=>Q(q,-hf+.2+pw*j+.09,-hf+.2+pw*(j+1)-.09,7.41,8.13,z+.012,m);
+    if(k%2){if(hi)pane((hz(sd,k+400)*4)|0,P.redLow);}else if(hi){const dark=(hz(sd,k+400)*4)|0;for(let j=0;j<4;j++)if(j!==dark)pane(j,(j+k)%3?P.redLow:P.redDim);}
+    else Q(q,k?-hf+.3:-hf+1.2,k?hf-1.2:hf-.3,7.41,8.13,z+.012,P.redLow);
+    if(hi)Q(q,-hf+.2,-hf+1.15,6.78,7.06,z,P.plateMilD);});}
+  // ---- plundered plating on every wall ----
+  side(HX,HZ,0,q=>{plating(q,-5.65,GX-HX-GW-.72,PY,5.85,HD,sd+11,{pw:1.9});plating(q,GX-HX+GW+.72,5.65,PY,5.85,HD,sd+12,{pw:2.4});});
+  side(HX,HZ,1,q=>plating(q,-3.65,3.65,PY,5.85,HW,sd+13,{pw:2.6}));
+  side(HX,HZ,2,q=>plating(q,-5.65,4.75,PY,5.85,HD,sd+14,{pw:2.7}));
+  side(HX,HZ,3,q=>plating(q,.5,3.65,PY,5.85,HW,sd+15,{pw:3.4}));
+  for(const k of [0,3,2])side(TX,TZ,k,q=>plating(q,k%2?-2.2:-2.3,k%2?2.2:2.3,PY,5.95,k%2?3:2.9,sd+k*17+50,{pw:2.4}));
+  // ---- the gate: hazard posts, a gold lintel, the dark bay with the infection's light in it, the jammed shutter ----
+  b.at(GX,PY,FZ,0,q=>{const ins=[0,2,-9];Q(q,-GW,GW,0,GH,.04,P.weld);Q(q,-GW+.15,GW-.15,0,2.75,.05,P.redLow);
+   for(const s of [-1,1]){q.part();qb(q,s*(GW+.32),0,.3,.64,GH+.35,.95,P.hazard,'b');
+    if(hi)for(let j=0;j<5;j++){const y=.2+j*.88,x0=s*(GW+.32)-.32,x1=x0+.64;q.quad([x0,y,.785],[x1,y+.4,.785],[x1,y+.8,.785],[x0,y+.4,.785],P.hazardD,ins);}}
+   q.part();qb(q,0,GH+.35,.3,2*GW+1.7,.62,1.1,P.gold,'b');if(hi)qb(q,0,GH+.97,.3,2*GW+1.3,.12,.9,P.goldD,'b');
+   slab(q,-GW,GW,2.75,GH,GH,.04,.2,P.plateMil,{bot:true});Q(q,-GW,GW,2.75,3.1,.25,P.hazard);
+   if(hi){bars(q,-GW,GW,2.75,3.1,.26,6,P.hazardD);for(let j=0;j<3;j++)Q(q,-GW+.1,GW-.1,3.32+j*.32,3.4+j*.32,.25,P.plateMilD);}});
+  // ---- the growth ----
+  const MC=[1.2,6.3,-1.9],SM=mass(b,MC,[4.5,5.0,3.5],sd+1,{na:hi?26:14,nr:hi?12:7,t0:.3,lob:.17,lx:.5,pole:.55});
+  const upOf=c=>p=>{const x=p[0]-c[0],y=(p[1]-c[1])*.7,z=p[2]-c[2],l=Math.hypot(x,y,z)||1;return [x/l,y/l,z/l];},upM=upOf(MC);
+  // the torn roof: plates bent up round the growth where it burst through
+  {const n=hi?11:6;for(let i=0;i<n;i++){const ph=i/n*TAU+.3*hz(sd,i+500),a=SM(ph-.13,.36,1.02),c=SM(ph+.13,.36,1.02),t=SM(ph,.36,1.28+.25*hz(sd,i+510));if(Math.abs(t[0]-HX)>HW-.2||Math.abs(t[2]-HZ)>HD-.2)continue;
+    a[1]=c[1]=RY+.02;t[1]=RY+.7+1.1*hz(sd,i+520);T3(b,a,c,t,i%3?P.ironL:P.rust,[MC[0],RY+4,MC[2]]);T3(b,a,c,t,P.weld,[2*t[0]-MC[0],RY-4,2*t[2]-MC[2]]);}}
+  [[.95,.6,1.35],[2.75,.5,1.15],[4.2,.64,1.3],[5.6,.5,1.05],[1.9,.82,1.0]].forEach(([ph,t,r],k)=>{if(!hi&&k>1)return;const p=SM(ph,t,.72);bulb(b,p[0],p[1]-r*.5,p[2],r,sd+k*7+30,{lx:Math.cos(ph)*r*.8,lz:Math.sin(ph)*r*.8,sy:1.5,na:hi?9:6,nr:hi?5:3,pole:.6});});
+  // the fissures of its crown (the hot core showing) and the veins over its flanks
+  for(let k=0;k<(hi?5:3);k++){const ph=k*TAU/(hi?5:3)+.7,n=hi?7:4,pts=[];for(let j=0;j<=n;j++)pts.push(SM(ph+.4*Math.sin(j*1.05+k),.992-.4*j/n,1));vein(b,pts,t=>(.03+.1*(1-t))*(hi?1:1.4),0,{raw:true,up:upM,rise:1.1,m:P.redHot});}
+  for(let k=0;k<(hi?7:4);k++){const ph=k*TAU/(hi?7:4)+.25,n=hi?7:3,pts=[];for(let j=0;j<=n;j++)pts.push(SM(ph+.4*Math.sin(j*1.1+k*2),.62-.52*j/n,1));vein(b,pts,t=>(.055+.035*t)*(hi?1:1.5),0,{raw:true,open:true,up:upM,rise:1.2});}
+  // the swelling that climbs the tower
+  const M2=[-3.5,6.7,-3.4],S2=mass(b,M2,[2.5,3.1,2.3],sd+2,{na:hi?14:8,nr:hi?8:4,t0:.25,lob:.18,lx:-.5,pole:.55});
+  if(hi){const p=S2(.9,.6,.7);bulb(b,p[0],p[1]-.4,p[2],.8,sd+60,{lx:.4,lz:.5,sy:1.5,pole:.6});const up2=upOf(M2);
+   for(let k=0;k<3;k++){const ph=k*TAU/3+.6,pts=[];for(let j=0;j<=3;j++)pts.push(S2(ph+.4*Math.sin(j*1.9+k),.9-.7*j/3,1.04));vein(b,pts,.07,.045,{seg:2,open:true,up:up2,rise:1.2});}}
+  vein(b,[S2(2.2,.55,.95),[-4.5,8.3,-1.05],[-6,7.5,-1.07],[-7.2,6.5,-.92],[-8.2,5.2,-.66],[-8.9,3.5,-.66]],.17,.06,{seg:hi?2:1});
+  vein(b,[S2(4.2,.55,.95),[-4.6,8.1,-6.72],[-6.1,7.3,-6.72],[-7.6,6.3,-6.9],[-8.6,4.2,-7.02],[-9.3,2,-7.05],[-9.7,PY+.1,-7.2]],.17,.07,{seg:hi?2:1});
+  if(hi)vein(b,[S2(3.2,.8,.95),[-4.7,9.6,-3.3],[-4.4,10.2,-3.4],[-5,TT+.1,-3.7],[-6.6,TT+.08,-4.3],[-8.3,TT+.1,-4.7],[-8.5,11.4,-4.8]],.14,.05,{seg:2});
+  // the swelling under the gate shutter
+  const SG=mass(b,[GX+.2,PY+.55,FZ+.25],[2.0,2.05,1.7],sd+21,{na:hi?14:8,nr:hi?7:4,t0:.3,lob:.2});
+  {const p=SG(1.35,.6,.72);bulb(b,p[0],p[1]-.4,p[2],.72,sd+23,{lz:.5,sy:1.4,pole:.6});}
+  // the breach in the back wall: plates peeled off round a swelling
+  {const SB=mass(b,[3.4,2.9,-5.9],[2.2,2.1,1.25],sd+3,{na:hi?12:8,nr:hi?6:3,lob:.2}),up=upOf([3.4,2.9,-5.9]);
+   for(let k=0;k<(hi?3:2);k++){const a=k*TAU/3+.4,pts=[];for(let j=0;j<=3;j++)pts.push(SB(-H2+.55*j/3*Math.cos(a),.52+.3*j/3*Math.sin(a),1));vein(b,pts,t=>.025+.085*(1-t),0,{raw:true,up,rise:1.1,m:P.redHot});}}
+  if(hi){bulb(b,2.6,3.6,-6.9,.6,sd+70,{lz:-.4,sy:1.4,pole:.6});[[1.2,4.6,.5],[5.5,4.2,-.4],[5.6,1.6,.3]].forEach(([x,y,rz],k)=>b.at(x,y,-6.05,Math.PI,q=>slab(q,-.9,.9,-.8,.8,.6,0,.1,plateMat(q,KINDS[k+2],k),{bot:true,back:true}),.5,rz));}
+  // ---- the veins: over the cornice, down the walls, out across the pad ----
+  const trunk=(k,u,r,sk,ext)=>{const v=HV(k),jx=j=>u+(hz(sd+sk,j)-.5)*1.3,g=W(k,u,RY,v-1.2),ph=Math.atan2(g[2]-MC[2],g[0]-MC[0]),s=hz(sd+sk,12)<.5?-1:1;
+   vein(b,[SM(ph,.41,.97),W(k,jx(1),RY+.14,v-.7),W(k,jx(2),RY+.1,v+.05),W(k,jx(2)+.1*s,HT+.5,v+.44),W(k,jx(2)+.2*s,HT-.1,v+.42),W(k,jx(3),4.8,v+.44),W(k,jx(4),3.3,v+.42),W(k,jx(5),1.7,v+.44),W(k,jx(6),PY+.16,v+.6),W(k,jx(7)+.5,PY+.07,v+.6+ext*.5),W(k,jx(8)-.4,PY+.03,v+.6+ext)],r,r*.4,{seg:hi?2:1,swell:.3});
+   if(hi)vein(b,[W(k,jx(4),3.3,v+.42),W(k,jx(4)+s*.75,2.5,v+.4),W(k,jx(4)+s*1.1,1.3,v+.42),W(k,jx(4)+s*1.5,PY+.1,v+.5)],r*.55,r*.2,{seg:2});
+   if(hi&&ext>1.4){const a=W(k,jx(7)+.5,PY+.03,v+.6+ext*.5),c=W(k,jx(7)+.5+(hz(sd+sk,9)<.5?-1.8:1.8),PY+.03,v+.6+ext*.95);if(lim(c))creep(b,a,c,r*.5,sd+sk,{n:2,fork:false,seg:2});}};
+  [[0,-4.3,.2,1,3.3],[0,4.7,.2,2,3.3],[1,-1.5,.22,3,2.6],[1,1.4,.19,4,2.6],[2,-4.5,.2,5,1.1],[2,.3,.22,6,1.1],[2,3.7,.18,7,1.1],[3,2.3,.17,8,.3]].forEach(([k,u,r,sk,ext],i)=>{if(!hi&&i%2)return;trunk(k,u,r,sk,ext);});
+  // two pour over the gate lintel into the swelling below
+  for(const s of [-1,1]){const ph=Math.atan2(1,s*.35);vein(b,[SM(ph,.44,.95),[GX+s*1.3,RY+.2,FZ-.7],[GX+s*1.5,RY+.16,FZ+.44],[GX+s*1.3,6.05,FZ+.75],[GX+s*1.6,PY+GH+.9,FZ+1.02],[GX+s*1.9,PY+GH-.1,FZ+1.05],[GX+s*1.55,PY+2.9,FZ+.95],[GX+s*1.1,PY+1.9,FZ+1.2]],.21,.12,{seg:hi?2:1,open:true});}
+  // creepers from the gate, the breach and the tower foot
+  [[[GX-1.2,5.0],[GX-3.6,7.4]],[[GX+.3,5.3],[GX+.2,7.45]],[[GX+1.6,4.9],[GX+4.6,7.3]],[[2.4,-6.9],[.4,-7.45]],[[4.6,-6.8],[7.2,-7.4]],[[-5.2,-6.1],[-3.2,-7.4]]].forEach(([a,c],k)=>{if(!hi&&k%2)return;creep(b,[a[0],PY+.12,a[1]],[c[0],PY+.03,c[1]],.15,sd+k*5+80,{lim,seg:2});});
+  // ---- the hall roof: vent stacks (the infection's light in their mouths) ----
+  b.part();b.cyl(5.6,RY,2.2,.5,2.3,P.rust,{n:hi?8:6,r2:.44,topMat:P.redLow});
+  if(hi){b.cyl(5.6,RY+1.85,2.2,.56,.2,P.gold,{n:8});b.cyl(4.3,RY,2.55,.4,1.3,P.ironL,{n:7,r2:.36,topMat:P.redLow});}
+  // ---- the tower roof: the raiders' black flag over the captured depot, a dead dish, loot ----
+  {const mx=TX-1.2,mz=TZ-.9;b.tube([mx,TT,mz],[mx,13.5,mz],.075,P.ironL,{n:hi?5:3,r2:.045});b.tube([mx,13.32,mz],[mx+2,13.32,mz+.4],.035,P.ironL,{n:3});
+   flag(b,[mx+.08,13.3,mz+.02],[mx+1.95,13.3,mz+.4],2.3,P.strap,P.redLow,{sway:.14});
+   const d=[.5,.55,.67],c=[TX+1.4,TT+1.05,TZ+1.3];b.tube([TX+1.1,TT,TZ+.9],c,.06,P.ironL,{n:3});dish(b,[c[0]+d[0]*.3,c[1]+d[1]*.3,c[2]+d[2]*.3],d,.95,P.tank,P.plateMilD);
+   if(hi){b.part();qb(b,TX+1.2,TT,TZ-1.5,1.4,.8,1.1,P.plateMilD,'b');for(let j=0;j<3;j++)Q(b,TX+.65,TX+1.75,TT+.16+j*.2,TT+.26+j*.2,TZ-.94,P.redDim);crate(b,TX-.4,TT,TZ+1.6,.9,.6,.7,.4,P.crate);sack(b,TX-1.5,TT,TZ+1.2,.36,sd+90);}}
+  // ---- the trophies: a line of conquered colonies' flags strung across the gate ----
+  {const AZ=6.95,X0=GX-3.7,X1=GX+3.7,AY=7.3,cab=t=>[X0+(X1-X0)*t,AY-.1-2.2*t*(1-t),AZ];
+   for(const x of [X0,X1]){b.part();beam(b,[x,PY,AZ],[x,AY,AZ],.26,.26,i=>i%2?P.ironL:P.iron,{w2:.16,d2:.16});qb(b,x,PY,AZ,.74,.14,.74,P.ironD,'b');gem8(b,x,AY+.26,AZ,.17,.3,.17,P.gold,.78);
+    if(hi)b.tube([x,PY+2.2,AZ],[x+(x<GX?-.9:.9),PY+.05,AZ-.5],.05,P.ironL,{n:3});}
+   b.cable(cab(0),cab(1),.55,.03,P.strap,{n:hi?8:4});
+   const nf=hi?5:3,s0=(hz(sd,600)*5)|0;for(let k=0;k<nf;k++){const t=(k+.5)/nf,hw=.4/nf,ldf=k%2===1,m=ldf?P.flagLDF:P.flagSet[(k+s0)%5],m2=ldf?P.flagLDF2:P.flagSet[(k+s0+2)%5];
+    flag(b,cab(t-hw),cab(t+hw),1.75+.45*hz(sd,k+610),m,m2,{sway:(hz(sd,k+620)-.5)*.3});}}
+  // ---- the hoard ----
+  cont(b,-8.3,PY,1.9,5.2,2.4,2.3,H2,0);cont(b,-7.4,PY,6.25,5.4,2.3,2.3,.06,1);cont(b,-8.05,PY+2.4,2.6,4.8,2.2,2.2,H2+.22,3);
+  tank(b,9.1,PY,-3.9,.9,4.2);tank(b,8.9,PY,-1.2,.75,3.5);
+  crate(b,8.3,PY,4.6,1.5,1,1.2,.3,P.crate,{plain:!hi});crate(b,7,PY,5.6,1.2,.9,1,-.5,P.crateD,{plain:!hi,strap:P.gold});crate(b,-8.6,2.72,6.2,1.1,.8,.9,.3,P.crate,{plain:!hi});
+  b.at(9.5,PY,6.3,.55,q=>{slab(q,-1.5,1.5,0,2.7,2.3,0,.15,P.hazard,{back:true});if(hi){bars(q,-1.45,1.45,.1,2.2,.16,3,P.hazardD);q.tube([0,2,0],[0,.05,-1.1],.06,P.ironL,{n:3});}},-.22);
+  side(HX,HZ,2,q=>q.at(1.9,PY,HD+1.05,0,r=>{slab(r,-1.5,1.5,0,3.5,3.1,0,.15,P.plateMil,{back:true});if(hi)dress(r,'mil',-1.5,1.5,.12,3,.18,0);},-.27));
+  if(hi){crate(b,8.2,PY+1,4.7,1,.8,.9,-.2,P.crateD);crate(b,9.7,PY,3.4,1.1,.9,1,1,P.crate,{strap:P.gold});crate(b,-6.6,2.72,6.3,.9,.7,.8,-.4,P.crateD,{strap:P.gold});
+   crate(b,-2.7,PY,-6.9,1.3,.9,1,.2,P.crate);crate(b,-3.9,PY,-6.95,1,.75,.85,-.3,P.crateD,{strap:P.gold});crate(b,-8.2,5.02,2.2,1,.7,.8,.5,P.crateD);
+   sack(b,8.9,PY,5.9,.5,sd+91);sack(b,6.1,PY,4.5,.45,sd+92,tint(P.sack,.8));sack(b,9.9,PY,4.9,.42,sd+93);sack(b,-7.6,2.72,6.6,.42,sd+94);sack(b,-6.5,PY,3.9,.5,sd+95);sack(b,-6.55,PY,2.9,.4,sd+96,tint(P.sack,.8));sack(b,-1.6,PY,-6.8,.42,sd+97);
+   tank(b,9.3,PY,1.9,.6,2.8,{band:P.hazard});b.tube([5.7,PY+.55,-7],[7.6,PY+.55,-6.75],.55,P.tank,{n:8,caps:true});b.tube([6.3,PY+.55,-6.92],[6.8,PY+.55,-6.86],.57,P.tankBand,{n:8});}
+  // ---- the glow where the infection lives ----
+  b.halo(MC[0],9.6,MC[2],7.5,RED,.12);
+  if(hi){b.halo(GX,PY+1.7,FZ+1.3,4.4,RED,.2);b.halo(M2[0],8.6,M2[2],5,RED,.1);b.pool(GX,PY+.08,FZ+2.7,3.8,2.6,RED,.14);b.pool(4.5,PY+.08,-6.9,3,.9,RED,.1);b.halo(3.2,3.2,-7.1,3.2,RED,.14);}
+ });
+},{aoH:8,aoMin:.5});
 })(typeof globalThis!=='undefined'?globalThis:window);
