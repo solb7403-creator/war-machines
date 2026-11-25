@@ -80,15 +80,15 @@ class View {
  this.vehicle.traverse(o=>{if(o.geometry&&!o.geometry.userData.hfShared&&!this.shared?.includes(o.geometry))o.geometry.dispose();});this.vehicle.clear();
  const T=this.T,P=PAINTS[L.paint]||PAINTS.stock,team='#88cbdc';
  if(!this.modelMats)this.modelMats={lit:new T.MeshPhongMaterial({vertexColors:true,shininess:45}),shine:new T.MeshPhongMaterial({vertexColors:true,shininess:65}),glow:new T.MeshBasicMaterial({vertexColors:true})};
- const body=new T.Group();body.rotation.y=-Math.PI/2;this.vehicle.add(body);const gun=new T.Group();this.gun=gun;body.add(gun);this.vehicle.scale.setScalar(1.65);this.vehicle.userData.body=body;this.vehicle.userData.gun=gun;
+ const body=new T.Group();body.rotation.y=-Math.PI/2;this.vehicle.add(body);const gun=new T.Group();this.gun=gun;this.vehicle.scale.setScalar(1.65);this.vehicle.userData.body=body;this.vehicle.userData.gun=gun;
  this.vehicleShow=show;this.vehicleBuild=(this.vehicleBuild||0)+1;delete this.vehicle.userData.tankId;delete this.vehicle.userData.bannerKey;/* the town banner on the hull is put back on the new model (plotview.js tankBanner) */this.motion=null;this.vehicle.visible=show!=='wait';
  if(show==='wait'&&!this.vehicleWait&&this.style?.holoMarker){const m=this.style.holoMarker(0x8fdcf2,{height:4.6,radius:2.3,icon:false});m.userData.tankWait=true;m.traverse(o=>{o.userData.noPick=true;o.frustumCulled=false;});m.position.copy(this.vehicle.position);this.scene.add(m);this.vehicleWait=m;}
  if(this.vehicleWait)this.vehicleWait.visible=show==='wait';
- if(show==='wait')return;
+ if(show==='wait'){body.add(gun);return;}
  const proc=f=>show==='kit'&&typeof Meshy3D!=='undefined'?Meshy3D.withDetail('none',f):f();   // a failed download: BOTH parts code-built, and what seats on them
  const add=(raw,parent)=>{parent.add(M3.meshOf(M3.bake(raw.k),null,this.modelMats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.modelMats);m.position.set(...a.p);parent.add(m);}};
  const H=proc(()=>M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar'));const hullB=M3.bake(H.k);body.add(M3.meshOf(hullB,null,this.modelMats));for(const a of H.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.modelMats);m.position.set(...a.p);body.add(m);}
- gun.position.y=H.meta.ty;const Wkit=proc(()=>M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c,L.c.t));gun.scale.setScalar(Wkit.meta.scale||M3.weaponScale(L.w.a,L.c.c));add(Wkit,gun);
+ gun.position.y=H.meta.ty;body.add(gun);const Wkit=proc(()=>M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c,L.c.t));gun.scale.setScalar(Wkit.meta.scale||M3.weaponScale(L.w.a,L.c.c));add(Wkit,gun);
  if(typeof Meshy3D!=='undefined')this.vehicle.userData.tankId=Meshy3D.label(L,H.meta.meshy&&Wkit.meta.meshy?'meshy':'kit');
  if(this.authority?.state?.achievements?.['field-veteran']){this.form(body,this.box,-.55,H.meta.ty*.7,0,.12,.18,1.25,0xf0d38c);this.form(body,this.box,-.65,H.meta.ty*.7+.15,0,.14,.12,.6,0x8ee8df);}
  const fits=fittingVisuals(L),context={cls:L.c.c,ct:L.c.t,arch:L.w.a,wt:L.w.t,lunar:L.skin==='lunar'};add(proc(()=>M3.fittingKit(fits,team,'body',context)),body);add(proc(()=>M3.fittingKit(fits,team,'mount',context)),gun);

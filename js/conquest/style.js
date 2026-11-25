@@ -874,8 +874,8 @@ function create(T,opts={}){
   KW().place('cover-wall',tk,KM(x,g,z),{w,d,h});
   X.decal(x,z,w/2+2.2,d/2+2.2,0,AT.BLOB,[0,0,0],.55,6,.1);X.decal(x,z,w/2+3.5,d/2+3.5,0,AT.BLOB,E(PAR.red,.2),0,6,.12);}
  function hive(tk,X,inst){const cx=inst.solid.x,cz=inst.solid.z,g=ground(cx,cz);let lo=g;for(const [sx,sz] of [[-11,-8],[11,-8],[11,8],[-11,8]])lo=Math.min(lo,ground(cx+sx,cz+sz));
-  KW().place('hive',tk,KM(cx,g,cz),{sink:r2(Math.min(4,g-lo+.6))});
-  const mx=inst.mast.x,mz=inst.mast.z,mg=ground(mx,mz);KW().place('hive-mast',tk,KM(mx,mg,mz),{});
+  KW().place('hive',tk,KM(cx,g,cz),{sink:r2(Math.min(4,g-lo+.6)),seed:1+F.installations.indexOf(inst)});   // each hive its own plundered plates, flags and veins
+  const mx=inst.mast.x,mz=inst.mast.z,mg=ground(mx,mz);KW().place('hive-mast',tk,KM(mx,mg,mz),{seed:1+F.installations.indexOf(inst)});
   X.band(mx,mz,mg+19.5,.9,.4,14,E(PAR.red,.5),[0,0,0],12);
   X.decal(cx,cz,15,12,0,AT.BLOB,[0,0,0],.6,low?6:10,.12);X.decal(cx,cz,21,18,0,AT.BLOB,E(PAR.red,.35),0,low?6:10,.16);}
  S.installations=()=>F.installations.map(inst=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);hive(tk,X,inst);const g=kdone(pair(Sb,X),tk);g.name='cq-style-hive-'+inst.id;g.userData.site={x:inst.solid.x,z:inst.solid.z,range:1100};return g;});
@@ -901,7 +901,7 @@ function create(T,opts={}){
    Kk.place('ldf-post',tk,m,{seed:i+1});X.decal(p.x,p.z,6.5,6.5,0,AT.BLOB,[0,0,0],.5,4,.1);X.decal(p.x,p.z,9,9,0,AT.BLOB,E(0x22e6ff,.16),0,4,.14);
    const g=kdone(pair(Sb,X),tk);g.name='cq-style-ldf-'+p.id;g.userData.site={x:p.x,z:p.z,range:900};out.push(g);});
   return out;};
- // Raid-only Parasite spire (decor where the live build places raid art): crystal cluster on a chitin root.
+ // Raid-only Parasite spire (decor where the live build places raid art): the kit's raid-spire, a growth nest on scavenged steel.
  S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});return kdone(pair(Sb,X),tk);};
  // Blender-authored GLB (constrained parser) adopted into the style: per-mesh PBR factors become vertex colour + emission.
  S.adopt=group=>{group.traverse(o=>{if(!o.isMesh||o.material===MAT.solid)return;const geo=o.geometry,m=o.material;if(!geo.attributes.aCol){const n=geo.attributes.position.count,a=new Float32Array(n*4),c=m.color||new T.Color(1,1,1),e=m.emissive||new T.Color(0,0,0),em=Math.max(e.r,e.g,e.b);
@@ -987,7 +987,8 @@ function create(T,opts={}){
    X.flat(0,.05,0,box[0]*.62,box[2]*.58,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,box[0]*.86,box[2]*.76,AT.BLOB,E(cmd?PATTERN[cmd]:PAR.red,cmd?.55:.5),0);
    c={hull:Kk.geometry(slot,Object.assign({part:'hull'},o)),gun:Kk.geometry(slot,Object.assign({part:'gun'},o)),fx:keep(X.geometry()),pivot:PU.pivot||[0,box[1]*.6,0],box};unitCache.set(key,c);}
   const g=new T.Group(),body=new T.Group(),gun=new T.Group(),mk=markers(),fx=low?null:fxMesh(c.fx);body.add(new T.Mesh(c.hull,MAT.solid));gun.position.set(c.pivot[0],c.pivot[1],c.pivot[2]);gun.add(new T.Mesh(c.gun,MAT.solid));body.add(gun);g.add(body);if(fx)g.add(fx);
-  mk.position.y=c.box[1]+(cmd?2.6:1.3);g.add(mk);Object.assign(g.userData,{gun,body,marker:mk,glow:fx,unit:kind,slot,general:cmd,death:DEATH[kind],half:c.box[0]/2,side:(e.id|0)%2?-1:1});return g;};
+  mk.position.y=cmd?((root.ConquestParUnits?.standardTop||{})[kind]||c.box[1]+2.6)+.9:c.box[1]+1.3;g.add(mk);   // a general's marker floats clear of its standard
+  Object.assign(g.userData,{gun,body,marker:mk,glow:fx,unit:kind,slot,general:cmd,death:DEATH[kind],half:c.box[0]/2,side:(e.id|0)%2?-1:1});return g;};
  // the death animation: dead = seconds since the unit died (0 or less = alive). The blast hops the hull, it rolls onto a flank
  // and settles; the gun slumps; the ground glow goes out. The kill burst and the flying plates are FX3D's (killBurst, shatter).
  S.unitPose=(g,dead)=>{const u=g?.userData,b=u?.body,D=u?.death;if(!b||!D)return;const gun=u.gun;

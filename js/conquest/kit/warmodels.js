@@ -61,7 +61,7 @@ function flag(b,h,w,fh,m,o={}){const n=b.hi?3:2,pm=o.pole,wv=k=>k?Math.sin(k*2.1
 // the shared Parasite palette plus this file's paints; a wreck gets every surface sooted and every glow dead (fires stay)
 function parPal(b,wreck){const K=b.k,P=Object.assign({},K.pal.par,{blue:K.mat(0x1f5f8a,'paint',.6),white:K.mat(0xc9c2b0,'paint',.6),deck:K.mat(0x4d4c52,'metal',.75),tread:K.mat(0x5c5a5e,'metal',.8),
    growth:K.mat(0x5a141a,'flat',0,.1),growthD:K.mat(0x30090d,'flat',0,.1),glassTop:{c:K.col(0x1c0508),a:1.5,j:0},lamp:K.glow(WK.PAR.red,1)});
- if(wreck){const soot=m=>m.a>0?{c:[.006,.005,.005],a:K.surfA(K.SURF.metal,.9),j:0}:{c:[m.c[0]*.3+.007,m.c[1]*.3+.006,m.c[2]*.3+.005],a:m.a,j:m.j};for(const k in P)P[k]=Array.isArray(P[k])?P[k].map(soot):soot(P[k]);}
+ if(wreck){const soot=m=>m.a>0?{c:[.006,.005,.005],a:K.surfA(K.SURF.metal,.9),j:0}:{c:[m.c[0]*.3+.007,m.c[1]*.3+.006,m.c[2]*.3+.005],a:m.a,j:m.j};for(const k in P)P[k]=Array.isArray(P[k])?P[k].map(soot):soot(P[k]);P.glassDead={c:[.012,.011,.011],a:K.surfA(K.SURF.metal,.9),j:0};}
  P.fire=K.glow(0xff5a1c,1.9);P.ember=K.glow(0xff3410,1);P.wreck=!!wreck;return P;}
 // what one raid stole: the seed picks the paint of the plundered plates, the stripe, the trophies and the loot
 function livery(P,sd,tint){const L=((sd%6)+6)%6,S=P.plateSet,main=[P.plateMil,S[0],S[1],P.hazard,S[2],S[4]][L],second=[P.plateMilD,S[3],S[2],P.ironL,S[0],S[3]][L],stripe=[P.blue,P.white,P.hazard,P.rust,S[0],P.gold][L],

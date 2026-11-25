@@ -110,7 +110,7 @@ root.ConquestSlots={version:1,items:{
  'cover-wall':S('parasite','Raid cover wall',[18,5,3],'world raid obstacle box (placement w, d, h)'),
  'raid-spire':S('parasite','Raid spire',[8.8,7.4,7.6],'none'),
  'par-battery':S('parasite','Plasma battery (o.part: base | gun)',[6.7,11.6,5.8],'none (the sim owns the hitbox)'),
- 'portal-gate':S('parasite','Portal gate (o.state: dormant | open | suppressed)',[16,14,6],'none (scenery until Session 7)'),
+ 'portal-gate':S('parasite','Portal gate (o.state: dormant | open | suppressed)',[16,14.6,6.2],'none (scenery until Session 7)'),
  // ---- Parasite units (Session 5E-2d2). o.part: hull | gun (the gun turns at the model's pivot); o.town: the light model the
  //      town raid instances; o.cmd: a general's doctrine (shield | ambush | artillery | carrier | plasma). The sim owns every hitbox ----
  'par-raider':S('parasite','Scavenger (interceptor)',[2.9,2.6,5.4],'none (moving; the sim owns the hitbox)'),
@@ -121,8 +121,8 @@ root.ConquestSlots={version:1,items:{
  'par-brute':S('parasite','Wrecker (wall breaker)',[5.4,4.6,8],'none (moving; the sim owns the hitbox)'),
  'par-drone':S('parasite','Stolen drone',[2.8,1.2,3],'none (flying)'),
  // ---- Parasite dropships (o.part: hull | ramp; o.wreck: the shot-down hulk; o.seed patches each raid's ships differently) ----
- 'par-shuttle':S('parasite','Scavenger shuttle (light dropship)',[10,4.4,13],'none (flying)'),
- 'par-hauler':S('parasite','Heavy hauler (dropship with a ramp)',[14,7.4,24],'none (flying)'),
+ 'par-shuttle':S('parasite','Scavenger shuttle (light dropship)',[10.2,4.6,11.8],'none (flying)'),
+ 'par-hauler':S('parasite','Heavy hauler (dropship with a ramp; the box holds it with the ramp raised)',[16.2,10.3,26],'none (flying)'),
  // ---- the Lunar Defense Force post (scenery until Session 7; o.seed varies each post) ----
  'ldf-post':S('military','LDF post',[8,7,8],'none (scenery until Session 7)'),
  'loot-cache':S('prop','Loot cache',[2.4,1.6,1.8],'none'),

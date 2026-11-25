@@ -13,11 +13,19 @@
  *   par-drone                      a stolen human quad-rotor with plundered parts and red growth (it flies: y 0 .. box height)
  *
  * Model space: metres, +y up, the ground at y = 0, the footprint centred on the origin, the FRONT FACING +z.
+ * Every default model stands inside its slot box (js/conquest/slots.js): the game draws it at that size with no extra scale.
  * o.part  undefined = the whole unit (the gun at its pivot) | 'hull' = everything that does not turn | 'gun' = the turning
- *         gun in its OWN frame (pivot at the origin, the barrel toward +z). ConquestParUnits lists every pivot.
- * o.town  1 = the light town-raid model (one piece, big shapes, 2-3 glow accents): raider, sentinel, swarm, brute, drone.
+ *         gun in its OWN frame (pivot at the origin, the barrel toward +z). ConquestParUnits lists every pivot. The Grabber
+ *         has no turret: its gun is a pintle stub on the cab roof. The drone's is a twin gun under the chin.
+ * o.town  1 = the light town-raid model (one piece, big shapes, 2-3 glow accents, the same on HIGH and LOW, nothing in the
+ *         detail batch): raider, sentinel, swarm, brute, drone. It is fitted to the town raid's own footprint, not to the
+ *         slot box (width x height x length, standing on y = 0): raider 3.4 x 2.9 x 4.4 (162 triangles), sentinel
+ *         5.2 x 4.6 x 6.8 (228), swarm 1.6 x 1.1 x 2.2 (132), brute 6.8 x 5.4 x 7.6 (310), drone 3.4 x 1 x 2.6 centred on
+ *         y = 0 (116; the town view lifts it). ConquestParUnits.townSize lists them.
  * o.cmd   'shield' | 'ambush' | 'artillery' | 'carrier' | 'plasma' = a GENERAL (raider, command, sentinel): a tall standard
- *         with a doctrine-colour banner and a 3D emblem, doctrine glow strips on both flanks, painted shoulder plates, more gold.
+ *         (a doctrine-colour banner under a glowing 3D emblem: a hex shield, crossed blades, a trio of shells, a winged
+ *         drone, an orb in a cage), doctrine light rails on both flanks, painted shoulder plates and gun plates, more gold.
+ *         The hull stays in the slot box; the standard rises up to 2.6 m above it (ConquestParUnits.standardTop).
  * o.seed  small variation of trophies and plate colours (silhouettes never change).
  * b.hi === false is LOW: the same silhouette and colour blocks, the small parts dropped. One material, vertex colours. */
 (function(root){
@@ -617,7 +625,7 @@ function sentinelTown(b,o){const sd=o.seed|0,S=P.plateSet,R=K.rect,tm=tint(P.iro
 // light rails along both flanks, shoulder plates painted in the doctrine colour, and more gold. Never the Parasite red.
 const DOCTRINE={shield:0x48d8ff,ambush:0xffb347,artillery:0xf2f4ff,carrier:0x8dff3a,plasma:0xb07bff};
 // (the solid shader shows colour x 2.3 at full emission: these keep the doctrine's own hue instead of burning out to white)
-const doc=o=>{const hex=DOCTRINE[o.cmd];if(hex==null)return null;const c=K.col(hex),M=(k,a)=>({c:[c[0]*k,c[1]*k,c[2]*k],a,j:0});return {glow:M(.52,1),soft:M(.34,1),cloth:M(.4,1),paint:M(.4,.86)};};
+const doc=o=>{const hex=DOCTRINE[o.cmd];if(typeof hex!=='number')return null;const c=K.col(hex),M=(k,a)=>({c:[c[0]*k,c[1]*k,c[2]*k],a,j:0});return {glow:M(.52,1),soft:M(.34,1),cloth:M(.4,1),paint:M(.4,.86)};};
 // the emblems: about 1.1 across, centred on the origin, readable from every side
 const EMBLEM={
  // shield: a hex shield (two crossed, so it never turns edge-on): a gold rim, a glowing field, a gold boss
@@ -653,16 +661,17 @@ function general(b,o,g){const D=doc(o);if(!D)return;const hi=b.hi,s=g.s,[px,py,p
   if(hi)for(const k of [-1,0,1])b.quad([e*x-w*.3,y+.124,z+k*d*.26-.05],[e*x,y+.124,z+k*d*.26+.07],[e*x,y+.124,z+k*d*.26+.15],[e*x-w*.3,y+.124,z+k*d*.26+.03],P.gold,[0,0,0]).quad([e*x+w*.3,y+.124,z+k*d*.26-.05],[e*x,y+.124,z+k*d*.26+.07],[e*x,y+.124,z+k*d*.26+.15],[e*x+w*.3,y+.124,z+k*d*.26+.03],P.gold,[0,0,0]);}
  if(g.gold)g.gold(b,hi,D);
 }
-const RAIDER_CMD={pole:[0,1.8,-2.16],top:4.52,s:1,rails:[[1.4,.9,-2.2,1.95]],pads:[[1.1,.93,1.4,.62,1.1]],
+const RAIDER_CMD={pole:[0,1.8,-2.1],top:4.52,s:1,rails:[[1.4,.9,-2.2,1.95]],pads:[[1.1,.93,1.4,.62,1.1]],
   gold(b,hi){for(const s of [-1,1])trim(b,[s*.84,1.03,-.55],[s*.84,1.03,1.55],.035);if(hi)b.loft([{p:K.rect(1.6,1.8,.1,0,-1.45),y:1.74},{p:K.rect(1.6,1.8,.1,0,-1.45),y:1.82}],P.gold,{top:false});}},
- SENTINEL_CMD={pole:[0,2.0,-2.7],top:7.05,s:1.4,rails:[[2.27,1.75,-2.72,2.62]],pads:[[1.83,1.75,2.12,.96,1.05]],
+ SENTINEL_CMD={pole:[0,2.0,-2.5],top:7.05,s:1.4,rails:[[2.27,1.75,-2.72,2.62]],pads:[[1.83,1.75,2.12,.96,1.05]],
   gold(b,hi){for(const s of [-1,1])trim(b,[s*1.36,2.02,-2.3],[s*1.36,2.02,1.9],.045);if(hi)for(const s of [-1,1])b.gem(s*2.06,1.86,2.68,.09,.16,.09,P.gold);}},
  COMMAND_CMD={pole:[0,6.0,-1.15],top:8.34,s:1.3,rails:[[2.18,3.32,-2.66,.46],[2.26,1.65,.5,2.5]],pads:[[1.78,1.65,2.24,.96,.72]],
   gold(b,hi){for(const s of [-1,1])trim(b,[s*1.32,1.92,-2.7],[s*1.32,1.92,1.9],.045);}};
 
 // ------------------------------------------------------------------ registration ----------------------------------------
 // one slot = hull + gun: o.part picks a half (the gun in its own frame); with no o.part the gun stands at its pivot
-function unit(hull,gun,pivot,town,cmd,size){return (b,o)=>{use(b);if(o.town&&town){const h=b.hi;b.hi=false;try{town(b,o);}finally{b.hi=h;}return fit(b,size,size===TOWN.drone);}const part=o.part;
+function unit(hull,gun,pivot,town,cmd,size){return (b,o)=>{use(b);if(o.cmd&&!(cmd&&typeof DOCTRINE[o.cmd]==='number'))o=Object.assign({},o,{cmd:null});   // not a doctrine, or a unit that is never a general
+  if(o.town&&town){const h=b.hi;b.hi=false;try{town(b,o);}finally{b.hi=h;}return fit(b,size,size===TOWN.drone);}const part=o.part;
   if(part!=='gun'){hull(b,o);if(o.cmd&&cmd)general(b,o,cmd);}
   if(part!=='hull'&&gun){const ao=b.aoMin;b.aoMin=1;if(part==='gun')gun(b,o);else b.at(pivot[0],pivot[1],pivot[2],0,q=>gun(q,o));b.aoMin=ao;}};}
 WK.model('par-raider',unit(raiderHull,raiderGun,RAIDER_PIVOT,raiderTown,RAIDER_CMD,TOWN.raider),{aoH:1.6,aoMin:.56});

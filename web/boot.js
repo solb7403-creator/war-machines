@@ -7,7 +7,7 @@ function inv(){try{const m=/[?&]i=([a-z0-9]{8})(?:&|$)/i.exec(location.search);i
 function earlyTank(session,E,build){try{
  let gfx='';try{gfx=(JSON.parse(localStorage.getItem('wm_web_'+(session.pid||'tg_'+session.user.id)))||{}).gfx;}catch{}
  if(gfx==='2d')return;
- ['js/vendor/three.lunar.min.js','js/vendor/meshopt_decoder.js'].forEach(file=>{const l=document.createElement('link');l.rel='preload';l.as='script';l.href='/'+file+'?v='+encodeURIComponent(build);document.head.append(l);});
+ {const l=document.createElement('link');l.rel='preload';l.as='script';l.href='/js/vendor/three.lunar.min.js?v='+encodeURIComponent(build);document.head.append(l);}
  const sp=E.lab.machines[E.lab.active].spec,t=x=>Math.max(0,Math.min(2,x|0)),ids=['chassis-'+sp.c.c+'-'+t(sp.c.t),sp.w.a==='moon'?'weapon-moon':'weapon-'+sp.w.a+'-'+t(sp.w.t)];
  const base=new URL('/js/assets/meshy-v1/',location.href).href,ok=r=>r.ok?r:Promise.reject(Error('fetch '+r.status)),manifest=fetch(base+'manifest.json',{cache:'no-cache'}).then(ok).then(r=>r.json()),files={};
  for(const id of ids)files[id+'|light']=manifest.then(m=>{const rec=m.items&&m.items[id];return rec&&rec.light?fetch(base+id+'-light.glb?h='+(rec.light.hash||m.build||''),{priority:'high'}).then(ok).then(r=>r.arrayBuffer()):null;});

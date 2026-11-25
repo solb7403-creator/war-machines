@@ -71,8 +71,17 @@ for(const low of [false,true]){
  // the five generals: a distinct doctrine colour each, far from the Parasite red, and a standard above the plain unit
  {const cols=Object.values(S.PATTERN).map(h=>new T.Color(h)),red=new T.Color(S.PAR.red),far=(a,b)=>Math.hypot(a.r-b.r,a.g-b.g,a.b-b.b);assert.equal(cols.length,5,'five doctrines');
   for(let i=0;i<5;i++){assert.ok(far(cols[i],red)>.35,q+' doctrine '+i+' is not the Parasite red');for(let j=i+1;j<5;j++)assert.ok(far(cols[i],cols[j])>.3,q+' doctrines '+i+' and '+j+' differ');}
-  for(const kind of ['raider','command','sentinel']){const plain=verts(unitOf(kind),m=>m.material===S.MAT.solid).reduce((h,v)=>Math.max(h,v[1]),0);
+  for(const kind of ['raider','command','sentinel']){const pg=unitOf(kind),plain=verts(pg,m=>m.material===S.MAT.solid&&!pg.userData.marker.children.includes(m)).reduce((h,v)=>Math.max(h,v[1]),0);
    for(const pattern of Object.keys(S.PATTERN)){const g=unitOf(kind,{commander:true,pattern});assert.equal(g.userData.general,pattern,q+' '+kind+' general '+pattern);const top=verts(g,m=>m.material===S.MAT.solid&&!g.userData.marker.children.includes(m)).reduce((h,v)=>Math.max(h,v[1]),0);assert.ok(top>plain+.8,q+' the '+pattern+' '+kind+' general carries a standard above the plain unit ('+top.toFixed(2)+' vs '+plain.toFixed(2)+')');}}}
+ // The portal gate and the LDF posts (Session 5E-2d2): scenery only. No collision and no layout change: every one stands on
+ // open ground (nothing solid, no road, lot, water or forest under its footprint), the portal beside a Parasite hive, each
+ // post its own variant, and nothing in the world's rules knows about them (conquest-world-equivalence.mjs is untouched).
+ {const WS=S.WAR_SCENERY,groups=S.warScenery(),clear=(x,z,hw,hd)=>{for(let i=-hw;i<=hw;i+=hw/2)for(let j=-hd;j<=hd;j+=hd/2){const px=x+i,pz=z+j;if(W.solidAt(px,pz)||W.roadAt(px,pz)||W.waterAt(px,pz)||W.colonyLotAt(px,pz)||W.forestAt(px,pz))return false;}return true;};
+  assert.equal(groups.length,1+WS.posts.length,q+' one group for the portal and one for each LDF post');assert.ok(WS.posts.length>=7,q+' LDF posts at the military places');
+  assert.ok(clear(WS.portal.x,WS.portal.z,8,3),q+' the portal stands on open ground');assert.ok(C.installations.some(s=>Math.hypot(s.x-WS.portal.x,s.z+8-WS.portal.z)<60),q+' the portal stands near a Parasite hive');assert.equal(groups[0].userData.portal,'dormant',q+' the portal is dormant');
+  for(const p of WS.posts)assert.ok(clear(p.x,p.z,4,4),q+' the LDF post "'+p.id+'" stands on open ground');
+  for(const g of groups){assert.ok(g.userData.site&&tris(g)>200,q+' '+g.name+' is drawn');g.traverse(m=>{if(m.isMesh)assert.ok(allowed.has(m.material),q+' '+g.name+' uses the style materials only');});}
+  for(const st of ['open','suppressed'])assert.equal(S.warScenery({portal:st})[0].userData.portal,st,q+' the portal can be drawn '+st+' (Session 7 only switches the state)');}
  // Tap-to-lock (the view's pick() steers the authoritative turret lock): only solid hull meshes are pickable — never the
  // ground underglow, decals or the floating target marker.
  {const g=unitOf('raider');g.updateMatrixWorld(true);

@@ -507,7 +507,7 @@ function tankShow(L,parts,own){
  if(typeof THREE==='undefined')return own?'wait':'2d';
  return Meshy3D.tank(L.c.c,L.c.t,L.w.a,L.w.t,parts);
 }
-// one menu picture of a tank on a 2D canvas (home cards, the garage picture, the bay editor): the empty pad while it waits,
+// one menu picture of a tank on a 2D canvas (home cards, the garage picture, the showroom's 2D fallback): the empty pad while it waits,
 // else the picture js/render.js drawMachinePreview makes (the 3D picture, or the 2D one on the 2D setting); the canvas says
 // what it shows (dataset.tank). A failed download draws BOTH parts code-built.
 function tankPicture(ctx,w,h,L,t){
