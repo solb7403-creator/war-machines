@@ -79,6 +79,14 @@ const sit=()=>({x:0,z:0});
 {const mk=()=>{const m=TT.make(GEAR.epic,{x:1000,z:1000,y:0,surface:'ground'},'hive-titan'),T=m.titan();m.friends.push(C.friendUnit({id:1,side:'mine',pid:'p',role:'lancer',kit:{w:{a:'pulse',t:1,q:1},c:{c:'vanguard',t:1,q:1}},m:1,x:T.x+5,z:T.z}));m.deploy('swarm',T.x+2,T.z,'test:add');const A=m.enemies.at(-1);A.x=T.x+2;A.z=T.z;A.y=T.y;A.hp=A.maxHp=1e6;return {m,T,A};};
  const a=mk(),b=mk();b.T.titan=0;const q=o=>({team:'ally',kind:'siege',x:o.A.x,y:o.A.y+2.2,z:o.A.z,vx:1,vy:0,vz:0,owner:1});const h0=a.T.hp,h1=b.T.hp;a.m.hit(q(a),a.A,3);b.m.hit(q(b),b.A,3);
  const da=h0-a.T.hp,db=h1-b.T.hp;ok(db>0&&Math.abs(da-db*TT.TITAN.allyMul)<1e-6,'an allied siege shot\'s splash on the Titan takes a quarter too ('+da.toFixed(1)+' of the '+db.toFixed(1)+' another unit takes)');}
+// ---- every crater a Titan slot can fall on (Session 5E-2d2; found by conquest-7c-browser.py on Nov 25, when the slot's crater was
+// Helium Basin: the operation record kept the first crater's place and the 260 m "left the operation area" rule lost the hunt on
+// its first step at Oxygen Spear and Helium Basin) ----
+{const seen=[];for(let k=0;k<4;k++){const t=T0+k*12*3600000,{s,M}=atTitan(GEAR.epic,t);ok(TT.isTitanSlot(M.slot),'slot '+M.slot+' is a Titan slot');seen.push(M.site.id);
+  const x=start(s,t+1000),B=hydrate(x);ok(B.operation.x===M.site.x&&B.operation.z===M.site.z,'the hunt at '+M.site.name+' is centred on its own crater (the saved battle carries it)');
+  for(let i=0;i<150&&B.state==='active';i++)B.step(1/30,false);ok(B.state==='active'&&B.time>4.9,'the hunt at '+M.site.name+' is still on after 5 s ('+B.state+(B.reason?': '+B.reason:'')+')');
+  const y=applyCommands(x,{seq:x.seq+1,commands:[{x:0,z:0}]},t+3000);ok(y.mission==='hive-titan'&&!y.settlement?.kind?.startsWith?.('titan'),'... and the Worker keeps it running at '+M.site.name);}
+ ok(new Set(seen).size===4,'four different craters over four Titan slots in a row ('+seen.join(', ')+')');}
 // ---- review round 1 (airdrop integrity, notes 1 and 2) ----
 {const M=TT.slotNow(T0),slot=M.slot,late=M.closesAt+11*60000,s={strikeSlot:slot,strikes:{[slot]:{claimed:1}},ttn:{v:1,sl:{}}};
  ok(TT.isTitanSlot(slot)&&TT.startWhy(s,late)==='this Titan slot has closed'&&TT.startWhy({...s,bcn:{slot,until:late+30*60000}},late)==='','a Strike Beacon on this Titan slot opens the hunt in the slot\'s idle phase (without it the slot is closed)');
