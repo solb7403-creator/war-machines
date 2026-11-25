@@ -7629,6 +7629,11 @@ is used by that assault); a minimum Battalion retry after a loss (downed allies 
 
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_07C_BRIEF.md first; it governs everything, then this section.
+- **SESSION 7C IS RELEASED** (Nov 25, 2026: PR #157, merge `804b68d`, build `20261125032217`; section "Release record (Nov 25,
+  2026)" at the end of this checkpoint; ROADMAP row 7C). Every PROPOSAL and open item for the owner: "Open items and PROPOSALs
+  (Session 7C)" after it. Next on the roadmap: 5E-2d2 (Fable, running), the visual sessions 6B-V and 7-V (row 7-V now also lists
+  7C's hooks: the Hive Titan's look, the War Effort's monument growth and the top squad's banner, the three War Effort pieces), then
+  7.5, 7.8, 8 (payments) and 9 (the full audit with its airdrop exploit review).
 - Checkpoint 45 belongs to Session 5E-2d2 (running at the same time on Fable, branch `claude/parasite-units-dropships-8y7kby`, head
   `af852a8` when this session started). Its files (js/conquest/combat.js, hub.js, plot.js, plotview.js, slots.js, style.js,
   townkit.js, view.js, worldkit.js, kit/*, js/core.js, main.js, meshy3d.js, net.js, showroom.js, fx3d.js, web/boot.js) get only
@@ -7649,8 +7654,14 @@ If your context was cleared, read docs/conquest/audit/SESSION_07C_BRIEF.md first
 - **Slice 6 (CI on PR #157):** four real failures fixed, the rest were the runner or the label (details under "CI fixes" below).
 - **Slice 7 (journeys, `f8fb9a4`):** `dev/tests/conquest-7c-browser.py` at five sizes (new CI job `boards-titan`), with the UI fixes it
   found (details under "Journeys" below). Reviews round 1 started at `f8fb9a4` (two rule reviewers, one airdrop-integrity reviewer).
-- **Next:** every guard re-run with everything on (fortress, ladder, town-selenite, cap, bounties, boards, Titan, fingerprints), the
-  CI Node suite, the browser journeys and captures (phone sizes + 1366x768 + 1920x1080, keyboard and mouse), then the reviews.
+- **Slice 8 (guards and captures, `0a1d760`-`d9147e5`):** every guard re-run with everything on, all 99 commands of the CI Node
+  suite, the journeys and captures at five sizes; the Titan's guaranteed Tranquillityite kept out (it failed fortress guard (e);
+  details under "Guards with everything on" below).
+- **Slice 9 (reviews, `b78b5a2`-`7be0955`):** two rounds of the three reviewers; every finding fixed with a test or recorded; every
+  rule PASS at the end (details under "Reviews" below).
+- **Slice 10 (release):** PR #157 marked ready with `auto-release` once the reviews and this checkpoint were done; the workflow merged
+  it at 04:25 UTC when every check was green on `e2014a4`; the deploy verified; this record and ROADMAP row 7C went in a docs-only PR
+  from the same branch (restarted from main `804b68d`). DONE.
 
 ### Research: the best comparable boards, raid bosses, anti-bot signals and community bars (before STEPs 2-4 were designed)
 One research agent, web search (gamedeveloper.com and docs.arbitrum.foundation fetches were blocked: search snippets used). Lessons and
@@ -7804,7 +7815,7 @@ what each changed here:
   Titan rises right after a strike whose rewards are carried, and a boss fight must not punish trying (the Citadel's rule, Session 7B).
 - **Not built (PROPOSAL): "it joins the next Grand Offensive if left alive"** (blueprint §2's mode table): not in the old brief's D;
   it would add THREAT to the weekend offensive (war balance).
-- **The boards** (`worker/src/conquest-boards.js`): small CAS documents `cqb/<kind>/<period>` (the best 120 pilots; 100 shown), a
+- **The boards** (`worker/src/conquest-boards.js`): small CAS documents `cqb/<kind>/<period>` (the best 200 pilots since review round 2, 120 before; 100 shown), a
   per-pilot marker `cqbp/<kind>/<period>/<pid>` (the field count), posted after a committed request from the pilot's verified record
   only (the campaign gain from the week's first request, the Titan damage of the week's / the 30-day period's slots, the featured
   raid's best server-timed clear; Town Score gain and defense rating from the town's public snapshot: conquest-visit.js), never by an
@@ -7836,7 +7847,8 @@ what each changed here:
   document and campaign score"): every verified campaign point a pilot adds (the document's own lifetime watermark per pilot, so a
   retry or a second tab never counts twice) also counts for the week (`we`: n active pilots, the counted score, by squad), each pilot up
   to **two quotas** (lead's decision, research lesson 15: one pilot cannot carry the week; a grinder still counts double an ordinary
-  week). **The quota: 150 campaign points a week** (lead's decision: about 15 raids or a mix of raids, strikes and defenses: an
+  week). **Superseded in review round 2 (rule reviewer 2, rule 11): every verified campaign point counts, as the brief says; the
+  two-quota cap is a PROPOSAL.** **The quota: 150 campaign points a week** (lead's decision: about 15 raids or a mix of raids, strikes and defenses: an
   ordinary week of a 60-minute pilot playing four or five days); the goal = active pilots x 150 x 0.6. With zero pilots there is no
   goal and nothing is won (tested); the first contribution of a new week moves the old one to `prev` with its result.
 - **A win** (`js/conquest/wareffort.js`, shared): High Morale for every pilot the next week: the war rules' existing "Shared-war morale"
@@ -7847,11 +7859,14 @@ what each changed here:
   Scanner Charge, each item at most to the cap of 10). No CP, salvage or points bonus (tested). A loss takes nothing.
 - **Exactly once, in the pilot's own record:** the pilot's contribution of the week before (`s.wep`, captured at its first request of a
   new week from the campaign board's baseline) and the shared view's result decide; the rewards are paid inside the record's own write
-  (`persistWarfront`) once per week (`wep.paid`, `wep.sq`), and the reply shows them once.
+  (`persistWarfront`) once per week (`wep.paid`, `wep.sq`), and the reply shows them once. **After the reviews:** the crate once per
+  won week (`wep.paid`), the squad fragment once per week topped (`s.wsq`, the weeks paid, pruned by age), for 8 weeks.
 - **Squads** (the referral squads: a recruiter and the pilots it recruited; a pilot's squad is its recruiter's, or its own): summed
   counted contribution; a squad needs 2+ contributing members to rank. The top squad's leader name and town banner (its public
   snapshot) fly at the warfront monument (`monument.banner`) and on every hub's WARFRONT card next week; its contributing members get an
-  uncommon fragment (lead's pick of "a fragment": the banner-standard pool), whether or not the bar was won. The public view never
+  uncommon fragment (lead's pick of "a fragment": the banner-standard pool), whether or not the bar was won. **Changed in the reviews
+  (rule 13):** every member, the leader included, gets it, contributor or not; a recruited pilot counts in its recruiter's squad and in
+  its own. The public view never
   carries a pilot id (the leader's id is a hidden Worker property).
 - **The monument's and the frontier's growth on a win** are hooks for the Fable 7-V session (`ConquestWarEffort.HOOKS`; the view's
   `monument.grown` and `monument.banner`).
@@ -8024,7 +8039,7 @@ what each changed here:
   the hidden `_top` fell back to the week before's top squad, so its members were paid a fragment for a week their squad did not top.
   `_top` is now last week's own top squad or nothing (`wtest/conquest-wareffort` 9). Note 1 acted on: a notice paying two weeks'
   fragments says "+2 UNCOMMON FRAGMENTS".
-- **Rule reviewer 2 (one round, verdicts at the tip `6ae798c`): 18 PASS, 1 FAIL; fixed after it.**
+- **Rule reviewer 2, round 1 (verdicts at the tip `6ae798c`): 18 PASS, 1 FAIL; fixed in `7be0955`.**
   - **Rule 11 FAIL -> fixed:** the War Effort counted each pilot up to two quotas (STEP 4's research lesson 15), but the brief says
     "Every verified operation adds to it". Every verified campaign point now counts (bar and squad sums); the cap is a PROPOSAL (one
     pilot could otherwise carry a small population's week: 5 pilots, goal 450, one at 400 + four at 20 wins it).
@@ -8037,4 +8052,101 @@ what each changed here:
     periods for the Titan's 30-day board) and a War Effort week settles for 8 weeks: a pilot away from Conquest that long loses them;
     (3) the human fixtures are synthetic (the existing PROPOSAL); (7) the squad banner and the monument growth are data and a hub line
     until the 7-V session draws them (a call site in view.js, a 5E-2d2 file); a squad needs 2+ contributing members to rank.
+- **Rule reviewer 2, round 2 (at `7be0955`; `e2014a4` only stamps the build): every rule PASS.** Rule 11 PASS (`counted` uncapped,
+  `WE.cap` 0; its repro: 5 pilots, goal 450, one at 400 and four at 20 count 480 and win the week, before 380 and lost; the member's
+  squad fragment paid); note 1 PASS (High Morale adds exactly +1 DEFENSE on all 20 territories and changes no LDF value: 13 have one);
+  note 4 PASS (200 stored, 100 shown: a verified pilot inside a band is cut only if 101+ held pilots rank above it); note 5 PASS (the
+  kill's +8 campaign score and +40 reputation = `strikeReward`); note 6 PASS (the identity test replays the real hunt on a claimed
+  Titan slot: 30 requests of live fighting, 1,648 requests identical both ways, 62.1% less replay time); notes 2, 3, 7 PASS (recorded
+  here). Re-run at `7be0955`, all passing: fingerprints, standing, citadel-payout, cosmetics, loot, ladder-check (CC10 median 26.8)
+  and its repros for rules 9, 12 and 13. **Two harmless code leftovers** (no behaviour): the comment above `counted` in
+  `js/conquest/wareffort.js` still says "two quotas at most", and `ldfOf` in `js/conquest/war.js` keeps a no-op `0/*...*/;`; left for
+  the next session that edits those files (the release PR was ready; this record is docs-only).
+- **The end state: every rule PASS.** Round 2's last two findings (the airdrop reviewer's E3, rule reviewer 1's rule 13) were fixed
+  with tests that fail without the fix (`wtest/conquest-wareffort` 8 and 9, green in CI on `e2014a4`), and rule reviewer 2's round 2
+  at `7be0955` re-ran rules 9, 12 and 13 with the rest. Two rounds each; no third round (nothing clearly broken).
 
+### Release record (Nov 25, 2026)
+- PR #157 merged by the auto-release workflow at 04:25 UTC as `804b68d` (a merge commit by `github-actions[bot]`; head `e2014a4`;
+  build `20261125032217`): all 19 checks green on the head (conquest, fortress, citadel, boards-titan (new in this session), town-ui,
+  guardrails, transmission chromium + webkit, signup-browsers chromium / webkit / firefox, website, balance, verify, asset-integrity,
+  owner-rules with the `owner-rules-change` label (CQ_PTS `titan` 1,600 and the boards' CP source: the brief's decisions), the
+  auto-release check and gate). Release pre-approved in the brief. The PR stayed a draft until both review rounds and this checkpoint
+  were done, then was marked ready with `auto-release`.
+- CI along the way (every failure investigated; no test skipped, deleted or loosened): section "CI fixes" above; later one WebKit
+  internal error in `signup-browser.cjs` on a navigation while the game was still loading (the test now waits for the game to finish
+  loading first, as its garage check does: `5dc5559`), and three flakes explained in PR comments: a town-screen scroll helper under CI
+  load (`town-ui`, passed on the next head), the flagship journey's CONFIRM BUILD click (`transmission chromium`, the known
+  environmental flake), and `conquest-frontier-recovery.mjs` (a seed flake that exists on main: 5 of 60 parallel runs on `a48305b`
+  failed, 2 of 60 on this branch, 20 of 20 sequential passed); superseded runs were cancelled when a newer commit was pushed.
+- Worker: `Deploy Stars server (Cloudflare)` run 45546722164 SUCCESS on `804b68d`, dispatched by the auto-release workflow (server
+  tests, the live-match smoke test in the Workers runtime, then deployed at 04:32 UTC: version id
+  `f6ba4e30-cf0d-42e8-a891-8ab820a4f362`, 24 changed assets uploaded (177 already there; 2,343.69 KiB, 604.21 KiB gzipped), startup
+  284 ms (the two deploys before read 385 and 171 ms: Cloudflare's reading varies), the crons `*/5`, `* 15-18` and the alert cron
+  `1-56/5` registered): `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`, live `version.json` =
+  `{"v":"20261125032217"}` = repo. The other push checks dispatched on main: owner-rules, equipment balance, lab UI, the Graphify
+  index.
+- GitHub Pages: `pages build and deployment` run 45546717852 SUCCESS on `804b68d` (04:27 UTC). This container cannot reach
+  workers.dev (network policy), so the live values come from the deploy job's own checks above.
+- Database rules: unchanged in this release (`database.rules.json` not touched), so `Deploy Firebase rules` did not run.
+- No live players: no migration code. Revert plan if broken: revert `804b68d` on main (both deploys follow main). Not needed.
+- Payments still off (`LAB_STORE_OPEN`, `CRYPTO_PAY` false); `AIRDROP.dist` false (nothing promises tokens); DAILY_CAP unchanged;
+  CQ_PTS gains `titan` 1,600 (the brief); the board rewards are the owner's bands (Nov 24); the War Effort pays no CP, salvage or
+  points; nothing bans.
+- This record and ROADMAP row 7C went to main in a second, docs-only PR from the same branch (restarted from main `804b68d`); row 7-V
+  now also lists 7C's visual hooks (the brief: "a hook for the Fable 7-V session"; lead's decision: the Titan's real look goes there
+  too, the next Fable session that draws the Living Front).
+
+### Open items and PROPOSALs (Session 7C), for the owner
+**PROPOSALs (not shipped; each needs the owner's decision):**
+1. **The Hive Titan's guaranteed 2 Tranquillityite a kill** (the decided LOOT.titan row; kept out by the brief's rule). Counted in
+   the fortress model, it moved `conquest-fortress` guard (e) 14.3 points at day 330 (limit 5); the Tranquillityite alone moved it 9.5.
+   Options: (a) ship it and accept guard (e) moving (a change to a guard, so the owner's call); (b) a smaller guaranteed drop (1 a kill,
+   or 2 every third kill), measured against guard (e) first; (c) rule reviewer 2's probe: the row without its 2% Moonheart but with the
+   Tranquillityite passed guard (e) at day 330, but the reading moves in whole raids (not monotonic), so it needs a full
+   `conquest-fortress` run before it can be offered. Lead's recommendation: (b), measured.
+2. **A War Effort cap per pilot** (two quotas, 300 campaign points a week), not shipped because the brief says every verified
+   operation adds. Without it one pilot can carry a small population's week (5 pilots, goal 450: one at 400 and four at 20 win it).
+   Lead's recommendation: adopt it before public promotion (the comparable community goals cap each player).
+3. **Real recorded play as the fingerprint fixtures** (phone touch and desktop keyboard): `cqrepeat` and `cqnoinput` are calibrated on
+   the synthetic human input model (`dev/tools/human-input-model.mjs`; no live players yet; no keyboard play in the fixtures). Record
+   real sessions (with consent) in the closed beta (row 10) and re-check that no flag fires before any airdrop snapshot.
+4. **The Hive Titan joins the next Grand Offensive if left alive** (blueprint §2's mode table): not in the old brief's D; it would add
+   THREAT to the weekend offensive (war balance), so not built.
+5. **Shard the shared warfront document before public launch:** every verified campaign point is a compare-and-swap on
+   `conquestWarfront/frontier-v1` (every contributor's lifetime count, up to 10,000, plus one entry per active pilot each week); at
+   launch scale that one document is the hot spot. Measure it in Session 9's load test and shard it (weekly sub-documents summed on
+   read) before row 14.
+6. **Load the website's first ~50 boot scripts together** (downloaded at once and run in order, as 7C's last 10 already are): today
+   each costs one network round trip, seconds of loading screen on a phone network. `web/boot.js` is a 5E-2d2 file, so only 7C's own
+   line changed; a small change for the session that owns the file.
+
+**Reported (decided or measured here; no action needed unless the owner wants one):**
+- **The board CP at its worst:** a pilot in the top 10% of all four CP boards every week (6,000 CP a week) reaches CC10 at a median day
+  16.8 (26.8 without; two boards a week: 17.8); CC5 unchanged. The boards reward the top pilots, as decided; the ladder guard's regular
+  is not in a board's top 10%.
+- **The never-walled builder** of fortress guard (f) meets stronger raids sooner on the measured Citadel days, pays 432,759 CP of
+  REPAIR (7B: 368,938) and does not reach CC10 within 200 days (7B: day 61.8). Not a guard (the coached ring is, and passes: CC10 median
+  27.8); it shows the first ring matters more.
+- **Session 8's requirement is still not met** (unchanged by 7C): in the fortress model the paying pilot is not fully built within the
+  year (`payerFullWithinYear` false; walls at 0.80 of full strength at day 365, the same as the grinder's).
+- **Expiries the brief does not set (lead's decisions, bounded memory, never a double payment):** a board grant expires unpaid after 12
+  weeks (3 thirty-day periods for the Titan's 30-day board); a War Effort week settles for 8 weeks. A pilot away from Conquest that long
+  loses them.
+- **A squad needs 2+ contributing members to rank** (lead's decision: a lone pilot is not a squad); a recruited pilot counts in its
+  recruiter's squad and in its own.
+- **`cqnoinput` kept by design:** three won operations of 15 s or longer with no change on any control flag a hands-off Battalion farm
+  (the old brief's A defines the flag so); it never bans, and the admin row explains it in plain words.
+- **The Titan's once-per-slot mark lives in the Conquest record** (like every operation's): a server-side reset of a record inside a
+  slot's window could pay that slot again, inside the daily cap (no live players; the Citadel bounty, outside the cap, is per account).
+- **The squad banner, the monument growth and the Titan's real look are data and stand-ins** until the Fable 7-V session draws them
+  (named hooks, listed on row 7-V; the call site is in view.js, a 5E-2d2 file).
+- **Two harmless code leftovers** (rule reviewer 2, round 2): the stale comment above `counted` (`js/conquest/wareffort.js`) and the
+  no-op `0/*...*/;` in `ldfOf` (`js/conquest/war.js`); for the next session that edits those files.
+- **A flaky test on main** (not from 7C): `conquest-frontier-recovery.mjs` failed 5 of 60 parallel runs on `a48305b` (its seeds come
+  from `createState`'s random draw); a session that touches the war code should pin its seeds or make its check seed-proof, never
+  looser.
+- **Graphify** did not connect from this container (proxy 403), so code was read directly; its bot also says its PR reviews are paused
+  for the workspace after 7 days unused (a workspace owner resumes them on Graphify's Repositories page).
+- **Agents used:** one research agent (before STEPs 2-4) and three read-only reviewers (two rule reviewers, one airdrop-integrity
+  reviewer), two rounds each, each in its own copy of the branch.
