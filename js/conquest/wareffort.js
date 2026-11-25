@@ -34,7 +34,7 @@ function lines(card,s,{el,now=Date.now()}={}){const v=s?.warfront?.we;if(!el||!c
  const L=v.last;if(L)el('small','cq-we-last',L.won?'LAST WEEK WON (TIER '+['','I','II','III'][L.tier]+') · HIGH MORALE: +1 DEFENSE ON EVERY TERRITORY THIS WEEK':'LAST WEEK '+Math.round(L.pct*100)+'% · NOTHING LOST · PUSH AGAIN',card);
  if(L?.top?.n)el('small','cq-we-squad','THE BANNER OF '+String(L.top.n).toUpperCase()+'\'S SQUAD FLIES AT THE MONUMENT THIS WEEK'+(v.mine?' · YOUR SQUAD':''),card);return card;}
 // the ticker line when last week's rewards arrive (js/conquest/app.js)
-function noticeText(n){const g=n?.got||{},bits=[];if(g.repair||g.scanner)bits.push('WAR EFFORT CRATE: '+(g.repair|0)+' REPAIR KIT'+((g.repair|0)===1?'':'S')+' + '+(g.scanner|0)+' SCANNER CHARGE');if(g.tier)bits.push('TIER '+['','I','II','III'][g.tier]+' PIECE UNLOCKED');if(g.fr)bits.push('YOUR SQUAD FLIES THE BANNER: +1 UNCOMMON FRAGMENT');
+function noticeText(n){const g=n?.got||{},bits=[];if(g.repair||g.scanner)bits.push('WAR EFFORT CRATE: '+(g.repair|0)+' REPAIR KIT'+((g.repair|0)===1?'':'S')+' + '+(g.scanner|0)+' SCANNER CHARGE');if(g.tier)bits.push('TIER '+['','I','II','III'][g.tier]+' PIECE UNLOCKED');if(g.fr){const n=Object.values(g.fr).reduce((a,b)=>a+(Number(b)||0),0)||1;bits.push('YOUR SQUAD TOPPED THE WAR EFFORT: +'+n+' UNCOMMON FRAGMENT'+(n>1?'S':''));}
  return (n?.won?'WAR EFFORT WON · ':'WAR EFFORT · ')+(bits.join(' · ')||'THANK YOU, PILOT');}
 root.ConquestWarEffort=Object.freeze({WE,HOOKS,weekOf,weekEnd,goalOf,counted,weekOfDoc,view,topSquad,lines,noticeText});
 })(globalThis);

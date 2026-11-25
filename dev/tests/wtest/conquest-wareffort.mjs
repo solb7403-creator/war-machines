@@ -71,4 +71,10 @@ const wk=WE.weekOf(now);db.root.players={tg_2:{ref:'tg_1'},tg_3:{ref:'tg_1'},tg_
  const m=mk(null),fr0=m.inv.fr?.u|0,rm=pilotWar(w0,'tg_56','tg_51',m,t);applyWarfront(m,rm,t);ok((rm.we.sqw||[]).includes(W)&&(m.inv.fr.u|0)===fr0+1&&!(m.inv.it.scanner|0),'a member who played neither that week nor the week after: the fragment when it returns (no crate)');
  const fr1=m.inv.fr.u|0;applyWarfront(m,pilotWar(w0,'tg_56','tg_51',m,t),t+1000);const o=mk({w:W,c:50});applyWarfront(o,pilotWar(w0,'tg_55','tg_53',o,t),t);
  ok((m.inv.fr.u|0)===fr1&&(o.inv.it.scanner|0)===1&&!(o.wsq||[]).length,'... once; a contributor of the other squad gets the crate of the won week and no fragment');}
+// ---- 9. review round 2 (airdrop integrity, E3): a week with no top squad never falls back to an older week's top squad ----
+{const {pilotWar}=await import('../../../worker/src/conquest-warfront.js');const t=now+70*DAY,W=WE.weekOf(t),Q2=WE.WE.quota;
+ db.root.conquestWarfront['frontier-v1']={v:1,score:5000,participants:40,contributions:{},updatedAt:t-DAY,we:{w:W-1,n:3,score:200,c:{tg_610:100,tg_611:50,tg_612:50},sq:{tg_610:100,tg_611:50,tg_612:50},sqn:{tg_610:1,tg_611:1,tg_612:1}},
+  prev:{w:W-2,n:5,score:Math.round(5*Q2*.6*1.2),top:{id:'tg_600',n:'Sentinel',bn:null,s:600,k:3}},hist:{[W-2]:{n:5,score:Math.round(5*Q2*.6*1.2),top:{id:'tg_600',n:'Sentinel',bn:null,s:600,k:3}}}};
+ const w0=await syncWarfront(env,'tg_601',0,t,{squad:'tg_600'}),x=createState(R.STOCK_L,t),rx=pilotWar(w0,'tg_601','tg_600',x,t);applyWarfront(x,rx,t);
+ ok(w0.we.last?.w===W-1&&!w0.we.last.top&&rx.we.mine===0&&!(x.wsq||[]).includes(W-1)&&(x.wsq||[]).includes(W-2),'9. last week had no top squad: no fragment for it (the week before, which the squad did top, pays its own once)');}
 console.log(JSON.stringify({test:'conquest-wareffort',pass}));

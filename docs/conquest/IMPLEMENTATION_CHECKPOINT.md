@@ -8007,3 +8007,21 @@ what each changed here:
     (5E-2d2 should keep it when it edits that file); (6) the board-CP report is the top pilots, not the guarded regular; (7) the
     Tranquillityite PROPOSAL names the smaller-drop option; (8) the hub's five-card fix ran in CI's `conquest` job at `0a1d760` (green).
 
+### Reviews, round 2 (the last: at `9defc63`; fixes in `edff140` and after)
+- **Rule reviewer 1:** rule 9 PASS (the 30-day Titan total now 300,000 for 60 slots x 5,000; 22 idle + 3 scorers is a small field paying
+  nothing), rule 12 PASS (away a week, back a week later: paid once), notes 2 and 4 PASS; **rule 13 FAIL -> fixed in `edff140`:** a
+  recruited leader's points counted only in its recruiter's squad, so its own squad's sum left it out (R 300 + A 100 lost to Q's
+  350). A recruited pilot now counts in its own squad as well (a squad is "a recruiter and the pilots it recruited": the leader is in
+  both); a pilot nobody follows forms a one-member squad, which never ranks (2+ members). The narrower gap: a member away both the won
+  week and the week after now gets that week's fragment when it returns (every finished week the document keeps whose top squad it
+  belongs to: `we.sqw`); and the note-1 edge: a won week nobody rolled over (no contribution since) still settles: the document's open
+  week counts as finished once it is over (`_open`). Tests: `wtest/conquest-wareffort` 8 (the chain R0 -> R -> A against Q's squad,
+  the unrolled week, the absent member, once).
+- **Airdrop integrity:** C3, C6, B6 and the five notes PASS (attack scripts re-run: 70 grants over 35 weeks pay the 24 live ones once
+  and clear 46 expired unpaid; 75 grants of every band of every live period paid once; the cqalt keep moves and pairs; the beacon;
+  64 slots; no flag text on the phone; settling at +71 min; the marker only with its row); E1 and E2 PASS (the War Effort pays once a
+  week, never points, CP or salvage). **E3 FAIL -> fixed:** when last week had no top squad (no squad with 2+ contributing members),
+  the hidden `_top` fell back to the week before's top squad, so its members were paid a fragment for a week their squad did not top.
+  `_top` is now last week's own top squad or nothing (`wtest/conquest-wareffort` 9). Note 1 acted on: a notice paying two weeks'
+  fragments says "+2 UNCOMMON FRAGMENTS".
+
