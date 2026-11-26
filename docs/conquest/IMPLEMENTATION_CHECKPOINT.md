@@ -8172,8 +8172,16 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
   the owner-rules.json `rules` entry dropped; refortMs back to 7 days (168 h); refortMs 25 h. refortMs 24 h (the owner's maximum)
   PASSES, as it must. Every mutation reverted.
 - **Slice 5 (reviews round 1 at `5cf8ae7`, fixes `7364d51`-`0355b02` + the paraphrase fix):** details under "Reviews" below.
-- Next: review round 2 (the same three reviewers' briefs, at the fixed head), then slice 6 (release: ready + `auto-release`, verify the
-  deploy, then the release record).
+- **Slice 6 (review round 2 at `a183a00`, fix `a251615`):** every brief item and every owner rule PASS from all three reviewers (below).
+- Next: slice 7 (release): PR #160 ready + `auto-release` once CI is green on the head; verify the deploy; then a docs-only PR with the
+  release record and the ROADMAP row.
+
+### Tests run locally at the end (head `a251615`; all PASS)
+`owner-rules` 58 (+ 7 mutation proofs, slice 4); `conquest-citadel` 84; `wtest/conquest-citadel-payout` 25; `conquest-citadel-pace` 33
+(SIMULATED); `conquest-citadel.py` 5 of 5 sizes (390x844, 390x700, 320x568 touch; 1366x768, 1920x1080 mouse + keyboard);
+`conquest-fortress` 14 (SIMULATED); `conquest-analytics` 24; `conquest-streak` 64; `wtest/conquest-boards` 35; `wtest/conquest-wareffort` 33;
+`wtest/accounts` 18; `wtest/referrals` 29; the Citadel pace model `dev/tools/citadel-pace.mjs` (SIMULATED). No playtesting was done:
+nothing here is evidence of enjoyment.
 
 ### Reviews (three independent read-only reviewers in their own worktrees, given the branch, head, brief and checkpoint, not the lead's conclusions)
 **Round 1 (`5cf8ae7`).** Reviewer A (every brief item, every owner rule): STEP 1 PASS (texts byte-identical in all seven places, its own
@@ -8205,6 +8213,14 @@ Findings and what was done:
    `docs/conquest/session6b/OWNER_RULES_6B.md` not given the text (A: it is Session 6B's record of its own prompt, not a file sessions
    read as instructions); the `owner-rules-change` label added by the lead (A: the brief orders the owner-rules.json entry, as in
    Sessions 7T and 7C); Act I is shallow on rare gear (A, B: PROPOSAL 1, ships as the owner's approved change).
+
+**Round 2 (`a183a00`).** Reviewer A: STEP 1, STEP 2, Rule 1, Rule 2, the existing owner rules and guards, correctness: all PASS; every
+round-1 finding fixed or recorded (it put the old `opensAt` back and the new clock check failed, so the check guards the bug; it ran the
+journey at five sizes: PASS). Reviewer B: Rule 1, Rule 2, side effects, correctness: all PASS (the re-taken captures read "open now" and
+fit). Reviewer C: bounties exactly once, airdrop points, no exploit path (the `opensAt` change is display-side: the tier-order gate runs
+first and the Worker judges launches on its own clock), Rule 1, Rule 2: all PASS. Two low points (A and B): the restored heavy-player
+check used a looser form than main's -> FIXED in `a251615` (main's strict form: heavy after the grinder's latest day and before the
+regular's earliest; PASS, 33); "1 days" for a cooldown of exactly 24 h -> FIXED ("1 day"). No round 3 (the brief: at most 2 rounds).
 
 ### STEP 2: the Citadel cooldown (owner Rule 1: "a matter of hours, with 24 hours being the absolute maximum, if a cooldown is even necessary")
 - **Choice: none** (`js/conquest/citadel.js` `CIT.refortMs:0`; the field and the gate code stay, so a future owner decision of some hours
