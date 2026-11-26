@@ -49,6 +49,13 @@
       ".indexOn": [
         "nx"
       ]
+    },
+    "orders": {
+      "$pid": {
+        ".indexOn": [
+          "t"
+        ]
+      }
     }
   }
 }

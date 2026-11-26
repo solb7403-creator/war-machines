@@ -4,7 +4,7 @@ import {citadelBoardPost} from './conquest-citadel-board.js';
 import {COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {BASE_ACTIONS} from './conquest-campaign.js';
 import {PLOT_ACTIONS,MINERAL_PLOT_ACTIONS,BIG_PLOT_ACTIONS} from './conquest-plot.js';
-import {readEco,readTag,writeIf,creditConquest} from './eco.js';
+import {readEco,readTag,writeIf,creditConquest,tx as ecoTx} from './eco.js';
 import {weDue,pilotWar} from './conquest-warfront.js';
 import {altNote} from './conquest-alt.js';   // Session 7C STEP 2
 import {postBoards,pendingGrants,applyGrants,clearGrants} from './conquest-boards.js';   // Session 7C STEP 3
@@ -69,7 +69,7 @@ const premiumCaches=new WeakMap();
 async function premiumPass(env,pid,now){const cache=premiumCaches.get(env)||new Map();premiumCaches.set(env,cache);const hit=cache.get(pid);if(hit&&now-hit.at<60000)return hit.value;let value;try{value=passPremium(await readEco(env,pid),now);}catch{return false;}if(cache.size>=5000)cache.delete(cache.keys().next().value);cache.set(pid,{at:now,value});return value;}
 async function canonical(env,pid,now=Date.now()){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');const day=Math.floor(now/86400000),lgi=S.lgi|0;
  // The HUD's airdrop numbers come from the account on every session open (today's points across all modes, league pay).
- const loadout=S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L);return {loadout,legacy:S.cqState?.v===1?S.cqState:null,rsAcct:researchCtx(S,now),batAcct:batCtx(S,loadout),view:{d:day,dailyPts:S.dailyDay===day?Math.max(0,(S.dailyPts||0)-(S.fx&&S.fx.d===day?S.fx.n|0:0)):0,cap:RULES.DAILY_CAP,cq:S.cqd?.d===day?S.cqd.b||0:0,lgi,pay:RULES.LG_BASE_PAY[lgi]||1,at:now,mn:RULES.mnOf(S.mn),ap:RULES.apOf(S.ap),pts:Math.max(0,Math.round(Number(S.pts)||0)),bmn:RULES.mnOf(S.bmn),rm:Object.keys(S.rm||{}).filter(k=>S.rm[k])}};}
+ const loadout=S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L);return {loadout,legacy:S.cqState?.v===1?S.cqState:null,rsAcct:researchCtx(S,now),batAcct:batCtx(S,loadout),rsjAt:{...(S.rsjAt&&typeof S.rsjAt==='object'?S.rsjAt:{})},view:{d:day,dailyPts:S.dailyDay===day?Math.max(0,(S.dailyPts||0)-(S.fx&&S.fx.d===day?S.fx.n|0:0)):0,cap:RULES.DAILY_CAP,cq:S.cqd?.d===day?S.cqd.b||0:0,lgi,pay:RULES.LG_BASE_PAY[lgi]||1,at:now,mn:RULES.mnOf(S.mn),ap:RULES.apOf(S.ap),pts:Math.max(0,Math.round(Number(S.pts)||0)),bmn:RULES.mnOf(S.bmn),rm:Object.keys(S.rm||{}).filter(k=>S.rm[k])}};}
 // Session 6B: what research reads from the account (eco record): bonus parts (Lunar Pass premium tiers, part packs), instant-finish
 // credits (written only by a verified purchase; checkout is off until Session 8) and the current season's premium pass (slot + 25%).
 function researchCtx(S,now){const prem=RULES.passResearch(passPremium(S,now));   /* the pass's research perks wait for the Lab store (rules.js passResearch) */return {bpt:{...(S.bpt||{})},bch:Math.max(0,S.bch|0),rsx:{...(S.rsx||{})},lsm:{...(S.lsm||{})},prem:prem?1:0,premium:prem};}
@@ -103,9 +103,13 @@ function result(r){return r.error?response(r.status||409,r.error,r.state):{statu
 export function publicHot(s){const {hot}=splitState(s),{lastDigest,rate,raidRoll,fpa,...out}=hot;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData','tz'])||a.b.tz!==undefined&&!(Number.isSafeInteger(a.b.tz)&&Math.abs(a.b.tz)<=840))return response(400,'invalid conquest session');
- const {loadout:L,legacy,view,rsAcct,batAcct}=await canonical(env,a.pid,now);const grants=await pendingGrants(env,a.pid,now);   // Session 7C: board rewards waiting for this pilot
+ const {loadout:L,legacy,view,rsAcct,batAcct,rsjAt}=await canonical(env,a.pid,now);const grants=await pendingGrants(env,a.pid,now);   // Session 7C: board rewards waiting for this pilot
  const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);researchAccount(state,rsAcct,now);batAccount(state,batAcct,now);if(!state.mission)batField(state,state.battle,state.position,'wing');refitState(state,L);reportTz(state,a.b.tz);applyGrants(state,grants.ok,now);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state),wal=alertChange(state,now);return {state,anq,wal};},now);
  if(!r0.abort&&(Object.keys(grants.ok).length||grants.bad.length))await clearGrants(env,a.pid,[...Object.keys(grants.ok).filter(id=>(r0.state?.gra||[]).includes(id)),...grants.bad]);   // applied once by id (or not in its settlement: unpaid), then off the inbox
+ // Session 8: a Legendary reservation older than 10 minutes whose research job never started (a request that died between the two
+ // writes) is released, so the mod can be researched or bought again
+ {const st=r0.abort?null:r0.state,stale=st?Object.entries(rsjAt||{}).filter(([id,at])=>now-Number(at)>600000&&!(st.rs?.jobs||[]).some(j=>j&&j.mod===id)&&!st.rs?.done?.[id]):[];
+  if(stale.length)await ecoTx(env,a.pid,S=>{let n=0;for(const [id,at] of stale)if(S.rsjAt?.[id]===at&&!S.rm?.[id]){delete S.rsj[id];delete S.rsjAt[id];n++;}return n?{}:{abort:true};},now).catch(()=>{});}
  if(!r0.abort&&r0.cv)await sweep(env,a.pid,r0.cv,r0.cvn,now);   // Session 6C: orphan cold blobs (an attempt that died between its blob and its CAS), throttled
  if(!r0.abort&&r0.anq?.length)await flush(env,r0.anq,r0.state?.an?.f,now);   // Session 6 analytics: entry, cohort and return, after the write
  if(!r0.abort&&r0.wal)await writeAlertDoc(env,a.pid,r0.wal);   // Session 7: the war alert schedule (only when it changed), after the write
@@ -147,11 +151,24 @@ export async function conquestAction(env,a,now=Date.now()){
  if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS,...BAT_ACTIONS,...WAR_ACTIONS,...TOWN_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
  if(a.b.plot!==undefined&&JSON.stringify(a.b.plot).length>(BIG_PLOT_ACTIONS.includes(a.b.action)?9000:2400))return response(400,'invalid conquest action fields');
  const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod','bat','war','town'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
+ // Session 8 (Checkpoint 41 open item 6): a Legendary set mod's research start reserves the mod on the account FIRST, in the account CAS
+ // (S.rsj, stamped in S.rsjAt; refused when the mod was bought or a quote for it is open), so a purchase and a research start can never
+ // both win: the purchase's grant checks S.lsm / S.rm / S.rsj in the same CAS. A reservation whose job did not start is released below.
+ let legRes=null;
+ if(a.b.action==='research-start'&&typeof a.b.mod==='string'&&RULES.rmodOf(a.b.mod)?.F?.leg){const id=a.b.mod;let why=null;
+  const t=await ecoTx(env,a.pid,S=>{why=null;S.rsj=S.rsj&&typeof S.rsj==='object'&&!Array.isArray(S.rsj)?S.rsj:{};S.rsjAt=S.rsjAt&&typeof S.rsjAt==='object'&&!Array.isArray(S.rsjAt)?S.rsjAt:{};
+   if(S.lsm?.[id]){why='bought';return {abort:true};}if(S.rm?.[id]){why='done';return {abort:true};}
+   if(Object.entries(S.ord||{}).some(([k,v])=>k==='rsleg:'+id&&v&&v.e>now)){why='open';return {abort:true};}
+   if(S.rsj[id]){why='held';return {abort:true};}S.rsj[id]=1;S.rsjAt[id]=now;return {};},now);
+  if(why==='bought')return response(409,'conquest: already yours: bought in the Lab store');
+  if(why==='open')return response(409,'conquest: you have an open payment for this mod in the Lab store: finish it or cancel it first');
+  if(!t.abort)legRes={id,at:now};}
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
  const ctx=a.b.action==='recall-start'||a.b.action==='war-fortify'?{premium:await premiumPass(env,a.pid,now)}:   /* Session 7: the Lunar Pass Fortify perks (behind the store flag) */MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:RESEARCH_ACTIONS.includes(a.b.action)?researchCtx(RULES.ecoNorm(await readEco(env,a.pid)),now):['hangar-arm','hangar-livery','hangar-gear'].includes(a.b.action)?await (async()=>{const S=RULES.ecoNorm(await readEco(env,a.pid));return batCtx(S,S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L));})():{};   /* Session 6C: AUTO-ARM and liveries read the account once */   /* Session 6B: research reads the account once (bonus parts, finish credits, premium pass) */const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
  const out=await submit(env,a,request,(p,r,n)=>owner&&p?.dev?.on?unlimited(p,q=>instant(applyAction(q,r,n,{...ctx,bmn:Object.fromEntries(Object.keys(RULES.mnOf({})).map(k=>[k,9e6]))}),n)):applyAction(p,r,n,ctx),now);
  if(out.status===200&&!out.body?.replayed&&out.body?.state?.cit?.lb?.at===now)await citadelBoardPost(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // Session 7B: the Throne Run board (a clear settled by an action)
+ if(legRes&&(out.status!==200||!(out.body?.state?.rs?.jobs||[]).some(j=>j&&j.mod===legRes.id)))await ecoTx(env,a.pid,S=>{if(S.rsjAt?.[legRes.id]!==legRes.at||S.rm?.[legRes.id])return {abort:true};delete S.rsj[legRes.id];delete S.rsjAt[legRes.id];return {};},now).catch(()=>{});   // Session 8: the job did not start: our reservation goes
  // Session 5: publish the plot's public snapshot (visits, top 20, Base of the Week) after a verified plot change. Best effort.
  if(out.status===200&&out.body?.state?.plot&&!out.body.replayed&&(PLOT_ACTIONS.includes(a.b.action)||['build-base','upgrade-base','base-module'].includes(a.b.action)))await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});
  return out;

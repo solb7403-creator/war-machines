@@ -920,7 +920,7 @@ function ecoNorm(S,opt){
   const w=obj('wmn');for(const k of Object.keys(w))if(!SHOP.ore[k])delete w[k];for(const k of SHOP.oreOrder)w[k]=Math.max(0,Math.min(1e6,Math.floor(Number(w[k])||0)));
   const fx=obj('cfx');for(const k of Object.keys(fx))if(!cfxKey(k)||!fx[k])delete fx[k];else fx[k]=1;
   const od=obj('ord');for(const k of Object.keys(od)){const v=od[k];if(!v||typeof v!=='object'||typeof v.q!=='string'||!(Number(v.e)>0)||k.length>60)delete od[k];}
-  const ra=obj('rsjAt');for(const k of Object.keys(ra))if(!rmodOf(k)||!(Number(ra[k])>0))delete ra[k];}
+  const ra=obj('rsjAt');for(const k of Object.keys(ra))if(!rmodOf(k)||!(Number(ra[k])>0)||!(S.rsj&&S.rsj[k]))delete ra[k];}
  S.mn=mnOf(S.mn);S.ap=apOf(S.ap);if(S.bmn!==undefined)S.bmn=mnOf(S.bmn);if(S.mnw&&typeof S.mnw==='object'){S.mnw={w:S.mnw.w|0,n:Math.max(0,S.mnw.n|0),p:S.mnw.p?1:0};}else delete S.mnw;   // minerals, Hull Plating, weekly league minerals
  return S;
 }

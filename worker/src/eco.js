@@ -562,7 +562,7 @@ export async function creditConquest(env, pid, out, now = Date.now()) {
     // Session 7B: each Citadel bounty id once per account, outside the daily cap (R.ecoBounty: S.cbty; the amount is the table's, by id)
     let bounty = 0;for (const id of [...bty, ...late]) { const n = R.ecoBounty(S, id, X); bounty += n; if (n) btyPaid[id] = n; }
     if (rsj.length) { S.rsj = S.rsj && typeof S.rsj === "object" && !Array.isArray(S.rsj) ? S.rsj : {}; for (const id of rsj) S.rsj[id] = 1; }
-    if (rm.length) { S.rm = S.rm && typeof S.rm === "object" && !Array.isArray(S.rm) ? S.rm : {}; for (const id of rm) { S.rm[id] = 1; if (S.rsj) delete S.rsj[id]; } }   // researched: no longer "being researched"
+    if (rm.length) { S.rm = S.rm && typeof S.rm === "object" && !Array.isArray(S.rm) ? S.rm : {}; for (const id of rm) { S.rm[id] = 1; if (S.rsj) delete S.rsj[id]; if (S.rsjAt) delete S.rsjAt[id]; } }   // researched: no longer "being researched"
     if (op) R.ecoPlayDay(S, X);
     if (fresh.length) S.cqw = fresh[fresh.length - 1].id;
     S.cqd = S.cqd && S.cqd.d === X.day ? S.cqd : { d: X.day, b: 0, ms: 0, n: 0 };

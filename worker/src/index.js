@@ -12,6 +12,7 @@ import {lunarAuth,resolveTelegramAccount,approveTelegramLunarLink} from "./lunar
 import {accountAuth,googleAuth,apiCallsign,apiTelegramLink,csOf,funnelDays} from "./accounts.js";
 import {ACCOUNT_TYPES} from "./web-auth.js";
 import { ownerGemEpic, ownerCheck } from "./owner.js";
+import { orderApi, quote, preCheckout, starsPaid, starsRefund, liveRates, railsFor, gramInTelegram, publicOrder } from "./shop.js";   // Session 8: the certified checkout
 import {conquestSession,conquestInput,conquestAction,conquestEvent} from "./conquest.js";
 import {conquestStanding} from "./conquest-standing.js";   // Session 7C STEP 2
 import {cqAltScan} from "./conquest-alt.js";
@@ -30,14 +31,9 @@ const CHANNEL_URL = RULES.TG_URL || "https://t.me/LUNARmemecoin";
 const ADMINS = ["lunarbattle"]; // Telegram usernames allowed to see the admin stats (lowercase)
 
 // ---- prices: one table, js/rules.js (RPRICE, RSTARS, PREMIUM, PASS_PRICE, PAINTS); the server charges those ----
-const PAINT_NAMES = { nebula: "Nebula", ember: "Ember", arctic: "Arctic", venom: "Venom", gold: "Gold Plate", void: "Void" };
 const TERMS_URL = "https://solb7403-creator.github.io/war-machines/terms.html";
 const SUPPORT_TEXT = "Need help with a purchase?\n\nMessage @LunarBattle with your Player ID (in the game: Settings, top right) and roughly when you bought. We reply within 48 hours.\n\nTelegram support can't help with purchases made in this bot. Terms: " + TERMS_URL;
 
-// ---- TON / SOL verification ----
-const TON_RECIPIENT = "UQAq3MBfPQ7Wqo5kL7631yEDKf2E9GOmZdhOfLUWhUiACfzu";
-const SOL_RECIPIENT = "A37J13iXXA47n4kFKvR9Cao1u8A6v3HP8qMCSCJDi7AE";
-const SOL_RPCS = ["https://solana-rpc.publicnode.com", "https://api.mainnet-beta.solana.com"];
 
 // webhook secret derived from the bot token, so it never needs storing separately
 export async function webhookSecret(env) { return hex(await hmac(env.BOT_TOKEN, "lunar-webhook")).slice(0, 48); }
@@ -109,21 +105,12 @@ async function auth(req, env) {
   return { b, user, pid, ip: req.headers.get("CF-Connecting-IP") || "", sp };
 }
 
-function itemLabel(k, tk, ri) {
-  if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
-  if (k === "core") return ["Common", "Rare", "Epic"][ri ?? 0] + " chosen core: " + (RULES.isGem(tk) ? RULES.GEM[tk].name : "Core");
-  if (k === "gear") { const g = RULES.gearTk(tk); return ["Common", "Rare", "Epic"][ri ?? 0] + " chosen " + (g === "weapon" ? "weapon: " + RULES.WNAMES[tk][ri ?? 0] : g === "chassis" ? "chassis: " + RULES.CNAMES[tk][ri ?? 0] : "item"); }
-  if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
-  if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
-  if (k === "vault") return "Hyperspace Vault: " + ((RULES.VAULT[tk] || {}).n || "Gold");
-  return k === "moonbeam" ? "Moonbeam" : k === "skin" ? "Lunar Skin" : k === "starter" ? "Starter Pack" : k === "founder" ? "Founder Pack" : k === "respec" ? "Build reset (keep all points)" : "Purchase";
-}
 
 // ================= /api/sync =================
 // No points come in here any more: every point comes from a named source the server checks (a scored match, a claim).
 // Sync sets the name, the referrer (once), the loadout the pilot fields (power and league from what they own), the
 // one-time move of an existing pilot's progress from their phone, and returns the server's record.
-export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = "") {
+export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = "", web = false) {
   const name = cleanName(user), d = dayOf(now);
   const rec = (await dbGet(env, `players/${pid}`).catch(() => null)) || null;
   const paid = b.mig && typeof b.mig === "object" ? await paidRecords(env, pid) : null;
@@ -186,6 +173,10 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = ""
     rec: { ac: S.ac || 0, pts: RULES.ecoBase(S), dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
   // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
   if (b.boot) out.stars = await undeliveredStars(env, pid, now);
+  // Session 8: the rails this surface may pay with (the GRAM switch in Telegram) and any open quote to resume (a GRAM or SOL payment
+  // the phone should keep checking until it confirms)
+  out.pay = { rails: await railsFor(env, web) };
+  if (S.ord && Object.values(S.ord).some((v) => v && v.e > now - 60000)) { const all = (await dbGet(env, `orders/${pid}`, { orderBy: '"t"', limitToLast: 10 }).catch(() => null)) || {}; out.pay.open = Object.values(all).filter((o) => o && o.st === "open" && o.cur !== "STARS" && o.e > now - 7 * 86400000).map((o) => publicOrder(o, now)); }
   // the ghost report: what your tank did in other pilots' matches while you were away. Cleared once the phone has shown it
   const gr = b.boot || b.ghAck ? await dbGet(env, `ghr/${pid}`).catch(() => null) : null;
   if (gr && b.ghAck && Number(b.ghAck) >= (gr.last || 0)) await dbDel(env, `ghr/${pid}`).catch(() => {});
@@ -246,160 +237,14 @@ async function inviterOf(env, sp, code) {
   return typeof owner === "string" && /^(?:tg|ln)_\d{3,15}$/.test(owner) ? owner : null;
 }
 
-// ================= /api/pay-log =================
-// TON and SOL purchases: the phone reports the order, the server finds the payment on-chain itself (TON: the order note
-// and the amount; SOL: the signature and the amount), records each transaction once, checks the price against its own
-// record, and only then grants the item. Nothing is granted on the phone's word.
-async function verifyTon(memo, amt) {
-  try {
-    const r = await fetch(`https://toncenter.com/api/v2/getTransactions?address=${TON_RECIPIENT}&limit=50`);
-    const d = await r.json();
-    for (const t of d.result || []) {
-      const val = parseInt((t.in_msg || {}).value || "0", 10) / 1e9;
-      if (memo && String((t.in_msg || {}).message || "") === memo && val + 1e-9 >= amt * 0.999) return t.transaction_id && t.transaction_id.hash ? { hash: t.transaction_id.hash, src: String((t.in_msg || {}).source || "") } : null;
-    }
-  } catch {}
-  return null;
-}
-async function verifySol(sig, amt) {
-  if (!/^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(String(sig || ""))) return false;
-  for (const url of SOL_RPCS) {
-    try {
-      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getTransaction", params: [sig, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "confirmed" }] }) });
-      const d = await r.json();
-      const tx = d.result;
-      if (!tx || !tx.meta || tx.meta.err) continue;
-      const keys = tx.transaction.message.accountKeys.map((k) => k.pubkey || k), i = keys.indexOf(SOL_RECIPIENT);
-      if (i < 0) return false;
-      return (tx.meta.postBalances[i] - tx.meta.preBalances[i]) / 1e9 + 1e-9 >= amt * 0.999 ? String(keys[0] || "payer") : false;   // the payer's wallet
-    } catch {}
-  }
-  return false;
-}
-// the launch liquidity fund: LP_SHARE of every verified shop sale goes into the $LUNAR liquidity pool at launch. Sales are
-// counted in US cents (meta/revc) as the server prices them (Stars at Telegram's ~1.3 cents, TON and SOL at the live TON
-// price), never the phone's number; refunds come off. The board file shows the fund (lb.lpf), the Ranks tab and Shop too
-const LP_SHARE = 0.25;   // not exported: the Workers runtime only accepts handlers and classes as exports of the main module
-let TONUSD = { v: 0, t: 0 };
-// Session 6B: the live TON and SOL dollar rates for the website's price labels (its security policy keeps third-party connections
-// out, so the page reads them same-origin here). Cached five minutes per isolate; the last good pair is served if the source fails.
-// A failed lookup is remembered for a minute and one lookup is shared by every request in flight (review F4: no upstream fan-out).
-let RATES = { ton: 0, sol: 0, t: 0, fail: 0 }, RATES_P = null;
-async function liveRates() {
-  const now = Date.now();
-  if (RATES.t && now - RATES.t < 300000) return RATES;
-  if (RATES.fail && now - RATES.fail < 60000) return RATES;
-  if (RATES_P) return RATES_P;
-  RATES_P = (async () => {
-    try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json(); const t = Number(d["the-open-network"].usd), so = Number(d.solana.usd); if (t > 0 && so > 0) { RATES = { ton: t, sol: so, t: Date.now(), fail: 0 }; TONUSD = { v: t, t: Date.now() }; return RATES; } } catch {}
-    RATES = { ...RATES, fail: Date.now() }; return RATES;
-  })().finally(() => { RATES_P = null; });
-  return RATES_P;
-}
-async function tonUsd() {
-  if (TONUSD.v && Date.now() - TONUSD.t < 300000) return TONUSD.v;
-  try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd")).json(); const v = Number(d["the-open-network"].usd); if (v > 0) TONUSD = { v, t: Date.now() }; } catch {}
-  return TONUSD.v;
-}
-const revAdd = (env, cents) => (cents ? dbPatch(env, "meta", { revc: { ".sv": { increment: Math.round(cents) } } }).catch(() => {}) : null);
-// SOL is priced off the TON price at live rates; the server checks it's in the right range (skipped if prices are unavailable)
-async function solValueOk(sol, ton) {
-  try {
-    const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json();
-    const t = d["the-open-network"].usd, s = d.solana.usd;
-    if (t > 0 && s > 0) return sol * s >= ton * t * 0.85;
-  } catch {}
-  return true;
-}
-const descOf = (d) => {
-  d = d && typeof d === "object" ? d : {};
-  const kind = String(d.kind || "");
-  const c = RULES.isCh(d.c) ? d.c : null;   // the chassis a gem cache, chosen core, pack's gem caches or reset is for (5E-2b3)
-  if (kind === "box") return ["gem", "weapon", "chassis"].includes(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri), deal: d.deal === "d" || d.deal === "w" ? d.deal : null, c } : null;
-  if (kind === "core") return RULES.isGem(d.tk) && [0, 1, 2].includes(Number(d.ri)) && c ? { kind, tk: d.tk, ri: Number(d.ri), c } : null;
-  if (kind === "gear") return RULES.gearTk(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri) } : null;   // a chosen weapon or chassis (Checkpoint 39)
-  if (kind === "paint") return RULES.PAINTS[d.id] && RULES.PAINTS[d.id].stars ? { kind, id: d.id } : null;
-  if (kind === "vault") return RULES.VAULT[d.tk] ? { kind, tk: d.tk } : null;   // a Hyperspace Vault bundle (Gold, looks only)
-  // Session 6B Science Lab store (part packs, Legendary set mods, instant finish): CHECKOUT OFF in every currency. Refused here, so no
-  // Stars invoice, TON or SOL payment can buy one. Opening it is an owner decision: set RULES.LAB_STORE_OPEN, add the kinds to the
-  // Stars payload and grant paths below, and price "rsfin" from the Conquest record's running job (never from the phone).
-  if (kind === "rspack" || kind === "rsleg" || kind === "rsfin") return null;
-  // Session 6C Battalion store (chip pack, liveries, RECRUIT instant finish): CHECKOUT OFF (RULES.BAT_STORE_OPEN false) in every
-  // currency, refused here like the Lab kinds; ecoGrant enforces the same sale rules itself (batSaleOk)
-  if (RULES.BAT_KINDS.includes(kind)) return null;
-  return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind, c } : null;
-};
-async function payLog(env, b, user, pid, now = Date.now()) {
-  const cur = b.cur === "SOL" ? "SOL" : b.cur === "TON" ? "TON" : null;
-  if (!cur) return { error: "cur" };
-  const memo = String(b.memo || "").slice(0, 64);
-  if (!memo.startsWith("LWM|" + pid + "|")) return { error: "memo" };
-  const amt = num(b.amt, 0, 100000), key = `payments/LWM_${safeKey(memo)}`;
-  const have = await dbGet(env, key).catch(() => null);
-  const desc = descOf(b.desc);
-  if (have && (have.granted || !desc)) { const S = await readEco(env, pid); return { ok: true, dup: true, verified: have.verified === true, out: have.o || [], E: pub(S) }; }
-  const rec = { pid, name: cleanName(user), cur, amt, gram: num(b.gram, 0, 100000), usd: num(b.usd, 0, 1e6), item: String(b.item || "").slice(0, 40), memo, proof: String(b.proof || "").slice(0, 120), t: { ".sv": "timestamp" } };
-  if (!desc) {   // an old phone without the order details: logged and checked, not granted here
-    rec.verified = cur === "TON" ? !!(await verifyTon(memo, amt)) : !!(await verifySol(rec.proof, amt));
-    await dbPut(env, key, rec);
-    return { ok: true, verified: rec.verified };
-  }
-  const S0 = await readEco(env, pid), X0 = ctxOf(pid, now), price = RULES.ecoPrice(S0, desc, X0);
-  if (!price) return { error: "item" };
-  const need = cur === "TON" ? Math.max(amt, price.ton) : amt;
-  if (cur === "TON" && amt + 1e-9 < price.ton * 0.999) return { error: "amount" };
-  if (cur === "SOL" && (rec.gram + 1e-9 < price.ton * 0.999 || !(await solValueOk(amt, price.ton)))) return { error: "amount" };
-  let txid = null, src = "";
-  if (cur === "TON") { const tv = await verifyTon(memo, need); if (tv) { txid = tv.hash; src = tv.src; } }
-  else { const payer = await verifySol(rec.proof, amt); if (payer) { txid = rec.proof; src = payer; } }
-  if (!txid) { if (!have) await dbPut(env, key, { ...rec, verified: false }); return { ok: true, verified: false, error: "pending" }; }
-  // each on-chain transaction pays for one order
-  const once = await claimOnce(env, `${cur === "TON" ? "tonTx" : "solTx"}/${safeKey(txid)}`, { pid, memo, t: now });
-  if (!once.ok && !(once.v && once.v.memo === memo)) return { error: "reused" };
-  const t = await tx(env, pid, (S, X) => {
-    S.gout = S.gout || {};
-    const gk = safeKey(memo);
-    if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
-    // a Lab store item already owned by now (a second order paid for the same thing, Session 6B review F5): nothing is granted, the
-    // payment is kept for a refund. Other kinds keep their own rule (a chosen item owned when its payment lands is re-rolled, Checkpoint 39)
-    const outs = RULES.LAB_KINDS.includes(desc.kind) && RULES.ecoOwned(S, desc, X) ? [{ none: 1, err: "owned" }] : RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
-    if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "gear" || desc.kind === "box") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
-    S.gout[gk] = outs.length ? outs : [{ none: 1 }];
-    const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
-    return { outs };
-  }, now);
-  const outs = (t.outs || []).filter((o) => o && !o.none), gerr = ((t.outs || []).find((o) => o && o.err) || {}).err || null;
-  await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs, ...(gerr ? { err: gerr } : {}) });   // err "owned": paid, nothing granted (for a refund)
-  { const tu = await tonUsd(), usd = tu ? price.ton * tu : Math.min(rec.usd || 0, price.ton * 10); await revAdd(env, usd * 100); }   // the liquidity fund
-  // farms: accounts paying from the same wallet are one person's (only a wallet that really paid counts)
-  if (src && src !== "payer") {
-    const wh = hex(await hmac(env.BOT_TOKEN, "w|" + src)).slice(0, 16);
-    const others = (await dbGet(env, `wal/${wh}`).catch(() => null)) || {};
-    for (const o of Object.keys(others).slice(0, 20)) if (o !== pid) await link(env, pid, o, "wallet").catch(() => {});
-    await dbPatch(env, `wal/${wh}`, { [pid]: dayOf(now) }).catch(() => {});
-  }
-  return { ok: true, verified: true, out: outs, E: pub(t.S) };
-}
-
-// ================= /api/stars-invoice =================
-// the price comes from the server's own record: repeat-buy pricing, and a deal only if it's still unused this period
-async function starsInvoice(env, b, user, pid, now = Date.now()) {
-  const k = String(b.kind || ""), tk = String(b.tk || ""), ri = Number(b.ri ?? 0), c = RULES.isCh(b.c) ? b.c : undefined;
-  if (k === "pass" && tk && !/^\d{1,3}$/.test(tk)) return { status: 400, body: { error: "item" } };
-  const desc = descOf({ kind: k, tk, ri, id: tk, deal: b.deal, c });
-  if (!desc) return { status: 400, body: { error: "item" } };
-  if (k === "founder" && !RULES.FOUNDER_OPEN) return { status: 400, body: { error: "closed" } };   // sold only until $LUNAR launches
-  const S = await readEco(env, pid), X = ctxOf(pid, now);
-  if (RULES.ecoOwned(S, desc, X)) return { status: 409, body: { error: "owned" } };
-  const pr = RULES.ecoPrice(S, desc, X);
-  if (!pr) return { status: 400, body: { error: "item" } };
-  if (desc.deal && pr.deal !== desc.deal) return { status: 409, body: { error: "deal_used" } };
-  const nonce = Math.random().toString(36).slice(2, 10);
-  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" || k === "box" || k === "vault" || k === "core" || k === "gear" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" || k === "core" || k === "gear" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined, c: desc.c || undefined });   // c: the chassis (gem caches, chosen cores, packs, resets)
-  const label = itemLabel(k, k === "pass" ? String(RULES.ecoSeason(X)) : tk, ri);
-  const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: pr.stars }] });
-  if (!r.ok) return { status: 502, body: { error: r.description || "telegram" } };
-  return { status: 200, body: { link: r.result, stars: pr.stars, nonce } };
+// ================= payments (Session 8): worker/src/shop.js =================
+// Every purchase is a server quote first (/api/order), in every currency: Stars (Telegram), GRAM (the website, and Telegram while the
+// owner's switch is on) and SOL (the website). The old orderless /api/pay-log is retired (it trusted the phone's order details and let a
+// SOL signature of someone else's payment be claimed). /api/stars-invoice stays as the Stars quote for older phones.
+async function starsInvoice(env, a) {
+  const b = a.b || {}, r = await quote(env, a, "STARS", { kind: b.kind, tk: b.tk, ri: b.ri, id: b.tk, deal: b.deal || null, c: b.c, job: b.job });
+  if (r.status !== 200) return r;
+  return { status: 200, body: { link: r.body.order.link, stars: r.body.order.amt, nonce: r.body.order.oid, order: r.body.order } };
 }
 
 // ================= /api/notify-optin =================
@@ -417,6 +262,7 @@ async function admin(env, user, b = {}) {
   if (pin && String(pin) !== String(user.id)) return { status: 403, body: { error: "not admin" } };
   if (!pin) await dbPatch(env, "cfg/admin", { [un]: user.id });
   if (b.proof === "enforce" || b.proof === "flag") { await dbPatch(env, "cfg", { proof: b.proof }); resetCfg(); }
+  if (b.gramTg === "on" || b.gramTg === "off") { await dbPatch(env, "cfg", { gramTg: b.gramTg === "on" ? 1 : 0 }); resetCfg(); }   // Session 8: the GRAM switch (one step, no release)
   if (b.clearCl && /^[0-9a-f]{1,8}$/.test(String(b.clearCl))) await clearCluster(env, String(b.clearCl));
   // clear a flagged pilot (every current reason): they count for the snapshot again
   if (b.clear && /^(?:tg|ln)_\d{3,15}$/.test(String(b.clear))) {
@@ -460,7 +306,8 @@ async function admin(env, user, b = {}) {
   const flagged = Object.entries(fl).filter(([, f]) => isFlagged(f)).map(([id, f]) => ({ id, n: f.n || id, why: flagReasons(f).map((k) => k + (f.r[k].v && f.r[k].v !== 1 ? ": " + f.r[k].v : "")) })).slice(0, 60);
   const [clu, conf, lkok] = await Promise.all([dbGet(env, "clu").catch(() => null), dbGet(env, "cfg/proof").catch(() => null), dbGet(env, "lkok").catch(() => null)]);
   const clusters = (Array.isArray(clu) ? clu : Object.values(clu || {})).filter(Boolean).slice(0, 40).map((c) => Object.assign({}, c, { ok: !!(lkok && lkok[c.sig]) }));   // a cluster cleared a moment ago shows as cleared
-  const body0 = { flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters, funnel: await funnelDays(env, 7).catch(() => []), conquest: await analyticsDays(env, 7).catch(() => null) };
+  const heldPays = (await dbGet(env, "held", { orderBy: '"$key"', limitToLast: 40 }).catch(() => null)) || {};
+  const body0 = { gramTg: await gramInTelegram(env, true), held: Object.entries(heldPays).map(([id, h]) => ({ id, ...h })).sort((x, y) => (y.t || 0) - (x.t || 0)).slice(0, 40), flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters, funnel: await funnelDays(env, 7).catch(() => []), conquest: await analyticsDays(env, 7).catch(() => null) };
   // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
@@ -595,63 +442,35 @@ async function webhook(req, env) {
   let u;
   try { u = await req.json(); } catch { return new Response("ok"); }
   if (u.pre_checkout_query) {
-    const q = u.pre_checkout_query;
-    let ok = q.currency === "XTR";
-    try { ok = ok && JSON.parse(q.invoice_payload).u === q.from.id; } catch { ok = false; }
-    await tg(env, "answerPreCheckoutQuery", ok ? { pre_checkout_query_id: q.id, ok: true } : { pre_checkout_query_id: q.id, ok: false, error_message: "This purchase couldn't be verified. Please try again from the game." });
+    // Session 8 (Checkpoint 39 gap 1): the pre-checkout re-checks the quote, ownership, every limit and the CURRENT price on the
+    // server's records (worker/src/shop.js preCheckout); any mismatch is answered no, so an invoice can never be paid at an old price
+    const q = u.pre_checkout_query, pid = (await resolveTelegramAccount(env, q.from.id)) || "tg_" + q.from.id;
+    let why;
+    try { why = await preCheckout(env, q, pid); } catch { why = "This purchase couldn't be verified right now. Please try again in a minute."; }
+    await tg(env, "answerPreCheckoutQuery", why ? { pre_checkout_query_id: q.id, ok: false, error_message: why } : { pre_checkout_query_id: q.id, ok: true });
     return new Response("ok");
   }
   const m = u.message;
   if (m && m.successful_payment) {
-    // Telegram confirmed a Stars payment: the server grants the item now (the phone just shows it)
-    const sp = m.successful_payment;
-    let p = {};
-    try { p = JSON.parse(sp.invoice_payload); } catch {}
-    const pid = (await resolveTelegramAccount(env,m.from.id))||"tg_" + m.from.id, now = Date.now();
-    const charge = safeKey(sp.telegram_payment_charge_id);
-    const item = itemLabel(p.k, p.t, p.r);
-    const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x, c: p.c });
-    const t = desc ? await tx(env, pid, (S, X) => {
-      S.gout = S.gout || {};
-      if (S.gout[charge]) return { outs: S.gout[charge] };   // Telegram sent this one twice
-      // a grant that throws (it shouldn't: names are checked in descOf) never loses the paid record: the record goes back as it was and the
-      // payment is logged below with the error for the owner. A database failure still throws, so Telegram retries the webhook
-      let outs;
-      const S0 = JSON.parse(JSON.stringify(S));
-      try { outs = RULES.LAB_KINDS.includes(desc.kind) && RULES.ecoOwned(S, desc, X) ? [{ none: 1, err: "owned" }] : RULES.ecoGrant(S, { ...desc, price: p.g }, X); }   // a Lab store item already owned by now (two invoices paid, Session 6B review F5): nothing granted, the payment is kept for a refund
-      catch (e) { for (const k of Object.keys(S)) delete S[k]; Object.assign(S, S0); outs = [{ none: 1, err: String((e && e.message) || e).slice(0, 80) }]; }
-      if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "gear" || desc.kind === "box") && S.L) setLoadout(S, S.L);
-      S.gout[charge] = outs.length ? outs : [{ none: 1 }];
-      const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
-      return { outs };
-    }, now) : { outs: [] };
-    const gerr = ((t.outs || []).find((o) => o && o.err) || {}).err || null, outs = (t.outs || []).filter((o) => o && !o.none);
-    await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + (p.n || ""), proof: charge, verified: true, ...(gerr ? { err: gerr } : {}), t: { ".sv": "timestamp" } });
-    await revAdd(env, sp.total_amount * 1.3);   // the liquidity fund (Stars at ~1.3 cents each)
-    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, c: p.c || null, stars: sp.total_amount, n: p.n || "", o: outs, ...(gerr ? { err: gerr } : {}), ts: { ".sv": "timestamp" } });
+    // Telegram confirmed a Stars payment: the server grants it once (a database failure throws, so Telegram retries the webhook)
+    const pid = (await resolveTelegramAccount(env, m.from.id)) || "tg_" + m.from.id;
+    await starsPaid(env, m, pid);
     return new Response("ok");
   }
   if (m && m.refunded_payment) {
-    // a Stars refund: the server takes back exactly what that purchase gave
-    const rp = m.refunded_payment, pid = (await resolveTelegramAccount(env,m.from.id))||"tg_" + m.from.id, charge = safeKey(rp.telegram_payment_charge_id), now = Date.now();
-    const sp = await dbGet(env, `starsPaid/${pid}/${charge}`).catch(() => null);
-    if (sp && !sp.rf) {
-      let n = 0;
-      const t = await tx(env, pid, (S) => {
-        S.rfd = S.rfd || [];
-        if (S.rfd.includes(charge)) return { abort: true };
-        S.rfd = S.rfd.concat(charge).slice(-40);
-        RULES.ecoRefund(S, sp.k, sp.o || []);
-        if ((S.lab || ["respec", "vault", "core", "gear", "box"].includes(sp.k)) && S.L) setLoadout(S, S.L);   // the stored loadout and power follow the refund, as they follow a grant
-        S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(sp.g) || 0));   // a refunded purchase isn't spending
-        n = S.rfd.length;
-        return {};
-      }, now);
-      const pk = `payments/LWM_${pid}_stars_${charge}`.slice(0, 120);
-      await dbPatch(env, "", { [`starsPaid/${pid}/${charge}/rf`]: now, [`${pk}/refunded`]: true, [`${pk}/verified`]: false });
-      await revAdd(env, -(Number(sp.stars) || 0) * 1.3);   // a refunded sale comes off the liquidity fund
-      if (n >= 2) await addFlags(env, pid, t.S && t.S.nm, [["refunds", n + " Stars refunds"]], now).catch(() => {});
-    }
+    // a Stars refund: the server takes back exactly what that purchase gave (once)
+    const pid = (await resolveTelegramAccount(env, m.from.id)) || "tg_" + m.from.id, n = await starsRefund(env, m, pid);
+    if (n >= 2) await addFlags(env, pid, null, [["refunds", n + " Stars refunds"]], Date.now()).catch(() => {});
+    return new Response("ok");
+  }
+  // Session 8: the GRAM switch, from the pinned admin's private chat (/gram, /gram on, /gram off)
+  const gramCmd = typeof m?.text === "string" ? m.text.match(/^\/gram(?:@LunarWarMachinesBot)?(?:\s+(on|off))?\s*$/i) : null;
+  if (gramCmd && m.chat?.type === "private") {
+    const un = String(m.from?.username || "").toLowerCase(), pin = ADMINS.includes(un) ? await dbGet(env, `cfg/admin/${un}`).catch(() => null) : null;
+    if (!ADMINS.includes(un) || !pin || String(pin) !== String(m.from.id)) { await tg(env, "sendMessage", { chat_id: m.chat.id, text: "This command is for the game's owner." }); return new Response("ok"); }
+    if (gramCmd[1]) { await dbPatch(env, "cfg", { gramTg: gramCmd[1].toLowerCase() === "on" ? 1 : 0 }); resetCfg(); }
+    const on = await gramInTelegram(env, true);
+    await tg(env, "sendMessage", { chat_id: m.chat.id, text: "GRAM in Telegram is " + (on ? "ON" : "OFF") + ". Players in Telegram pay with " + (on ? "Stars or GRAM" : "Stars only") + "; the website always takes GRAM and SOL. Send /gram " + (on ? "off" : "on") + " to switch (within a minute everywhere)." });
     return new Response("ok");
   }
   // Website login: only a genuine private-chat message delivered by Telegram's signed webhook
@@ -701,7 +520,7 @@ const ROUTES = {
   "/api/conquest/citadel-board": conquestCitadelBoard,
   "/api/conquest/standing": (env, a) => conquestStanding(env, a),   // Session 7C: the hub's airdrop standing and trust line
   "/api/conquest/boards": (env, a) => conquestBoards(env, a),   // Session 7C: the weekly boards (read only)
-  "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
+  "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp, !!a.web); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
   "/api/match/end": async (env, a) => matchEnd(env, a.b, a.user, a.pid),
@@ -711,8 +530,9 @@ const ROUTES = {
     return { status: 200, body: { ok: true, squad: q.list, me: { ...q.me, held: q.held, ref: rec || null }, code,
       phase: { i: ph, x: nx.x, ap: Number(ap) || 0, next: Number.isFinite(nx.n) ? nx.n : null }, cap: RULES.REF_PCT_CAP } };
   },
-  "/api/pay-log": async (env, a) => ({ status: 200, body: await payLog(env, a.b, a.user, a.pid) }),
-  "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user, a.pid),
+  "/api/pay-log": async () => ({ status: 410, body: { error: "update" } }),   // retired in Session 8: every purchase is a quote first (/api/order)
+  "/api/stars-invoice": async (env, a) => starsInvoice(env, a),
+  "/api/order": async (env, a) => orderApi(env, a),   // Session 8: quote / status / cancel / list / rails, every currency
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),
   "/api/admin": async (env, a) => (a.b && a.b.a === "owner_gem_epic" ? ownerGemEpic(env, a, ADMINS) : a.b && a.b.a === "owner_check" ? ownerCheck(env, a, ADMINS) : admin(env, a.user, a.b)),
   "/api/owner": async (env, a) => (a.b && a.b.a === "owner_gem_epic" ? ownerGemEpic(env, a, ADMINS) : a.b && a.b.a === "owner_check" ? ownerCheck(env, a, ADMINS) : { status: 400, body: { error: "action" } }),   // owner only (owner.js); also open to his website session   // owner only (owner.js); also open to his website session
@@ -745,7 +565,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/conquest/visit": 30, "/api/conquest/citadel-board": 30, "/api/conquest/standing": 12, "/api/conquest/boards": 20, "/api/conquest/an": 12, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
+const PID_RL = { "/api/conquest/visit": 30, "/api/conquest/citadel-board": 30, "/api/conquest/standing": 12, "/api/conquest/boards": 20, "/api/conquest/an": 12, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/order": 90, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)
@@ -780,7 +600,7 @@ export default {
       if (a.err) return cors(a.err, req);
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
-      if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
+      if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log","/api/order"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
         return cors(json({error:"update",build:"20261126053718"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
