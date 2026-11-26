@@ -263,12 +263,19 @@ WK.model('par-shuttle',shuttle,{aoH:1.6,aoMin:.72});
 // a gilded keystone on top) cradled in a ramped plinth between two leaning piers with braces. Capacitor banks and their
 // cables feed it, loot is stacked at its feet, trophy banners hang down the piers. The infection lives in the ring: every
 // seam between two segments glows red and veins creep across the faces.
-// o.state: 'dormant' (the ring dark but alive: a web of veins across the opening around an ember), 'open' (a bright red
-// event surface, brightest at the rim, arcs between the hot emitters), 'suppressed' (four LDF damper clamps locked on the
+// o.state: 'dormant' (the ring dark but alive: a web of veins across the opening around an ember), 'open' (a red event
+// surface, a hot rim round a deep core, arcs between the hot emitters), 'suppressed' (four LDF damper clamps locked on the
 // ring, their lock beams crossing the opening into a cyan hub; veins dim, emitters dead, the ring scorched).
+// 5E-2d2 critic round 2: (a) DORMANT is asleep: every glow on it is a steady, dim red (it looked as awake as the open gate:
+// the seams, veins and lamps pulsed at full strength) and the ember is at 30%; the style breathes the ember's halo every
+// 4 s. (b) OPEN no longer burns out: its colours are pre-scaled for the solid shader's 2.3x glow gain like every other
+// Parasite glow (the rim was an unscaled near-white) and its halos are a third of what they were. (c) The swirl is no
+// longer part of this model: the style draws it as two glow layers that turn against each other (style.js S.warScenery),
+// over the static surface here. (d) The piers' four black raking poles read as thorns: they are steel cable stays now,
+// each with a turnbuckle, on a hazard-painted anchor block.
 const PORT={size:[16,14.6,6.2],cy:6.5,rIn:4.95};
-function portal(b,o){const K=b.k,{tint,glow,col}=K,hi=b.hi,P=parPal(b,false),M=K.pal.mil,st=o.state==='open'?'open':o.state==='suppressed'?'sup':'dorm',open=st==='open',sup=st==='sup',cy=PORT.cy,r0=PORT.rIn,sd=(o.seed|0)||1,D=Math.PI/180;
- const seamM=open?P.redHot:sup?P.redLow:P.red,veinM=sup?P.redLow:P.red,emM=open?P.redHot:sup?P.weld:P.lamp,capM=open?P.redHot:sup?P.weld:P.redLow,sc=m=>sup?tint(m,.58):m;
+function portal(b,o){const K=b.k,{tint,glow,col}=K,hi=b.hi,P=parPal(b,false),M=K.pal.mil,st=o.state==='open'?'open':o.state==='suppressed'?'sup':'dorm',open=st==='open',sup=st==='sup',dorm=st==='dorm',cy=PORT.cy,r0=PORT.rIn,sd=(o.seed|0)||1,D=Math.PI/180;
+ const lampM=dorm?P.redDim:P.red,seamM=open?P.redHot:sup?P.redLow:P.redDim,veinM=open?P.red:P.redLow,emM=open?P.redHot:sup?P.weld:P.redLow,capM=open?P.redHot:sup?P.weld:P.redLow,sc=m=>sup?tint(m,.58):m;   // dormant: steady and dim (P.redDim / redLow never pulse)
  const RP=(a,r,z)=>[Math.cos(a)*r,cy+Math.sin(a)*r,z],ang=(a,fn)=>b.at(0,cy,0,0,fn,0,a-HP);   // ring coordinates; a frame whose +y is the ring's radius at angle a
  // ---- the ring: twelve stolen segments ----
  const S=P.plateSet,SEG=[[P.iron,P.ironL,6.5,.8],[P.rust,P.scrap,6.35,.7],[P.plateMil,P.blue,6.6,.85],[P.iron,S[2],6.45,.76],[S[1],P.white,6.3,.66],[P.hazard,P.hazardD,6.55,.8],[P.gold,P.goldD,6.75,.95],[S[0],P.white,6.4,.7],[P.plateMilD,P.plateMil,6.6,.85],[P.iron,S[4],6.45,.76],[S[2],P.rust,6.3,.68],[P.scrap,P.ironL,6.5,.8]];
@@ -283,11 +290,11 @@ function portal(b,o){const K=b.k,{tint,glow,col}=K,hi=b.hi,P=parPal(b,false),M=K
  // ---- the seams: the infection glows between every two segments; veins creep from them across both faces ----
  for(let k=0;k<12;k++){const a=(-75+k*30)*D;if(k===0||k===11)continue;ang(a,p=>qb(p,0,r0+.04,0,.34,1.3,1.16,seamM,'blr'));
   if(open||!sup||k%2)for(const f of [1,-1]){if(!hi&&f<0)continue;const dir=(k+(f>0?0:1))%2?1:-1,z=f*.92,h=q=>hz(sd+k*13+(f>0?0:7),q),pts=[RP(a,r0+.25,z*.8)];for(let i=1;i<=(hi?4:2);i++)pts.push(RP(a+dir*i*(hi?4.2:8)*D,r0+.3+(hi?.26:.5)*i+.2*h(i),z+f*.02));vein(b,pts,sup?.06:.085,veinM);
-   if(hi&&k%3===0&&!sup){const q=pts[2];vein(b,[q,RP(a+dir*10*D,r0+.35+.3*h(9),z),RP(a+dir*15*D,r0+.2,z*.9)],.055,P.lamp);}}}
+   if(hi&&k%3===0&&!sup){const q=pts[2];vein(b,[q,RP(a+dir*10*D,r0+.35+.3*h(9),z),RP(a+dir*15*D,r0+.2,z*.9)],.055,open?P.red:P.redLow);}}}
  // ---- the emitters on the inner face, the keystone's crest ----
  for(const a of [30,90,150,210,330]){ang(a*D,p=>{skin(p,[[[-.42,r0+.05,-.34],[.42,r0+.05,-.34],[.42,r0+.05,.34],[-.42,r0+.05,.34]],[[-.16,r0-.62,-.16],[.16,r0-.62,-.16],[.16,r0-.62,.16],[-.16,r0-.62,.16]]],sup?P.weld:P.ironL,{z:emM});p.gem(0,r0-.72,0,.17,.24,.17,emM);});
-  if(open){const q=RP(a*D,r0-.75,0);b.halo(q[0],q[1],q[2],1.8,WK.PAR.red,.7);}}
- b.at(0,cy+6.72,0,0,q=>{qb(q,0,0,0,2.2,.36,1.5,P.gold,'b');qb(q,0,.36,0,1.1,.4,1,P.goldD,'b');q.gem(0,1,0,.2,.26,.2,sup?P.weld:P.red);
+  if(open){const q=RP(a*D,r0-.75,0);b.halo(q[0],q[1],q[2],1.2,WK.PAR.red,.3);}}
+ b.at(0,cy+6.72,0,0,q=>{qb(q,0,0,0,2.2,.36,1.5,P.gold,'b');qb(q,0,.36,0,1.1,.4,1,P.goldD,'b');q.gem(0,1,0,.2,.26,.2,sup?P.weld:lampM);
   for(const s of [-1,1])q.at(s*.95,.3,0,s>0?0:Math.PI,f=>flag(f,.92,1.05,.6,s>0?P.flagSet[1]:P.flagLDF,{pole:P.ironL,m2:s>0?null:P.flagLDF2,torn:true,sag:.3,r:.04}),0,-s*.0);});
  // ---- the cradle: a plinth with a tread ramp up each side to the ring's lip, hazard lane edges ----
  skin(b,[-5.8,5.8].map(x=>[[x,-.4,-2.95],[x,-.4,2.95],[x,.5,2.95],[x,1.52,1.15],[x,1.52,-1.15],[x,.5,-2.95]]),(r,i)=>i===0?null:i===3?P.deck:i===2||i===4?P.tread:P.ironD,{a:P.ironD,z:P.ironD});
@@ -297,9 +304,11 @@ function portal(b,o){const K=b.k,{tint,glow,col}=K,hi=b.hi,P=parPal(b,false),M=K
  for(const s of [-1,1]){const R=(y,xi,xo,zh)=>({y,p:[[s*xi,-zh],[s*xo,-zh],[s*xo,zh],[s*xi,zh]]}),pm=[P.iron,s>0?P.plateMilD:P.rust,P.ironL,P.iron];
   yloft(b,[R(-.4,5.5,8,1.5),R(1.1,5.6,7.95,1.45),R(1.1,5.75,7.8,1.3),R(3.4,5.9,7.75,1.2),R(3.4,6.02,7.62,1.08),R(6.5,6.2,7.6,1),R(6.5,6.1,7.7,1.1),R(8.7,5.95,7.3,.95)],(r,i)=>r%2?P.weld:pm[r>>1],{z:P.ironL});
   for(const [y,xi] of [[4.5,5.2],[8.1,5.6]]){qb(b,s*(xi+.75),y-.34,0,1.6,.68,hi?2.5:2.3,sc(P.ironL),'');if(hi)for(const f of [1,-1])qb(b,s*(xi+.6),y-.2,f*1.27,.9,.4,.06,P.gold,'kf'.replace(f>0?'f':'k',''));}
-  for(const f of [1,-1]){b.tube([s*7.35,0,f*2.8],[s*6.95,6.7,f*.95],.2,P.ironD,{n:hi?6:4});qb(b,s*7.35,-.3,f*2.75,1,.42,.5,P.iron,'b');
-   if(hi)b.tube([s*7.2,2.3,f*2.15],[s*7.6,3.3,f*1.2],.1,P.ironL,{n:4});}
-  qb(b,s*6.6,8.7,0,.5,.3,.5,sup?P.weld:P.red,'b');if(!sup)b.halo(s*6.6,9.1,0,1.4,WK.PAR.red,.6);
+  // cable stays (critic round 2: the black raking poles here read as thorns): a taut steel cable from a lug on the pier down to
+  // a hazard-painted anchor block, a turnbuckle a third of the way up
+  for(const f of [1,-1]){const A=[s*7.35,.14,f*2.8],B=[s*6.95,6.7,f*.95];b.tube(A,B,.055,P.ironL,{n:hi?4:3});qb(b,s*7.35,-.3,f*2.75,1.1,.44,.7,P.hazard,'b');
+   if(hi){const T0=L3(A,B,.3),T1=L3(A,B,.4);b.tube(T0,T1,.12,P.gold,{n:5});qb(b,s*7.35,.14,f*2.8,.3,.26,.3,P.ironD,'b');qb(b,B[0],B[1]-.12,B[2],.4,.24,.3,P.ironD,'');qb(b,s*7.35,-.3,f*2.75,.5,.45,.72,P.hazardD,'b');}}
+  qb(b,s*6.6,8.7,0,.5,.3,.5,sup?P.weld:lampM,'b');if(!sup)b.halo(s*6.6,9.1,0,dorm?1:1.2,WK.PAR.red,dorm?.18:.3);
   // plundered plates on the outer face, the banner on the face that looks at the visitor
   b.at(s*7.72,0,0,s*HP,p=>{plate(p,P,0,1.3,1.9,1.8,s>0?P.plateMil:S[1],{t:.1,rz:.04});plate(p,P,.1,3.7,1.5,2.3,s>0?P.hazard:S[3],{t:.1,rz:-.05});},0,0);
   for(const f of [1,-1]){const z=f*1.14,bm=f*s>0?P.flagLDF:P.flagSet[f>0?3:0],x=s*6.85,w=.62;b.tube([x-.8,8.25,z+f*.1],[x+.8,8.25,z+f*.1],.05,P.ironL,{n:4});
@@ -309,23 +318,21 @@ function portal(b,o){const K=b.k,{tint,glow,col}=K,hi=b.hi,P=parPal(b,false),M=K
  // ---- capacitor banks on the plinth's shoulders, their cables up into the ring; loot at the other feet ----
  for(const f of [1,-1]){const sx=f,bx=sx*4.1,bz=f*2.05;qb(b,bx,.2,bz,2.9,1.02,1.5,P.ironD,'b');if(hi)qb(b,bx,1.22,bz,3.05,.1,1.62,P.ironL,'b');
   for(let j=0;j<3;j++){const x=bx+(j-1)*.9,n=hi?8:6;rev(b,x,1.3,bz,hi?[[.38,0],[.38,.4],[.43,.4],[.43,.56],[.38,.56],[.38,1],[.43,1],[.43,1.16],[.38,1.16],[.38,1.5],[.26,1.72],[0,1.72]]:[[.38,0],[.38,1.5],[.26,1.72],[0,1.72]],n,sg=>hi?(sg===2||sg===6?P.gold:sg===10?capM:sg===9?P.ironL:P.plateMilD):(sg===2?capM:P.plateMilD),{smooth:hi});
-   if(!sup)b.halo(x,3.2,bz,.9,WK.PAR.red,open?.9:.3);
+   if(!sup)b.halo(x,3.2,bz,.9,WK.PAR.red,open?.35:.1);
    if(hi||j===1){const a=(f>0?-52:232)*D+(j-1)*.07*f,q=RP(a,6.45+.1*j,f*.5);b.cable([x,3,bz],q,1.1+.3*j,.09,P.strap,{n:hi?5:3});}}
-  {const a=(f>0?-52:232)*D;ang(a,p=>{qb(p,0,6.25,f*.45,1.3,.5,.9,P.ironD,'b');qb(p,0,6.75,f*.45,.5,.08,.4,sup?M.cyan:P.red,'b');});}
+  {const a=(f>0?-52:232)*D;ang(a,p=>{qb(p,0,6.25,f*.45,1.3,.5,.9,P.ironD,'b');qb(p,0,6.75,f*.45,.5,.08,.4,sup?M.cyan:lampM,'b');});}
   // loot
   const lx=-sx*4.2,lz=f*2.1;crate(b,P,lx,.36,lz,1.5,1,1.2,P.crate,.15*f);crate(b,P,lx+sx*.2,1.36,lz,1,.75,.95,P.crateD,-.2);if(hi){crate(b,P,lx-sx*1.5,.1,lz+f*.3,1.1,.8,1,S[f>0?1:0],.4);tank(b,P,lx+sx*1.25,.2,lz+f*.35,.36,1.5);sacks(b,P,lx-sx*.3,0,f*2.3,4,7+f,.5);}}
  // ---- the opening ----
- if(st==='dorm'){   // dormant: a web of veins strung across the opening around a sleeping ember
-  const nV=hi?7:4;for(let k=0;k<nV;k++){const a=(20+k*360/nV+30*hz(sd,k+60))*D,pts=[RP(a,r0-.05,0)],n=hi?4:2;for(let i=1;i<=n;i++){const t=i/n,rr=(r0-.2)*(1-t)+.3*t,aa=a+(hz(sd,k*7+i)-.5)*.5*(1-t);pts.push(RP(aa,rr,(hz(sd,k*5+i+30)-.5)*.5*(1-t)));}vein(b,pts,.085,k%2?P.red:P.lamp);
+ if(dorm){   // dormant: a web of veins strung across the opening around a sleeping ember (30%: tint(P.redDim, .47) is 30% of P.red; its halo is the style's, which breathes it)
+  const nV=hi?7:4;for(let k=0;k<nV;k++){const a=(20+k*360/nV+30*hz(sd,k+60))*D,pts=[RP(a,r0-.05,0)],n=hi?4:2;for(let i=1;i<=n;i++){const t=i/n,rr=(r0-.2)*(1-t)+.3*t,aa=a+(hz(sd,k*7+i)-.5)*.5*(1-t);pts.push(RP(aa,rr,(hz(sd,k*5+i+30)-.5)*.5*(1-t)));}vein(b,pts,.085,k%2?P.redDim:P.redLow);
    if(hi){const q=pts[2],a2=a+(k%2?1:-1)*.5;vein(b,[q,RP((a+a2)/2,r0*.72,.1),RP(a2,r0-.1,0)],.05,P.redLow);}}
-  blob(b,0,cy,0,.5,.5,.42,P.growth);b.gem(0,cy,0,.34,.42,.34,P.red);b.halo(0,cy,0,4.6,WK.PAR.red,.22);b.halo(0,cy,0,1.6,WK.PAR.red,.8);b.pool(0,1.6,0,2.4,1,WK.PAR.red,.25);}
- if(open){   // open: the event surface (glow, brightest at the rim) with swirl arms on both faces, arcs between the emitters
-  const deep={c:col(0x5a0810),a:1.45,j:0},mid=P.red,hot=P.redHot,white=glow(0xffc8b0,1.98),n=hi?24:12,g=(m0,m1)=>[m0,m0,m1,m1],prof=[[r0+.02,.05],[4.5,.1],[3.3,.2],[1.7,.27],[0,.3]];
-  for(const f of [1,-1])b.at(0,cy,0,0,q=>{rev(q,0,0,0,prof,n,sg=>sg===0?g(white,hot):sg===1?g(hot,mid):sg===2?g(mid,deep):g(deep,deep),{rot:.1});
-    const arms=hi?6:4,ns=hi?5:3;for(let k=0;k<arms;k++){const a0=k/arms*TAU,P2=(t,w)=>{const r=.7+3.95*t,a=a0+1.75*t*t+w/(r+.6);return [Math.cos(a)*r,.34-.2*t,Math.sin(a)*r];};
-     for(let i=0;i<ns;i++){const t0=i/ns,t1=(i+1)/ns,w0=.1+.42*t0,w1=.1+.42*t1;face(q,[P2(t0,-w0),P2(t0,w0),P2(t1,w1),P2(t1,-w1)],[mid,mid,i===ns-1?white:hot,i===ns-1?white:hot],[0,-9,0]);}}},f*HP);
-  const E=[30,90,150,210,330];for(let k=0;k<E.length;k++){const a=E[k]*D,c=E[(k+1)%E.length]*D+(k===E.length-1?TAU:0),pts=[];for(let i=0;i<=(hi?5:2);i++){const t=i/(hi?5:2);pts.push(RP(a+(c-a)*t,r0-.7-.5*Math.sin(t*Math.PI)*(.5+hz(sd,k*9+i)),(hz(sd,k*4+i)-.5)*.9));}for(let i=1;i<pts.length;i++)b.tube(pts[i-1],pts[i],.07,white,{n:3});}
-  b.halo(0,cy,0,10,WK.PAR.red,.55);b.pool(0,.1,3.6,6,3,WK.PAR.red,.6);b.pool(0,.1,-3.6,6,3,WK.PAR.red,.6);}
+  blob(b,0,cy,0,.5,.5,.42,P.growth);b.gem(0,cy,0,.34,.42,.34,tint(P.redDim,.47));b.pool(0,1.6,0,2.4,1,WK.PAR.red,.1);}
+ if(open){   // open: the event surface (steady glow: a deep core, the Parasite red, a hot pulsing rim; the turning swirl over it is the style's two glow layers), arcs between the emitters
+  const sg=(hex,k)=>({c:col(hex).map(v=>v*k),a:1,j:0}),deep=sg(WK.PAR.deep,.12),mid=sg(WK.PAR.red,.3),hotS=sg(WK.PAR.hot,.5),n=hi?24:12,g=(m0,m1)=>[m0,m0,m1,m1],prof=[[r0+.02,.05],[4.72,.08],[4.5,.1],[3.3,.2],[1.7,.27],[0,.3]];
+  for(const f of [1,-1])b.at(0,cy,0,0,q=>rev(q,0,0,0,prof,n,sg2=>sg2===0?P.redHot:sg2===1?g(hotS,mid):sg2===2?g(mid,deep):g(deep,deep),{rot:.1}),f*HP);
+  const E=[30,90,150,210,330];for(let k=0;k<E.length;k++){const a=E[k]*D,c=E[(k+1)%E.length]*D+(k===E.length-1?TAU:0),pts=[];for(let i=0;i<=(hi?5:2);i++){const t=i/(hi?5:2);pts.push(RP(a+(c-a)*t,r0-.7-.5*Math.sin(t*Math.PI)*(.5+hz(sd,k*9+i)),(hz(sd,k*4+i)-.5)*.9));}for(let i=1;i<pts.length;i++)b.tube(pts[i-1],pts[i],.07,P.redHot,{n:3});}
+  b.halo(0,cy,0,7,WK.PAR.red,.16);b.pool(0,.1,3.6,6,3,WK.PAR.red,.26);b.pool(0,.1,-3.6,6,3,WK.PAR.red,.26);}
  if(sup){   // suppressed: four LDF damper clamps on the ring, lock beams into a hub; cyan says who switched it off
   for(const a of [45,135,225,315])ang(a*D,p=>{const r1=6.95;qb(p,0,r0-.2,0,1.7,r1-r0+.2,2.2,M.hull2,'');
    for(const f of [1,-1]){qb(p,0,r0+.15,f*1.13,1.3,1.5,.08,M.plate,f>0?'k':'f');qb(p,0,r0+.62,f*1.18,.92,.2,.05,M.cyan,f>0?'k':'f');if(hi){qb(p,0,r0+1.75,f*1.13,1.5,.12,.06,M.gold,f>0?'k':'f');for(const x of [-.72,.72])qb(p,x,r0-.2,f*1.02,.14,r1-r0+.2,.18,M.hull,f>0?'k':'f');}}
@@ -465,5 +472,5 @@ function ldfPost(b,o){const K=b.k,{mat,rect}=K,T=K.T,M=K.pal.mil,hi=b.hi,sd=(o.s
 }
 WK.model('ldf-post',ldfPost,{aoH:2.6,aoMin:.66});
 
-root.ConquestWarModels={hauler:{size:HAUL.size,hinge:[0,HAUL.deckY,HAUL.zH+.02],rampLen:HAUL.rampLen,rampW:HAUL.rampW,closedAngle:HAUL.closed,openAngle:HAUL.open,deckY:HAUL.deckY},shuttle:SHUT,portal:{size:PORT.size},ldf:{size:LDF.size,variants:LDF.variants}};
+root.ConquestWarModels={hauler:{size:HAUL.size,hinge:[0,HAUL.deckY,HAUL.zH+.02],rampLen:HAUL.rampLen,rampW:HAUL.rampW,closedAngle:HAUL.closed,openAngle:HAUL.open,deckY:HAUL.deckY},shuttle:SHUT,portal:{size:PORT.size,cy:PORT.cy,rIn:PORT.rIn},ldf:{size:LDF.size,variants:LDF.variants}};
 })(typeof globalThis!=='undefined'?globalThis:window);

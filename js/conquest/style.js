@@ -941,10 +941,27 @@ function create(T,opts={}){
  const WAR_SCENERY={portal:{x:1196,z:987,ry:0},posts:[{id:'refuge',x:1121,z:1158},{id:'oxygen',x:1169,z:1056},{id:'viaduct-east',x:1150,z:1020},{id:'viaduct-west',x:893,z:1032},{id:'base',x:1028,z:1166},
   {id:'frontier-wall',x:1018,z:1046},{id:'pylon',x:1006,z:1115},{id:'ice-mine',x:944,z:1163},{id:'dam',x:811,z:1371}]};
  S.WAR_SCENERY=WAR_SCENERY;
- S.warScenery=(o={})=>{const out=[],Kk=KW(),hives=F.installations;
-  {const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X),P=WAR_SCENERY.portal,st=o.portal||'dormant',y=ground(P.x,P.z);Kk.place('portal-gate',tk,KM(P.x,y,P.z,P.ry),{state:st});
-   X.decal(P.x,P.z,11,6,0,AT.BLOB,[0,0,0],.5,low?4:8,.1);if(st!=='suppressed')X.decal(P.x,P.z,15,9,0,AT.BLOB,E(PAR.red,st==='open'?.5:.22),0,low?4:8,.14);
-   const g=kdone(pair(Sb,X),tk);g.name='cq-style-portal';g.userData.site={x:P.x,z:P.z,range:1100};g.userData.portal=st;out.push(g);}
+ // 5E-2d2 critic round 2: what moves on the war scenery (g.userData.warTick(t), called by S.update for the groups in view).
+ // No new program and, for the dormant portal and the posts, no new draw: a handful of vertices of the group's OWN glow draw
+ // are rewritten (the ember halo's brightness, a searchlight's blades). The open portal's swirl is two small glow meshes
+ // that turn against each other by their transform alone (a state Session 7-V switches on; only at the portal).
+ // an arm of soft light along a spiral in the plane z (lit across its width by the BLOB mask's middle row, like Fx.shaft)
+ const swirl=(arms,turn,ra,rb,w0,w1,ea,eb,ph,core)=>{const X=new Fx(),r=AT.BLOB,vm=(r[1]+r[3])/2,ns=low?5:9;
+  for(const z of [.4,-.4])for(let k=0;k<arms;k++){const a0=ph+k/arms*TAU,pt=t=>{const rr=ra+(rb-ra)*t,a=a0+turn*Math.pow(t,1.25);return [Math.cos(a)*rr,Math.sin(a)*rr];};let prev=null;
+   for(let i=0;i<=ns;i++){const t=i/ns,c=pt(t),d=pt(Math.min(1,t+.02)),e=pt(Math.max(0,t-.02));let tx=d[0]-e[0],ty=d[1]-e[1];const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;const w=(w0+(w1-w0)*t)/2,f=Math.pow(Math.sin(Math.PI*t),.7),col=[(ea[0]+(eb[0]-ea[0])*t)*f,(ea[1]+(eb[1]-ea[1])*t)*f,(ea[2]+(eb[2]-ea[2])*t)*f];
+    const i0=X.v(c[0]-ty*w,c[1]+tx*w,z,r[0],vm,col,0),i1=X.v(c[0]+ty*w,c[1]-tx*w,z,r[2],vm,col,0);if(prev)X.q4(prev[0],prev[1],i1,i0);prev=[i0,i1];}}
+  if(core)X.bill(0,0,0,core,AT.BLOB,E(PAR.hot,.3));return fxMesh(X.geometry(),3);};
+ S.warScenery=(o={})=>{const out=[],Kk=KW(),hives=F.installations,WM=root.ConquestWarModels;
+  {const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X),P=WAR_SCENERY.portal,st=o.portal||'dormant',y=ground(P.x,P.z),cy=y+WM.portal.cy;Kk.place('portal-gate',tk,KM(P.x,y,P.z,P.ry),{state:st});
+   X.decal(P.x,P.z,11,6,0,AT.BLOB,[0,0,0],.5,low?4:8,.1);if(st!=='suppressed')X.decal(P.x,P.z,15,9,0,AT.BLOB,E(PAR.red,st==='open'?.3:.14),0,low?4:8,.14);   // (round 2: the open gate's ground glow was .5 and the dormant one's .22: part of the burn-out, and of a dormant gate that looked awake)
+   const b0=X.n;if(st==='dormant'){X.bill(P.x,cy,P.z,3.4,AT.BLOB,E(PAR.red,.16));X.bill(P.x,cy,P.z,1.2,AT.BLOB,E(PAR.red,.5));}const b1=X.n;   // dormant: the sleeping ember's halo
+   const g=kdone(pair(Sb,X),tk);g.name='cq-style-portal';g.userData.site={x:P.x,z:P.z,range:1100};g.userData.portal=st;
+   // dormant: the ember breathes, one slow swell every 4 s (the solid shader's own pulse is a 2 s shimmer: too lively for a gate that sleeps)
+   if(b1>b0){const A=g.children[1].geometry.attributes.aCol,base=A.array.slice(b0*4,b1*4);g.userData.warTick=t=>{const k=.3+.7*Math.pow(.5-.5*Math.cos(t*TAU/4),1.6);for(let i=0;i<base.length;i++)if(i%4<3)A.array[b0*4+i]=base[i]*k;A.needsUpdate=true;};}
+   // open: the swirl, two layers turning against each other (it was a flat pinwheel fixed to the surface): five thin hot arms one way, three broad deep ones the other way under them
+   if(st==='open'){const a=swirl(5,1.9,.9,4.55,.45,1.5,E(PAR.red,.42),E(PAR.hot,.6),0,0),c=swirl(3,-2.5,.3,3.9,1.3,2.5,E(PAR.deep,.5),E(PAR.red,.34),.5,low?0:1.5);
+    for(const m of [a,c]){m.position.set(P.x,cy,P.z);m.rotation.order='YXZ';m.rotation.y=P.ry;g.add(m);}g.userData.warTick=t=>{a.rotation.z=t*.42;c.rotation.z=-t*.27;};g.userData.swirl=[a,c];}
+   out.push(g);}
   WAR_SCENERY.posts.forEach((p,i)=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);let lo=1e9,hi=-1e9;for(const [dx,dz] of [[0,0],[3,0],[-3,0],[0,3],[0,-3]])hi=Math.max(hi,ground(p.x+dx,p.z+dz));for(const [dx,dz] of [[4.3,4.3],[-4.3,4.3],[4.3,-4.3],[-4.3,-4.3],[0,0]])lo=Math.min(lo,ground(p.x+dx,p.z+dz));
    let h=hives[0],hd=1e9;for(const q of hives){const d=Math.hypot(q.x-p.x,q.z-p.z);if(d<hd){hd=d;h=q;}}const ry=Math.round(Math.atan2(h.x-p.x,h.z-p.z)/(Math.PI/4))*(Math.PI/4),m=KM(p.x,hi,p.z,ry);   // it faces the nearest Parasite hive
    if(hi-lo>.25){const pb=Kk.part({});pb.box(0,-(hi-lo)-.4,0,8.6,hi-lo+.4,8.6,Kk.pal.mil.conc);Kk.emit(tk,pb,m);}   // a concrete footing down to the lowest corner (the ground here is rarely level)
@@ -1150,7 +1167,8 @@ function create(T,opts={}){
    const b=Math.round(255*Math.min(1,Math.max(0,U.uAtmo.value))),d=guestAtmo.image.data;if(d[0]!==b){d[0]=d[1]=d[2]=b;guestAtmo.needsUpdate=true;}U.uShadowMap.value=guestNoShadow;U.uAtmoMap.value=guestAtmo;}
   else{if(!gSave.on)return;gSave.on=false;U.uShadowMap.value=gSave.sh;U.uAtmoMap.value=gSave.at;U.uSite.value.forEach((v,i)=>v.copy(gSave.sites[i]));}};
  S.atmoApply=(scene,near,far)=>{const k=U.uAtmo.value;if(!scene.fog)scene.fog=new T.Fog(0,near,far);scene.fog.color.copy(nightFog).lerp(dayFog,k);scene.fog.near=near*(1-.55*k);scene.fog.far=far*(1-.45*k);if(!scene.background)scene.background=new T.Color(0);scene.background.setRGB(.36*k,.27*k,.19*k);return k;};
- S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);if(view?.p)S.atmo(view.p,dt);
+ S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.styleGroups)for(const g of view.styleGroups){const f=g.userData.warTick;if(f&&g.visible)f(t,view.p);}   /* 5E-2d2 critic round 2: the war scenery's motion (the portal, the posts' searchlights) */
+  if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);if(view?.p)S.atmo(view.p,dt);
   const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)*100003+Math.round(p.z/32);if(siteKey.k===k&&siteKey.t===terr)return;siteKey.k=k;siteKey.t=terr;
   const list=allSites(F,terr).map(s=>[s,Math.hypot(s[0]-p.x,s[1]-p.z)-s[2]]).sort((a,b)=>a[1]-b[1]).slice(0,8);for(let i=0;i<8;i++){const s=list[i]?.[0];U.uSite.value[i].set(s?s[0]:0,s?s[1]:0,s?s[2]:0,s?s[3]:0);}};
  // HIGH shading can drop to the LOW branch at runtime (adaptive quality, LOW setting): same programs, no recompile.
