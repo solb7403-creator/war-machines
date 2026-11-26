@@ -10,10 +10,11 @@ from playwright.async_api import async_playwright
 HERE=pathlib.Path(__file__).resolve().parents[2]
 # stand the tank `back` metres from (x, z) on open ground (the side with the flattest clear spot), looking at it
 GO='''([x,z,back,pitch,dist,lift])=>{const v=Conquest.view,W=ConquestWorld;let best=null;for(let a=0;a<16;a++){const an=a/16*Math.PI*2,px=x+Math.sin(an)*back,pz=z+Math.cos(an)*back;if(W.solidAt(px,pz)||W.waterAt(px,pz))continue;
-  let block=0;for(let k=1;k<8;k++){const qx=px+(x-px)*k/8,qz=pz+(z-pz)*k/8;if(W.solidAt(qx,qz)&&Math.hypot(qx-x,qz-z)>9)block++;}const dy=W.groundAt(px,pz)-W.groundAt(x,z),sc=block*30+Math.abs(dy-2)*2+Math.abs(Math.cos(an)-1)*3;if(!best||sc<best[0])best=[sc,px,pz];}
+  let block=0;for(let k=1;k<8;k++){const qx=px+(x-px)*k/8,qz=pz+(z-pz)*k/8;if(W.solidAt(qx,qz)&&Math.hypot(qx-x,qz-z)>9)block++;}/* the camera stands behind the tank: nothing solid there either (a house wall filled the picture), and no ground rising over it */for(let k=1;k<=5;k++){const d=dist*k/5,cx=px+(px-x)/back*d,cz=pz+(pz-z)/back*d;if(W.solidAt(cx,cz))block+=2;if(W.groundAt(cx,cz)-W.groundAt(px,pz)>d*Math.tan(pitch)*.8+1)block+=2;}const dy=W.groundAt(px,pz)-W.groundAt(x,z),sc=block*30+Math.abs(dy-2)*2+Math.abs(Math.cos(an)-1)*3;if(!best||sc<best[0])best=[sc,px,pz];}
  if(!best)return null;v.jump(best[1],best[2]);v.heading=Math.atan2(x-best[1],z-best[2]);v.yaw=Math.PI+v.heading;v.aimYaw=v.heading;v.pitch=pitch;v.distance=dist;v.camSnap=true;
  const E=v.encounter;if(E){for(const e of E.enemies||[]){e.hp=0;if(E.cleared)E.cleared[e.key]=true;}E.playerHp=E.playerMax;}return {from:[best[1],best[2]],look:[x,z]};}'''
 PORTAL='''st=>{const v=Conquest.view,S=v.style,old=v.styleGroups.find(g=>g.name==='cq-style-portal'),g=S.warScenery({portal:st})[0];if(old){v.props.remove(old);v.styleGroups.splice(v.styleGroups.indexOf(old),1);}v.props.add(g);v.styleGroups.push(g);return g.userData.portal;}'''
+SHARP='''for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){const v=g.call(this,p);return typeof v==='string'&&/swiftshader|llvmpipe|softpipe|software/i.test(v)?'Capture GPU':v;};}'''   # --sharp: the game holds a CPU rasterizer at .75x of the screen (js/graphics.js); a capture for LOOKS is drawn at the resolution a real device gets (HIGH on a phone: the device's own ratio, here the context's; LOW: 1x), by not telling the game the renderer is SwiftShader. Never used by a test that measures a budget.
 async def main(a):
  ROOT=pathlib.Path(a.root).resolve() if a.root else HERE
  out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True);w,h=[int(v) for v in a.size.split('x')];only=a.only.split(',') if a.only else None
@@ -21,7 +22,7 @@ async def main(a):
   browser=await p.chromium.launch(executable_path=shutil.which('chromium') or '/opt/pw-browsers/chromium',args=['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader'])
   ctx=await browser.new_context(viewport={'width':w,'height':h},device_scale_factor=1 if a.mouse else a.dpr,has_touch=not a.mouse,is_mobile=not a.mouse,reduced_motion='reduce')
   page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-  await page.add_init_script('window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='+json.dumps(a.quality)+';try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
+  await page.add_init_script(SHARP) if a.sharp else None;await page.add_init_script('window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='+json.dumps(a.quality)+';try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
   async def route(r):
    u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
    if u.netloc=='lunar.test' and f.is_file():return await r.fulfill(path=str(f))
@@ -56,4 +57,5 @@ async def main(a):
   assert not errors,errors
   await browser.close()
 ap=argparse.ArgumentParser();ap.add_argument('--quality',default='high');ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default=str(HERE/'docs/conquest/session5e2d2/scenery'));ap.add_argument('--tag',default='after');ap.add_argument('--only',default='');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=900);ap.add_argument('--clean',action='store_true');ap.add_argument('--root',default='')
+ap.add_argument('--sharp',action='store_true')
 asyncio.run(main(ap.parse_args()))

@@ -31,6 +31,7 @@ STEP='''([t,kill])=>{const v=Conquest.view,B=window.__B,e=window.__ship;B.time=t
   const wave=B.enemies.filter(x=>x.wave==='ship').map(x=>{const m=v.enemyMeshes.get(x.id);return {id:x.id,kind:x.kind,x:x.x,z:x.z,step:!!m?.userData.pose?.step,dx:m?m.position.x+v.origin.x-x.x:null,dz:m?m.position.z+v.origin.z-x.z:null,unit:m?.userData.unit};});
   r({t,hauler:!!U,slot:g?.userData.slot,look:q&&{phase:q.phase,ramp:q.ramp,wreck:q.wreck,x:q.x,y:q.y,z:q.z,pitch:q.pitch,roll:q.roll,vis:q.vis},sim:{x:e.x,y:e.y,z:e.z,landed:!!e.landed,left:!!e.left,hp:e.hp},mesh:g&&{x:g.position.x+v.origin.x,y:g.position.y,z:g.position.z+v.origin.z,vis:g.visible},
    parts:U&&{hull:U.hull.visible,ramp:U.ramp.visible,wreck:U.wreck.visible,rampAngle:U.ramp.rotation.x,mats:[U.hull,U.ramp,U.wreck].every(m=>m.material===v.style.MAT.par||m.material===v.style.MAT.parHit)},wave,down:B.cit.down,landed:B.cit.landed,calls:v.renderer.info.render.calls,programs:v.renderer.info.programs?.length});};requestAnimationFrame(f);});}'''
+SHARP='''for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){const v=g.call(this,p);return typeof v==='string'&&/swiftshader|llvmpipe|softpipe|software/i.test(v)?'Capture GPU':v;};}'''   # --sharp: the game holds a CPU rasterizer at .75x of the screen (js/graphics.js); a capture for LOOKS is drawn at the resolution a real device gets (HIGH on a phone: the device's own ratio, here the context's; LOW: 1x), by not telling the game the renderer is SwiftShader. Never used by a test that measures a budget.
 async def main(a):
  out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True);results={}
  async with async_playwright() as p:
@@ -40,7 +41,7 @@ async def main(a):
     w,h=[int(v) for v in size.split('x')];touch=w<700;tag=f'{size}-{q}'
     ctx=await browser.new_context(viewport={'width':w,'height':h},device_scale_factor=a.dpr if touch else 1,has_touch=touch,is_mobile=touch,reduced_motion='reduce')
     page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-    await page.add_init_script('window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='+json.dumps(q)+';try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
+    await page.add_init_script(SHARP) if a.sharp else None;await page.add_init_script('window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='+json.dumps(q)+';try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
     async def route(r):
      u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
      if u.netloc=='lunar.test' and f.is_file():return await r.fulfill(path=str(f))
@@ -81,4 +82,5 @@ async def main(a):
  (out/'citadel-ship.json').write_text(json.dumps(results,indent=1))
  print('PASS conquest-citadel-ship: '+', '.join(results)+': the tier III ship is the real hauler flown by ConquestDropship.flight(dropshipSpec): it flies in at the fight\'s ship, flares, sets its ramp\'s foot on the pad, lowers the ramp before the wave\'s moment, the wave steps off and stands where the fight has it, it lifts away; shot down it falls and lies as a wreck, its wave never lands')
 ap=argparse.ArgumentParser();ap.add_argument('--sizes',default='390x844');ap.add_argument('--quality',default='high,low');ap.add_argument('--out',default=str(ROOT/'docs/conquest/session5e2d2/citadel'));ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=700);ap.add_argument('--clean',action='store_true')
+ap.add_argument('--sharp',action='store_true')
 asyncio.run(main(ap.parse_args()))

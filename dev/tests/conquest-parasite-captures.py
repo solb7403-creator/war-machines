@@ -67,6 +67,7 @@ PHONE={
  'generals':(rows(G('command',CMD[:2]),G('command',CMD[2:]),7,17,7.4),0,20,.5,23,0),
  'generals-raider':(rows(G('raider',CMD[:2]),G('raider',CMD[2:]),5,12,5.4),0,18,.46,21,0),
  'generals-sentinel':(rows(G('sentinel',CMD[:2]),G('sentinel',CMD[2:]),7,17,7.4),0,20,.5,23,0)}
+SHARP='''for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){const v=g.call(this,p);return typeof v==='string'&&/swiftshader|llvmpipe|softpipe|software/i.test(v)?'Capture GPU':v;};}'''   # --sharp: the game holds a CPU rasterizer at .75x of the screen (js/graphics.js); a capture for LOOKS is drawn at the resolution a real device gets (HIGH on a phone: the device's own ratio, here the context's; LOW: 1x), by not telling the game the renderer is SwiftShader. Never used by a test that measures a budget.
 async def main(a):
  ROOT=pathlib.Path(a.root).resolve() if a.root else HERE
  out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True);w,h=[int(v) for v in a.size.split('x')];shots=[s for s in SHOTS if not a.only or s in a.only.split(',')];TABLE=dict(SHOTS,**PHONE) if h>w else SHOTS
@@ -75,7 +76,7 @@ async def main(a):
   browser=await p.chromium.launch(executable_path=shutil.which('chromium') or '/opt/pw-browsers/chromium',args=['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader'])
   ctx=await browser.new_context(viewport={'width':w,'height':h},device_scale_factor=1 if a.mouse else a.dpr,has_touch=not a.mouse,is_mobile=not a.mouse,reduced_motion='reduce')
   page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-  await page.add_init_script('window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='+json.dumps(a.quality)+';try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
+  await page.add_init_script(SHARP) if a.sharp else None;await page.add_init_script('window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='+json.dumps(a.quality)+';try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
   async def route(r):
    u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
    if u.netloc=='lunar.test' and f.is_file():return await r.fulfill(path=str(f))
@@ -116,4 +117,5 @@ async def main(a):
   assert not errors,errors
   await browser.close()
 ap=argparse.ArgumentParser();ap.add_argument('--quality',default='high');ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default=str(HERE/'docs/conquest/session5e2d2/units'));ap.add_argument('--tag',default='after');ap.add_argument('--only',default='');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=900);ap.add_argument('--clean',action='store_true');ap.add_argument('--ratio',type=float,default=0);ap.add_argument('--root',default='');ap.add_argument('--mask',action='store_true')
+ap.add_argument('--sharp',action='store_true')
 asyncio.run(main(ap.parse_args()))

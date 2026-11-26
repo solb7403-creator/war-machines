@@ -19,6 +19,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[2]
 STATE='''()=>{const X=ConquestPlotView.state,D=X.drill,R=X.R,S=R&&R.ships&&R.ships.stage;if(!D||!S)return null;const n={};for(const [k,im] of Object.entries(S.meshes))n[k]=im.visible?im.count:0;
  const alive={r:0,s:0,d:0,w:0,b:0};for(const q of D.now||[])alive[q[1]]++;const drawn={};for(const [k,im] of Object.entries(R.foes))drawn[k]=im.visible?im.count:0;
  return {t:D.t,ships:D.ships?D.ships.ships.map(s=>({key:s.key,kind:s.kind,at:s.at,lane:s.lane,units:s.units.length,pad:s.flight.pad,hit:s.flight.hitAt})):[],now:(D.shipNow||[]).map(i=>({key:i.key,x:i.pose.x,z:i.pose.z,phase:i.pose.phase,ramp:i.pose.ramp,bay:i.pose.bay,y:i.pose.y,wreck:i.pose.wreck,flash:i.pose.flash})),n,alive,drawn,info:X.info,mats:Object.values(S.meshes).every(m=>m.material===R.S.MAT.par||m.material===R.S.MAT.parHit)};}'''
+SHARP='''for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){const v=g.call(this,p);return typeof v==='string'&&/swiftshader|llvmpipe|softpipe|software/i.test(v)?'Capture GPU':v;};}'''   # --sharp: the game holds a CPU rasterizer at .75x of the screen (js/graphics.js); a capture for LOOKS is drawn at the resolution a real device gets (HIGH on a phone: the device's own ratio, here the context's; LOW: 1x), by not telling the game the renderer is SwiftShader. Never used by a test that measures a budget.
 async def main(a):
  out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True)
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
@@ -31,7 +32,7 @@ async def main(a):
      w,h=[int(v) for v in size.split('x')];touch=w<700
      ctx=await browser.new_context(viewport={'width':w,'height':h},device_scale_factor=a.dpr if touch else 1,has_touch=touch,is_mobile=touch,reduced_motion='reduce');page=await ctx.new_page()
      errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-     await page.add_init_script('''window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='''+json.dumps(q)+''';window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'BrowserPilot'}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};''')
+     await page.add_init_script(SHARP) if a.sharp else None;await page.add_init_script('''window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='''+json.dumps(q)+''';window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'BrowserPilot'}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};''')
      async def route(r):
       u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
       if u.path.startswith('/api/conquest/') or u.path in ('/api/sync','/api/act'):
@@ -146,4 +147,5 @@ async def main(a):
  finally:
   server.terminate()
 ap=argparse.ArgumentParser();ap.add_argument('--sizes',default='390x844');ap.add_argument('--quality',default='high,low');ap.add_argument('--out',default=str(ROOT/'docs/conquest/session5e2d2/dropships'));ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=700);ap.add_argument('--clean',action='store_true')
+ap.add_argument('--sharp',action='store_true')
 asyncio.run(main(ap.parse_args()))

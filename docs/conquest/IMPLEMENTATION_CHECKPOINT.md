@@ -6623,6 +6623,43 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md fi
   fixture needs `cd worker && npm install` (`@simplewebauthn/server`). The pre-session tree for before / after captures:
   `git archive d61d259` into a scratch folder, then `--root` on the capture tool.
 
+### The Nov 26 resume: the untested snapshot checked (step 0)
+- **What the snapshot `bdbb839..616fa50` held, read edit by edit** (it recorded nothing in this file; its comments in the
+  code are the record, and they say a first critic round ran on Nov 25): `kit/parunits.js` (the units' values lifted to
+  mid tones, the Hoard Fortress rebuilt tall and wide with a slab-sided turret and a long gold cannon), `worldkit.js` (the
+  Parasite red moved from `#ff2030` to the orange-red `#ff3a1c`, hot `#ff8a4a`, deep `#a81c0c`: green always above blue, so
+  it cannot drift to wine or plum under the Moon's blue light; `pal.parUnit`), `style.js` (the Parasites' own warm ambient
+  and fill light; `MAT.parDead`: a wreck is dark; the six wreck poses; a general's marker floats above its standard, a
+  Grabber's is half size; `S.glowSync`: every hostile's ground glow and every shot's glow in ONE draw, on HIGH and LOW; the
+  see-through outline asks 12 cells of the tank and comes on whole once 3 are hidden; the objective beam as a light shaft;
+  bank strata read from the side; the town's pocks in patches that never repeat; an atmosphere pylon's dome thins near the
+  camera), `view.js` (the beam, the glow data, the pad's hero pieces), `townkit.js` (`o.hero`: the pad's miniature is the
+  board, the wall band, the Command Center and up to nine more buildings), `plotview.js` (the drive view opens from a side
+  with a clear line to the tank), `app.js` (the map opens on the pilot, as close as still shows where he is headed),
+  `kit/military.js` (the Command Base wall and tower on HIGH: conduits, marker lamps, vents, hazard bands, lit slits,
+  floodlamps; LOW unchanged), `kit/parstruct.js` (the battery's head: four long barrels in a yoke, a gun shield of two
+  stolen plates, a loot rack), `conquest-style.mjs` (LOW colony + frontier as built at most 59,818 triangles, main before
+  5E-2d1) and `conquest-session6c.py` (LOW draws at most its triangles before 5E-2d1 at each phone size: 197,849 at
+  390x844, the owner's figure).
+- **Result on the merged tree: kept, with three fixes.** The node list of every CI workflow (149 commands) ran: 147 passed
+  at once; `conquest-earned-defense.mjs` needs the file `conquest-earned-journey.mjs` writes first (it passes in CI's
+  order and alone); `conquest-style.mjs` failed on one real fault: **the Hoard Fortress stood 4 cm over its slot box**
+  (the hoard's net, 6.04 m in a 6 m box): the net is 1.26 m over a 0.44 m crate now, the box and the rule unchanged.
+  `conquest-parasite-captures.py` crashed recording the units' boxes (the game's three.js build exports no `Box3`): it
+  takes the class from a geometry's own box, and counts wrecks (`MAT.parDead`) too. `conquest-dropship-browser.py` and
+  `conquest-citadel-ship.py` PASS on HIGH and LOW (the raid view with every ship of a wave: 79 / 81 draw calls and 11 / 9
+  programs against 150 and 16).
+- **Capture tools (Nov 26):** `--sharp` on the five capture tools of this session: the game holds a CPU rasterizer at
+  0.75x of the screen (`js/graphics.js`), so a picture taken here was softer than any phone shows; with `--sharp` the tool
+  does not tell the game the renderer is SwiftShader, and a picture is drawn at the resolution a real device gets (HIGH on
+  a phone: the device's ratio; LOW: 1x). Looks only: no test that measures a budget uses it. New:
+  `dev/tests/conquest-town-tank-captures.py` (the town's drive and build views at any size with the server's loadout, a
+  Titan with the Moonbeam: the tank drawn is the pilot's, never a stand-in). `conquest-warscenery-captures.py` keeps the
+  camera's own spot clear too (a house wall filled two pictures).
+- **Page load, measured on Nov 26 against main `25c83d6`:** +276,965 bytes raw, +105.5 KB gzipped (+8.9% of the page's
+  JS and CSS): `kit/parunits.js` 28.6 KB, `kit/warmodels.js` 24.5 KB, `kit/parstruct.js` 23.4 KB, `dropship.js` 7.3 KB,
+  `style.js` 7.2 KB gzipped; `kit/nature.js` is 7.2 KB lighter (the alien hive, mast, wall and spire deleted).
+
 ### Integration (Nov 25): the choices made while wiring the models in (each with its reason)
 - **Size on screen is unchanged.** Measured in the client before the change (HIGH, metres, width x height x length): raider
   2.67 x 1.39 x 4.53, breacher 4.01 x 2.18 x 5.32, sentinel 4.52 x 2.38 x 5.58, command 4.52 x 2.10 x 5.57, drone 4.59 x
