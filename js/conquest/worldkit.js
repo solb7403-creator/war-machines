@@ -215,7 +215,7 @@ function kit(S){if(S.worldKit)return S.worldKit;
   // colour. The stolen oxygen tanks are a dirty white under red-brown straps (strapR), one blue band left; the conquered
   // LDF blue (flagLDF) is a dirty, small trophy; soot = scorch patches. The hive, the masts and the ships keep pal.par.
   parUnit:{hull:mat(0x9a3626,'metal',.8),hullL:mat(0xb4492f,'metal',.7),hullD:mat(0x6e281d,'metal',.85),hullSet:[0x8a3226,0xa8452c,0x7a2a20,0x9c4a30].map(h=>mat(h,'paint',.8,.1)),
-   iron:mat(0x54443c,'metal',.6),ironL:mat(0x7c6a5c,'metal',.5),rust:mat(0x8e4522,'scrap',.85),scrap:mat(0x6e5a4c,'scrap',.7),wreck:mat(0x86766a,'metal',.75),wreckD:mat(0x5c4e46,'metal',.75),
+   iron:mat(0x54443c,'metal',.6),ironL:mat(0x7c6a5c,'metal',.5),rust:mat(0x8e4522,'scrap',.85),scrap:mat(0x6e5a4c,'scrap',.7),wreck:mat(0x8c6654,'metal',.8),wreckD:mat(0x5e4238,'metal',.8),
    plateMil:mat(0xd0c6b2,'metal',.6),plateMilD:mat(0x9c8e7a,'metal',.6),plateSet:[0xcbbf9e,0xb9a676,0x8e8a58,0xd6cab0].map(h=>mat(h,'paint',.75,.1)),hazard:mat(0xd8a622,'paint',.7),
    gold:mat(0xd8b044,'metal',0),goldD:mat(0x9a7828,'metal',.2),crate:mat(0x8a5c36,'timber',.5,.12),crateD:mat(0x5c3e26,'timber',.6,.12),sack:mat(0xb4a482,'cloth',0,.12),sackL:mat(0xe2d6b6,'cloth',0,.08),
    tank:mat(0xd2cab8,'paint',.85),tankBand:mat(0x2f6fc0,'paint',.5),strapR:mat(0x6a2418,'flat',0),soot:mat(0x120e0c,'flat',0),flagLDF:mat(0x2c5484,'cloth',0),flagLDF2:mat(0xa8a090,'cloth',0),
