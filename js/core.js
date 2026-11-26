@@ -262,6 +262,20 @@ function revealOf(r){
  if(r.tk==='vault'){const lv=r.lv|0,lv0=r.lv0|0,got=VAULT_REW.filter(x=>x.lv>lv0&&x.lv<=lv).map(x=>x.n),t=r.t||save.vg||0;
   return {tk:'vault',rar:2,color:vaultTier(lv).c,lv,title:'+'+fmtNum(r.g)+' Gold',
    sub:(r.gg?'Recorded as Genesis Gold. ':'')+(lv>lv0?'Vault level '+lv+'!'+(got.length?' Unlocked: '+got.join(', ')+'.':' Your badge is brighter on every board.'):'Vault level '+lv+'. '+fmtNum(Math.max(0,vaultNeed(lv+1)-t))+' Gold to level '+(lv+1)+'.')};}
+ // Session 8: the store's purchases (js/rules.js cqGrant and the Lab store): what each one gives, with its own picture (ui.js drawShopArt)
+ if(typeof SHOP==='object'&&SHOP){
+  if(r.tk==='cq'&&SHOP.cq[r.id]){const sub={'builder-2':'Two constructions run at once from now on. Yours for good.','wall-ext-10':'+10% wall capacity at your level (capacity only: strength still comes from composite and ore).',
+    'foundry-rush':'Your Foundry makes composite 4x as fast'+(r.until?' until '+new Date(r.until).toISOString().slice(0,16).replace('T',' ')+' UTC':' for 24 h')+'.','layout-slot':'One more saved layout in your town designer. Yours for good.',
+    'skin-gilded':'Pick it in your town designer: WALL SKIN. Looks only.','skin-turret-neon':'Pick it in your town designer: TURRET SKIN. Looks only.','theme-aurora':'Pick it in your town designer: LIGHTING. Looks only.'}[r.id];
+   return {tk:'cq',rar:2,color:'#ffcf4a',art:'cq:'+r.id,title:SHOP.cq[r.id].n,sub:sub||''};}
+  if(r.tk==='cos'){const I=typeof ConquestCatalog!=='undefined'&&ConquestCatalog.byId?ConquestCatalog.byId[r.id]:null;return {tk:'cos',rar:2,color:'#ffcf4a',art:'cos:'+r.id,title:I?I.name:'Collection piece',sub:'In your Conquest collection for good: equip it in COLLECTION. Looks only.'};}
+  if(r.tk==='mncrate'&&SHOP.mn[r.id]){const M=SHOP.mn[r.id],g=r.got&&Object.keys(r.got).length?r.got:M.give;return {tk:'mncrate',rar:1,color:MINERALS[r.id]?MINERALS[r.id].c:'#9fb3c2',art:'mn:'+r.id,title:M.n,sub:Object.entries(g).map(([m,n])=>'+'+n+' '+(MINERALS[m]?MINERALS[m].s:m)).join(', ')+' in your mineral wallet.'};}
+  if(r.tk==='orecrate'&&SHOP.ore[r.id]){const O=SHOP.ore[r.id];return {tk:'orecrate',rar:3,color:MINERALS[r.id]?MINERALS[r.id].c:'#ffcf4a',art:'ore:'+r.id,title:O.n,sub:'+'+(r.q||O.q)+' '+(MINERALS[r.id]?MINERALS[r.id].s:r.id)+' for your town walls only: never tank plates, never traded or gifted.'};}
+  if(r.tk==='cfin')return {tk:'cfin',rar:2,color:'#22e6ff',art:'cq:finish',title:'Construction finished',sub:'Done. Your town shows it as soon as it syncs.'};
+ }
+ if(r.tk==='rspack'&&typeof RS_PACKS==='object'&&RS_PACKS[r.id]){const P=RS_PACKS[r.id];return {tk:'rspack',rar:2,color:'#22e6ff',art:'rs:pack',title:P.n,sub:'+'+P.each+' of every research part for your Science Lab.'};}
+ if(r.tk==='rsleg'){const m=typeof rmodOf==='function'?rmodOf(r.id):null;return {tk:'rsleg',rar:4,color:'#ffcf4a',art:'rs:leg',title:'★ '+(m&&m.F?m.F.n:'Legendary set mod'),sub:'Legendary set mod unlocked for good: fit it in your Science Lab.'};}
+ if(r.tk==='rsfin')return {tk:'rsfin',rar:2,color:'#22e6ff',art:'rs:fin',title:'Research finished',sub:'Done. Your Science Lab shows it as soon as it syncs.'};
  const isW=r.isW,k=r.k,t=r.tier;if(!k)return null;
  const pw=v=>(Math.round(v*1000)/10)+'%';
  if(r.sal){const nm='Salvaged '+(isW?WNAMES[k][t]:CNAMES[k][t]),item={isW,k,tier:t,sal:true};

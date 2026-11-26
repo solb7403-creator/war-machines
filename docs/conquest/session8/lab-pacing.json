@@ -1,0 +1,277 @@
+{
+ "label": "SIMULATED (the game's research rules with a scripted buy-everything pilot), not playtesting",
+ "labDays": {
+  "I": 4,
+  "III": 7
+ },
+ "before": {
+  "label": "Session 6B gates (no weekly limit, 599 Stars each)",
+  "treeDays": {
+   "min": 8,
+   "median": 8,
+   "max": 8
+  },
+  "allFourDays": {
+   "min": 8,
+   "median": 8,
+   "max": 8
+  },
+  "bought": [
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4
+  ],
+  "researchedFree": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "stars": {
+   "min": 4794,
+   "max": 4794
+  },
+  "runs": [
+   {
+    "startWeekday": 0,
+    "treeDay": 8,
+    "allDay": 8,
+    "bought": 4,
+    "researchedLeg": 0,
+    "spend": {
+     "packs": 1894,
+     "legendary": 2396,
+     "finish": 504,
+     "stars": 4794,
+     "usd": 62.26
+    }
+   },
+   {
+    "startWeekday": 1,
+    "treeDay": 8,
+    "allDay": 8,
+    "bought": 4,
+    "researchedLeg": 0,
+    "spend": {
+     "packs": 1894,
+     "legendary": 2396,
+     "finish": 504,
+     "stars": 4794,
+     "usd": 62.26
+    }
+   },
+   {
+    "startWeekday": 2,
+    "treeDay": 8,
+    "allDay": 8,
+    "bought": 4,
+    "researchedLeg": 0,
+    "spend": {
+     "packs": 1894,
+     "legendary": 2396,
+     "finish": 504,
+     "stars": 4794,
+     "usd": 62.26
+    }
+   },
+   {
+    "startWeekday": 3,
+    "treeDay": 8,
+    "allDay": 8,
+    "bought": 4,
+    "researchedLeg": 0,
+    "spend": {
+     "packs": 1894,
+     "legendary": 2396,
+     "finish": 504,
+     "stars": 4794,
+     "usd": 62.26
+    }
+   },
+   {
+    "startWeekday": 4,
+    "treeDay": 8,
+    "allDay": 8,
+    "bought": 4,
+    "researchedLeg": 0,
+    "spend": {
+     "packs": 1894,
+     "legendary": 2396,
+     "finish": 504,
+     "stars": 4794,
+     "usd": 62.26
+    }
+   },
+   {
+    "startWeekday": 5,
+    "treeDay": 8,
+    "allDay": 8,
+    "bought": 4,
+    "researchedLeg": 0,
+    "spend": {
+     "packs": 1894,
+     "legendary": 2396,
+     "finish": 504,
+     "stars": 4794,
+     "usd": 62.26
+    }
+   },
+   {
+    "startWeekday": 6,
+    "treeDay": 8,
+    "allDay": 8,
+    "bought": 4,
+    "researchedLeg": 0,
+    "spend": {
+     "packs": 1894,
+     "legendary": 2396,
+     "finish": 504,
+     "stars": 4794,
+     "usd": 62.26
+    }
+   }
+  ]
+ },
+ "after": {
+  "label": "Owner, Nov 26 (one a UTC week, 1500 Stars each)",
+  "treeDays": {
+   "min": 8,
+   "median": 8,
+   "max": 8
+  },
+  "allFourDays": {
+   "min": 16,
+   "median": 19,
+   "max": 22
+  },
+  "bought": [
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2
+  ],
+  "researchedFree": [
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2
+  ],
+  "stars": {
+   "min": 7448,
+   "max": 7448
+  },
+  "runs": [
+   {
+    "startWeekday": 0,
+    "treeDay": 8,
+    "allDay": 22,
+    "bought": 2,
+    "researchedLeg": 2,
+    "spend": {
+     "packs": 3788,
+     "legendary": 3000,
+     "finish": 660,
+     "stars": 7448,
+     "usd": 96.73
+    }
+   },
+   {
+    "startWeekday": 1,
+    "treeDay": 8,
+    "allDay": 21,
+    "bought": 2,
+    "researchedLeg": 2,
+    "spend": {
+     "packs": 3788,
+     "legendary": 3000,
+     "finish": 660,
+     "stars": 7448,
+     "usd": 96.73
+    }
+   },
+   {
+    "startWeekday": 2,
+    "treeDay": 8,
+    "allDay": 20,
+    "bought": 2,
+    "researchedLeg": 2,
+    "spend": {
+     "packs": 3788,
+     "legendary": 3000,
+     "finish": 660,
+     "stars": 7448,
+     "usd": 96.73
+    }
+   },
+   {
+    "startWeekday": 3,
+    "treeDay": 8,
+    "allDay": 19,
+    "bought": 2,
+    "researchedLeg": 2,
+    "spend": {
+     "packs": 3788,
+     "legendary": 3000,
+     "finish": 660,
+     "stars": 7448,
+     "usd": 96.73
+    }
+   },
+   {
+    "startWeekday": 4,
+    "treeDay": 8,
+    "allDay": 18,
+    "bought": 2,
+    "researchedLeg": 2,
+    "spend": {
+     "packs": 3788,
+     "legendary": 3000,
+     "finish": 660,
+     "stars": 7448,
+     "usd": 96.73
+    }
+   },
+   {
+    "startWeekday": 5,
+    "treeDay": 8,
+    "allDay": 17,
+    "bought": 2,
+    "researchedLeg": 2,
+    "spend": {
+     "packs": 3788,
+     "legendary": 3000,
+     "finish": 660,
+     "stars": 7448,
+     "usd": 96.73
+    }
+   },
+   {
+    "startWeekday": 6,
+    "treeDay": 8,
+    "allDay": 16,
+    "bought": 2,
+    "researchedLeg": 2,
+    "spend": {
+     "packs": 3788,
+     "legendary": 3000,
+     "finish": 660,
+     "stars": 7448,
+     "usd": 96.73
+    }
+   }
+  ]
+ }
+}

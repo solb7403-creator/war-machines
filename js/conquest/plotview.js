@@ -390,9 +390,9 @@ function sync(){const R=X?.R,p=plotOf();if(!p)return;if(!R){draw2d();return;}con
   if(e.o.userData.drones)R.anim.push(e.o);}
  for(const [id,e] of R.meshes)if(!want.has(id)){g.build.remove(e.o);if(typeof Meshy3D!=='undefined')Meshy3D.release(e.o);e.o.traverse(o=>{if(!keep.has(o.geometry)&&!o.geometry?.userData?.meshy)o.geometry?.dispose?.();});R.meshes.delete(id);}
  // complete turrets: one base and one head draw per turret type and level (a CC10 town has up to 42 turrets)
- const tk=JSON.stringify([[...pl.turrets].map(([kk,l])=>[kk,l.map(([id,b])=>[id,b.i,b.j])]),theme?.finish,theme?.light,MY?MY.townStamp([...pl.turrets.keys()].map(kk=>kk.split(':')[0])):'']);if(R.keys.tur!==tk){R.keys.tur=tk;wipe(g.turrets,keep);R.tur=TK.turrets(R,p,pl,theme,g.turrets);}
+ const tk=JSON.stringify([[...pl.turrets].map(([kk,l])=>[kk,l.map(([id,b])=>[id,b.i,b.j])]),theme?.finish,theme?.light,theme?.ts,MY?MY.townStamp([...pl.turrets.keys()].map(kk=>kk.split(':')[0])):'']);if(R.keys.tur!==tk){R.keys.tur=tk;wipe(g.turrets,keep);R.tur=TK.turrets(R,p,pl,theme,g.turrets);}
  // walls: one instanced draw per blend look (up to 3,000 cells at CC10 with extensions), one for corner posts, one for rubble
- const wk=JSON.stringify(p.w)+low+JSON.stringify(p.dmg||{});if(R.keys.walls!==wk){R.keys.walls=wk;wipe(g.walls,keep);const W=TK.walls(R,p,pl,low,g.walls);R.wim=W.wim;R.wcell=W.wcell;R.wpost=W.wpost;R.dmgFx=TK.damageFx(R,p,g.walls);}
+ const wk=JSON.stringify(p.w)+low+JSON.stringify(p.dmg||{})+(p.theme?.ws||'');if(R.keys.walls!==wk){R.keys.walls=wk;wipe(g.walls,keep);const W=TK.walls(R,p,pl,low,g.walls);R.wim=W.wim;R.wcell=W.wcell;R.wpost=W.wpost;R.dmgFx=TK.damageFx(R,p,g.walls);}   // Session 8: + the Gilded wall skin (a skin change rebuilds them)
  // settler homes: one instanced draw per home kind
  const hk=P.homes(p).map(h=>h.id).join()+p.site+p.cc+low;if(R.keys.homes!==hk){R.keys.homes=hk;wipe(g.homes,keep);const H=TK.homes(R,p,pl,low,g.homes);R.him=H.him;R.hcell=H.hcell;}
  const ck=JSON.stringify([p.banner,p.theme,p.b.cc?.i,p.b.cc?.j,p.site]);if(R.keys.deco!==ck){R.keys.deco=ck;if(R.deco){g.build.remove(R.deco);R.deco.traverse(o=>{if(!o.geometry?.userData?.hfShared)o.geometry?.dispose?.();});}R.deco=new T.Group();const c=p.b.cc,x0=P.cellX(c.i)+6,z0=P.cellZ(c.j)+6;R.deco.position.y=footY(p.site,c);

@@ -428,7 +428,7 @@ const G_BODY={
    const on=cur[slot]===vid,tf=fittingStats({...cur,[slot]:vid}),sel=gCmp==='fit|'+slot+'|'+vid,base=FITS[slot][cur[slot]];
    const need=[['weight','weight'],['power','power']].filter(([k])=>tf[k]>FIT_BUDGET[k]).map(([k,n])=>'needs '+F[k]+' '+n+', '+(FIT_BUDGET[k]-(f[k]-base[k]))+' free');
    const own=rmodOwned(save,slot,vid),T=F.rs&&RTREE.tracks[F.rs];   // Session 6B: research mods once researched, Legendary set mods once bought (the server record)
-   const lock=own?'':F.leg?'Legendary set mod · research it in the Science Lab ('+RTREE.leg.n+' parts, Science Lab III, after '+rmodOf(RTREE.mods[F.rs][3]).F.n+') or buy it in the Lab store (not on sale yet)':'Research it in the Science Lab (Conquest town): '+T.n+(F.set?' set mod · Science Lab III':' · Science Lab '+['','I','II','III'][T.lab]);
+   const lock=own?'':F.leg?'Legendary set mod · research it in the Science Lab ('+RTREE.leg.n+' parts, Science Lab III, after '+rmodOf(RTREE.mods[F.rs][3]).F.n+') or buy it in the Lab store '+(LAB_STORE_OPEN?'(Shop: Science Lab, one a week)':'(not on sale yet)'):'Research it in the Science Lab (Conquest town): '+T.n+(F.set?' set mod · Science Lab III':' · Science Lab '+['','I','II','III'][T.lab]);
    const cost=F.weight||F.power?'Weight '+F.weight+' · Power '+F.power:'Free: no weight or power';
    return '<button class="gopt'+(on?' on':'')+(sel?' picked':'')+(F.rs?' grs':'')+(F.leg?' gleg':'')+(lock?' glock':'')+'"'+(T?' style="--tc:'+T.c+'"':'')+' data-act="'+(on?'gnop':'gcmp')+'" data-arg="fit|'+slot+'|'+vid+'"'+(need.length||lock?' disabled':'')+' aria-pressed="'+on+'"><b>'+(F.leg?'★ ':F.set?'◆ ':'')+esc(F.n)+(on?' <span class="eq">Fitted</span>':'')+(F.rs?' <span class="grs-tag">'+esc(F.leg?'LEGENDARY':F.set?T.n.toUpperCase()+' SET':T.n.toUpperCase())+'</span>':'')+'</b><span>'+esc(modText(F))+'</span><small>'+(lock?esc(lock):cost+(need.length?'. Doesn’t fit: '+need.join(' and '):''))+'</small></button>'+
     (sel?gCmpCard(L,gL(gFitCand(spec,slot,vid)),'gfit',slot+'|'+vid,'Fit '+F.n,'','fit'+slot):'');}).join('')+'</div>').join('')+'<p class="gnote">Speed means driving speed. Dash and supers stay the same.</p>';
@@ -570,7 +570,7 @@ const CRATE_N={weapon:'weapon cache',chassis:'chassis crate',gem:'gem cache'};
 const crateName=(tk,ri)=>TIER_N[ri]+' '+CRATE_N[tk];
 function payNote(){payCurOk();
  if(save.payCur==='stars')return IN_TG?'Pay with Telegram Stars. No wallet needed.':'Stars work inside Telegram.';
- if(save.payCur==='ton')return IN_TG&&!IN_WEB?(tonWallet?'GRAM wallet connected (TON Connect)':'Pay GRAM from Keeper, Telegram Wallet or any TON wallet'):'Pay GRAM from Keeper (Tonkeeper) or any TON wallet: a link on your phone, a QR code on a computer';
+ if(save.payCur==='ton')return IN_TG&&!IN_WEB?(tonWallet?'GRAM wallet connected (TON Connect)':'Pay GRAM from Keeper, Telegram Wallet or any GRAM wallet'):'Pay GRAM from Keeper (Tonkeeper) or any GRAM wallet: a link on your phone, a QR code on a computer';
  const w=SOL_WALLETS[save.solWallet]?save.solWallet:'phantom';
  return px.sol?'Pays from '+SOL_WALLETS[w].n:'Loading the SOL price…';
 }
@@ -927,6 +927,32 @@ const SCREENS={play:renderPlay,garage:renderGarage,shop:renderShop,quests:render
 // a Meshy model that just arrived replaces its procedural stand-in in the menu pictures too (one repaint per burst)
 let meshyArtTimer=0;
 if(typeof addEventListener==='function')addEventListener('lunar-meshy-ready',()=>{clearTimeout(meshyArtTimer);meshyArtTimer=setTimeout(()=>{try{if(typeof inGame==='undefined'||!inGame)paintArt(document);}catch(e){}},150);});
+// Session 8: the store's own pictures (the Conquest store, the mineral and wall-only ore crates, the Lab store, a construction finish):
+// vector icons drawn in a 64 x 44 box, scaled to the canvas (a store row's 64 x 44, a reveal's large one)
+function drawShopArt(ctx,w,h,a){const s=Math.min(w/64,h/44);ctx.save();ctx.translate(w/2,h/2);ctx.scale(s,s);ctx.lineJoin='round';ctx.lineCap='round';
+ const k=a[0],id=a[1]||'',GOLD='#ffcf4a',CY='#22e6ff',DK='#1b2a36',ED='#3d5a6e',ln=(c,lw)=>{ctx.strokeStyle=c;ctx.lineWidth=lw||1.6;},
+  poly=(pts,f,st)=>{ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();if(f){ctx.fillStyle=f;ctx.fill();}if(st)ctx.stroke();},
+  txt=(t,x,y,c,sz)=>{ctx.fillStyle=c;ctx.font='800 '+(sz||9)+'px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,x,y);},
+  glow=(c,b)=>{ctx.shadowColor=c;ctx.shadowBlur=b;},noGlow=()=>{ctx.shadowBlur=0;ctx.shadowColor='transparent';},
+  wall=(x,y,wd,hh,f,st)=>{ctx.fillStyle=f;ctx.fillRect(x,y,wd,hh);for(let i=0;i<wd;i+=6)ctx.fillRect(x+i,y-3,3.5,3);ln(st,1);ctx.strokeRect(x,y,wd,hh);ctx.beginPath();ctx.moveTo(x,y+hh/2);ctx.lineTo(x+wd,y+hh/2);for(let i=4;i<wd;i+=8){ctx.moveTo(x+i,y);ctx.lineTo(x+i,y+hh/2);ctx.moveTo(x+i+4,y+hh/2);ctx.lineTo(x+i+4,y+hh);}ctx.stroke();},
+  crate=(c,shine)=>{ctx.fillStyle=DK;ctx.fillRect(-16,-1,32,17);ln(ED,1.4);ctx.strokeRect(-16,-1,32,17);ctx.beginPath();ctx.moveTo(-16,7.5);ctx.lineTo(16,7.5);ctx.moveTo(-8,-1);ctx.lineTo(-8,16);ctx.moveTo(8,-1);ctx.lineTo(8,16);ctx.stroke();
+   if(shine)glow(c,9);poly([[-10,-1],[-5,-14],[4,-18],[10,-7],[7,-1]],c,false);noGlow();ln('rgba(255,255,255,.6)',1);ctx.beginPath();ctx.moveTo(-5,-14);ctx.lineTo(0,-6);ctx.lineTo(4,-18);ctx.moveTo(0,-6);ctx.lineTo(7,-1);ctx.stroke();},
+  hourglass=c=>{ln(c,1.8);ctx.beginPath();ctx.moveTo(-9,-15);ctx.lineTo(9,-15);ctx.moveTo(-9,15);ctx.lineTo(9,15);ctx.moveTo(-7,-15);ctx.lineTo(-7,-9);ctx.lineTo(0,0);ctx.lineTo(-7,9);ctx.lineTo(-7,15);ctx.moveTo(7,-15);ctx.lineTo(7,-9);ctx.lineTo(0,0);ctx.lineTo(7,9);ctx.lineTo(7,15);ctx.stroke();
+   ctx.fillStyle=c;poly([[-5,11],[5,11],[0,4]],c,false);glow(GOLD,8);poly([[13,-14],[7,-1],[12,-1],[9,12],[18,-4],[13,-4],[16,-14]],GOLD,false);noGlow();};
+ if(k==='mn'||k==='ore'){const M=MINERALS[id];crate(M?M.c:'#9fb3c2',k==='ore');if(k==='ore')wall(10,-17,16,9,GOLD,DK);}
+ else if(k==='rs'){if(id==='leg'){glow(GOLD,10);const P=[];for(let i=0;i<10;i++){const r=i%2?7:17,t=-Math.PI/2+i*Math.PI/5;P.push([Math.cos(t)*r,Math.sin(t)*r+1]);}poly(P,GOLD,false);noGlow();ln('#fff3c4',1.2);poly(P,null,true);}
+  else if(id==='fin')hourglass(CY);
+  else{ctx.fillStyle=DK;ctx.fillRect(-17,-6,34,20);ln(ED,1.4);ctx.strokeRect(-17,-6,34,20);ln(CY,1.8);ctx.beginPath();ctx.arc(0,-8,8,0,Math.PI*2);ctx.stroke();for(let i=0;i<8;i++){const t=i*Math.PI/4;ctx.beginPath();ctx.moveTo(Math.cos(t)*8,-8+Math.sin(t)*8);ctx.lineTo(Math.cos(t)*11.5,-8+Math.sin(t)*11.5);ctx.stroke();}ctx.beginPath();ctx.arc(0,-8,3,0,Math.PI*2);ctx.stroke();}}
+ else if(k==='cq'){
+  if(id==='builder-2'){for(const [x,c] of [[-13,'#9fb3c2'],[11,CY]]){ln(c,1.8);ctx.beginPath();ctx.moveTo(x-7,16);ctx.lineTo(x+7,16);ctx.moveTo(x,16);ctx.lineTo(x,-15);ctx.lineTo(x+13,-15);ctx.moveTo(x-5,-15);ctx.lineTo(x,-15);ctx.moveTo(x,-10);ctx.lineTo(x+8,-15);ctx.moveTo(x+11,-15);ctx.lineTo(x+11,-5);ctx.stroke();ctx.fillStyle=c;ctx.fillRect(x+8.5,-5,5,4);}txt('x2',22,10,GOLD,10);}
+  else if(id==='wall-ext-10'){wall(-26,-2,30,14,'#6f8797',DK);ctx.setLineDash([3,3]);ln(CY,1.4);ctx.strokeRect(6,-2,18,14);ctx.setLineDash([]);txt('+10%',15,-12,CY,10);}
+  else if(id==='foundry-rush'){ctx.fillStyle='#4a5d6b';ctx.fillRect(-24,-4,26,20);ctx.fillRect(-20,-16,6,12);ln(ED,1.2);ctx.strokeRect(-24,-4,26,20);glow('#ff8a3d',10);ctx.fillStyle='#ff8a3d';ctx.fillRect(-17,4,12,8);noGlow();ln(GOLD,2.2);for(const x of [8,16]){ctx.beginPath();ctx.moveTo(x,-6);ctx.lineTo(x+6,2);ctx.lineTo(x,10);ctx.stroke();}txt('4x',18,-13,GOLD,10);}
+  else if(id==='layout-slot'){ctx.fillStyle='#173a5c';ctx.fillRect(-22,-15,32,30);ln('rgba(140,200,255,.55)',.8);for(let i=-15;i<=15;i+=6){ctx.beginPath();ctx.moveTo(-22,i);ctx.lineTo(10,i);ctx.stroke();}for(let i=-22;i<=10;i+=6){ctx.beginPath();ctx.moveTo(i,-15);ctx.lineTo(i,15);ctx.stroke();}ln('#cfe6ff',1.6);ctx.strokeRect(-16,-9,14,12);ctx.strokeRect(-4,-3,8,8);ln(CY,2.4);ctx.beginPath();ctx.moveTo(19,-6);ctx.lineTo(19,8);ctx.moveTo(12,1);ctx.lineTo(26,1);ctx.stroke();}
+  else if(id==='skin-gilded'){const g=ctx.createLinearGradient(0,-14,0,14);g.addColorStop(0,'#fff1b0');g.addColorStop(.5,GOLD);g.addColorStop(1,'#a8741c');glow(GOLD,8);wall(-26,-8,52,20,g,'#6b4a12');noGlow();}
+  else if(id==='skin-turret-neon'){ctx.fillStyle=DK;ctx.beginPath();ctx.arc(0,6,13,Math.PI,0);ctx.closePath();ctx.fill();ctx.fillRect(-16,6,32,9);glow('#ff4fd8',10);ln('#ff4fd8',1.8);ctx.beginPath();ctx.arc(0,6,13,Math.PI,0);ctx.stroke();ctx.strokeRect(-16,6,32,9);glow(CY,10);ln(CY,2.4);ctx.beginPath();ctx.moveTo(4,-2);ctx.lineTo(24,-12);ctx.stroke();noGlow();}
+  else if(id==='theme-aurora'){for(const [c,y] of [['#2dffc4',-12],['#a07bff',-6],['#22e6ff',-1]]){glow(c,8);ln(c,2.6);ctx.beginPath();ctx.moveTo(-28,y);ctx.bezierCurveTo(-12,y-8,4,y+8,28,y-4);ctx.stroke();}noGlow();ctx.fillStyle='#5f7484';ctx.beginPath();ctx.arc(0,17,14,Math.PI,0);ctx.closePath();ctx.fill();ln('#9fb3c2',1);ctx.stroke();ctx.fillStyle='#38464f';ctx.fillRect(-30,16,60,4);}
+  else hourglass(CY);}   // 'finish': a paid construction finish
+ ctx.restore();}
 function paintArt(root){
  for(const c of root.querySelectorAll('canvas[data-art]')){
   const w=c.clientWidth,h=c.clientHeight;if(!w||!h)continue;
@@ -946,6 +972,8 @@ function paintArt(root){
     const it=k==='moon'?getW('moon'):a[3]===undefined?(isW?getW(save.weapon):getC(save.chassis)):(isW?getW(k,+a[3],a[4]==='1'):getC(k,+a[3],a[4]==='1'));
     if(c.dataset.locked)ctx.globalAlpha=0.45;drawGearIcon(ctx,w,h,isW,it);ctx.globalAlpha=1;}
    else if(a[0]==='gem')drawGemArt(ctx,w,h,a[1]);
+   else if(a[0]==='cq'||a[0]==='mn'||a[0]==='ore'||a[0]==='rs')drawShopArt(ctx,w,h,a);
+   else if(a[0]==='cos'){if(typeof ConquestCatalog!=='undefined'&&ConquestCatalog.draw2D){const s=Math.min(w/66,h/62);ConquestCatalog.draw2D(ctx,a[1],w/2,h/2+3*s,s);}}
    else if(a[0]==='vault')drawVaultArt(ctx,w,h,+a[1]||0);
    else if(a[0]==='unit')drawUnitArt(ctx,w,h,units[+a[1]]);
    else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,TC[0],null,'pulse',null,3,a[1]==='paint'?PAINTS[a[2]]:a[1]==='me'||a[1]==='lunar'?myPaint():null,null,a[1]==='lunar'?'lunar':a[1]==='me'||a[1]==='paint'?save.skin:'default');}
@@ -1277,6 +1305,7 @@ function openAdmin(){
 let revealQ=[],revealOv=null;
 function showReveal(list){revealQ.push(...(list||[]).filter(Boolean));if(revealOv&&!overlays.includes(revealOv))revealOv=null;if(!revealOv)nextReveal();}   // a reveal closed by closeAll() never ran its onClose
 function itemArt(r){
+ if(r.art)return r.art;   // Session 8: a store purchase names its own picture (drawShopArt, the catalog's draw2D)
  if(r.gem)return 'gem:'+r.gem;
  if(r.tk==='moonbeam')return 'gear:w:moon:2:0';
  if(r.tk==='skin')return 'tank:lunar';
@@ -1431,8 +1460,8 @@ function openFinish(id){
  if(P.soon&&typeof fetchPrices==='function')fetchPrices();
  sheet('finish',()=>{const sol=P.soon&&typeof solFor==='function'?solFor(P.soon.ton):0;
   return '<h3>'+esc(P.n)+'</h3><div class="finbig'+(P.fx?' live':'')+'"><canvas data-art="tank:paint:'+id+'"></canvas>'+paintFx(P)+'</div>'+
-  (P.soon?'<p class="finsoon">Not on sale yet</p><p class="mut">The animated version of '+esc(F.n)+'. Looks only, no stats. It goes on sale when payments open.</p>'+
-    '<p class="mut finprice">Planned price: '+(IN_TG?fmtNum(P.soon.stars)+' ⭐ or ':'')+P.soon.ton+' TON'+(sol?' (about '+sol+' SOL)':' (SOL at the live rate)')+'</p>'
+  (P.soon?'<p class="finsoon">Not on sale yet</p><p class="mut">The animated version of '+esc(F.n)+'. Looks only, no stats. It goes on sale once its in-battle animation is finished.</p>'+
+    '<p class="mut finprice">Planned price: '+(IN_TG?fmtNum(P.soon.stars)+' ⭐ or ':'')+P.soon.ton+' GRAM'+(sol?' (about '+sol+' SOL)':' (SOL at the live rate)')+'</p>'
    :'<p class="mut">Looks only, no stats. Earned in Arcade, never sold.</p>')+
   '<div class="finprog"><div class="row"><b>'+esc(F.n)+'</b><span class="grow"></span><span>'+(own?'Unlocked':n+'/'+WX_FINISH_N)+'</span></div><div class="track"><i style="width:'+Math.round((own?1:n/WX_FINISH_N)*100)+'%"></i></div>'+
   '<p class="mut">'+(own?'You earned it on '+esc(M.n)+'.':WX_FINISH_N+' hazard takedowns on '+esc(M.n)+' ('+esc(WX_MAP[map].hn)+'). A takedown: an enemy you hit in the last '+WX_CREDIT+' seconds takes the hazard, or is finished by it. AI and live matches both count.')+'</p>'+
@@ -1667,7 +1696,7 @@ const ACT={
  flagclear:a=>{loadAdmin({clear:a});showToast('Cleared: '+a+' counts for the snapshot again');},
  clclear:a=>{loadAdmin({clearCl:a});showToast('Cleared: every account in that group counts again');},
  adminproof:a=>{loadAdmin({proof:a});showToast(a==='flag'?'Match records: flag only':'Match records: enforced');},
- snapshot:()=>{api('/api/admin',{snap:1}).then(r=>{const rows=(r.snapshot||[]).map((x,i)=>[i+1].concat(x).join(','));const txt='rank,player,name,points,days,airdrop credit,verified spend (TON value),genesis gold\n'+rows.join('\n');
+ snapshot:()=>{api('/api/admin',{snap:1}).then(r=>{const rows=(r.snapshot||[]).map((x,i)=>[i+1].concat(x).join(','));const txt='rank,player,name,points,days,airdrop credit,verified spend (GRAM value),genesis gold\n'+rows.join('\n');
   try{navigator.clipboard.writeText(txt).then(()=>showToast('Snapshot copied: '+rows.length+' pilots'),()=>showToast(rows.length+' pilots (copy failed)'));}catch(e){showToast(rows.length+' pilots');}}).catch(()=>showToast('Snapshot unavailable'));},
  leavecancel:()=>{const ov=findOv('leave');if(ov)closeOverlay(ov);},
  leaveok:()=>forfeit(),

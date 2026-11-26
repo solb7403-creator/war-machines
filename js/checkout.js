@@ -59,16 +59,16 @@ async function tonConnectPay(o,desc){
 // ---- the checkout sheet (GRAM and SOL): the quote, how to pay it, its live status ----
 const tonLink=(o,app)=>(app?'https://app.tonkeeper.com/transfer/':'ton://transfer/')+o.to+'?amount='+o.base+'&text='+encodeURIComponent(o.memo);
 const solPayUrl=o=>'solana:'+o.to+'?amount='+encodeURIComponent(o.amt)+'&reference='+encodeURIComponent(o.ref)+'&label='+encodeURIComponent('LUNAR: War Machines')+'&message='+encodeURIComponent(o.item)+'&memo='+encodeURIComponent(o.oid);
-const solPage=(o,w)=>PAY_PAGE+'?a='+o.amt+'&r='+o.ref+'&m='+encodeURIComponent(o.oid)+'&d='+encodeURIComponent(o.item)+(o.usd?'&u='+o.usd:'')+'&w='+w;
+const solPage=(o,w)=>PAY_PAGE+'?a='+o.amt+'&r='+o.ref+'&m='+encodeURIComponent(o.oid)+'&d='+encodeURIComponent(o.item)+(o.usd?'&u='+o.usd:'')+'&w='+w+(IN_WEB?'&s=web':'');
 const narrowPay=()=>innerWidth<720||matchMedia('(pointer:coarse)').matches;
 function coSheet(o,desc,step){coOpen={o,desc,step:step||'start',at:Date.now()};save.coOpen=o.oid;store();
  sheet('checkout',()=>coHtml());coWatch();}
 function coStep(oid,step){if(coOpen&&coOpen.o.oid===oid){coOpen.step=step;coRedraw();}}
 function coRedraw(){const ov=findOv('checkout');if(!ov||!coOpen)return;const b=ov.box.querySelector('.cosheet');if(b){b.outerHTML=coHtml();coQr();}}
 function coHtml(){const {o,step}=coOpen,t=o.cur==='TON',left=Math.max(0,o.e-Date.now()),m=Math.floor(left/60000),st=o.st,done=st==='paid',held=st==='held';
- const steps=[['approve',t?'Approve in your wallet':'Approve in your wallet'],['confirm','Confirming on '+(t?'the TON chain':'Solana')],['done','Delivered']],cur=done?2:step==='confirm'||coOpen.seen?1:0;
+ const steps=[['approve',t?'Approve in your wallet':'Approve in your wallet'],['confirm','Confirming on '+(t?'chain':'Solana')],['done','Delivered']],cur=done?2:step==='confirm'||coOpen.seen?1:0;
  const row=(lbl,val,k)=>'<div class="corow"><div><span class="lbl">'+lbl+'</span><b class="val'+(k==='addr'?' addr':'')+'">'+esc(val)+'</b></div><button class="btn sm btn-quiet" data-act="cocopy" data-arg="'+k+'">Copy</button></div>';
- const wal=t?'<a class="btn btn-go block" href="'+esc(tonLink(o,true))+'" target="_blank" rel="noopener">Pay '+o.amt+' GRAM in Keeper (Tonkeeper)</a><a class="btn btn-quiet block" href="'+esc(tonLink(o,false))+'">Another TON wallet</a>'+(IN_TG&&tonConnectUI?'<button class="btn btn-quiet block" data-act="cotonc">Pay with a connected wallet (TON Connect)</button>':''):
+ const wal=t?'<a class="btn btn-go block" href="'+esc(tonLink(o,true))+'" target="_blank" rel="noopener">Pay '+o.amt+' GRAM in Keeper (Tonkeeper)</a><a class="btn btn-quiet block" href="'+esc(tonLink(o,false))+'">Another GRAM wallet</a>'+(IN_TG&&tonConnectUI?'<button class="btn btn-quiet block" data-act="cotonc">Pay with a connected wallet (TON Connect)</button>':''):
   ['phantom','solflare','backpack'].map(w=>'<a class="btn '+(w==='phantom'?'btn-go':'btn-quiet')+' block" href="'+esc(SOL_WALLETS[w].ul(solPage(o,w)))+'" target="_blank" rel="noopener">Pay in '+SOL_WALLETS[w].n+'</a>').join('');
  return '<div class="cosheet" data-oid="'+o.oid+'"><h3>'+esc(o.item)+'</h3>'+
   '<div class="coamt"><b class="num">'+o.amt+'</b> '+(t?'GRAM':'SOL')+(o.usd?'<span class="mut"> ≈ $'+o.usd+'</span>':'')+'</div>'+
@@ -96,8 +96,12 @@ function coWatch(){clearTimeout(coPoll);const tick=async()=>{if(!coOpen)return;c
  coQr();coPoll=setTimeout(tick,2500);}
 function coDone(o,outs){save.coOpen=null;save.purchases=save.purchases||[];save.purchases.push({cur:o.cur,amt:o.amt,what:o.item,memo:o.memo||o.oid,proof:o.tx||'',ts:Date.now()});store();
  coOpen={o,desc:coOpen&&coOpen.desc,step:'done'};coRedraw();showOuts(outs||[]);showToast('Delivered: '+o.item);uiDirty('shop');coAfter(o);}
-// a Conquest purchase: the town reads the account at once (the second builder, a finish, the looks...)
-function coAfter(o){try{const k=o.d&&o.d.kind;if(['cq','cos','orecrate','cfin','rsfin','rspack','rsleg'].includes(k)&&typeof conquestShopRefresh==='function')conquestShopRefresh();}catch(e){}}
+// a Conquest purchase: the town reads the account at once (the second builder, a finish, the looks...): the Conquest session's own
+// sync (/api/conquest/session runs worker/src/conquest-shop.js shopAccount); outside Conquest the next open reads it
+function conquestShopRefresh(){try{const v=typeof Conquest!=='undefined'&&Conquest.view,A=v&&v.authority;if(A&&typeof A.refresh==='function')A.refresh();}catch(e){}}
+const CQ_OUTS=['cq','cos','mncrate','orecrate','cfin','rsfin','rspack','rsleg'];
+function coAfter(o){try{const k=o.d&&o.d.kind;if(CQ_OUTS.includes(k))conquestShopRefresh();}catch(e){}}
+function coAfterOuts(outs){if((outs||[]).some(x=>x&&CQ_OUTS.includes(x.tk)))conquestShopRefresh();}   // a Stars delivery (net.js starsDeliver)
 // resume: an open GRAM / SOL order from the server (sync) or this phone keeps being checked until it confirms
 function coResume(list){const open=(list||[]).filter(o=>o&&o.open);if(!open.length)return;const o=open.find(x=>x.oid===save.coOpen)||open[0];if(coOpen&&coOpen.o.oid===o.oid)return;coOpen={o,step:'confirm',at:Date.now()};coWatch();}
 async function coResumeAll(show){try{const r=await api('/api/order',{a:'list'});const open=(r.orders||[]).filter(o=>o.open&&o.cur!=='STARS');if(!open.length)return;coOpen={o:open[0],step:'confirm',at:Date.now()};if(show)sheet('checkout',()=>coHtml());coWatch();}catch(e){}}

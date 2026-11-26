@@ -143,7 +143,7 @@ function pay(ton,desc){checkout(desc);}
 // a paid Stars purchase: the server grants it when Telegram's confirmation arrives (usually within a second or two)
 function starsDeliver(nonce,k){
  api('/api/act',{a:'paid',n:nonce}).then(r=>{
-  if(r&&r.out&&r.out.outs){if(r.E)applyEco(r.E);showOuts(r.out.outs);return;}
+  if(r&&r.out&&r.out.outs){if(r.E)applyEco(r.E);showOuts(r.out.outs);if(typeof coAfterOuts==='function')coAfterOuts(r.out.outs);return;}
   if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),1500);else showToast('Payment received. Your item arrives in a moment.');
  }).catch(()=>{if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),2500);});
 }

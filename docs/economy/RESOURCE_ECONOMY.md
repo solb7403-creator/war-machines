@@ -716,47 +716,82 @@ Part packs (§9.3) only speed this up; checkout is off.
 
 ## 9. Store rules and revenue levers
 
-Checkout stays **DISABLED** for every item below until payments are certified (`ConquestCatalog.checkout.enabled=false`; PR #21 is not certified).
+**Session 8 (owner brief `docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.md`, Nov 26, 2026): checkout is OPEN** once every payment
+check passed (ROADMAP row 8): the website (the main store) takes GRAM (formerly TON) and SOL; Telegram takes Stars and GRAM (a server
+switch turns GRAM off inside Telegram in one step, default on). Every price and limit on sale lives in ONE table, `js/rules.js` `SHOP`
+(older constants are referenced from it); dollar prices convert like the Lab store: Stars = ceil(USD x 77), GRAM = USD x 1.25 to two
+decimals, SOL at the live GRAM rate (no rate: no SOL quote). The server checks every price, limit, deal and ownership rule in every
+currency (`worker/src/shop.js`); paid items never grant airdrop points; never sold: anything in the loot tables, points, Gambits,
+consumables on their own, trophies, boards. DAILY_CAP 50,000 and CQ_PTS unchanged.
 
-### 9.1 Minerals in the store (owner-approved; illustrative prices only; checkout off)
+### 9.1 Minerals in the store (owner-approved Nov 26: live)
 
-- **Sellable:** Ferrite Regolith and Ilmenite only, in **fixed bundles** with nothing random:
-  - Ferrite Crate: 150 Ferrite, about $1.99;
-  - Ilmenite Crate: 60 Ilmenite + 30 Ferrite, about $4.99.
+- **Ferrite and Ilmenite, fixed bundles, nothing random:** Ferrite Crate (150 Ferrite) **$1.99** (154 Stars / 2.49 GRAM), at most
+  **2 a UTC day**; Ilmenite Crate (60 Ilmenite + 30 Ferrite) **$4.99** (385 Stars / 6.24 GRAM), at most **1 a UTC day and 4 a UTC
+  week**. Into the mineral wallet. The earn path stays the main path.
+- **Points shop:** 10 Ferrite for 1,500 earned points, up to 30 Ferrite a day (a points sink; earned).
+- **Rare-or-better ore, for town walls only (owner, Nov 23 and Nov 26; this replaces "rare and above are earn-only" for town walls
+  only):** Armalcolite, Tranquillityite, Selenite Glass and Moonheart, each in its own **wall-only crate**, at most **1 of each a UTC
+  day**: Armalcolite wall crate **20** Armalcolite **$4.99** (385 Stars / 6.24 GRAM); Tranquillityite **8** **$7.99** (616 / 9.99);
+  Selenite **4** **$9.99** (770 / 12.49); Moonheart **2** **$14.99** (1,155 / 18.74). Bought ore is **wall-only**: its own account
+  bucket (`S.wmn`), spent only by the town's wall blends (first, before the base stores' ore); it never goes into tank plates,
+  buildings, Foundry research or anything else, is never moved to the wallet, never traded or gifted, never counts for points.
+  Earned rare ore is unchanged (earned only; it still never appears in paid bundles or the premium pass track).
+- **Sizing (SIMULATED with `dev/tools/fortress-model.mjs`, `dev/tools/ore-crate-sizing.mjs`, `docs/conquest/session8/ore-crates.json`;
+  not playtesting):** the definitions were fixed before measuring (Rule 2): *fully built within the year* = day-365 mean wall blend
+  quality >= 0.99 on the full cap (CC10's 2,000 cells + 50% = 3,000); *noticeably stronger* = the mean hold rate over days 300 / 330 /
+  365 at least 5 points above the free heavy pilot's, and stronger day-365 walls. Every crate holds the ore for the same 20 wall cells
+  at heavy blend, so a rarer ore costs more per cell exactly as the owner's prices step. The paying pilot at the 2-hour heavy play time
+  (second builder, wall extension packs, Epic gear, Ferrite / Ilmenite at their limits, one of each wall crate a day while that ore can
+  still improve the walls) is **fully built from day 228** (all seven sites days 205-234), holds **100%** of late raids against the free
+  heavy pilot's **81%** (+19 points), walls 1.000 against 0.675; one size smaller (10 / 4 / 2 / 1) is never fully built in the year
+  (0.943). Free pilots are **bit-for-bit unchanged** (the model's fingerprint, sha256 41b98539..., before and after). Money (ridge, a
+  year): $5,568 of wall crates (41 / 71 / 141 / 226), $2,493 of Ferrite / Ilmenite at their limits every day (an upper bound).
+  PROPOSAL (final report): larger crates are better value per dollar (30 / 12 / 6 / 3: day 156 for $3,770; 50 / 20 / 10 / 5: day 95
+  for $2,243); the late raids stop being a contest for a fully built town at every size measured (a Rule 1 challenge concern).
 
-  These prices are illustrative and are not live pricing.
-- **Limits:** at most 2 Ferrite Crates a day, and at most 1 Ilmenite Crate a day (4 a week). The earn path always stays the main path.
-- **Points shop:** 10 Ferrite for 1,500 earned points, up to 30 Ferrite a day. This is a points sink, and it is earned.
-- **Earn-only:** Armalcolite, Tranquillityite, Selenite Glass and Moonheart are never sold. They never appear in paid bundles or in the premium Lunar Pass track, and they cannot be traded or gifted.
+### 9.2 Other revenue levers (Session 8: what shipped)
 
-### 9.2 Other planned revenue levers
+**Guardrail (owner wording, 2026-11-08):** paid features never grant airdrop points or rare+ minerals directly (the owner's Nov 23 / 26
+wall-only ore crates are the one exception, for town walls only, as above). Indirect gains through power or base level are allowed,
+the same as Moonbeam today.
 
-**Guardrail (owner wording, 2026-11-08):** paid features never grant airdrop points or rare+ minerals directly. Indirect gains through power or base level are allowed, the same as Moonbeam today. Examples: a faster base through speed-ups or a second builder, or gear that raises league. Raid shields only once PvP base raids exist.
+| Lever | Shipped | What it does | Guardrail |
+|---|---|---|---|
+| Mineral crates (§9.1) | yes: Ferrite $1.99 (2 a day), Ilmenite $4.99 (1 a day, 4 a week) | saves time on plating tiers 1-2 | only Ferrite and Ilmenite; daily and weekly limits |
+| Wall-only rare ore (§9.1) | yes: $4.99 / $7.99 / $9.99 / $14.99, 1 of each a day | rare-or-better ore for town walls | wall-only; never plates, trades, gifts or points |
+| Second builder | yes: $9.99 (770 Stars / 12.49 GRAM), once | two base constructions at once (a second job slot) | never points or minerals; PROPOSAL: the spec's earnable second builder (Trophy Hall III) was never built |
+| Wall extension pack | yes: $2.99, +10% capacity each | wall capacity only | within the same +50% cap as the earned extensions |
+| Foundry speed-up | yes: $1.99 | the Foundry makes composite 4x as fast for 24 h (each adds 24 h) | composite only |
+| Extra layout slot | yes: $1.99, once | a fourth saved town layout | none |
+| Speed-ups | yes: priced by the time left, RS_FIN ($0.22 x hours^0.85, 5-minute steps, $0.10 minimum), the free time shown beside it | finish a running construction now | construction timers only: never repairs, deposit respawns, strike timers or anything that pays points |
+| Looks: Gilded wall skin $4.99, Neon turret skins $4.99, Aurora town lighting $3.99 | yes, rendered in the town (kit and Meshy models) | looks only | stats unchanged |
+| Base cosmetics (`js/conquest/catalog.js`, 20 pieces) | yes, at their proposedUsd ($2.99-$29.99) | looks only; also earned by play | hitboxes and readability unchanged |
+| Plate finishes (cosmetic) | NOT on sale: not built (row 6B-V) | | |
+| Raid shields | NOT on sale: only once PvP base raids exist | | |
+| Lunar Pass Conquest perks | yes, inside the existing pass (799 Stars / 13 GRAM): RECALL in 5 minutes, scanner +50 m, two more layout slots, one Repair Kit a UTC day (up to the consumables' cap) | the plate finish waits for row 6B-V | never points, never minerals |
+| Battalion store (chip pack, liveries, RECRUIT finish) | NOT on sale (not in the Nov 26 sale list) | | |
 
-| Lever | Where it fits | What it does | Indirect effect (allowed) | Guardrail |
-|---|---|---|---|---|
-| Mineral crates (§9.1) | garage store | saves time on plating tiers 1–2 (at most +7% HP) | plating raises gear rating, then league and the league airdrop factor | only Ferrite and Ilmenite; daily and weekly limits; the stronger league also meets a harder AI |
-| Second builder | base-builder session | two base constructions at once | a faster base reaches the Conquest points multiplier and the yield sooner | never grants points or rare+ minerals itself; an earnable second builder exists too |
-| Speed-ups | base-builder session | finish a running construction timer now, at a fixed shown price, with the earn time beside it | same as the second builder | construction timers only: never deposit respawns, strike timers or anything that pays points itself |
-| Base cosmetics | exists (`js/conquest/catalog.js`: 5 architecture collections, $7.99–$29.99 proposals, preview only) | looks only | none | must keep hitboxes and readability |
-| Plate finishes (cosmetic) | tank session | premium looks for plates (trim, glow colors) | none | looks only; the tier stays readable |
-| Raid shields | competitive / PvP base-raid session | protection from player raids for a while | protection in a steal system | only once PvP base raids exist (`base.pvpAvailable=false` today); free shields after being raided; earnable shields; never against PvE alerts |
-| Lunar Pass perks | existing pass (13 TON / 799 Stars) | already halves RECALL; could add scanner range and plate finishes | none | the existing rule holds: the premium track never gives points; never rare+ minerals |
+### 9.3 Science Lab store (owner, Nov 26: OPEN)
 
-### 9.3 Science Lab store (Session 6B; proposals; checkout OFF in every currency)
+`LAB_STORE_OPEN = true`. Stars, GRAM and SOL at the shop's own rates (77 Stars and 1.25 GRAM a dollar; SOL at the live GRAM rate).
+Nothing here gives points.
 
-Real store entries with **no checkout**: `LAB_STORE_OPEN=false` and the Worker refuses every Lab kind (no Stars invoice, no TON or SOL grant). Prices are priced like the shop: Stars and TON at the shop's own rates (77 Stars and 1.25 TON a dollar; 61.5–62.5 Stars a TON), SOL at the live TON rate. Telegram shows Stars; the website shows TON and SOL. Nothing here gives points.
-
-| Entry | What it gives | Stars | TON | Limit |
+| Entry | What it gives | Stars | GRAM | Limit |
 |---|---|---:|---:|---|
-| Instant finish | ends the running research job now | 8 (20 min left) · 31 (2 h) · 100 (8 h) | 0.13 · 0.50 · 1.61 | priced by the time left: $0.22 × hours^0.85, 5-minute steps, $0.10 minimum (the genre's concave skip curve; Clash of Clans ~20 gems an hour, ~260 a day) |
+| Instant finish | ends the running research job now | 8 (20 min left) · 31 (2 h) · 100 (8 h) | 0.13 · 0.50 · 1.61 | priced by the time left: $0.22 x hours^0.85, 5-minute steps, $0.10 minimum |
 | Field kit | +1 of every research part (4) | 99 | 1.6 | one a UTC week |
 | Lab crate | +3 of every part (12) | 249 | 4 | one a UTC week |
 | Research cache | +8 of every part (32) | 599 | 9.6 | one a UTC week |
-| Legendary set mod (Sunfire Core, Starfall Driver, Hyperdrive, Aegis Prime), each | a step stronger than the earned set mod of its track (§6.5); **also free in the Science Lab** (30 of its track's part, 8 h, Science Lab III, after that set mod) | 599 | 9.6 | on sale only after that track's earned set mod is researched (Science Lab III alone never opens it); one ownership: researched or being researched = not for sale, bought = never researched, a refund removes only a bought one |
-| Lunar Pass premium perks (the existing pass, 799 Stars / 13 TON) | +1 research slot, research 25% faster, 1 of each part on premium tiers 10, 20 and 30 | — | — | start only when the Lab store opens (`LAB_STORE_OPEN`, `passResearch`): until then the pass is unchanged and shows them as coming; the premium track never gives points; season dates unchanged |
+| Legendary set mod (Sunfire Core, Starfall Driver, Hyperdrive, Aegis Prime), each | a step stronger than its track's earned set mod (§6.5); **also free in the Science Lab** (30 of its track's part, 8 h, Science Lab III, after that set mod) | **1,500** | **23** | **at most one a UTC week** (owner, Nov 26: the Epic crate's price; was 599 / 9.6); on sale only after that track's earned set mod is researched; one ownership (researched, being researched or bought); a purchase and a research start are atomic (Checkpoint 41 item 6) |
+| Lunar Pass premium perks (the existing pass, 799 Stars / 13 GRAM) | +1 research slot, research 25% faster, 1 of each part on premium tiers 10, 20 and 30 | — | — | live with the Lab store (`passResearch`); the premium track never gives points |
 
-What a free pilot needs is in §7.5 (the earned tree in about 149 days at 60 min a day, every Legendary free in about 343). **PROPOSAL for the owner, before the Lab store opens (Lab store pacing):** with the gates as built, a pilot who buys every pack can finish the tree and buy all four Legendary set mods in about 8–9 days (Science Lab III is the gate; pack weeks start Monday 00:00 UTC, so two weeks of packs fit inside the first seven days). One option from the planning: one Legendary set mod a UTC week; under the owner's revenue rules of Nov 16-17 the lead's recommendation is to keep the gates as built (a weekly limit delays revenue and invites churn before the purchase, and live rooms already seat by power). For scale (reviewer 2's count at the proposed prices): a payer exhausts the Lab by about day 9 for about 4,924 Stars (about $64: two pack weeks 1,894, four Legendary set mods 2,396, every skip 634). Recorded on the roadmap (row 8); nothing is on sale.
+**Pacing (SIMULATED: `dev/tools/lab-store-pacing.mjs`, `docs/conquest/session8/lab-pacing.json`; the game's research rules with a
+scripted pilot who buys everything; the regular town ladder, Science Lab III on day 7):** before (Session 6B gates: no weekly limit,
+599 Stars) the earned tree and all four Legendary set mods on **day 8** for 4,794 Stars; after (owner, Nov 26: one a UTC week, 1,500
+Stars) the earned tree still on **day 8**, all four Legendary set mods on **day 19** (16-22 by the weekday the pilot starts): two
+bought, and two researched free with the packs' parts, for 7,448 Stars (about $97). A free pilot is unchanged (§7.5: the earned tree in
+about 149 days at 60 minutes a day, every Legendary free in about 343).
 
 ---
 

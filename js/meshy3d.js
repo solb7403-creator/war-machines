@@ -382,10 +382,13 @@ const Meshy3D=(()=>{
  const townScale=(type,l)=>type==='cc'?.78+.0245*(Math.max(1,l)-1):.82+.045*(Math.min(5,Math.max(1,l))-1);
  const townAsset=(type,item)=>enabled&&detail!=='none'?request(item||'town-'+type,'light'):null;
  const townStamp=types=>enabled?types.map(t=>peek('town-'+t,'light')?1:0).join(''):'';
- const THEME_FINISH={sand:'#8f7c62',graphite:'#353d49'},THEME_LIGHT={cyan:'#22e6ff',amber:'#ffb347',violet:'#b78bff',green:'#3fe0c0',red:'#ff5a4a'};
+ const THEME_FINISH={sand:'#8f7c62',graphite:'#353d49'},THEME_LIGHT={cyan:'#22e6ff',amber:'#ffb347',violet:'#b78bff',green:'#3fe0c0',red:'#ff5a4a',aurora:'#3fe0c0'};
+ // Session 8, the store's looks (owner brief section 2; looks only): the Aurora town lighting shimmers through the aurora's colours
+ // (townStep below), the Neon turret skin lights the turrets magenta and brighter
+ const AURORA=['#3fe0c0','#b78bff','#22e6ff'],NEON='#ff3df0';
  // one material per model and theme, shared by every instance (town motion is clock-driven, so nothing is per instance)
- function townMaterial(asset,theme,low){
-  const key=(low?'l':'h')+'|'+(theme&&theme.finish||'')+'|'+(theme&&theme.light||'');asset.townMats=asset.townMats||new Map();let m=asset.townMats.get(key);if(m)return m;
+ function townMaterial(asset,theme,low,tur){
+  const neon=!!(tur&&theme&&theme.ts==='neon'),key=(low?'l':'h')+'|'+(theme&&theme.finish||'')+'|'+(theme&&theme.light||'')+(neon?'|neon':'');asset.townMats=asset.townMats||new Map();let m=asset.townMats.get(key);if(m)return m;
   const U=paintUniforms(asset,null,false),L=asset.info.look||{};
   // Session 5E-2d1 (critic round 3: the colour re-check of the owner's town items against his references): in the town
   // the armour read near-black navy where the references are gunmetal, so the stock finish is lifted a step and warmed a
@@ -396,6 +399,8 @@ const Meshy3D=(()=>{
   if(TL.glow){const c=lin(TL.glow);U.uGlowTint.value.set(c.r,c.g,c.b,TL.mix||.85);U.uGlowBase.value=1;}
   if(theme&&THEME_FINISH[theme.finish]){const c=lin(THEME_FINISH[theme.finish]);U.uPaintA.value=ratio(c,lin(L.paintA||'#808890'));U.uPaintB.value=ratio(c.clone().multiplyScalar(.8),lin(L.paintB||L.paintA||'#808890'));}
   if(theme&&THEME_LIGHT[theme.light]){const c=lin(THEME_LIGHT[theme.light]);U.uGlowTint.value.set(c.r,c.g,c.b,1);}
+  if(theme&&theme.light==='aurora')U.aurora=AURORA.map(lin);   // animated by townStep
+  if(neon){const c=lin(NEON);U.uGlowTint.value.set(c.r,c.g,c.b,1);U.uGlowGain.value=(U.uGlowGain.value||1)*1.6;U.aurora=null;}
   m=makeMaterial(asset,low?'low':'high',U);m.userData.meshyOwned=false;m.userData.town=true;asset.townMats.set(key,m);townLive.add(U);return m;
  }
  // index subsets of one geometry: the fixed base (part "ring") and the head (everything else)
@@ -437,7 +442,7 @@ const Meshy3D=(()=>{
   const asset=townAsset(type);if(!asset)return null;
   // a tower with no turning head (Tesla coil: body + emitter, no ring part) is one fixed instanced piece; its head set is empty
   let sp=townSplit(asset);if(!sp){if(!noHead){noHead=new THREE.BufferGeometry();noHead.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9),3));noHead.setIndex([]);noHead.userData.hfShared=true;noHead.userData.meshy=true;}sp={base:asset.geometry,head:noHead,fixed:true};}
-  const mat=townMaterial(asset,theme,low),n=Math.max(1,count),base=new THREE.InstancedMesh(sp.base,mat,n),hd=new THREE.InstancedMesh(sp.head,mat,n),pv=townPivot(asset),sc=.9+.025*(Math.max(1,lvl)-1);
+  const mat=townMaterial(asset,theme,low,true),n=Math.max(1,count),base=new THREE.InstancedMesh(sp.base,mat,n),hd=new THREE.InstancedMesh(sp.head,mat,n),pv=townPivot(asset),sc=.9+.025*(Math.max(1,lvl)-1);
   base.count=hd.count=count;base.frustumCulled=hd.frustumCulled=false;base.onBeforeRender=hd.onBeforeRender=envHook;
   const q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),v=new THREE.Vector3(),s3=new THREE.Vector3(),off=new THREE.Vector3();
   // model point p -> world: T(x,y,z) * R(yaw) * S * T(-pivot); kick slides the head back along its aim
@@ -446,7 +451,8 @@ const Meshy3D=(()=>{
   asset.refs=(asset.refs||0)+2;return {base,hd,matrix,asset,meshy:true,recoil:(asset.info.meta&&asset.info.meta.recoil)||.22};
  }
  // clock-driven channels of every live town material (spinning dishes, blinking lights, pulsing cores)
- function townStep(t,quiet){for(const U of townLive){const c=U.uCh.value;c[CH.time]=quiet?0:t;c[CH.pulse]=quiet?.8:.72+.28*Math.sin(t*2.6);c[CH.sway]=quiet?0:Math.sin(t*2.3)*.6;c[CH.charge]=quiet?.3:.5+.5*Math.sin(t*1.7);}}
+ function townStep(t,quiet){for(const U of townLive){const c=U.uCh.value;c[CH.time]=quiet?0:t;c[CH.pulse]=quiet?.8:.72+.28*Math.sin(t*2.6);c[CH.sway]=quiet?0:Math.sin(t*2.3)*.6;c[CH.charge]=quiet?.3:.5+.5*Math.sin(t*1.7);
+  if(U.aurora){const A=U.aurora,f=quiet?0:((t*.08)%1+1)%1*A.length,i=Math.floor(f)%A.length,j=(i+1)%A.length,u=f-Math.floor(f),e=u*u*(3-2*u);U.uGlowTint.value.set(A[i].r+(A[j].r-A[i].r)*e,A[i].g+(A[j].g-A[i].g)*e,A[i].b+(A[j].b-A[i].b)*e,1);}}}   // Session 8: the Aurora light drifts green, violet, cyan (about 12 s a cycle; still when quiet)
  // free the per-mesh materials of a removed tree (geometry and maps are shared and stay cached)
  function release(root){if(!root||!root.traverse)return;root.traverse(o=>{if(o.userData.meshyTownRelease){o.userData.meshyTownRelease();delete o.userData.meshyTownRelease;}const om=o.isMesh&&(o.userData.fadeOrig||o.material);if(om&&om.userData&&om.userData.meshyOwned&&!o.userData.meshyReleased){o.userData.meshyReleased=true;om.dispose();if(om!==o.material&&o.material)o.material.dispose();o.onBeforeRender=()=>{};const a=o.userData.meshy&&o.userData.meshy.asset;if(a)a.refs=Math.max(0,(a.refs||0)-1);}});}
  // warm the cache for a loadout (LIGHT only): called when a loadout is known before it is drawn

@@ -8342,7 +8342,30 @@ If your context was cleared, read docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.
   Legendary at 1,500 Stars). Also PASS: wtest/test 204, wtest/lab-store 38, conquest-cosmetics, -authority, conquest-loot,
   owner-rules 58, wtest/conquest-research 19, conquest-plot 63, conquest-guardrails 67, gem-ui.
 - **Store research (helper 1) back:** findings recorded under "Store research" below; applied in slice 6.
-- **Next:** slice 4 (server orders + Stars certification, `wtest/payments.mjs`).
+- **Slice 4 (the certified checkout, wip 0d8ee72 + a9bc0d7):** `worker/src/shop.js` (server quotes for Stars, GRAM and SOL on
+  `/api/order`; one open quote per item across every rail; the Stars pre-checkout re-check; exactly-once grants; the GRAM switch;
+  fail-closed SOL; the Legendary reservation); the old orderless `/api/pay-log` answers 410; `wtest/payments.mjs` (new) and the old
+  payment tests ported to the quote flow (wtest/test 208, chassis 110, lab-store 44, battalion 95, farm 55, the research suites).
+- **Slices 5-6 (wip 3e98bbc + this commit):** the Conquest entitlements in the Conquest record (`worker/src/conquest-shop.js`: second
+  builder `p.job2`, layout slots, wall extension packs, the Foundry 4x window, the looks, wall-only ore spent first by walls, paid
+  construction finishes, bought collection pieces, the Lunar Pass perks); the phone (`js/checkout.js`: quotes, the Stars invoice, the
+  GRAM / SOL sheet with QR on a computer and wallet links on a phone, the three-step pending state, receipts in Settings > Purchases;
+  the Shop's Conquest and Lab sections; FINISH NOW on the town's job cards; the collection's BUY; the reveal card of every new
+  purchase; the store's own pictures `drawShopArt`); the looks rendered in the town (`js/conquest/townkit.js` skins on the kit
+  models, `js/meshy3d.js` Neon turret material and the animated Aurora light); pay.html bound to its order (order id shown, back to
+  the website or Telegram); GRAM everywhere a player sees the coin (wiki, terms, Shop, checkout, admin export); the wiki's store
+  tables written from SHOP and checked by `shop-table.mjs`; docs (RESOURCE_ECONOMY §9, the spec §9, the ROADMAP standing Store
+  decision). Fixed on the way: the wall extension pack's cap check read a field the server never sent (always 'town'), now earned +
+  bought + this pack within +50% (`wtest/payments` 96); an owner-rules lint hit in `wtest/pay.mjs`'s header comment.
+- **Slice 7 (the measurements, SIMULATED, not playtesting):** the wall-only ore crates sized with the fortress model (helper 2; the
+  lead reviewed and copied `dev/tools/fortress-model.mjs`, `dev/tools/ore-crate-sizing.mjs`, `dev/tests/conquest-fortress.mjs` section
+  (h), `docs/conquest/session8/ore-crates.json`): 20 / 8 / 4 / 2 (results under "Measurements"); the Lab store pacing
+  (`dev/tools/lab-store-pacing.mjs`, `docs/conquest/session8/lab-pacing.json`).
+- **Evidence noise (not regressions, checked on a clean main worktree):** `docs/conquest-session-2/earned-defense.json` (main's own
+  code writes cp 165 and no chain item: the committed file is stale on main too) and the timing fields of town-rules / living-world
+  JSONs under parallel load are never committed from this branch.
+- **Next:** slice 9 (switches on, every CI node and browser test, new browser tests for the store / checkout / receipts), slice 10
+  (captures), slice 11 (three reviewers), slice 12 (release). The switches stay OFF in every commit until slice 9 passes.
 
 ### What was read (slice 1-2)
 CLAUDE.md, AGENTS.md, ROADMAP row 8 + Standing owner decisions, DECISIONS 12, CONQUEST_1_0_SPEC §9-10, RESOURCE_ECONOMY §7.5,
@@ -8416,6 +8439,40 @@ one step, with no release (Design 2). Stars stay the default currency in Telegra
 11. **Not on sale (kept off, reported):** the Battalion store (chip pack, liveries, RECRUIT finish: not in the brief's sale list,
    and chips are research-like), plate finishes (row 6B-V), the earnable second builder (the spec names Trophy Hall III but it
    was never built; building it would change every free pilot's pace, so it stays a PROPOSAL and the store copy stops claiming it).
+
+12. **Crate amounts (wall-only ore):** 20 / 8 / 4 / 2, the smallest size that meets the owner's requirement (the helper's search; one
+   size smaller fails). Kept over larger crates because the brief's requirement is a year-long arc ("fully built within the year"),
+   each crate already equals 1-4 weeks of a dedicated pilot's earning for the rare tiers (Selenite 0.37 a day, Moonheart 0.07) and
+   about a day for Armalcolite / Tranquillityite (the owner's own Ferrite / Ilmenite crates are about a day too), and buying the whole
+   fortress in three weeks would empty the town's progression for a payer (Rule 1). Larger crates are a PROPOSAL (final report).
+13. **The fortress model's `payer` profile** (the grinder's play time, guard (d)) now buys Ferrite / Ilmenite at the SHIPPED limits
+   (2 Ferrite Crates + 4/7 Ilmenite Crate a day) instead of the planned 200 Ferrite + 60 Ilmenite a day: justified by the approved
+   change itself (the owner's limits replaced the plan), not by any result (Rule 2); its day-330 hold went 90.5% -> 85.7%, walls
+   unchanged at 0.80; no threshold moved. Guard (d)'s report text no longer says the store sells no rare ore.
+14. **LIVE hazard finishes stay off sale:** their in-battle animation belongs to row 6B-V (not built) and their prices were only
+   proposals; the finish sheet now says it goes on sale once its in-battle animation is finished (it said "when payments open").
+15. **The Legendary hint in the Garage** names the Lab store honestly in both switch states (open: "Shop: Science Lab, one a week";
+   closed: "not on sale yet"); `lab-ui.mjs` asserts both strings (the rule changed, the check did not loosen).
+16. **Store pictures:** the Conquest store's tiles and the reveal cards use vector icons drawn in code (`drawShopArt`) and the
+   catalog's own `draw2D` for collection pieces; the town sheet keeps its 3D previews (`spriteModel` kind 'x').
+17. **The looks in the town:** the Gilded wall skin and the Neon turret skin recolour the kit models' vertex colours on a copy (a wall
+   keeps its ore's height and face details, so strength still reads); the owner's Meshy turrets take a magenta light at 1.6x glow; the
+   Aurora light gives each kit building one of three aurora colours and animates the Meshy models' light through them (about 12 s a
+   cycle, still when the town is quiet).
+
+### Measurements (SIMULATED, not playtesting; nothing here measures enjoyment)
+- **Wall-only ore crates (fortress model, helper 2, 1,065 s run, 17 PASS):** the paying pilot at the 2-hour heavy play time is fully
+  built from day 228 on ridge (all seven sites days 205-234), holds 100% of the raids on days 300 / 330 / 365 against the free heavy
+  pilot's 81% (+19 points), walls 1.000 against 0.675. Free profiles bit-for-bit unchanged (sha256 41b98539... before and after).
+  Money (ridge, a year): $5,568.21 of wall crates (41 Armalcolite, 71 Tranquillityite, 141 Selenite, 226 Moonheart; $4,585-$5,568
+  across sites) plus $2,493.47 of Ferrite / Ilmenite at their limits every day (an upper bound). Other sizes: 10 / 4 / 2 / 1 never fully
+  built (0.943); 30 / 12 / 6 / 3 day 156, $3,770; 50 / 20 / 10 / 5 day 95, $2,243; 100 / 40 / 20 / 10 day 48, $1,059. Concerns for the
+  report: every size holds 100% of late raids (the late raids stop being a contest for a fully built paid town: Rule 1); the as-needed
+  buyer leaves some lower ore unused (60 Armalcolite, 6.4 Tranquillityite, 11.2 Selenite on day 365).
+- **Lab store pacing (`dev/tools/lab-store-pacing.mjs`; a buy-everything pilot: every pack every UTC week, every job instantly
+  finished, the premium pass, the regular town ladder with Science Lab III on day 7):** before (no weekly limit, 599 Stars) the tree and
+  all four Legendary set mods on day 8 for 4,794 Stars; after (owner: 1,500 Stars, one a UTC week) the tree on day 8, all four on day 19
+  (16-22 by the weekday the pilot starts): two bought, two researched free with the packs' parts, 7,448 Stars (about $97).
 
 ### Slices (each tested, committed and pushed)
 3. The one table + the new kinds in js/rules.js (prices, limits, grants, refunds; Lab: Legendary 1,500 Stars / 23 GRAM, one a

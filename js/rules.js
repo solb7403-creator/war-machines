@@ -1620,7 +1620,7 @@ function fittingPe(v){const o={h:0,d:0,s:0};for(const [b,x] of Object.entries(fi
 // in a track costs RTREE.cost[n] of that track's part, the set mod (needs the track's other three) RTREE.cost[3] (owner, Nov 17:
 // 2 / 4 / 5 / 9, 20 a track, 80 in all), and one research part found by play a day per account (CQ_PART_DAY). A track's Legendary
 // set mod can also be researched (RTREE.leg: its own job) once Science Lab III stands and the track's set mod is researched; or
-// bought (the Lab store, checkout off), never both. The fifth track slot (Role Cores) is shown locked: Session 6C adds Science Lab
+// bought (the Lab store), never both. The fifth track slot (Role Cores) is shown locked: Session 6C adds Science Lab
 // level IV with it.
 const RTREE={tracks:{thermal:{n:'Thermal',part:'thermal',lab:1,c:'#ff8a3d',d:'Keep firing: heat becomes damage.'},
   coil:{n:'Ballistics',part:'coil',lab:1,c:'#e8f4ff',d:'Precision: every hit counts.'},
@@ -1649,13 +1649,12 @@ function rsQuote(rs,id,labLv,premium,bought){
 const rsSlots=(labLv,premium)=>(labLv>=1?RTREE.slots.base:0)+(labLv>=3?RTREE.slots.lab3:0)+(premium&&labLv>=1?RTREE.slots.pass:0);
 // the parts a whole tree costs (the economy model and the lab screen read it)
 const rsTreeCost=()=>RTREE.order.reduce((a,t)=>(a[RTREE.tracks[t].part]=RTREE.cost.reduce((x,y)=>x+y,0),a),{});
-// ---- Session 6B Science Lab store (owner decision 8): real store entries with CHECKOUT OFF in every currency. While LAB_STORE_OPEN is
-// false the Worker's descOf (worker/src/index.js) refuses every Lab kind, so no Stars invoice and no TON or SOL payment can buy one;
-// the phone shows each entry with its proposed price and a disabled button. Prices are PROPOSALS priced like the shop: Stars and TON
-// at the shop's own dollar rates (the paid build reset: 77 Stars, 1.25 TON a dollar; the Vault's 62.5 Stars a TON), SOL at the live
-// TON rate; Telegram shows Stars, the website TON and SOL. Ownership is server-verified: only ecoGrant, after a verified payment,
-// writes S.bpt (bonus parts) / S.lsm (Legendary set mods) / S.rsx (finish credits), and the client can never sync them (ECO_KEYS).
-// Nothing here gives points (owner: research, mods and purchases give no airdrop points).
+// ---- Science Lab store (Session 6B owner decision 8; OPEN since Session 8, owner Nov 26, 2026: LAB_STORE_OPEN true). While it is
+// false the Worker's descOf (worker/src/shop.js) refuses every Lab kind. Priced like the shop: Stars and GRAM (formerly TON; the ids
+// keep 'ton') at the shop's own dollar rates (77 Stars, 1.25 GRAM a dollar), SOL at the live GRAM rate; Telegram shows Stars and GRAM,
+// the website GRAM and SOL. Ownership is server-verified: only ecoGrant, after a verified payment, writes S.bpt (bonus parts) / S.lsm
+// (Legendary set mods) / S.rsx (finish credits), and the client can never sync them (ECO_KEYS). Nothing here gives points (owner:
+// research, mods and purchases give no airdrop points).
 const LAB_STORE_OPEN=false;
 const RS_STARS_USD=77,RS_TON_USD=1.25;
 // instant finish, priced by the time left: concave like the genre's skip prices (Clash of Clans: 1 h ~20 gems, 1 day ~260): the

@@ -48,6 +48,7 @@ h1{font:800 22px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;lett
   <div class="item" id="item">PURCHASE</div>
   <div class="amt"><span id="sol">0</span> SOL</div>
   <div class="usd" id="usd"></div>
+  <div class="small" id="ord" style="margin-top:2px"></div>
   <!-- inside a Solana wallet's browser: one-tap pay -->
   <div id="inwallet" class="hide">
    <button class="btn pay" id="payBtn">APPROVE PAYMENT</button>
@@ -63,7 +64,7 @@ h1{font:800 22px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;lett
  </div>
 
  <div class="card" id="manual">
-  <div class="item">KEEPER OR ANOTHER WALLET?</div>
+  <div class="item">ANOTHER SOLANA WALLET?</div>
   <p class="small" style="margin:6px 0 10px">Send <b>exactly</b> this amount of SOL to this address. The exact amount is how we match the payment to your account, so don't round it.</p>
   <div class="copyrow"><div><div class="lbl">AMOUNT</div><div class="val" id="amtV">0</div></div><button class="cp" data-k="amt">COPY</button></div>
   <div class="copyrow"><div style="min-width:0"><div class="lbl">ADDRESS (SOLANA)</div><div class="val addr" id="addrV"></div></div><button class="cp" data-k="addr">COPY</button></div>
@@ -71,7 +72,7 @@ h1{font:800 22px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;lett
 
  <div class="card">
   <div class="small" style="margin-top:0">After paying, go back to the game. Your item unlocks automatically once the payment confirms (usually under 30 seconds).</div>
-  <a class="btn back" href="https://t.me/LunarWarMachinesBot/play">BACK TO THE GAME</a>
+  <a class="btn back" id="backBtn" href="https://t.me/LunarWarMachinesBot/play">BACK TO THE GAME</a>
  </div>
 
  <div class="card" id="qrCard">
@@ -84,14 +85,16 @@ h1{font:800 22px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;lett
  var RECIPIENT='A37J13iXXA47n4kFKvR9Cao1u8A6v3HP8qMCSCJDi7AE';
  var RPCS=['https://solana-rpc.publicnode.com','https://api.mainnet-beta.solana.com','https://solana.drpc.org'];
  var q=new URLSearchParams(location.search);
- var a=q.get('a'),r=q.get('r'),m=q.get('m'),d=q.get('d')||'Purchase',u=q.get('u');
+ var a=q.get('a'),r=q.get('r'),m=q.get('m'),d=q.get('d')||'Purchase',u=q.get('u'),web=q.get('s')==='web';
+ // Session 8: the page belongs to one server order (m: its id, r: its reference key, a: its exact amount); back to where it was bought
+ var BACK=web?'https://lunar-api.solb7403.workers.dev/web/play.html':'https://t.me/LunarWarMachinesBot/play';
  var $=function(id){return document.getElementById(id);};
  if(!a||!r||!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(r)||!(parseFloat(a)>0)){
-  document.querySelector('.wrap').innerHTML='<div class="brand">☾ LUNAR: WAR MACHINES</div><h1>LINK INCOMPLETE</h1><div class="card">Go back to the game and tap the item again.<a class="btn back" href="https://t.me/LunarWarMachinesBot/play">BACK TO THE GAME</a></div>';return;
+  document.querySelector('.wrap').innerHTML='<div class="brand">☾ LUNAR: WAR MACHINES</div><h1>LINK INCOMPLETE</h1><div class="card">Go back to the game and tap the item again.<a class="btn back" href="'+BACK+'">BACK TO THE GAME</a></div>';return;
  }
  var lamports=Math.round(parseFloat(a)*1e9);
  $('item').textContent=d.toUpperCase();$('sol').textContent=a;if(u)$('usd').textContent='≈ $'+u;
- $('amtV').textContent=a;$('addrV').textContent=RECIPIENT;
+ $('amtV').textContent=a;$('addrV').textContent=RECIPIENT;if(m&&/^[A-Za-z0-9_-]{4,40}$/.test(m))$('ord').textContent='Order '+m+' · price held 30 minutes';$('backBtn').href=BACK;
 
  // wallet links (open this same page inside the wallet's browser)
  var self=location.href,ref=encodeURIComponent(location.origin);

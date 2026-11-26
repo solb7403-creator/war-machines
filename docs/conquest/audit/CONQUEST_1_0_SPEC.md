@@ -185,18 +185,19 @@ Hangar slots hold owned tanks as defenders (fixed authored AI, never copying the
 
 Guardrails (owner wording): paid features never grant airdrop points or rare+ minerals directly; indirect gains through power or base level are allowed; raid shields only once player raids exist; every price and sellable flag in one table.
 
-**Catalog**
-- Lunar Pass Conquest perks: RECALL 5 min (exists), scanner +50 m, two extra layout slots, one Repair Kit a day, a Pass-only plate finish. Never points, never minerals.
-- Second builder (an earnable second builder exists: Trophy Hall III).
-- Town looks: lighting sets, wall skins, gate ornaments, banner sets, decorations.
-- Tank plate finishes and trim (looks only; tier stays readable).
-- Ferrite Crate (150, 2 a day) and Ilmenite Crate (60 + 30 Ferrite, 1 a day, 4 a week).
-- Extra layout slot; wall extension pack (+10% capacity, never strength).
-- Speed-ups for construction timers only, shown with the earn time beside them, not in the first wave.
+**Session 8 (owner brief `docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.md`, Nov 26, 2026): shipped.** Every price and limit is the owner's and lives in `js/rules.js` `SHOP`; the website (GRAM, SOL) is the main store, Telegram takes Stars and GRAM (a server switch); the server checks every rule in every currency (`worker/src/shop.js`); the town reads the purchases from the account (`worker/src/conquest-shop.js`). Details: `docs/economy/RESOURCE_ECONOMY.md` §9.
 
-**First wave:** Decision 12 (★ Pass perks, second builder, town looks bundle, plate finishes, Ferrite Crate).
+**Catalog (as shipped)**
+- Lunar Pass Conquest perks, inside the existing pass (799 Stars / 13 GRAM): RECALL 5 min, scanner +50 m, two extra layout slots, one Repair Kit a UTC day (up to the consumables' cap). The Pass-only plate finish waits for row 6B-V. Never points, never minerals.
+- Second builder $9.99 (a second construction slot). The earnable second builder (Trophy Hall III) was never built: PROPOSAL (building it changes every free pilot's pace, so it is the owner's call).
+- Town looks: Aurora town lighting $3.99, Gilded wall skin $4.99, Neon turret skins $4.99 (looks only), and the 20 base / trail / armor / commander collection pieces at their proposed prices (`js/conquest/catalog.js`; also earned by play).
+- Tank plate finishes and trim: NOT on sale (not built: row 6B-V).
+- Ferrite Crate (150, $1.99, 2 a day) and Ilmenite Crate (60 + 30 Ferrite, $4.99, 1 a day, 4 a week).
+- Wall-only rare ore crates (owner, Nov 23 / 26: this replaces "rare+ minerals are never sold" for town walls only): Armalcolite 20 $4.99, Tranquillityite 8 $7.99, Selenite 4 $9.99, Moonheart 2 $14.99, 1 of each a UTC day; wall blends only (never plates, never traded or gifted, never points); sized with the fortress model (SIMULATED).
+- Extra layout slot $1.99; wall extension pack $2.99 (+10% capacity, never strength, within the +50% cap); Foundry speed-up $1.99 (4x for 24 h).
+- Speed-ups for construction timers only (never repairs), priced by the time left on the Lab's RS_FIN curve, shown with the earn time beside them.
 
-**Never sold:** anything in the loot tables, points, rare+ minerals, mods, research, Gambits, consumables, trophies, boards.
+**Never sold:** anything in the loot tables, points, Gambits, consumables on their own, trophies, boards; earned rare+ minerals (only the wall-only crates above); research and mods only as the Science Lab store sells them (packs, Legendary set mods 1,500 Stars / 23 GRAM one a UTC week, instant finishes).
 
 ## 10. Anti-cheat and airdrop integrity
 
