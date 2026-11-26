@@ -237,6 +237,10 @@ async function inviterOf(env, sp, code) {
   return typeof owner === "string" && /^(?:tg|ln)_\d{3,15}$/.test(owner) ? owner : null;
 }
 
+// the launch liquidity fund: LP_SHARE of every verified shop sale goes into the $LUNAR liquidity pool at launch. Sales are counted in US
+// cents (meta/revc) as the server prices them (Stars at Telegram's ~1.3 cents, GRAM at its quote-time rate, SOL at its quote's dollar
+// value), never the phone's number; refunds come off (worker/src/shop.js revAdd). The board file shows the fund (lb.lpf).
+const LP_SHARE = 0.25;   // not exported: the Workers runtime only accepts handlers and classes as exports of the main module
 // ================= payments (Session 8): worker/src/shop.js =================
 // Every purchase is a server quote first (/api/order), in every currency: Stars (Telegram), GRAM (the website, and Telegram while the
 // owner's switch is on) and SOL (the website). The old orderless /api/pay-log is retired (it trusted the phone's order details and let a
@@ -278,15 +282,18 @@ async function admin(env, user, b = {}) {
     dbGet(env, "payments", { orderBy: '"$key"', limitToLast: 300 }).catch(() => ({})),
     dbGet(env, "starsPaid", { shallow: "true" }).catch(() => ({})),
   ]);
-  const rev = { TON: 0, SOL: 0, STARS: 0, USD: 0, count: 0, unverified: 0 };
+  // Session 8: revenue counts verified, granted sales; a payment held with nothing granted (owned, over a limit, a second payment of one
+  // quote: for a refund) is counted apart (held), a refunded one not at all
+  const rev = { TON: 0, SOL: 0, STARS: 0, USD: 0, count: 0, held: 0, refunded: 0 };
   const recent = [];
   for (const p of Object.values(pays || {})) {
     if (!p) continue;
+    if (p.refunded) { rev.refunded++; continue; }
+    if (p.granted === false || p.verified === false) { rev.held++; recent.push({ name: p.name, cur: p.cur, amt: p.amt, item: p.item, t: p.t, v: false, err: p.err || "held" }); continue; }
     rev.count++;
     if (p.cur in rev) rev[p.cur] += Number(p.amt) || 0;
     rev.USD += Number(p.usd) || 0;
-    if (p.verified === false) rev.unverified++;
-    recent.push({ name: p.name, cur: p.cur, amt: p.amt, item: p.item, t: p.t, v: p.verified !== false });
+    recent.push({ name: p.name, cur: p.cur, amt: p.amt, item: p.item, t: p.t, v: true });
   }
   recent.sort((a, b) => (b.t || 0) - (a.t || 0));
   // retention + conversion from up to 1,000 player records
@@ -311,7 +318,7 @@ async function admin(env, user, b = {}) {
   // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
-    revenue: { TON: +rev.TON.toFixed(3), SOL: +rev.SOL.toFixed(4), STARS: rev.STARS, USD: Math.round(rev.USD), count: rev.count, unverified: rev.unverified },
+    revenue: { TON: +rev.TON.toFixed(3), SOL: +rev.SOL.toFixed(4), STARS: rev.STARS, USD: Math.round(rev.USD), count: rev.count, held: rev.held, refunded: rev.refunded },
     recent: recent.slice(0, 15), top: Object.values(top || {}).sort((a, b) => (b.pts || 0) - (a.pts || 0)).map((p) => ({ name: p.name, pts: p.pts, days: p.days, power: p.power })) } };
 }
 

@@ -17,6 +17,8 @@ globalThis.fetch = async (url, init) => {
   throw new Error('unexpected fetch ' + url);
 };
 const mod = await import('../../../worker/src/index.js');
+const shop = await import('../../../worker/src/shop.js');
+import { payKit } from './pay.mjs';
 const eco = await import('../../../worker/src/eco.js');
 const { RULES: R } = await import('../../../worker/src/sim.gen.js');
 const worker = mod.default;
@@ -187,45 +189,56 @@ const S1 = E('tg_111'), ownsC = Lc.s ? R.salvIn(S1, Lc.c, Lc.t) === Lc.q : R.has
 t(Lw.a === got1.k && Lw.t === 1 && Lw.q === S1.roll[got1.k + ':1'] && ownsC && !(Lc.c === 'titan' && Lc.t === 2 && !Lc.s) && S1.L.skin === 'default', 'loadout: owned rare weapon with the server roll; the unowned crate epic chassis falls back to what they own; no skin ' + JSON.stringify(S1.L).slice(0, 160));
 
 // ---- Stars: invoice priced by the server, webhook grants, recovery, refunds ----
-[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'weapon', ri: 1, price: 0.01 }); t(s === 200 && r.stars === 500 && r.nonce, 'stars invoice: the server sets the price (1st paid rare weapon cache x1: the points buy above no longer counts, Checkpoint 39; a forged price is ignored) ' + JSON.stringify(r));
-const nonce = r.nonce;
-const payBody = (charge, payload, amount) => ({ message: { from: { id: 111, username: 'alice' }, chat: { id: 111, type: 'private' }, successful_payment: { total_amount: amount, telegram_payment_charge_id: charge, invoice_payload: JSON.stringify(payload) } } });
+// Session 8: every purchase is a server quote first (/api/order; /api/stars-invoice is the Stars quote for older phones): the invoice
+// carries only the user and the quote id, the pre-checkout re-checks the quote, ownership, limits and the current price, the webhook
+// grants it once (the full certification: dev/tests/wtest/payments.mjs)
+const K = payKit({ call, hook, initData, tgCalls });
+[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'weapon', ri: 1, price: 0.01 }); t(s === 200 && r.stars === 500 && r.nonce, 'stars invoice: the server sets the price (1st paid rare weapon cache x1: the points buy above no longer counts, Checkpoint 39; a forged price is ignored) ' + JSON.stringify(r).slice(0, 120));
+const nonce = r.nonce, o1 = r.order;
 const w0 = JSON.stringify(E('tg_111').wOwn);
-let wr = await hook(payBody('ch.1', { u: 111, k: 'box', t: 'weapon', r: 1, g: 8, n: nonce }, 500)); t(wr.status === 200, 'webhook');
+t((await K.pre(A, o1)).ok, 'pre-checkout: the open quote at the current price');
+let wr = await K.paid(A, o1, 'ch.1'); t(wr.status === 200, 'webhook');
 t(JSON.stringify(E('tg_111').wOwn) !== w0 || E('tg_111').roll, 'webhook granted the crate on the server');
 t(Array.isArray(db.get('/starsPaid/tg_111/ch_1/o')) && db.get('/starsPaid/tg_111/ch_1/o').length === 1, 'what it gave is stored with the payment');
-await hook(payBody('ch.1', { u: 111, k: 'box', t: 'weapon', r: 1, g: 8, n: nonce }, 500));
+await K.paid(A, o1, 'ch.1');
 t(E('tg_111').buys.weapon1 === 1, 'Telegram resending the same payment grants once (buys ' + E('tg_111').buys.weapon1 + ')');
 [s, r] = await act(A, 'paid', { n: nonce }); t(r.ok && r.out.outs && r.out.outs.length === 1, 'the phone fetches what its Stars purchase gave');
 [s, r] = await call('/api/sync', { initData: initData(A), boot: true }); t(r.stars.length === 1 && r.stars[0].n === nonce && r.stars[0].o.length === 1, 'undelivered stars listed with what they gave');
 [s, r] = await call('/api/sync', { initData: initData(A), boot: true, starsAck: [nonce] }); t(r.stars.length === 0, 'acked stars hidden');
 [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'weapon', ri: 1 }); t(r.stars === 1000, 'repeat-buy price from the server record (2nd paid rare weapon cache x2) ' + r.stars);
+await K.cancel(A, r.nonce);
 // moonbeam: buy, field it, refund takes it back
 [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'moonbeam' }); t(r.stars === 3300, 'moonbeam invoice');
-await hook(payBody('ch.mb', { u: 111, k: 'moonbeam', n: 'mb1' }, 3300));
+t((await K.pre(A, r.order)).ok, 'moonbeam pre-checkout');
+await K.paid(A, r.order, 'ch.mb');
 t(E('tg_111').moonbeam === true, 'moonbeam granted by the webhook');
 [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'moonbeam' }); t(s === 409 && r.error === 'owned', 'one-time item not sold twice');
 [s, r] = await call('/api/sync', { initData: initData(A), L: { w: { a: 'moon' }, c: { c: 'vanguard', t: 0 } } }); t(E('tg_111').L.w.a === 'moon', 'owned moonbeam fielded');
-await hook({ message: { from: { id: 111 }, chat: { id: 111, type: 'private' }, refunded_payment: { currency: 'XTR', total_amount: 3300, invoice_payload: '{}', telegram_payment_charge_id: 'ch.mb' } } });
+await K.refund(A, 'ch.mb', 3300);
 t(E('tg_111').moonbeam === false && db.get('/starsPaid/tg_111/ch_mb/rf') > 0, 'Stars refund removes the moonbeam');
 [s, r] = await call('/api/sync', { initData: initData(A), L: { w: { a: 'moon' }, c: { c: 'vanguard', t: 0 } } }); t(E('tg_111').L.w.a !== 'moon', 'refunded moonbeam can\'t be fielded');
 const ownBefore = JSON.stringify([E('tg_111').wOwn, E('tg_111').roll]);
-await hook({ message: { from: { id: 111 }, chat: { id: 111, type: 'private' }, refunded_payment: { currency: 'XTR', total_amount: 500, invoice_payload: '{}', telegram_payment_charge_id: 'ch.1' } } });
+await K.refund(A, 'ch.1', 500);
 t(JSON.stringify([E('tg_111').wOwn, E('tg_111').roll]) !== ownBefore, 'refunded crate: its item comes back out');
 t(db.get('/flags/tg_111/r/refunds'), 'two refunds flag the pilot');
 
-// ---- TON: memo AND amount, each transaction once, price from the server ----
+// ---- GRAM (TON) in Telegram: memo AND amount, each transaction once, price from the server ----
 const tonDesc = { kind: 'box', tk: 'weapon', ri: 0 };
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 3, gram: 3, item: 'Common Weapon Cache', memo: 'LWM|tg_111|abc', desc: tonDesc }); t(r.error === 'amount', 'TON amount below the price refused');
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, gram: 4, item: 'Common Weapon Cache', memo: 'LWM|tg_111|zzz', desc: tonDesc }); t(r.ok && r.verified === false && r.error === 'pending', 'no matching memo on chain: not granted');
-tonTxs = [{ in_msg: { value: '2000000000', message: 'LWM|tg_111|low' }, transaction_id: { hash: 'h0' } }].concat(tonTxs);
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, gram: 4, item: 'Common Weapon Cache', memo: 'LWM|tg_111|low', desc: tonDesc }); t(r.verified === false, 'memo matches but the chain shows 2 TON for a 4 TON item: not granted');
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, gram: 4, item: 'Common Weapon Cache', memo: 'LWM|tg_111|abc', desc: tonDesc }); t(r.ok && r.verified === true && r.out.length === 1 && r.out[0].tier === 0, 'TON verified (memo + amount) and granted by the server ' + JSON.stringify(r).slice(0, 160));
-t(db.get('/tonTx/h1/memo') === 'LWM|tg_111|abc', 'transaction hash recorded');
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, memo: 'LWM|tg_111|abc', desc: tonDesc }); t(r.dup === true, 'same order again: nothing new');
-tonTxs.push({ in_msg: { value: '9000000000', message: 'LWM|tg_111|re' }, transaction_id: { hash: 'h1' } });
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, memo: 'LWM|tg_111|re', desc: tonDesc }); t(r.error === 'reused', 'a transaction hash pays for one order only ' + JSON.stringify(r));
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 8, memo: 'LWM|tg_222|zzz' }); t(r.error === 'memo', 'memo must be own');
+[s, r] = await K.quote(A, 'TON', tonDesc); const ot = r.order;
+t(s === 200 && ot.amt === 4 && ot.base === '4000000000' && ot.memo === 'LWM|tg_111|' + ot.oid, 'a GRAM quote: the server\'s price (4 GRAM), the exact nanoGRAM and the quote\'s own memo');
+[s, r] = await K.status(A, ot.oid); t(r.ok && r.pending === true && r.order.st === 'open', 'no matching memo on chain: not granted');
+tonTxs = [K.tonTx(ot, 'h0', { value: '2000000000' })].concat(tonTxs); shop.resetLookups();
+[s, r] = await K.status(A, ot.oid); t(r.pending === true && r.short === '2000000000', 'memo matches but the chain shows 2 GRAM for a 4 GRAM item: not granted');
+tonTxs = [K.tonTx(ot, 'h1')].concat(tonTxs); shop.resetLookups();
+[s, r] = await K.status(A, ot.oid); t(r.ok && r.order.st === 'paid' && r.outs.length === 1 && r.outs[0].tier === 0, 'GRAM verified (memo + amount) and granted by the server ' + JSON.stringify(r).slice(0, 160));
+t(db.get('/tonTx/h1/oid') === ot.oid, 'transaction hash recorded');
+shop.resetLookups();
+[s, r] = await K.status(A, ot.oid); t(r.order.st === 'paid' && !r.outs, 'same order again: nothing new');
+[s, r] = await K.quote(A, 'TON', tonDesc); const ot2 = r.order;
+tonTxs.unshift({ ...K.tonTx(ot2, 'h1') }); shop.resetLookups();
+[s, r] = await K.status(A, ot2.oid); t(r.error === 'reused', 'a transaction hash pays for one order only ' + JSON.stringify(r));
+[s, r] = await K.status(B, ot2.oid); t(s === 404, 'an order must be your own');
+await K.cancel(A, ot2.oid);
 
 // ---- the one-time move for a pilot who played before ----
 db.root.players.tg_444 = { pts: 60000, name: 'oldtimer', days: 9, ld: day - 1, d: day - 1, w: 1, dailyPts: 300 };
@@ -291,7 +304,7 @@ t(db.get('/lb/top').length === lb.top.length, 'lb stored');
 t(s === 200 && r.flagged.some((f) => f.id === 'tg_444' && f.why.some((w) => /mig_epic/.test(w))), 'admin lists flagged pilots with reasons');
 t(r.snapshot.some((x) => x[0] === 'tg_666' && x[3] === 4) && !r.snapshot.some((x) => x[0] === 'tg_444'), 'snapshot: points and days, flagged left out');
 t(db.get('/players/tg_111/sg') > 0 && r.snapshot.every((x) => typeof x[5] === 'number'), 'verified spending (TON value) on the record and in the snapshot ' + db.get('/players/tg_111/sg'));
-t(r.revenue.STARS >= 500 && r.revenue.TON >= 4 && r.revenue.unverified >= 2, 'admin revenue (unverified orders counted apart) ' + JSON.stringify(r.revenue));
+t(r.revenue.TON >= 4 && r.revenue.refunded >= 2 && r.revenue.held === 0 && Array.isArray(r.held), 'admin revenue: verified sales; refunded and held payments (paid, nothing granted) counted apart ' + JSON.stringify(r.revenue));
 [s, r] = await call('/api/admin', { initData: initData(J), clear: 'tg_444', snap: 1 });
 t(!r.flagged.some((f) => f.id === 'tg_444') && r.snapshot.some((x) => x[0] === 'tg_444'), 'cleared pilot counts again');
 lb = await mod.buildLeaderboard(env); t(lb.top.some((x) => x[0] === 'tg_444'), 'cleared pilot back on the board');
@@ -335,25 +348,27 @@ t((await mod.sendReminders(env, d1.getTime())) === 0, 'no reminders off-hours');
 [s, r] = await call('/api/stars-invoice', { initData: initData(J), kind: 'box', tk: 'gem', ri: 0, price: 4 }); t(s === 200 && r.stars === 250, 'common crate 250');
 const lastInv = tgCalls.filter(c => c[0] === 'createInvoiceLink').pop(); t(/Common Gem Cache/.test(lastInv[1].title), 'invoice title');
 { // deals: d = first rare/epic gem cache of the day 30% off, w = one epic crate a week 25% off; once paid, that period's deal is used
-  const inv = (o) => call('/api/stars-invoice', Object.assign({ initData: initData(J), kind: 'box' }, o));
-  const lastPayload = () => JSON.parse(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].payload);
-  [s, r] = await inv({ tk: 'gem', ri: 1, deal: 'd' }); t(s === 200 && r.stars === 350 && lastPayload().x === 'd', 'daily gem deal 30% off ' + JSON.stringify(r));
-  [s, r] = await inv({ tk: 'gem', ri: 2, deal: 'd' }); t(s === 200 && r.stars === 1050, 'daily deal on an epic gem cache ' + JSON.stringify(r));
+  // Session 8: each check is its own quote (cancelled after it, so the next one is not the same open quote); the deal a quote holds is
+  // never given to a second open quote (wtest/payments.mjs)
+  const inv = async (o) => { const x = await call('/api/stars-invoice', Object.assign({ initData: initData(J), kind: 'box' }, o)); if (x[0] === 200) await K.cancel(J, x[1].nonce); return x; };
+  [s, r] = await inv({ tk: 'gem', ri: 1, deal: 'd' }); t(s === 200 && r.stars === 350 && r.order.price.deal === 'd', 'daily gem deal 30% off ' + JSON.stringify(r).slice(0, 120));
+  [s, r] = await inv({ tk: 'gem', ri: 2, deal: 'd' }); t(s === 200 && r.stars === 1050, 'daily deal on an epic gem cache ' + JSON.stringify(r).slice(0, 120));
   [s, r] = await inv({ tk: 'weapon', ri: 1, deal: 'd' }); t(s === 409, 'daily deal is gems only');
   [s, r] = await inv({ tk: 'gem', ri: 0, deal: 'd' }); t(s === 409, 'no deal on common caches');
-  [s, r] = await inv({ tk: 'chassis', ri: 2, deal: 'w' }); t(s === 200 && r.stars === 1125 && lastPayload().x === 'w', 'weekly epic deal 25% off ' + JSON.stringify(r));
+  [s, r] = await inv({ tk: 'chassis', ri: 2, deal: 'w' }); t(s === 200 && r.stars === 1125 && r.order.price.deal === 'w', 'weekly epic deal 25% off ' + JSON.stringify(r).slice(0, 120));
   [s, r] = await inv({ tk: 'chassis', ri: 1, deal: 'w' }); t(s === 409, 'weekly deal is epic only');
-  [s, r] = await inv({ tk: 'gem', ri: 1 }); t(s === 200 && r.stars === 500 && !lastPayload().x, 'no deal asked: full price ' + JSON.stringify(r));
-  const paid = async (x, ch, k, tk, ri) => hook({ message: { from: { id: 999, username: 'LunarBattle' }, chat: { id: 999, type: 'private' }, successful_payment: { total_amount: 1125, telegram_payment_charge_id: ch, invoice_payload: JSON.stringify({ u: 999, k: 'box', t: tk, r: ri, g: 17.25, n: 'dw' + ch.slice(-1), x }) } } });
-  await paid('w', 'ch.w1', 'box', 'chassis', 2);
+  [s, r] = await inv({ tk: 'gem', ri: 1 }); t(s === 200 && r.stars === 500 && !r.order.price.deal, 'no deal asked: full price ' + JSON.stringify(r).slice(0, 120));
+  const buy = async (desc, ch) => { const [s2, r2] = await K.quote(J, 'STARS', desc); if (s2 !== 200) return [s2, r2]; const p2 = await K.pre(J, r2.order); if (p2.ok) await K.paid(J, r2.order, ch); return [s2, r2, p2]; };
+  const [, rw] = await buy({ kind: 'box', tk: 'chassis', ri: 2, deal: 'w' }, 'ch.w1');
   [s, r] = await inv({ tk: 'weapon', ri: 2, deal: 'w' }); t(s === 409 && r.error === 'deal_used', 'weekly deal used after paying ' + s + ' ' + JSON.stringify(r));
   [s, r] = await inv({ tk: 'gem', ri: 1, deal: 'd' }); t(s === 200 && r.stars === 350, 'daily deal still open');
-  await paid('d', 'ch.d1', 'box', 'gem', 1);
+  await buy({ kind: 'box', tk: 'gem', ri: 1, deal: 'd' }, 'ch.d1');
   [s, r] = await inv({ tk: 'gem', ri: 2, deal: 'd' }); t(s === 409, 'daily deal used after paying');
   t(E('tg_999').cOwn.chassis === undefined && Object.values(E('tg_999').cOwn).some((ts) => ts.includes(2)), 'epic chassis crate granted');
   const rec = (await call('/api/sync', { initData: initData(J), boot: true }))[1];
-  const lost = (rec.stars || []).find((x) => x.n === 'dw1'); t(lost && lost.x === 'w', 'undelivered deal purchase keeps its deal tag ' + JSON.stringify(rec.stars).slice(0, 200));
-  [s, r] = await call('/api/stars-invoice', { initData: initData(J), kind: 'founder', price: 1 }); t(s === 200 && r.stars === 1199 && /Founder Pack/.test(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].title), 'founder pack invoice ' + JSON.stringify(r));
+  const lost = (rec.stars || []).find((x) => x.n === rw.order.oid); t(lost && lost.x === 'w', 'undelivered deal purchase keeps its deal tag ' + JSON.stringify(rec.stars).slice(0, 200));
+  [s, r] = await call('/api/stars-invoice', { initData: initData(J), kind: 'founder', price: 1 }); t(s === 200 && r.stars === 1199 && /Founder Pack/.test(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].title), 'founder pack invoice ' + JSON.stringify(r).slice(0, 120));
+  await K.cancel(J, r.nonce);
 }
 const cmd = async (text) => { const n0 = tgCalls.length; await hook({ message: { from: { id: 333 }, chat: { id: 333, type: 'private' }, text } }); return tgCalls.slice(n0); };
 let out = await cmd('/paysupport'); t(out.length === 1 && /@LunarBattle/.test(out[0][1].text) && /Telegram support can't help/.test(out[0][1].text), 'paysupport reply');
@@ -383,16 +398,22 @@ t(!JSON.stringify(db.root.lb).includes('iph') && !db.get('/players/tg_111/iph'),
   t(R.respecTier(16500) === 1.5 && R.respecTier(62500) === 5 && R.respecTier(9375) === 1 && R.respecTier(6250) === 0, 'paid reset tiers: 16,500 → $1.50, full → $5, small builds points only');
   setEco(pd, (S) => { S.upc.vanguard = { hull: 4, cannon: 4, engine: 4, target: 2, reactor: 0 }; S.pts = 0; S.ptsSpent = 62500; });
   [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec', price: 0.01 }); t(s === 200 && r.stars === 385 && /Build reset/.test(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].title), 'paid reset invoice: full build is $5 = 385 Stars ' + JSON.stringify(r));
-  const rpay = (ch, g) => hook({ message: { from: { id: 4444, username: 'dana' }, chat: { id: 4444, type: 'private' }, successful_payment: { total_amount: 385, telegram_payment_charge_id: ch, invoice_payload: JSON.stringify({ u: 4444, k: 'respec', g, n: 'rs' + ch }) } } });
+  const ro = r.order;   // Session 8: the reset's own quote, paid through the pre-checkout and the webhook
+  const rpay = async (ch, o = ro) => { if ((await K.pre(D, o)).ok || o.st !== 'open') await K.paid(D, o, ch); };
   const pw0 = db.get('/players/tg_4444/power');
-  await rpay('rs1', 6.25);
+  await rpay('rs1');
   t(R.upLevels(E(pd).upc.vanguard) === 0 && E(pd).pts === 62500 && E(pd).ptsSpent === 0 && db.get('/players/tg_4444/power') < pw0, 'paid reset: levels to 0, all 62,500 points back, power follows ' + E(pd).pts);
-  await rpay('rs1', 6.25); t(E(pd).pts === 62500, 'paid reset granted once');
+  await K.paid(D, ro, 'rs1'); t(E(pd).pts === 62500, 'paid reset granted once');
   [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec' }); t(s === 400, 'nothing to reset: no invoice');
-  await hook({ message: { from: { id: 4444 }, chat: { id: 4444, type: 'private' }, refunded_payment: { total_amount: 385, telegram_payment_charge_id: 'rs1', invoice_payload: '{}' } } });
+  await K.refund(D, 'rs1', 385);
   t(E(pd).pts === 31250 && R.upLevels(E(pd).upc.vanguard) === 0, 'refunded paid reset: the extra half goes back, like a points reset ' + E(pd).pts);
-  // paid with nothing left to clear (reset with points in between): it waits for the next reset
-  await rpay('rs2', 1.25); t(E(pd).rsCr === 1, 'paid reset with an empty build is saved for later');
+  // paid with nothing left to clear (reset with points in between): it waits for the next reset (a $1 quote, then the build cleared
+  // before its payment lands: the reset is still granted and waits; Session 8: a quote at $1)
+  setEco(pd, (S) => { S.upc.vanguard = { hull: 3, cannon: 2, engine: 0, target: 0, reactor: 0 }; });
+  [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec' }); const ro2 = r.order; t(s === 200 && r.stars === 77, 'a small build: the $1 paid reset quote (77 Stars)');
+  t((await K.pre(D, ro2)).ok, 'its pre-checkout');
+  setEco(pd, (S) => { S.upc.vanguard = { hull: 0, cannon: 0, engine: 0, target: 0, reactor: 0 }; });
+  await K.paid(D, ro2, 'rs2'); t(E(pd).rsCr === 1, 'paid reset with an empty build is saved for later');
   [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec' }); t(s >= 400, 'a saved paid reset is not sold twice');
   setEco(pd, (S) => { S.upc.vanguard = { hull: 4, cannon: 0, engine: 0, target: 0, reactor: 0 }; S.pts = 0; });
   [s, r] = await act(D, 'respec'); t(r.out.back === 10000 + 7813 && r.E.rsCr === 0, 'next reset uses it: half back plus $1 of fee covered ' + JSON.stringify(r.out));
@@ -449,16 +470,19 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   await act(V, 'login');
   const pts0 = E(pv).pts, earned0 = E(pv).earned;
   [s, r] = await call('/api/stars-invoice', { initData: initData(V), kind: 'vault', tk: 'chest' });
-  t(s === 200 && r.stars === 1000 && /Hyperspace Vault: Chest/.test(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].title), 'Vault invoice: the server prices the Chest at 1,000 Stars ' + JSON.stringify(r));
+  t(s === 200 && r.stars === 1000 && /Hyperspace Vault: Chest/.test(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].title), 'Vault invoice: the server prices the Chest at 1,000 Stars ' + JSON.stringify(r).slice(0, 120));
+  const vchest = r.order;   // Session 8: a Vault deposit has no reservation (fixed price, never fills): every quote is its own
   [s, r] = await call('/api/stars-invoice', { initData: initData(V), kind: 'vault', tk: 'mega' }); t(s === 400, 'unknown Vault bundle: no invoice');
-  const vpay = (ch, tk, g, stars) => hook({ message: { from: { id: 5555, username: 'vic' }, chat: { id: 5555, type: 'private' }, successful_payment: { total_amount: stars, telegram_payment_charge_id: ch, invoice_payload: JSON.stringify({ u: 5555, k: 'vault', t: tk, g, n: 'v' + ch }) } } });
+  const vpay = async (ch, o) => { if ((await K.pre(V, o)).ok) await K.paid(V, o, ch); };
   const rev0 = db.get('/meta/revc') || 0;
-  await vpay('vc1', 'chest', 16, 1000);
+  await vpay('vc1', vchest);
   t(E(pv).vg === 1050 && Math.abs(E(pv).spendGram - 16) < 1e-9 && db.get('/players/tg_5555/vg') === 1050, 'Chest: 1,050 Gold (5% bonus), counted as verified spending ' + E(pv).vg);
   t((db.get('/meta/revc') || 0) - rev0 === 1300, 'a Vault deposit feeds the liquidity fund like any sale');
-  await vpay('vc1', 'chest', 16, 1000); t(E(pv).vg === 1050, 'the same payment is granted once');
-  [s, r] = await call('/api/stars-invoice', { initData: initData(V), kind: 'vault', tk: 'chest' }); t(s === 200, 'the Vault never fills: the same bundle can be bought again');
-  await vpay('vh1', 'hyper', 400, 25000);
+  await K.paid(V, vchest, 'vc1'); t(E(pv).vg === 1050, 'the same payment is granted once');
+  [s, r] = await call('/api/stars-invoice', { initData: initData(V), kind: 'vault', tk: 'chest' }); t(s === 200 && r.nonce !== vchest.oid, 'the Vault never fills: the same bundle can be bought again (a new quote)');
+  await K.cancel(V, r.nonce);
+  [s, r] = await call('/api/stars-invoice', { initData: initData(V), kind: 'vault', tk: 'hyper' });
+  await vpay('vh1', r.order);
   const S1 = E(pv);
   t(S1.vg === 29800 && R.vaultLevel(S1.vg) === 10 && S1.paints.hyper === 1 && S1.L && S1.L.vl === 10, 'Hyperspace: 28,750 Gold, level 10, Hyperspace paint unlocked, the loadout carries the level ' + S1.vg + ' ' + JSON.stringify(S1.L && S1.L.vl));
   t(S1.vgg === 29800 && db.get('/players/tg_5555/gg') === 29800, 'before launch, every deposit is also Genesis Gold ' + S1.vgg);
@@ -466,13 +490,15 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   t(S1.pts === pts0 && S1.earned === earned0 && R.powerOf(S1.L) === R.powerOf({ ...S1.L, vl: 0 }), 'looks only: no points, no power');
   const tk = R.tankOf(S1.L, 1); t(tk.vl === 10 && R.tankOf({ ...S1.L, vl: 'x' }, 1).vl === 0, 'the battle tank carries the Vault level (looks)');
   t(R.ecoLoadout(R.ecoNorm({}), { paint: 'hyper' }).paint === 'stock' && R.ecoLoadout(S1, { paint: 'hyper' }).paint === 'hyper', 'the Hyperspace paint only for Vault level 7+');
-  await hook({ message: { from: { id: 5555 }, chat: { id: 5555, type: 'private' }, refunded_payment: { total_amount: 25000, telegram_payment_charge_id: 'vh1', invoice_payload: '{}' } } });
+  await K.refund(V, 'vh1', 25000);
   t(E(pv).vg === 1050 && E(pv).vgg === 1050 && !E(pv).paints.hyper && Math.abs(E(pv).spendGram - 16) < 1e-9, 'refunded deposit: its Gold, the paint and the spending come off ' + E(pv).vg);
-  // TON: the price comes from the server, the Gold from the verified payment
-  tonTxs.push({ in_msg: { value: '4000000000', message: 'LWM|tg_5555|vt1' }, transaction_id: { hash: 'hv1' } });
-  [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 3, memo: 'LWM|tg_5555|vt0', desc: { kind: 'vault', tk: 'pouch' } }); t(r.error === 'amount', 'Vault in TON: under the price is refused');
-  [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 4, memo: 'LWM|tg_5555|vt1', desc: { kind: 'vault', tk: 'pouch' } });
-  t(r.ok && r.verified && E(pv).vg === 1300 && r.out[0].tk === 'vault' && r.out[0].g === 250 && r.E.vg === 1300, 'Vault in TON: Pouch adds 250 Gold ' + JSON.stringify(r.out));
+  // GRAM: the price comes from the server, the Gold from the verified payment
+  [s, r] = await K.quote(V, 'TON', { kind: 'vault', tk: 'pouch' }); const vo = r.order;
+  tonTxs.push(K.tonTx(vo, 'hv0', { value: '3000000000' })); shop.resetLookups();
+  [s, r] = await K.status(V, vo.oid); t(r.pending && r.short && E(pv).vg === 1050, 'Vault in GRAM: under the price is refused');
+  tonTxs.push(K.tonTx(vo, 'hv1')); shop.resetLookups();
+  [s, r] = await K.status(V, vo.oid);
+  t(r.order.st === 'paid' && E(pv).vg === 1300 && r.outs[0].tk === 'vault' && r.outs[0].g === 250 && r.E.vg === 1300, 'Vault in GRAM: Pouch adds 250 Gold ' + JSON.stringify(r.outs));
   for (const [g, m, mp] of [['royale', '1v1', 'longshot'], ['arena', '2v2', 'classic']]) {
     [s, r] = await call('/api/match/start', { initData: initData(V), g, m, map: mp, pv: 1, L: { paint: 'hyper' } });
     t(s === 200 && r.tok, 'a Vault pilot gets a match ticket: ' + g + ' ' + s + ' ' + JSON.stringify(r).slice(0, 120));

@@ -84,7 +84,7 @@ ok(JSON.stringify(R.RTREE.cost)==='[2,4,5,9]'&&R.RTREE.cost.reduce((a,b)=>a+b,0)
  // a refund removes only a bought one: the researched Sunfire stays
  {const S=R.ecoNorm(JSON.parse(JSON.stringify(eco(P))));R.ecoRefund(S,'rsleg',[{tk:'rsleg',id:'sunfire'}]);ok(R.rmodOwned(S,'mount','sunfire'),'a refund of a bought Sunfire never takes a researched one');}
  // the open store (a test-only copy of the rules with LAB_STORE_OPEN true): a paid order for a researched or a being-researched Legendary grants nothing
- const O=(()=>{const ctx=vm.createContext({console}),src=fs.readFileSync(new URL('../../../js/rules.js',import.meta.url),'utf8');assert(src.includes('const LAB_STORE_OPEN=false;'));vm.runInContext(src.replace('const LAB_STORE_OPEN=false;','const LAB_STORE_OPEN=true;')+'\n;globalThis.__R={ecoNorm,ecoGrant,ecoOwned,ecoRefund,rmodOwned};',ctx);return ctx.__R;})();
+ const O=(()=>{const ctx=vm.createContext({console}),src=fs.readFileSync(new URL('../../../js/rules.js',import.meta.url),'utf8');assert(/const LAB_STORE_OPEN=(true|false);/.test(src));vm.runInContext(src.replace(/const LAB_STORE_OPEN=(true|false);/,'const LAB_STORE_OPEN=true;')+'\n;globalThis.__R={ecoNorm,ecoGrant,ecoOwned,ecoRefund,rmodOwned};',ctx);return ctx.__R;})();
  {const S=O.ecoNorm(JSON.parse(JSON.stringify(eco(P))));ok(O.ecoGrant(S,{kind:'rsleg',tk:'sunfire',price:9.6},{week:1}).length===0&&!(S.lsm&&S.lsm.sunfire),'store open: a paid order for the researched Sunfire grants nothing (never double)');}
  {const S=O.ecoNorm({rm:{pierce:1,marksman:1,predictor:1,rail:1},rsj:{starfall:1}});ok(O.ecoGrant(S,{kind:'rsleg',tk:'starfall',price:9.6},{week:1}).length===0,'store open: a Legendary being researched cannot be bought either');}
  // bought first: research refuses it

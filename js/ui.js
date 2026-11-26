@@ -1212,7 +1212,7 @@ function openAdmin(){
   return '<h3>Admin</h3>'+(ownerGemHtml()||sndLabBtn())+
    (A.loading?'<p class="mut">Loading server stats…</p>':A.error?'<p class="mut">Server stats: '+esc(A.error)+'</p>':
    '<div class="kv"><div><b class="num">'+fmtNum(A.players)+'</b><span>Players</span></div><div><b class="num">'+fmtNum(A.activeToday)+'</b><span>Active today</span></div><div><b class="num">$'+fmtNum(R.USD)+'</b><span>Revenue</span></div></div>'+
-   '<p class="mut" style="margin-top:8px">'+fmtNum(R.STARS||0)+' Stars, '+(R.TON||0)+' TON, '+(R.SOL||0)+' SOL from '+fmtNum(R.count||0)+' payments'+(R.unverified?'. '+R.unverified+' need checking':'')+'</p>'+
+   '<p class="mut" style="margin-top:8px">'+fmtNum(R.STARS||0)+' Stars, '+(R.TON||0)+' TON, '+(R.SOL||0)+' SOL from '+fmtNum(R.count||0)+' payments'+(R.held?'. '+R.held+' held for a refund (paid, nothing granted)':'')+(R.refunded?'. '+R.refunded+' refunded':'')+'</p>'+
    (A.stats?'<div class="kv"><div><b class="num">'+fmtNum(A.stats.newToday)+'</b><span>New today</span></div><div><b class="num">'+A.stats.back2+'%</b><span>Came back day 2</span></div><div><b class="num">'+A.stats.back5of7+'%</b><span>5+ of 7 days</span></div></div>'+
     '<div class="kv"><div><b class="num">'+A.stats.avgMatches+'</b><span>Matches per player</span></div><div><b class="num">'+A.stats.conv+'%</b><span>Paid</span></div><div><b class="num">$'+A.stats.arppu+'</b><span>Per payer</span></div></div>'+
     '<p class="dimtxt" style="margin-top:6px">Retention from the top 1,000 players. Paid = payers out of all players.</p>':''))+

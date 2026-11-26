@@ -255,7 +255,7 @@ export async function grantOrder(env, pid, o, pay, now = Date.now()) {
     const why = held ? null : R.ecoSaleErr(S, d, X), cur = why || held ? null : R.ecoPrice(S, d, X);
     if (!held && why) held = why;
     else if (!held && !mine) held = "superseded";
-    else if (!held && (!cur || cur.ton > o.price.ton + 1e-9 || (o.cur === "STARS" && cur.stars > o.price.stars))) held = "price";
+    else if (!held && (cur ? cur.ton > o.price.ton + 1e-9 || (o.cur === "STARS" && cur.stars > o.price.stars) : d.kind !== "respec")) held = "price";   // a paid build reset with nothing left to clear by now is still granted: it waits for the next reset (S.rsCr)
     let outs;
     if (held) outs = [{ none: 1, err: held }];
     else {
@@ -324,6 +324,7 @@ export async function findTon(env, o, now = Date.now()) {
   return null;
 }
 export const resetTonCache = () => { TONC = { t: 0, list: [] }; };
+export const resetLookups = () => { TONC = { t: 0, list: [] }; LOOK.clear(); };   // tests: forget the 4 s lookup throttles
 async function solRpc(method, params) {
   for (const url of SOL_RPCS) {
     try { const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) }); const d = await r.json(); if (d && !d.error) return d.result; } catch {}

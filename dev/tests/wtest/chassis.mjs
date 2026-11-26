@@ -15,6 +15,7 @@ globalThis.fetch = async (url, init) => {
   throw new Error('unexpected fetch ' + url);
 };
 const mod = await import('../../../worker/src/index.js');
+import { payKit } from './pay.mjs';
 const { RULES: R } = await import('../../../worker/src/sim.gen.js');
 const { OWNER_PID } = await import('../../../worker/src/owner.js');
 const worker = mod.default, env = { BOT_TOKEN: '123:ABC', FIREBASE_DB_SECRET: 'SECRET' };
@@ -26,6 +27,7 @@ function initData(user) {
 }
 const call = async (path, body) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ gv: R.PVP_V, ...body }) }), env); return [r.status, await r.json()]; };
 const act = (u, a, o) => call('/api/act', { initData: initData(u), a, ...(o || {}) });
+let K = null;   // Session 8: the quote flow (dev/tests/wtest/pay.mjs), set once the webhook helper exists
 const sec = await mod.webhookSecret(env);
 const hook = (body) => worker.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': sec }, body: JSON.stringify(body) }), env);
 const E = (pid) => db.get('/eco/' + pid), J = JSON.stringify;
@@ -88,26 +90,30 @@ db.root.eco[pp].pts = 10; [s, r] = await act(P, 'core', { k: 'arm', ri: 2, c: 'v
 db.root.eco[pp].pts = 400000;
 
 // ---- 4. paid: the gem cache and the chosen core name their chassis; Stars invoice -> webhook -> grant -> refund ----
-const inv = async (body) => { tgCalls.length = 0; const [st, res] = await call('/api/stars-invoice', { initData: initData(P), ...body }); const c = tgCalls.find((x) => x[0] === 'createInvoiceLink'); return [st, res, c ? JSON.parse(c[1].payload) : null, c ? c[1] : null]; };
+// Session 8: every purchase is a server quote first: the invoice carries only the user and the quote id; the goods (kind, item, size,
+// chassis) live in the server's quote (res.order.d), paid through Telegram's pre-checkout (the Worker re-checks it) and the webhook
+K = payKit({ call, hook, initData, tgCalls });
+const inv = async (body) => { tgCalls.length = 0; const [st, res] = await call('/api/stars-invoice', { initData: initData(P), ...body }); const c = tgCalls.find((x) => x[0] === 'createInvoiceLink'); return [st, res, res && res.order ? res.order.d : null, c ? c[1] : null]; };
+const buyP = async (body, ch) => { const [st2, res2] = await call('/api/stars-invoice', { initData: initData(P), ...body }); if (st2 !== 200) return null; const p2 = await K.pre(P, res2.order); if (p2.ok) await K.paid(P, res2.order, ch); return { o: res2.order, pre: p2 }; };
 let [st, res, pl, iv] = await inv({ kind: 'box', tk: 'gem', ri: 2, c: 'titan' });
-t(st === 200 && pl && pl.c === 'titan' && pl.t === 'gem' && pl.r === 2, 'an Epic gem cache invoice carries its chassis ' + J(pl));
+t(st === 200 && pl && pl.c === 'titan' && pl.tk === 'gem' && pl.ri === 2, 'an Epic gem cache quote carries its chassis ' + J(pl));
 const cachePrice = res.stars;
 [st, res, pl, iv] = await inv({ kind: 'core', tk: 'arm', ri: 2, c: 'titan' });
-t(st === 200 && pl.k === 'core' && pl.t === 'arm' && pl.r === 2 && pl.c === 'titan' && /chosen core: Armor/.test(iv.title), 'a chosen-core invoice: the core, the size and the chassis ' + J(pl) + ' ' + (iv && iv.title));
+t(st === 200 && pl.kind === 'core' && pl.tk === 'arm' && pl.ri === 2 && pl.c === 'titan' && /chosen core: Armor/.test(iv.title), 'a chosen-core quote: the core, the size and the chassis ' + J(pl) + ' ' + (iv && iv.title));
+const oCore = res.order;
 t(res.stars === Math.round(R.RSTARS[2] * R.ecoBoxMult(E(pp), 'gem', 2, { day: Math.floor(Date.now() / 864e5) }) * R.CORE_X) && res.stars > cachePrice, 'the chosen core costs 1.5x the gem cache\'s price right now, more than the random cache (' + res.stars + ' vs ' + cachePrice + ')');
 [st, res] = await call('/api/stars-invoice', { initData: initData(P), kind: 'core', tk: 'arm', ri: 2 }); t(st === 400, 'a chosen core must name its chassis');
 [st, res] = await call('/api/stars-invoice', { initData: initData(P), kind: 'core', tk: 'arm', ri: 2, c: 'scout' }); t(st === 409, 'no chosen core for a chassis you don\'t own (' + st + ')');
 db.root.eco[pp].glc.titan.vel = 5; [st, res] = await call('/api/stars-invoice', { initData: initData(P), kind: 'core', tk: 'vel', ri: 1, c: 'titan' }); t(st === 409, 'no chosen core for a core at level 5 (' + st + ')');
-const pay = (ch, payload, amt) => hook({ message: { from: { id: 702, username: 'per' }, chat: { id: 702, type: 'private' }, successful_payment: { total_amount: amt, telegram_payment_charge_id: ch, invoice_payload: J(payload) } } });
 const g0 = J(E(pp).gsc), lv0 = J(E(pp).glc);
-await pay('pc1', { u: 702, k: 'core', t: 'arm', r: 2, c: 'titan', g: 34.5, n: 'n1' }, 2250);
+{ const p0 = await K.pre(P, oCore); t(p0.ok, 'the chosen core\'s pre-checkout'); await K.paid(P, oCore, 'pc1'); }
 S = E(pp);
 t(S.gsc.titan.arm + (S.glc.titan.arm - JSON.parse(lv0).titan.arm) * 100 > JSON.parse(g0).titan.arm && J(S.gsc.vanguard) === J(JSON.parse(g0).vanguard), 'the paid chosen core landed on the Titan\'s Armor core only');
 const paid = db.get('/starsPaid/tg_702/pc1'); t(paid && paid.c === 'titan' && paid.o && paid.o[0].c === 'titan' && paid.o[0].n === 14, 'the Stars record keeps the chassis and what it gave ' + J(paid && paid.o));
-await pay('pc1', { u: 702, k: 'core', t: 'arm', r: 2, c: 'titan', g: 34.5, n: 'n1' }, 2250); t(J(E(pp).gsc) === J(S.gsc) && J(E(pp).glc) === J(S.glc), 'the same payment twice grants once');
-await pay('pb1', { u: 702, k: 'box', t: 'gem', r: 1, c: 'titan', g: 8, n: 'n2' }, 500);
+await K.paid(P, oCore, 'pc1'); t(J(E(pp).gsc) === J(S.gsc) && J(E(pp).glc) === J(S.glc), 'the same payment twice grants once');
+await buyP({ kind: 'box', tk: 'gem', ri: 1, c: 'titan' }, 'pb1');
 const pb = db.get('/starsPaid/tg_702/pb1'); t(pb && pb.o && pb.o[0].c === 'titan' && pb.o[0].gem, 'a paid gem cache\'s shards went to the chassis it named ' + J(pb && pb.o));
-await hook({ message: { from: { id: 702 }, chat: { id: 702, type: 'private' }, refunded_payment: { total_amount: 2250, telegram_payment_charge_id: 'pc1', invoice_payload: '{}' } } });
+await K.refund(P, 'pc1', 2250);
 t(J(E(pp).glc.vanguard) === J(S.glc.vanguard) && (E(pp).gsc.titan.arm + E(pp).glc.titan.arm * 100) < (S.gsc.titan.arm + S.glc.titan.arm * 100), 'a refund takes the chosen core\'s shards back off the Titan');
 
 // ---- 5. loadouts, tickets, the Lab and power follow the fielded chassis ----
@@ -132,26 +138,29 @@ t(R.powerOf(Lv) !== R.powerOf({ ...Lv, up: S.upc.titan }), 'power reads the fiel
 // ---- 6. review round 1: forged names, unowned chassis, a maxed chosen core, the refund's loadout, the home chassis ----
 for (const c of ['constructor', '__proto__', 'toString']) {
   [st, res, pl] = await inv({ kind: 'box', tk: 'gem', ri: 2, c });
-  t(st === 200 && pl && pl.c === undefined, 'a forged chassis name is dropped from a gem cache invoice (' + c + ') ' + J(pl));
+  t(st === 200 && pl && !pl.c, 'a forged chassis name is dropped from a gem cache quote (' + c + ') ' + J(pl));
+  await K.cancel(P, res.order.oid);
 }
 [st, res] = await call('/api/stars-invoice', { initData: initData(P), kind: 'core', tk: 'toString', ri: 2, c: 'titan' }); t(st === 400, 'a forged core name is refused (' + st + ')');
-{ const hr = await pay('pf1', { u: 702, k: 'box', t: 'gem', r: 2, c: 'constructor', g: 23, n: 'n9' }, 1500), sp = db.get('/starsPaid/tg_702/pf1');
-  t(hr.status === 200 && sp && sp.o && sp.o[0] && R.CHORDER.includes(sp.o[0].c) && !sp.err, 'a payment naming a forged chassis is granted to a real one and recorded ' + J(sp && sp.o)); }
+{ const hr = await buyP({ kind: 'box', tk: 'gem', ri: 2, c: 'constructor' }, 'pf1'), sp = db.get('/starsPaid/tg_702/pf1');
+  t(hr && hr.pre.ok && sp && sp.o && sp.o[0] && R.CHORDER.includes(sp.o[0].c) && !sp.err, 'a purchase naming a forged chassis is quoted without it, granted to a real one and recorded ' + J(sp && sp.o)); }
 { const pts0 = E(pp).pts; [s, r] = await act(P, 'core', { k: 'toString', ri: 2, c: 'titan' });
   t(s < 500 && E(pp).pts === pts0 && R.CHORDER.every((c) => Object.keys(E(pp).gsc[c]).every((k) => R.GORDER.includes(k))), 'a forged core name takes no points and writes nothing (' + s + ')');
   [s, r] = await act(P, 'core', { k: 'dmg', ri: 0, c: 'constructor' }); t(s < 500 && E(pp).pts === pts0, 'a forged chassis on a chosen core is not a server error (' + s + ')'); }
 { const up0 = J(E(pp).upc); [s, r] = await act(P, 'respec', { c: 'scout' });
   t(r.out && r.out.err === 'chassis' && J(E(pp).upc) === up0, 'a reset named for a chassis you don\'t own is refused, no build is touched ' + J(r.out)); }
 [st] = await inv({ kind: 'box', tk: 'gem', ri: 1, c: 'scout' }); t(st === 409, 'no paid gem cache for a chassis you don\'t own (' + st + ')');
-{ // a chosen core already at level 5 when its payment lands: the shards go to the chassis's lowest core still below 5
-  db.root.eco[pp].glc.titan.dmg = 5; const gl0 = { ...E(pp).glc.titan }, low = R.GORDER.filter((k) => gl0[k] < 5).sort((a, b) => gl0[a] - gl0[b])[0];
-  await pay('pm1', { u: 702, k: 'core', t: 'dmg', r: 1, c: 'titan', g: 12, n: 'n10' }, 750);
-  const o = (db.get('/starsPaid/tg_702/pm1') || {}).o || [];
-  t(o[0] && o[0].gem === low && o[0].was === 'dmg' && E(pp).glc.titan.dmg === 5, 'a maxed chosen core\'s shards went to the lowest core instead (' + J(o[0]) + ')'); }
+{ // Session 8 (Checkpoint 39 gap 1): a chosen core that reached level 5 while its invoice was open is refused at the pre-checkout; a
+  // payment that lands anyway is held for a refund (nothing granted: what was bought was that core, not shards for another)
+  db.root.eco[pp].glc.titan.dmg = 4; const [st4, r4] = await call('/api/stars-invoice', { initData: initData(P), kind: 'core', tk: 'dmg', ri: 1, c: 'titan' });
+  db.root.eco[pp].glc.titan.dmg = 5; const gl0 = J(E(pp).glc.titan), gs0 = J(E(pp).gsc.titan);
+  const p4 = await K.pre(P, r4.order); t(st4 === 200 && !p4.ok && /already have/.test(p4.why), 'a chosen core maxed since its invoice opened: the pre-checkout refuses it');
+  await K.paid(P, r4.order, 'pm1');
+  t(db.get('/orders/tg_702/' + r4.order.oid + '/st') === 'held' && J(E(pp).glc.titan) === gl0 && J(E(pp).gsc.titan) === gs0, 'a payment landing anyway for the maxed core: held for a refund, nothing granted'); }
 { // the refund puts the stored loadout and power back too
-  await pay('pr1', { u: 702, k: 'core', t: 'rof', r: 2, c: 'titan', g: 34.5, n: 'n11' }, 2250);
+  await buyP({ kind: 'core', tk: 'rof', ri: 2, c: 'titan' }, 'pr1');
   const Lg = E(pp).L; t(Lg.c.c === 'titan' && J(Lg.gl) === J(E(pp).glc.titan), 'a paid chosen core updates the deployed loadout\'s cores');
-  await hook({ message: { from: { id: 702 }, chat: { id: 702, type: 'private' }, refunded_payment: { total_amount: 2250, telegram_payment_charge_id: 'pr1', invoice_payload: '{}' } } });
+  await K.refund(P, 'pr1', 2250);
   const L2 = E(pp).L; t(J(L2.gl) === J(E(pp).glc.titan) && E(pp).pw === R.powerOf(L2), 'after its refund the stored loadout and power match the cores again ' + J(L2.gl)); }
 { // a chassis no longer owned is not home
   const S2 = R.ecoNorm({}); S2.L = { c: { c: 'titan', t: 0 } }; t(R.homeChassis(S2) === 'vanguard', 'an unowned chassis in the record is not the home chassis');
@@ -190,32 +199,35 @@ for (const c of ['constructor', '__proto__', 'toString']) {
   { db.root.eco[gp].pts = 10; delete db.root.eco[gp].cOwn.vanguard; db.root.eco[gp].cOwn.vanguard = [0];
     [s, r] = await act(G, 'gear', { k: 'vanguard', ri: 2 }); t(r.out.err === 'pts' && !E(gp).cOwn.vanguard.includes(2), 'not enough points: refused, nothing given'); db.root.eco[gp].pts = 2000000; }
   // Stars: 1.5x the crate's price right now; an owned item has no invoice; webhook grants the exact item; a refund takes it back
-  const ginv = async (body) => { tgCalls.length = 0; const [st, res] = await call('/api/stars-invoice', { initData: initData(G), ...body }); const c = tgCalls.find((x) => x[0] === 'createInvoiceLink'); return [st, res, c ? JSON.parse(c[1].payload) : null, c && c[1]]; };
-  const gpay = (ch, payload, amt) => hook({ message: { from: { id: 703, username: 'gear' }, chat: { id: 703, type: 'private' }, successful_payment: { total_amount: amt, telegram_payment_charge_id: ch, invoice_payload: J(payload) } } });
-  let [st, res, pl, iv] = await ginv({ kind: 'box', tk: 'chassis', ri: 2 }); const crateStars = res.stars;
+  const ginv = async (body) => { tgCalls.length = 0; const [st, res] = await call('/api/stars-invoice', { initData: initData(G), ...body }); const c = tgCalls.find((x) => x[0] === 'createInvoiceLink'); return [st, res, res && res.order ? res.order.d : null, c && c[1]]; };
+  let [st, res, pl, iv] = await ginv({ kind: 'box', tk: 'chassis', ri: 2 }); const crateStars = res.stars; if (st === 200) await K.cancel(G, res.order.oid);
   [st, res, pl, iv] = await ginv({ kind: 'gear', tk: 'vanguard', ri: 2 });
-  t(st === 200 && pl.k === 'gear' && pl.t === 'vanguard' && pl.r === 2 && iv.title === 'Epic chosen chassis: Paladin' && res.stars === Math.round(crateStars * R.CORE_X) && res.stars === 2250, 'a chosen-chassis invoice: the item, 1.5x the crate (' + crateStars + ' -> ' + res.stars + ' Stars) ' + J(pl) + ' ' + (iv && iv.title));
+  t(st === 200 && pl.kind === 'gear' && pl.tk === 'vanguard' && pl.ri === 2 && iv.title === 'Epic chosen chassis: Paladin' && res.stars === Math.round(crateStars * R.CORE_X) && res.stars === 2250, 'a chosen-chassis quote: the item, 1.5x the crate (' + crateStars + ' -> ' + res.stars + ' Stars) ' + J(pl) + ' ' + (iv && iv.title));
+  const oGear = res.order;
   [st] = await ginv({ kind: 'gear', tk: 'titan', ri: 2 }); t(st === 409, 'no invoice for a chosen item you own (' + st + ')');
   [st] = await ginv({ kind: 'gear', tk: 'moon', ri: 2 }); t(st === 400, 'Moonbeam is not chosen gear (' + st + ')');
   [st] = await ginv({ kind: 'gear', tk: 'toString', ri: 1 }); t(st === 400, 'a forged item name has no invoice (' + st + ')');
   const pr = R.ecoPrice(E(gp), { kind: 'gear', tk: 'storm', ri: 1 }, X()); t(pr === null, 'no price for an unknown item');
   const m0 = R.ecoBoxMult(R.ecoNorm(JSON.parse(J(E(gp)))), 'chassis', 2, X());
-  await gpay('pg1', { u: 703, k: 'gear', t: 'vanguard', r: 2, g: 34.5, n: 'g1' }, 2250);
+  t((await K.pre(G, oGear)).ok, 'the chosen chassis\'s pre-checkout'); await K.paid(G, oGear, 'pg1');
   { const S3 = E(gp), o = (db.get('/starsPaid/tg_703/pg1') || {}).o || [], roll = S3.roll['vanguard:2'];
     t(S3.cOwn.vanguard.includes(2) && o[0] && o[0].kind === 'new' && o[0].k === 'vanguard' && o[0].tier === 2 && roll >= R.ROLL_MIN && roll <= R.ROLL_MAX, 'the paid chosen chassis: exactly the Paladin, rolled ' + roll + ' ' + J(o[0]));
     t(R.ecoBoxMult(R.ecoNorm(JSON.parse(J(S3))), 'chassis', 2, X()) === Math.min(3, m0 + 1), 'a paid chosen item counts as a buy of its crate (x' + m0 + ' -> x' + R.ecoBoxMult(R.ecoNorm(JSON.parse(J(S3))), 'chassis', 2, X()) + '), as a chosen core does for its cache');
     t(S3.L && S3.pw === R.powerOf(S3.L), 'the stored loadout and power follow the paid item'); }
-  { const S3 = J(E(gp)); await gpay('pg1', { u: 703, k: 'gear', t: 'vanguard', r: 2, g: 34.5, n: 'g1' }, 2250); const S4 = E(gp); t(J(S4.cOwn) === J(JSON.parse(S3).cOwn) && J(S4.roll) === J(JSON.parse(S3).roll), 'the same payment twice grants once'); }
-  { // two invoices for the same item paid one after the other: the second re-rolls it like a crate, keeps the better roll
-    db.root.eco[gp].roll['vanguard:2'] = 1.05; const pts0 = E(gp).pts;
-    await gpay('pg2', { u: 703, k: 'gear', t: 'vanguard', r: 2, g: 34.5, n: 'g2' }, 2250); const o = (db.get('/starsPaid/tg_703/pg2') || {}).o || [];
-    t(o[0] && (o[0].kind === 'up' && E(gp).roll['vanguard:2'] === o[0].roll || o[0].kind === 'dup' && E(gp).pts === pts0 + o[0].pts) && E(gp).cOwn.vanguard.filter((x) => x === 2).length === 1, 'an item already owned when its payment lands is re-rolled, never duplicated ' + J(o[0])); }
-  await hook({ message: { from: { id: 703 }, chat: { id: 703, type: 'private' }, refunded_payment: { total_amount: 2250, telegram_payment_charge_id: 'pg1', invoice_payload: '{}' } } });
+  { const S3 = J(E(gp)); await K.paid(G, oGear, 'pg1'); const S4 = E(gp); t(J(S4.cOwn) === J(JSON.parse(S3).cOwn) && J(S4.roll) === J(JSON.parse(S3).roll), 'the same payment twice grants once'); }
+  { // Session 8 (Checkpoint 39 gaps 1 and 2): a second invoice for an item owned since can't pass the pre-checkout, and a second payment
+    // that lands anyway is held for a refund: never a duplicate and never re-rolled (what was bought was that item, not a crate roll)
+    const r0 = E(gp).roll['vanguard:2'], pts0 = E(gp).pts;
+    const [stq, rq] = await call('/api/stars-invoice', { initData: initData(G), kind: 'gear', tk: 'vanguard', ri: 2 }); t(stq === 409 && rq.error === 'owned', 'no new quote for the chosen item now owned');
+    t(!(await K.pre(G, oGear)).ok, 'the paid invoice can\'t be paid again (pre-checkout)');
+    await K.paid(G, oGear, 'pg2');
+    t(E(gp).roll['vanguard:2'] === r0 && E(gp).pts === pts0 && E(gp).cOwn.vanguard.filter((x) => x === 2).length === 1 && Object.values(db.get('/held') || {}).some((h) => h.oid === oGear.oid && h.err === 'duplicate'), 'an item already owned when a second payment lands: held for a refund, never duplicated or re-rolled'); }
+  await K.refund(G, 'pg1', 2250);
   t(!E(gp).cOwn.vanguard.includes(2) && E(gp).roll['vanguard:2'] === undefined && E(gp).cOwn.vanguard.includes(0), 'a refund takes the chosen chassis back (the starter Vanguard stays)');
   { const L = E(gp).L; t(!L || L.c.c !== 'vanguard' || L.c.t !== 2, 'and the deployed loadout no longer fields it ' + J(L && L.c)); }
-  // TON / SOL: the same order description and price (the payments route; checkout stays as Session 8 leaves it)
+  // GRAM / SOL: the same quote and price (the full GRAM and SOL paths: dev/tests/wtest/payments.mjs)
   { const { RULES } = await import('../../../worker/src/sim.gen.js'); const S5 = R.ecoNorm(JSON.parse(J(E(gp)))), p5 = RULES.ecoPrice(S5, { kind: 'gear', tk: 'twin', ri: 1 }, X()), c5 = RULES.ecoPrice(S5, { kind: 'box', tk: 'weapon', ri: 1 }, X());
-    t(p5 && Math.abs(p5.ton - Math.round(c5.ton * 1.5 * 100) / 100) < 0.011 && p5.stars === Math.round(c5.stars * 1.5), 'TON / SOL price: 1.5x the crate\'s TON price (' + c5.ton + ' -> ' + p5.ton + ')');
+    t(p5 && Math.abs(p5.ton - Math.round(c5.ton * 1.5 * 100) / 100) < 0.011 && p5.stars === Math.round(c5.stars * 1.5), 'GRAM / SOL price: 1.5x the crate\'s GRAM price (' + c5.ton + ' -> ' + p5.ton + ')');
     const G0 = R.ecoNorm({}); t(R.ecoOwned(G0, { kind: 'gear', tk: 'pulse', ri: 0 }) && !R.ecoOwned(G0, { kind: 'gear', tk: 'pulse', ri: 1 }) && R.ecoOwned(G0, { kind: 'gear', tk: 'moon', ri: 2 }), 'ecoOwned: the starter item is owned, a new one is not, an unknown one is never sold'); }
   // the migration check of old phone records keeps the old crate prices (it audits records kept under them)
   { const eco = await import('../../../worker/src/eco.js'); t(typeof eco.migrate === 'function', 'the migration check is still there'); }

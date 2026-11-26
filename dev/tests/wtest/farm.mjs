@@ -172,11 +172,14 @@ const mutate = (pf, fn) => { const b = Buffer.from(pf.s, 'base64'); fn(b, pf.n *
   F.forEach((u, i) => { const p = db.root.players['tg_' + u.id]; p.pts = 5000 + i * 1000; p.days = 3; p.ac = p.pts; });
   // a shared wallet
   const W1 = { id: 6101, username: 'payer1' }, W2 = { id: 6102, username: 'payer2' };
-  tonTxs = [{ in_msg: { value: '4000000000', message: 'LWM|tg_6101|w1', source: 'EQwallet1' }, transaction_id: { hash: 'hw1' } }, { in_msg: { value: '4000000000', message: 'LWM|tg_6102|w2', source: 'EQwallet1' }, transaction_id: { hash: 'hw2' } }];
-  const desc = { kind: 'box', tk: 'weapon', ri: 0 };
-  await call('/api/pay-log', { initData: initData(W1), cur: 'TON', amt: 4, gram: 4, item: 'x', memo: 'LWM|tg_6101|w1', desc });
-  const [, pr] = await call('/api/pay-log', { initData: initData(W2), cur: 'TON', amt: 4, gram: 4, item: 'x', memo: 'LWM|tg_6102|w2', desc });
-  t(pr.verified && linked('tg_6102', 'tg_6101') === 'wallet', 'two accounts paying from the same TON wallet: linked ("wallet")');
+  // Session 8: each GRAM purchase is a server quote (memo + exact amount) paid on chain; both quotes paid from one wallet
+  for (const u of [W1, W2]) await call('/api/sync', { initData: initData(u), boot: true });
+  const desc = { kind: 'box', tk: 'weapon', ri: 0 }, q1 = (await call('/api/order', { initData: initData(W1), a: 'quote', cur: 'TON', desc }))[1].order, q2 = (await call('/api/order', { initData: initData(W2), a: 'quote', cur: 'TON', desc }))[1].order;
+  tonTxs = [q1, q2].map((q, i) => ({ utime: Math.floor(Date.now() / 1000), in_msg: { value: q.base, message: q.memo, source: 'EQwallet1' }, transaction_id: { lt: String(i + 1), hash: 'hw' + (i + 1) } }));
+  await call('/api/order', { initData: initData(W1), a: 'status', q: q1.oid });
+  (await import('../../../worker/src/shop.js')).resetLookups();
+  const [, pr] = await call('/api/order', { initData: initData(W2), a: 'status', q: q2.oid });
+  t(pr.order && pr.order.st === 'paid' && linked('tg_6102', 'tg_6101') === 'wallet', 'two accounts paying from the same GRAM wallet: linked ("wallet")');
   // starting together, again and again, on one network
   const G = [6201, 6202, 6203].map((id) => ({ id, username: 'grp' + id }));
   for (let d = 0; d < 3; d++) for (const hr of [10, 16]) {
@@ -295,7 +298,11 @@ const mutate = (pf, fn) => { const b = Buffer.from(pf.s, 'base64'); fn(b, pf.n *
 {
   const c0 = Number(db.get('/meta/revc')) || 0;
   const sec = await mod.webhookSecret(env), hk = (body) => worker.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': sec }, body: JSON.stringify(body) }), env);
-  await hk({ message: { from: { id: 7301 }, chat: { id: 7301, type: 'private' }, successful_payment: { total_amount: 1000, telegram_payment_charge_id: 'lpf1', invoice_payload: JSON.stringify({ u: 7301, k: 'box', t: 'gem', r: 1, g: 8, n: 'lp1' }) } } });
+  // Session 8: a 1,000 Stars purchase (a Vault Chest): the server's quote, Telegram's pre-checkout, the payment
+  await call('/api/sync', { initData: initData({ id: 7301, username: 'lpf' }), boot: true });
+  const lq = (await call('/api/order', { initData: initData({ id: 7301, username: 'lpf' }), a: 'quote', cur: 'STARS', desc: { kind: 'vault', tk: 'chest' } }))[1].order;
+  await hk({ pre_checkout_query: { id: 'lpq', from: { id: 7301 }, currency: 'XTR', total_amount: lq.amt, invoice_payload: JSON.stringify({ u: 7301, q: lq.oid }) } });
+  await hk({ message: { from: { id: 7301 }, chat: { id: 7301, type: 'private' }, successful_payment: { total_amount: 1000, telegram_payment_charge_id: 'lpf1', invoice_payload: JSON.stringify({ u: 7301, q: lq.oid }) } } });
   t((Number(db.get('/meta/revc')) || 0) - c0 === 1300, 'a 1,000 Stars sale adds $13 of sales');
   const lb = await mod.buildLeaderboard(env);
   t(lb.lpf === Math.round((Number(db.get('/meta/revc')) / 100) * 0.25) && lb.lps === 0.25, 'the board file shows the fund: 25% of verified sales ($' + lb.lpf + ')');

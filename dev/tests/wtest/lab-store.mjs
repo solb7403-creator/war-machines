@@ -1,8 +1,11 @@
-// Session 6B Science Lab store (owner decision 8) through the real Worker routes: the entries exist with their proposed prices, and
-// CHECKOUT IS OFF in every currency: no Stars invoice, a Telegram-confirmed payment naming a Lab item grants nothing, a TON payment
-// log grants nothing, and a phone can never sync the server-owned ownership (Legendary set mods, bonus parts, finish credits).
-// The grants themselves (for the day the owner opens checkout) only ever run from ecoGrant, give no points, and a Legendary set mod
-// is on sale only after its track's earned set mod; ecoGrant enforces those sale rules itself (review F5). Lunar Pass premium tiers 10/20/30 add research parts, never points.
+// Session 6B Science Lab store (owner decision 8), OPEN since Session 8 (owner, Nov 26, 2026: LAB_STORE_OPEN true; Legendary set mods
+// 1,500 Stars / 23 GRAM, one a UTC week; packs and instant finish unchanged), through the real Worker routes: every Lab item is a server
+// quote (/api/order or /api/stars-invoice) checked on the server's record (on sale only after its track's set mod, one of each pack a
+// week, an instant finish priced by the research job's real time left), paid through Telegram's pre-checkout and webhook or GRAM, and
+// granted once; a payment naming a Lab item without a quote grants nothing; a phone can never sync the server-owned ownership
+// (Legendary set mods, bonus parts, finish credits). The grants give no points and keep their sale rules inside the grant itself (review
+// F5): with the switch turned off again (a test-only copy of the rules) a verified payment grants nothing. Lunar Pass premium tiers
+// 10/20/30 add research parts (they start with the Lab store), never points.
 import { createHmac } from 'node:crypto';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -42,59 +45,81 @@ const snap = () => J({ lsm: E().lsm || {}, bpt: E().bpt || {}, rsx: E().rsx || {
 const before = snap();
 
 // ---- 1. the entries exist, priced like the shop ----
-t(R.LAB_STORE_OPEN === false, 'LAB_STORE_OPEN is false: checkout off');
+t(R.LAB_STORE_OPEN === true, 'LAB_STORE_OPEN is true: the Lab store is open (Session 8, owner Nov 26)');
 const X = { day: 20774, week: 2967 }, S0 = R.ecoNorm({});
 const pk = R.RS_PACK_ORDER.map(k => [k, R.ecoPrice(S0, { kind: 'rspack', tk: k }, X)]);
-t(pk.every(([k, p]) => p && p.stars === R.RS_PACKS[k].stars && p.ton === R.RS_PACKS[k].ton), 'three part packs priced: ' + pk.map(([k, p]) => R.RS_PACKS[k].n + ' ' + p.stars + ' Stars / ' + p.ton + ' TON').join(', '));
+t(pk.every(([k, p]) => p && p.stars === R.RS_PACKS[k].stars && p.ton === R.RS_PACKS[k].ton) && J(pk.map(([, p]) => [p.stars, p.ton])) === J([[99, 1.6], [249, 4], [599, 9.6]]), 'three part packs priced (unchanged): ' + pk.map(([k, p]) => R.RS_PACKS[k].n + ' ' + p.stars + ' Stars / ' + p.ton + ' GRAM').join(', '));
 const legs = Object.values(R.RTREE.legendary);
-t(legs.length === 4 && legs.every(id => R.ecoPrice(S0, { kind: 'rsleg', tk: id }, X)?.stars === R.RS_LEG_PRICE.stars), 'four Legendary set mods priced ' + R.RS_LEG_PRICE.stars + ' Stars / ' + R.RS_LEG_PRICE.ton + ' TON each');
+t(legs.length === 4 && legs.every(id => R.ecoPrice(S0, { kind: 'rsleg', tk: id }, X)?.stars === 1500 && R.ecoPrice(S0, { kind: 'rsleg', tk: id }, X)?.ton === 23), 'four Legendary set mods priced 1,500 Stars / 23 GRAM each (the Epic crate\'s price)');
 const fin = [20 * 60e3, 2 * 3600e3, 8 * 3600e3, 6 * 3600e3].map(ms => R.rsFinPrice(ms));
 t(fin[0].stars === 8 && fin[1].stars === 31 && fin[2].stars === 100 && fin[3].stars < fin[2].stars, 'instant finish by time left: 20 min ' + fin[0].stars + ', 2 h ' + fin[1].stars + ', 8 h ' + fin[2].stars + ' Stars (6 h ' + fin[3].stars + ')');
 t(fin[2].usd / 8 < fin[1].usd / 2 && fin[1].usd / 2 < fin[0].usd / (1 / 3) + 1e-9, 'the longer the skip, the cheaper each hour');
 const ratios = [...pk.map(([, p]) => p), R.RS_LEG_PRICE, ...fin].map(p => p.stars / p.ton);
-t(ratios.every(r => r > 55 && r < 70), 'Stars-to-TON within the shop\'s own range (Vault 62.5, Pass 61.5): ' + ratios.map(r => r.toFixed(1)).join(' '));
-// ---- 2. checkout off: Stars ----
-for (const body of [{ kind: 'rspack', tk: 'kit' }, { kind: 'rspack', tk: 'cache' }, { kind: 'rsleg', tk: 'sunfire' }, { kind: 'rsfin', tk: 'j1' }]) {
-  tgCalls.length = 0; const [st, res] = await call('/api/stars-invoice', { initData: initData(P), ...body });
-  t(st === 400 && res.error === 'item' && !tgCalls.some(c => c[0] === 'createInvoiceLink'), 'no Stars invoice for ' + body.kind + ':' + body.tk + ' (' + st + ' ' + res.error + ')');
-}
-// a payment Telegram confirmed (secret-signed webhook) that names a Lab item grants nothing
-let n = 0;
-for (const pl of [{ u: P.id, k: 'rsleg', t: 'sunfire', g: 9.6 }, { u: P.id, k: 'rspack', t: 'cache', g: 9.6 }, { u: P.id, k: 'rsfin', t: 'j1' }]) {
-  const r = await hook({ message: { from: { id: P.id, username: P.username }, chat: { id: P.id, type: 'private' }, successful_payment: { total_amount: 599, telegram_payment_charge_id: 'ch-lab-' + (++n), invoice_payload: J(pl) } } });
-  t(r.status === 200 && snap() === before, 'a confirmed Stars payment naming ' + pl.k + ' grants nothing');
-}
-// ---- 3. checkout off: TON / SOL ----
-{ const [st, res] = await call('/api/pay-log', { initData: initData(P), cur: 'TON', amt: 9.6, memo: 'LWM|' + pp + '|lab1', item: 'Sunfire', desc: { kind: 'rsleg', tk: 'sunfire' } });
-  t(st === 200 && !res.out && snap() === before, 'a TON payment log for a Lab item is only logged, never granted (' + J(res) + ')'); }
-{ const [st, res] = await call('/api/pay-log', { initData: initData(P), cur: 'SOL', amt: 0.2, gram: 9.6, memo: 'LWM|' + pp + '|lab2', proof: 'x', item: 'Research cache', desc: { kind: 'rspack', tk: 'cache' } });
-  t(st === 200 && !res.out && snap() === before, 'a SOL payment log for a Lab item is only logged, never granted'); }
+t(ratios.every(r => r > 55 && r < 70), 'Stars-to-GRAM within the shop\'s own range (Vault 62.5, Pass 61.5): ' + ratios.map(r => r.toFixed(1)).join(' '));
+// ---- 2. open: Stars quotes on the server's record, the pre-checkout, the webhook ----
+const { payKit } = await import('./pay.mjs');
+const K = payKit({ call, hook, initData, tgCalls });
+{ let [st, res] = await K.quote(P, 'STARS', { kind: 'rsleg', tk: 'starfall' });
+  t(st === 409 && res.error === 'owned', 'Starfall is not on sale before its track\'s set mod (Rail) is researched (' + st + ' ' + res.error + ')');
+  [st, res] = await K.quote(P, 'STARS', { kind: 'rsfin', job: 'j1' });
+  t(st === 409 && res.error === 'none', 'an instant finish needs a running research job on the server (none: ' + res.error + ')'); }
+// a confirmed payment naming a Lab item without a quote of ours (the old invoice payload) grants nothing
+{ const r = await hook({ message: { from: { id: P.id, username: P.username }, chat: { id: P.id, type: 'private' }, successful_payment: { total_amount: 599, telegram_payment_charge_id: 'ch-lab-forged', invoice_payload: J({ u: P.id, k: 'rsleg', t: 'sunfire', g: 9.6 }) } } });
+  t(r.status === 200 && snap() === before && db.get('/held/st_ch-lab-forged/err') === 'no quote', 'a confirmed Stars payment naming a Lab item without a quote grants nothing (held for the owner)'); }
+{ const res = await K.stars(P, { kind: 'rspack', tk: 'kit' }, 'ch-kit');
+  t(res.s === 200 && res.o.amt === 99 && res.pre.ok && R.CQ_PART_ORDER.every(k => E().bpt[k] === 1), 'Field kit: 99 Stars, +1 of every research part');
+  const [st, r2] = await K.quote(P, 'STARS', { kind: 'rspack', tk: 'kit' });
+  t(st === 409 && r2.error === 'owned', 'one Field kit a UTC week');
+  const res2 = await K.stars(P, { kind: 'rsleg', tk: 'sunfire' }, 'ch-sun');
+  t(res2.o.amt === 1500 && res2.pre.ok && E().lsm.sunfire === 1, 'Sunfire Core (Inferno researched): 1,500 Stars, owned');
+  E().rm.rail = 1;
+  const [st3, r3] = await K.quote(P, 'TON', { kind: 'rsleg', tk: 'starfall' });
+  t(st3 === 409 && r3.error === 'limit', 'one Legendary set mod a UTC week in all (Starfall waits for next week)');
+  t(E().pts === 5000, 'no Lab purchase gives points'); }
+// an instant finish priced by the research job's real time left on the server (the Conquest record), never the phone's
+{ const now = Date.now(); db.root.conquest = db.root.conquest || {}; db.root.conquest[pp] = { v: 1, plot: { b: { b1: { t: 'lab', i: 10, j: 10, r: 0, l: 2 } }, dmg: {} }, rs: { v: 1, jobs: [{ id: 'j1', mod: 'traction', part: 'servo', paid: { e: 2, b: 0 }, ms: 7200000, left: 7200000, at: now, st: now }] } };
+  const [st, res] = await K.quote(P, 'STARS', { kind: 'rsfin', job: 'j1', left: 60000 });
+  t(st === 200 && res.order.amt === R.rsFinPrice(7200000).stars, 'an instant finish quoted from the server\'s job: 2 h left = ' + res.order.amt + ' Stars (a forged time left is ignored)');
+  t((await K.pre(P, res.order)).ok, 'its pre-checkout');
+  await K.paid(P, res.order, 'ch-fin');
+  t(E().rsx.j1 === 1, 'paid: a one-time finish credit for that job (the Conquest record finishes it at its next read)');
+  const [st2, r2] = await K.quote(P, 'STARS', { kind: 'rsfin', job: 'j1' });
+  t(st2 === 409 && r2.error === 'owned', 'the same job\'s finish is sold once'); }
+// ---- 3. GRAM: the same quote and checks (SOL is website-only) ----
+{ const [st, res] = await K.quote(P, 'TON', { kind: 'rspack', tk: 'cache' });
+  t(st === 200 && res.order.amt === 9.6 && res.order.memo === 'LWM|' + pp + '|' + res.order.oid, 'a Research cache GRAM quote: 9.6 GRAM with its memo');
+  await K.cancel(P, res.order.oid);
+  const [st2, r2] = await K.quote(P, 'SOL', { kind: 'rspack', tk: 'cache' });
+  t(st2 === 403 && r2.error === 'sol_web', 'SOL is paid on the website only'); }
 // ---- 4. the phone can never write the ownership ----
+const before4 = snap();
 { const [st] = await call('/api/sync', { initData: initData(P), s: { lsm: { sunfire: 1, starfall: 1 }, bpt: { thermal: 99, coil: 99, servo: 99, cap: 99 }, rsx: { j1: 1 }, pts: E().pts } });
-  t(st === 200 && snap() === before, 'a synced save cannot grant Legendary set mods, bonus parts or finish credits'); }
-{ const S = R.ecoNorm(JSON.parse(J(E()))), spec = R.labSpec(R.ecoLoadout(S)), v = R.labValidate(S, { ...spec, catalog: R.FIT_VERSION, mods: { mount: 'sunfire' } }), v2 = R.labValidate(S, { ...spec, catalog: R.FIT_VERSION, mods: { mount: 'inferno' } });
-  t(v === 'owned' && v2 !== 'owned', 'the garage refuses the unowned Legendary Sunfire (' + v + ') but takes the researched Inferno (' + v2 + ')'); }
+  t(st === 200 && snap() === before4, 'a synced save cannot grant Legendary set mods, bonus parts or finish credits'); }
+{ const S = R.ecoNorm(JSON.parse(J(E()))), spec = R.labSpec(R.ecoLoadout(S)), sf = R.rmodOf('starfall'), rl = R.rmodOf('rail'), v = R.labValidate(S, { ...spec, catalog: R.FIT_VERSION, mods: { [sf.slot]: 'starfall' } }), v2 = R.labValidate(S, { ...spec, catalog: R.FIT_VERSION, mods: { [rl.slot]: 'rail' } }), v3 = R.labValidate(S, { ...spec, catalog: R.FIT_VERSION, mods: { mount: 'sunfire' } });
+  t(v === 'owned' && v2 !== 'owned' && v3 !== 'owned', 'the garage refuses the unowned Legendary Starfall (' + v + ') but takes the researched Rail (' + v2 + ') and the bought Sunfire (' + v3 + ')'); }
 // ---- 5. the grants: server-only, no points, and the sale rules hold inside the grant itself (Session 6B review F5) ----
-// while the Lab store is closed, even a payment that somehow verified grants nothing (the invoice and price checks refuse it first)
-{ const S = R.ecoNorm(JSON.parse(J(E()))), b0 = J(S);
-  for (const d of [{ kind: 'rspack', tk: 'crate', price: 4 }, { kind: 'rsleg', tk: 'sunfire', price: 9.6 }, { kind: 'rsfin', job: 'j3', price: 1.6 }])
-    t(R.ecoGrant(S, d, X).length === 0, 'Lab store closed: a verified ' + d.kind + ' payment grants nothing (ecoGrant checks it itself)');
-  t(J(S) === b0 && J(R.LAB_KINDS) === J(['rspack', 'rsleg', 'rsfin']), '... and changes nothing on the record'); }
-// the day the owner opens checkout: js/rules.js with LAB_STORE_OPEN true (a test-only copy; the shipped flag stays false)
-const O = (() => { const ctx = vm.createContext({ console }), src = fs.readFileSync(new URL('../../../js/rules.js', import.meta.url), 'utf8');
-  if (!src.includes('const LAB_STORE_OPEN=false;')) throw new Error('LAB_STORE_OPEN flag not found');
-  vm.runInContext(src.replace('const LAB_STORE_OPEN=false;', 'const LAB_STORE_OPEN=true;') + '\n;globalThis.__R={ecoNorm,ecoGrant,ecoOwned,ecoRefund,rmodOwned,CQ_PART_ORDER,LAB_STORE_OPEN};', ctx); return ctx.__R; })();
-{ const S = O.ecoNorm(JSON.parse(J(E()))), pts0 = [S.pts, S.earned, S.dailyPts, S.weeklyPts].join();
-  t(O.LAB_STORE_OPEN === true, 'open-store copy of the rules');
+// the switch works both ways: a test-only copy of js/rules.js with LAB_STORE_OPEN false (the store closed again) grants nothing
+const C = (() => { const ctx = vm.createContext({ console }), src = fs.readFileSync(new URL('../../../js/rules.js', import.meta.url), 'utf8');
+  if (!src.includes('const LAB_STORE_OPEN=true;')) throw new Error('LAB_STORE_OPEN flag not found');
+  vm.runInContext(src.replace('const LAB_STORE_OPEN=true;', 'const LAB_STORE_OPEN=false;') + '\n;globalThis.__R={ecoNorm,ecoGrant,LAB_STORE_OPEN,LAB_KINDS};', ctx); return ctx.__R; })();
+{ const S = C.ecoNorm(JSON.parse(J(E()))), b0 = J(S);
+  t(C.LAB_STORE_OPEN === false, 'a closed-store copy of the rules');
+  for (const d of [{ kind: 'rspack', tk: 'crate', price: 4 }, { kind: 'rsleg', tk: 'starfall', price: 23 }, { kind: 'rsfin', job: 'j3', price: 1.6 }])
+    t(C.ecoGrant(S, d, X).length === 0, 'Lab store closed: a verified ' + d.kind + ' payment grants nothing (ecoGrant checks it itself)');
+  t(J(S) === b0 && J(C.LAB_KINDS) === J(['rspack', 'rsleg', 'rsfin']), '... and changes nothing on the record'); }
+{ const O = R, S = O.ecoNorm({}), pts0 = [S.pts, S.earned, S.dailyPts, S.weeklyPts].join();
+  S.rm = { inferno: 1 };
   const o1 = O.ecoGrant(S, { kind: 'rspack', tk: 'crate', price: 4 }, X);
   t(o1[0]?.tk === 'rspack' && O.CQ_PART_ORDER.every(k => S.bpt[k] === 3), 'a Lab crate adds 3 of every research part to the account\'s bonus parts');
   t(O.ecoOwned(S, { kind: 'rspack', tk: 'crate' }, X) && !O.ecoOwned(S, { kind: 'rspack', tk: 'crate' }, { ...X, week: X.week + 1 }), 'one of each pack a UTC week');
   t(O.ecoGrant(S, { kind: 'rspack', tk: 'crate', price: 4 }, X).length === 0 && O.CQ_PART_ORDER.every(k => S.bpt[k] === 3), 'a second Lab crate paid the same week grants nothing (the grant checks the weekly rule itself)');
   const S2 = O.ecoNorm({}); S2.rm = { vent: 1, overclock: 1, heatsink: 1 };
-  t(O.ecoOwned(S2, { kind: 'rsleg', tk: 'sunfire' }, X) && O.ecoGrant(S2, { kind: 'rsleg', tk: 'sunfire', price: 9.6 }, X).length === 0 && !(S2.lsm && S2.lsm.sunfire), 'Sunfire is not on sale before its track\'s set mod (Inferno) is researched, and a paid order grants nothing');
-  S.rm = { ...(S.rm || {}), inferno: 1 }; O.ecoGrant(S, { kind: 'rsleg', tk: 'sunfire', price: 9.6 }, X);
+  t(O.ecoOwned(S2, { kind: 'rsleg', tk: 'sunfire' }, X) && O.ecoGrant(S2, { kind: 'rsleg', tk: 'sunfire', price: 23 }, X).length === 0 && !(S2.lsm && S2.lsm.sunfire), 'Sunfire is not on sale before its track\'s set mod (Inferno) is researched, and a paid order grants nothing');
+  O.ecoGrant(S, { kind: 'rsleg', tk: 'sunfire', price: 23 }, X);
   t(S.lsm.sunfire === 1 && O.ecoOwned(S, { kind: 'rsleg', tk: 'sunfire' }, X) && O.rmodOwned(S, 'mount', 'sunfire'), 'a granted Legendary is owned on the server record and fits in the garage');
-  t(O.ecoGrant(S, { kind: 'rsleg', tk: 'sunfire', price: 9.6 }, X).length === 0, 'a second paid order for an owned Legendary grants nothing');
+  t(O.ecoGrant(S, { kind: 'rsleg', tk: 'sunfire', price: 23 }, X).length === 0, 'a second paid order for an owned Legendary grants nothing');
+  S.rm.rail = 1;
+  t(O.ecoGrant(S, { kind: 'rsleg', tk: 'starfall', price: 23 }, X).length === 0 && O.ecoGrant(S, { kind: 'rsleg', tk: 'starfall', price: 23 }, { ...X, week: X.week + 1 }).length === 1, 'the grant itself holds the one-a-week rule (Starfall waits for the next UTC week)');
   O.ecoGrant(S, { kind: 'rsfin', job: 'j3', price: 1.6 }, X);
   t(S.rsx.j3 === 1 && O.ecoOwned(S, { kind: 'rsfin', job: 'j3' }, X) && O.ecoOwned(S, { kind: 'rsfin', job: '../x' }, X), 'an instant finish is a one-time credit for that job id only');
   t(O.ecoGrant(S, { kind: 'rsfin', job: 'j3', price: 1.6 }, X).length === 0 && O.ecoGrant(S, { kind: 'rsfin', job: '../x', price: 1.6 }, X).length === 0, 'the same finish paid twice, or a forged job id: nothing granted');

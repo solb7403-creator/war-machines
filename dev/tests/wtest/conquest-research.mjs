@@ -52,7 +52,11 @@ r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',m
 ok(R.passResearch(true,true)&&!R.passResearch(true,false)&&!R.passResearch(false,true)&&R.rsSlots(1,R.passResearch(true,true))===2&&R.rsQuote({done:{},jobs:[]},'vent',1,R.passResearch(true,true)).ms===15*MIN,'when the Lab store opens: the premium pass gives a second slot and 15-minute Lab I jobs');
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'marksman'});ok(r.status===409&&/slot/.test(r.error),'no third slot below Lab III ('+r.error+')');
 // pass gone (a new season): one slot again, full time
-{const e=eco(Q);e.pass={s:e.pass.s+1,xp:0,prem:false,cf:[],cp:[]};putEco(Q,e);}now+=(R.LAB_STORE_OPEN?16:21)*MIN;   // the premium job (15 min with the store open, 20 while closed) is overr=await call(Q,'/api/conquest/session');
+{const e=eco(Q);e.pass={s:e.pass.s+1,xp:0,prem:false,cf:[],cp:[]};putEco(Q,e);}now+=(R.LAB_STORE_OPEN?16:21)*MIN;   // the premium job (15 min with the store open, 20 while closed) is over
+r=await call(Q,'/api/conquest/session');   // Session 8: this call had been swallowed by the comment above (it never ran)
+// Session 8 (the Lab store open): the premium pass's second slot ran Pierce too (2 Ballistic Coils), so Marksman is the track's second mod
+// (4 coils): the coils are topped up so this step still measures the job's time without the pass
+if(R.LAB_STORE_OPEN){const q=cq(Q);q.inv.pt.coil=Math.max(q.inv.pt.coil|0,R.RTREE.cost[1]);putCq(Q,q);}
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'marksman'});ok(r.status===200&&r.state.rs.jobs.find(j=>j.mod==='marksman').ms===20*MIN,JSON.stringify(r.error||'without the pass: the full 20 minutes'));
 // the field must be a research mod id
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'__proto__'});ok(r.status===409,'unknown mod ids are refused ('+r.error+')');

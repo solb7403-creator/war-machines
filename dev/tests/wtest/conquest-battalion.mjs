@@ -98,12 +98,13 @@ const DAY1=dayOf(now);
  const sec=await mod.webhookSecret(env),hook=b=>worker.fetch(new Request('https://test/api/tg-webhook',{method:'POST',headers:{'x-telegram-bot-api-secret-token':sec},body:J(b)}),env);let n=0;
  for(const pl of [{u:P,k:'chippack',g:R.CHIP_PACK.ton},{u:P,k:'livery',t:'liv-arctic',g:R.LIVERIES['liv-arctic'].ton},{u:P,k:'rcfin',t:'r1',g:1}]){
   const r=await hook({message:{from:u,chat:{id:P,type:'private'},successful_payment:{total_amount:299,telegram_payment_charge_id:'ch-bat-'+(++n),invoice_payload:J(pl)}}});
-  const paid=db.get('starsPaid/'+pid(P)+'/ch-bat-'+n);
-  ok(r.status===200&&snap()===before&&paid&&!(paid.o&&Object.keys(paid.o).length),'a Telegram-confirmed Stars payment naming '+pl.k+' grants nothing (logged with no grant; bch, liveries, finish credits unchanged)');}
+  const held=db.get('held/st_ch-bat-'+n);   // Session 8: a payment with no server quote of ours is logged for the owner (held/), never granted
+  ok(r.status===200&&snap()===before&&held&&held.err==='no quote','a Telegram-confirmed Stars payment naming '+pl.k+' grants nothing (logged with no grant; bch, liveries, finish credits unchanged)');}
  const logged=memo=>db.get('payments/LWM_'+memo.replace(/[.#$\[\]\/|]/g,'_'));
- {const r=await call(P,'/api/pay-log',{cur:'TON',amt:R.CHIP_PACK.ton,memo:'LWM|'+pid(P)+'|bat1',item:'Command chip pack',desc:{kind:'chippack'}});const L=logged('LWM|'+pid(P)+'|bat1');ok(r.status===200&&!r.out&&snap()===before&&L&&!L.granted&&L.verified===false,'a TON payment log for the chip pack is only logged, never granted ('+J({verified:L?.verified,granted:!!L?.granted})+')');}
- {const r=await call(P,'/api/pay-log',{cur:'SOL',amt:0.1,gram:3.2,memo:'LWM|'+pid(P)+'|bat2',proof:'x',item:'Arctic livery',desc:{kind:'livery',tk:'liv-arctic'}});const L=logged('LWM|'+pid(P)+'|bat2');ok(r.status===200&&!r.out&&snap()===before&&L&&!L.granted,'a SOL payment log for a livery is only logged, never granted');}
- {const r=await call(P,'/api/pay-log',{cur:'TON',amt:1,memo:'LWM|'+pid(P)+'|bat3',item:'Recruit finish',desc:{kind:'rcfin',tk:'r1'}});const L=logged('LWM|'+pid(P)+'|bat3');ok(r.status===200&&!r.out&&snap()===before&&L&&!L.granted,'a TON payment log for a RECRUIT instant finish is only logged, never granted');}
+ {const r=await call(P,'/api/order',{a:'quote',cur:'TON',desc:{kind:'chippack'}});ok(r.status===400&&r.error==='item'&&snap()===before,'no GRAM quote for the chip pack (the Battalion store stays off: '+r.status+' '+r.error+')');}   // Session 8: every GRAM / SOL purchase is a server quote first (the old orderless pay-log is retired)
+ {const r=await call(P,'/api/order',{a:'quote',cur:'TON',desc:{kind:'livery',tk:'liv-arctic'}});ok(r.status===400&&r.error==='item'&&snap()===before,'no GRAM quote for a livery (Battalion store off)');}
+ {const r=await call(P,'/api/order',{a:'quote',cur:'TON',desc:{kind:'rcfin',tk:'r1'}});ok(r.status===400&&r.error==='item'&&snap()===before,'no GRAM quote for a RECRUIT instant finish (Battalion store off)');}
+ {const r=await call(P,'/api/pay-log',{cur:'SOL',amt:0.1,gram:3.2,memo:'LWM|'+pid(P)+'|bat2',proof:'x',item:'Arctic livery',desc:{kind:'livery',tk:'liv-arctic'}});ok(r.status===410&&snap()===before,'the retired orderless pay-log grants nothing (410)');}
  // ecoGrant itself, with a payment record that looks confirmed (the shape the webhook hands it: the item plus its paid price)
  {const S=R.ecoNorm(JSON.parse(J(E()))),X={day:dayOf(now),week:Math.floor(dayOf(now)/7)},b0=J(S);
   for(const d of [{kind:'chippack',price:R.CHIP_PACK.ton},{kind:'livery',tk:'liv-arctic',price:R.LIVERIES['liv-arctic'].ton},{kind:'rcfin',job:'r1',price:1}])

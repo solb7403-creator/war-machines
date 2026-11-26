@@ -1775,7 +1775,7 @@ function ecoLimit(S,d,X){const b=k=>((S.buys&&S.buys[k])|0);
  if(d.kind==='rsleg')return b(rsLegWeekKey(X))>=RS_LEG_WEEK?'limit':null;
  if(d.kind==='cq'&&d.tk==='wall-ext-10'){if(!(Number(d.extNow)>=0))return 'town';return Number(d.extNow)+SHOP.cq['wall-ext-10'].step>EXT_MAX_PCT?'cap':null;}
  if(d.kind==='cq'&&d.tk==='foundry-rush')return d.foundry?null:'town';
- if(d.kind==='cfin')return Number(d.left)>0?null:'none';
+ if(d.kind==='cfin'||d.kind==='rsfin')return Number(d.left)>0?null:'none';   // a finish needs a running job (the Worker reads its time left)
  return null;}
 const EXT_MAX_PCT=50;   // ConquestPlot.EXT.max (the +50% wall extension cap; the Conquest test checks they agree)
 // is this item on sale at all (its store open, its rail named in descOf)?
