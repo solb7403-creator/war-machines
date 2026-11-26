@@ -8173,9 +8173,15 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
   PASSES, as it must. Every mutation reverted.
 - **Slice 5 (reviews round 1 at `5cf8ae7`, fixes `7364d51`-`0355b02` + the paraphrase fix):** details under "Reviews" below.
 - **Slice 6 (review round 2 at `a183a00`, fix `a251615`):** every brief item and every owner rule PASS from all three reviewers (below).
-- **Slice 7 (release, in progress):** PR #160 marked ready with `auto-release` at `0384276`. CI's `boards-titan` job failed: a real
-  game bug from Session 7C, red on main too (fixed in `8de1769`, under "CI fix" below). Next: CI green on the head -> the workflow merges;
-  verify the deploy; then a docs-only PR with the release record and the ROADMAP row.
+- **SESSION 7R IS RELEASED** (Nov 26, 2026: PR #160 merged by the auto-release workflow as `a58acff`; the build stamp
+  `20261126053718` and this record in the follow-up PR from the same branch, restarted from main; section "Release record" below;
+  ROADMAP row 7R). Open for the owner: PROPOSALs 1 and 2 below.
+- **Slice 7 (release):** PR #160 marked ready with `auto-release` at `0384276`. CI's `boards-titan` job failed: a real game bug from
+  Session 7C, red on main too (fixed in `8de1769`, under "CI fix" below). Every check green on `50ebfaa`; merged at 05:36 UTC.
+- **Slice 8 (follow-up PR):** PR #160 shipped without a `dev/bump.sh` build stamp (7C's release had one): a phone with the old build
+  cached would keep the old `citadel.js` and show the 7-day lock while the Worker already has none. The follow-up stamps build
+  `20261126053718` into index.html (every css/js tag, the Citadel and Titan files included), web/play.html, worker/src/index.js and
+  version.json, with this record and the ROADMAP row.
 
 ### CI fix: the Hive Titan hunt failed at once on most strike craters (found Nov 26 by CI; Session 7C's bug, red on main `ae22fcb` too)
 - **Symptom:** `dev/tests/conquest-7c-browser.py` timed out waiting for the hunt's clock: the battle had ended in its first step,
@@ -8286,3 +8292,13 @@ regular's earliest; PASS, 33); "1 days" for a cooldown of exactly 24 h -> FIXED 
    already warns ("Retaliation III: your town and the front meet stronger attacks") and the War Map shows DEFENSE beside its recommended band, so
    this is a real choice (build first, or push). If playtests show it feels punishing, the fix is a clearer DEFENSE warning on the tier
    card before launch, not a wait.
+
+### Release record (Nov 26, 2026)
+- PR #160 merged by the auto-release workflow at 05:36 UTC as `a58acff` (head `50ebfaa`): every check green on the head (owner-rules
+  with the `owner-rules-change` label, guardrails, asset-integrity, fortress, boards-titan, citadel, town-ui, transmission chromium +
+  webkit, conquest). Release pre-approved in the brief. The PR stayed a draft until both review rounds and this checkpoint were done.
+- CI along the way: `boards-titan` red on `0384276` (and on main): the Titan perimeter bug, fixed with a test (above);
+  `transmission (chromium)` red once on `0384276` (the flagship journey's bot pilot lost a battery raid at 71 s): passed on both this
+  branch and main locally, and passed on the next head in CI; this PR touches no raid code. No test skipped, deleted or loosened.
+- The follow-up PR (build stamp) and the deploy check of both merges are recorded below when they finish.
+
