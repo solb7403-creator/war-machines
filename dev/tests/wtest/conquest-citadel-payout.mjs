@@ -56,13 +56,14 @@ async function clear(P,tier,pre){now+=1000;let s=place(P);if(s.mission){now+=100
 // 4. the hourly limit reached: battle points 0, the bounty paid
 {const P=7704;await fresh(P);const p0=pts(P);const {r}=await clear(P,1,s=>{s.airdrop.hr={h:Math.floor(now/3600000),n:R.CQ_PTS.hourMax};});
  ok(r.status===200&&pts(P)-p0===25000,'the hourly limit reached: the battle points stop, the bounty is paid (+'+(pts(P)-p0)+')');}
-// 5. review W1: the Conquest record reset on the server after tier I; tier I re-cleared pays 0, tier II pays (its entry id is at or below the
+// 5. review W1: the Conquest record reset on the server after tier I; tier I re-cleared pays 0, tier II (right after: no wait between
+// tiers, owner rule Nov 25, 2026) pays (its entry id is at or below the
 // old watermark), once
 {const P=7705;await fresh(P);await clear(P,1);now+=2*60*1000;await clear(P,1);now+=2*60*1000;await clear(P,1);const w=eco(P).cqw;
  db.root.conquest&&delete db.root.conquest['tg_'+P];for(const k of Object.keys(db.root))if(k.startsWith('conquest')&&db.root[k]&&db.root[k]['tg_'+P])delete db.root[k]['tg_'+P];
  await call(P,'/api/conquest/session');const f1=eco(P).fx?.n|0;const {r:r1}=await clear(P,1);ok(r1.status===200&&(eco(P).fx?.n|0)===f1,'a reset record re-clears tier I: the account pays 0 (watermark '+w+')');
  ok(r1.state.settlement?.first===1&&r1.state.settlement.bounty===25000&&r1.state.settlement.paid===0&&cq(P).settlement?.paid===0,'Session 7C: ... and its result card shows no bounty number (rec.paid 0: "already paid to this account")');
- now+=8*DAY;const {r:r2,start:st2}=await clear(P,2);ok(r2.status===200&&r2.state.settlement?.first===1&&eco(P).cbty?.cit2>0,'... and its first clear of tier II still pays 37,500 although its outbox ids restarted below the watermark (review W1)');
+ now+=2*60*1000;const {r:r2,start:st2}=await clear(P,2);ok(r2.status===200&&r2.state.settlement?.first===1&&eco(P).cbty?.cit2>0,'... and its first clear of tier II still pays 37,500 although its outbox ids restarted below the watermark (review W1)');
  ok(r2.state.settlement.paid===37500,'Session 7C: ... and its card shows the 37,500 the account paid');
  const f2=eco(P).fx?.n|0,{r:r3}=await clear(P,2);ok(r3.state?.settlement?.throne===1&&(eco(P).fx?.n|0)===f2,'... once');}
 // 6. review W2: ids beyond the live tiers pay nothing, even if something ever wrote one; the amount is always the table's

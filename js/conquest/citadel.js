@@ -29,7 +29,11 @@ const CIT=Object.freeze({
  par:7,                                       // the assault's par minutes (lead's design: the brief's 6-8 minutes with the full Battalion)
  ring:5,                                      // the Inner Ring: the ring's danger in the battle points formula (war.js WAR.danger)
  prepMs:48*HOUR,                              // each siege prep objective stays valid 48 hours
- refortMs:7*DAY,                              // lead's design (measured pacing): after a tier's first clear the Hive re-fortifies the next one for 7 days
+ // owner rule (Nov 25, 2026, AGENTS.md "Gameplay quality first"): no seven-day wait between Citadel attacks; a cooldown is a matter of
+ // hours, 24 hours the absolute maximum, if one is needed at all (dev/tests/owner-rules.mjs fails above 24 h). Session 7R's choice:
+ // none. Nothing else waits between attacks, the siege prep is optional, and the pacing model shows the kit (gear, Battalion, ranks)
+ // is what gates the next tier for the regular pilot; the wait only ever held back the strongest pilots (Checkpoint 51)
+ refortMs:0,
  // lead's design numbers (fixed for every tier): the warden's hull and shield core (re-formed twice), the gate and its generators
  warden:Object.freeze({hp:18500,core:2800,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
  gate:Object.freeze({hp:15000}),gen:Object.freeze({hp:6000}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),

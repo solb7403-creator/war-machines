@@ -28,13 +28,14 @@ else if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.ur
 const seeds=Number(arg('--seeds',4)),run=runner(Math.max(1,Math.min(8,Number(arg('--par',4)))));
  // where each search starts: the kit day before the full Battalion (tier I) and before the rare gear day (tiers II-III)
  const M=await import('./citadel-model.mjs'),start=(p,f)=>{let d=1;for(let x=1;x<=80;x++){if(f(M.kitAt(p,x))){d=x;break;}}return Math.max(1,d-3);};
- // a tier after the first opens CIT.refortMs (7 days) after the previous tier's first clear (the Hive re-fortifies): its search starts there
+ // a tier after the first opens CIT.refortMs after the previous tier's first clear: its search starts there. Session 7R (owner rule, Nov 25,
+ // 2026: no seven-day wait; hours, 24 h the absolute maximum, or none): refortMs 0, so the next tier's search starts on the day the last fell
  const {CONQUEST}=await import('../../worker/src/sim.gen.js'),RF=Math.round(CONQUEST.Citadel.CIT.refortMs/86400000);
  const res={};await Promise.all(['regular','heavy','grinder'].map(async p=>{res[p]={};const t1=await firstWin(run,p,1,{from:start(p,k=>k.allies.length>=9),seeds});res[p][1]=t1;
   const t2=await firstWin(run,p,2,{from:Math.max((t1.day||1)+RF,start(p,k=>k.tier>=1)),seeds});res[p][2]=t2;res[p][3]=await firstWin(run,p,3,{from:(t2.day||1)+RF,seeds,steps:8});}));
  const inside=(x,[a,b])=>x!==null&&x>=a&&x<=b,check={};for(const t of [1,3]){const T=TARGETS[t],g=res.grinder[t].day,r=res.regular[t].day,h=res.heavy[t].day;
   check[t]={regular:{day:r,target:T.regular,ok:inside(r,T.regular)},grinder:{day:g,target:T.grinder,ok:inside(g,T.grinder)},heavy:{day:h,target:'between the grinder and the regular',ok:h!==null&&g!==null&&r!==null&&h>=g&&h<=r}};}
- const out={about:'Session 7B pacing: the first day each profile\'s kit breaks each Citadel tier with the real assault (citadel-model.mjs bot, '+seeds+' seeded assaults a day, won at least half); a tier after the first opens '+RF+' days after the previous first clear',seeds,refortDays:RF,check,results:res};
+ const out={about:'Session 7B pacing: the first day each profile\'s kit breaks each Citadel tier with the real assault (citadel-model.mjs bot, '+seeds+' seeded assaults a day, won at least half); a tier after the first opens '+RF+' days after the previous first clear (Session 7R: no wait, owner rule Nov 25, 2026). SIMULATED results, not playtesting. The tier III targets are the 7B brief\'s, unchanged: tier III outside them is reported, not asserted (owner Rule 2; Checkpoint 51)',seeds,refortDays:RF,refortHours:CONQUEST.Citadel.CIT.refortMs/36e5,check,results:res};
  mkdirSync('docs/conquest/session7b',{recursive:true});writeFileSync('docs/conquest/session7b/citadel-pace.json',JSON.stringify(out,null,1)+'\n');
  for(const p of ['regular','heavy','grinder'])console.log(p.padEnd(8),[1,2,3].map(t=>'tier '+t+': day '+res[p][t].day+' ('+res[p][t].tried.map(x=>x.d+':'+x.won+'/'+x.of).join(' ')+')').join(' · '));
  for(const t of [1,3])console.log('tier',t,Object.entries(check[t]).map(([p,c])=>p+' '+c.day+(c.ok?' ok':' OUTSIDE '+JSON.stringify(c.target))).join(' · '));}
