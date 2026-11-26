@@ -1,6 +1,6 @@
 'use strict';
 // =====================================================================
-// net: LUNAR server (verified Telegram login), leaderboard file, squad, payments (Stars / TON / SOL)
+// net: LUNAR server (verified Telegram login), leaderboard file, squad, payments (Stars / GRAM / SOL: js/checkout.js)
 // =====================================================================
 const API=IN_WEB?location.origin:'https://lunar-api.solb7403.workers.dev';
 const DB_PUBLIC='https://warmachines-a6034-default-rtdb.firebaseio.com';   // only the public leaderboard file is readable
@@ -14,9 +14,7 @@ function api(path,body){
 function initBackend(){
  if(ACCOUNT_OK){doSync(true);setTimeout(()=>loadSquad(),3000);}   // the invite link is ready before the first win
  if(IN_WEB)return;
- checkPendingPurchase();checkPendingSol();
- if(SRV_ECO)setTimeout(payResumeQueue,4000);
- if(save.payCur==='ton')setTimeout(initTonConnect,2500);
+ if(save.payCur==='ton')setTimeout(initTonConnect,2500);   // Telegram: TON Connect for GRAM (open orders resume from the sync: js/checkout.js)
 }
 // ask for a sync soon (batched: at most one request every ~8s)
 function syncPlayer(){
@@ -45,6 +43,7 @@ async function doSync(boot){
   if(r.rec){save.refBy=r.rec.ref||null;if(r.rec.ref||(r.rec.days||0)>1)inviteDone();}   // the server's binding is the only one
   if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}
   if(r.stars&&r.stars.length)recoverStars(r.stars);
+  if(r.pay&&typeof setPayRails==='function'){setPayRails(r.pay.rails);if(r.pay.open&&r.pay.open.length)coResume(r.pay.open);}   // Session 8: the rails this surface pays with (the GRAM switch), an open GRAM / SOL order to keep checking
   if(ghAck&&save.ghAck===ghAck)save.ghAck=0;
   if(r.ghost&&r.ghost.m&&typeof showGhostReport==='function'){save.ghAck=r.ghost.last||Date.now();showGhostReport(r.ghost);}
   store();
@@ -111,51 +110,20 @@ let adminData=null;
 function loadAdmin(extra){if(!IN_TG){adminData={error:'Open the game in Telegram to see server stats'};return;}if(!adminData||adminData.error)adminData={loading:true};api('/api/admin',extra||{}).then(r=>{adminData=r;uiDirty('admin');}).catch(e=>{adminData={error:String(e.message||e)};uiDirty('admin');});}
 
 // ================= payments =================
-const TON_RECIPIENT='UQAq3MBfPQ7Wqo5kL7631yEDKf2E9GOmZdhOfLUWhUiACfzu';  // Jake's Tonkeeper - receives all TON payments
+const TON_RECIPIENT='UQAq3MBfPQ7Wqo5kL7631yEDKf2E9GOmZdhOfLUWhUiACfzu';  // the owner's wallet: receives every GRAM payment (the server's quote names it)
 const TON_MANIFEST_URL='https://solb7403-creator.github.io/war-machines/tonconnect-manifest.json';
 const SOL_RECIPIENT='A37J13iXXA47n4kFKvR9Cao1u8A6v3HP8qMCSCJDi7AE'; // Jake's War Machines SOL wallet
 const PAY_PAGE='https://solb7403-creator.github.io/war-machines/pay.html';
 let tonConnectUI=null,tonWallet=null,tonLoading=false;
-function newMemo(){return 'LWM|'+playerKey()+'|'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
-function descLabel(d){
- if(!d)return 'Purchase';
- if(d.kind==='box')return TIER_N[d.ri]+' '+(d.tk==='weapon'?'Weapon Cache':d.tk==='chassis'?'Chassis Crate':'Gem Cache'+(CH[d.c]?' for '+CH[d.c].n:''));
- if(d.kind==='gear')return TIER_N[d.ri]+' chosen '+(gearTk(d.tk)==='weapon'?'weapon: '+((WNAMES[d.tk]||[])[d.ri]||'Weapon'):'chassis: '+((CNAMES[d.tk]||[])[d.ri]||'Chassis'));
- if(d.kind==='core')return TIER_N[d.ri]+' chosen core: '+((GEM[d.tk]||{}).name||'Core')+(CH[d.c]?' for '+CH[d.c].n:'');
- if(d.kind==='paint')return 'Paint: '+((PAINTS[d.id]||{}).n||d.id);
- return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='founder'?'Founder Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():d.kind==='respec'?'Build reset':d.kind==='vault'?'Hyperspace Vault: '+((VAULT[d.tk]||{}).n||'Gold'):'Purchase';
-}
-// record a confirmed payment locally and on the server (which re-checks it on-chain). In Telegram the server also
-// grants it: nothing is unlocked until the server has found the payment itself
-function logPayment(rec,desc){
- save.purchases=save.purchases||[];save.purchases.push(rec);
- if(rec.cur==='SOL')save.spendSol=Math.round(((save.spendSol||0)+rec.amt)*1e6)/1e6;
- if(SRV_ECO&&desc){save.payQ=(save.payQ||[]).filter(p=>p.memo!==rec.memo).concat({rec,desc,t:Date.now()});}
- store();
- if(!IN_TG)return;
- if(SRV_ECO&&desc){payGrant(rec.memo,0);return;}
- const send=(k)=>api('/api/pay-log',{cur:rec.cur,amt:rec.amt,gram:rec.gram,usd:rec.usd||0,item:rec.what,memo:rec.memo,proof:rec.proof||''}).catch(()=>{if(k<3)setTimeout(()=>send(k+1),20000*(k+1));});
- send(0);
-}
-// ask the server to verify a TON/SOL payment and grant it; chains can take a minute to show it, so this retries
-function payGrant(memo,k){
- const p=(save.payQ||[]).find(x=>x.memo===memo||x.rec.memo===memo);if(!p)return;
- const rec=p.rec,desc=p.desc;
- api('/api/pay-log',{cur:rec.cur,amt:rec.amt,gram:rec.gram,usd:rec.usd||0,item:rec.what,memo:rec.memo,proof:rec.proof||'',desc}).then(r=>{
-  if(r&&r.E)applyEco(r.E);
-  if(r&&r.verified){save.payQ=(save.payQ||[]).filter(x=>x.rec.memo!==rec.memo);save.pendingTx=null;store();showOuts(r.out||[]);uiDirty('shop');return;}
-  if(r&&r.error&&r.error!=='pending'){save.payQ=(save.payQ||[]).filter(x=>x.rec.memo!==rec.memo);store();showToast('That payment couldn’t be matched. Message @LunarBattle with your Player ID.');return;}
-  if(k<8)setTimeout(()=>payGrant(memo,k+1),15000*(k+1));
- }).catch(()=>{if(k<8)setTimeout(()=>payGrant(memo,k+1),15000*(k+1));});
-}
-function payResumeQueue(){for(const p of (save.payQ||[]))if(Date.now()-p.t<48*3600*1000)payGrant(p.rec.memo,3);}
+// Session 8: every purchase is a server quote first (/api/order, js/checkout.js); the server finds GRAM and SOL payments on chain itself
+// and grants them, so the phone keeps no payment queue of its own and never reports a payment's details (the old /api/pay-log is retired)
 // TON text comment as a one-cell BOC (opcode 0 + UTF-8 text), base64 for TON Connect payload
 function tonCommentPayload(txt){
  const tb=Array.from(new TextEncoder().encode(txt)).slice(0,120),n=4+tb.length;
  const b=[0xb5,0xee,0x9c,0x72,0x01,0x01,0x01,0x01,0x00,2+n,0x00,0x00,2*n,0,0,0,0].concat(tb);
  let bin='';b.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin);
 }
-// live prices so SOL costs about the same $ as the TON price
+// live prices so SOL costs about the same $ as the GRAM price (labels only: the server's quote fixes the exact SOL amount)
 let px={ton:0,sol:0,t:0},pxBusy=false;
 function fetchPrices(){
  if(pxBusy||Date.now()-px.t<300000)return;
@@ -166,45 +134,12 @@ function fetchPrices(){
   .catch(()=>{}).finally(()=>{pxBusy=false;});
 }
 function solFor(ton){if(!px.ton||!px.sol)return 0;const v=ton*px.ton/px.sol;return v>=1?Math.round(v*1000)/1000:Math.round(v*10000)/10000;}
-// Science Lab store proposals (Session 6B, checkout off): Telegram shows the Stars price, the website the TON price and SOL at the
-// live TON rate. A label only: nothing calls pay() for these.
-function labPriceLabel(p){if(!p)return '';if(IN_TG&&!IN_WEB)return fmtNum(p.stars)+' ⭐';if(!px.sol)fetchPrices();const s=solFor(p.ton);return p.ton+' TON · '+(s?s+' SOL':'… SOL');}
-function priceLabel(ton,stars){
- if(save.payCur==='stars')return fmtNum(stars)+' ⭐';
- if(save.payCur==='sol'){const s=solFor(ton);return s?s+' SOL':'… SOL';}
- return ton+' TON';
-}
-function pay(ton,desc){
- if(IN_WEB){showToast('Purchases are available in the Telegram edition only.');return;}
- if(save.payCur==='pts')return;
- if(!save.termsOk&&typeof askTerms==='function'){askTerms(()=>pay(ton,desc));return;}   // agree to the terms once, before the first purchase
- if(save.payCur==='stars')payWithStars(ton,desc);else if(save.payCur==='sol')payWithSol(ton,desc);else payWithTon(ton,desc);
-}
+// prices in the surface's currency: Telegram Stars or GRAM, the website GRAM or SOL (SOL at the live GRAM rate; the quote fixes it)
+function labPriceLabel(p){return curLabel(p);}
+function priceLabel(ton,stars){return curLabel({ton,stars});}
+// a purchase: the server quotes it with every rule checked (js/checkout.js); the price argument is only what the button showed
+function pay(ton,desc){checkout(desc);}
 // ---- Telegram Stars: invoice created + payment confirmed by the LUNAR server ----
-let starsBusy=false;
-async function payWithStars(ton,desc){
- if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
- if(!IN_TG||!TG.openInvoice){showToast('Open the game in Telegram to pay with Stars');return;}
- if(starsBusy)return;starsBusy=true;showToast('Opening Stars checkout…');
- try{
-  const d=await api('/api/stars-invoice',{kind:desc.kind,tk:desc.kind==='paint'?desc.id:desc.kind==='pass'?String(seasonNo()):desc.tk,ri:desc.ri,price:ton,deal:desc.deal||'',c:desc.c||''});   // c: the chassis (gem caches, chosen cores, packs, resets)
-  if(!d.link)throw new Error(d.error||'invoice');
-  TG.openInvoice(d.link,status=>{
-   starsBusy=false;
-   if(status==='paid'){
-    save.purchases=save.purchases||[];save.purchases.push({cur:'STARS',amt:d.stars,gram:ton,what:descLabel(desc),memo:'STARS|'+d.nonce,ts:Date.now()});
-    save.spendStars=(save.spendStars||0)+d.stars;save.starsDone=save.starsDone||{};save.starsDone[d.nonce]=1;starsAckQ.push(d.nonce);store();
-    if(SRV_ECO)starsDeliver(d.nonce,0);   // the server adds it once Telegram confirms the payment
-    else{grantPurchase(desc);syncPlayer();}
-   }else if(status==='cancelled')showToast('Payment cancelled');
-   else if(status==='failed')showToast('Stars payment failed. Nothing was charged.');
-  });
- }catch(e){starsBusy=false;
-  if(e&&e.message==='owned'){showToast('You already have this');return;}
-  if(e&&e.message==='deal_used'){markDeal(desc.deal);store();if(typeof uiDirty==='function')uiDirty();showToast('You already used this deal. Check the new price.');return;}   // used on another device
-  if(desc.kind==='vault'&&e&&/stars|amount|price|invoice_invalid/i.test(e.message||'')){showToast('Telegram didn’t accept a Stars payment this size. Pay with TON or SOL instead.');return;}   // a very large Stars amount
-  showToast('Stars checkout is unavailable right now. Try again in a minute.');}
-}
 // a paid Stars purchase: the server grants it when Telegram's confirmation arrives (usually within a second or two)
 function starsDeliver(nonce,k){
  api('/api/act',{a:'paid',n:nonce}).then(r=>{
@@ -223,81 +158,7 @@ const SOL_WALLETS={
  backpack:{n:'Backpack',ul:u=>'https://backpack.app/ul/v1/browse/'+encodeURIComponent(u)+'?ref='+SOL_REF},
  other:{n:'Keeper / other',ul:null}};
 const SOL_ORDER=['phantom','solflare','backpack','other'];
-function payWithSol(ton,desc){
- if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
- const sol=solFor(ton);
- if(!sol){fetchPrices();showToast('Loading the SOL price. Tap again in a second.');return;}
- const ref=b58(crypto.getRandomValues(new Uint8Array(32))),memo=newMemo();
- // unique tail (1-999 micro-SOL) makes each order's exact amount identifiable on-chain
- const lamports=Math.floor(sol*1e9/1e6)*1e6+(1+Math.floor(Math.random()*999))*1e3;
- const solX=(lamports/1e9).toFixed(6).replace(/0+$/,'');
- save.pendingSol={desc,gram:ton,sol:+solX,lamports,ref,memo,since:Date.now(),usd:Math.round(ton*px.ton*100)/100};store();
- const q='?a='+solX+'&r='+ref+'&m='+encodeURIComponent(memo)+'&d='+encodeURIComponent(descLabel(desc))+'&u='+(save.pendingSol.usd||'');
- const w=SOL_WALLETS[save.solWallet]?save.solWallet:'phantom',page=PAY_PAGE+q+'&w='+w;
- const link=SOL_WALLETS[w].ul?SOL_WALLETS[w].ul(page):page;
- try{if(IN_TG)TG.openLink(link);else window.open(link,'_blank');}catch(e){window.open(link,'_blank');}
- showToast(SOL_WALLETS[w].ul?'Approve in '+SOL_WALLETS[w].n+', then come back':'Send the exact amount, then come back');
- watchSol(900000);
-}
-// several public Solana endpoints: if one blocks or rate-limits the Telegram webview, try the next
-const SOL_RPCS=['https://solana-rpc.publicnode.com','https://api.mainnet-beta.solana.com','https://solana.drpc.org','https://rpc.ankr.com/solana'];
-let solRpcI=0;
-async function solRpc(method,params){
- let lastErr;
- for(let k=0;k<SOL_RPCS.length;k++){
-  const url=SOL_RPCS[(solRpcI+k)%SOL_RPCS.length];
-  try{
-   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
-   if(!r.ok)throw new Error('http '+r.status);
-   const d=await r.json();if(d.error)throw new Error(d.error.message||'rpc');
-   solRpcI=(solRpcI+k)%SOL_RPCS.length;return d.result;
-  }catch(e){lastErr=e;}
- }
- throw lastErr||new Error('no rpc');
-}
-async function findSolPayment(p){
- // 1) wallet-link payments carry our reference key; 2) manual sends (Keeper etc.) match by exact unique amount
- let sigs=await solRpc('getSignaturesForAddress',[p.ref,{limit:5,commitment:'confirmed'}])||[];
- const exactOnly=!sigs.length;
- if(exactOnly)sigs=(await solRpc('getSignaturesForAddress',[SOL_RECIPIENT,{limit:40,commitment:'confirmed'}])||[]).filter(sg=>!sg.blockTime||sg.blockTime*1000>=p.since-60000);
- for(const sg of sigs){
-  if(sg.err)continue;
-  const tx=await solRpc('getTransaction',[sg.signature,{encoding:'jsonParsed',maxSupportedTransactionVersion:0,commitment:'confirmed'}]);
-  if(!tx||!tx.meta||tx.meta.err)continue;
-  const keys=tx.transaction.message.accountKeys.map(k=>k.pubkey||k),i=keys.indexOf(SOL_RECIPIENT);
-  if(i<0)continue;
-  const got=tx.meta.postBalances[i]-tx.meta.preBalances[i];
-  if(exactOnly?got===p.lamports:got>=p.lamports*0.999)return sg.signature;
- }
- return null;
-}
-let solWatch=null;
-function watchSol(ms){
- if(solWatch)return;
- const t0=Date.now();
- const tick=async()=>{
-  const p=save.pendingSol;if(!p){solWatch=null;return;}
-  try{const sig=await findSolPayment(p);
-   if(sig&&save.pendingSol){save.pendingSol=null;
-    logPayment({cur:'SOL',amt:p.sol,gram:p.gram,usd:p.usd,what:descLabel(p.desc),memo:p.memo,proof:sig,ts:Date.now()},p.desc);
-    if(!SRV_ECO)grantPurchase(p.desc);solWatch=null;uiDirty('shop');return;}
-  }catch(e){}
-  if(Date.now()-t0>ms){solWatch=null;return;}
-  solWatch=setTimeout(tick,2500);
- };
- solWatch=setTimeout(tick,1500);
-}
-function checkPendingSol(){
- const p=save.pendingSol;if(!p)return;
- if(Date.now()-p.since>24*3600*1000){save.pendingSol=null;store();return;}
- watchSol(600000);
-}
-// coming back from the wallet app: resume checking right away
-function payResume(){if(save&&save.pendingSol){clearTimeout(solWatch);solWatch=null;watchSol(600000);}if(save&&save.pendingTx)checkPendingPurchase();}
-try{if(TG&&TG.onEvent)TG.onEvent('activated',payResume);}catch(e){}
-addEventListener('focus',payResume);addEventListener('pageshow',payResume);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)payResume();});
-// ---- TON Connect (loads only when someone pays with TON) ----
+// ---- TON Connect for GRAM in Telegram (loads only when someone pays with GRAM there) ----
 function initTonConnect(attempt){
  attempt=attempt||0;
  try{
@@ -316,62 +177,4 @@ function tonWalletButton(){
  else if(tonConnectUI)tonConnectUI.openModal();
  else{showToast('Loading wallets…');initTonConnect();setTimeout(()=>{if(tonConnectUI)tonConnectUI.openModal();},1500);}
 }
-// If the wallet app never returns to the page (common on iOS), confirm the payment on the TON chain by its memo instead.
-async function verifyPurchaseOnChain(amount,sinceTs,timeoutMs,isDone,memo){
- const t0=Date.now();
- while(Date.now()-t0<timeoutMs){
-  if(isDone())return false;
-  try{
-   const r=await fetch('https://toncenter.com/api/v2/getTransactions?address='+TON_RECIPIENT+'&limit=50');
-   const d=await r.json();
-   for(const t of (d.result||[])){
-    if((t.utime*1000)<sinceTs-10000)continue;
-    const val=parseInt(((t.in_msg||{}).value||'0'),10)/1e9;
-    if(memo&&String((t.in_msg||{}).message||'')!==memo)continue; // only OUR payment counts
-    if(val+1e-9>=amount)return (t.transaction_id&&t.transaction_id.hash)||true;
-   }
-  }catch(e){}
-  await new Promise(r=>setTimeout(r,5000));
- }
- return false;
-}
-function checkPendingPurchase(){
- const p=save.pendingTx;
- if(!p||!p.desc)return;
- if(Date.now()-p.since>2*3600*1000){save.pendingTx=null;store();return;}
- verifyPurchaseOnChain(p.amount,p.since,60000,()=>false,p.memo).then(ok=>{
-  if(ok&&save.pendingTx){logPayment({cur:'TON',amt:p.amount,gram:p.amount,what:descLabel(p.desc),memo:p.memo||'',proof:typeof ok==='string'?ok:'',ts:Date.now()},p.desc);if(!SRV_ECO)grantPurchase(p.desc);}
- });
-}
-async function payWithTon(amount,desc){
- if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
- if(!tonConnectUI){showToast('Loading wallets…');initTonConnect();return;}
- if(!tonWallet){tonConnectUI.openModal();showToast('Connect a TON wallet first');return;}
- const sinceTs=Date.now(),memo=newMemo();
- let granted=false;
- const grant=(proof)=>{if(granted)return;granted=true;
-  logPayment({cur:'TON',amt:amount,gram:amount,usd:px.ton?Math.round(amount*px.ton*100)/100:0,what:descLabel(desc),memo,proof:proof||'',ts:Date.now()},desc);
-  if(!SRV_ECO)grantPurchase(desc);};
- // persist so a closed/killed page can still complete the purchase on next launch
- if(desc){save.pendingTx={desc:desc,amount,since:sinceTs,memo};store();}
- verifyPurchaseOnChain(amount,sinceTs,180000,()=>granted,memo).then(ok=>{
-  if(ok)grant(typeof ok==='string'?ok:'');
-  else if(!granted)showToast('Payment not detected yet. If you paid, it unlocks automatically when it confirms.');
- });
- showToast('Waiting for your wallet…');
- try{
-  const tx=pl=>tonConnectUI.sendTransaction({validUntil:Math.floor(Date.now()/1000)+300,
-   messages:[Object.assign({address:TON_RECIPIENT,amount:Math.round(amount*1e9).toString()},pl?{payload:pl}:{})]});
-  // the order note (memo) is how the server finds this payment, so a wallet that won't attach it can't be used
-  let res;
-  try{res=await tx(tonCommentPayload(memo));}
-  catch(e1){
-   if(e1&&e1.message&&/cancel|reject|declin/i.test(e1.message))throw e1;
-   save.pendingTx=null;store();granted=true;showToast('This wallet can’t attach the order note. Try another wallet, or pay with Stars.');return;
-  }
-  grant(res&&res.boc?'boc':'');
- }catch(e){
-  if(e&&e.message&&/cancel|reject|declin/i.test(e.message)){save.pendingTx=null;store();showToast('Payment cancelled');}
-  else showToast('Payment failed. Nothing was sent.');
- }
-}
+// GRAM payments are found on chain by the server (js/checkout.js polls the order's status); TON Connect only sends the transfer

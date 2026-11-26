@@ -1,7 +1,7 @@
 // Session 8: the payment flow for the server tests (every purchase is a server quote first: /api/order). Stars: the quote's invoice,
 // Telegram's pre-checkout (answered by the Worker: read from the captured Telegram calls) and the successful_payment webhook. GRAM: the
 // quote's memo and nanoGRAM amount, the fake toncenter history, the status call. SOL: the quote's reference and lamports, the fake RPC.
-// call(path, body), hook(body): the test's own helpers; tgCalls: the captured Telegram API calls ([method, body]).
+// call and the webhook poster are the test's own helpers (path + body, update body); tgCalls holds the captured Telegram API calls.
 export function payKit({ call, hook, initData, tgCalls }) {
   const quote = (u, cur, desc, extra = {}) => call('/api/order', { initData: initData(u), a: 'quote', cur, desc, ...extra });
   const status = (u, q) => call('/api/order', { initData: initData(u), a: 'status', q });

@@ -1,4 +1,5 @@
 // Server-owned deterministic input replay; never accepts client outcomes or positions.
+import {shopAccount,scanBonus} from './conquest-shop.js';   // Session 8: the Conquest store's entitlements and the Lunar Pass perks
 import {campaign,baseAction,BASE_ACTIONS,capture,defenseOutcome,contest,failedContest,beginContest,restoreContest,sectorDefenseOutcome} from './conquest-campaign.js';
 import {cosmetics,cosmeticAction,COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {CONQUEST,RULES} from './sim.gen.js';
@@ -134,7 +135,7 @@ export function harvestStep(s,B,input,moved,hit,now){const H=W.HARVEST;
 // Scanner pulse (RESOURCE_ECONOMY.md §5.3): free, 30 s cooldown; reveals this pilot's live veins within 150 m (+50 m per Radar
 // module level) and the Starter Vein. Scanned veins stay on the MAP with what they hold; an exhausted vein shows EXHAUSTED for
 // MN_VEIN.dryShowMs and disappears; its replacement elsewhere in the sector needs a new SCAN.
-export function scanStep(s,B,input,now){if(!input.scan||B.playerHp<=0||now-(s.scanAt||0)<RULES.MN_SCAN.cooldownMs)return;scanPulse(s,now);}
+export function scanStep(s,B,input,now){if(!input.scan||B.playerHp<=0||now-(s.scanAt||0)<RULES.MN_SCAN.cooldownMs)return;scanPulse(s,now,scanBonus(s,now));}   // Session 8: the premium Lunar Pass's scanner +50 m
 // One pulse. A Scanner Charge (Session 6 consumable) adds CQ_ITEMS.scanner.extra metres and finds every vein in this sector.
 function scanPulse(s,now,extra=0,sector=false){const S=RULES.MN_SCAN,r=S.radius+S.perRadar*(s.base?.modules?.radar|0)+extra;s.scanAt=now;s.found=s.found||{};let fresh=0,near=0;
  for(const d of W.deposits){if(d.m!=='starter'||s.deposits?.[d.id]||Math.hypot(d.x-s.position.x,d.z-s.position.z)>r)continue;near++;if(!s.found[d.id]){s.found[d.id]=1;fresh++;}}
@@ -192,6 +193,7 @@ export function applyAction(previous,request,now,ctx={}){
  // from the MAP (remote command, banked goods only), as module and tier upgrades always did.
  if(Object.keys(request).some(k=>!['seq','action','plot'].includes(k)))fail('invalid plot fields');if(!s.base?.tier)fail('build your Command Base first');if(s.mission||s.hp<=0)fail('approach your Command Gate');
  if(!REMOTE_PLOT_ACTIONS.includes(request.action)){if(Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)>C.baseDefinition.radius)fail('approach your Command Gate');if(B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<65))fail('secure base perimeter');}
+ if(ctx.shop)shopAccount(s,ctx.shop,now);   // Session 8: the store's entitlements, read fresh from the account for this action (worker/src/conquest-shop.js)
  plotAction(s,request,now,ctx);
  }else if(request.action==='buy-upgrade'||request.action==='set-tuning'){
  if(!atTerminal(s)||B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<80))fail('engineering requires safe Refuge terminal');

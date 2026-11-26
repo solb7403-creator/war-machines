@@ -165,6 +165,12 @@ const wdecode=c=>{c|=0;return c<=1?{o:0,l:0}:{o:Math.floor((c-2)/3)+1,l:(c-2)%3+
 const blendQ=(o,l)=>TIER_W[o]*BLEND_W[l];
 function wallStats(c,s){const {o,l}=wdecode(c),q=blendQ(o,l),S=SITES[s]||SITES.ridge;return {o,l,q,hp:Math.round(COMPOSITE.hp*(1+4*q)*S.wallHp),dr:Math.round(40*q)/100,refl:Math.round(35*q)/100};}
 const blendName=c=>{const {o,l}=wdecode(c);return o?ORE_NAME[ORES[o-1]]+' '+BLEND_NAME[l].toLowerCase():'Composite';};
+// Session 8: the town's looks. Free: five lights, three finishes; bought in the store (p.own, mirrored from the account): the Aurora lighting
+// (a slow shifting light), the Gilded wall skin (gold walls), the Neon turret skins. Looks only: stats, hitboxes and readability unchanged.
+const LIGHTS=T(['cyan','amber','violet','green','red']),FINISHES=T(['steel','sand','graphite']),PAID_LOOKS=T({light:T({aurora:'aur'}),ws:T({gilded:'gild'}),ts:T({neon:'neon'})});
+function themeError(p,a){const own=p?.own||{};if(!(LIGHTS.includes(a.light)||PAID_LOOKS.light[a.light]&&own[PAID_LOOKS.light[a.light]]))return PAID_LOOKS.light[a.light]?'the Aurora lighting is in the store':'invalid theme';
+ if(!FINISHES.includes(a.finish))return 'invalid theme';if(a.ws!==undefined&&a.ws!=='none'&&!(PAID_LOOKS.ws[a.ws]&&own[PAID_LOOKS.ws[a.ws]]))return PAID_LOOKS.ws[a.ws]?'the Gilded wall skin is in the store':'invalid theme';
+ if(a.ts!==undefined&&a.ts!=='none'&&!(PAID_LOOKS.ts[a.ts]&&own[PAID_LOOKS.ts[a.ts]]))return PAID_LOOKS.ts[a.ts]?'the Neon turret skins are in the store':'invalid theme';return '';}
 // Wall extensions (owner decision 4): up to +50% of the level's base cap. Earned by Foundry research with rarer ores, Defense
 // Drill milestones and real base defenses won; or bought (store, capacity only, disabled until payments are certified).
 const EXT=T({max:50,research:T([T({pct:6,fl:1,cost:T({il:30})}),T({pct:6,fl:2,cost:T({ar:12})}),T({pct:6,fl:3,cost:T({ar:25})}),T({pct:6,fl:4,cost:T({tq:6})}),T({pct:6,fl:5,cost:T({se:2})})]),
@@ -220,7 +226,8 @@ function rates(p){const S=siteOf(p),r={alloy:0,biomass:0,helium:0,fe:0,cm:0},sup
 // turns the alloy loaded into its hopper into composite at its rate, straight into the composite stock, up to its cap.
 function accrue(p,now){const st=p.st||(p.st={alloy:0,biomass:0,helium:0,fe:0,at:now});const dt=Math.max(0,Math.min(7*DAY,now-(Number(st.at)||now)));
  if(dt>0){const r=rates(p),c=caps(p);for(const k of ['alloy','biomass','helium','fe']){const old=Number(st[k])||0;st[k]=Math.max(old,Math.min(c[k],old+r[k]*dt/HOUR));}   // a lower cap (a ruined Depot) stops production, never deletes what is stored
-  const cm=Number(p.cm)||0,fh=Number(p.fh)||0,out=Math.max(0,Math.min(r.cm*dt/HOUR,fh*COMPOSITE.perAlloy,c.cm-cm));if(out>0){p.cm=cm+out;p.fh=Math.max(0,fh-out/COMPOSITE.perAlloy);}}
+  const t0=now-dt,rush=Math.max(0,Math.min(now,Number(p.fr)||0)-Math.max(t0,Number(p.frs)||0)),fx=typeof SHOP!=='undefined'?SHOP.cq['foundry-rush'].x:4;   // Session 8: the Foundry speed-up's 4x window [p.frs, p.fr] (bought: mirrored from the account)
+  const cm=Number(p.cm)||0,fh=Number(p.fh)||0,out=Math.max(0,Math.min(r.cm*(dt+rush*(fx-1))/HOUR,fh*COMPOSITE.perAlloy,c.cm-cm));if(out>0){p.cm=cm+out;p.fh=Math.max(0,fh-out/COMPOSITE.perAlloy);}}
  st.at=now;return st;}
 // Command Power: a visible score from building levels, wall strength and defenses.
 function power(p){if(!p)return 0;let s=100*ccLevel(p);for(const b of Object.values(p.b||{})){const B=BUILDINGS[b.t];if(!B)continue;s+=(B.turret?30:B.gate?10:20)*(b.l|0)*(1+.15*((b.l|0)-1));}
@@ -293,7 +300,7 @@ function newPlot(s,now){const p={v:2,site:SITES[s]?s:'ridge',cc:1,b:{},w:{},n:0,
 // Session 5B: no live players, so a Session 5 plot (v1) becomes a fresh town claim on the same site at the same Command
 // Center level (tier, points multiplier and banked goods unchanged; banner and theme kept). Owner-approved, no migration.
 function resetPlot(old,now){const p=newPlot(old?.site,now),cc=Math.max(1,Math.min(CC.max,old?.cc|0||1));p.cc=cc;p.b.cc.l=cc;p.siteFree=old?.siteFree?1:0;p.siteAt=Number(old?.siteAt)||0;
- if(old?.banner)p.banner=old.banner;if(old?.theme)p.theme=old.theme;p.mnSpent={...(record(old?.mnSpent)?old.mnSpent:{})};p.resetFrom={v:old?.v|0,at:now};return p;}
+ if(old?.banner)p.banner=old.banner;if(old?.theme)p.theme=old.theme;p.mnSpent={...(record(old?.mnSpent)?old.mnSpent:{})};p.wmSpent={...(record(old?.wmSpent)?old.wmSpent:{})};p.resetFrom={v:old?.v|0,at:now};return p;}
 // Pre-plot saves: tier I..V becomes CC 1/3/5/7/9 (same points multiplier, yield and travel), every module becomes its
 // building at the same level, a pending module build becomes the builder's job, banked goods and the yield clock stay.
 function migrate(base,now){const t=Math.max(1,Math.min(5,base.tier|0)),p=newPlot('ridge',now);p.cc=2*t-1;p.b.cc.l=p.cc;p.migratedFrom={tier:t,modules:{...(base.modules||{})},at:now};
@@ -303,7 +310,12 @@ function migrate(base,now){const t=Math.max(1,Math.min(5,base.tier|0)),p=newPlot
   if(id&&(p.b[id].l|0)<want){p.b[id].l=want-1;p.job={id,t:type,l:want,at:now,ready:Math.max(now,Number(base.pending.readyAt)||now)};}}
  return p;}
 // Finish the builder's job when its time is up (Worker clock).
-function settle(p,now){if(p?.job&&now>=p.job.ready){const j=p.job;if(j.t==='repair'){accrue(p,j.ready);for(const [k,hp] of Object.entries(record(j.fix)?j.fix:{}))if(p.dmg?.[k]!==undefined){const d=(Number(p.dmg[k])||0)-(Number(hp)||0);if(d>0)p.dmg[k]=d;else delete p.dmg[k];}delete p.job;return j;}if(j.t==='cc'){accrue(p,j.ready);p.cc=j.l;p.b.cc.l=j.l;}else if(p.b[j.id]){accrue(p,j.ready);p.b[j.id].l=j.l;}delete p.job;return j;}return null;}
+// Session 8 (owner, Nov 26, 2026): a second builder (bought in the store: p.b2, mirrored from the account) works the slot p.job2 beside
+// p.job; both finish here, the earlier one first. JOB_SLOTS / jobsOf / freeSlot / busyWith are every builder check's one rule.
+const JOB_SLOTS=T(['job','job2']),buildersOf=p=>1+(p?.b2?1:0),jobsOf=p=>JOB_SLOTS.map(k=>p?.[k]).filter(j=>j&&typeof j==='object');
+const freeSlot=p=>!p?.job?'job':p.b2&&!p.job2?'job2':null,busyWith=(p,id)=>jobsOf(p).some(j=>j.id===id||id==='cc'&&j.t==='cc');
+function settleOne(p,k,now){const j=p?.[k];if(!j||now<j.ready)return null;if(j.t==='repair'){accrue(p,j.ready);for(const [id,hp] of Object.entries(record(j.fix)?j.fix:{}))if(p.dmg?.[id]!==undefined){const d=(Number(p.dmg[id])||0)-(Number(hp)||0);if(d>0)p.dmg[id]=d;else delete p.dmg[id];}delete p[k];return j;}if(j.t==='cc'){accrue(p,j.ready);p.cc=j.l;p.b.cc.l=j.l;}else if(p.b[j.id]){accrue(p,j.ready);p.b[j.id].l=j.l;}delete p[k];return j;}
+function settle(p,now){const ks=JOB_SLOTS.filter(k=>p?.[k]&&now>=p[k].ready).sort((a,b)=>p[a].ready-p[b].ready);let first=null;for(const k of ks){const j=settleOne(p,k,now);if(j&&!first)first=j;}return first;}
 
 // ---------------------------------------------------------------- persistent damage, repair, rating, layouts, hooks ---
 // Owner addendum (Nov 8): raid damage persists (raids, not the drill): p.dmg = {structure id: HP lost} (building ids and
@@ -334,14 +346,15 @@ function defenseRating(p){if(!p)return 0;const S=siteOf(p);let walls=0,tur=0,cov
 // Layout slots (3; a fourth is a store item, disabled): save walls, turrets and vitals positions; apply moves buildings and
 // walls in one tap. Nothing is rebuilt or charged: walls are a stock of cells by blend, taken up and set down again; cells
 // a layout has no room for stay in storage (placed again for free with the wall tools). Not while the town is damaged.
-const LAYOUT=T({slots:3});
+const LAYOUT=T({slots:3,max:6});   // Session 8: +1 with the extra layout slot (store), +2 with the premium Lunar Pass (p.lsl, mirrored from the account)
+const layoutSlots=p=>Math.min(LAYOUT.max,LAYOUT.slots+Math.max(0,p?.lsl|0));
 const B64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 function encWalls(w){let out='';for(const [k,c] of Object.entries(w||{})){const [i,j]=k.split(',').map(Number),n=i*N+j;out+=B64[(n>>12)&63]+B64[(n>>6)&63]+B64[n&63]+B64[c&63];}return out;}
 function decWalls(str){const w={};if(typeof str!=='string'||str.length%4)return w;for(let k=0;k<str.length;k+=4){const v=[0,1,2,3].map(q=>B64.indexOf(str[k+q]));if(v.some(x=>x<0))return {};const n=(v[0]<<12)|(v[1]<<6)|v[2],i=Math.floor(n/N),j=n%N,c=v[3];if(inGrid(i,j)&&c>=1&&c<=19)w[i+','+j]=c;}return w;}
 function layoutOf(p,now=0){return {at:now,cc:ccLevel(p),b:Object.fromEntries(Object.entries(p.b||{}).map(([id,b])=>[id,[b.i,b.j,b.r|0]])),w:encWalls(p.w)};}
 function applyLayout(p,L){if(!record(L)||!record(L.b))return 'empty layout slot';if(repairPlan(p).keys.length)return 'repair your town first';
  const stock={...stockOf(p)};for(const c of Object.values(p.w||{}))stock[c|0]=(stock[c|0]||0)+1;
- const nb={};for(const [id,b] of Object.entries(p.b||{})){nb[id]={...b};const at=L.b[id];if(Array.isArray(at)&&p.job?.id!==id&&[0,1,2].every(k=>Number.isInteger(at[k])))Object.assign(nb[id],{i:at[0],j:at[1],r:((at[2]%4)+4)%4});}
+ const nb={};for(const [id,b] of Object.entries(p.b||{})){nb[id]={...b};const at=L.b[id];if(Array.isArray(at)&&!busyWith(p,id)&&[0,1,2].every(k=>Number.isInteger(at[k])))Object.assign(nb[id],{i:at[0],j:at[1],r:((at[2]%4)+4)%4});}
  const q={...p,b:nb,w:{}};for(const id of Object.keys(nb)){const b=nb[id];if(placeError(q,b.t,b.i,b.j,b.r|0,id)){const rest={...q,b:Object.fromEntries(Object.entries(nb).filter(([k])=>k!==id))},at=autoPlace(rest,b.t,b.r|0)||autoPlace(rest,b.t,0);if(!at)return 'that layout no longer fits';Object.assign(b,at);}}
  const occ=occupancy(q),w={};for(const [k,c] of Object.entries(decWalls(L.w))){const [i,j]=k.split(',').map(Number);if((stock[c]|0)>0&&inTown(ccLevel(p),i,j)&&!NOBUILD[terrainAt(p.site,i,j)]&&!occ.has(k)){w[k]=c;stock[c]--;}}
  p.b=nb;p.w=w;p.ws=Object.fromEntries(Object.entries(stock).filter(([,n])=>n>0));return '';}
@@ -474,5 +487,6 @@ root.ConquestPlot=Object.freeze({GRID,MID,TOWN,SITES,SITE_IDS,BUILDINGS,TURRETS,
  wallCap,wallBase,wallCapOf,extParts,wcode,wdecode,blendQ,wallStats,blendName,levelCap,countCap,tierOf,costOf,timeOf,sizeOf,cells,occupancy,countOf,turretCount,
  powerSupply,powerUse,levelOf,levelSum,modulesOf,caps,rates,accrue,power,lotsOf,homes,placeError,buildCheck,line4,rectCells,ringCells,shapeCells,wallLine,wallPlan,wallRemovePlan,
  autoPlace,newPlot,resetPlot,migrate,settle,drill,drillGen,raid:drill,drillWaves,hpOfBuilding,wallHit,
- maxHpOf,hpLeft,ruined,repairPlan,applyRaidDamage,alert,loot,defenseRating,townName,TOWN_NAME_MAX,LAYOUT,encWalls,decWalls,layoutOf,applyLayout,turretRefund,wallRefund,garrisonSlots,stockOf,SEC,MIN,HOUR,DAY});
+ maxHpOf,hpLeft,ruined,repairPlan,applyRaidDamage,alert,loot,defenseRating,townName,TOWN_NAME_MAX,LAYOUT,layoutSlots,encWalls,decWalls,layoutOf,applyLayout,turretRefund,wallRefund,garrisonSlots,stockOf,
+ JOB_SLOTS,buildersOf,jobsOf,freeSlot,busyWith,LIGHTS,FINISHES,PAID_LOOKS,themeError,SEC,MIN,HOUR,DAY});
 })(globalThis);

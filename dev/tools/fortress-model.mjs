@@ -13,6 +13,8 @@
 //  3. Raids: THREAT from the Citadel tiers on the blueprint's pacing (§6 pacing targets), the attacking general's stars
 //     (ConquestTown.STARS), the portal open three raids in four, the Grand Offensive surge one raid in eight; the raid level from
 //     ConquestTown.levelOf; every site, several seeds and lanes.
+//  Session 8 (owner brief docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.md section 2): the paying pilot at the heavy player's play time
+//  (PROFILES.payerHeavy) with the store as shipped, the wall-only ore crates included (FE_IL, oreCrateInfo, townAt's shop). Simulated.
 // usage: node dev/tools/fortress-model.mjs [--quick] [--json out.json]
 import {writeFileSync,mkdirSync,readFileSync} from 'node:fs';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
 const {CONQUEST,RULES:R}=await import('../../worker/src/sim.gen.js');const {Combat:C,World:W,Plot:P,War:WR,Raid:RD,Town:TN,Battalion:BT}=CONQUEST;
@@ -42,7 +44,40 @@ export const PROFILES={
  // them): 2 h a day in two sessions, the economy model's town ladder at 120 minutes (ladderOf: the log-midpoint of the regular's and the
  // grinder's), the Citadel and gear paced between the two; otherwise as the grinder
  heavy:{label:'Heavy (2 h a day, two sessions)',sessions:[[10,60],[19,60]],ladder:'heavy',share:.5,builders:1,citadel:[[0,0],[9,1],[17,2],[17,3],[32,3],[90,6],[208,9]],gear:[[0,0],[17,1],[95,2]]},
- payer:{label:'Paying pilot at the grinder\'s play time (store levers as planned)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:2,citadel:[[0,0],[6,1],[10,2],[10,3],[21,3],[60,6],[135,9]],gear:[[0,2]],buyFeIl:true,extPacks:true}};
+ // Session 8: the paying pilot's Ferrite and Ilmenite at the shipped limits (FE_IL below; was 200 Ferrite + 60 Ilmenite a day); never
+ // the wall-only ore crates (the store levers before Session 8: guard (d) reports it as before; Session 8's requirement is payerHeavy)
+ payer:{label:'Paying pilot at the grinder\'s play time (store levers as planned)',sessions:[[10,120],[19,120]],ladder:'grinder',share:.5,builders:2,citadel:[[0,0],[6,1],[10,2],[10,3],[21,3],[60,6],[135,9]],gear:[[0,2]],buyFeIl:true,extPacks:true},
+ // Session 8 (owner brief docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.md section 2, Nov 26, 2026; ROADMAP row 8's requirement at the
+ // 2-hour heavy play time): the heavy player's play time, schedule, town ladder and Citadel pacing with the store levers as shipped: the
+ // second builder bought on day 1, the wall extension packs, Epic gear from day 1, Ferrite and Ilmenite crates at the shipped limits and
+ // the four wall-only ore crates bought as needed (oreCrates: townAt's wall-only ore, the store's amounts from oreCrateInfo)
+ payerHeavy:{label:'Paying pilot at the heavy player\'s play time (store levers as shipped, Session 8)',sessions:[[10,60],[19,60]],ladder:'heavy',share:.5,builders:2,citadel:[[0,0],[9,1],[17,2],[17,3],[32,3],[90,6],[208,9]],gear:[[0,2]],buyFeIl:true,extPacks:true,oreCrates:true}};
+// ---- Session 8: the store as shipped (owner, Nov 26, 2026; every price and limit is the owner's) ----
+// Ferrite and Ilmenite (RESOURCE_ECONOMY §9.1): a Ferrite Crate (150 Ferrite, $1.99) at most 2 a day; an Ilmenite Crate (60 Ilmenite +
+// 30 Ferrite, $4.99) at most 1 a day and 4 a week, so on average 4/7 of a crate a day. A paying pilot buys both at the limits every day,
+// all of it to the town's bag (as the paying pilot always did: the model has no plating). From the game's table (RULES.SHOP.mn:
+// {fe:{give,usd,day}, il:{give,usd,day,week}}) when it exists, else these shipped numbers (the same).
+let feIlSrc='the shipped numbers';const feIlOf=t=>{const one=(x,d)=>{const give=x?.give&&typeof x.give==='object'?x.give:null,day=Number(x?.day),week=Number(x?.week);if(!give||!(day>0)||!(Number(x?.usd)>0))return d;feIlSrc='RULES.SHOP.mn';return Object.freeze({n:Object.freeze({...give}),usd:Number(x.usd),perDay:week>0?Math.min(day,week/7):day});};
+ const D={fe:Object.freeze({n:Object.freeze({fe:150}),usd:1.99,perDay:2}),il:Object.freeze({n:Object.freeze({il:60,fe:30}),usd:4.99,perDay:4/7})};return Object.freeze({fe:one(t?.fe,D.fe),il:one(t?.il,D.il)});};
+export const FE_IL=feIlOf(R?.SHOP?.mn),FE_IL_SOURCE=feIlSrc;
+// Rare-or-better ore for TOWN WALLS ONLY (brief section 2): Armalcolite, Tranquillityite, Selenite and Moonheart, each in its own
+// wall-only crate, at most 1 of each a day: $4.99, $7.99, $9.99, $14.99. Bought ore is wall-only: in the model it goes 100% to the
+// town's wall-only store, which only wall blends draw on (never halved like earned minerals, never plating, building costs or
+// Foundry research, never traded, gifted or points). The amounts in a crate {ar,tq,se,mh}, in this order of precedence:
+//  1. KNOB.oreCrates (the sizing tool's candidates: dev/tools/ore-crate-sizing.mjs);
+//  2. the game's table when it exists: RULES.SHOP.ore ({ar:{q, usd, day}, ...}: Session 8's one price table in js/rules.js), RULES.ORE_CRATES
+//     or ConquestPlot.STORE.oreCrates ({ar:n, ...} or {ar:{n|q, usd, day}, ...}), or ConquestPlot.STORE.items granting {wallOre:{ar:n}};
+//  3. the amounts the sizing tool chose (docs/conquest/session8/ore-crates.json "chosen");
+// none of them: null (a crate buyer then buys nothing; oreCrateInfo().source says so). A day's limit is the table's `day` (the owner's: 1).
+export const WALL_ORES=Object.freeze(['ar','tq','se','mh']),ORE_CRATE_USD=Object.freeze({ar:4.99,tq:7.99,se:9.99,mh:14.99});
+const crateAmt=v=>{if(typeof v==='number')return v;for(const k of ['q','n','amount','qty'])if(typeof v?.[k]==='number')return v[k];return NaN;};   // the first number (RULES.SHOP.ore's n is the crate's name)
+const crateTable=t=>{if(!t||typeof t!=='object')return null;const a={},usd={},day={};for(const k of WALL_ORES){const n=crateAmt(t[k]);if(!(n>0))return null;a[k]=n;usd[k]=Number(t[k]?.usd)||ORE_CRATE_USD[k];day[k]=Math.max(1,Math.floor(Number(t[k]?.day)||1));}return {a,usd,day};};
+const crateItems=items=>{if(!Array.isArray(items))return null;const t={};for(const it of items){const g=it?.grants?.wallOre;if(!g||typeof g!=='object')continue;for(const k of WALL_ORES)if(g[k]>0)t[k]={n:g[k],usd:it.usd};}return crateTable(t);};
+let SIZED;const sized=()=>{if(SIZED===undefined){try{SIZED=crateTable(JSON.parse(readFileSync(new URL('../../docs/conquest/session8/ore-crates.json',import.meta.url),'utf8')).chosen);}catch(e){SIZED=null;}}return SIZED;};
+export function oreCrateInfo(){const k=KNOB.oreCrates?crateTable(KNOB.oreCrates):null;if(k)return {...k,source:'KNOB.oreCrates'};
+ for(const [t,source] of [[R?.SHOP?.ore,'RULES.SHOP.ore'],[R?.ORE_CRATES,'RULES.ORE_CRATES'],[P?.STORE?.oreCrates,'ConquestPlot.STORE.oreCrates']]){const x=crateTable(t);if(x)return {...x,source};}
+ const it=crateItems(P?.STORE?.items);if(it)return {...it,source:'ConquestPlot.STORE.items (wallOre)'};const s=sized();return s?{...s,source:'docs/conquest/session8/ore-crates.json (sized)'}:{a:null,usd:{...ORE_CRATE_USD},source:'none'};}
+const crateKey=pr=>{if(!pr?.oreCrates)return '';const x=oreCrateInfo();return ':crates'+JSON.stringify([x.a,x.usd,x.day??null]);};   // the cache keys of a crate buyer's towns
 const interp=(pts,d)=>{let v=pts[0][1];for(let i=0;i<pts.length;i++){if(d>=pts[i][0])v=pts[i][1];if(i+1<pts.length&&d>=pts[i][0]&&d<pts[i+1][0]){const [a,va]=pts[i],[b,vb]=pts[i+1];return va+(vb-va)*(d-a)/(b-a);}}return v;};
 export const tiersAt=(pr,d)=>Math.max(0,Math.min(9,Math.floor(interp(pr.citadel,d))));
 const HEAVY=MODEL.ladderOf(120),hitOf=pr=>pr.ladder==='heavy'?Object.fromEntries(Object.entries(HEAVY).map(([k,day])=>[k,{day}])):AUDIT[pr.ladder].base.hit;
@@ -84,6 +119,7 @@ export const KNOB={};
 // KNOB.cit7b=false turns it off (the Session 7T-P measurement). KNOB.heldCache: model-only factors on the held UNFOUGHT raid's defense
 // cache {cp, mat} (STEP 3's options: full {1,1}, half {.5,.5}, without its CP {0,1}, none {0,0}); the game pays its own rule.
 KNOB.cit7b=true;KNOB.heldCache=null;   // null: the game's own rule (ConquestTown.TOWN.away for a held unfought raid)
+// Session 8: KNOB.oreCrates = {ar,tq,se,mh}, the units in each wall-only ore crate (the sizing tool's candidates; above the game's table)
 const citFor=(s,pr,d)=>{if(!KNOB.cit7b||!pr?.citadel)return;const t=tiersAt(pr,d);if((s.cit?.t|0)!==t||s.cit?.v!==1)s.cit=CONQUEST.Citadel.norm({...(s.cit||{}),v:1,t});};
 // the held unfought raids a town meets a day (Session 7T-P decision 1: perDay at the Command Center level x the 60% chance) and the share
 // it holds (an approximation for the income only: the fortress test's hold rates run 62-100% by day; 85% is their mean), paying the cache
@@ -123,7 +159,7 @@ export function inPersonDays(pr,{seeds=24,days=YEAR}={}){const key=JSON.stringif
 function capShare(pr,d){const k=pr.label+':'+d;if(!shareMemo.has(k)){const rs=raidSet(pr,d,400,{seed:77});shareMemo.set(k,rs.filter(r=>TN.seOf(r.level)>0).length/rs.length);}return shareMemo.get(k);}
 // the in-person hold rate at the cap level, by day (samples, linear between them)
 const IP_DAYS=[135,180,270,330,400];
-export function inPersonRate(prName,d,{n=3}={}){const key=prName+':'+d+':'+n;if(ipMemo.has(key))return ipMemo.get(key);const pr=PROFILES[prName];let ok=0,all=0;
+export function inPersonRate(prName,d,{n=3}={}){const key=prName+':'+d+':'+n+crateKey(PROFILES[prName]);if(ipMemo.has(key))return ipMemo.get(key);const pr=PROFILES[prName];let ok=0,all=0;
  for(const site of P.SITE_IDS){const t=townAt(prName,site,d,{se:false}),lanes=P.spawnCells(site,10).length;for(let i=0;i<n;i++){const x=fight(t,{level:TN.TOWN.se.from,lane:i%lanes},3000+i*17,d,pr);all++;if(x.se)ok++;}}
  const r=ok/all;ipMemo.set(key,r);return r;}
 function townSe(pr,d){const n=KNOB.townSeN??TN.seOf(TN.TOWN.cap);if(!n)return 0;const sh=capShare(pr,Math.floor(d));if(!sh)return 0;const ip=inPersonDays(pr).inPerson[Math.min(YEAR,Math.floor(d))]||0;if(!ip)return 0;
@@ -182,12 +218,18 @@ export function plotOf(site,st){const pl=plan(site),p=P.newPlot(site,start);p.cc
 // The pilot's town on a site at day `days`: the plan, built day by day with the town's share of the income, the builder in the pilot's
 // sessions, the Foundry's composite and half of the mineral income.
 const BUILT={};
-export function townAt(prName,site,days,{share,se=true}={}){const key=prName+':'+site+':'+days+':'+share+':'+(se?1:0)+':'+(KNOB.cit7b?1:0)+':'+JSON.stringify(KNOB.heldCache||0);if(BUILT[key])return BUILT[key];const pr={...PROFILES[prName]};if(share!==undefined)pr.share=share;if(!se)pr.noTownSe=true;const rows=income(pr,YEAR),pl=plan(site);
+export function townAt(prName,site,days,{share,se=true}={}){const key=prName+':'+site+':'+days+':'+share+':'+(se?1:0)+':'+(KNOB.cit7b?1:0)+':'+JSON.stringify(KNOB.heldCache||0)+crateKey(PROFILES[prName]);if(BUILT[key])return BUILT[key];const pr={...PROFILES[prName]};if(share!==undefined)pr.share=share;if(!se)pr.noTownSe=true;const rows=income(pr,YEAR),pl=plan(site);
  const st={cc:1,lv:{storage:1},rings:[]},bag={cp:0,alloy:0,biomass:0,helium:0,fe:0,il:0,ar:0,tq:0,se:0,mh:0};let cm=P.COMPOSITE.start,jobs=[];
  const can=c=>Object.entries(c||{}).every(([k,v])=>(bag[k]||0)>=v-1e-9),pay=c=>{for(const [k,v] of Object.entries(c||{}))bag[k]-=v;};
+ // Session 8, a store buyer: wo is the town's wall-only ore (bought; wall blends draw on it first and nothing else ever does: canB / payB
+ // below are the blends' own); shop records the purchases and, a day at a time, the walls' mean blend quality and cells. A free pilot
+ // has neither (canB / payB are the bag's own can / pay).
+ const buy=pr.oreCrates?oreCrateInfo():null,wo={ar:0,tq:0,se:0,mh:0},shop=pr.oreCrates||pr.buyFeIl?{source:buy?.source??null,amounts:buy?.a??null,crates:{ar:0,tq:0,se:0,mh:0},usd:{ar:0,tq:0,se:0,mh:0},feIl:{fe:0,il:0,usd:0},q:[],cells:[]}:null;
+ const canB=pr.oreCrates?c=>Object.entries(c||{}).every(([k,v])=>(bag[k]||0)+(wo[k]||0)>=v-1e-9):can,payB=pr.oreCrates?c=>{for(const [k,v] of Object.entries(c||{})){const w=Math.min(wo[k]||0,v);if(w>0)wo[k]-=w;bag[k]-=v-w;}}:pay;
+ const full=Math.min(pl.walls.reduce((a,s)=>a+s.length,0),P.wallBase(P.CC.max)+Math.floor(P.wallBase(P.CC.max)*P.EXT.max/100)),ringQ=g=>{const x=P.wdecode(g.code);return P.blendQ(x.o,x.l);};   // full: the CC10 cap + 50%
  const capOf=t=>P.levelCap(t,st.cc),countOK=(x)=>{const B=P.BUILDINGS[x.t];if(st.cc<B.cc)return false;if(B.turret)return pl.slots.indexOf(x)<P.TURRET_CAP[st.cc-1];const same=pl.sup.filter(y=>y.t===x.t),i=same.indexOf(x);return i<P.countCap(x.t,st.cc);};
  const S0=P.SITES[site],power=()=>{let use=0,sup=12+3*st.cc;for(const x of [...pl.sup,...pl.slots]){const l=st.lv[x.id]|0;if(!l)continue;use+=P.BUILDINGS[x.t].pw*l;if(x.t==='reactor')sup+=P.BUILDINGS.reactor.power*l*S0.power;}return {use,sup:Math.round(sup)};};   // the plot's own power rules, without building the plot
- for(let d=0;d<days;d++){const r=rows[d]||rows.at(-1);for(const k of K)bag[k]+=Math.max(0,r[k])*pr.share;if(st.cc>=2){const hc=heldCacheOf(st.cc);for(const k of K)bag[k]+=(hc[k]||0)*pr.share;}const mn=minerals(pr,d);for(const k of MIN)bag[k]+=mn[k]*.5;if(pr.buyFeIl){bag.fe+=200;bag.il+=60;}
+ for(let d=0;d<days;d++){const r=rows[d]||rows.at(-1);for(const k of K)bag[k]+=Math.max(0,r[k])*pr.share;if(st.cc>=2){const hc=heldCacheOf(st.cc);for(const k of K)bag[k]+=(hc[k]||0)*pr.share;}const mn=minerals(pr,d);for(const k of MIN)bag[k]+=mn[k]*.5;if(pr.buyFeIl)for(const [c,x] of Object.entries(FE_IL)){for(const [k,v] of Object.entries(x.n))bag[k]+=v*x.perDay;shop.feIl[c]+=x.perDay;shop.feIl.usd+=x.usd*x.perDay;}
   const want=ccAt(pr,d+1);while(st.cc<want){st.cc++;const c=P.CC.cost[st.cc];if(c)for(const k of K)bag[k]=Math.max(0,bag[k]-(c[k]||0));}
   const fl=st.lv.s2|0||0,foundry=pl.sup.find(x=>x.t==='foundry'),fL=foundry?st.lv[foundry.id]|0:0;if(fL){const make=Math.min(P.COMPOSITE.rate*fL*24,bag.alloy*P.COMPOSITE.perAlloy*.5);cm+=make;bag.alloy-=make/P.COMPOSITE.perAlloy;}
   // the builder: in each session, the next affordable job whenever a builder is free (jobs keep running on the Worker clock)
@@ -197,9 +239,14 @@ export function townAt(prName,site,days,{share,se=true}={}){const key=prName+':'
   // walls: rings outside the turrets (instant orders), composite permitting, up to the cap with the extensions earned (or bought)
   const ext=Math.min(50,(st.cc>=9?20:st.cc>=7?16:st.cc>=5?12:st.cc>=3?8:4)+(d>=10?5:0)+(d>=30?5:0)+(fL>=5&&d>=40?30:fL*6)+(pr.extPacks?50:0)),cap=P.wallBase(st.cc)+Math.floor(P.wallBase(st.cc)*ext/100);
   let cells=st.rings.reduce((a,g)=>a+g.n,0);for(let guard=0;guard<40&&cells<cap&&cm>=1;guard++){let g=st.rings.find(x=>x.n<pl.walls[x.s].length);if(!g){const s0=st.rings.length;if(s0>=pl.walls.length||segMax(pl.walls[s0])>P.townH(st.cc)-1)break;g={s:s0,n:0,code:1};st.rings.push(g);}const k=Math.min(pl.walls[g.s].length-g.n,Math.floor(cm),cap-cells);if(k<=0)break;g.n+=k;cm-=k;cells+=k;}
+  // Session 8: the wall-only ore crates, as needed: each day, one crate of each of Armalcolite, Tranquillityite, Selenite and Moonheart
+  // (ore o = 3..6) that the Command Center has unlocked (P.ORE_CC[o]), while that ore can still improve the walls (a built ring below its
+  // heavy blend, or cells left to build up to the full cap); none once the walls are fully built
+  if(buy?.a)for(let o=3;o<=6;o++){const k=P.ORES[o-1],qh=P.blendQ(o,3);if(st.cc<P.ORE_CC[o]||!(buy.a[k]>0))continue;if(cells<full||st.rings.some(g=>g.n&&ringQ(g)<qh))for(let c=0;c<(buy.day?.[k]||1);c++){wo[k]+=buy.a[k];shop.crates[k]++;shop.usd[k]+=buy.usd[k];}}
   // blends: the weakest ring first, to the best blend its ore and the Command Center allow
   for(let guard=0;guard<60;guard++){const g=st.rings.filter(x=>x.n).sort((a,b)=>P.blendQ(P.wdecode(a.code).o,P.wdecode(a.code).l)-P.blendQ(P.wdecode(b.code).o,P.wdecode(b.code).l))[0];if(!g)break;const cur=P.wdecode(g.code),q0=P.blendQ(cur.o,cur.l);
-   const up=BLENDS.filter(([o,l])=>P.blendQ(o,l)>q0&&st.cc>=P.ORE_CC[o]&&can(oreFor(o,l,g.n))).sort((a,b)=>P.blendQ(b[0],b[1])-P.blendQ(a[0],a[1]))[0];if(!up)break;pay(oreFor(up[0],up[1],g.n));g.code=P.wcode(up[0],up[1]);}}
+   const up=BLENDS.filter(([o,l])=>P.blendQ(o,l)>q0&&st.cc>=P.ORE_CC[o]&&canB(oreFor(o,l,g.n))).sort((a,b)=>P.blendQ(b[0],b[1])-P.blendQ(a[0],a[1]))[0];if(!up)break;payB(oreFor(up[0],up[1],g.n));g.code=P.wcode(up[0],up[1]);}
+  if(shop){let n=0,s=0;for(const g of st.rings){n+=g.n;s+=g.n*ringQ(g);}shop.q.push(n?s/n:0);shop.cells.push(n);}}   // shop.q[d]: the town of townAt(..., d + 1)
  // the next job: support first (storage, power before it is short, the Foundry, the Hangar, shields), then a new turret slot, then the
  // lowest turret's next level; never past the power the town has
  function next(){const busy=new Set(jobs.map(j=>j.id)),{use,sup}=power(),c=[];
@@ -208,7 +255,7 @@ export function townAt(prName,site,days,{share,se=true}={}){const key=prName+':'
   for(const x of pl.slots){if(busy.has(x.id)||!countOK(x))continue;const l=(st.lv[x.id]|0)+1;if(l>capOf(x.t))continue;if(use+P.BUILDINGS[x.t].pw>sup)continue;c.push({id:x.id,t:x.t,l,c:P.costOf(x.t,l),prio:l===1?4:5});}
   const ok=c.filter(x=>can(x.c)).sort((a,b)=>a.prio-b.prio||(st.lv[a.id]|0)-(st.lv[b.id]|0)||a.c.cp-b.c.cp);return ok[0]||null;}
  for(const j of jobs)st.lv[j.id]=st.lv[j.id]|0;   // a job still running does not fight at its new level
- const tier=Math.round(interp(pr.gear,days)),plot=plotOf(site,st);return BUILT[key]={plot,st,bag,garrison:garrisonAt(pr,plot,days,tier)};}
+ const tier=Math.round(interp(pr.gear,days)),plot=plotOf(site,st),town={plot,st,bag,garrison:garrisonAt(pr,plot,days,tier)};if(shop)town.shop={...shop,wallOre:{...wo},full};return BUILT[key]=town;}
 // the garrison: the roster by this day (a pilot a day from the rescue and the Hangar's RECRUIT job, at most 16), fielded by the
 // Hangar (the rest are reserves), one slot a Hangar level, the spare gear tier the profile's pilot owns by then
 function rosterAt(d){return Math.min(16,1+Math.max(0,Math.floor(d-1))+Math.max(0,Math.floor(d-3)));}
@@ -300,5 +347,5 @@ if(process.argv[1]&&import.meta.url.endsWith(process.argv[1].split('/').pop())&&
  for(const [pr,days] of [['regular',[30,60,120,180,330]],['grinder',[60,180,330]],['payer',[180,330]]])for(const d of days)one(pr+'@'+d,site=>townAt(pr,site,d));one('full',site=>fullTown(site));
  const o=process.argv.indexOf('--out');if(o>0)writeFileSync(process.argv[o+1],rows.join('\n')+'\n');}
 else if(process.argv[1]&&import.meta.url.endsWith(process.argv[1].split('/').pop())){const quick=process.argv.includes('--quick'),out={};
- for(const pr of ['regular','grinder','payer'])for(const d of [60,180,330]){const h=holdRate(pr,d,{n:quick?2:4});out[pr+'@'+d]={p:Math.round(h.p*100)/100,n:h.all,levels:[...new Set(h.per.map(x=>x.level))].sort((a,b)=>a-b)};console.log(pr,d,JSON.stringify(out[pr+'@'+d]));}
+ for(const pr of ['regular','grinder','payer','payerHeavy'])for(const d of [60,180,330]){const h=holdRate(pr,d,{n:quick?2:4});out[pr+'@'+d]={p:Math.round(h.p*100)/100,n:h.all,levels:[...new Set(h.per.map(x=>x.level))].sort((a,b)=>a-b)};console.log(pr,d,JSON.stringify(out[pr+'@'+d]));}
  const o=process.argv.indexOf('--json');if(o>0){mkdirSync('docs/conquest/session7t',{recursive:true});writeFileSync(process.argv[o+1],JSON.stringify(out,null,1)+'\n');}}

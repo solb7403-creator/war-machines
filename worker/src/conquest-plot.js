@@ -32,10 +32,11 @@ export function plotSync(s,now){const b=s.base;if(!b?.tier&&!s.plot)return null;
  else if(s.plot.v!==2)s.plot=P.resetPlot(s.plot,now);   // Session 5B: no live players; a Session 5 plot becomes a fresh town claim (same site and CC level)
  const p=s.plot;p.b=record(p.b)?p.b:{};p.w=record(p.w)?p.w:{};p.mnSpent=record(p.mnSpent)?p.mnSpent:{};p.log=Array.isArray(p.log)?p.log:Object.values(p.log||{});
  p.dmg=record(p.dmg)?p.dmg:{};p.ws=P.stockOf(p);p.lay=record(p.lay)?p.lay:{};p.alerts=Array.isArray(p.alerts)?p.alerts:Object.values(p.alerts||{});p.shieldUntil=Number(p.shieldUntil)||0;   // Session 5B addendum hooks (damage, wall storage, layouts, alerts, peace shield)
+ p.wmSpent=record(p.wmSpent)?p.wmSpent:{};   // Session 8: the wall-only ore walls have spent
  p.ext=record(p.ext)?p.ext:{};p.ext.r=p.ext.r|0;p.ext.d=p.ext.d|0;p.ext.w=Math.max(p.ext.w|0,b?.defense?.wins|0);p.cm=Math.max(0,Number(p.cm)||0);p.fh=Math.max(0,Number(p.fh)||0);
  if(p.theme&&typeof p.theme==='object')p.theme.decor=Array.isArray(p.theme.decor)?p.theme.decor:Object.values(p.theme.decor||{});   // Firebase drops an empty list
  if(!p.b.cc)p.b.cc={t:'cc',...(P.autoPlace(p,'cc')||{i:37,j:37,r:0}),l:p.cc|0};
- if(p.job?.t==='repair'&&p.job.ready<=now)researchTick(s,p.job.ready);   // Session 6B: a ruined Science Lab pauses research until the repair crews finish, not until the next request
+ for(const j of P.jobsOf(p))if(j.t==='repair'&&j.ready<=now)researchTick(s,j.ready);   // Session 6B: a ruined Science Lab pauses research until the repair crews finish, not until the next request (Session 8: either builder)
  townClock(s,now);   // Session 7T: town attacks land first, each on the town as it stood at its landing (worker/src/conquest-town.js)
  const done=P.settle(p,now);if(done)s.notice={kind:'plot-built',type:done.t,level:done.l};
  for(const k of Object.keys(p.dmg))if(!P.maxHpOf(p,k)||!(Number(p.dmg[k])>0))delete p.dmg[k];   // damage of a structure that no longer exists
@@ -50,12 +51,22 @@ function debit(s,price,ctx){const avail=mnAvail(s,ctx);for(const [k,n] of Object
  for(const [k,n] of Object.entries(price||{})){if(k==='cp')s.ledger.cp-=n;else if(k==='cm')s.plot.cm-=n;else if(P.MNS.includes(k))s.plot.mnSpent[k]=(s.plot.mnSpent[k]||0)+n;else s.ledger.banked[k]-=n;}}
 // Walls removed by a site change (now blocked ground) give back their composite and the whole ore units they used (no loss);
 // a dev-mode test record's walls were free, so nothing comes back.
-function refundWalls(s,keys){const p=s.plot,units=[0,0,0,0,0,0,0];let cm=0;for(const k of keys){const {o,l}=P.wdecode(p.w[k]);cm+=P.COMPOSITE.perCell;units[o]+=P.ORE_UNITS[o]*P.BLEND_UNITS[l];delete p.w[k];delete p.dmg['w:'+k];}
- if(s.dev?.used)return;p.cm=(p.cm||0)+cm;for(let o=1;o<=6;o++){const m=P.ORES[o-1],n=Math.floor(units[o]/40);if(n)p.mnSpent[m]=Math.max(0,(p.mnSpent[m]||0)-n);}}
+export function refundWalls(s,keys){const p=s.plot,units=[0,0,0,0,0,0,0];let cm=0;for(const k of keys){const {o,l}=P.wdecode(p.w[k]);cm+=P.COMPOSITE.perCell;units[o]+=P.ORE_UNITS[o]*P.BLEND_UNITS[l];delete p.w[k];delete p.dmg['w:'+k];}
+ if(s.dev?.used)return;p.cm=(p.cm||0)+cm;for(let o=1;o<=6;o++){const m=P.ORES[o-1];let n=Math.floor(units[o]/40);if(!n)continue;
+  const w=Math.min(n,(p.wmSpent?.[m]|0));if(w){p.wmSpent[m]-=w;n-=w;}   // Session 8: ore goes back to the wall-only store first (never laundered into the base stores)
+  if(n)p.mnSpent[m]=Math.max(0,(p.mnSpent[m]||0)-n);}}
+// Session 8 (owner, Nov 23 and Nov 26): bought rare-or-better ore is for town walls only: it lives in its own account store (eco S.wmn, only
+// a verified purchase adds to it) and only a wall order spends it (plot.wmSpent, the base stores' monotonic rule: a stale read can refuse,
+// never overspend). A wall order takes its ore from the wall-only store first, the rest from the base stores; nothing else ever reads it.
+function wallOnly(s,cost,ctx){const p=s.plot,have=RULES.mnOf(ctx?.wmn),out={...(cost||{})};p.wmSpent=record(p.wmSpent)?p.wmSpent:{};
+ for(const k of ['ar','tq','se','mh']){const need=out[k]|0;if(!need)continue;const left=Math.max(0,(have[k]||0)-(p.wmSpent[k]|0)),take=Math.min(need,left);if(take){p.wmSpent[k]=(p.wmSpent[k]|0)+take;out[k]=need-take;if(!out[k])delete out[k];}}
+ return out;}
 const int=(v,lo,hi)=>Number.isInteger(v)&&v>=lo&&v<=hi,own=(o,k)=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(o,k);
-function job(p,t,id,l,now){if(p.job)fail('builder busy: '+(p.job.t==='repair'?'repairs':P.BUILDINGS[p.job.t]?.n||'Command Center')+' ready in '+Math.max(1,Math.ceil((p.job.ready-now)/1000))+'s');p.job={id,t,l,at:now,ready:now+P.timeOf(t,l)};}
-export function upgrade(s,id,now,ctx){const p=s.plot;if(id==='cc'){const l=(p.cc|0)+1,e=P.buildCheck(p,'cc',l);if(e)fail(e);job(p,'cc','cc',l,now);debit(s,P.costOf('cc',l),ctx);return;}
- const b=own(p.b,id)?p.b[id]:null;if(!b||b.t==='cc')fail('unknown building');const l=(b.l|0)+1,e=P.buildCheck(p,b.t,l,id);if(e)fail(e);job(p,b.t,id,l,now);debit(s,P.costOf(b.t,l),ctx);}
+// one builder (p.job), two with the store's second builder (p.job2; Session 8): a job takes the free one
+function job(p,t,id,l,now){const k=P.freeSlot(p);if(!k){const j=P.jobsOf(p).sort((a,b)=>a.ready-b.ready)[0];fail('builder busy: '+(j.t==='repair'?'repairs':P.BUILDINGS[j.t]?.n||'Command Center')+' ready in '+Math.max(1,Math.ceil((j.ready-now)/1000))+'s');}
+ if(P.busyWith(p,id))fail('already building that');return p[k]={id,t,l,at:now,ready:now+P.timeOf(t,l)};}
+export function upgrade(s,id,now,ctx){const p=s.plot;if(id==='cc'){const l=(p.cc|0)+1,e=P.buildCheck(p,'cc',l);if(e)fail(e);const j=job(p,'cc','cc',l,now);debit(s,P.costOf('cc',l),ctx);return j;}
+ const b=own(p.b,id)?p.b[id]:null;if(!b||b.t==='cc')fail('unknown building');const l=(b.l|0)+1,e=P.buildCheck(p,b.t,l,id);if(e)fail(e);const j=job(p,b.t,id,l,now);debit(s,P.costOf(b.t,l),ctx);return j;}
 // Old remote module command, kept for clients mid-update: upgrades (or places) the building that module became.
 export function legacyModule(s,module,now,ctx){const type=Object.keys(P.BUILDINGS).find(k=>P.BUILDINGS[k].mod===module);if(!type)fail('invalid module');const p=s.plot;let id=Object.keys(p.b).find(k=>p.b[k].t===type);
  if(!id){const at=P.autoPlace(p,type);if(!at)fail('no room for '+P.BUILDINGS[type].n);const e=P.buildCheck(p,type,1);if(e)fail(e);id='b'+(++p.n);p.b[id]={t:type,...at,l:0};try{job(p,type,id,1,now);debit(s,P.costOf(type,1),ctx);}catch(err){delete p.b[id];p.n--;throw err;}return;}
@@ -71,22 +82,22 @@ export function plotAction(s,r,now,ctx={}){const p=s.plot;if(!p)fail('build your
   for(const [id,b] of Object.entries(p.b)){if(!P.placeError(p,b.t,b.i,b.j,b.r|0,id))continue;const t=b.t;const at=P.autoPlace({...p,b:Object.fromEntries(Object.entries(p.b).filter(([k])=>k!==id))},t,b.r|0)||P.autoPlace({...p,b:Object.fromEntries(Object.entries(p.b).filter(([k])=>k!==id))},t,0);if(at)Object.assign(b,at);}
   s.notice={kind:'plot-site',site:p.site,free};return;}
  if(r.action==='plot-build'){only(['type','i','j','r']);const B=own(P.BUILDINGS,a.type)?P.BUILDINGS[a.type]:null;if(!B)fail('unknown building');const e=P.buildCheck(p,a.type,1)||P.placeError(p,a.type,a.i,a.j,a.r|0);if(e)fail(e);
-  if(p.job)fail('builder busy');const id='b'+(++p.n);p.b[id]={t:a.type,i:a.i,j:a.j,r:a.r|0,l:0};try{job(p,a.type,id,1,now);debit(s,P.costOf(a.type,1),ctx);}catch(err){delete p.b[id];p.n--;throw err;}track(s,'build',a.type);s.notice={kind:'plot-started',type:a.type,level:1};return;}
- if(r.action==='plot-upgrade'){only(['id']);if(typeof a.id!=='string'||a.id!=='cc'&&!own(p.b,a.id))fail('unknown building');upgrade(s,a.id,now,ctx);if(a.id==='cc')track(s,'build','cc');s.notice={kind:'plot-started',type:a.id==='cc'?'cc':p.b[a.id].t,level:a.id==='cc'?p.job.l:p.job.l};return;}
- if(r.action==='plot-move'){only(['id','i','j','r']);const b=own(p.b,a.id)?p.b[a.id]:null;if(!b)fail('unknown building');if(p.job?.id===a.id&&!(b.l>0))fail('wait for construction');const e=P.placeError(p,b.t,a.i,a.j,a.r|0,a.id);if(e)fail(e);b.i=a.i;b.j=a.j;b.r=a.r|0;s.notice={kind:'plot-moved',id:a.id};return;}
+  if(!P.freeSlot(p))fail('builder busy');const id='b'+(++p.n);p.b[id]={t:a.type,i:a.i,j:a.j,r:a.r|0,l:0};let jb=null;try{jb=job(p,a.type,id,1,now);debit(s,P.costOf(a.type,1),ctx);}catch(err){for(const k of P.JOB_SLOTS)if(p[k]===jb)delete p[k];delete p.b[id];p.n--;throw err;}track(s,'build',a.type);s.notice={kind:'plot-started',type:a.type,level:1};return;}
+ if(r.action==='plot-upgrade'){only(['id']);if(typeof a.id!=='string'||a.id!=='cc'&&!own(p.b,a.id))fail('unknown building');const jb=upgrade(s,a.id,now,ctx);if(a.id==='cc')track(s,'build','cc');s.notice={kind:'plot-started',type:a.id==='cc'?'cc':p.b[a.id].t,level:jb.l};return;}
+ if(r.action==='plot-move'){only(['id','i','j','r']);const b=own(p.b,a.id)?p.b[a.id]:null;if(!b)fail('unknown building');if(P.busyWith(p,a.id)&&!(b.l>0))fail('wait for construction');const e=P.placeError(p,b.t,a.i,a.j,a.r|0,a.id);if(e)fail(e);b.i=a.i;b.j=a.j;b.r=a.r|0;s.notice={kind:'plot-moved',id:a.id};return;}
  if(r.action==='plot-remove'){only(['id','w']);
   // removing walls gives their composite back (not the ore); a dev-mode test record's walls were free, so nothing comes back
   if(a.w!==undefined){const plan=P.wallRemovePlan(p,a.w);if(plan.err)fail(plan.err);let share=0;for(const k of plan.keys){const m=P.maxHpOf(p,'w:'+k);share+=m?P.hpLeft(p,'w:'+k)/m:1;delete p.w[k];delete p.dmg['w:'+k];}const back=s.dev?.used?0:Math.floor(share*P.COMPOSITE.perCell/2);p.cm=(p.cm||0)+back;s.notice={kind:'plot-wall-removed',n:plan.keys.length,cm:back};return;}   // 50% of the composite back (a damaged wall: of what is left), none of the ore (no refund loop)
-  const b=own(p.b,a.id)?p.b[a.id]:null;if(!b||['cc','storage'].includes(b.t))fail('that building cannot be removed');if(p.job?.id===a.id)fail('wait for construction');
+  const b=own(p.b,a.id)?p.b[a.id]:null;if(!b||['cc','storage'].includes(b.t))fail('that building cannot be removed');if(P.busyWith(p,a.id))fail('wait for construction');
   const back=s.dev?.used?{}:P.turretRefund(b);for(const [k,n] of Object.entries(back)){if(k==='cp')s.ledger.cp+=n;else s.ledger.banked[k]=(s.ledger.banked[k]||0)+n;}   // a turret returns 50% of its cost; other buildings nothing
   delete p.b[a.id];delete p.dmg[a.id];s.notice={kind:'plot-removed',type:b.t,refund:back};return;}
- if(r.action==='plot-wall'){only(['s']);const plan=P.wallPlan(p,a.s,{dev:!!p.devx});if(plan.err)fail(plan.err);debit(s,plan.cost,ctx);for(const c of plan.cells){const k=P.key(c.i,c.j);p.w[k]=c.code;if(c.isNew)delete p.dmg['w:'+k];}   // re-blending a damaged wall keeps its damage (REPAIR fixes it)
+ if(r.action==='plot-wall'){only(['s']);const plan=P.wallPlan(p,a.s,{dev:!!p.devx});if(plan.err)fail(plan.err);debit(s,wallOnly(s,plan.cost,ctx),ctx);for(const c of plan.cells){const k=P.key(c.i,c.j);p.w[k]=c.code;if(c.isNew)delete p.dmg['w:'+k];}   // re-blending a damaged wall keeps its damage (REPAIR fixes it)
   for(const [c,n] of Object.entries(plan.used||{})){p.ws[c]=(p.ws[c]|0)-n;if(p.ws[c]<=0)delete p.ws[c];}   // cells from storage (a layout switch) are free, and leave storage (Session 6B fix: this loop sat after the comment above and never ran)
   s.notice={kind:'plot-wall',n:plan.cells.length,fresh:plan.fresh,skip:plan.skip};return;}
  if(r.action==='plot-feed'){only(['n']);const c=P.caps(p);if(!c.fh)fail('build a Foundry first');if(!int(a.n,1,10000))fail('invalid amount');const room=Math.floor(c.fh-(p.fh||0));if(room<1)fail('the Foundry hopper is full');const n=Math.min(a.n,room);
   debit(s,{alloy:n},ctx);p.fh=(p.fh||0)+n;s.notice={kind:'plot-feed',n};return;}
- if(r.action==='plot-repair'){only([]);const plan=P.repairPlan(p);if(!plan.keys.length)fail('nothing to repair');if(p.job)fail('builder busy');debit(s,plan.cost,ctx);p.job={id:'repair',t:'repair',l:0,fix:plan.fix,at:now,ready:now+plan.ms};s.notice={kind:'plot-repair',n:plan.keys.length,ms:plan.ms};return;}
- if(r.action==='plot-layout'){only(['op','k']);if(!['save','apply'].includes(a.op)||!int(a.k,0,P.LAYOUT.slots-1))fail('invalid layout slot');const slot='s'+a.k;
+ if(r.action==='plot-repair'){only([]);const plan=P.repairPlan(p);if(!plan.keys.length)fail('nothing to repair');if(P.jobsOf(p).some(j=>j.t==='repair'))fail('repairs are already under way');const k=P.freeSlot(p);if(!k)fail('builder busy');debit(s,plan.cost,ctx);p[k]={id:'repair',t:'repair',l:0,fix:plan.fix,at:now,ready:now+plan.ms};s.notice={kind:'plot-repair',n:plan.keys.length,ms:plan.ms};return;}
+ if(r.action==='plot-layout'){only(['op','k']);if(!['save','apply'].includes(a.op)||!int(a.k,0,P.layoutSlots(p)-1))fail(a.k>=P.layoutSlots(p)&&a.k<P.LAYOUT.max?'invalid layout slot: more slots are in the store (and the Lunar Pass)':'invalid layout slot');const slot='s'+a.k;
   if(a.op==='save'){p.lay[slot]=P.layoutOf(p,now);s.notice={kind:'plot-layout',op:'save',k:a.k};return;}
   const e=P.applyLayout(p,p.lay[slot]);if(e)fail(e);s.notice={kind:'plot-layout',op:'apply',k:a.k,stored:Object.values(p.ws).reduce((x,n)=>x+n,0)};return;}
  if(r.action==='plot-research'){only([]);const k=p.ext.r|0,step=P.EXT.research[k];if(!step)fail('all Foundry research done');if(P.levelOf(p,'foundry')<step.fl)fail('needs a Foundry at level '+step.fl);
@@ -103,6 +114,6 @@ export function plotAction(s,r,now,ctx={}){const p=s.plot;if(!p)fail('build your
  if(r.action==='plot-name'){only(['n']);if(typeof a.n!=='string'||a.n.length>64)fail('invalid town name');const t=P.townName(a.n);if(t.err)fail(t.err);if(t.name&&nameBlocked(t.name))fail('that name is not allowed: please pick another');if(t.name)p.nm=t.name;else delete p.nm;s.notice={kind:'plot-name',n:t.name};return;}
  if(r.action==='plot-banner'){only(['shape','colors','emblem']);if(!['shield','pennant','square','chevron'].includes(a.shape)||!Array.isArray(a.colors)||a.colors.length!==2||!a.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c))||!(['moon','tank','star','skull','gear','wing','bolt','crown'].includes(a.emblem)||a.emblem==='hive'&&trophySet(s)||streakEmblem(s,a.emblem)))fail(a.emblem==='hive'?'the Hive emblem needs the full Trophy Hall set':/^streak/.test(String(a.emblem))?'that emblem is earned on the return streak':'invalid banner');   // 'hive': earn-only (Session 6); 'streak<day>': earn-only (Session 7T decision 11)
   p.banner={shape:a.shape,colors:a.colors.map(c=>c.toLowerCase()),emblem:a.emblem};s.notice={kind:'plot-banner'};return;}
- if(r.action==='plot-theme'){only(['light','finish','decor']);if(!['cyan','amber','violet','green','red'].includes(a.light)||!['steel','sand','graphite'].includes(a.finish)||!Array.isArray(a.decor)||a.decor.length>6||!a.decor.every(d=>['flags','lamps','crates','antenna','plants','statue'].includes(d)))fail('invalid theme');
-  p.theme={light:a.light,finish:a.finish,decor:[...new Set(a.decor)]};s.notice={kind:'plot-theme'};return;}
+ if(r.action==='plot-theme'){only(['light','finish','decor','ws','ts']);const e=P.themeError(p,a);if(e)fail(e);if(!Array.isArray(a.decor)||a.decor.length>6||!a.decor.every(d=>['flags','lamps','crates','antenna','plants','statue'].includes(d)))fail('invalid theme');
+  p.theme={light:a.light,finish:a.finish,decor:[...new Set(a.decor)],...(a.ws&&a.ws!=='none'?{ws:a.ws}:{}),...(a.ts&&a.ts!=='none'?{ts:a.ts}:{})};s.notice={kind:'plot-theme'};return;}
  fail('invalid plot action');}

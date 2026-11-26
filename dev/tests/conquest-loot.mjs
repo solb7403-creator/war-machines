@@ -30,7 +30,7 @@ console.log('PASS loot tables exactly as spec §4.1 (mob, elite, commander + VET
 const lootIds=new Set([...Object.keys(R.CQ_ITEMS),...Object.keys(R.CQ_PARTS),...Object.keys(R.CQ_TROPHY),...R.CQ_TROPHY_RESERVED,...Object.values(CAT.pools).flat()]);
 const storeIds=new Set([...PL.STORE.items.map(i=>i.id),...CAT.items.filter(i=>!i.pool).map(i=>i.id),...Object.keys(R.PAINTS),...Object.keys(R.WEAPONS),...Object.keys(R.CH),...Object.keys(R.PREMIUM),...Object.keys(R.VAULT),...R.VAULT_REW.map(v=>v.k),...Object.keys(R.GEM),...Object.keys(R.BUFF),...R.SUP_KEYS]);
 for(const id of lootIds)assert(!storeIds.has(id),'loot id '+id+' is also a store / catalog / Arcade id');
-assert(PL.STORE.checkout===false,'base store checkout stays disabled');
+assert(PL.STORE.checkout===(R.CQ_STORE_OPEN===true),'base store checkout follows the store switch (Session 8: CQ_STORE_OPEN '+R.CQ_STORE_OPEN+'); nothing in it is in a loot table (checked above)');
 for(const id of Object.values(CAT.pools).flat()){const i=CAT.byId[id];assert(i.earnOnly&&i.proposedUsd===null&&i.pool,'fragment piece '+id+' is earn-only, never priced');}
 const ALLOWED=new Set(['p','mn','item','part','frag','trophy','ward']);   // Session 7T owner decision 2: 'ward', the Peace Ward (a 24-hour town shield consumable, never points or currency)
 for(const [src,t] of Object.entries(T)){if(!t)continue;for(const r of [...(t.rows||[]),...Object.values(t.ring||{}).flat()]){for(const k of Object.keys(r))assert(ALLOWED.has(k),src+' row pays '+k+' (no points, no currency)');assert(!r.mn||R.MINERALS[r.mn],src);assert((r.item|0)<=2,src+' pays at most 2 consumables');}

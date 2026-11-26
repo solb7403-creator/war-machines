@@ -568,9 +568,9 @@ function gShareText(tag,v,brk){return 'My '+tag.n+' war machine in LUNAR: War Ma
 // ---------- SHOP ----------
 const CRATE_N={weapon:'weapon cache',chassis:'chassis crate',gem:'gem cache'};
 const crateName=(tk,ri)=>TIER_N[ri]+' '+CRATE_N[tk];
-function payNote(){
+function payNote(){payCurOk();
  if(save.payCur==='stars')return IN_TG?'Pay with Telegram Stars. No wallet needed.':'Stars work inside Telegram.';
- if(save.payCur==='ton')return tonWallet?'TON wallet connected':'Connect a TON wallet to pay';
+ if(save.payCur==='ton')return IN_TG&&!IN_WEB?(tonWallet?'GRAM wallet connected (TON Connect)':'Pay GRAM from Keeper, Telegram Wallet or any TON wallet'):'Pay GRAM from Keeper (Tonkeeper) or any TON wallet: a link on your phone, a QR code on a computer';
  const w=SOL_WALLETS[save.solWallet]?save.solWallet:'phantom';
  return px.sol?'Pays from '+SOL_WALLETS[w].n:'Loading the SOL price…';
 }
@@ -688,7 +688,7 @@ function openVault(){
  });
 }
 function shopSeg(){
- return '<div class="seg c2 shopseg" role="tablist" aria-label="Shop sections">'+[['store','Store','Stars'+(CRYPTO_PAY?', TON, SOL':'')],['pts','Points shop',fmtNum(save.pts||0)+' points']].map(([k,l,sm])=>'<button role="tab" aria-selected="'+(shopTab===k)+'" class="'+(shopTab===k?'on':'')+'" data-act="shoptab" data-arg="'+k+'">'+l+'<small>'+sm+'</small></button>').join('')+'</div>';
+ return '<div class="seg c2 shopseg" role="tablist" aria-label="Shop sections">'+[['store','Store',payCurs().map(k=>CUR_NAME[k]).join(', ')],['pts','Points shop',fmtNum(save.pts||0)+' points']].map(([k,l,sm])=>'<button role="tab" aria-selected="'+(shopTab===k)+'" class="'+(shopTab===k?'on':'')+'" data-act="shoptab" data-arg="'+k+'">'+l+'<small>'+sm+'</small></button>').join('')+'</div>';
 }
 // the Points shop (owner, Nov 14: "a separate section for just points purchases, with salvaged gear moved there, along with anything
 // else points are used to buy"): gem caches and chosen cores for points, weapon caches and chassis crates for points, the salvage
@@ -709,10 +709,9 @@ function renderShop(){
  if(shopTab==='pts')return '<h2 class="title" data-act="devtap">Shop</h2>'+shopSeg()+renderPtsShop();
  const cur=save.payCur;
  const prem=(id,nm,d,ton,stars,owned)=>'<button class="premium" data-act="premium" data-arg="'+id+'"'+(owned?' disabled':'')+'><canvas data-art="'+(id==='moonbeam'?'gear:w:moon:2:0':'tank:lunar')+'"></canvas><b>'+nm+'</b><span>'+d+'</span><div class="p">'+(owned?'Owned':priceLabel(ton,stars))+'</div></button>';
- const pend=save.pendingSol||save.pendingTx;
  return '<h2 class="title" data-act="devtap">Shop</h2>'+shopSeg()+
-  (CRYPTO_PAY?'<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':'')+
-  '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
+  curPick('paycur')+
+  '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'&&IN_TG&&!IN_WEB?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':'')+'<button class="btn sm btn-quiet" data-act="purchases">Purchases</button></div>'+
   '<p class="dimtxt" style="margin:6px 0 10px">'+lpPct()+'% of every sale goes into the $LUNAR launch liquidity pool'+(lbMeta&&lbMeta.lpf>0?' ($'+fmtNum(lbMeta.lpf)+' so far)':'')+'. The other '+(100-lpPct())+'% funds the game: development, servers and promotion. <button class="linkbtn inl" data-act="lpwallet">Verify</button></p>'+
   '<div class="deals">'+dealCard('d')+dealCard('w')+'</div>'+
   (FOUNDER_OPEN&&!save.founder?'<div class="founder"><canvas data-art="tank:paint:founder"></canvas><span class="tag">Until $LUNAR launches</span><h4>Founder pack</h4>'+
@@ -721,7 +720,7 @@ function renderShop(){
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache for your '+esc(CH[shopCh()].n)+'</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
   (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap. '+(LAB_STORE_OPEN?'Science Lab: ':'Coming with the Science Lab store: ')+'+1 research slot, research 25% faster and research parts on tiers '+Object.keys(PASS_PREM_PARTS).join(', ')+'.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
-  labShopSec()+batShopSec()+
+  labShopSec()+conquestShopSec()+batShopSec()+
   vaultCard()+
   sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+gearPickHead('weapon',false)+gearPickGrid('weapon',false)+
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+gearPickHead('chassis',false)+gearPickGrid('chassis',false)+
@@ -732,21 +731,51 @@ function renderShop(){
   sec('LIVE finishes','Animated · not on sale yet')+'<div class="paints">'+PAINT_LIVE.map(paintCard).join('')+'</div>'+
   sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon. Precision: shots never graze. Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin',SKINS.lunar.d,SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
   '<button class="q ptslink" data-act="shoptab" data-arg="pts"><div class="grow"><div class="t">Points shop</div><div class="p">Every cache and crate (Epic too), chosen cores, weapons and chassis, and the salvage yard, for points</div></div><span class="chev">›</span></button>'+
-  (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
+  (coOpen&&coOpen.o&&coOpen.o.st==='open'&&coOpen.o.cur!=='STARS'?'<button class="pending" data-act="coresume">Checking your '+(coOpen.o.cur==='SOL'?'SOL':'GRAM')+' payment for '+esc(coOpen.o.item)+'. It arrives the moment it confirms. Open</button>':'');
 }
 
-// Session 6B: the Science Lab entries with CHECKOUT OFF in every currency (the Worker refuses them): research part packs, the four
-// Legendary set mods and instant finish, with their proposed prices (labPriceLabel: Stars in Telegram, TON + SOL on the website)
+// Session 6B Science Lab store, OPEN since Session 8 (owner, Nov 26, 2026): research part packs (one of each a UTC week), the four
+// Legendary set mods (1,500 Stars / 23 GRAM, one a UTC week in all, each only after its track's earned set mod), instant finish (on a
+// running job in the Science Lab). Prices in the surface's currency (curLabel); the server quotes and checks every rule.
+const buyBtn=(act,arg,p,label)=>'<button class="btn sm btn-go" data-act="'+act+'" data-arg="'+esc(arg)+'">'+(label||curLabel(p))+'</button>';
+const nowX=()=>ecoX(),weekLeft=()=>{const t=Date.now(),d=new Date(t),dow=(d.getUTCDay()+6)%7,next=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()+7-dow);return next-t;};
+const resetIn=ms=>{const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000);return h>=24?Math.floor(h/24)+' d '+(h%24)+' h':h+' h '+m+' min';};
+const dayLeft=()=>86400000-Date.now()%86400000;
 function labShopSec(){
- const off='<span class="labshop-off">Not on sale yet</span>',btn=p=>'<button class="btn sm btn-quiet" disabled aria-disabled="true">'+labPriceLabel(p)+'</button>';
- const packs=RS_PACK_ORDER.map(k=>{const P=RS_PACKS[k];return '<div class="labshop-item"><div class="grow"><b>'+esc(P.n)+'</b><span>+'+P.each+' of every research part</span></div>'+btn(P)+off+'</div>';}).join('');
+ const off='<span class="labshop-off">Not on sale</span>',X=nowX(),buys=save.buys||{};
+ if(!LAB_STORE_OPEN){const btn=p=>'<button class="btn sm btn-quiet" disabled aria-disabled="true">'+curLabel(p)+'</button>';return sec('Science Lab','Research parts · Legendary mods')+'<div class="labshop panel"><p class="labshop-note">Not on sale right now.</p>'+RS_PACK_ORDER.map(k=>'<div class="labshop-item"><div class="grow"><b>'+esc(RS_PACKS[k].n)+'</b></div>'+btn(RS_PACKS[k])+off+'</div>').join('')+'</div>';}
+ const packs=RS_PACK_ORDER.map(k=>{const P=RS_PACKS[k],got=((buys[rsPackKey(k,X)])|0)>=1;return '<div class="labshop-item"><div class="grow"><b>'+esc(P.n)+'</b><span>+'+P.each+' of every research part'+(got?' · bought this week: the next one '+resetIn(weekLeft()).replace(/^/,'in '):' · one a week')+'</span></div>'+(got?'<span class="labshop-off">Next week</span>':buyBtn('labbuy','rspack:'+k,P))+'</div>';}).join('');
+ const legWeek=((buys[rsLegWeekKey(X)])|0)>=RS_LEG_WEEK;
  const legs=RTREE.order.map(t=>{const id=RTREE.legendary[t],F=rmodOf(id).F,set=rsLegSet(id),own=!!(save.lsm&&save.lsm[id]||save.rm&&save.rm[id]),rsj=!own&&!!(save.rsj&&save.rsj[id]),done=!!(save.rm&&save.rm[set]);   // owned: bought or researched (one ownership)
-  return '<div class="labshop-item leg"><div class="grow"><b>★ '+esc(F.n)+'</b><span>'+esc(RTREE.tracks[t].n)+' · '+(own?'Owned':rsj?'Being researched in your Science Lab':done?'A step stronger than '+esc(rmodOf(set).F.n)+' · or research it free ('+RTREE.leg.n+' parts)':'Needs '+esc(rmodOf(set).F.n)+' first · or research it free ('+RTREE.leg.n+' parts, Science Lab III)')+'</span></div>'+(own||rsj?'':btn(RS_LEG_PRICE)+off)+'</div>';}).join('');
- const f=[20*60e3,2*3600e3,8*3600e3].map(ms=>labPriceLabel(rsFinPrice(ms)));
- return sec('Science Lab','Research parts · Legendary mods')+'<div class="labshop panel"><p class="labshop-note">Not on sale yet: nothing in this section can be bought.</p><p class="mut">For the Science Lab in Conquest. Research is free with the parts you find; these only speed it up. Purchases never give points.</p>'+
+  const why=own?'Owned':rsj?'Being researched in your Science Lab':!done?'Needs '+esc(rmodOf(set).F.n)+' first · or research it free ('+RTREE.leg.n+' parts, Science Lab III)':legWeek?'One Legendary a week: the next one in '+resetIn(weekLeft()):'A step stronger than '+esc(rmodOf(set).F.n)+' · or research it free ('+RTREE.leg.n+' parts)';
+  return '<div class="labshop-item leg"><div class="grow"><b>★ '+esc(F.n)+'</b><span>'+esc(RTREE.tracks[t].n)+' · '+why+'</span></div>'+(own||rsj||!done||legWeek?'':buyBtn('labbuy','rsleg:'+id,RS_LEG_PRICE))+'</div>';}).join('');
+ const f=[20*60e3,2*3600e3,8*3600e3].map(ms=>curLabel(rsFinPrice(ms)));
+ return sec('Science Lab','Research parts · Legendary mods')+'<div class="labshop panel"><p class="mut">For the Science Lab in Conquest. Research is free with the parts you find; these only speed it up. Purchases never give points.</p>'+
   '<h4 class="ptsh">Research part packs · one of each a week</h4>'+packs+
-  '<h4 class="ptsh">Legendary set mods · a step stronger than the earned set mod</h4>'+legs+
-  '<h4 class="ptsh">Instant finish · priced by the time left</h4><p class="mut">20 min: '+f[0]+' / 2 h: '+f[1]+' / 8 h: '+f[2]+'. Shown on a running job in the Science Lab.</p></div>';
+  '<h4 class="ptsh">Legendary set mods · one a week</h4>'+legs+
+  '<h4 class="ptsh">Instant finish · priced by the time left</h4><p class="mut">20 min: '+f[0]+' / 2 h: '+f[1]+' / 8 h: '+f[2]+'. Tap FINISH NOW on a running job in the Science Lab.</p></div>';
+}
+// Session 8 (owner, Nov 26, 2026): the Conquest store, prices and limits from the one table (SHOP): town items (capacity, convenience, looks
+// and time; never points), the mineral crates (common and uncommon, into your mineral wallet), the wall-only rare ore crates (town walls
+// only), the permanent collection's pieces (looks only, each also earned by play). Construction speed-ups are on a running build in town.
+function conquestShopSec(){
+ if(typeof SHOP!=='object'||!CQ_STORE_OPEN)return '';
+ const X=nowX(),buys=save.buys||{},cq=save.cq||{},wmn=save.wmn||{},b=k=>(buys[k]|0);
+ const items=SHOP.cqOrder.map(id=>{const Q=SHOP.cq[id],f=CQ_FLAG[id],own=f&&cq[f],rush=id==='foundry-rush'&&Number(cq.fr)>Date.now(),ext=id==='wall-ext-10'?(cq.ext|0):0;
+  const st=own?'Owned':rush?'Running: '+resetIn(Number(cq.fr)-Date.now())+' left (another adds 24 h)':id==='wall-ext-10'?ext+' of 5 bought · '+Q.limit:Q.limit||'';
+  return '<div class="labshop-item cqitem"><canvas class="cqart" width="64" height="44" data-art="cq:'+id+'"></canvas><div class="grow"><b>'+esc(Q.n)+'</b><span>'+esc(Q.d)+(st?' · '+esc(st):'')+'</span></div>'+(own||ext>=5?'<span class="labshop-off">'+(own?'Owned':'Maxed')+'</span>':buyBtn('cqbuy','cq:'+id,usdPrice(Q.usd)))+'</div>';}).join('');
+ const mn=['fe','il'].map(k=>{const M=SHOP.mn[k],d=b('mn'+k+'|'+X.day),w=M.week?b('mnw'+k+'|'+X.week):0,full=d>=M.day||(M.week&&w>=M.week),giv=Object.entries(M.give).map(([m,n])=>n+' '+MINERALS[m].s).join(' + ');
+  return '<div class="labshop-item"><div class="grow"><b>'+esc(M.n)+'</b><span>'+giv+' into your mineral wallet · '+(M.day-d)+' of '+M.day+' left today'+(M.week?', '+(M.week-w)+' of '+M.week+' this week':'')+'</span></div>'+(full?'<span class="labshop-off">'+(d>=M.day?'Tomorrow':'Next week')+'</span>':buyBtn('cqbuy','mncrate:'+k,usdPrice(M.usd)))+'</div>';}).join('');
+ const ore=SHOP.oreOrder.map(k=>{const O=SHOP.ore[k],d=b('ore'+k+'|'+X.day),have=wmn[k]|0;
+  return '<div class="labshop-item ore"><div class="grow"><b>'+esc(O.n)+'</b><span>'+O.q+' '+MINERALS[k].s+' for your town\'s walls only'+(have?' · '+have+' bought so far':'')+' · '+(d?'bought today: the next in '+resetIn(dayLeft()):'1 a day')+'</span></div>'+(d?'<span class="labshop-off">Tomorrow</span>':buyBtn('cqbuy','orecrate:'+k,usdPrice(O.usd)))+'</div>';}).join('');
+ const CAT=typeof ConquestCatalog!=='undefined'?ConquestCatalog:null,cos=CAT?CAT.items.filter(i=>!i.earnOnly&&i.proposedUsd).map(i=>{const own=!!(save.cqc&&save.cqc[i.id]);
+  return '<div class="labshop-item cos"><canvas class="cosart" width="64" height="44" data-art="cos:'+i.id+'"></canvas><div class="grow"><b>'+esc(i.name)+'</b><span>'+esc(i.slot)+' · looks only · also earned: '+esc(i.earnText)+'</span></div>'+(own?'<span class="labshop-off">Owned</span>':buyBtn('cqbuy','cos:'+i.id,usdPrice(i.proposedUsd)))+'</div>';}).join(''):'';
+ return sec('Conquest','Your town · minerals · collection')+'<div class="labshop panel cqshop"><p class="mut">Capacity, convenience, looks and time for Conquest. Nothing here gives airdrop points. Rare-or-better ore is sold for town walls only: it never goes into tank plates, is never traded or gifted.</p>'+
+  '<h4 class="ptsh">Your town</h4>'+items+
+  '<p class="mut">Speed-ups: open your town and tap FINISH NOW on a running construction (priced by the time left, the free time shown beside it).</p>'+
+  '<h4 class="ptsh">Minerals · fixed bundles</h4>'+mn+
+  '<h4 class="ptsh">Wall-only rare ore · 1 of each a day</h4>'+ore+
+  (cos?'<h4 class="ptsh">Permanent collection · looks only</h4>'+cos:'')+'</div>';
 }
 // Session 6C Battalion store (owner prompt Nov 18): the chip pack, the battalion liveries, the RECRUIT instant finish: CHECKOUT OFF in
 // every currency (BAT_STORE_OPEN false; the Worker refuses every kind). Looks and speed only: never pilots, ranks or Role Core levels.
@@ -1104,7 +1133,7 @@ function openCrate(tk,ri,pts){
     '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
     (pp?'<button class="linkbtn" style="margin-top:6px" data-act="ptscrate" data-arg="'+tk+':'+ri+'">Or '+fmtNum(pp)+' points in the Points shop</button>':''))+
    '<p class="dimtxt odds">'+odds+'</p>'+
-   (pts?'<p class="dimtxt" style="margin-top:8px">The points price never changes. '+(isGem?'Want one core in particular? Chosen cores are in the Points shop too.':'Want one in particular? Tap Pick it above: no random roll.')+'</p>':ri===0?'<p class="dimtxt" style="margin-top:8px">Common crates are always this price.</p>':!isGem?'<p class="dimtxt" style="margin-top:8px">Each Stars, TON or SOL purchase of this crate, or of a chosen item from it, raises its price: ×1, then ×2, then ×3. Now ×'+boxMult(tk,ri)+'. Points purchases don’t.</p>':'');
+   (pts?'<p class="dimtxt" style="margin-top:8px">The points price never changes. '+(isGem?'Want one core in particular? Chosen cores are in the Points shop too.':'Want one in particular? Tap Pick it above: no random roll.')+'</p>':ri===0?'<p class="dimtxt" style="margin-top:8px">Common crates are always this price.</p>':!isGem?'<p class="dimtxt" style="margin-top:8px">Each Stars, GRAM or SOL purchase of this crate, or of a chosen item from it, raises its price: ×1, then ×2, then ×3. Now ×'+boxMult(tk,ri)+'. Points purchases don’t.</p>':'');
  });
 }
 function openPaints(){
@@ -1132,6 +1161,7 @@ function openSettings(){
   '<div class="seg c4" style="margin:-4px 0 6px">'+[['auto','Auto'],['high','High'],['low','Low'],['2d','2D']].map(([k,l])=>'<button class="'+(gfxMode()===k?'on':'')+'" data-act="gfx" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="q"><div class="grow"><div class="t">Daily reminder</div><div class="p">One message when your reward is ready</div></div><button class="toggle'+(save.remind?' on':'')+'" data-act="remind" aria-pressed="'+(!!save.remind)+'"><i></i></button></div>'+
   '<div class="q"><div class="grow"><div class="t">War alerts</div><div class="p">Conquest assaults you can still stop: at most 3 a day, never at night</div></div><button class="btn sm" data-act="waralerts">SET</button></div>'+
+  '<button class="q" data-act="purchases"><div class="grow"><div class="t">Purchases</div><div class="p">Every order, its status and receipt</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="info" data-arg="howto"><div class="grow"><div class="t">How to play</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="wiki"><div class="grow"><div class="t">Wiki and tokenomics</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="terms"><div class="grow"><div class="t">Terms and purchase help</div><div class="p">Refunds and payment problems: send /paysupport to the bot</div></div><span class="chev">›</span></button>'+
@@ -1212,7 +1242,7 @@ function openAdmin(){
   return '<h3>Admin</h3>'+(ownerGemHtml()||sndLabBtn())+
    (A.loading?'<p class="mut">Loading server stats…</p>':A.error?'<p class="mut">Server stats: '+esc(A.error)+'</p>':
    '<div class="kv"><div><b class="num">'+fmtNum(A.players)+'</b><span>Players</span></div><div><b class="num">'+fmtNum(A.activeToday)+'</b><span>Active today</span></div><div><b class="num">$'+fmtNum(R.USD)+'</b><span>Revenue</span></div></div>'+
-   '<p class="mut" style="margin-top:8px">'+fmtNum(R.STARS||0)+' Stars, '+(R.TON||0)+' TON, '+(R.SOL||0)+' SOL from '+fmtNum(R.count||0)+' payments'+(R.held?'. '+R.held+' held for a refund (paid, nothing granted)':'')+(R.refunded?'. '+R.refunded+' refunded':'')+'</p>'+
+   '<p class="mut" style="margin-top:8px">'+fmtNum(R.STARS||0)+' Stars, '+(R.TON||0)+' GRAM, '+(R.SOL||0)+' SOL from '+fmtNum(R.count||0)+' payments'+(R.held?'. '+R.held+' held for a refund (paid, nothing granted)':'')+(R.refunded?'. '+R.refunded+' refunded':'')+'</p>'+
    (A.stats?'<div class="kv"><div><b class="num">'+fmtNum(A.stats.newToday)+'</b><span>New today</span></div><div><b class="num">'+A.stats.back2+'%</b><span>Came back day 2</span></div><div><b class="num">'+A.stats.back5of7+'%</b><span>5+ of 7 days</span></div></div>'+
     '<div class="kv"><div><b class="num">'+A.stats.avgMatches+'</b><span>Matches per player</span></div><div><b class="num">'+A.stats.conv+'%</b><span>Paid</span></div><div><b class="num">$'+A.stats.arppu+'</b><span>Per payer</span></div></div>'+
     '<p class="dimtxt" style="margin-top:6px">Retention from the top 1,000 players. Paid = payers out of all players.</p>':''))+
@@ -1232,6 +1262,9 @@ function openAdmin(){
    (A.clusters?'<h3 style="margin-top:16px;font-size:16px">Linked accounts ('+A.clusters.filter(c=>!c.ok).length+')</h3>'+
     '<p class="dimtxt" style="margin-top:4px">Accounts that look like one person: the same phone, the same paying wallet, the same controls move for move, starting together on one network, or trading live wins. Only the one with the most points counts for the airdrop until you clear the group.</p>'+
     (A.clusters.length?'<div class="list">'+A.clusters.map(c=>'<div class="row" style="gap:8px;align-items:flex-start;margin-top:8px"><div class="grow"><b>'+c.m.length+' accounts</b> <span class="dimtxt">'+esc(c.why.join(', '))+(c.ok?', cleared':'')+'</span><div class="dimtxt">'+c.m.map(x=>esc(x[1])+' ('+fmtNum(x[2])+')'+(x[0]===c.keep&&!c.ok?' counts':'')).join(', ')+'</div>'+(Array.isArray(c.cq)&&c.cq.length?'<div class="dimtxt"><b>Conquest:</b> '+c.cq.map(k=>esc({town:'the same town layout',hours:'the same hours of play',beacon:'a Strike Beacon in the same minute'}[k]||k)).join(', ')+'</div>':'')+'</div>'+(c.ok?'':'<button class="btn sm btn-quiet" data-act="clclear" data-arg="'+esc(c.sig)+'">Clear</button>')+'</div>').join('')+'</div>':'<p class="dimtxt" style="margin-top:6px">None found.</p>'):'')+
+   (A.gramTg!==undefined?'<h3 style="margin-top:16px;font-size:16px">GRAM in Telegram</h3><p class="dimtxt" style="margin-top:4px">Telegram\'s rules (developer notice, Nov 17, 2026) say digital goods inside bots and Mini Apps must be paid in Stars. ON: players in Telegram can pay with Stars or GRAM. OFF: Stars only in Telegram (the website always takes GRAM and SOL). Takes effect within a minute; the bot command /gram off does the same.</p>'+
+    '<div class="seg" style="grid-template-columns:1fr 1fr;margin-top:8px">'+[['on','On'],['off','Off']].map(([k,l])=>'<button class="'+((A.gramTg?'on':'off')===k?'on':'')+'" data-act="adminGram" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':'')+
+   (A.held&&A.held.length?'<h3 style="margin-top:16px;font-size:16px">Held payments ('+A.held.length+')</h3><p class="dimtxt" style="margin-top:4px">Paid, nothing granted (owned by then, over a limit, a second payment of one order): refund these.</p><div class="list">'+A.held.map(h=>'<div class="row" style="margin-top:6px"><div class="grow"><b>'+esc(h.item||'?')+'</b> <span class="dimtxt">'+esc(h.pid||'')+' · '+esc(String(h.amt))+' '+(h.cur==='TON'?'GRAM':esc(h.cur||''))+' · '+esc(h.err||'')+'</span><div class="dimtxt">'+esc(String(h.tx||'').slice(0,60))+'</div></div></div>').join('')+'</div>':'')+
    (A.proof?'<h3 style="margin-top:16px;font-size:16px">Match records</h3><p class="dimtxt" style="margin-top:4px">AI results come with a record of the match. Flag only (recommended): every result scores, and a pilot with 3 results a day the record doesn\'t back up is flagged for your review. Enforce: those results score nothing.</p>'+
     '<div class="seg" style="grid-template-columns:1fr 1fr;margin-top:8px">'+[['flag','Flag only'],['enforce','Enforce']].map(([k,l])=>'<button class="'+(A.proof===k?'on':'')+'" data-act="adminproof" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':'')+
    '<p class="mut" style="margin-top:8px">This device: power '+pw+', '+fmtNum(save.earned)+' lifetime points, '+(save.mp||0)+' matches</p>'+
@@ -1567,12 +1600,12 @@ const ACT={
    '<p class="mut">'+lvGo+' back to 0 (your other chassis keep theirs). The reset fee is '+fmtNum(fee)+' points.</p>'+
    '<div style="display:grid;gap:8px;margin-top:14px"><button class="btn btn-ghost block" data-act="respecok">Pay '+fmtNum(fee)+' points · get '+fmtNum(half)+' back</button>'+
    (pr?'<button class="btn btn-gold block" data-act="respecpay">Pay '+priceLabel(pr.ton,pr.stars)+' · get all '+fmtNum(inv)+' back</button>'+
-    (CRYPTO_PAY?'<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="respeccur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':''):
+    curPick('respeccur'):
     '<p class="mut" style="margin:0">Builds worth under 9,375 points reset with points only.</p>')+
    '<button class="btn btn-quiet block" data-act="respeccancel">Keep it</button></div>';
   const ov=findOv('respec');if(ov)closeOverlay(ov);
   openOverlay('modal','<h3>Reset the '+N+'\'s build?</h3>'+body,{key:'respec'});},
- respeccur:a=>{if(!CRYPTO_PAY)a='stars';save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');ACT.respec(respecCh);},
+ respeccur:a=>{if(!payCurs().includes(a))return;save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton'&&IN_TG&&!IN_WEB)initTonConnect();fx('tap');ACT.respec(respecCh);},
  respecpay:()=>{const ch=respecCh||homeChassis(save),pr=ecoPrice(save,{kind:'respec',c:ch},ecoX());const ov=findOv('respec');if(ov)closeOverlay(ov);if(pr)pay(pr.ton,{kind:'respec',c:ch});},
  respeccancel:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);},
  respecok:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);when(respecBuild(respecCh||homeChassis(save)),ok=>{if(ok)syncPlayer();uiDirty();});},
@@ -1580,7 +1613,8 @@ const ACT={
  gear:a=>openBayGear(a==='w'),
  core:a=>openBayCore(+a),
  gemcore:a=>openBayCore(+a),
- paycur:a=>{if(!CRYPTO_PAY)a='stars';save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');},
+ paycur:a=>{if(!payCurs().includes(a))return;save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton'&&IN_TG&&!IN_WEB)initTonConnect();fx('tap');},
+ adminGram:a=>{loadAdmin({gramTg:a});showToast(a==='on'?'GRAM in Telegram: ON':'GRAM in Telegram: OFF (Stars only in Telegram)');},
  tonwallet:()=>tonWalletButton(),
  solwallet:()=>openSolWallets(),
  setsolw:a=>{save.solWallet=a;store();const ov=findOv('solw');if(ov)closeOverlay(ov);},
@@ -1604,6 +1638,8 @@ const ACT={
  lbscope:a=>{lbScope=a;fx('tap');uiDirty('ranks');},
  vault:()=>openVault(),
  vaultbuy:a=>{const B=VAULT[a];if(!B)return;pay(B.ton,{kind:'vault',tk:a});},
+ labbuy:a=>{const [k,id]=a.split(':');if(k==='rspack'&&RS_PACKS[id])checkout({kind:'rspack',tk:id});else if(k==='rsleg'&&rsLegSet(id))checkout({kind:'rsleg',tk:id});},   // Session 8: the Lab store
+ cqbuy:a=>{const i=a.indexOf(':'),k=a.slice(0,i),id=a.slice(i+1);if(['cq','cos','mncrate','orecrate'].includes(k))checkout({kind:k,tk:id});},   // Session 8: the Conquest store
  vaultboard:()=>{closeAll();lbScope='vault';loadLB();setTab('ranks');},
  wiki:()=>openLink(WIKI_URL),
  lpwallet:()=>openLink('https://solscan.io/account/'+LP_WALLET),

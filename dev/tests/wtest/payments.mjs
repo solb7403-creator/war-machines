@@ -86,6 +86,8 @@ const WP = 'tg_888001';
   t(!p.ok && /already bought/i.test(p.why), 'the paid invoice can\'t be paid again (pre-checkout says no)');
   await K.paid(A, o1, 'ch.1b');
   t(E('tg_111').buys.weapon1 === 1 && db.get('/orders/tg_111/' + o1.oid + '/st') === 'paid' && Object.values(db.get('/held') || {}).some((h) => h.oid === o1.oid && h.err === 'duplicate'), 'a second payment of the same quote (a race past the pre-checkout): nothing more granted, the quote stays paid, the payment kept for a refund');
+  { const b1 = E('tg_111').buys.weapon1; await K.refund(A, 'ch.1b', 500);
+    t(db.get('/orders/tg_111/' + o1.oid + '/st') === 'paid' && E('tg_111').buys.weapon1 === b1, 'refunding the held second payment leaves the paid order and its crate as they are'); }
   [s, r] = await call('/api/act', { initData: initData(A), a: 'paid', n: o1.oid });
   t(r.out.outs && r.out.outs.length === 1, 'the phone fetches what its Stars purchase gave');
   [s, r] = await K.status(A, o1.oid);
@@ -325,6 +327,31 @@ const WP = 'tg_888001';
   await K.refund(A, 'ch.mh', 1155);
   t(E('tg_111').wmn.mh === 0, 'a refunded wall crate takes its ore back');
   t(E('tg_111').pts === 5e6 || E('tg_111').pts >= 0, 'no purchase touched points');
+}
+// ======================= 7. a construction speed-up: priced on the server from the real job, held while its timer runs =======================
+{
+  const now = Date.now(); setEco('tg_111', (S) => { delete S.ord; });
+  db.root.conquest = db.root.conquest || {}; db.root.conquest.tg_111 = { v: 1, plot: { v: 2, site: 'ridge', cc: 3, b: { cc: { t: 'cc', i: 37, j: 37, r: 0, l: 3 }, b5: { t: 'cannon', i: 30, j: 30, r: 0, l: 1 } }, w: {}, job: { id: 'b5', t: 'cannon', l: 2, at: now, ready: now + 2 * 3600000 } } };
+  let [s, r] = await K.quote(A, 'STARS', { kind: 'cfin', job: 'b5@2', left: 1 });
+  const o = r.order, want = R.rsFinPrice(2 * 3600000).stars;
+  t(s === 200 && o.amt === want, 'a construction finish quoted from the server\'s own job: 2 h left = ' + o.amt + ' Stars (a forged time left is ignored)');
+  db.root.conquest.tg_111.plot.job.ready = now + 2 * 3600000 - 15 * 60000;   // 15 minutes pass before the pre-checkout: the price falls a step
+  const p = await K.pre(A, o);
+  t(p.ok, 'the quote holds its price while the timer runs (the current price is lower: never more than quoted)');
+  await K.paid(A, o, 'ch.cfin');
+  t(E('tg_111').cfx['b5@2'] === 1, 'paid: a one-time credit for that construction (the town finishes it at its next read)');
+  [s, r] = await K.quote(A, 'STARS', { kind: 'cfin', job: 'b5@2' });
+  t(s === 409 && r.error === 'owned', 'the same construction\'s finish is sold once');
+  [s, r] = await K.quote(A, 'STARS', { kind: 'cfin', job: 'b6@2' });
+  t(s === 409 && r.error === 'none', 'no finish for a construction that isn\'t running');
+  [s, r] = await K.quote(A, 'STARS', { kind: 'cfin', job: 'repair@0' });
+  t(s === 400, 'never a repair (construction timers only)');
+  // the wall extension pack with a town: what it earned (two Foundry research levels: 12%) + the packs bought + this one never past +50%
+  db.root.conquest.tg_111.plot.ext = { r: 2 };
+  setEco('tg_111', (S) => { delete S.ord; if (S.cq) S.cq.ext = 0; });
+  let n = 0;
+  for (let i = 0; i < 6; i++) { const x = await K.stars(A, { kind: 'cq', tk: 'wall-ext-10' }, 'ch.ext' + i); if (x.s === 200 && x.pre && x.pre.ok) n++; else { s = x.s; r = x.r; break; } }
+  t(n === 3 && E('tg_111').cq.ext === 3 && s === 409 && r.error === 'cap', 'wall extension packs with a town: 12% earned + 3 packs = 42%; a 4th would pass the +50% cap (refused before any payment)');
 }
 console.log((bad ? 'FAIL' : 'PASS') + ' wtest payments: ' + ok + ' passed, ' + bad + ' failed');
 if (bad) process.exit(1);

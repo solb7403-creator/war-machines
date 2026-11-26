@@ -97,7 +97,7 @@ const point=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'});
  s=applyCommands(s,{seq:2,commands:[{x:0,z:0}]},e.l*WAR.tickMs+1000);ok(!s.war.st.oxygen,'they return when the assault is decided');}
 
 // ---- decision 8: the Lunar Pass perks, behind the store flag -----------------------------------------------------------------------
-{const {passLive}=await import('../../worker/src/conquest-war.js');ok(R.LAB_STORE_OPEN===false&&passLive(true)===false,'the Pass perks wait for the store (Session 8)');
+{const {passLive}=await import('../../worker/src/conquest-war.js');ok(passLive(true)===(R.LAB_STORE_OPEN===true)&&passLive(false)===false,'the Pass perks go live with the store (decision 8; Session 8 opens it: '+R.LAB_STORE_OPEN+')');
  ok(WR.fortifySlots(true)===2&&WR.fortifySlots(false)===1&&WR.fortifyCost('oxygen',3,true).cp===Math.round(WR.fortifyCost('oxygen',3).cp*.8/1)&&WR.fortifyTime(5,true)===Math.round(WR.fortifyTime(5)*.8),'with the Pass: a second slot, 20% cheaper, 20% faster');}
 
 // ---- decision 9: the Grand Offensive ------------------------------------------------------------------------------------------------

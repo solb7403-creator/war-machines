@@ -184,8 +184,8 @@ export async function quote(env, a, cur, raw, now = Date.now()) {
   if (!d) return { status: 400, body: { error: "item" } };
   if (d.kind === "pass" && raw && raw.tk && !/^\d{1,3}$/.test(String(raw.tk))) return { status: 400, body: { error: "item" } };
   d = await serverDesc(env, pid, d, now);
-  let sol = null;
-  if (cur === "SOL") { const S0 = await readEco(env, pid), P0 = R.ecoPrice(S0, d, ctxOf(pid, now)); if (!P0) return { status: 400, body: { error: "item" } }; sol = await solValueOk(P0.ton, now); if (!sol) return { status: 503, body: { error: "pending", msg: "SOL prices are loading. Try again in a minute." } }; }
+  let rate = null;
+  if (cur === "SOL") { rate = await solValueOk(1, now); if (!rate) return { status: 503, body: { error: "pending", msg: "SOL prices are loading. Try again in a minute." } }; }   // fail closed: no live rates, no SOL quote
   const oid = newOid();
   let reuse = null, err = null, price = null, rk = null, superseded = [];
   const t = await tx(env, pid, (S, X) => {
@@ -211,7 +211,7 @@ export async function quote(env, a, cur, raw, now = Date.now()) {
   const S = t.S, item = labelOf(d), rec = { v: 1, oid, pid, cur, sf: web ? "web" : "tg", d, dp: dpOf(d), rk, price, item, t: now, e: now + QUOTE_MS, st: "open", name: cleanName(a.user || {}) };
   if (cur === "TON") { rec.amt = price.ton; rec.base = String(Math.round(price.ton * 1e9)); rec.memo = "LWM|" + pid + "|" + oid; const r0 = await liveRates(now); if (r0.ton > 0) rec.rate = { ton: r0.ton }; }
   if (cur === "SOL") {
-    const lam0 = Math.floor((sol.sol * 1e9) / 1e6) * 1e6;
+    const sol = { sol: price.ton * rate.sol, ton: rate.ton, solUsd: rate.solUsd, usd: Math.round(price.ton * rate.ton * 100) / 100 }, lam0 = Math.floor((sol.sol * 1e9) / 1e6) * 1e6;
     let lam = 0;
     for (let i = 0; i < 6 && !lam; i++) { const cand = lam0 + (1 + Math.floor(Math.random() * 999)) * 1e3; if ((await claimOnce(env, "solAmt/" + cand, { pid, oid, t: now })).ok) lam = cand; }   // a unique exact amount: an exact-amount send without the reference still finds its own quote
     if (!lam) { await release(env, pid, oid, now); return { status: 503, body: { error: "busy" } }; }
@@ -409,8 +409,8 @@ export async function preCheckout(env, q, pid, now = Date.now()) {
   const S = await readEco(env, pid), X = ctxOf(pid, now), d = await serverDesc(env, pid, o.d, now);
   const why = R.ecoSaleErr(S, d, X);
   if (why) return why === "owned" ? "You already have this." : why === "limit" ? "You reached this item's limit for now." : why === "cap" ? "Your wall extensions are at the +50% cap." : why === "none" ? "That timer already finished." : "This item is not for sale right now.";
-  const cur = R.ecoPrice(S, d, X);
-  if (!cur || cur.stars !== Number(o.price.stars)) return "The price changed. Open the purchase again from the game.";
+  const cur = R.ecoPrice(S, d, X), timed = d.kind === "cfin" || d.kind === "rsfin";   // a finish's price falls as its timer runs: the quote holds it (never more than quoted)
+  if (!cur || (timed ? cur.stars > Number(o.price.stars) : cur.stars !== Number(o.price.stars))) return "The price changed. Open the purchase again from the game.";
   const ord = S.ord && typeof S.ord === "object" ? S.ord : {};
   if (!(o.rk || []).every((k) => ord[k] && ord[k].q === o.oid)) return "This purchase was replaced. Open it again from the game.";
   if (!(await writeIf(env, path, { ...o, pc: { q: String(q.id).slice(0, 64), t: now } }, tag))) return "This purchase is already being paid.";
@@ -446,7 +446,10 @@ export async function starsRefund(env, m, pid, now = Date.now()) {
     n = S.rfd.length;
     return {};
   }, now);
-  await dbPatch(env, "", { [`starsPaid/${pid}/${charge}/rf`]: now, ...(sp.q ? { [`orders/${pid}/${sp.q}/st`]: "refunded", [`orders/${pid}/${sp.q}/rf`]: now, [`payments/LWM_${safeKey(pid)}_${sp.q}/refunded`]: true } : {}) });
+  // a granted payment refunded: its order shows refunded; a held one (nothing was granted, e.g. a second payment of a paid quote) is
+  // marked on its own records only, never on the order another payment paid
+  const pk = payId("STARS", charge), own = sp.q && !sp.err ? { [`orders/${pid}/${sp.q}/st`]: "refunded", [`orders/${pid}/${sp.q}/rf`]: now, [`payments/LWM_${safeKey(pid)}_${sp.q}/refunded`]: true } : sp.q ? { [`payments/LWM_${safeKey(pid)}_${sp.q}${sp.err === "duplicate" ? "_" + pk : ""}`.slice(0, 160) + "/refunded"]: true } : {};
+  await dbPatch(env, "", { [`starsPaid/${pid}/${charge}/rf`]: now, ...own });
   if (!sp.err) await revAdd(env, -(Number(sp.stars) || 0) * 1.3);
   return n;
 }

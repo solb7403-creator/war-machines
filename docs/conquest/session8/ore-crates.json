@@ -1,0 +1,1745 @@
+{
+ "about": "Session 8 (owner brief docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.md section 2): the amounts in the four wall-only ore crates, sized with the fortress model (dev/tools/ore-crate-sizing.mjs; fortress-model.mjs PROFILES.payerHeavy) so ROADMAP row 8's requirement holds at the 2-hour heavy play time",
+ "label": "SIMULATED (the fortress model: the real income, builder and raid engine with scripted pilots), not playtesting; it measures wall strength and hold rates, not enjoyment",
+ "definitions": {
+  "fixed": "before any crate was measured; never tuned to results",
+  "FULL": "fully built within the year: on day 365 the payerHeavy town (ridge, the fortress test's town) has mean wall blend quality q >= 0.99 (the mean of ConquestPlot.blendQ over its wall cells, the fortress test's q) on the full cap (CC10's 2,000 cells + 50% = 3,000)",
+  "STRONG": "noticeably stronger than a free pilot who plays as much: payerHeavy's mean hold rate over days 300, 330 and 365 (holdRate, n 3 a site and day, the fortress test's) at least 5 points above the free heavy profile's, and its day-365 wall q above the free heavy's",
+  "relativeValue": "every crate holds the ore for the same number of wall cells at heavy blend (a cell at heavy blend takes 1.0 Armalcolite, 0.4 Tranquillityite, 0.2 Selenite, 0.1 Moonheart): Moonheart m, Selenite 2m, Tranquillityite 4m, Armalcolite 10m units (10m cells a crate), so a rarer ore costs more per cell exactly as the owner's prices step. Rejected before the search, on their shape alone: the fewest units that keep a rarer ore never cheaper per cell (for larger crates it prices every ore the same per cell, so Moonheart becomes the best buy per unit of strength) and the same strength per dollar for all four (no rarity premium). One probe ran before the search to time the model: {\"ar\":16,\"tq\":8,\"se\":4,\"mh\":2}, fully built on day 225",
+  "search": "the smallest m (Moonheart units a crate; the lower crates follow) that passes FULL and STRONG; m - 1 must fail; larger m measured for the table",
+  "payerHeavy": "the heavy player's play time (sessions 10:00 and 19:00 UTC, 60 min each), town ladder and Citadel pacing; the store levers as shipped: the second builder from day 1, the wall extension packs (+50%), Epic gear from day 1, the Ferrite Crate (150 Ferrite) 2 a day and the Ilmenite Crate (60 Ilmenite + 30 Ferrite) 4/7 a day (1 a day, 4 a week), and one of each wall-only ore crate a day while that ore can still improve the walls (a built ring below its heavy blend, or cells left to build), none once fully built; bought ore 100% to the walls' blends only",
+  "money": "the wall-only ore crates bought on the ridge town over days 0-364 at the owner's prices ($4.99 / $7.99 / $9.99 / $14.99); the Ferrite and Ilmenite crates are reported apart (bought at the limits every day: an upper bound)"
+ },
+ "prices": {
+  "ar": 4.99,
+  "tq": 7.99,
+  "se": 9.99,
+  "mh": 14.99
+ },
+ "freeHeavy": {
+  "holdByDay": {
+   "300": 81,
+   "330": 81,
+   "365": 81
+  },
+  "holdMean": 81,
+  "wallQ365": 0.675,
+  "sites": {
+   "crater": 0.6676,
+   "delta": 0.6613,
+   "ridge": 0.675,
+   "canyon": 0.6655,
+   "plateau": 0.673,
+   "ice": 0.6713,
+   "ash": 0.6613
+  }
+ },
+ "candidates": [
+  {
+   "m": 1,
+   "crates": {
+    "ar": 10,
+    "tq": 4,
+    "se": 2,
+    "mh": 1
+   },
+   "value": {
+    "ar": {
+     "units": 10,
+     "cellsAtHeavy": 10,
+     "usdPerCell": 0.499
+    },
+    "tq": {
+     "units": 4,
+     "cellsAtHeavy": 10,
+     "usdPerCell": 0.799
+    },
+    "se": {
+     "units": 2,
+     "cellsAtHeavy": 10,
+     "usdPerCell": 0.999
+    },
+    "mh": {
+     "units": 1,
+     "cellsAtHeavy": 10,
+     "usdPerCell": 1.499
+    }
+   },
+   "FULL": {
+    "pass": false,
+    "q365": 0.9432,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": null
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 0.9432,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": false,
+   "allSitesFull": false,
+   "sites": {
+    "crater": {
+     "q365": 0.9669,
+     "cells365": 3000,
+     "firstFullDay": null,
+     "usdTotal": 8384.96
+    },
+    "delta": {
+     "q365": 0.9289,
+     "cells365": 3000,
+     "firstFullDay": null,
+     "usdTotal": 9001.19
+    },
+    "ridge": {
+     "q365": 0.9432,
+     "cells365": 3000,
+     "firstFullDay": null,
+     "usdTotal": 8992.22
+    },
+    "canyon": {
+     "q365": 0.9386,
+     "cells365": 3000,
+     "firstFullDay": null,
+     "usdTotal": 8921.31
+    },
+    "plateau": {
+     "q365": 0.9289,
+     "cells365": 3000,
+     "firstFullDay": null,
+     "usdTotal": 9064.12
+    },
+    "ice": {
+     "q365": 0.9523,
+     "cells365": 3000,
+     "firstFullDay": null,
+     "usdTotal": 8702.53
+    },
+    "ash": {
+     "q365": 0.9405,
+     "cells365": 3000,
+     "firstFullDay": null,
+     "usdTotal": 9105.07
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 62,
+     "tq": 125,
+     "se": 235,
+     "mh": 356
+    },
+    "usd": {
+     "ar": 309.38,
+     "tq": 998.75,
+     "se": 2347.65,
+     "mh": 5336.44
+    },
+    "usdTotal": 8992.22,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 0,
+     "tq": 0,
+     "se": 8,
+     "mh": 3
+    },
+    "qByDay": {
+     "30": 0.338,
+     "60": 0.4627,
+     "90": 0.5715,
+     "120": 0.6467,
+     "150": 0.7069,
+     "180": 0.7512,
+     "210": 0.7815,
+     "240": 0.8591,
+     "270": 0.8763,
+     "300": 0.9008,
+     "330": 0.9144,
+     "365": 0.9432
+    }
+   }
+  },
+  {
+   "m": 2,
+   "crates": {
+    "ar": 20,
+    "tq": 8,
+    "se": 4,
+    "mh": 2
+   },
+   "value": {
+    "ar": {
+     "units": 20,
+     "cellsAtHeavy": 20,
+     "usdPerCell": 0.2495
+    },
+    "tq": {
+     "units": 8,
+     "cellsAtHeavy": 20,
+     "usdPerCell": 0.3995
+    },
+    "se": {
+     "units": 4,
+     "cellsAtHeavy": 20,
+     "usdPerCell": 0.4995
+    },
+    "mh": {
+     "units": 2,
+     "cellsAtHeavy": 20,
+     "usdPerCell": 0.7495
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 228
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 205,
+     "usdTotal": 4585.15
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 231,
+     "usdTotal": 5385.39
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 228,
+     "usdTotal": 5568.21
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 229,
+     "usdTotal": 5330.46
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 220,
+     "usdTotal": 5231.53
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 222,
+     "usdTotal": 4992.78
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 234,
+     "usdTotal": 5508.28
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 41,
+     "tq": 71,
+     "se": 141,
+     "mh": 226
+    },
+    "usd": {
+     "ar": 204.59,
+     "tq": 567.29,
+     "se": 1408.59,
+     "mh": 3387.74
+    },
+    "usdTotal": 5568.21,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 60,
+     "tq": 6.4,
+     "se": 11.2,
+     "mh": 0
+    },
+    "qByDay": {
+     "30": 0.4196,
+     "60": 0.6224,
+     "90": 0.7217,
+     "120": 0.7913,
+     "150": 0.8853,
+     "180": 0.9149,
+     "210": 0.9584,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  },
+  {
+   "m": 3,
+   "crates": {
+    "ar": 30,
+    "tq": 12,
+    "se": 6,
+    "mh": 3
+   },
+   "value": {
+    "ar": {
+     "units": 30,
+     "cellsAtHeavy": 30,
+     "usdPerCell": 0.1663
+    },
+    "tq": {
+     "units": 12,
+     "cellsAtHeavy": 30,
+     "usdPerCell": 0.2663
+    },
+    "se": {
+     "units": 6,
+     "cellsAtHeavy": 30,
+     "usdPerCell": 0.333
+    },
+    "mh": {
+     "units": 3,
+     "cellsAtHeavy": 30,
+     "usdPerCell": 0.4997
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 156
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 137,
+     "usdTotal": 3025.44
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 155,
+     "usdTotal": 3567.94
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 156,
+     "usdTotal": 3769.75
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 152,
+     "usdTotal": 3545.97
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 153,
+     "usdTotal": 3547.95
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 147,
+     "usdTotal": 3295.19
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 160,
+     "usdTotal": 3733.78
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 27,
+     "tq": 51,
+     "se": 95,
+     "mh": 152
+    },
+    "usd": {
+     "ar": 134.73,
+     "tq": 407.49,
+     "se": 949.05,
+     "mh": 2278.48
+    },
+    "usdTotal": 3769.75,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 150,
+     "tq": 48,
+     "se": 2.8,
+     "mh": 1.4
+    },
+    "qByDay": {
+     "30": 0.5221,
+     "60": 0.7081,
+     "90": 0.8163,
+     "120": 0.9171,
+     "150": 0.9741,
+     "180": 1,
+     "210": 1,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  },
+  {
+   "m": 4,
+   "crates": {
+    "ar": 40,
+    "tq": 16,
+    "se": 8,
+    "mh": 4
+   },
+   "value": {
+    "ar": {
+     "units": 40,
+     "cellsAtHeavy": 40,
+     "usdPerCell": 0.1248
+    },
+    "tq": {
+     "units": 16,
+     "cellsAtHeavy": 40,
+     "usdPerCell": 0.1998
+    },
+    "se": {
+     "units": 8,
+     "cellsAtHeavy": 40,
+     "usdPerCell": 0.2498
+    },
+    "mh": {
+     "units": 4,
+     "cellsAtHeavy": 40,
+     "usdPerCell": 0.3748
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 117
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 104,
+     "usdTotal": 2254.08
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 117,
+     "usdTotal": 2740.64
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 117,
+     "usdTotal": 2763.61
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 116,
+     "usdTotal": 2661.72
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 116,
+     "usdTotal": 2746.62
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 114,
+     "usdTotal": 2510.86
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 121,
+     "usdTotal": 2793.58
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 21,
+     "tq": 37,
+     "se": 70,
+     "mh": 111
+    },
+    "usd": {
+     "ar": 104.79,
+     "tq": 295.63,
+     "se": 699.3,
+     "mh": 1663.89
+    },
+    "usdTotal": 2763.61,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 120,
+     "tq": 32,
+     "se": 19.2,
+     "mh": 0
+    },
+    "qByDay": {
+     "30": 0.6222,
+     "60": 0.7867,
+     "90": 0.9171,
+     "120": 1,
+     "150": 1,
+     "180": 1,
+     "210": 1,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  },
+  {
+   "m": 5,
+   "crates": {
+    "ar": 50,
+    "tq": 20,
+    "se": 10,
+    "mh": 5
+   },
+   "value": {
+    "ar": {
+     "units": 50,
+     "cellsAtHeavy": 50,
+     "usdPerCell": 0.0998
+    },
+    "tq": {
+     "units": 20,
+     "cellsAtHeavy": 50,
+     "usdPerCell": 0.1598
+    },
+    "se": {
+     "units": 10,
+     "cellsAtHeavy": 50,
+     "usdPerCell": 0.1998
+    },
+    "mh": {
+     "units": 5,
+     "cellsAtHeavy": 50,
+     "usdPerCell": 0.2998
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 95
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 84,
+     "usdTotal": 1819.44
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 96,
+     "usdTotal": 2183.11
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 95,
+     "usdTotal": 2243.05
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 93,
+     "usdTotal": 2066.23
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 93,
+     "usdTotal": 2147.15
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 92,
+     "usdTotal": 1998.29
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 97,
+     "usdTotal": 2190.11
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 18,
+     "tq": 30,
+     "se": 58,
+     "mh": 89
+    },
+    "usd": {
+     "ar": 89.82,
+     "tq": 239.7,
+     "se": 579.42,
+     "mh": 1334.11
+    },
+    "usdTotal": 2243.05,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 6,
+     "tq": 80,
+     "se": 4.8,
+     "mh": 2.8
+    },
+    "qByDay": {
+     "30": 0.6534,
+     "60": 0.8641,
+     "90": 0.9736,
+     "120": 1,
+     "150": 1,
+     "180": 1,
+     "210": 1,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  },
+  {
+   "m": 6,
+   "crates": {
+    "ar": 60,
+    "tq": 24,
+    "se": 12,
+    "mh": 6
+   },
+   "value": {
+    "ar": {
+     "units": 60,
+     "cellsAtHeavy": 60,
+     "usdPerCell": 0.0832
+    },
+    "tq": {
+     "units": 24,
+     "cellsAtHeavy": 60,
+     "usdPerCell": 0.1332
+    },
+    "se": {
+     "units": 12,
+     "cellsAtHeavy": 60,
+     "usdPerCell": 0.1665
+    },
+    "mh": {
+     "units": 6,
+     "cellsAtHeavy": 60,
+     "usdPerCell": 0.2498
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 80
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 72,
+     "usdTotal": 1550.66
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 78,
+     "usdTotal": 1757.48
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 80,
+     "usdTotal": 1830.41
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 77,
+     "usdTotal": 1693.54
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 80,
+     "usdTotal": 1833.41
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 79,
+     "usdTotal": 1716.52
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 82,
+     "usdTotal": 1825.42
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 15,
+     "tq": 24,
+     "se": 47,
+     "mh": 73
+    },
+    "usd": {
+     "ar": 74.85,
+     "tq": 191.76,
+     "se": 469.53,
+     "mh": 1094.27
+    },
+    "usdTotal": 1830.41,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 156,
+     "tq": 25.6,
+     "se": 10.4,
+     "mh": 0
+    },
+    "qByDay": {
+     "30": 0.6945,
+     "60": 0.904,
+     "90": 1,
+     "120": 1,
+     "150": 1,
+     "180": 1,
+     "210": 1,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  },
+  {
+   "m": 8,
+   "crates": {
+    "ar": 80,
+    "tq": 32,
+    "se": 16,
+    "mh": 8
+   },
+   "value": {
+    "ar": {
+     "units": 80,
+     "cellsAtHeavy": 80,
+     "usdPerCell": 0.0624
+    },
+    "tq": {
+     "units": 32,
+     "cellsAtHeavy": 80,
+     "usdPerCell": 0.0999
+    },
+    "se": {
+     "units": 16,
+     "cellsAtHeavy": 80,
+     "usdPerCell": 0.1249
+    },
+    "mh": {
+     "units": 8,
+     "cellsAtHeavy": 80,
+     "usdPerCell": 0.1874
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 60
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 52,
+     "usdTotal": 1071.05
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 58,
+     "usdTotal": 1256.89
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 60,
+     "usdTotal": 1289.86
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 58,
+     "usdTotal": 1231.91
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 56,
+     "usdTotal": 1209.92
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 59,
+     "usdTotal": 1228.92
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 61,
+     "usdTotal": 1314.84
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 14,
+     "tq": 17,
+     "se": 32,
+     "mh": 51
+    },
+    "usd": {
+     "ar": 69.86,
+     "tq": 135.83,
+     "se": 319.68,
+     "mh": 764.49
+    },
+    "usdTotal": 1289.86,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 404,
+     "tq": 13.6,
+     "se": 16,
+     "mh": 2.4
+    },
+    "qByDay": {
+     "30": 0.7987,
+     "60": 1,
+     "90": 1,
+     "120": 1,
+     "150": 1,
+     "180": 1,
+     "210": 1,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  },
+  {
+   "m": 10,
+   "crates": {
+    "ar": 100,
+    "tq": 40,
+    "se": 20,
+    "mh": 10
+   },
+   "value": {
+    "ar": {
+     "units": 100,
+     "cellsAtHeavy": 100,
+     "usdPerCell": 0.0499
+    },
+    "tq": {
+     "units": 40,
+     "cellsAtHeavy": 100,
+     "usdPerCell": 0.0799
+    },
+    "se": {
+     "units": 20,
+     "cellsAtHeavy": 100,
+     "usdPerCell": 0.0999
+    },
+    "mh": {
+     "units": 10,
+     "cellsAtHeavy": 100,
+     "usdPerCell": 0.1499
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 48
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 43,
+     "usdTotal": 870.21
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 49,
+     "usdTotal": 1049.05
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 48,
+     "usdTotal": 1059.04
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 45,
+     "usdTotal": 933.15
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 48,
+     "usdTotal": 1041.06
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 47,
+     "usdTotal": 963.13
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 49,
+     "usdTotal": 1041.06
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 14,
+     "tq": 15,
+     "se": 27,
+     "mh": 40
+    },
+    "usd": {
+     "ar": 69.86,
+     "tq": 119.85,
+     "se": 269.73,
+     "mh": 599.6
+    },
+    "usdTotal": 1059.04,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 760,
+     "tq": 120.8,
+     "se": 52.8,
+     "mh": 1.2
+    },
+    "qByDay": {
+     "30": 0.858,
+     "60": 1,
+     "90": 1,
+     "120": 1,
+     "150": 1,
+     "180": 1,
+     "210": 1,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  },
+  {
+   "m": 15,
+   "crates": {
+    "ar": 150,
+    "tq": 60,
+    "se": 30,
+    "mh": 15
+   },
+   "value": {
+    "ar": {
+     "units": 150,
+     "cellsAtHeavy": 150,
+     "usdPerCell": 0.0333
+    },
+    "tq": {
+     "units": 60,
+     "cellsAtHeavy": 150,
+     "usdPerCell": 0.0533
+    },
+    "se": {
+     "units": 30,
+     "cellsAtHeavy": 150,
+     "usdPerCell": 0.0666
+    },
+    "mh": {
+     "units": 15,
+     "cellsAtHeavy": 150,
+     "usdPerCell": 0.0999
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 32
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 30,
+     "usdTotal": 595.42
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 31,
+     "usdTotal": 643.37
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 32,
+     "usdTotal": 668.35
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 30,
+     "usdTotal": 628.38
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 30,
+     "usdTotal": 608.4
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 32,
+     "usdTotal": 648.37
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 33,
+     "usdTotal": 693.33
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 14,
+     "tq": 13,
+     "se": 15,
+     "mh": 23
+    },
+    "usd": {
+     "ar": 69.86,
+     "tq": 103.87,
+     "se": 149.85,
+     "mh": 344.77
+    },
+    "usdTotal": 668.35,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 1303,
+     "tq": 308.8,
+     "se": 0.4,
+     "mh": 0
+    },
+    "qByDay": {
+     "30": 0.9669,
+     "60": 1,
+     "90": 1,
+     "120": 1,
+     "150": 1,
+     "180": 1,
+     "210": 1,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  },
+  {
+   "m": 20,
+   "crates": {
+    "ar": 200,
+    "tq": 80,
+    "se": 40,
+    "mh": 20
+   },
+   "value": {
+    "ar": {
+     "units": 200,
+     "cellsAtHeavy": 200,
+     "usdPerCell": 0.025
+    },
+    "tq": {
+     "units": 80,
+     "cellsAtHeavy": 200,
+     "usdPerCell": 0.04
+    },
+    "se": {
+     "units": 40,
+     "cellsAtHeavy": 200,
+     "usdPerCell": 0.05
+    },
+    "mh": {
+     "units": 20,
+     "cellsAtHeavy": 200,
+     "usdPerCell": 0.075
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 24
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 24,
+     "usdTotal": 485.5
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 25,
+     "usdTotal": 523.46
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 24,
+     "usdTotal": 508.47
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 24,
+     "usdTotal": 508.47
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 24,
+     "usdTotal": 508.47
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 25,
+     "usdTotal": 523.46
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 25,
+     "usdTotal": 523.46
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 14,
+     "tq": 13,
+     "se": 11,
+     "mh": 15
+    },
+    "usd": {
+     "ar": 69.86,
+     "tq": 103.87,
+     "se": 109.89,
+     "mh": 224.85
+    },
+    "usdTotal": 508.47,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 2200,
+     "tq": 480,
+     "se": 97.8,
+     "mh": 0
+    },
+    "qByDay": {
+     "30": 1,
+     "60": 1,
+     "90": 1,
+     "120": 1,
+     "150": 1,
+     "180": 1,
+     "210": 1,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  },
+  {
+   "m": 30,
+   "crates": {
+    "ar": 300,
+    "tq": 120,
+    "se": 60,
+    "mh": 30
+   },
+   "value": {
+    "ar": {
+     "units": 300,
+     "cellsAtHeavy": 300,
+     "usdPerCell": 0.0166
+    },
+    "tq": {
+     "units": 120,
+     "cellsAtHeavy": 300,
+     "usdPerCell": 0.0266
+    },
+    "se": {
+     "units": 60,
+     "cellsAtHeavy": 300,
+     "usdPerCell": 0.0333
+    },
+    "mh": {
+     "units": 30,
+     "cellsAtHeavy": 300,
+     "usdPerCell": 0.05
+    }
+   },
+   "FULL": {
+    "pass": true,
+    "q365": 1,
+    "cells365": 3000,
+    "fullCap": 3000,
+    "firstFullDay": 20
+   },
+   "STRONG": {
+    "pass": true,
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "holdMean": 100,
+    "freeHeavyMean": 81,
+    "pointsAbove": 19,
+    "wallQ365": 1,
+    "freeHeavyWallQ365": 0.675
+   },
+   "pass": true,
+   "allSitesFull": true,
+   "sites": {
+    "crater": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 19,
+     "usdTotal": 410.55
+    },
+    "delta": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 19,
+     "usdTotal": 433.52
+    },
+    "ridge": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 20,
+     "usdTotal": 448.51
+    },
+    "canyon": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 19,
+     "usdTotal": 433.52
+    },
+    "plateau": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 19,
+     "usdTotal": 433.52
+    },
+    "ice": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 19,
+     "usdTotal": 433.52
+    },
+    "ash": {
+     "q365": 1,
+     "cells365": 3000,
+     "firstFullDay": 20,
+     "usdTotal": 448.51
+    }
+   },
+   "ridge": {
+    "cratesBought": {
+     "ar": 14,
+     "tq": 13,
+     "se": 11,
+     "mh": 11
+    },
+    "usd": {
+     "ar": 69.86,
+     "tq": 103.87,
+     "se": 109.89,
+     "mh": 164.89
+    },
+    "usdTotal": 448.51,
+    "feIl": {
+     "ferriteCrates": 730,
+     "ilmeniteCrates": 208.57,
+     "usd": 2493.47
+    },
+    "wallOreLeft": {
+     "ar": 3726,
+     "tq": 1079.6,
+     "se": 288.2,
+     "mh": 28.8
+    },
+    "qByDay": {
+     "30": 1,
+     "60": 1,
+     "90": 1,
+     "120": 1,
+     "150": 1,
+     "180": 1,
+     "210": 1,
+     "240": 1,
+     "270": 1,
+     "300": 1,
+     "330": 1,
+     "365": 1
+    }
+   }
+  }
+ ],
+ "chosen": {
+  "ar": 20,
+  "tq": 8,
+  "se": 4,
+  "mh": 2
+ },
+ "chosenM": 2,
+ "chosenAllSites": {
+  "ar": 20,
+  "tq": 8,
+  "se": 4,
+  "mh": 2
+ },
+ "smallerFails": {
+  "m": 1,
+  "crates": {
+   "ar": 10,
+   "tq": 4,
+   "se": 2,
+   "mh": 1
+  },
+  "pass": false,
+  "FULL": {
+   "pass": false,
+   "q365": 0.9432,
+   "cells365": 3000,
+   "fullCap": 3000,
+   "firstFullDay": null
+  },
+  "STRONG": {
+   "pass": true,
+   "holdByDay": {
+    "300": 100,
+    "330": 100,
+    "365": 100
+   },
+   "holdMean": 100,
+   "freeHeavyMean": 81,
+   "pointsAbove": 19,
+   "wallQ365": 0.9432,
+   "freeHeavyWallQ365": 0.675
+  }
+ },
+ "n": 3,
+ "quick": false,
+ "ms": 362936,
+ "notes": [
+  "SIMULATED, not playtesting: the model shows wall strength and hold rates; it says nothing about whether buying or building is enjoyable.",
+  "Money (PROPOSAL for the lead and the owner, under the owner's Nov 25 rule that monetization must give meaningful value): at the smallest amounts the requirement holds only for a pilot who buys the crates on most days until day 228: $5568.21 a year of wall-only ore on the ridge town ($4585.15 to $5568.21 across the seven sites; 41 ar, 71 tq, 141 se, 226 mh crates), besides the Ferrite and Ilmenite crates ($2493.47 bought at their limits every day). Every larger crate is fully built sooner for less money: m 5 {\"ar\":50,\"tq\":20,\"se\":10,\"mh\":5} fully built day 95, $2243.05; m 10 {\"ar\":100,\"tq\":40,\"se\":20,\"mh\":10} fully built day 48, $1059.04; m 30 {\"ar\":300,\"tq\":120,\"se\":60,\"mh\":30} fully built day 20, $448.51. Smaller crates mean more purchases, not a weaker paid fortress.",
+  "STRONG is not the binding definition: every m measured (m 1 too) holds 100% of the late raids against the free heavy player's 81%: with the wall-only ore the paying pilot's town reaches the fully built town's ceiling (guard (a): it holds every raid at the top strength), so late raids stop being a contest for it.",
+  "As needed (the lead's rule): a lower ore is bought while any ring is below its heavy blend or cells are left to build, so some is never used (at the pick: 60 ar, 6.4 tq, 11.2 se, 0 mh left on day 365); the lower crates' spend is an upper bound.",
+  "Hold rates are 21 raids a day (3 a site), so one raid is 4.8 points; the requirement's 5 points is 4 more raids held of the 63 measured on days 300, 330, 365."
+ ],
+ "freeProfilesUnchanged": {
+  "label": "SIMULATED (the fortress model), not playtesting",
+  "method": "node dev/tools/ore-crate-sizing.mjs --fingerprint on the model before Session 8 (commit 54696a6, copied beside this tool) and after; every hold rate (each raid's site, level and outcome), town (levels, rings, exact bag) and mineral number the fortress test reads from the free profiles, compared as exact JSON",
+  "identical": true,
+  "byProfile": {
+   "regular": true,
+   "grinder": true,
+   "heavy": true,
+   "minerals": true,
+   "ladder": true
+  },
+  "sha256": {
+   "before": "41b98539fde3618c236582f4a66d954958801f41209755fe98797d132884404b",
+   "after": "41b98539fde3618c236582f4a66d954958801f41209755fe98797d132884404b"
+  },
+  "numbers": {
+   "regularOn": {
+    "5": 61.9,
+    "8": 66.7,
+    "14": 85.7,
+    "30": 52.4,
+    "60": 81,
+    "120": 66.7,
+    "180": 100,
+    "330": 61.9
+   },
+   "regularOff": {
+    "5": 61.9,
+    "8": 66.7,
+    "14": 85.7,
+    "30": 52.4,
+    "60": 81,
+    "120": 66.7,
+    "180": 100,
+    "330": 57.1
+   },
+   "regularAhead": {
+    "60": 90.5,
+    "120": 95.2,
+    "180": 100
+   },
+   "regularPush": {
+    "60": 23.8,
+    "120": 71.4,
+    "180": 52.4
+   },
+   "grinderOn": {
+    "60": 100,
+    "180": 81,
+    "300": 90.5,
+    "330": 85.7,
+    "365": 95.2
+   },
+   "grinderOff": {
+    "300": 81,
+    "330": 81,
+    "365": 81
+   },
+   "heavyOn": {
+    "300": 81,
+    "330": 81,
+    "365": 81
+   },
+   "heavyOff": {
+    "300": 71.4,
+    "330": 71.4,
+    "365": 76.2
+   },
+   "wallQ365": {
+    "regular": 0.3684,
+    "grinder": 0.8,
+    "heavy": 0.675
+   },
+   "ladderCC10": 18.8
+  },
+  "payer": {
+   "note": "the paying pilot at the grinder's play time (not a free profile): its Ferrite and Ilmenite corrected to the shipped limits (was 200 Ferrite + 60 Ilmenite a day)",
+   "before": {
+    "hold": {
+     "180": 81,
+     "330": 90.5
+    },
+    "wallQ365": 0.8
+   },
+   "after": {
+    "hold": {
+     "180": 81,
+     "330": 85.7
+    },
+    "wallQ365": 0.8
+   }
+  }
+ },
+ "diagnostics": {
+  "label": "SIMULATED; diagnostic only, off the relative-value rule, never used for the choice",
+  "probes": [
+   {
+    "why": "the lower crates of m 1 with the chosen Moonheart crate",
+    "crates": {
+     "ar": 10,
+     "tq": 4,
+     "se": 2,
+     "mh": 2
+    },
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "q365": 1,
+    "firstFullDay": 248,
+    "allSitesFull": true,
+    "usdTotal": 6389.34,
+    "cratesBought": {
+     "ar": 56,
+     "tq": 90,
+     "se": 181,
+     "mh": 239
+    }
+   },
+   {
+    "why": "one unit in each lower crate (about Moonheart alone) with the chosen Moonheart crate",
+    "crates": {
+     "ar": 1,
+     "tq": 1,
+     "se": 1,
+     "mh": 2
+    },
+    "holdByDay": {
+     "300": 100,
+     "330": 100,
+     "365": 100
+    },
+    "q365": 1,
+    "firstFullDay": 260,
+    "allSitesFull": true,
+    "usdTotal": 7122.55,
+    "cratesBought": {
+     "ar": 72,
+     "tq": 108,
+     "se": 214,
+     "mh": 251
+    }
+   }
+  ]
+ }
+}

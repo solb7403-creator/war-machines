@@ -914,8 +914,8 @@ function ecoNorm(S,opt){
   for(const k of Object.keys(rx))if(!/^j\d{1,6}$/.test(k)||!(Number(rx[k])>0))delete rx[k];}
  // Session 8: the Conquest store's entitlements (S.cq), bought collection pieces (S.cqc), wall-only ore (S.wmn), paid construction
  // finishes (S.cfx) and the open quotes (S.ord: one per item across Stars, GRAM and SOL); written only by the Worker
- {const c=obj('cq');for(const k of Object.keys(c))if(!['b2','lay','gild','neon','aur','ext','fr'].includes(k))delete c[k];for(const k of ['b2','lay','gild','neon','aur'])if(c[k])c[k]=1;else delete c[k];
-  c.ext=Math.max(0,Math.min(EXT_MAX_PCT/10,c.ext|0));if(!c.ext)delete c.ext;c.fr=Math.max(0,Number(c.fr)||0);if(!c.fr)delete c.fr;
+ {const c=obj('cq');for(const k of Object.keys(c))if(!['b2','lay','gild','neon','aur','ext','fr','frs'].includes(k))delete c[k];for(const k of ['b2','lay','gild','neon','aur'])if(c[k])c[k]=1;else delete c[k];
+  c.ext=Math.max(0,Math.min(EXT_MAX_PCT/10,c.ext|0));if(!c.ext)delete c.ext;c.fr=Math.max(0,Number(c.fr)||0);if(!c.fr)delete c.fr;c.frs=Math.max(0,Number(c.frs)||0);if(!c.frs||!c.fr)delete c.frs;
   const cc=obj('cqc');for(const k of Object.keys(cc))if(!SHOP.cos[k]||!cc[k])delete cc[k];else cc[k]=1;
   const w=obj('wmn');for(const k of Object.keys(w))if(!SHOP.ore[k])delete w[k];for(const k of SHOP.oreOrder)w[k]=Math.max(0,Math.min(1e6,Math.floor(Number(w[k])||0)));
   const fx=obj('cfx');for(const k of Object.keys(fx))if(!cfxKey(k)||!fx[k])delete fx[k];else fx[k]=1;
@@ -1767,13 +1767,13 @@ function cqPrice(d){if(d.kind==='cq'){const Q=SHOP.cq[d.tk];return Q?usdPrice(Q.
 // the counters a limited item steps (S.buys keys; day and week numbers are UTC)
 const cqBuyKeys=(d,X)=>d.kind==='mncrate'?['mn'+d.tk+'|'+X.day].concat(SHOP.mn[d.tk]&&SHOP.mn[d.tk].week?['mnw'+d.tk+'|'+X.week]:[]):d.kind==='orecrate'?['ore'+d.tk+'|'+X.day]:d.kind==='rsleg'?[rsLegWeekKey(X)]:[];
 // the limit that stops this sale right now, or null: 'limit' (a day or week count), 'cap' (the wall extension cap), 'none' (no
-// running construction left to finish), 'town' (needs your town or its Foundry). d.extNow / d.left / d.foundry are the Worker's,
+// running construction left to finish), 'town' (needs your town or its Foundry). d.extEarned / d.left / d.foundry are the Worker's,
 // read from the Conquest record (never the phone's)
 function ecoLimit(S,d,X){const b=k=>((S.buys&&S.buys[k])|0);
  if(d.kind==='mncrate'){const M=SHOP.mn[d.tk];if(!M)return 'item';if(b('mn'+d.tk+'|'+X.day)>=M.day)return 'limit';if(M.week&&b('mnw'+d.tk+'|'+X.week)>=M.week)return 'limit';return null;}
  if(d.kind==='orecrate'){const O=SHOP.ore[d.tk];if(!O)return 'item';return b('ore'+d.tk+'|'+X.day)>=O.day?'limit':null;}
  if(d.kind==='rsleg')return b(rsLegWeekKey(X))>=RS_LEG_WEEK?'limit':null;
- if(d.kind==='cq'&&d.tk==='wall-ext-10'){if(!(Number(d.extNow)>=0))return 'town';return Number(d.extNow)+SHOP.cq['wall-ext-10'].step>EXT_MAX_PCT?'cap':null;}
+ if(d.kind==='cq'&&d.tk==='wall-ext-10'){if(!(Number(d.extEarned)>=0))return 'town';const st=SHOP.cq['wall-ext-10'].step,now=Number(d.extEarned)+(((S.cq&&S.cq.ext)|0)*st);return now+st>EXT_MAX_PCT?'cap':null;}   // earned (research, drill, defense) + bought so far + this pack
  if(d.kind==='cq'&&d.tk==='foundry-rush')return d.foundry?null:'town';
  if(d.kind==='cfin'||d.kind==='rsfin')return Number(d.left)>0?null:'none';   // a finish needs a running job (the Worker reads its time left)
  return null;}
@@ -1790,7 +1790,7 @@ function cqGrant(S,d,X){const P=cqPrice(d),pay=Number(d.price)||(P?P.ton:0);
  const step=()=>{for(const k of cqBuyKeys(d,X))S.buys[k]=(S.buys[k]|0)+1;pruneBuys(S,X);};
  if(d.kind==='cq'){const Q=SHOP.cq[d.tk];if(!Q)return null;const c=cqOf(S);let o={tk:'cq',id:d.tk};
   if(d.tk==='wall-ext-10')c.ext=Math.min(EXT_MAX_PCT/Q.step,(c.ext|0)+1);
-  else if(d.tk==='foundry-rush'){const t=Number(X.now)||0;c.fr=Math.max(t,Number(c.fr)||0)+Q.ms;o.until=c.fr;o.ms=Q.ms;}
+  else if(d.tk==='foundry-rush'){const t=Number(X.now)||0;if(!(Number(c.fr)>t))c.frs=t;c.fr=Math.max(t,Number(c.fr)||0)+Q.ms;o.until=c.fr;o.ms=Q.ms;}   // the window [frs, fr]: a new one starts now, a running one grows by 24 h
   else c[CQ_FLAG[d.tk]]=1;
   S.spendGram+=pay;return o;}
  if(d.kind==='cos'){if(!SHOP.cos[d.tk])return null;shopOf(S,'cqc')[d.tk]=1;S.spendGram+=pay;return {tk:'cos',id:d.tk};}
@@ -1801,7 +1801,7 @@ function cqGrant(S,d,X){const P=cqPrice(d),pay=Number(d.price)||(P?P.ton:0);
 // a refunded Conquest store purchase: take back exactly what it gave (a finished construction stays finished, as an instant finish
 // of research does; spent wall-only ore leaves its walls standing and the store at 0)
 function cqRefund(S,o){
- if(o.tk==='cq'){const c=cqOf(S),Q=SHOP.cq[o.id];if(!Q)return;if(o.id==='wall-ext-10')c.ext=Math.max(0,(c.ext|0)-1);else if(o.id==='foundry-rush')c.fr=Math.max(0,(Number(c.fr)||0)-(o.ms||Q.ms));else delete c[CQ_FLAG[o.id]];return;}
+ if(o.tk==='cq'){const c=cqOf(S),Q=SHOP.cq[o.id];if(!Q)return;if(o.id==='wall-ext-10')c.ext=Math.max(0,(c.ext|0)-1);else if(o.id==='foundry-rush'){c.fr=Math.max(0,(Number(c.fr)||0)-(o.ms||Q.ms));if(!(c.fr>(Number(c.frs)||0))){delete c.fr;delete c.frs;}}else delete c[CQ_FLAG[o.id]];return;}
  if(o.tk==='cos'){if(S.cqc)delete S.cqc[o.id];return;}
  if(o.tk==='mncrate'){S.mn=mnOf(S.mn);for(const [k,n] of Object.entries(o.got||{}))if(MN_ORDER.includes(k))S.mn[k]=Math.max(0,S.mn[k]-(n|0));return;}
  if(o.tk==='orecrate'){const w=shopOf(S,'wmn');if(SHOP.ore[o.id])w[o.id]=Math.max(0,(w[o.id]|0)-(o.q|0));return;}

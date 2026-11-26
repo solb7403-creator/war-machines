@@ -9,11 +9,13 @@ import {weDue,pilotWar} from './conquest-warfront.js';
 import {altNote} from './conquest-alt.js';   // Session 7C STEP 2
 import {postBoards,pendingGrants,applyGrants,clearGrants} from './conquest-boards.js';   // Session 7C STEP 3
 import {seal,due,pending,acknowledge,airdrop} from './conquest-airdrop.js';
-import {RULES} from './sim.gen.js';
+import {RULES,CONQUEST as CQ_SIM} from './sim.gen.js';
+const CONQUEST_PLOT=CQ_SIM.Plot;
 import {hex,dbGet} from './db.js';
 import {transaction as store,split as splitState,sweep,COLD_KEYS} from './conquest-store.js';
 import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS,LOOT_ACTIONS} from './conquest-sim.js';
 import {RESEARCH_ACTIONS,account as researchAccount} from './conquest-research.js';
+import {shopCtx,shopAccount} from './conquest-shop.js';   // Session 8: the Conquest store's entitlements (from the account)
 import {BAT_ACTIONS,account as batAccount,gearOf,field as batField} from './conquest-battalion.js';
 import {WAR_ACTIONS,reportTz,alertChange} from './conquest-war.js';
 import {TOWN_ACTIONS} from './conquest-town.js';
@@ -43,12 +45,12 @@ export function unlimited(previous,run){const q=structuredClone(previous),L0=pre
  if(s.plot)s.plot.mnSpent={...mn0};   // base-store minerals: exactly what was really spent before (no spend, no refund)
  return s;}
 // Dev mode builds are instant (owner, Nov 8: "get rid of the countdown for testing"): the builder's job completes in the same request.
-function instant(s,now){if(s?.plot?.job){s.plot.job.ready=now;refreshState(s,now);}return s;}
+function instant(s,now){const js=CONQUEST_PLOT.jobsOf(s?.plot);if(js.length){for(const j of js)j.ready=now;refreshState(s,now);}return s;}   // Session 8: both builders
 export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.seq+1)throw Error('conquest: stale sequence');if(!Number.isSafeInteger(now)||now<previous.lastWall)throw Error('conquest: invalid server clock');
  const s=structuredClone(previous);
  if(r.action==='dev-on'){s.dev={on:1,used:1,at:now};instant(s,now);}
  else if(r.action==='dev-off')s.dev={...(s.dev||{}),on:0,used:1};
- else{if(!s.dev?.on)throw Error('conquest: dev mode is off');if(!s.plot?.job)throw Error('conquest: nothing is building');s.plot.job.ready=now;refreshState(s,now);}
+ else{if(!s.dev?.on)throw Error('conquest: dev mode is off');const js=CONQUEST_PLOT.jobsOf(s?.plot);if(!js.length)throw Error('conquest: nothing is building');for(const j of js)j.ready=now;refreshState(s,now);}
  s.notice={kind:'dev',action:r.action};s.seq=r.seq;return s;}
 // Server-only fields never leave the Worker: the vein seed and unscanned veins (s.lodes) become the scanned-only s.veins view.
 // lseed: the loot seed (Session 6) never leaves the Worker either.
@@ -69,7 +71,7 @@ const premiumCaches=new WeakMap();
 async function premiumPass(env,pid,now){const cache=premiumCaches.get(env)||new Map();premiumCaches.set(env,cache);const hit=cache.get(pid);if(hit&&now-hit.at<60000)return hit.value;let value;try{value=passPremium(await readEco(env,pid),now);}catch{return false;}if(cache.size>=5000)cache.delete(cache.keys().next().value);cache.set(pid,{at:now,value});return value;}
 async function canonical(env,pid,now=Date.now()){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');const day=Math.floor(now/86400000),lgi=S.lgi|0;
  // The HUD's airdrop numbers come from the account on every session open (today's points across all modes, league pay).
- const loadout=S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L);return {loadout,legacy:S.cqState?.v===1?S.cqState:null,rsAcct:researchCtx(S,now),batAcct:batCtx(S,loadout),rsjAt:{...(S.rsjAt&&typeof S.rsjAt==='object'?S.rsjAt:{})},view:{d:day,dailyPts:S.dailyDay===day?Math.max(0,(S.dailyPts||0)-(S.fx&&S.fx.d===day?S.fx.n|0:0)):0,cap:RULES.DAILY_CAP,cq:S.cqd?.d===day?S.cqd.b||0:0,lgi,pay:RULES.LG_BASE_PAY[lgi]||1,at:now,mn:RULES.mnOf(S.mn),ap:RULES.apOf(S.ap),pts:Math.max(0,Math.round(Number(S.pts)||0)),bmn:RULES.mnOf(S.bmn),rm:Object.keys(S.rm||{}).filter(k=>S.rm[k])}};}
+ const loadout=S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L);return {loadout,legacy:S.cqState?.v===1?S.cqState:null,rsAcct:researchCtx(S,now),batAcct:batCtx(S,loadout),shopAcct:shopCtx(S,now),rsjAt:{...(S.rsjAt&&typeof S.rsjAt==='object'?S.rsjAt:{})},view:{d:day,dailyPts:S.dailyDay===day?Math.max(0,(S.dailyPts||0)-(S.fx&&S.fx.d===day?S.fx.n|0:0)):0,cap:RULES.DAILY_CAP,cq:S.cqd?.d===day?S.cqd.b||0:0,lgi,pay:RULES.LG_BASE_PAY[lgi]||1,at:now,mn:RULES.mnOf(S.mn),ap:RULES.apOf(S.ap),pts:Math.max(0,Math.round(Number(S.pts)||0)),bmn:RULES.mnOf(S.bmn),rm:Object.keys(S.rm||{}).filter(k=>S.rm[k])}};}
 // Session 6B: what research reads from the account (eco record): bonus parts (Lunar Pass premium tiers, part packs), instant-finish
 // credits (written only by a verified purchase; checkout is off until Session 8) and the current season's premium pass (slot + 25%).
 function researchCtx(S,now){const prem=RULES.passResearch(passPremium(S,now));   /* the pass's research perks wait for the Lab store (rules.js passResearch) */return {bpt:{...(S.bpt||{})},bch:Math.max(0,S.bch|0),rsx:{...(S.rsx||{})},lsm:{...(S.lsm||{})},prem:prem?1:0,premium:prem};}
@@ -103,8 +105,8 @@ function result(r){return r.error?response(r.status||409,r.error,r.state):{statu
 export function publicHot(s){const {hot}=splitState(s),{lastDigest,rate,raidRoll,fpa,...out}=hot;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData','tz'])||a.b.tz!==undefined&&!(Number.isSafeInteger(a.b.tz)&&Math.abs(a.b.tz)<=840))return response(400,'invalid conquest session');
- const {loadout:L,legacy,view,rsAcct,batAcct,rsjAt}=await canonical(env,a.pid,now);const grants=await pendingGrants(env,a.pid,now);   // Session 7C: board rewards waiting for this pilot
- const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);researchAccount(state,rsAcct,now);batAccount(state,batAcct,now);if(!state.mission)batField(state,state.battle,state.position,'wing');refitState(state,L);reportTz(state,a.b.tz);applyGrants(state,grants.ok,now);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state),wal=alertChange(state,now);return {state,anq,wal};},now);
+ const {loadout:L,legacy,view,rsAcct,batAcct,rsjAt,shopAcct}=await canonical(env,a.pid,now);const grants=await pendingGrants(env,a.pid,now);   // Session 7C: board rewards waiting for this pilot
+ const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */shopAccount(state,shopAcct,now);   /* Session 8: the store's entitlements first, so a paid construction finish settles in this same refresh */refreshState(state,now);researchAccount(state,rsAcct,now);batAccount(state,batAcct,now);if(!state.mission)batField(state,state.battle,state.position,'wing');refitState(state,L);reportTz(state,a.b.tz);applyGrants(state,grants.ok,now);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state),wal=alertChange(state,now);return {state,anq,wal};},now);
  if(!r0.abort&&(Object.keys(grants.ok).length||grants.bad.length))await clearGrants(env,a.pid,[...Object.keys(grants.ok).filter(id=>(r0.state?.gra||[]).includes(id)),...grants.bad]);   // applied once by id (or not in its settlement: unpaid), then off the inbox
  // Session 8: a Legendary reservation older than 10 minutes whose research job never started (a request that died between the two
  // writes) is released, so the mod can be researched or bought again
@@ -165,7 +167,7 @@ export async function conquestAction(env,a,now=Date.now()){
   if(!t.abort)legRes={id,at:now};}
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
- const ctx=a.b.action==='recall-start'||a.b.action==='war-fortify'?{premium:await premiumPass(env,a.pid,now)}:   /* Session 7: the Lunar Pass Fortify perks (behind the store flag) */MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:RESEARCH_ACTIONS.includes(a.b.action)?researchCtx(RULES.ecoNorm(await readEco(env,a.pid)),now):['hangar-arm','hangar-livery','hangar-gear'].includes(a.b.action)?await (async()=>{const S=RULES.ecoNorm(await readEco(env,a.pid));return batCtx(S,S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L));})():{};   /* Session 6C: AUTO-ARM and liveries read the account once */   /* Session 6B: research reads the account once (bonus parts, finish credits, premium pass) */const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
+ const ctx=a.b.action==='recall-start'||a.b.action==='war-fortify'?{premium:await premiumPass(env,a.pid,now)}:   /* Session 7: the Lunar Pass Fortify perks (behind the store flag) */PLOT_ACTIONS.includes(a.b.action)||MINERAL_PLOT_ACTIONS.includes(a.b.action)?await (async()=>{const S=await readEco(env,a.pid);return {bmn:RULES.mnOf(S.bmn),wmn:RULES.mnOf(S.wmn),shop:shopCtx(S,now)};})():   /* Session 8: plot actions also read the wall-only ore and the store's entitlements */RESEARCH_ACTIONS.includes(a.b.action)?researchCtx(RULES.ecoNorm(await readEco(env,a.pid)),now):['hangar-arm','hangar-livery','hangar-gear'].includes(a.b.action)?await (async()=>{const S=RULES.ecoNorm(await readEco(env,a.pid));return batCtx(S,S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L));})():{};   /* Session 6C: AUTO-ARM and liveries read the account once */   /* Session 6B: research reads the account once (bonus parts, finish credits, premium pass) */const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
  const out=await submit(env,a,request,(p,r,n)=>owner&&p?.dev?.on?unlimited(p,q=>instant(applyAction(q,r,n,{...ctx,bmn:Object.fromEntries(Object.keys(RULES.mnOf({})).map(k=>[k,9e6]))}),n)):applyAction(p,r,n,ctx),now);
  if(out.status===200&&!out.body?.replayed&&out.body?.state?.cit?.lb?.at===now)await citadelBoardPost(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // Session 7B: the Throne Run board (a clear settled by an action)
  if(legRes&&(out.status!==200||!(out.body?.state?.rs?.jobs||[]).some(j=>j&&j.mod===legRes.id)))await ecoTx(env,a.pid,S=>{if(S.rsjAt?.[legRes.id]!==legRes.at||S.rm?.[legRes.id])return {abort:true};delete S.rsj[legRes.id];delete S.rsjAt[legRes.id];return {};},now).catch(()=>{});   // Session 8: the job did not start: our reservation goes
