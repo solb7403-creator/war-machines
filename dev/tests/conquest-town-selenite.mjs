@@ -14,7 +14,9 @@ let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;console.log('PASS '+m);};const
 // ---- 1. the rule ----
 ok(TN.TOWN.se.from===TN.TOWN.cap&&TN.TOWN.se.n===8,'the rule (the owner\'s addendum, Nov 23: the 2-hour heavy player\'s amount): '+TN.TOWN.se.n+' Selenite for a raid at the cap level ('+TN.TOWN.cap+') held in person');
 ok([1,2,3,4,5,6,7,8].every(l=>TN.seOf(l)===0)&&TN.seOf(9)===8,'none below the cap: levels 1-8 pay 0, level 9 pays 8');
-ok(P.STORE.ores.se===false&&!P.STORE.items.some(i=>JSON.stringify(i.grants||{}).includes('se')),'Selenite stays earn-only: never in the store');
+// Session 8 (owner, Nov 26, 2026; it replaces "rare and above are earn-only" for town walls only): Selenite is sold only in its wall-only
+// crate (js/rules.js SHOP.ore.se, into the wall-only store S.wmn), never to the mineral wallet and never in any other store item
+ok(P.STORE.ores.se==='walls'&&!P.STORE.items.some(i=>JSON.stringify(i.grants||{}).includes('se'))&&!Object.values(R.SHOP.mn).some(m=>m.give.se),'Selenite is sold only for walls (its wall-only crate), never to the mineral wallet');
 // a cap-level attack: THREAT = a five-star general + every Citadel tier + the Grand Offensive surge (+ the portal while open) -> level 9
 const G5=WR.GENERALS.find(g=>g.stars===5).id;
 const capRaid=(strong=true)=>{const s=townPilot(CONQUEST,R,createState,t0,{cc:10,strong});const e=townAttack(CONQUEST,s,t0,{g:G5,go:true});return {s,e};};

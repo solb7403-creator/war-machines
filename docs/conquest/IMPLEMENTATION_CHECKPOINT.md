@@ -8330,7 +8330,19 @@ If your context was cleared, read docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.
   crates in its own worktree `/home/user/wt-fortress` (files: dev/tools/fortress-model.mjs, dev/tools/ore-crate-sizing.mjs,
   dev/tests/conquest-fortress.mjs, docs/conquest/session8/ore-crates.json; the lead copies them back). The definitions of "fully
   built" and "noticeably stronger" were fixed BEFORE any measurement (Rule 2): see "Design" 7.
-- **Next:** slice 3 (the one price table + the new kinds in js/rules.js), then slice 4 (server orders + Stars certification).
+- **Slice 3 (the one table):** js/rules.js `SHOP` holds every price and limit (new items only there; older constants named in
+  SHOP.sold / lab / off); `usdPrice` (integer cents: Stars = ceil(USD x 77), GRAM = USD x 1.25 to 2 decimals); new kinds `cq`, `cos`,
+  `mncrate`, `orecrate`, `cfin` in ecoPrice / ecoOwned / `ecoLimit` / `ecoSaleErr` / `cqGrant` / `cqRefund` (account fields S.cq,
+  S.cqc, S.wmn, S.cfx, S.ord; ECO_KEYS; ecoNorm); Legendary 1,500 Stars / 23 GRAM, one a UTC week (`rslw|week`); crate / core / gear
+  outs carry their price-step key so a refund steps the price back (Checkpoint 39 finding 2); plot.js STORE and catalog.js read their
+  prices from SHOP (no dollar literal left there); switches added and still OFF: `CRYPTO_OPEN`, `CQ_STORE_OPEN` (LAB_STORE_OPEN off).
+  Wall-only ore amounts in SHOP.ore are PROVISIONAL (20 / 8 / 4 / 2) until the sizing helper reports. Tests: new
+  `dev/tests/shop-table.mjs` 24 PASS; updated to the owner's Nov 26 rules (not loosened: each now asserts the new rule): conquest-town
+  (rare ore only in wall-only crates; checkout = CQ_STORE_OPEN), conquest-town-selenite (Selenite only for walls), lab-store-ui (the
+  Legendary at 1,500 Stars). Also PASS: wtest/test 204, wtest/lab-store 38, conquest-cosmetics, -authority, conquest-loot,
+  owner-rules 58, wtest/conquest-research 19, conquest-plot 63, conquest-guardrails 67, gem-ui.
+- **Store research (helper 1) back:** findings recorded under "Store research" below; applied in slice 6.
+- **Next:** slice 4 (server orders + Stars certification, `wtest/payments.mjs`).
 
 ### What was read (slice 1-2)
 CLAUDE.md, AGENTS.md, ROADMAP row 8 + Standing owner decisions, DECISIONS 12, CONQUEST_1_0_SPEC §9-10, RESOURCE_ECONOMY §7.5,
@@ -8414,3 +8426,30 @@ one step, with no release (Design 2). Stars stay the default currency in Telegra
    sizing (helper) and the Lab pacing report. 8. Docs (RESOURCE_ECONOMY §9, spec §9, ROADMAP standing decision, wiki, terms).
 9. Switches on (CRYPTO_PAY, LAB_STORE_OPEN, catalog checkout, STORE.checkout), every CI test. 10. Captures (5 sizes, website and
    Telegram). 11. Three reviewers (<= 2 rounds). 12. Release.
+
+### Store research (helper 1, Nov 26; web search extracts, not full page reads: the helper could not fetch pages directly)
+Findings that shape the store screens (sources in the helper's report; dates as found):
+- Telegram: digital goods inside bots and Mini Apps must be paid in Stars (Stars FAQ, Developer Terms 6.2; the TON docs repeat it; no
+  2026 relaxation found). The helper therefore recommended Stars only in Telegram; the OWNER decided Stars + GRAM with the server
+  switch (his answer to exactly this risk), so GRAM stays on in Telegram by default and the switch turns it off in one step.
+- Stars: `openInvoice` reports paid / cancelled / failed / pending; pre-checkout must be answered within 10 s; refunds through
+  `refundStarPayment`; `/paysupport` expected; Telegram's own sheet is the confirmation (no second confirm on top); invoice title
+  at most 32 characters, description 255.
+- 2026 renames: Toncoin -> GRAM (Jun 15); Tonkeeper -> "Keeper" (Sep 15); TON confirmations about 0.8 s since Catchain 2.0 (Apr);
+  Solana Alpenglow (Oct 21). TON Connect on iPhone: the wallet only opens straight from the tap; the return to the browser is
+  unreliable (SDK issue 302); show the order's status instead of trusting the wallet's return. Exact amount + comment: payments
+  without the comment get lost; some wallets can't add one (offer a hash recovery path).
+- Solana Pay: a `solana:` link with a unique reference (QR on desktop, link on phone); iPhone has no Mobile Wallet Adapter; a wallet's
+  in-app browser works (our pay.html path).
+- Trust: fake or mismatched countdowns were fined (Epic, Netherlands); one-tap buys drew the FTC case (Epic added hold-to-buy and
+  undo); odds before purchase (Apple 3.1.1, Google Play; FTC v. HoYoverse also the currency rate); EU principles (Mar 2025): show the
+  real-money price, no forced over-buying; "Best value" only where the arithmetic proves it.
+- Layout: tabs, a detail view that says exactly what an item gives (Brawl Stars 2026); WCAG 2.2: fits 320 px, tap targets >= 24 px
+  (we keep 44 px); thumb zone at the bottom.
+Applied rules (slice 6): the server quote before Pay with the price held (GRAM / SOL 30 min); each card says what it gives, its price
+in the surface's currency (+ the dollar figure for GRAM / SOL), its limit and reset ("1 of 2 left today · resets 00:00 UTC"), "also
+earned by play" where true, "no airdrop points"; no fake urgency (only real resets); one confirm sheet (Telegram's own for Stars);
+a three-step pending state (approve in wallet, confirming, delivered) that is safe to leave, with Check now / Open wallet / Copy
+details / Support after a minute and a re-check on return; desktop: the QR first (>= 240 px), amount and comment printed under it with
+copy buttons; receipts with the order id, item, amount, method, time, status and the Tonviewer / Solscan link or the Stars charge;
+"GRAM (formerly TON)" once in the currency picker, the wallet named "Keeper (Tonkeeper)".

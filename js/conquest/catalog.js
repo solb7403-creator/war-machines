@@ -2,8 +2,11 @@
 (function(root){
 'use strict';
 const freeze=o=>{Object.freeze(o);Object.values(o).forEach(v=>{if(v&&typeof v==='object'&&!Object.isFrozen(v))freeze(v);});return o;};
-const checkout=freeze({enabled:false,blocker:'COMMERCE NOT YET AVAILABLE: Stars/TON/SOL Conquest SKU pricing, authenticated receipts, replay, refunds and cross-device entitlement delivery have not received end-to-end certification. No live purchase or acceleration is enabled.'});
-const item=(id,name,slot,design,color,accent,earn,earnText,proposedUsd)=>({id,name,slot,design,color,accent,earn,earnText,proposedUsd,priceStatus:'Illustrative USD concept only; no live price or checkout',permanent:true,preview:true,competitive:false});
+// Session 8 (owner, Nov 26, 2026): every piece's price lives in the one table (js/rules.js SHOP.cos); checkout opens with the Conquest
+// store (CQ_STORE_OPEN). Without js/rules.js loaded (a preview page) nothing is priced and checkout stays closed.
+const SHOP_C=typeof SHOP!=='undefined'&&SHOP&&SHOP.cos?SHOP.cos:null,OPEN=typeof CQ_STORE_OPEN!=='undefined'&&CQ_STORE_OPEN===true&&!!SHOP_C;
+const checkout=freeze(OPEN?{enabled:true,blocker:''}:{enabled:false,blocker:'COMMERCE NOT YET AVAILABLE: checkout opens once Stars, GRAM and SOL payments are certified on the server. Every piece is also earned by play.'});
+const item=(id,name,slot,design,color,accent,earn,earnText)=>{const usd=SHOP_C&&SHOP_C[id]||null;return {id,name,slot,design,color,accent,earn,earnText,proposedUsd:usd,priceStatus:usd?(OPEN?'On sale: '+usd+' USD in Stars, GRAM or SOL (also earned by play)':'Priced '+usd+' USD; checkout not open yet'):'Not priced',permanent:true,preview:true,competitive:false};};
 const POOL_NAME={c:'COMMON',u:'UNCOMMON',r:'RARE',e:'EPIC'};
 const streakItem=(id,name,slot,design,color,accent,days)=>({id,name,slot,design,color,accent,earn:{streak:days},earnText:'A '+days+'-day return streak',earnOnly:true,proposedUsd:null,priceStatus:'Earn-only: never sold',permanent:true,preview:true,competitive:false});
 // Session 7C STEP 4: the War Effort's cosmetic reward tiers (earn-only): a contributor of a won week earns the tier the bar reached (s.wet:
@@ -11,26 +14,26 @@ const streakItem=(id,name,slot,design,color,accent,days)=>({id,name,slot,design,
 const weItem=(id,name,slot,design,color,accent,tier)=>({id,name,slot,design,color,accent,earn:{we:tier},earnText:'Contribute to a won War Effort week at tier '+['','I','II','III'][tier]+' ('+[0,100,150,200][tier]+'% of the goal)',earnOnly:true,proposedUsd:null,priceStatus:'Earn-only: never sold',permanent:true,preview:true,competitive:false});
 const frag=(id,name,slot,design,color,accent,pool)=>({id,name,slot,design,color,accent,earn:{frag:pool},earnText:'Ten '+POOL_NAME[pool].toLowerCase()+' blueprint fragments (loot drops)',pool,earnOnly:true,proposedUsd:null,priceStatus:'Earn-only: never sold',permanent:true,preview:true,competitive:false});
 const items=freeze([
- item('base-bastion','Bastion Ramparts','base',0,0x283b4b,0xd2aa55,{base:1},'Build Command Base I',7.99),
- item('base-lancer','Lancer Gantries','base',1,0x334854,0x84d9d8,{base:2},'Build Command Base II',12.99),
- item('base-cathedral','Signal Cathedral','base',2,0x434252,0xc0a6ef,{base:3},'Build Command Base III',19.99),
- item('base-orbital','Orbital Crown','base',3,0x293f4a,0x78c5e7,{base:4},'Build Command Base IV',24.99),
- item('base-monolith','Command Monolith','base',4,0x494237,0xf3d38a,{base:5},'Build Command Base V',29.99),
- item('fire-sunlance','Sunlance Muzzle Halo','trail',0,0x9c6130,0xffcc73,{clears:1},'Complete one eligible raid',3.99),
- item('fire-ionwake','Ion Wake Vanes','trail',1,0x315a66,0x80e4ed,{clears:3},'Complete three eligible raids',5.99),
- item('fire-prism','Prism Convergence','trail',2,0x594c74,0xc6b0ff,{clears:5},'Complete five eligible raids',7.99),
- item('fire-siege','Siege Coil Rings','trail',3,0x674231,0xffa775,{clears:10},'Complete ten eligible raids',9.99),
- item('fire-twin','Twin Comet Fins','trail',4,0x294e5c,0xb4e8f6,{blueprint:1},'Earn the deterministic 25-raid blueprint',14.99),
- item('armor-brass','Brass Campaign Chevrons','armor',0,0xa2844d,0xead39d,{reputation:100},'Earn 100 Conquest reputation',4.99),
- item('armor-ceramic','Ceramic Shoulder Guards','armor',1,0xc6c5be,0x84b6c8,{reputation:500},'Earn 500 Conquest reputation',7.99),
- item('armor-radiant','Radiant Heat Sinks','armor',2,0x36414d,0xf1a75f,{reputation:1500},'Earn 1,500 Conquest reputation',9.99),
- item('armor-vector','Vector Sensor Fins','armor',3,0x4e5f65,0x8edbca,{reputation:3500},'Earn 3,500 Conquest reputation',12.99),
- item('armor-obsidian','Obsidian Honor Crest','armor',4,0x292b38,0xc9a9ee,{reputation:8000},'Earn 8,000 Conquest reputation',19.99),
- item('command-standard','First Defense Standard','commander',0,0x426171,0xe7c97e,{defenses:1},'Win one real base defense',2.99),
- item('command-wings','Guardian Wings','commander',1,0xadb8bd,0x6cd8e7,{defenses:3},'Win three real base defenses',4.99),
- item('command-orrery','Warfront Orrery','commander',2,0x4b5a6f,0xd2bbf8,{campaign:250},'Contribute 250 verified campaign score',7.99),
- item('command-beacon','Humanity Beacon','commander',3,0x5b563e,0xf7d580,{campaign:1000},'Contribute 1,000 verified campaign score',9.99),
- item('command-parasite','Captured Parasite Sigil','commander',4,0x493d59,0xb2e4a0,{eliteBlueprint:1},'Earn the disclosed rare raid blueprint (3.5% eligible raid chance)',9.99),
+ item('base-bastion','Bastion Ramparts','base',0,0x283b4b,0xd2aa55,{base:1},'Build Command Base I'),
+ item('base-lancer','Lancer Gantries','base',1,0x334854,0x84d9d8,{base:2},'Build Command Base II'),
+ item('base-cathedral','Signal Cathedral','base',2,0x434252,0xc0a6ef,{base:3},'Build Command Base III'),
+ item('base-orbital','Orbital Crown','base',3,0x293f4a,0x78c5e7,{base:4},'Build Command Base IV'),
+ item('base-monolith','Command Monolith','base',4,0x494237,0xf3d38a,{base:5},'Build Command Base V'),
+ item('fire-sunlance','Sunlance Muzzle Halo','trail',0,0x9c6130,0xffcc73,{clears:1},'Complete one eligible raid'),
+ item('fire-ionwake','Ion Wake Vanes','trail',1,0x315a66,0x80e4ed,{clears:3},'Complete three eligible raids'),
+ item('fire-prism','Prism Convergence','trail',2,0x594c74,0xc6b0ff,{clears:5},'Complete five eligible raids'),
+ item('fire-siege','Siege Coil Rings','trail',3,0x674231,0xffa775,{clears:10},'Complete ten eligible raids'),
+ item('fire-twin','Twin Comet Fins','trail',4,0x294e5c,0xb4e8f6,{blueprint:1},'Earn the deterministic 25-raid blueprint'),
+ item('armor-brass','Brass Campaign Chevrons','armor',0,0xa2844d,0xead39d,{reputation:100},'Earn 100 Conquest reputation'),
+ item('armor-ceramic','Ceramic Shoulder Guards','armor',1,0xc6c5be,0x84b6c8,{reputation:500},'Earn 500 Conquest reputation'),
+ item('armor-radiant','Radiant Heat Sinks','armor',2,0x36414d,0xf1a75f,{reputation:1500},'Earn 1,500 Conquest reputation'),
+ item('armor-vector','Vector Sensor Fins','armor',3,0x4e5f65,0x8edbca,{reputation:3500},'Earn 3,500 Conquest reputation'),
+ item('armor-obsidian','Obsidian Honor Crest','armor',4,0x292b38,0xc9a9ee,{reputation:8000},'Earn 8,000 Conquest reputation'),
+ item('command-standard','First Defense Standard','commander',0,0x426171,0xe7c97e,{defenses:1},'Win one real base defense'),
+ item('command-wings','Guardian Wings','commander',1,0xadb8bd,0x6cd8e7,{defenses:3},'Win three real base defenses'),
+ item('command-orrery','Warfront Orrery','commander',2,0x4b5a6f,0xd2bbf8,{campaign:250},'Contribute 250 verified campaign score'),
+ item('command-beacon','Humanity Beacon','commander',3,0x5b563e,0xf7d580,{campaign:1000},'Contribute 1,000 verified campaign score'),
+ item('command-parasite','Captured Parasite Sigil','commander',4,0x493d59,0xb2e4a0,{eliteBlueprint:1},'Earn the disclosed rare raid blueprint (3.5% eligible raid chance)'),
  // Session 6 loot v1: fragment pools (rules.js CQ_FRAG). EARN-ONLY: never priced, never sold, never in a store or crate (the
  // loot test checks it). Ten fragments of a pool give one piece of that pool, picked by the Worker without repeats.
  frag('frag-c-basalt','Basalt Matte Chevrons','armor',0,0x3d4146,0x8a9199,'c'),frag('frag-c-regolith','Regolith Matte Guards','armor',1,0x8b7d63,0xc9b68f,'c'),

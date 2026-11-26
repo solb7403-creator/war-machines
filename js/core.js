@@ -194,7 +194,7 @@ const dayNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0))/864
 const weekNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0)-4*864e5)/(7*864e5));
 let VERIFIED_PID=IN_WEB?(window.LUNAR_WEB.pid||'tg_'+TG_USER.id):null;
 const playerKey=()=>VERIFIED_PID||(IN_TG?'tg_'+TG_USER.id:'local');
-const ecoX=()=>({day:dayNum(),week:weekNum(),rnd:Math.random,pk:playerKey()});
+const ecoX=()=>({day:dayNum(),week:weekNum(),rnd:Math.random,pk:playerKey(),now:Date.now()+(typeof srvOff==='number'?srvOff:0)});
 const when=(v,f)=>v&&typeof v.then==='function'?v.then(f):f(v);   // a result now (local) or later (server)
 function rollPeriods(){ecoRoll(save,ecoX());}
 let ecoBusy=0;

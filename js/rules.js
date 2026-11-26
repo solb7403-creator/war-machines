@@ -867,7 +867,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','upc','glc','gsc','wOwn','cOwn','roll','salv',
  'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw','bmn','hz',   // hz: hazard takedowns per Arcade map (5E-2e)
- 'rm','lsm','bpt','rsx','rsj','bch','liv','rcx'];   // Session 6C: pack command chips (a monotonic total), liveries owned, RECRUIT instant-finish credits: written only by ecoGrant after a verified payment (checkout off)   // Session 6B: researched mods (Legendary set mods too, once researched), Legendary set mods bought, bonus research parts (pass tiers, packs; monotonic), instant-finish credits, Legendary set mods being researched
+ 'rm','lsm','bpt','rsx','rsj','bch','liv','rcx','cq','cqc','wmn','cfx','ord'];   // Session 8: the Conquest store's entitlements, bought pieces, wall-only ore, paid construction finishes, open quotes (the Worker writes them; the phone only shows them)   // Session 6C: pack command chips (a monotonic total), liveries owned, RECRUIT instant-finish credits: written only by ecoGrant after a verified payment (checkout off)   // Session 6B: researched mods (Legendary set mods too, once researched), Legendary set mods bought, bonus research parts (pass tiers, packs; monotonic), instant-finish credits, Legendary set mods being researched
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S,opt){
@@ -912,6 +912,15 @@ function ecoNorm(S,opt){
   for(const k in ls)if(!rmodOf(k)||!rmodOf(k).F.leg||!ls[k])delete ls[k];else ls[k]=1;
   for(const k in bp)if(!CQ_PARTS[k])delete bp[k];for(const k of CQ_PART_ORDER)bp[k]=Math.max(0,Math.min(1e5,Math.floor(Number(bp[k])||0)));
   for(const k of Object.keys(rx))if(!/^j\d{1,6}$/.test(k)||!(Number(rx[k])>0))delete rx[k];}
+ // Session 8: the Conquest store's entitlements (S.cq), bought collection pieces (S.cqc), wall-only ore (S.wmn), paid construction
+ // finishes (S.cfx) and the open quotes (S.ord: one per item across Stars, GRAM and SOL); written only by the Worker
+ {const c=obj('cq');for(const k of Object.keys(c))if(!['b2','lay','gild','neon','aur','ext','fr'].includes(k))delete c[k];for(const k of ['b2','lay','gild','neon','aur'])if(c[k])c[k]=1;else delete c[k];
+  c.ext=Math.max(0,Math.min(EXT_MAX_PCT/10,c.ext|0));if(!c.ext)delete c.ext;c.fr=Math.max(0,Number(c.fr)||0);if(!c.fr)delete c.fr;
+  const cc=obj('cqc');for(const k of Object.keys(cc))if(!SHOP.cos[k]||!cc[k])delete cc[k];else cc[k]=1;
+  const w=obj('wmn');for(const k of Object.keys(w))if(!SHOP.ore[k])delete w[k];for(const k of SHOP.oreOrder)w[k]=Math.max(0,Math.min(1e6,Math.floor(Number(w[k])||0)));
+  const fx=obj('cfx');for(const k of Object.keys(fx))if(!cfxKey(k)||!fx[k])delete fx[k];else fx[k]=1;
+  const od=obj('ord');for(const k of Object.keys(od)){const v=od[k];if(!v||typeof v!=='object'||typeof v.q!=='string'||!(Number(v.e)>0)||k.length>60)delete od[k];}
+  const ra=obj('rsjAt');for(const k of Object.keys(ra))if(!rmodOf(k)||!(Number(ra[k])>0))delete ra[k];}
  S.mn=mnOf(S.mn);S.ap=apOf(S.ap);if(S.bmn!==undefined)S.bmn=mnOf(S.bmn);if(S.mnw&&typeof S.mnw==='object'){S.mnw={w:S.mnw.w|0,n:Math.max(0,S.mnw.n|0),p:S.mnw.p?1:0};}else delete S.mnw;   // minerals, Hull Plating, weekly league minerals
  return S;
 }
@@ -1001,6 +1010,7 @@ function ecoPrice(S,d,X){
  if(d.kind==='chippack')return {ton:CHIP_PACK.ton,stars:CHIP_PACK.stars};
  if(d.kind==='livery'){const L=LIVERIES[d.tk];return L?{ton:L.ton,stars:L.stars}:null;}
  if(d.kind==='rcfin')return rsFinPrice(d.left);   // the RECRUIT job's time left, from the Conquest record on the Worker (Session 6C)
+ if(CQ_KINDS.includes(d.kind))return cqPrice(d);   // Session 8: the Conquest store, the catalog, mineral and wall-only ore crates, construction speed-ups (SHOP)
  if(d.kind==='respec'){const t=respecTier(upInvested(chUp(S,chFor(S,d.c))));return t?{ton:Math.round(t*RESPEC_TON_USD*100)/100,stars:Math.round(t*RESPEC_STARS_USD),usd:t}:null;}
  if(d.kind==='gear'){const tk=gearTk(d.tk);if(!tk||!(d.ri>=0&&d.ri<=2))return null;const m=ecoBoxMult(S,tk,d.ri,X)*CORE_X;return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m)};}   // 1.5x the crate's price right now (before any deal)
  if(d.kind==='core'){if(!isGem(d.tk)||!(d.ri>=0&&d.ri<=2))return null;const m=ecoBoxMult(S,'gem',d.ri,X)*CORE_X;return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m)};}   // 1.5x the gem cache's price right now (before any deal)
@@ -1018,6 +1028,10 @@ function ecoOwned(S,d,X){
  if(d.kind==='livery')return !LIVERIES[d.tk]||!!(S.liv&&S.liv[d.tk]);
  if(d.kind==='rcfin')return !/^r\d{1,6}$/.test(String(d.job||''))||!!(S.rcx&&S.rcx[d.job]);
  if(d.kind==='core')return !isGem(d.tk)||!ownsCh(S,d.c)||(chGl(S,d.c)[d.tk]|0)>=5;
+ if(d.kind==='cq'){if(!SHOP.cq[d.tk])return true;const f=CQ_FLAG[d.tk];return f?!!(S.cq&&S.cq[f]):false;}   // Session 8: a one-time Conquest store item already bought (repeatables: ecoLimit)
+ if(d.kind==='cos')return !SHOP.cos[d.tk]||!!(S.cqc&&S.cqc[d.tk])||!!d.earned;   // a collection piece bought, or already earned in Conquest (d.earned: the Worker reads the Conquest record)
+ if(d.kind==='cfin')return !cfxKey(d.job)||!!(S.cfx&&S.cfx[d.job]);   // that construction is already paid for
+ if(d.kind==='mncrate')return !SHOP.mn[d.tk];if(d.kind==='orecrate')return !SHOP.ore[d.tk];
  if(d.kind==='gear'){const tk=gearTk(d.tk);return !tk||(tk==='weapon'?hasW(S,d.tk,d.ri):hasC(S,d.tk,d.ri));}   // a chosen item you already own: nothing to sell
  if(d.kind==='box'&&d.tk==='gem'&&d.c&&!ownsCh(S,d.c))return true;   // a gem cache named for a chassis you don't own: refused, never moved to another   // a chosen core for a chassis you don't own, or one already at level 5: nothing to sell
  return false;
@@ -1162,9 +1176,9 @@ const LAB_KINDS=Object.freeze(['rspack','rsleg','rsfin']),labSaleOk=(S,d,X)=>LAB
 function ecoGrant(S,d,X){
  const outs=[];
  if(d.kind==='box'){const bk=ecoBuyKey(d.tk,d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;if(d.deal==='d')S.dealD=X.day;else if(d.deal==='w')S.dealW=X.week;
-  S.spendGram+=Number(d.price)||RPRICE[d.ri]||0;outs.push(ecoOpenBox(S,d.tk,d.ri,X,d.c));}
- else if(d.kind==='core'){const bk=ecoBuyKey('gem',d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||RPRICE[d.ri]*CORE_X||0;outs.push(ecoCoreAdd(S,d.tk,d.ri,d.c));}   // counts toward the day's gem-cache price steps, like a cache
- else if(d.kind==='gear'){const tk=gearTk(d.tk);if(tk){const bk=ecoBuyKey(tk,d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||RPRICE[d.ri]*CORE_X||0;outs.push(ecoGearAdd(S,d.tk,d.ri,X));}}   // counts toward that crate's price steps, like a crate (as a chosen core does for its cache)
+  S.spendGram+=Number(d.price)||RPRICE[d.ri]||0;outs.push({...ecoOpenBox(S,d.tk,d.ri,X,d.c),bk});}   // bk: a refund steps the price back (Session 8)
+ else if(d.kind==='core'){const bk=ecoBuyKey('gem',d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||RPRICE[d.ri]*CORE_X||0;outs.push({...ecoCoreAdd(S,d.tk,d.ri,d.c),bk});}   // counts toward the day's gem-cache price steps, like a cache
+ else if(d.kind==='gear'){const tk=gearTk(d.tk);if(tk){const bk=ecoBuyKey(tk,d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||RPRICE[d.ri]*CORE_X||0;outs.push({...ecoGearAdd(S,d.tk,d.ri,X),bk});}}   // counts toward that crate's price steps, like a crate (as a chosen core does for its cache)
  else if(d.kind==='starter'){if(!S.starter){S.starter=true;S.spendGram+=STARTER.ton;outs.push(ecoOpenBox(S,'weapon',1,X),ecoOpenBox(S,'chassis',1,X),ecoOpenBox(S,'gem',1,X,d.c));}}
  else if(d.kind==='founder'){if(!S.founder){S.founder=true;S.spendGram+=FOUNDER.ton;S.paints.founder=1;outs.push({tk:'paint',id:'founder'},ecoOpenBox(S,'weapon',2,X),ecoOpenBox(S,'gem',1,X,d.c),ecoOpenBox(S,'gem',1,X,d.c));}}
  else if(d.kind==='moonbeam'){if(!S.moonbeam){S.moonbeam=true;S.spendGram+=MOONBEAM_PRICE;outs.push({tk:'moonbeam'});}}
@@ -1173,11 +1187,12 @@ function ecoGrant(S,d,X){
  else if(d.kind==='respec'){const t=respecTierOfTon(d.price);S.spendGram+=Number(d.price)||0;outs.push(ecoRespec(S,t,d.c));}
  else if(d.kind==='pass'){const P=ecoPassState(S,X);if(!P.prem){P.prem=true;S.spendGram+=PASS_PRICE.ton;outs.push({tk:'pass',s:P.s});}}
  else if(d.kind==='rspack'){const P=RS_PACKS[d.tk];if(P&&labSaleOk(S,d,X)){const bk=rsPackKey(d.tk,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||P.ton;outs.push({tk:'rspack',id:d.tk,parts:ecoAddParts(S,P.each)});}}
- else if(d.kind==='rsleg'){if(labSaleOk(S,d,X)){S.lsm=S.lsm&&typeof S.lsm==='object'?S.lsm:{};S.lsm[d.tk]=1;S.spendGram+=Number(d.price)||RS_LEG_PRICE.ton;outs.push({tk:'rsleg',id:d.tk});}}
+ else if(d.kind==='rsleg'){if(labSaleOk(S,d,X)&&!ecoLimit(S,d,X)){S.lsm=S.lsm&&typeof S.lsm==='object'?S.lsm:{};S.lsm[d.tk]=1;const wk=rsLegWeekKey(X);S.buys[wk]=(S.buys[wk]|0)+1;S.spendGram+=Number(d.price)||RS_LEG_PRICE.ton;outs.push({tk:'rsleg',id:d.tk});}}   // one a UTC week in all (Session 8)
  else if(d.kind==='rsfin'){if(labSaleOk(S,d,X)){S.rsx=S.rsx&&typeof S.rsx==='object'?S.rsx:{};S.rsx[d.job]=1;S.spendGram+=Number(d.price)||0;outs.push({tk:'rsfin',job:d.job});}}   // Conquest finishes that job once (conquest-research.js account)
  else if(d.kind==='chippack'){if(batSaleOk(S,d,X)){const bk=chipPackKey(X);S.buys[bk]=(S.buys[bk]||0)+1;S.bch=Math.min(1e5,(S.bch|0)+CHIP_PACK.chips);S.spendGram+=Number(d.price)||CHIP_PACK.ton;outs.push({tk:'chippack',chips:CHIP_PACK.chips});}}   // Session 6C: a separate chip total (never the daily limit's)
  else if(d.kind==='livery'){if(batSaleOk(S,d,X)){S.liv=S.liv&&typeof S.liv==='object'?S.liv:{};S.liv[d.tk]=1;S.spendGram+=Number(d.price)||LIVERIES[d.tk].ton;outs.push({tk:'livery',id:d.tk});}}   // looks only
  else if(d.kind==='rcfin'){if(batSaleOk(S,d,X)){S.rcx=S.rcx&&typeof S.rcx==='object'?S.rcx:{};S.rcx[d.job]=1;S.spendGram+=Number(d.price)||0;outs.push({tk:'rcfin',job:d.job});}}   // the Conquest record finishes that RECRUIT job once (conquest-battalion.js account)
+ else if(CQ_KINDS.includes(d.kind)){const o=cqSaleOk(S,d,X)?cqGrant(S,d,X):null;if(o)outs.push(o);}   // Session 8: the Conquest store (cqGrant: never points)
  else if(d.kind==='vault'){const B=VAULT[d.tk];if(B){const lv0=vaultLevel(S.vg);S.vg=(S.vg||0)+B.g;const gg=GENESIS_OPEN?B.g:0;S.vgg=(S.vgg||0)+gg;S.spendGram+=Number(d.price)||B.ton;const lv=vaultLevel(S.vg);
   if(lv>=VAULT_PAINT_LV)S.paints.hyper=1;outs.push({tk:'vault',id:d.tk,g:B.g,gg,lv0,lv,t:S.vg});}}   // any number of times: the Vault never fills
  for(const r of outs)labGain(S,r);
@@ -1188,6 +1203,7 @@ function ecoRefund(S,kind,outs){
  if(kind==='starter')S.starter=false;
  for(const o of listOf(outs)){
   if(!o||typeof o!=='object')continue;
+  if(typeof o.bk==='string'&&S.buys&&S.buys[o.bk]>0)S.buys[o.bk]--;   // Session 8: the crate / gem cache price step this purchase took
   if(o.gem&&isGem(o.gem)){const k=o.gem,c=isCh(o.c)?o.c:homeChassis(S),gl=S.glc[c],gs=S.gsc[c];gs[k]-=o.n||0;while(gs[k]<0&&gl[k]>1){gl[k]--;gs[k]+=SHARD_NEED[gl[k]];}gs[k]=Math.max(0,gs[k]);}
   else if(o.kind==='new'){const own=o.isW?S.wOwn:S.cOwn;own[o.k]=(own[o.k]||[]).filter(t=>t!==o.tier);delete S.roll[o.k+':'+o.tier];if(!S.wOwn.pulse.includes(0))S.wOwn.pulse.unshift(0);if(!S.cOwn.vanguard.includes(0))S.cOwn.vanguard.unshift(0);}
   else if(o.kind==='up'){if(rollIn(S,o.k,o.tier)===o.roll)S.roll[o.k+':'+o.tier]=o.old;}
@@ -1201,6 +1217,7 @@ function ecoRefund(S,kind,outs){
   else if(o.tk==='skin')S.skin='default';
   else if(o.tk==='pass'){if(S.pass&&S.pass.s===o.s)S.pass.prem=false;}
   else if(o.tk==='respec'){if(o.credit)S.rsCr=0;else{const p=Math.min(S.pts,o.extra||0);S.pts-=p;S.ptsSpent+=p;}}   // the levels stay cleared; the extra points go back
+  else if(o.tk==='cq'||o.tk==='cos'||o.tk==='mncrate'||o.tk==='orecrate'||o.tk==='cfin')cqRefund(S,o);   // Session 8: exactly what that purchase gave
   else if(o.tk==='vault'){S.vg=Math.max(0,(S.vg||0)-(o.g||0));S.vgg=Math.max(0,(S.vgg||0)-(o.gg||0));if(vaultLevel(S.vg)<VAULT_PAINT_LV&&S.paints)delete S.paints.hyper;}
  }
 }
@@ -1651,7 +1668,10 @@ const RS_PACKS=Object.freeze({kit:Object.freeze({n:'Field kit',each:1,stars:99,t
 const RS_PACK_ORDER=Object.freeze(['kit','crate','cache']);
 const rsPackKey=(tk,X)=>'rsp:'+tk+'|'+X.week;
 // a Legendary set mod: on sale only once its track's earned set mod is researched (a step up from it, never a skip of the tree)
-const RS_LEG_PRICE=Object.freeze({stars:599,ton:9.6});
+// Session 8 (owner, Nov 26, 2026): 1,500 Stars / 23 GRAM each (the Epic crate's price; was 599 / 9.6), at most one a UTC week in all
+// (RS_LEG_WEEK: the week's count, rsLegWeekKey), still on sale only after that track's earned set mod is researched
+const RS_LEG_PRICE=Object.freeze({stars:1500,ton:23}),RS_LEG_WEEK=1;
+const rsLegWeekKey=X=>'rslw|'+X.week;
 const rsLegSet=id=>{const r=rmodOf(id);return r&&r.F.leg?RTREE.mods[r.F.rs][3]:null;};
 // Lunar Pass premium (season perks while premium is active: +1 research slot, jobs 25% faster: RTREE.slots.pass / passTime) and
 // research parts on these premium tiers: tier -> that many of each part, on top of the tier's own reward. Never points. Tiers
@@ -1682,6 +1702,112 @@ const LIVERIES=Object.freeze({'liv-colors':Object.freeze({n:'Battalion colors',d
 const LIVERY_ORDER=Object.freeze(Object.keys(LIVERIES)),LDF_LIVERY=Object.freeze({p:'#5b646b',a:'#d9c27a'});
 const BAT_KINDS=Object.freeze(['chippack','livery','rcfin']),batSaleOk=(S,d,X)=>BAT_STORE_OPEN&&!ecoOwned(S,d,X);
 function ecoAddParts(S,n){S.bpt=S.bpt&&typeof S.bpt==='object'?S.bpt:{};const o={};for(const k of CQ_PART_ORDER){S.bpt[k]=Math.min(1e5,(S.bpt[k]|0)+n);o[k]=n;}return o;}
+// ---- Session 8 (owner, Nov 26, 2026; brief docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.md): THE ONE PRICE TABLE (SHOP) ----
+// Every price and every limit on sale, in every currency, is in SHOP: the new items' numbers live only here, and the shop's older
+// constants (crates RPRICE / RSTARS and their price steps, chosen cores and gear CORE_X, PAINTS, VAULT, STARTER, FOUNDER, PREMIUM,
+// PASS_PRICE, the paid build reset, the Lab store RS_PACKS / RS_LEG_PRICE / RS_FIN, and the Battalion store kept off) are named in
+// SHOP.sold / SHOP.lab / SHOP.off, so this one table lists all of it. The Worker charges these and checks every limit on its own
+// record; the phone only shows them. A dollar price converts like the Lab store's (rsFinPrice): Stars = ceil(USD x 77), GRAM = USD x
+// 1.25 to 2 decimals (usdPrice; GRAM is the TON coin, renamed June 15, 2026: the code's 'ton' fields hold GRAM), SOL at the live
+// GRAM rate (the Worker's quote: no rate, no SOL quote). Guardrails (owner): nothing sold gives airdrop points; never sold: anything
+// in the loot tables, points, Gambits, consumables on their own, trophies, boards; research, mods and wall-only rare ore only as the
+// brief says. DAILY_CAP and CQ_PTS are untouched by every purchase.
+const CRYPTO_OPEN=false;   // GRAM (website and Telegram, the GRAM switch) and SOL (website) checkout on the Worker (/api/order); js/core.js CRYPTO_PAY mirrors it
+const CQ_STORE_OPEN=false;   // the Conquest store: ConquestPlot.STORE, the catalog's cosmetics, the mineral and wall-only ore crates, construction speed-ups
+function usdPrice(usd){const c=Math.round((Number(usd)||0)*100);if(!(c>0))return null;return {usd:c/100,stars:Math.floor((c*RS_STARS_USD+99)/100),ton:Math.round(c*RS_TON_USD)/100};}   // integer cents: no float drift
+const SHOP=Object.freeze({
+ rate:Object.freeze({stars:RS_STARS_USD,gram:RS_TON_USD}),
+ // the Conquest town store (ConquestPlot.STORE shows these rows): capacity, convenience, cosmetics and time; never points
+ cq:Object.freeze({
+  'wall-ext-10':Object.freeze({n:'Wall extension pack',d:'+10% wall capacity at your level (capacity only: strength still comes from composite and ore)',usd:2.99,step:10,limit:'up to the +50% extension cap together with the ones you earn'}),
+  'skin-gilded':Object.freeze({n:'Gilded wall skin',d:'a gold finish on every wall (looks only: stats unchanged)',usd:4.99,once:1}),
+  'skin-turret-neon':Object.freeze({n:'Neon turret skins',d:'a neon finish on all eleven turret types (looks only)',usd:4.99,once:1}),
+  'foundry-rush':Object.freeze({n:'Foundry speed-up',d:'your Foundry turns loaded alloy into composite 4x faster for 24 h',usd:1.99,ms:86400000,x:4,limit:'each one adds 24 h'}),
+  'builder-2':Object.freeze({n:'Second builder',d:'two constructions at once, for good',usd:9.99,once:1}),
+  'theme-aurora':Object.freeze({n:'Aurora town lighting',d:'shifting aurora lights across your town (looks only)',usd:3.99,once:1}),
+  'layout-slot':Object.freeze({n:'Extra layout slot',d:'a fourth saved town layout (walls, turrets, vitals)',usd:1.99,once:1})}),
+ cqOrder:Object.freeze(['builder-2','wall-ext-10','foundry-rush','layout-slot','skin-gilded','skin-turret-neon','theme-aurora']),
+ // the permanent collection (js/conquest/catalog.js reads each piece's price here): looks only, each one also earned by play
+ cos:Object.freeze({'base-bastion':7.99,'base-lancer':12.99,'base-cathedral':19.99,'base-orbital':24.99,'base-monolith':29.99,
+  'fire-sunlance':3.99,'fire-ionwake':5.99,'fire-prism':7.99,'fire-siege':9.99,'fire-twin':14.99,
+  'armor-brass':4.99,'armor-ceramic':7.99,'armor-radiant':9.99,'armor-vector':12.99,'armor-obsidian':19.99,
+  'command-standard':2.99,'command-wings':4.99,'command-orrery':7.99,'command-beacon':9.99,'command-parasite':9.99}),
+ // minerals (RESOURCE_ECONOMY §9.1): fixed bundles, nothing random, common and uncommon only, into the mineral wallet
+ mn:Object.freeze({fe:Object.freeze({n:'Ferrite Crate',give:Object.freeze({fe:150}),usd:1.99,day:2}),il:Object.freeze({n:'Ilmenite Crate',give:Object.freeze({il:60,fe:30}),usd:4.99,day:1,week:4})}),
+ // rare-or-better ore for TOWN WALLS ONLY (owner, Nov 23 and Nov 26): one crate of each a UTC day; the ore lands in its own wall-only
+ // store (S.wmn): only wall blends spend it (never plates, buildings or Foundry research), never traded or gifted, never points.
+ // q (the amount) sized with dev/tools/fortress-model.mjs (docs/conquest/session8/ore-crates.json, SIMULATED)
+ ore:Object.freeze({ar:Object.freeze({n:'Armalcolite wall crate',q:20,usd:4.99,day:1}),tq:Object.freeze({n:'Tranquillityite wall crate',q:8,usd:7.99,day:1}),
+  se:Object.freeze({n:'Selenite wall crate',q:4,usd:9.99,day:1}),mh:Object.freeze({n:'Moonheart wall crate',q:2,usd:14.99,day:1})}),
+ oreOrder:Object.freeze(['ar','tq','se','mh']),
+ // construction speed-ups: finish one running construction timer now (a building, a turret or the Command Center; never a repair),
+ // priced by the time left on the Lab's instant-finish curve, the earn time shown beside it
+ cfin:RS_FIN,
+ // the Science Lab store: research part packs (one of each a UTC week), Legendary set mods (one a UTC week in all), instant finish
+ lab:Object.freeze({packs:RS_PACKS,packWeek:1,leg:RS_LEG_PRICE,legWeek:RS_LEG_WEEK,fin:RS_FIN}),
+ // on sale before Session 8, prices unchanged (the constants above): crates and caches with their price steps and deals, chosen
+ // cores and gear (1.5x the crate's price at that moment), paints, the Vault, the packs, Moonbeam and Lunar Skin, the Lunar Pass and
+ // the paid build reset
+ sold:Object.freeze({box:Object.freeze({stars:RSTARS,ton:RPRICE,steps:'weapon and chassis crates x1 / x2 / x3, gem caches +25% a buy that UTC day; common crates always x1',deals:Object.freeze({d:DEAL_D_OFF,w:DEAL_W_OFF})}),
+  core:CORE_X,gear:CORE_X,paint:'PAINTS (stars, ton)',vault:VAULT,starter:STARTER,founder:FOUNDER,moonbeam:PREMIUM.moonbeam,skin:PREMIUM.skin,pass:PASS_PRICE,
+  respec:Object.freeze({usdMin:RESPEC_USD_MIN,usdMax:RESPEC_USD_MAX,stars:RESPEC_STARS_USD,ton:RESPEC_TON_USD})}),
+ // kept off (not in the Nov 26 sale list): the Battalion store (BAT_STORE_OPEN false)
+ off:Object.freeze({chippack:CHIP_PACK,livery:LIVERIES,rcfin:RS_FIN})
+});
+const CQ_KINDS=Object.freeze(['cq','cos','mncrate','orecrate','cfin']);
+const CQ_FLAG=Object.freeze({'builder-2':'b2','layout-slot':'lay','skin-gilded':'gild','skin-turret-neon':'neon','theme-aurora':'aur'});
+const cfxKey=v=>/^(?:cc|b\d{1,5})@\d{1,2}$/.test(String(v||''))?String(v):null;   // a construction job: its building and the level it builds
+const cqOf=S=>{if(!S.cq||typeof S.cq!=='object'||Array.isArray(S.cq))S.cq={};return S.cq;};
+const shopOf=(S,k)=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={};return S[k];};
+// one Conquest store entry's price (Stars, GRAM, USD) or null
+function cqPrice(d){if(d.kind==='cq'){const Q=SHOP.cq[d.tk];return Q?usdPrice(Q.usd):null;}if(d.kind==='cos'){const u=SHOP.cos[d.tk];return u?usdPrice(u):null;}
+ if(d.kind==='mncrate'){const M=SHOP.mn[d.tk];return M?usdPrice(M.usd):null;}if(d.kind==='orecrate'){const O=SHOP.ore[d.tk];return O?usdPrice(O.usd):null;}
+ if(d.kind==='cfin')return cfxKey(d.job)?rsFinPrice(d.left):null;   // the time left comes from the Conquest record on the Worker, never from the phone
+ return null;}
+// the counters a limited item steps (S.buys keys; day and week numbers are UTC)
+const cqBuyKeys=(d,X)=>d.kind==='mncrate'?['mn'+d.tk+'|'+X.day].concat(SHOP.mn[d.tk]&&SHOP.mn[d.tk].week?['mnw'+d.tk+'|'+X.week]:[]):d.kind==='orecrate'?['ore'+d.tk+'|'+X.day]:d.kind==='rsleg'?[rsLegWeekKey(X)]:[];
+// the limit that stops this sale right now, or null: 'limit' (a day or week count), 'cap' (the wall extension cap), 'none' (no
+// running construction left to finish), 'town' (needs your town or its Foundry). d.extNow / d.left / d.foundry are the Worker's,
+// read from the Conquest record (never the phone's)
+function ecoLimit(S,d,X){const b=k=>((S.buys&&S.buys[k])|0);
+ if(d.kind==='mncrate'){const M=SHOP.mn[d.tk];if(!M)return 'item';if(b('mn'+d.tk+'|'+X.day)>=M.day)return 'limit';if(M.week&&b('mnw'+d.tk+'|'+X.week)>=M.week)return 'limit';return null;}
+ if(d.kind==='orecrate'){const O=SHOP.ore[d.tk];if(!O)return 'item';return b('ore'+d.tk+'|'+X.day)>=O.day?'limit':null;}
+ if(d.kind==='rsleg')return b(rsLegWeekKey(X))>=RS_LEG_WEEK?'limit':null;
+ if(d.kind==='cq'&&d.tk==='wall-ext-10'){if(!(Number(d.extNow)>=0))return 'town';return Number(d.extNow)+SHOP.cq['wall-ext-10'].step>EXT_MAX_PCT?'cap':null;}
+ if(d.kind==='cq'&&d.tk==='foundry-rush')return d.foundry?null:'town';
+ if(d.kind==='cfin')return Number(d.left)>0?null:'none';
+ return null;}
+const EXT_MAX_PCT=50;   // ConquestPlot.EXT.max (the +50% wall extension cap; the Conquest test checks they agree)
+// is this item on sale at all (its store open, its rail named in descOf)?
+const shopOpen=d=>LAB_KINDS.includes(d.kind)?LAB_STORE_OPEN:BAT_KINDS.includes(d.kind)?BAT_STORE_OPEN:CQ_KINDS.includes(d.kind)?CQ_STORE_OPEN:true;
+// every sale rule in one answer (the Worker's quote, the Stars pre-checkout and the grant all ask it): null, or why not
+function ecoSaleErr(S,d,X){if(!shopOpen(d))return 'closed';if(d.kind==='founder'&&!FOUNDER_OPEN)return 'closed';if(ecoOwned(S,d,X))return 'owned';return ecoLimit(S,d,X);}
+const cqSaleOk=(S,d,X)=>!ecoSaleErr(S,d,X);
+// the grant of one Conquest store purchase (after its payment is verified and every sale rule passed): exactly what it gives, on
+// the account (S.cq entitlements, S.cqc bought pieces, S.mn the mineral wallet, S.wmn the wall-only ore, S.cfx paid construction
+// finishes); the Conquest record reads them (worker/src/conquest-shop.js). Never points, CP or anything in the loot tables
+function cqGrant(S,d,X){const P=cqPrice(d),pay=Number(d.price)||(P?P.ton:0);
+ const step=()=>{for(const k of cqBuyKeys(d,X))S.buys[k]=(S.buys[k]|0)+1;pruneBuys(S,X);};
+ if(d.kind==='cq'){const Q=SHOP.cq[d.tk];if(!Q)return null;const c=cqOf(S);let o={tk:'cq',id:d.tk};
+  if(d.tk==='wall-ext-10')c.ext=Math.min(EXT_MAX_PCT/Q.step,(c.ext|0)+1);
+  else if(d.tk==='foundry-rush'){const t=Number(X.now)||0;c.fr=Math.max(t,Number(c.fr)||0)+Q.ms;o.until=c.fr;o.ms=Q.ms;}
+  else c[CQ_FLAG[d.tk]]=1;
+  S.spendGram+=pay;return o;}
+ if(d.kind==='cos'){if(!SHOP.cos[d.tk])return null;shopOf(S,'cqc')[d.tk]=1;S.spendGram+=pay;return {tk:'cos',id:d.tk};}
+ if(d.kind==='mncrate'){const M=SHOP.mn[d.tk];if(!M)return null;step();const got=ecoMinerals(S,M.give);S.spendGram+=pay;return {tk:'mncrate',id:d.tk,got};}
+ if(d.kind==='orecrate'){const O=SHOP.ore[d.tk];if(!O)return null;step();const w=shopOf(S,'wmn');w[d.tk]=Math.min(1e6,(w[d.tk]|0)+O.q);S.spendGram+=pay;return {tk:'orecrate',id:d.tk,q:O.q};}
+ if(d.kind==='cfin'){const k=cfxKey(d.job);if(!k)return null;shopOf(S,'cfx')[k]=1;S.spendGram+=pay;return {tk:'cfin',job:k};}
+ return null;}
+// a refunded Conquest store purchase: take back exactly what it gave (a finished construction stays finished, as an instant finish
+// of research does; spent wall-only ore leaves its walls standing and the store at 0)
+function cqRefund(S,o){
+ if(o.tk==='cq'){const c=cqOf(S),Q=SHOP.cq[o.id];if(!Q)return;if(o.id==='wall-ext-10')c.ext=Math.max(0,(c.ext|0)-1);else if(o.id==='foundry-rush')c.fr=Math.max(0,(Number(c.fr)||0)-(o.ms||Q.ms));else delete c[CQ_FLAG[o.id]];return;}
+ if(o.tk==='cos'){if(S.cqc)delete S.cqc[o.id];return;}
+ if(o.tk==='mncrate'){S.mn=mnOf(S.mn);for(const [k,n] of Object.entries(o.got||{}))if(MN_ORDER.includes(k))S.mn[k]=Math.max(0,S.mn[k]-(n|0));return;}
+ if(o.tk==='orecrate'){const w=shopOf(S,'wmn');if(SHOP.ore[o.id])w[o.id]=Math.max(0,(w[o.id]|0)-(o.q|0));return;}
+ if(o.tk==='cfin'){if(S.cfx)delete S.cfx[o.job];}}
+// day / week counters older than 5 weeks are dropped when a new one is written (their day or week is past)
+function pruneBuys(S,X){for(const k of Object.keys(S.buys||{})){const m=/\|(\d+)$/.exec(k);if(!m)continue;const n=+m[1],wk=/^(rsp:|chp|mnw|rslw)/.test(k);if(wk?n<X.week-5:n<X.day-35)delete S.buys[k];}}
 // ---- Research mod behaviors: ONE engine for the Arcade/PvP sim (js/game.js) and Conquest (js/conquest/combat.js + controls.js),
 // on the phone and on the Worker. T: the tank (tankOf: T.rm = {behavior: numbers}); mf: its runtime state (plain numbers; Conquest
 // saves it with the battle). Every trigger is a count or a timer, never a chance. The engines feed it what happened (a shot left,

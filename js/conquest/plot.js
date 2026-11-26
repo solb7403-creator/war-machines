@@ -169,18 +169,15 @@ const blendName=c=>{const {o,l}=wdecode(c);return o?ORE_NAME[ORES[o-1]]+' '+BLEN
 // Drill milestones and real base defenses won; or bought (store, capacity only, disabled until payments are certified).
 const EXT=T({max:50,research:T([T({pct:6,fl:1,cost:T({il:30})}),T({pct:6,fl:2,cost:T({ar:12})}),T({pct:6,fl:3,cost:T({ar:25})}),T({pct:6,fl:4,cost:T({tq:6})}),T({pct:6,fl:5,cost:T({se:2})})]),
  drill:T([T({cc:1,pct:4}),T({cc:3,pct:4}),T({cc:5,pct:4}),T({cc:7,pct:4}),T({cc:9,pct:4})]),defense:T([T({wins:3,pct:5}),T({wins:10,pct:5})]),pack:10});
-// The base store (owner decision 11; MONEY RULE: what is sold and its limits are the owner's business decisions, changed here
-// in this one table). Checkout stays DISABLED until payments are certified (Session 8): every tile shows as unavailable.
-const STORE=T({checkout:false,items:T([
- T({id:'wall-ext-10',name:'Wall extension pack',what:'+10% wall capacity at your level (capacity only: strength still comes from composite and ore)',grants:T({extPct:10}),limit:'up to the +50% extension cap with earned ones',usd:2.99}),
- T({id:'skin-gilded',name:'Gilded wall skin',what:'cosmetic finish for walls (stats unchanged)',usd:4.99}),
- T({id:'skin-turret-neon',name:'Neon turret skins',what:'cosmetic finish for all eleven turrets',usd:4.99}),
- T({id:'foundry-rush',name:'Foundry speed-up',what:'the Foundry converts loaded alloy 4x faster for 24 h',usd:1.99}),
- T({id:'builder-2',name:'Second builder',what:'two constructions at once (an earnable second builder exists too)',usd:9.99}),
- T({id:'theme-aurora',name:'Aurora town lighting',what:'cosmetic town lighting',usd:3.99}),
- T({id:'layout-slot',name:'Extra layout slot',what:'a fourth saved town layout (walls, turrets, vitals)',usd:1.99})]),
- // Ores the store may sell (owner-adjustable default, RESOURCE_ECONOMY §9.1): common and uncommon only; rare-or-better earn-only.
- ores:T({fe:true,il:true,ar:false,tq:false,se:false,mh:false})});
+// The base store (owner decision 11; MONEY RULE: what is sold and its limits are the owner's business decisions). Session 8 (owner,
+// Nov 26, 2026): every price and limit lives in the ONE table, js/rules.js SHOP (SHOP.cq here; the collection's pieces SHOP.cos, the
+// mineral crates SHOP.mn, the wall-only ore crates SHOP.ore, construction speed-ups SHOP.cfin); this list only shows them.
+// checkout: CQ_STORE_OPEN (js/rules.js). The Worker grants every one after a verified payment (rules.js cqGrant).
+const SHOP_T=typeof SHOP!=='undefined'?SHOP:null,cqRow=id=>{const Q=SHOP_T.cq[id];return T({id,name:Q.n,what:Q.d,usd:Q.usd,...(Q.step?{grants:T({extPct:Q.step})}:{}),...(Q.limit?{limit:Q.limit}:{}),...(Q.once?{once:1}:{})});};
+const STORE=T({checkout:typeof CQ_STORE_OPEN!=='undefined'&&CQ_STORE_OPEN===true,items:T(SHOP_T?SHOP_T.cqOrder.map(cqRow):[]),
+ // Ores the store may sell (RESOURCE_ECONOMY §9.1): common and uncommon to the mineral wallet ('wallet'); rare-or-better ONLY in the
+ // wall-only crates ('walls': owner, Nov 23 and Nov 26: town walls only, never plates or anything else, never traded or gifted)
+ ores:T({fe:'wallet',il:'wallet',ar:'walls',tq:'walls',se:'walls',mh:'walls'})});
 const wallBase=cc=>WALL_CAP[clampCC(cc)-1];
 function extParts(p,dev=false){const e=record(p?.ext)?p.ext:{},r=Math.max(0,Math.min(EXT.research.length,e.r|0)),dm=e.d|0,w=e.w|0,research=EXT.research.slice(0,r).reduce((a,x)=>a+x.pct,0),
  drill=EXT.drill.reduce((a,x,k)=>a+((dm>>k)&1?x.pct:0),0),defense=EXT.defense.reduce((a,x)=>a+(w>=x.wins?x.pct:0),0),bought=Math.max(0,e.buy|0),devx=dev||p?.devx?EXT.max:0;

@@ -76,7 +76,7 @@ export async function link(env, a, b, why) {
 }
 
 const mapList = () => LIM.MAP_REAL;   // no sim built just to list the maps
-export const ctxOf = (pid, now) => ({ day: dayOf(now), week: weekOf(now), rnd: Math.random, pk: pid });
+export const ctxOf = (pid, now) => ({ day: dayOf(now), week: weekOf(now), rnd: Math.random, pk: pid, now });   // now: the server clock (Session 8: a Foundry speed-up's 24 h start here)
 const safeKey = (s) => String(s).replace(/[.#$\[\]\/|]/g, "_").slice(0, 100);
 
 // ---- conditional reads and writes ----
