@@ -22,7 +22,7 @@
 import assert from 'node:assert/strict';import {cpus} from 'node:os';
 const {runner,TARGETS}=await import('../tools/citadel-pace.mjs');const M=await import('../tools/citadel-model.mjs');
 const {buildSim}=await import('../../worker/build-sim.mjs');buildSim();const {CONQUEST}=await import('../../worker/src/sim.gen.js');
-const run=runner(Math.max(1,Math.min(4,cpus().length))),SEEDS=3,RF=Math.round(CONQUEST.Citadel.CIT.refortMs/86400000);let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;console.log('PASS '+m);};
+const run=runner(Math.max(1,Math.min(4,cpus().length))),SEEDS=3,RF=Math.ceil(CONQUEST.Citadel.CIT.refortMs/86400000);let pass=0;const ok=(c,m)=>{assert.ok(c,m);pass++;console.log('PASS '+m);};
 const at=async(p,t,d)=>{const rs=await Promise.all(Array.from({length:SEEDS},(_,s)=>run({p,t,d,s})));return {d,won:rs.filter(r=>r.won).length,sec:rs.filter(r=>r.won).map(r=>r.sec).sort((a,b)=>a-b)};};
 const k=(p,d)=>{const x=M.kitAt(p,d);return x.allies.length+' allies, force rank '+x.force+', '+['common','rare','epic'][x.tier]+' gear';};
 ok(RF===0&&CONQUEST.Citadel.CIT.refortMs===0&&CONQUEST.Citadel.CIT.refortMs<=86400000,'no cooldown between Citadel tiers (owner: hours, 24 h the absolute maximum, or none; Session 7R: none)');
@@ -38,13 +38,14 @@ loses(R.r2a,'regular',2);wins(R.r2b,'regular',2);loses(R.h2a,'heavy',2);wins(R.h
 loses(R.r3a,'regular',3);loses(R.r3c,'regular',3);loses(R.h3a,'heavy',3);loses(R.g3a,'grinder',3);wins(R.r3b,'regular',3);wins(R.g3b,'grinder',3);wins(R.h3b,'heavy',3);
 in68(R.r2b,'the regular, tier II,');in68(R.h2b,'the heavy player, tier II,');in68(R.g2b,'the grinder, tier II,');in68(R.r3b,'the regular, tier III,');in68(R.g3b,'the grinder, tier III,');in68(R.h3b,'the heavy player, tier III,');
 // the windows these boundary days imply (a kit day that wins stays won): regular tier I in (7, 18], grinder (4, 7], heavy (4, 11]
-const W={r1:[8,18],g1:[5,7],h1:[5,11]};
+const W={r1:[8,18],g1:[5,7],h1:[5,11],r3:[28,30+RF],g3:[8,12+RF],h3:[15,17+RF]};   // tier III: lost on days 27 / 7 / 14, won on 30 / 12 / 17 (+RF)
 ok(W.r1[0]>=TARGETS[1].regular[0]&&W.r1[1]<=TARGETS[1].regular[1],'tier I for the regular on days '+W.r1.join('-')+': weeks 2-3 ('+TARGETS[1].regular.join('-')+')');
 ok(W.g1[0]>=TARGETS[1].grinder[0]&&W.g1[1]<=TARGETS[1].grinder[1],'tier I for the grinder on days '+W.g1.join('-')+': days '+TARGETS[1].grinder.join('-'));
 ok(W.h1[0]>=W.g1[0]&&W.h1[1]<=W.r1[1],'tier I for the heavy player on days '+W.h1.join('-')+': between the grinder and the regular');
+ok(W.h3[0]>=W.g3[0]&&W.h3[1]<=W.r3[1],'tier III for the heavy player on days '+W.h3.join('-')+': between the grinder ('+W.g3.join('-')+') and the regular ('+W.r3.join('-')+')');
 // tier III comes when the kit breaks it: lost on common gear, broken on the day tier II falls (above). REPORTED against the owner's brief
 // targets (Rule 2: not asserted, not changed; see the header), with the step from tier II on the same kit (SIMULATED)
-const med=x=>x.sec.length?x.sec[x.sec.length>>1]:null,rep=(n,d,T)=>console.log('REPORT (simulated) tier III for the '+n+' by day '+d+' (brief target '+(Array.isArray(T)?T.join('-'):T)+'): '+(Array.isArray(T)?(d>=T[0]&&d<=T[1]?'inside':'OUTSIDE: the 7-day waits produced it; Checkpoint 51'):'see the regular and grinder'));
+const med=x=>x.sec.length?x.sec[x.sec.length>>1]:null,rep=(n,d,T)=>console.log('REPORT (simulated) tier III for the '+n+' broken by day '+d+' (this test\'s boundary day; the full search in citadel-pace.json may find it earlier) against the 7B brief target '+(Array.isArray(T)?'days '+T.join('-'):T)+': '+(Array.isArray(T)?(d>=T[0]&&d<=T[1]?'inside':'OUTSIDE (the target window was met only by the old two 7-day waits; Checkpoint 51)'):'see the regular and the grinder'));
 rep('regular',30+RF,TARGETS[3].regular);rep('grinder',12+RF,TARGETS[3].grinder);rep('heavy',17+RF,TARGETS[3].heavy);
 console.log('REPORT (simulated) the same kit, tier II -> tier III median clear: regular '+mmss(med(R.r2b))+' -> '+mmss(med(R.r3b))+', heavy '+mmss(med(R.h2b))+' -> '+mmss(med(R.h3b))+', grinder '+mmss(med(R.g2b))+' -> '+mmss(med(R.g3b))+' (tier III is barely harder on rare gear: the kit day that breaks tier II breaks tier III, its clears about 30 s longer; Checkpoint 51 PROPOSAL)');
 console.log(JSON.stringify({test:'conquest-citadel-pace',pass}));

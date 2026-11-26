@@ -8176,19 +8176,22 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
 
 ### STEP 2: the Citadel cooldown (owner Rule 1: "a matter of hours, with 24 hours being the absolute maximum, if a cooldown is even necessary")
 - **Choice: none** (`js/conquest/citadel.js` `CIT.refortMs:0`; the field and the gate code stay, so a future owner decision of some hours
-  is one number; `dev/tests/owner-rules.mjs` fails above 24 h). **Reason:** a cooldown is not necessary. (1) Nothing else waits between
+  is one number: the result card prints it in hours or days and the pace tools round it up to whole model days; `dev/tests/owner-rules.mjs` fails above 24 h). **Reason:** a cooldown is not necessary. (1) Nothing else waits between
   Citadel attacks (`launchWhy` has no timer after a loss; a loss spends the prep it used and downed allies need repair; siege prep is
   optional, each objective valid 48 h). (2) The pacing model shows
-  the kit (rare gear, the full Battalion, ranks) is what gates tiers II and III for the regular pilot: on common gear every profile
-  loses tiers II and III. (3) So the 7-day wait only ever held back the strongest pilots, the ones most likely to stay: exactly the
-  "arbitrary waiting period" the owner ruled out. (4) No integrity reason: the first-clear bounties pay exactly once per account
+  the kit (rare gear, the full Battalion, ranks) is what gates tier II: on common gear every profile loses tiers II and III. (3) The
+  7-day wait was the only thing between tier II and tier III for every profile (tier III a week later for the regular too, and tier II
+  three days later for the grinder): a timer, not difficulty, exactly the "arbitrary waiting period" the owner ruled out. The step it
+  hid (tier III barely harder than tier II on rare gear) is fixed by difficulty, not by a timer (PROPOSAL 1). (Corrected in review
+  round 1: an earlier version said the wait only held back the strongest pilots; the data says every profile.) (4) No integrity reason: the first-clear bounties pay exactly once per account
   (unchanged; `conquest-citadel`, `wtest/conquest-citadel-payout`: tier II now cleared right after tier I still pays 37,500 once), and an
   alt account still needs the kit. A few hours would add only a return timer for the strongest pilots.
 - **Copies of the 7 days updated (only these):** `js/conquest/citadel.js`; `dev/tests/conquest-citadel.mjs` (the next tier opens the
   moment the first clear settles; the Worker launches Citadel II right after); `dev/tests/wtest/conquest-citadel-payout.mjs` (tier II 2
   minutes after, not 8 days); `dev/tests/conquest-citadel.py` (LAUNCH THE ASSAULT · CITADEL II enabled right after the first clear, at
   390x844, 390x700, 320x568, 1366x768, 1920x1080: all PASS; capture `next-tier-open-*` replaces `refortify-*`, checked by eye at 320x568
-  and 1366x768: the button and every line fit); `dev/tools/citadel-pace.mjs` (comments, the json's about); `dev/tests/conquest-citadel-pace.mjs`
+  and 1366x768: the button fits. Review round 1 found what that look missed: the first-clear result card still said "the Hive
+  re-fortifies it for 0 days"; fixed (it says the next tier is open now) and asserted in the journey); `dev/tools/citadel-pace.mjs` (comments, the json's about); `dev/tests/conquest-citadel-pace.mjs`
   (Rule 2 below); `dev/tools/fortress-model.mjs` (the profiles' Citadel days were the 7B measurements with the wait in them).
   `conquest-analytics` 24, `conquest-streak` 64, `wtest/conquest-boards` 35, `wtest/conquest-wareffort` 33, `wtest/accounts` 18,
   `wtest/referrals` 29: all PASS unchanged (nothing in them encodes the 7 days, so nothing in them was edited).
@@ -8198,6 +8201,9 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
 - **Fortress model (SIMULATED):** all 14 guards PASS. The regular's town hold rate by day: 62 / 67 / 86 / **52** / 81 / 67 / 100 / 62%
   (day 30 was 86%: tier III and its Retaliation now land on day 30, a week earlier), year mean 72% (was 76%; guard: about 3 in 4). The
   model also shows the choice this gives the pilot: building ahead of the Citadel holds 90-100%, pushing it without building 24-71%.
+  The undefended reference builder's REPAIR bill on the way to CC10 rises from 432,759 to 518,555 CP (+20%; stronger raids earlier;
+  the coached pilot's stays 660 CP). Tier II and tier III first-clear bounties (37,500 + 50,000, outside the daily cap) can now land on
+  the same day; the total per account (112,500 for Act I) and the once-per-account rule are unchanged.
 - **Rule 2 (guardrails) on the pace guard:** two checks failed with the wait gone: tier III for the regular in weeks 6-8 (day 36-56) and
   for the grinder in week 3 (15-21). Investigation: they were met only by the two 7-day waits (the 7B test computed tier III = tier II +
   7); with no wait tier III falls on the day the kit breaks tier II. Fixing the calendar without a wait would need harder tier III numbers,
@@ -8215,6 +8221,6 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
    land in two waves at once, a warden phase that punishes ignoring the deck, or a tier III that needs one siege prep objective's effect
    to be countered. Then judge it by playtesting, not only the bot.
 2. **Retaliation arrives a week earlier for a regular who pushes tier III on day 30 (simulated hold rate 52% that day):** the result card
-   already warns ("Retaliation III: attacks on your town grow stronger") and the War Map shows DEFENSE beside its recommended band, so
+   already warns ("Retaliation III: your town and the front meet stronger attacks") and the War Map shows DEFENSE beside its recommended band, so
    this is a real choice (build first, or push). If playtests show it feels punishing, the fix is a clearer DEFENSE warning on the tier
    card before launch, not a wait.

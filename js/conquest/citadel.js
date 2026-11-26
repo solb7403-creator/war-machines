@@ -31,8 +31,8 @@ const CIT=Object.freeze({
  prepMs:48*HOUR,                              // each siege prep objective stays valid 48 hours
  // owner rule (Nov 25, 2026, AGENTS.md "Gameplay quality first"): no seven-day wait between Citadel attacks; a cooldown is a matter of
  // hours, 24 hours the absolute maximum, if one is needed at all (dev/tests/owner-rules.mjs fails above 24 h). Session 7R's choice:
- // none. Nothing else waits between attacks, the siege prep is optional, and the pacing model shows the kit (gear, Battalion, ranks)
- // is what gates the next tier for the regular pilot; the wait only ever held back the strongest pilots (Checkpoint 51)
+ // none. Nothing else waits between attacks and the siege prep is optional; the kit (rare gear, the Battalion) gates tier II, and the
+ // wait was the only thing between tier II and tier III for every profile (the pacing model): a timer, not difficulty (Checkpoint 51)
  refortMs:0,
  // lead's design numbers (fixed for every tier): the warden's hull and shield core (re-formed twice), the gate and its generators
  warden:Object.freeze({hp:18500,core:2800,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),

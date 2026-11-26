@@ -30,7 +30,7 @@ const seeds=Number(arg('--seeds',4)),run=runner(Math.max(1,Math.min(8,Number(arg
  const M=await import('./citadel-model.mjs'),start=(p,f)=>{let d=1;for(let x=1;x<=80;x++){if(f(M.kitAt(p,x))){d=x;break;}}return Math.max(1,d-3);};
  // a tier after the first opens CIT.refortMs after the previous tier's first clear: its search starts there. Session 7R (owner rule, Nov 25,
  // 2026: no seven-day wait; hours, 24 h the absolute maximum, or none): refortMs 0, so the next tier's search starts on the day the last fell
- const {CONQUEST}=await import('../../worker/src/sim.gen.js'),RF=Math.round(CONQUEST.Citadel.CIT.refortMs/86400000);
+ const {CONQUEST}=await import('../../worker/src/sim.gen.js'),RF=Math.ceil(CONQUEST.Citadel.CIT.refortMs/86400000);
  const res={};await Promise.all(['regular','heavy','grinder'].map(async p=>{res[p]={};const t1=await firstWin(run,p,1,{from:start(p,k=>k.allies.length>=9),seeds});res[p][1]=t1;
   const t2=await firstWin(run,p,2,{from:Math.max((t1.day||1)+RF,start(p,k=>k.tier>=1)),seeds});res[p][2]=t2;res[p][3]=await firstWin(run,p,3,{from:(t2.day||1)+RF,seeds,steps:8});}));
  const inside=(x,[a,b])=>x!==null&&x>=a&&x<=b,check={};for(const t of [1,3]){const T=TARGETS[t],g=res.grinder[t].day,r=res.regular[t].day,h=res.heavy[t].day;
