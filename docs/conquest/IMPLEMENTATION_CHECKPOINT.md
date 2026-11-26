@@ -8163,5 +8163,53 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
   (it would be copied into every PR body). `dev/tests/owner-rules.mjs` section 9: the three rule texts' SHA-256 pinned in the test, the
   six files (pinned in the test, not only the JSON) hold both texts word for word, and the Citadel cooldown is at most 24 h. The
   last check fails against the old 7-day code on purpose (the rule is in force): slice 3 makes it pass.
-- Next: slice 3 (STEP 2, the Citadel cooldown), then reviews, then release. The PR needs the `owner-rules-change` label (the owner's
-  brief orders the owner-rules.json entry).
+- **Slice 3 (STEP 2, `5f80a60`-`bc95699` + the fortress json):** the Citadel cooldown 7 days -> **none** (`refortMs:0`; reason under
+  "STEP 2" below); the tests that encoded the 7 days updated; the Citadel pace model and the fortress model re-run (SIMULATED, below).
+  Draft PR #160 with the `owner-rules-change` label (the brief orders the owner-rules.json entry).
+- Next: slice 4 (mutation proofs of owner-rules section 9), slice 5 (three independent reviewers, at most 2 rounds), slice 6 (release:
+  ready + `auto-release`, verify the deploy, then the release record).
+
+### STEP 2: the Citadel cooldown (owner Rule 1: "a matter of hours, with 24 hours being the absolute maximum, if a cooldown is even necessary")
+- **Choice: none** (`js/conquest/citadel.js` `CIT.refortMs:0`; the field and the gate code stay, so a future owner decision of some hours
+  is one number; `dev/tests/owner-rules.mjs` fails above 24 h). **Reason:** a cooldown is not necessary. (1) Nothing else waits between
+  Citadel attacks (`launchWhy` has no timer after a loss; a loss spends the prep it used and downed allies need repair; siege prep is
+  optional, each objective valid 48 h). (2) The pacing model shows
+  the kit (rare gear, the full Battalion, ranks) is what gates tiers II and III for the regular pilot: on common gear every profile
+  loses tiers II and III. (3) So the 7-day wait only ever held back the strongest pilots, the ones most likely to stay: exactly the
+  "arbitrary waiting period" the owner ruled out. (4) No integrity reason: the first-clear bounties pay exactly once per account
+  (unchanged; `conquest-citadel`, `wtest/conquest-citadel-payout`: tier II now cleared right after tier I still pays 37,500 once), and an
+  alt account still needs the kit. A few hours would add only a return timer for the strongest pilots.
+- **Copies of the 7 days updated (only these):** `js/conquest/citadel.js`; `dev/tests/conquest-citadel.mjs` (the next tier opens the
+  moment the first clear settles; the Worker launches Citadel II right after); `dev/tests/wtest/conquest-citadel-payout.mjs` (tier II 2
+  minutes after, not 8 days); `dev/tests/conquest-citadel.py` (LAUNCH THE ASSAULT · CITADEL II enabled right after the first clear, at
+  390x844, 390x700, 320x568, 1366x768, 1920x1080: all PASS; capture `next-tier-open-*` replaces `refortify-*`, checked by eye at 320x568
+  and 1366x768: the button and every line fit); `dev/tools/citadel-pace.mjs` (comments, the json's about); `dev/tests/conquest-citadel-pace.mjs`
+  (Rule 2 below); `dev/tools/fortress-model.mjs` (the profiles' Citadel days were the 7B measurements with the wait in them).
+  `conquest-analytics` 24, `conquest-streak` 64, `wtest/conquest-boards` 35, `wtest/conquest-wareffort` 33, `wtest/accounts` 18,
+  `wtest/referrals` 29: all PASS unchanged (nothing in them encodes the 7 days, so nothing in them was edited).
+- **Citadel pacing (SIMULATED: the bot pilot on each profile's modelled kit, 4 seeded assaults a day; not playtesting):** tier I
+  unchanged (regular day 15, heavy 9, grinder 6). Tier II / III: regular **30 / 30** (was 30 / 37), heavy **17 / 17** (was 17 / 24),
+  grinder **10 / 10** (was 13 / 20). Median clears on the same kit: tier II about 7:00, tier III 7:27-7:32 (6-8 minutes kept).
+- **Fortress model (SIMULATED):** all 14 guards PASS. The regular's town hold rate by day: 62 / 67 / 86 / **52** / 81 / 67 / 100 / 62%
+  (day 30 was 86%: tier III and its Retaliation now land on day 30, a week earlier), year mean 72% (was 76%; guard: about 3 in 4). The
+  model also shows the choice this gives the pilot: building ahead of the Citadel holds 90-100%, pushing it without building 24-71%.
+- **Rule 2 (guardrails) on the pace guard:** two checks failed with the wait gone: tier III for the regular in weeks 6-8 (day 36-56) and
+  for the grinder in week 3 (15-21). Investigation: they were met only by the two 7-day waits (the 7B test computed tier III = tier II +
+  7); with no wait tier III falls on the day the kit breaks tier II. Fixing the calendar without a wait would need harder tier III numbers,
+  which this session may not change. Decision: the owner's targets (`TARGETS`) are **unchanged** and still **reported** against every run
+  (OUTSIDE, in the test output and citadel-pace.json); the two calendar assertions are no longer asserted, because the approved change (no
+  waiting period; progression limited by difficulty and strength) removes the mechanism that produced them. Not masked: every difficulty
+  gate stays (tier I windows, tier II lost on common gear and won on rare, 6-8 minute clears), four new difficulty checks are added (tier
+  III lost on common gear by the regular on day 27, the heavy on day 14, the grinder on day 7; tier II lost by the grinder on day 7), and
+  the genuine problem the wait hid is a PROPOSAL below. Every other guard threshold is unchanged.
+
+### PROPOSALs for the owner (Session 7R)
+1. **Tier III is barely harder than tier II on rare gear (simulated):** the kit day that breaks tier II breaks tier III too, 4 of 4,
+   about 30 s slower. With the wait gone, Act I ends the day tier II falls. Proposal for the next Citadel session (Session 11 or a Citadel
+   tuning pass): make THE CARRIER DECK a real step up through tactics, never bigger numbers (the fixed-stats rule): e.g. dropships that
+   land in two waves at once, a warden phase that punishes ignoring the deck, or a tier III that needs one siege prep objective's effect
+   to be countered. Then judge it by playtesting, not only the bot.
+2. **Retaliation arrives a week earlier for a regular who pushes tier III on day 30 (simulated hold rate 52% that day):** the result card
+   already warns ("Retaliation III: attacks on your town grow stronger") and the War Map shows DEFENSE beside its recommended band, so
+   this is a real choice (build first, or push). If playtests show it feels punishing, the fix is a clearer DEFENSE warning on the tier
+   card before launch, not a wait.
