@@ -17,7 +17,7 @@
 // Rule 2 (guardrails, owner, Nov 25, 2026): the brief's tier III calendar targets (regular weeks 6-8, grinder week 3) were met only by
 // the two 7-day waits (tier III = tier II + 7 here before). They are still REPORTED below against the owner's numbers (TARGETS,
 // unchanged) but no longer asserted: the owner's approved change removes the wait that produced them, and no other number may change
-// this session. The genuine problem the wait hid is reported, not masked: on rare gear tier III is no harder than tier II (the same kit
+// this session. The genuine problem the wait hid is reported, not masked: on rare gear tier III is barely harder than tier II (the same kit
 // day breaks both; Checkpoint 51 PROPOSAL).
 import assert from 'node:assert/strict';import {cpus} from 'node:os';
 const {runner,TARGETS}=await import('../tools/citadel-pace.mjs');const M=await import('../tools/citadel-model.mjs');
@@ -46,5 +46,5 @@ ok(W.h1[0]>=W.g1[0]&&W.h1[1]<=W.r1[1],'tier I for the heavy player on days '+W.h
 // targets (Rule 2: not asserted, not changed; see the header), with the step from tier II on the same kit (SIMULATED)
 const med=x=>x.sec.length?x.sec[x.sec.length>>1]:null,rep=(n,d,T)=>console.log('REPORT (simulated) tier III for the '+n+' by day '+d+' (brief target '+(Array.isArray(T)?T.join('-'):T)+'): '+(Array.isArray(T)?(d>=T[0]&&d<=T[1]?'inside':'OUTSIDE: the 7-day waits produced it; Checkpoint 51'):'see the regular and grinder'));
 rep('regular',30+RF,TARGETS[3].regular);rep('grinder',12+RF,TARGETS[3].grinder);rep('heavy',17+RF,TARGETS[3].heavy);
-console.log('REPORT (simulated) the same kit, tier II -> tier III median clear: regular '+mmss(med(R.r2b))+' -> '+mmss(med(R.r3b))+', heavy '+mmss(med(R.h2b))+' -> '+mmss(med(R.h3b))+', grinder '+mmss(med(R.g2b))+' -> '+mmss(med(R.g3b))+' (tier III is no harder on rare gear: Checkpoint 51 PROPOSAL)');
+console.log('REPORT (simulated) the same kit, tier II -> tier III median clear: regular '+mmss(med(R.r2b))+' -> '+mmss(med(R.r3b))+', heavy '+mmss(med(R.h2b))+' -> '+mmss(med(R.h3b))+', grinder '+mmss(med(R.g2b))+' -> '+mmss(med(R.g3b))+' (tier III is barely harder on rare gear: the kit day that breaks tier II breaks tier III, its clears about 30 s longer; Checkpoint 51 PROPOSAL)');
 console.log(JSON.stringify({test:'conquest-citadel-pace',pass}));
