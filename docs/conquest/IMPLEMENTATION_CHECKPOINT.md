@@ -8156,5 +8156,12 @@ what each changed here:
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first; it governs everything, then this section.
 - **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07R_BRIEF.md`; this checkpoint opened.
-- Next: slice 2 (STEP 1, the owner rules recorded word for word in every governing file + the owner-rules test), then slice 3
-  (STEP 2, the Citadel cooldown), then reviews, then release.
+- **Slice 2 (STEP 1):** both owner rules of Nov 25, 2026 recorded word for word (generated from the saved brief, so byte-identical)
+  in CLAUDE.md, AGENTS.md, docs/ROADMAP.md (a Standing owner decisions bullet + the full section), docs/AI_TOOLCHAIN.md,
+  docs/conquest/CONQUEST_FLAGSHIP_EXECUTION_HANDOFF.md, docs/conquest/CONQUEST_BLUEPRINT.md, and docs/owner-rules.json (new `rules`
+  + `rulesEnforced` entries; every constant and limit unchanged). The PR and issue templates get a pointer checkbox, not the full text
+  (it would be copied into every PR body). `dev/tests/owner-rules.mjs` section 9: the three rule texts' SHA-256 pinned in the test, the
+  six files (pinned in the test, not only the JSON) hold both texts word for word, and the Citadel cooldown is at most 24 h. The
+  last check fails against the old 7-day code on purpose (the rule is in force): slice 3 makes it pass.
+- Next: slice 3 (STEP 2, the Citadel cooldown), then reviews, then release. The PR needs the `owner-rules-change` label (the owner's
+  brief orders the owner-rules.json entry).

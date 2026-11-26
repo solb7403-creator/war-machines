@@ -6,6 +6,7 @@ Summarize purpose and specific files/systems touched.
 - [ ] No unintended gameplay balance, inventory, payment, account or server-authority changes.
 - [ ] Existing HIGH/LOW/2D mobile behavior is preserved or differences are explicitly documented.
 - [ ] No secrets, proprietary third-party assets or unapproved paid services were added.
+- [ ] Owner rules of Nov 25, 2026 (`AGENTS.md`, full text) followed: gameplay judged on enjoyment, not only mathematical targets; simulated results labeled apart from playtesting; no guard threshold adjusted to match a simulation result (any changed threshold justified by the approved gameplay change and documented).
 
 ## Tests actually run
 List exact commands/CI URLs and observed results. Do not check boxes for tests not executed.
