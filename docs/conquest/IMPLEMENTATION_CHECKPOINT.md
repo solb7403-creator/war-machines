@@ -8314,3 +8314,14 @@ regular's earliest; PASS, 33); "1 days" for a cooldown of exactly 24 h -> FIXED 
   checks on main: owner-rules, the lab UI, the Graphify index: SUCCESS. This container cannot reach workers.dev (network policy), so
   the live values come from the deploy job's own checks.
 
+
+## Checkpoint 52 — Session 8: Payments certification + the store (branch `claude/payments-certification-store-sd5slv`, from main `25c83d6`)
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.md first; it governs everything.
+- Then this section, then the rest of this checkpoint. Every price, limit and payment rule in the brief is the owner's decision (Nov 26,
+  2026): ship exactly; a better number goes in the final report as a labeled PROPOSAL.
+- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.md`; this checkpoint opened.
+- **5E-2d2** (`claude/conquest-models-addendum-yg3oj6`, also changes js/core.js, js/net.js, js/ui.js) was NOT merged into main at the
+  start (its head `8392bd3`); merge main again before release and keep both sides.
+- **Next:** read the documents and code the brief names; review old PR #21; plan the slices (below, once written).
