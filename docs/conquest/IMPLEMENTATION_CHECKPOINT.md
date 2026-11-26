@@ -6546,10 +6546,40 @@ Not worth credits: rocks, grass, ferns, ore, fences, lamps, pipes, poles (small,
 people and livestock (many instances each: a Meshy model there costs triangles on LOW, the open item above); the viaduct,
 rail and dam (long repeating hard-surface pieces, which code builds well).
 
-## Checkpoint 45 — Session 5E-2d2: Conquest models + addendum (branch `claude/parasite-units-dropships-8y7kby`, from main `d61d259`) — IN PROGRESS
+## Checkpoint 45 — Session 5E-2d2: Conquest models + addendum (branch `claude/conquest-models-addendum-yg3oj6`, resumed Nov 26 from snapshot `616fa50`; first branch `claude/parasite-units-dropships-8y7kby`, from main `d61d259`) — IN PROGRESS
 
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md first; it governs everything.
+- **State on Nov 26 (the session resumed a third time, with a new brief that supersedes the Nov 21 one; it is saved word
+  for word in `docs/conquest/audit/SESSION_05E2D2_BRIEF.md`):** the work is on branch
+  `claude/conquest-models-addendum-yg3oj6`, started from the safety snapshot `616fa50` of
+  `claude/wonderful-hamilton-yvjoat` (every commit of PR #159, head `1dc8284`, plus the builders' untested work), with main
+  `25c83d6` merged in (merge `a9a434f`: Sessions 7R's owner rules and the Citadel with no cooldown). Two conflicts, both
+  sides kept: `index.html` (this session's five new script tags on main's build stamp `20261126053718`) and
+  `js/conquest/titan.js` (both sides had fixed the Hive Titan's perimeter; main's released `centre()` is the one kept).
+  PR #159 stays a draft; the new draft PR is opened from this branch only when the work is ready for review.
+- **Release is pre-approved** (owner, Nov 26: "I approve merging this session's PRs into main once all checks pass"):
+  `dev/bump.sh`, the draft PR marked ready with the `auto-release` label, verify the deploy, ROADMAP row, release record.
+- **Tested and done before this resume (do not redo):** everything in "History of this section" below.
+- **NOT tested yet: the snapshot's edits** (`bdbb839..616fa50`: `kit/parunits.js` 347 lines, `style.js` 180,
+  `kit/parstruct.js` 50, `townkit.js` 39, `kit/military.js` 19, `worldkit.js` 18, `view.js` 16, `plotview.js` 9,
+  `app.js` 5, `slots.js` 2, `conquest-parasite-captures.py` recording each unit's box, `conquest-session6c.py`,
+  `conquest-style.mjs`, 93 re-taken pictures). Step 0 of this resume: run the node list and the session's browser tests
+  on the merged tree, read each of those edits, keep and finish what holds up, fix what does not.
+- **Next, in order:** (0) the check of the snapshot above; (1) captures at the five sizes on HIGH and LOW
+  (`dev/tests/conquest-parasite-captures.py`, `conquest-warscenery-captures.py`, `conquest-dropship-browser.py`,
+  `conquest-citadel-ship.py`: the six units side by side at chase distance, the five commanders, the drone, both dropship
+  sequences and a ship shot down, the portal open and suppressed, the LDF posts, the town view with the real tank);
+  (2) the raid-view budget at CC10 (16 programs, 150 draw calls: `conquest-base-builder.py`) and the relay fight (80 draw
+  calls at 320 wide); (3) the 5E-2d1 leftovers (the ten reviewer notes of Checkpoint 44; the colony on LOW back to at most
+  197,849 triangles); (4) three critic rounds; (5) the whole test list of the brief; (6) two independent reviewers;
+  (7) release.
+- **Environment notes for a fresh context:** Python Playwright is not in the image (`pip install playwright==1.55.0`;
+  Chromium is `/opt/pw-browsers/chromium`, linked to `/usr/bin/chromium` for the tests that look there); the website
+  fixture needs `cd worker && npm install` (`@simplewebauthn/server`). The pre-session tree for before / after captures:
+  `git archive d61d259` into a scratch folder, then `--root` on the capture tool.
+
+#### History of this section (the state recorded on Nov 25, 15:00 UTC, kept as written)
 - **State on Nov 25, 15:00 UTC (the session resumed after Sessions 7, 7T, 7T-P, 7B and 7C shipped; the context was cleared
   once more on Nov 25 and this section was rebuilt from the tree, the tests and the builders' logs):** main `ae22fcb` is
   merged into this branch (merge `de4c9bd`; both sides kept in `web/boot.js` and this file). The owner approved merging this
