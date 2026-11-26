@@ -234,7 +234,7 @@
    "id": "guardrails",
    "owner": "owner",
    "date": "2026-11-25",
-   "title": "Rule 2: guardrails, permanent (never adjust a guard threshold to match a simulation)",
+   "title": "Rule 2: guardrails, permanent (never adjust a guard threshold automatically to match new simulation results; only when independently justified, documented)",
    "text": "Do not automatically adjust guardrail thresholds to match new simulation results. Investigate failures and only adjust thresholds when independently justified by the approved gameplay change, without masking genuine problems. Document the reasoning and continue autonomously."
   },
   {

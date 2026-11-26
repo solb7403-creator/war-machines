@@ -8171,8 +8171,40 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
   removed from docs/ROADMAP.md; "24 hours" -> "48 hours" in the owner-rules.json rule text (the pinned hash and all six files fail);
   the owner-rules.json `rules` entry dropped; refortMs back to 7 days (168 h); refortMs 25 h. refortMs 24 h (the owner's maximum)
   PASSES, as it must. Every mutation reverted.
-- Next: slice 5 (three independent reviewers, at most 2 rounds; round 1 started at `5cf8ae7`), slice 6 (release: ready +
-  `auto-release`, verify the deploy, then the release record).
+- **Slice 5 (reviews round 1 at `5cf8ae7`, fixes `7364d51`-`0355b02` + the paraphrase fix):** details under "Reviews" below.
+- Next: review round 2 (the same three reviewers' briefs, at the fixed head), then slice 6 (release: ready + `auto-release`, verify the
+  deploy, then the release record).
+
+### Reviews (three independent read-only reviewers in their own worktrees, given the branch, head, brief and checkpoint, not the lead's conclusions)
+**Round 1 (`5cf8ae7`).** Reviewer A (every brief item, every owner rule): STEP 1 PASS (texts byte-identical in all seven places, its own
+four mutations each fail the test), STEP 2 PASS, Rule 1 PASS (caveat: an unevidenced "most likely to stay" claim), Rule 2 PASS narrowly,
+existing rules and guards PASS. Reviewer B (gameplay quality + guardrails): the choice PASS, the stated reason FAIL, Rule 2 PASS (one
+dropped assertion), side effects FAIL, correctness FAIL (the card text). Reviewer C (first-clear bounties + airdrop points): bounties
+exactly once PASS (time was never part of the once-only guarantee: first = tier === c.t+1, ids by `cbty`, watermark, outbox dedupe),
+airdrop points and numbers PASS (one constant changed), no exploit path found, Rule 2 PASS, Rule 1 FAIL (minor: the card text).
+Findings and what was done:
+1. **The first-clear result card said "the Hive re-fortifies it for 0 days"** (B, C; medium; the 160-character cut in citadel-ui.json
+   hid it from the journey's record and the eye check missed it) -> FIXED: "Next: CITADEL II · IRON RAIN · open now (or replay this tier
+   as a Throne Run)"; a cooldown of hours would print in hours; `conquest-citadel.py` asserts "open now" and no "re-fortif" / "0 days"
+   at all five sizes (PASS); captures re-taken and checked at 320x568 and 1920x1080.
+2. **A phone clock behind the server's showed a phantom wait** (A, C; low-medium) -> FIXED: `opensAt` returns 0 when `refortMs` is 0;
+   `conquest-citadel.mjs` checks a phone 3 minutes behind sees Citadel II open (84 PASS).
+3. **The stated reason was wrong** (B: the wait delayed tier III for every profile, not only the strongest) -> FIXED in citadel.js and
+   STEP 2 above; the unevidenced "most likely to stay" claim (A) removed with it.
+4. **The pace tools rounded a cooldown of hours to days** (B) -> FIXED: `Math.ceil` (a wait of hours moves the next tier to the next
+   model day).
+5. **A still-true assertion was dropped: the heavy player's tier III between the grinder and the regular** (A, B; Rule 2) -> RESTORED as
+   an assertion (heavy 15-17 inside grinder 8-12 .. regular 28-30).
+6. **Side effects not reported** (B: the undefended REPAIR bill +20%, tier II and III bounties on the same day, a misquoted card line) ->
+   recorded in STEP 2 and PROPOSAL 2 corrected.
+7. **Report wording** (B: "by day 12" vs the json's day 10) -> the REPORT lines say "this test's boundary day".
+8. **Paraphrases stricter than Rule 2** (A: "never adjusted") -> the ROADMAP bullet, both templates and the owner-rules.json title now
+   say "never adjusted automatically to match new simulation results; only when independently justified ... documented" (the full text
+   follows each).
+9. Recorded, no change: the grinder's tier II loss on day 7 wins 1 of 3 (A: thin margin; the seeds are fixed, so it is deterministic);
+   `docs/conquest/session6b/OWNER_RULES_6B.md` not given the text (A: it is Session 6B's record of its own prompt, not a file sessions
+   read as instructions); the `owner-rules-change` label added by the lead (A: the brief orders the owner-rules.json entry, as in
+   Sessions 7T and 7C); Act I is shallow on rare gear (A, B: PROPOSAL 1, ships as the owner's approved change).
 
 ### STEP 2: the Citadel cooldown (owner Rule 1: "a matter of hours, with 24 hours being the absolute maximum, if a cooldown is even necessary")
 - **Choice: none** (`js/conquest/citadel.js` `CIT.refortMs:0`; the field and the gate code stay, so a future owner decision of some hours
