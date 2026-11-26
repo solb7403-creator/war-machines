@@ -8173,9 +8173,10 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
   PASSES, as it must. Every mutation reverted.
 - **Slice 5 (reviews round 1 at `5cf8ae7`, fixes `7364d51`-`0355b02` + the paraphrase fix):** details under "Reviews" below.
 - **Slice 6 (review round 2 at `a183a00`, fix `a251615`):** every brief item and every owner rule PASS from all three reviewers (below).
-- **SESSION 7R IS RELEASED** (Nov 26, 2026: PR #160 merged by the auto-release workflow as `a58acff`; the build stamp
-  `20261126053718` and this record in the follow-up PR from the same branch, restarted from main; section "Release record" below;
-  ROADMAP row 7R). Open for the owner: PROPOSALs 1 and 2 below.
+- **SESSION 7R IS RELEASED** (Nov 26, 2026: PR #160 merged as `a58acff`, PR #161 (the build stamp) merged as `42e9382`; live build
+  `20261126053718` = repo; section "Release record" below; ROADMAP row 7R). Open for the owner: PROPOSALs 1 and 2 below. Next on the
+  roadmap: as Checkpoint 50 lists (5E-2d2, 6B-V, 7-V, 7.5, 7.8, 8, 9); a later session should also make `signup-browser.cjs` wait for
+  the 3D models before it leaves the play page (the WebKit note in the release record).
 - **Slice 7 (release):** PR #160 marked ready with `auto-release` at `0384276`. CI's `boards-titan` job failed: a real game bug from
   Session 7C, red on main too (fixed in `8de1769`, under "CI fix" below). Every check green on `50ebfaa`; merged at 05:36 UTC.
 - **Slice 8 (follow-up PR):** PR #160 shipped without a `dev/bump.sh` build stamp (7C's release had one): a phone with the old build
@@ -8300,5 +8301,16 @@ regular's earliest; PASS, 33); "1 days" for a cooldown of exactly 24 h -> FIXED 
 - CI along the way: `boards-titan` red on `0384276` (and on main): the Titan perimeter bug, fixed with a test (above);
   `transmission (chromium)` red once on `0384276` (the flagship journey's bot pilot lost a battery raid at 71 s): passed on both this
   branch and main locally, and passed on the next head in CI; this PR touches no raid code. No test skipped, deleted or loosened.
-- The follow-up PR (build stamp) and the deploy check of both merges are recorded below when they finish.
+- Worker for PR #160: `Deploy Stars server (Cloudflare)` run 45762739999 SUCCESS on `a58acff` (server tests, the live-match smoke test,
+  deployed 05:43 UTC): `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`; live `version.json` still
+  `20261125032217` (no stamp yet: the follow-up).
+- PR #161 (`release(7R)`: the build stamp `20261126053718`, the record, ROADMAP row 7R) merged by the auto-release workflow at 06:21 UTC
+  as `42e9382` (head `6a12207`), every check green. `signup-browsers (webkit)` failed once (nine "Cannot load blob ... due to access
+  control checks" with the GLB loads "cancelled": WebKit reporting in-flight texture loads a navigation cancelled; the test exempts the
+  "Fetch API" variant of that message for this cause, not the blob one); its one re-run passed; noted on the PR with the proposed fix
+  (wait for the models before leaving the play page), left for a later session.
+- Worker for PR #161: run 45767630415 SUCCESS on `42e9382` (deployed 06:26 UTC): `/pvp/health` ok (`v` 7), live `version.json` =
+  `{"v":"20261126053718"}` = repo. GitHub Pages: `pages build and deployment` run 45767623694 SUCCESS on `42e9382`. The other push
+  checks on main: owner-rules, the lab UI, the Graphify index: SUCCESS. This container cannot reach workers.dev (network policy), so
+  the live values come from the deploy job's own checks.
 
