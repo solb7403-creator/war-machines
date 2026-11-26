@@ -83,4 +83,12 @@ const sit=()=>({x:0,z:0});
 {const M=TT.slotNow(T0),slot=M.slot,late=M.closesAt+11*60000,s={strikeSlot:slot,strikes:{[slot]:{claimed:1}},ttn:{v:1,sl:{}}};
  ok(TT.isTitanSlot(slot)&&TT.startWhy(s,late)==='this Titan slot has closed'&&TT.startWhy({...s,bcn:{slot,until:late+30*60000}},late)==='','a Strike Beacon on this Titan slot opens the hunt in the slot\'s idle phase (without it the slot is closed)');
  const many={};for(let i=1;i<=70;i++)many[i*6]={k:0,d:i,a:1};const kept=Object.keys(TT.norm({sl:many}).sl).length;ok(kept===64,'the Titan record keeps 64 slots: a 30-day board period holds 60 ('+kept+')');}
+// ---- Session 7R CI fix: the hunt's perimeter is the slot's own crater. Before, a Titan slot at any crater but the first (REFUGE CORRIDOR)
+// failed at once ("Operation perimeter abandoned": 260 m around the first site), which the 7C journey met on Nov 26 ----
+{const S=C.strikeSites,n=S.length,res=[];
+ for(let i=0;i<n;i++){const slot=6*n+i*6-((6*n+i*6)%n)+i;const site=S[((slot%n)+n)%n],a=TT.arenaOf(site),P={x:a.x,z:a.z+30,y:W.groundAt(a.x,a.z+30),surface:'ground'};
+  const B=TT.make(GEAR.epic,P,'hive-titan').setup({slot,site});B.tick(5,P,{aim:{x:a.x,y:P.y+2,z:a.z}});
+  const R2=TT.make(GEAR.epic,P,'hive-titan');Object.assign(R2,JSON.parse(JSON.stringify(B)));R2.restore();R2.tick(2,P,{aim:{x:a.x,y:P.y+2,z:a.z}});
+  res.push({site:site.id,state:B.state,after:R2.state,ox:R2.operation.x,oz:R2.operation.z,sx:site.x,sz:site.z});}
+ ok(res.every(r=>r.state==='active'&&r.after==='active'&&r.ox===r.sx&&r.oz===r.sz),'the hunt\'s perimeter is its own crater at every strike site ('+res.map(r=>r.site+' '+r.state+'/'+r.after).join(', ')+'), also after a save and restore');}
 console.log(JSON.stringify({test:'conquest-titan',pass}));
