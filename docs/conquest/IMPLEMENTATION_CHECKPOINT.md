@@ -8150,3 +8150,11 @@ what each changed here:
   for the workspace after 7 days unused (a workspace owner resumes them on Graphify's Repositories page).
 - **Agents used:** one research agent (before STEPs 2-4) and three read-only reviewers (two rule reviewers, one airdrop-integrity
   reviewer), two rounds each, each in its own copy of the branch.
+
+## Checkpoint 51 — Session 7R: owner rules + Citadel cooldown (branch `claude/owner-rules-citadel-cooldown-69wg3f`, from main `ae22fcb`)
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first; it governs everything, then this section.
+- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07R_BRIEF.md`; this checkpoint opened.
+- Next: slice 2 (STEP 1, the owner rules recorded word for word in every governing file + the owner-rules test), then slice 3
+  (STEP 2, the Citadel cooldown), then reviews, then release.
