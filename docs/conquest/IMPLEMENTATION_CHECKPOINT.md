@@ -6641,8 +6641,11 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md fi
   stolen plates, a loot rack), `conquest-style.mjs` (LOW colony + frontier as built at most 59,818 triangles, main before
   5E-2d1) and `conquest-session6c.py` (LOW draws at most its triangles before 5E-2d1 at each phone size: 197,849 at
   390x844, the owner's figure).
-- **Result on the merged tree: kept, with three fixes.** The node list of every CI workflow (149 commands) ran: 147 passed
-  at once; `conquest-earned-defense.mjs` needs the file `conquest-earned-journey.mjs` writes first (it passes in CI's
+- **Result on the merged tree: kept, with three fixes.** The node list of every CI workflow is 149 commands. **Correction
+  (Nov 26): the first run of it was cut off by its time limit after 104 commands had reported (102 passed, 2 below); the
+  commit `0c9bbae` and an earlier wording of this line said "149 green", which was not yet true. The commands that had not
+  reported are run again and their result is recorded under "The whole test list" when it is in.** Of the 104:
+  `conquest-earned-defense.mjs` needs the file `conquest-earned-journey.mjs` writes first (it passes in CI's
   order and alone); `conquest-style.mjs` failed on one real fault: **the Hoard Fortress stood 4 cm over its slot box**
   (the hoard's net, 6.04 m in a 6 m box): the net is 1.26 m over a 0.44 m crate now, the box and the rule unchanged.
   `conquest-parasite-captures.py` crashed recording the units' boxes (the game's three.js build exports no `Box3`): it

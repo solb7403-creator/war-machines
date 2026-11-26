@@ -24,8 +24,9 @@ HERE=pathlib.Path(__file__).resolve().parents[2]
 PLACE='''([spec,gap,ahead,pitch,dist,dead])=>{const v=Conquest.view,W=ConquestWorld,T=THREE;
  if(v.__cap){for(const g of v.__cap)v.scene.remove(g);}v.__cap=[];
  // the flattest spot of a coarse search over the barren plain north of the Refuge (kept for every later shot)
- if(!v.__capAt){let best=1e9,at=null;for(let x=1240;x<=1560;x+=16)for(let z=820;z<=1010;z+=16){let lo=1e9,hi=-1e9,bad=false;for(let i=-3;i<=3&&!bad;i++)for(let j=-1;j<=4;j++){const px=x+i*8,pz=z+j*8;if(W.solidAt(px,pz)||W.waterAt(px,pz)){bad=true;break;}const g=W.groundAt(px,pz);lo=Math.min(lo,g);hi=Math.max(hi,g);}
-   if(!bad&&hi-lo<best){best=hi-lo;at=[x,z];}}v.__capAt=at;}
+ if(!v.__capAt){let best=1e9,at=null;for(let x=1240;x<=1560;x+=8)for(let z=820;z<=1100;z+=8){let lo=1e9,hi=-1e9,n=0;/* every 2 m of the stage (the rows stand up to 22 m either side and 48 m ahead) and of the strip the camera looks along behind the tank: a boulder between the old grid's 8 m points stood in the middle of the line-up. The spot with the fewest solid points wins, then the flattest. */
+   for(let i=-11;i<=11;i++)for(let k=-13;k<=24;k++){if(k<2&&Math.abs(i)>3)continue;const px=x+i*2,pz=z+k*2;if(W.solidAt(px,pz)||W.waterAt(px,pz))n++;const g=W.groundAt(px,pz);lo=Math.min(lo,g);hi=Math.max(hi,g);}
+   const sc=n*100+(hi-lo);if(sc<best){best=sc;at=[x,z];}}v.__capAt=at;}
  const [cx,cz]=v.__capAt;v.jump(cx,cz);v.heading=0;v.yaw=Math.PI;v.pitch=pitch;v.distance=dist;v.camSnap=true;
  const E=v.encounter;if(E){for(const e of E.enemies||[]){e.hp=0;if(E.cleared)E.cleared[e.key]=true;}E.playerHp=E.playerMax;}
  const A=ConquestCombat.archetypes,n=spec.length,out=[];
@@ -60,13 +61,13 @@ def rows(front,back,gap,dz,gapB=None):
  return out
 G=lambda k,ps,**o:[U(k,commander=True,pattern=p,**o) for p in ps]
 PHONE={
- 'lineup':(rows([U('raider'),U('swarm'),U('breacher')],[U('sentinel'),U('command'),U('brute')],6.2,17,7.6),0,20,.5,23,0),
- 'lineup-34':(rows([U('raider',rot=.75),U('swarm',rot=.75),U('breacher',rot=.75)],[U('sentinel',rot=.75),U('command',rot=.75),U('brute',rot=.75)],6.6,18,8.6),0,20,.5,23,0),
- 'lineup-side':(rows([U('raider',rot=1.5708),U('swarm',rot=1.5708),U('breacher',rot=1.5708)],[U('sentinel',rot=1.5708),U('command',rot=1.5708),U('brute',rot=1.5708)],7,18,9.4),0,20,.5,23,0),
- 'dead':(rows([U('raider'),U('swarm'),U('breacher')],[U('sentinel'),U('command'),U('brute')],6.2,17,7.6),0,20,.5,23,3),
- 'generals':(rows(G('command',CMD[:2]),G('command',CMD[2:]),7,17,7.4),0,20,.5,23,0),
- 'generals-raider':(rows(G('raider',CMD[:2]),G('raider',CMD[2:]),5,12,5.4),0,18,.46,21,0),
- 'generals-sentinel':(rows(G('sentinel',CMD[:2]),G('sentinel',CMD[2:]),7,17,7.4),0,20,.5,23,0)}
+ 'lineup':(rows([U('raider'),U('swarm'),U('breacher')],[U('sentinel'),U('command'),U('brute')],6.2,17,7.6),0,14,.36,23,0),
+ 'lineup-34':(rows([U('raider',rot=.75),U('swarm',rot=.75),U('breacher',rot=.75)],[U('sentinel',rot=.75),U('command',rot=.75),U('brute',rot=.75)],6.6,18,8.6),0,14,.36,23,0),
+ 'lineup-side':(rows([U('raider',rot=1.5708),U('swarm',rot=1.5708),U('breacher',rot=1.5708)],[U('sentinel',rot=1.5708),U('command',rot=1.5708),U('brute',rot=1.5708)],7,18,9.4),0,14,.36,23,0),
+ 'dead':(rows([U('raider'),U('swarm'),U('breacher')],[U('sentinel'),U('command'),U('brute')],6.2,17,7.6),0,14,.36,23,3),
+ 'generals':(rows(G('command',CMD[:2]),G('command',CMD[2:]),7,17,7.4),0,14,.36,23,0),
+ 'generals-raider':(rows(G('raider',CMD[:2]),G('raider',CMD[2:]),5,12,5.4),0,13,.36,21,0),
+ 'generals-sentinel':(rows(G('sentinel',CMD[:2]),G('sentinel',CMD[2:]),7,17,7.4),0,14,.36,23,0)}
 SHARP='''for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){const v=g.call(this,p);return typeof v==='string'&&/swiftshader|llvmpipe|softpipe|software/i.test(v)?'Capture GPU':v;};}'''   # --sharp: the game holds a CPU rasterizer at .75x of the screen (js/graphics.js); a capture for LOOKS is drawn at the resolution a real device gets (HIGH on a phone: the device's own ratio, here the context's; LOW: 1x), by not telling the game the renderer is SwiftShader. Never used by a test that measures a budget.
 async def main(a):
  ROOT=pathlib.Path(a.root).resolve() if a.root else HERE
@@ -92,6 +93,7 @@ async def main(a):
   info={}
   for name in shots:
    spec,gap,ahead,pitch,dist,dead=TABLE[name]
+   if h>w and h<=700 and name in PHONE:ahead-=4;dist-=2   # a short phone: the HUD takes more of the screen, so the rows stand nearer and stay under it
    if a.ratio:await ratio(.3)
    placed=await page.evaluate(PLACE,[spec,gap,ahead,pitch,dist,dead]);await page.wait_for_timeout(400)
    if not info:await page.wait_for_timeout(1500);placed=await page.evaluate(PLACE,[spec,gap,ahead,pitch,dist,dead]);await page.wait_for_timeout(400)   # the first shot: the jump to the capture ground settles first
