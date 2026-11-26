@@ -1,0 +1,291 @@
+diff --git a/css/conquest.css b/css/conquest.css
+index d329009..6d9f9a1 100644
+--- a/css/conquest.css
++++ b/css/conquest.css
+@@ -601,11 +601,18 @@
+  .cq-world .cq-heat{top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 120px);bottom:auto;right:12px;width:112px;height:24px;display:flex;align-items:center;gap:6px;padding:2px 6px}
+  .cq-world .cq-heat .cq-heat-label{font-size:9px;line-height:1;white-space:nowrap}.cq-world .cq-heat .cq-heat-track{flex:1;min-width:30px}
+  .cq-map canvas{width:min(100%,calc(min(36vh,250px)*.857));height:auto}.cq-map h2{font-size:15px;white-space:nowrap}
++ /* 5E-2d2 (reviewer note: the docked heat panel touched the end of a long POWER pill): on the row the two share, the pill's pending
++    line ("→ 60 at the Refuge") goes under its number as the second line it was written to be (in one line the pill ran 236 px
++    wide, 38 px under the panel at 320 px and to within 2 px of it at 390 px); the pill is then at most 143 px wide */
++ .cq-world .cq-combat-hud .cq-rating{display:inline-grid;grid-template-columns:auto auto;justify-content:start;gap:1px 6px}.cq-world .cq-combat-hud .cq-rating .cq-rating-next{grid-column:1/-1;justify-self:start}
+ }
+ @media(pointer:coarse) and (max-height:600px) and (orientation:portrait){.cq-map canvas{width:min(100%,190px);height:auto}
+  /* the map's buttons (zoom, LOCATE SELF, CLOSE MAP) come straight after the map on a short phone: they were below the fold */
+  .cq-dialog.cq-map{display:flex;flex-direction:column}.cq-dialog.cq-map>h2{order:-4}.cq-dialog.cq-map>.cq-map-mission{order:-3}.cq-dialog.cq-map>canvas{order:-2}.cq-dialog.cq-map>.cq-map-controls{order:-1}}
+ @media(pointer:coarse) and (max-width:360px) and (orientation:portrait){.cq-world .cq-heat{width:84px;gap:4px;padding:2px 5px}.cq-world .cq-heat .cq-heat-label{font-size:8px}}
++/* 5E-2d2 (reviewer note: minor HUD items at 320x568): the docked heat panel is as tall as the POWER pill beside it (it was 30 px
++   beside 22, and the status line under the row ran behind its lower edge) */
++@media(pointer:coarse) and (max-width:360px) and (max-height:720px) and (orientation:portrait){.cq-world .cq-heat{height:16px;top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 119px)}}
+ 
+ /* ---- Session 7T Living Town (js/conquest/townui.js): town attacks, raided while away, the Strike Beacon, the streak line, the last
+    chance, the live defense HUD, the Hangar gear picker, the alert switches. Fits or scrolls; 44 px touch targets. ---- */
+diff --git a/dev/tests/conquest-leftovers-captures.py b/dev/tests/conquest-leftovers-captures.py
+new file mode 100644
+index 0000000..a28cd13
+--- /dev/null
++++ b/dev/tests/conquest-leftovers-captures.py
+@@ -0,0 +1,211 @@
++"""Session 5E-2d2 captures (brief section 7, "5E-2d1 LEFTOVERS"): one picture per reviewer note of Checkpoint 44, framed the same
++way before (a tree given with --root, e.g. `git archive origin/main`) and after, plus the colony on LOW.
++Shipped client (index.html), real renderer, scenario placements only (a jump, a camera framing, a UI tap). Software GL: looks
++and counts only, never a phone frame rate.
++usage: python3 dev/tests/conquest-leftovers-captures.py --mode world|town [--quality high|low] [--size 390x844] [--mouse]
++       [--out DIR] [--tag before|after] [--only name,name] [--root DIR] [--sharp] [--dpr 2]
++--mode world (the local economy; the pilot has no town): the see-through outline behind a thin thing and behind a building
++ (note 1), an atmosphere pylon's dome and the settler block (2), the map as it opens (3, 10), the objective beam (4), the Command
++ Base wall and towers (5: the art the style builds for a tier V base, stood on the base's own pad), steep banks (6), the colony
++ (LOW), the docked heat panel beside the POWER pill (10).
++--mode town (the real Worker on the fixture server, a fully built CC10 town): the town's miniature on the pad (8), the drive
++ view as it opens (9), the town's ground in the build view (7).
++Every run writes PNG pictures at the device's resolution and one JSON (draws, triangles, programs, the HUD boxes measured).
++Sizes used by the session: 390x844, 320x568 (touch) and 1366x768 (--mouse: keyboard + mouse)."""
++import argparse,asyncio,json,pathlib,shutil
++from urllib.parse import urlparse
++from playwright.async_api import async_playwright
++HERE=pathlib.Path(__file__).resolve().parents[2]
++SHARP='''for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){const v=g.call(this,p);return typeof v==='string'&&/swiftshader|llvmpipe|softpipe|software/i.test(v)?'Capture GPU':v;};}'''   # --sharp: the game holds a CPU rasterizer at .75x of the screen (js/graphics.js); a capture for LOOKS is drawn at the resolution a real device gets, by not telling the game the renderer is SwiftShader. Never used by a test that measures a budget.
++# the steepest open bank on the terraformed side of the colony (found the same way in both trees: the terrain is the same)
++STEEP='''(()=>{let b=[936,1197],bs=0;for(let x=900;x<=1320;x+=5)for(let z=1000;z<=1300;z+=5){if(W.solidAt(x,z)||W.waterAt(x,z))continue;const s=Math.hypot(W.groundAt(x+1.5,z)-W.groundAt(x-1.5,z),W.groundAt(x,z+1.5)-W.groundAt(x,z-1.5))/3;if(s>bs){bs=s;b=[x,z];}}return b;})()'''
++BASE='[ConquestCombat.baseDefinition.x,ConquestCombat.baseDefinition.z]'
++# name, subject ([x, z] in the page: F = the style's footprints, W = ConquestWorld), the side the tank stands on (degrees from
++# +x toward +z, seen from the subject), stand-off (m), camera pitch, camera distance, kind:
++#  '' = the camera looks over the tank at the subject (the world-kinds framing);
++#  'across' = the camera stands on the far side of the subject and looks back at the tank, so the subject is in the way;
++#  'thin:pole' / 'thin:lattice' / 'thin:slab' = the tank on open ground (where conquest-occluder.py stands it) with a thin thing
++#   stood 6 m in front of it on the camera's line: a 0.4 m pole, a lattice leg (two 0.3 m uprights and their braces) or a
++#   2.4 m slab that hides most of the hull (the outline: nothing behind the first two, the whole silhouette behind the third);
++#  'census' = '' with the local raiders left alive, and the frame's triangles counted by what drew them (the colony, the frontier,
++#   the Refuge, the ground, the scenery, the hostiles, the pilot's tank ...): where a frame's weight comes from, in either tree;
++#  'fort' = '' with the tier V Command Base art stood on the pad; 'map' / 'hud' = a UI picture taken where the tank stands.
++SHOTS=[
++ ('note03-map-open',None,0,0,0,0,'map'),
++ ('note10-hud',None,0,0,0,0,'hud'),
++ ('note01-outline-pole','[1132,1240]',90,12,.42,30,'thin:pole'),
++ ('note01-outline-lattice','[1132,1240]',90,12,.42,30,'thin:lattice'),
++ ('note01-outline-slab','[1132,1240]',90,12,.42,30,'thin:slab'),
++ ('note01-outline-pylon','[1004,1122]',90,13,.55,30,'across'),
++ ('note01-outline-pylon-foot','[1004,1122]',90,7,.2,30,'across'),
++ ('note01-outline-building','[1218,1096]',90,9,.2,34,'across'),
++ ('note02-atmo-pylon','[1004,1122]',90,14,.18,22,''),
++ ('note02-colony-block','[1194,1096]',90,14,.24,20,''),
++ ('note04-beam-near',BASE,270,40,.1,24,''),
++ ('note04-beam-far',BASE,270,150,.08,22,''),
++ ('note05-base-fort',BASE,315,36,.45,28,'fort'),   # from the front corner (the monorail passes the gate side: straight on, its beam fills the frame)
++ ('note05-base-wall',BASE,0,30,.28,24,'fort'),
++ ('note05-base-tower','[ConquestCombat.baseDefinition.x+15,ConquestCombat.baseDefinition.z-13]',300,14,.25,16,'fort'),
++ ('note06-bank-steepest',STEEP,90,16,.3,22,''),
++ ('note06-bank-terminal','[F.terminal.x,F.terminal.z]',90,9,.8,24,''),
++ ('note06-bank-wall','[1255,1166]',200,14,.5,26,''),
++ ('note06-bank-crater','[922,1179]',315,18,.34,25,''),
++ ('census-raid','[905,925]',90,0,.95,100,'census'),   # the scene conquest-session6c.py samples (its raid's own camera), with what each part of the world draws
++ ('census-colony','[1062,1090]',135,24,.32,38,'census'),
++ ('colony-core','[1062,1090]',135,24,.32,38,''),
++ ('colony-homes','[1146,1108]',90,13,.3,17,''),
++ ('colony-plaza','[1012,1096]',90,16,.5,28,''),
++ ('colony-hall','[1014,1144]',90,15,.28,21,''),
++ ('note03-map-colony',None,0,0,0,0,'map'),
++]
++PLACE='''([deg,stand,pitch,dist,across,keep])=>{const v=Conquest.view,W=ConquestWorld,F=v.style.footprints,S=(SUBJ),a=deg*Math.PI/180,dx=Math.cos(a),dz=Math.sin(a);
++ const free=(x,z)=>{for(let k=0;k<8;k++)if(W.solidAt(x+Math.cos(k*.785)*5,z+Math.sin(k*.785)*5))return false;return !W.solidAt(x,z)&&!W.waterAt(x,z);};
++ const rise=(x,z)=>{const fx=S[0]-x,fz=S[1]-z,l=Math.hypot(fx,fz)||1,g0=W.groundAt(x,z),h=Math.cos(pitch)*dist;let worst=0;for(let i=1;i<=16;i++){const t=i/16,g=W.groundAt(x-fx/l*h*t,z-fz/l*h*t);worst=Math.max(worst,(g-g0)/t-Math.sin(pitch)*dist);}return worst;};
++ let x=0,z=0,best=1e9;for(const off of [0,25,-25,50,-50,80,-80,115,-115,150,-150,180]){const b=a+off*Math.PI/180,p=S[0]+Math.cos(b)*stand,q=S[1]+Math.sin(b)*stand;if(!free(p,q))continue;const sc=(across?0:Math.max(0,rise(p,q)))+Math.abs(off)*.004;if(sc<best){best=sc;x=p;z=q;}if(sc<.5)break;}
++ if(best>1e8){x=S[0]+dx*stand;z=S[1]+dz*stand;search:for(let r=2;r<=22;r+=2)for(let k=0;k<16;k++){const p=x+Math.cos(k*.3927)*r,q=z+Math.sin(k*.3927)*r;if(free(p,q)){x=p;z=q;break search;}}}
++ const fx=S[0]-x,fz=S[1]-z,yaw=across?Math.atan2(fx,fz):Math.atan2(-fx,-fz);v.jump(x,z);v.heading=Math.atan2(fx,fz)+(across?1.2:0);v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;
++ const E=v.encounter;if(E){if(!keep)for(const e of E.enemies||[]){e.hp=0;if(E.cleared)E.cleared[e.key]=true;}E.playerHp=E.playerMax;}return {yaw,at:[x,z],subject:S};}'''
++# one more render of the same frame with every draw's triangles booked to the part of the world that owns the mesh
++CENSUS='''()=>{const v=Conquest.view,r=v.renderer,orig=r.renderBufferDirect,by={},foes=new Set(v.enemyMeshes?[...v.enemyMeshes.values()]:[]),pals=new Set([...(v.friendViews?.values()||[])].map(F=>F.g));
++ const tag=o=>{for(let p=o;p;p=p.parent){if(p===v.vehicle)return 'pilot tank';if(foes.has(p)||p.userData&&p.userData.unit)return 'hostiles';if(pals.has(p))return 'allies';if(p===v.baseGroup)return 'command base';if(p.name&&p.name.indexOf('cq-')===0)return p.name.replace(/-[0-9].*$/,'').replace(/-(main|detail|core|smoke)$/,'');if(p===v.props)return 'props (refuge, viaduct, hives, cover)';}
++  return o.isInstancedMesh?'scenery (instanced)':o.geometry&&o.geometry.userData&&o.geometry.userData.hfShared?'shared':'ground and scenery chunks';};
++ if(typeof orig!=='function')return null;r.renderBufferDirect=function(c,s,g,m,o){const t0=r.info.render.triangles;orig.apply(this,arguments);const k=tag(o);by[k]=(by[k]||0)+r.info.render.triangles-t0;};
++ try{r.render(v.scene,v.camera);}finally{r.renderBufferDirect=orig;}return {by,total:Object.values(by).reduce((a,b)=>a+b,0),hostilesAlive:(v.encounter?.enemies||[]).filter(e=>e.hp>0&&Math.hypot(e.x-v.p.x,e.z-v.p.z)<160).length};}'''
++THIN='''what=>{const v=Conquest.view,T=v.T;for(const m of window.__thin||[]){m.parent&&m.parent.remove(m);m.geometry.dispose();}window.__thin=[];if(!what)return;
++ const cam=v.camera.position,t=v.vehicle.position,d=new T.Vector3(cam.x-t.x,0,cam.z-t.z).normalize(),r=new T.Vector3(d.z,0,-d.x),mat=window.__thinMat||(window.__thinMat=new T.MeshLambertMaterial({color:0x8090a0}));
++ const bar=(off,y,w,h,tilt)=>{const m=new T.Mesh(new T.BoxGeometry(w,h,Math.min(w,.4)),mat);m.position.copy(t).addScaledVector(d,6).addScaledVector(r,off);m.position.y=t.y+y;m.quaternion.setFromAxisAngle(d,tilt||0).multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.atan2(d.x,d.z)));m.position.sub(v.props.position);m.name='leftovers-thin';v.props.add(m);window.__thin.push(m);};
++ if(what==='pole')bar(0,7,.4,18);
++ if(what==='lattice'){bar(-1.1,7,.3,18);bar(1.1,7,.3,18);for(let k=0;k<5;k++){bar(0,.6+k*3.2,.16,3.6,k%2?.62:-.62);bar(0,-.9+k*3.2,2.2,.16,0);}}
++ if(what==='slab')bar(.5,7,2.4,18);}'''
++FRAMES='n=>new Promise(r=>{let k=0;const f=()=>++k<n?requestAnimationFrame(f):r();requestAnimationFrame(f);})'
++INFO='(()=>{const v=Conquest.view,i=v.renderer.info;return {calls:i.render.calls,tris:i.render.triangles,programs:i.programs?.length};})()'
++BOX='''s=>{const e=typeof s==='string'?document.querySelector(s):s;if(!e)return null;const r=e.getBoundingClientRect(),c=getComputedStyle(e);return {x:+r.x.toFixed(1),y:+r.y.toFixed(1),w:+r.width.toFixed(1),h:+r.height.toFixed(1),shown:c.display!=='none'&&c.visibility!=='hidden'&&r.width>0};}'''
++# the map as it opens: the canvas and every button of its control row, against the screen (a button below the fold is one a pilot
++# has to scroll to); read before anything scrolls
++MAPBOX='''()=>{const B=('''+BOX+'''),d=document.querySelector('.cq-dialog.cq-map'),o={screen:[innerWidth,innerHeight],dialog:B(d),scroll:d?[d.scrollTop,d.scrollHeight,d.clientHeight]:null,canvas:B('.cq-map canvas'),buttons:{}};
++ for(const b of document.querySelectorAll('.cq-map-controls button'))o.buttons[b.textContent.trim()]=B(b);return o;}'''
++# the docked heat panel beside the POWER pill, with the pill as it reads plain, while a change shows ("POWER 92 -> 94") and
++# with a pending value under it ("-> 60 at the Refuge"); gap = px between the pill's right edge and the panel's left edge
++# when they share a row (negative: they overlap)
++HUDBOX='''()=>{const B=('''+BOX+'''),chip=document.querySelector('.cq-rating-power-field'),heat=document.querySelector('.cq-world .cq-heat,.cq-heat'),o={screen:[innerWidth,innerHeight],cases:{}};
++ const read=()=>{const a=B(chip),b=B(heat);return {pill:a,heat:b,text:chip?chip.textContent:null,rowShared:!!(a&&b&&a.y<b.y+b.h&&b.y<a.y+a.h),gap:a&&b?+(b.x-(a.x+a.w)).toFixed(1):null};};
++ o.cases.plain=read();const R=window.ConquestRating,U=R&&R.update;
++ // the long pill is held for the next picture (the HUD rewrites the pill every frame: its updates wait until HUDFREE)
++ if(chip&&U){const v=Number(chip.dataset.v)||68;try{U(chip,v+24,{});o.cases.delta=read();U(chip,v+24,{next:v+48,note:'at the Refuge'});o.cases.deltaPending=read();chip.dataset.until='0';chip.classList.remove('up','down');U(chip,v+24,{next:v+48,note:'at the Refuge'});o.cases.pending=read();window.__ru={U,v,chip};window.ConquestRating=Object.assign({},R,{update(){}});}catch(e){o.error=String(e);}}
++ // what stands over the play field: each panel's box, the tank's box on the screen and how much of the tank each panel covers
++ const v=Conquest.view,cv=v.renderer.domElement.getBoundingClientRect(),T=v.T,P=new T.Vector3(),t=v.vehicle.position;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
++ for(let c=0;c<8;c++){P.set(t.x+(c&1?1.9:-1.9),t.y+(c&2?2.6:0),t.z+(c&4?1.9:-1.9)).project(v.camera);const x=cv.left+(P.x+1)/2*cv.width,y=cv.top+(1-P.y)/2*cv.height;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
++ o.tank={x:+x0.toFixed(1),y:+y0.toFixed(1),w:+(x1-x0).toFixed(1),h:+(y1-y0).toFixed(1)};const over=b=>b&&b.shown?+(Math.max(0,Math.min(b.x+b.w,x1)-Math.max(b.x,x0))*Math.max(0,Math.min(b.y+b.h,y1)-Math.max(b.y,y0))/((x1-x0)*(y1-y0))).toFixed(3):0;
++ o.panels=[...document.querySelectorAll('.cq-top,.cq-navigation,.cq-combat-hud,.cq-net,.cq-rating-power-field,.cq-heat,.cq-mission-access,#cq-base-access,#cq-scan-access,#cq-gather-access,#cq-supply-access,.cq-stick,.cq-joystick,.cq-actions,.cq-item,.cq-coords,.cq-zoom,.cq-retreat,.cq-radio,.cq-orders')].map(e=>({cls:(e.id?'#'+e.id+' ':'')+e.className,box:B(e),text:(e.textContent||'').trim().slice(0,40)})).filter(e=>e.box&&e.box.shown).map(e=>Object.assign(e,{coversTank:over(e.box)}));return o;}'''
++HUDFREE='''()=>{const k=window.__ru;if(!k)return;window.ConquestRating.update=k.U;delete window.__ru;}'''
++async def launch(p):return await p.chromium.launch(executable_path=shutil.which('chromium') or '/opt/pw-browsers/chromium',args=['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader'])
++async def world(a,ROOT,out,w,h):
++ shots=[s for s in SHOTS if not a.only or s[0] in a.only.split(',')];info={}
++ async with async_playwright() as p:
++  browser=await launch(p)
++  ctx=await browser.new_context(viewport={'width':w,'height':h},device_scale_factor=1 if a.mouse else a.dpr,has_touch=not a.mouse,is_mobile=not a.mouse,reduced_motion='reduce')
++  page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
++  await page.add_init_script(SHARP) if a.sharp else None;await page.add_init_script('window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='+json.dumps(a.quality)+';try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
++  async def route(r):
++   u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
++   if u.netloc=='lunar.test' and f.is_file():return await r.fulfill(path=str(f))
++   await r.abort()
++  await page.route('**/*',route)
++  await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"&&typeof closeAll==="function"')
++  await page.evaluate('closeAll();save.welcomed=true;save.gfx='+json.dumps(a.quality)+';uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
++  await page.wait_for_function('typeof Conquest!=="undefined"&&!!Conquest.view',timeout=120000)
++  if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
++  await page.wait_for_function('Conquest.view.pending===0',timeout=900000);await page.wait_for_timeout(1500)
++  for name,subj,deg,stand,pitch,dist,kind in shots:
++   path=str(out/f'{name}-{a.size}-{a.quality}-{a.tag}.png')
++   if kind=='map':
++    await page.get_by_role('button',name='OPEN MAP',exact=True).click();await page.wait_for_selector('.cq-map canvas');await page.wait_for_timeout(1200)
++    info[name]=await page.evaluate(MAPBOX);await page.screenshot(path=path,timeout=180000)
++    await page.locator('.cq-map canvas').screenshot(path=path.replace('.png','.canvas.png'),timeout=180000)   # the map alone, to read its labels
++    await page.get_by_role('button',name='CLOSE MAP',exact=True).click();await page.wait_for_timeout(400);print(name,json.dumps(info[name]),flush=True);continue
++   if kind=='hud':
++    await page.wait_for_timeout(600);await page.screenshot(path=path,timeout=180000);info[name]=await page.evaluate(HUDBOX);await page.evaluate(FRAMES,3);await page.screenshot(path=path.replace(name,name+'-long-pill'),timeout=180000);await page.evaluate(HUDFREE);await page.wait_for_timeout(5000);print(name,json.dumps(info[name]),flush=True);continue
++   placed=await page.evaluate(PLACE.replace('SUBJ',subj),[deg,stand,pitch,dist,kind=='across',kind=='census']);await page.wait_for_timeout(400)
++   try:await page.wait_for_function('Conquest.view.pending===0',timeout=600000)
++   except Exception:print('WARNING still streaming at the shot:',name,flush=True)
++   if kind=='fort':   # the art the style builds for a tier V base without a town on its pad (the wall on three sides, the gate, both corner towers), in place of the build site's
++    await page.evaluate('''()=>{const v=Conquest.view,g=v.baseGroup;if(!g||g.userData.capFort)return;for(const c of g.children)c.visible=false;const art=v.style.commandBase({tier:5,modules:{}},{paint:'#2c3a49'});g.add(art);g.userData.capFort=true;}''')
++   await page.evaluate('([yaw,pitch,dist])=>{const v=Conquest.view;v.yaw=yaw;v.pitch=pitch;v.distance=dist;v.camSnap=true;if(v.style&&v.style.atmo)v.style.atmo(v.p,10);}',[placed['yaw'],pitch,dist])
++   look=kind=='across' or kind.startswith('thin')
++   if kind.startswith('thin'):await page.wait_for_timeout(a.settle);await page.evaluate(FRAMES,3);await page.evaluate(THIN,kind[5:])
++   await page.wait_for_timeout(a.settle);await page.evaluate(FRAMES,44 if look else 3)   # the outline asks one question a frame (14 a round): three rounds
++   await page.screenshot(path=path,timeout=180000)
++   info[name]=dict(placed,**await page.evaluate(INFO))
++   if kind.startswith('thin'):await page.evaluate(THIN,'')
++   if kind=='census':
++    if name=='census-raid':await page.evaluate('()=>{const v=Conquest.view;v.yaw=-.8;v.pitch=.95;v.distance=100;v.camera.fov=75;v.camera.updateProjectionMatrix();v.camSnap=true;}');await page.wait_for_timeout(a.settle);await page.evaluate(FRAMES,3);await page.screenshot(path=path,timeout=180000);info[name]=dict(placed,**await page.evaluate(INFO))
++    info[name]['census']=await page.evaluate(CENSUS)
++    if name=='census-raid':await page.evaluate('()=>{const v=Conquest.view;v.camera.fov=55;v.camera.updateProjectionMatrix();}')   # the exploration camera's own angle (js/conquest/view.js)
++   if look:info[name]['outline']=await page.evaluate('''(()=>{const v=Conquest.view,o=v.outline;if(!o)return null;const s=o.sets&&o.sets.get(v.vehicle);return {twinsShown:(o.group.children||[]).filter(m=>m.visible&&m.userData.outlineTwin).length,whole:s?!!s.whole:null,hidden:s?s.nh:null};})()''')
++   print(name,json.dumps(info[name]),flush=True)
++  (out/f'world-{a.size}-{a.quality}-{a.tag}.json').write_text(json.dumps({'errors':errors,'shots':info},indent=1))
++  assert not errors,errors
++  await browser.close()
++async def town(a,ROOT,out,w,h):
++ only=a.only.split(',') if a.only else None;want=lambda n:not only or n in only;info={}
++ server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
++ ready=json.loads(await server.stdout.readline());base='http://127.0.0.1:'+str(ready['port'])
++ try:
++  async with async_playwright() as p:
++   browser=await launch(p)
++   ctx=await browser.new_context(viewport={'width':w,'height':h},device_scale_factor=1 if a.mouse else a.dpr,has_touch=not a.mouse,is_mobile=not a.mouse,reduced_motion='reduce')
++   page=await ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
++   await page.add_init_script(SHARP) if a.sharp else None;await page.add_init_script('''window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.LUNAR_STYLE_QUALITY='''+json.dumps(a.quality)+''';try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){};window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'BrowserPilot'}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};''')
++   async def route(r):
++    u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
++    if u.path.startswith('/api/conquest/') or u.path in ('/api/sync','/api/act'):
++     body=json.loads(r.request.post_data or '{}')
++     for attempt in range(2):
++      try:resp=await page.request.post(base+u.path,data=body);return await r.fulfill(status=resp.status,body=await resp.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
++      except Exception:
++       if attempt:return await r.fulfill(status=503,body='{}',content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
++       await asyncio.sleep(0.2)
++    if u.path.startswith('/api/'):return await r.fulfill(body='{}',content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
++    if u.netloc=='lunar.test' and f.is_file():return await r.fulfill(path=str(f))
++    if u.netloc=='telegram.org':return await r.fulfill(body='',content_type='application/javascript')
++    await r.abort()
++   await page.route('**/*',route)
++   fixture={'position':[1080,1160],'plotFull':'crater','baseFunds':True}
++   await page.request.post(base+'/fixture',data=fixture)
++   await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
++   await page.request.post(base+'/fixture',data=fixture)
++   await page.evaluate('closeAll();save.welcomed=true;save.gfx='+json.dumps(a.quality)+';uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
++   if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
++   await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=600000)
++   png=lambda n:str(out/f'{n}-{a.size}-{a.quality}-{a.tag}.png')
++   # note 8: the town's miniature on the pad, from where the pilot stands beside it (the game moves the tank off the model) and from
++   # further off, the camera looking across the pad
++   await page.wait_for_function('!!Conquest.view.diorama',timeout=600000);await page.wait_for_timeout(2500)
++   for n,pitch,dist in (('note08-pad-chase',.42,26),('note08-pad-far',.5,44),('note08-pad-above',.9,40)):
++    if not want(n):continue
++    await page.evaluate('([pitch,dist])=>{const v=Conquest.view,D=ConquestCombat.baseDefinition,fx=D.x-v.p.x,fz=D.z+1.5-v.p.z;v.yaw=Math.atan2(-fx,-fz);v.pitch=pitch;v.distance=dist;v.camSnap=true;if(v.style&&v.style.atmo)v.style.atmo(v.p,10);}',[pitch,dist])
++    await page.wait_for_timeout(a.settle);await page.evaluate(FRAMES,3);await page.screenshot(path=png(n),timeout=180000)
++    info[n]=dict(await page.evaluate(INFO),pad=await page.evaluate('(()=>{const d=Conquest.view.diorama;let t=0,m=0;d.traverse(o=>{if(o.isMesh&&o.geometry){m++;const g=o.geometry,c=(g.index?g.index.count:g.attributes.position.count)/3;t+=c*(o.isInstancedMesh?o.count:1);}});return {meshes:m,tris:Math.round(t),counts:d.userData.counts};})()'));print(n,json.dumps(info[n]),flush=True)
++   # note 9: the drive view exactly as it opens (the town opens in it); note 7: the town's ground in the build view, whole and close
++   await page.locator('#cq-base-access').click();await page.wait_for_selector('.cq-plot-tabs',timeout=120000)
++   await page.evaluate('ConquestPlotView.state.view==="drive"||ConquestPlotView.setView("drive")');await page.wait_for_function('ConquestPlotView.state.view==="drive"&&!ConquestPlotView.state.tour',timeout=240000);await page.wait_for_timeout(a.settle+2500)
++   if want('note09-drive-open'):
++    await page.screenshot(path=png('note09-drive-open'),timeout=180000);info['note09-drive-open']=await page.evaluate('(()=>{const X=ConquestPlotView.state,d=X.drive||{};return Object.assign({},X.info,{heading:d.h,chase:X.chase,pad:d.pad&&[d.pad.x,d.pad.z]});})()');print('note09-drive-open',json.dumps(info['note09-drive-open']),flush=True)
++   if want('note07-ground-drive'):   # the ground beside the tank, the chase camera pulled back to its far stop
++    await page.evaluate('ConquestPlotView.state.chase.dist=40');await page.wait_for_timeout(a.settle+1200);await page.screenshot(path=png('note07-ground-drive'),timeout=180000);info['note07-ground-drive']=await page.evaluate('ConquestPlotView.state.info')
++   await page.evaluate('ConquestPlotView.setView("build")');await page.wait_for_function('ConquestPlotView.state.view==="build"',timeout=60000);await page.wait_for_timeout(a.settle+2500)
++   if want('note07-ground-build'):await page.screenshot(path=png('note07-ground-build'),timeout=180000);info['note07-ground-build']=await page.evaluate('ConquestPlotView.state.info')
++   for n,dist,k in (('note07-ground-close',60,1.0),('note07-ground-edge',90,.55)):   # the open ground outside the wall, south of the town (the pattern repeated where nothing stands on it)
++    if not want(n):continue
++    await page.evaluate('([dist,k])=>{const X=ConquestPlotView.state,P=ConquestPlot,p=Conquest.view.authority.state.plot;X.cam.dist=dist;X.cam.x=0;X.cam.z=(P.townH(p.cc)+5)*P.GRID.cell*k;}',[dist,k])
++    await page.wait_for_timeout(a.settle+1500);await page.screenshot(path=png(n),timeout=180000);info[n]=await page.evaluate('ConquestPlotView.state.info')
++   (out/f'town-{a.size}-{a.quality}-{a.tag}.json').write_text(json.dumps({'errors':errors,'shots':info},indent=1))
++   assert not errors,errors
++   await browser.close()
++ finally:
++  server.terminate();await server.wait()
++async def main(a):
++ ROOT=pathlib.Path(a.root).resolve() if a.root else HERE;out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True);w,h=[int(v) for v in a.size.split('x')]
++ await (town if a.mode=='town' else world)(a,ROOT,out,w,h)
++ap=argparse.ArgumentParser();ap.add_argument('--mode',default='world');ap.add_argument('--quality',default='high');ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default=str(HERE/'docs/conquest/session5e2d2/leftovers'));ap.add_argument('--tag',default='after');ap.add_argument('--only',default='');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=900);ap.add_argument('--root',default='');ap.add_argument('--sharp',action='store_true')
++asyncio.run(main(ap.parse_args()))
+diff --git a/js/conquest/app.js b/js/conquest/app.js
+index ecff95c..0b9a99e 100644
+--- a/js/conquest/app.js
++++ b/js/conquest/app.js
+@@ -654,9 +654,14 @@ function fold(parent,title){const f=el('details','cq-map-fold',null,parent);el('
+ function homeRoutes(parent){const row=el('div','cq-home-routes',null,parent);row.append(button('NAVIGATE · REFUGE',()=>navigate('refuge'),'cq-nav-refuge'),button('⌂ MY BASE',myBase,'cq-nav-base'));return row;}
+ function map(v){if(panel.querySelector('.cq-dialog'))return;mapOpen=true;if(view)view.reset();const discovery=v?.discovery||root.ConquestDiscovery.create(),d=dialog();d.classList.add('cq-map');el('h2','','FRONTLINE / REGION MAP',d);el('div','cq-warmap-row',null,d).append(button('⚔ WAR MAP · THE LIVING FRONT',()=>{if(typeof warMap==='function')warMap();},'cq-warmap-open'));const mission=root.ConquestCombat?.mission;if(mission)el('p','cq-map-mission',mission.name+' · '+(root.ConquestProgress.create().completed(mission.id)?'SECURED · PERSONAL COMPLETION':'ASSIGNED · AWAITING DEFENSE'),d);const c=el('canvas','',null,d);c.width=720;c.height=840;const ctx=c.getContext('2d');{const W0=root.ConquestWorld,Cb=root.ConquestCombat,pw=tankPower(v?.authority?.state);if(W0?.zones&&Cb?.zoneBand){const zb=el('details','cq-map-fold cq-zone-bands',null,d);el('summary','','ZONE BANDS · THE POWER EACH ZONE ASKS FOR'+(pw?' · YOURS '+pw:''),zb);for(const q of W0.zones){const b=Cb.zoneBand(q.ring);el('small','cq-zone-row'+(pw&&pw<b[0]?' cq-zone-hard':''),q.name+' · '+W0.RINGS[q.ring]+' · ZONE '+b[0]+'–'+b[1],zb);}{const b=Cb.zoneBand(2);el('small','cq-zone-row','BARREN REACHES · REAR · ZONE '+b[0]+'–'+b[1],zb);}el('small','cq-zone-note','A guide only: the Parasites never read your gear.',zb);}}{const legend=el('p','cq-map-legend','● Refuge · ⌂ Base · ◆ Mission · ⬢ Ore · ✿ Bio-flora · ▲ Parasites · ■ Settlers · ■ Military · ! Alert',d);if(root.ConquestStyle)legend.innerHTML=root.ConquestStyle.MAP_LEGEND;}if(v)homeRoutes(d);
+  let scale=1,px=0,py=0,styleFoot=null,missionDone=null;const terrainCache=new Map();
++ // 5E-2d2 (reviewer note: map labels): on a short phone the map is shown small so that its buttons fit (190 px wide at 320x568,
++ // 214 px at 390x700), which made its lettering 5 to 6 px tall. The lettering is drawn larger there, 8 px on the screen at
++ // least (never smaller than before, and unchanged where the map is 300 px wide or more); a label that no longer fits beside
++ // a more important one is left out until the pilot zooms in, as the painter has always done.
++ const labelK=()=>{const w=c.clientWidth||0;return w>0&&w<300?Math.min(1.8,300/w):1;};
+  function draw(){
+  // Neon Frontline holo map (js/conquest/style.js): cached relief per zoom level, same markers, explored ground only.
+- if(root.ConquestStyle){const C=root.ConquestCombat;root.ConquestStyle.map(ctx,{W,C,discovery,state:v?.authority?.state||{},scale,px,py,low:typeof gfxMode==='function'&&gfxMode()==='low',time:performance.now()/1000,footprints:styleFoot||(styleFoot=root.ConquestStyle.footprints(W,C)),player:v?{x:v.p.x,z:v.p.z,heading:v.heading||0}:null,routeTarget:v?.routeTarget||null,mission,missionDone:missionDone??(missionDone=!!(mission&&root.ConquestProgress.create().completed(mission.id))),convoy:v?.authority?.state?.mission==='convoy',toScreen:(x,z)=>({x:40+px+x/W.WIDTH*280*scale,y:py+(1-z/W.LENGTH)*420*scale}),toWorld:(sx,sy)=>({x:(sx-40-px)/(280*scale)*W.WIDTH,z:(1-(sy-py)/(420*scale))*W.LENGTH}),repaint:draw});return;}
++ if(root.ConquestStyle){const C=root.ConquestCombat;root.ConquestStyle.map(ctx,{W,C,discovery,state:v?.authority?.state||{},scale,px,py,low:typeof gfxMode==='function'&&gfxMode()==='low',labelScale:labelK(),time:performance.now()/1000,footprints:styleFoot||(styleFoot=root.ConquestStyle.footprints(W,C)),player:v?{x:v.p.x,z:v.p.z,heading:v.heading||0}:null,routeTarget:v?.routeTarget||null,mission,missionDone:missionDone??(missionDone=!!(mission&&root.ConquestProgress.create().completed(mission.id))),convoy:v?.authority?.state?.mission==='convoy',toScreen:(x,z)=>({x:40+px+x/W.WIDTH*280*scale,y:py+(1-z/W.LENGTH)*420*scale}),toWorld:(sx,sy)=>({x:(sx-40-px)/(280*scale)*W.WIDTH,z:(1-(sy-py)/(420*scale))*W.LENGTH}),repaint:draw});return;}
+ const unit=280/W.WIDTH*scale,left=(-40-px)/unit,right=(320-px)/unit,top=W.LENGTH+py/unit,bottom=W.LENGTH+(py-420)/unit;
+  ctx.setTransform(2,0,0,2,0,0);ctx.fillStyle='#080e16';ctx.fillRect(0,0,360,420);ctx.save();ctx.translate(40+px,py+420*scale);ctx.scale(unit,-unit);
+  const cells=discovery.cellsIn({x:left,z:bottom,width:right-left,height:top-bottom});
+diff --git a/js/conquest/style.js b/js/conquest/style.js
+index 0a26b83..ed48edf 100644
+--- a/js/conquest/style.js
++++ b/js/conquest/style.js
+@@ -1216,9 +1216,11 @@ function glyph(gl,c){const k=gl+c;let s=MAPC.glyphs.get(k);if(s)return s;s=docum
+  x.shadowColor=c;x.shadowBlur=11;x.fillStyle=c;x.fillText(gl,24,25);x.shadowBlur=0;x.fillText(gl,24,25);x.lineWidth=1;x.strokeStyle='rgba(255,255,255,.6)';x.strokeText(gl,24,25);MAPC.glyphs.set(k,s);return s;}
+ function wrap(t){t=String(t).toUpperCase();if(t.length<=17)return [t];const p=t.split(' / ');if(p.length===2)return [p[0]+' /',p[1]];const w=t.split(' ');let best=[t],score=1e9;
+  for(let i=1;i<w.length;i++){const a=w.slice(0,i).join(' '),b=w.slice(i).join(' '),sc=Math.max(a.length,b.length);if(sc<score){score=sc;best=[a,b];}}return best;}
+-function label(lines,c,dim){const k=lines.join('|')+c+(dim?1:0);let s=MAPC.labels.get(k);if(s)return s;const mx=MAPC.mctx||(MAPC.mctx=document.createElement('canvas').getContext('2d'));mx.font=MFONT;if(dim)mx.letterSpacing='1px';
+- const w=Math.ceil(Math.max(...lines.map(l=>mx.measureText(l).width)))+6,h=lines.length*11+3;mx.letterSpacing='0px';const cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;const x=cv.getContext('2d');x.scale(2,2);x.font=MFONT;x.textBaseline='top';x.lineJoin='round';if(dim)x.letterSpacing='1px';
+- lines.forEach((l,i)=>{const y=2+i*11;x.lineWidth=3;x.strokeStyle='rgba(1,4,9,.94)';x.strokeText(l,3,y);x.fillStyle=c;if(!dim){x.shadowColor=c;x.shadowBlur=5;x.fillText(l,3,y);x.shadowBlur=0;}x.fillText(l,3,y);});s={cv,w,h};if(MAPC.labels.size>400)MAPC.labels.clear();MAPC.labels.set(k,s);return s;}
++// ks (5E-2d2): the lettering's size against the map's own 360 units (1 = 10 units). A map shown small on a short phone asks for
++// larger lettering (mapPaint: m.labelScale), so a label is never under 8 px on the screen; 1 is drawn exactly as before.
++function label(lines,c,dim,ks){ks=ks>1?ks:1;const k=lines.join('|')+c+(dim?1:0)+(ks>1?'@'+ks:''),font=ks>1?MFONT.replace('10px',(10*ks).toFixed(1)+'px'):MFONT,lh=ks>1?Math.round(11*ks):11;let s=MAPC.labels.get(k);if(s)return s;const mx=MAPC.mctx||(MAPC.mctx=document.createElement('canvas').getContext('2d'));mx.font=font;if(dim)mx.letterSpacing='1px';
++ const w=Math.ceil(Math.max(...lines.map(l=>mx.measureText(l).width)))+6,h=lines.length*lh+3;mx.letterSpacing='0px';const cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;const x=cv.getContext('2d');x.scale(2,2);x.font=font;x.textBaseline='top';x.lineJoin='round';if(dim)x.letterSpacing='1px';
++ lines.forEach((l,i)=>{const y=2+i*lh;x.lineWidth=3;x.strokeStyle='rgba(1,4,9,.94)';x.strokeText(l,3,y);x.fillStyle=c;if(!dim){x.shadowColor=c;x.shadowBlur=5;x.fillText(l,3,y);x.shadowBlur=0;}x.fillText(l,3,y);});s={cv,w,h};if(MAPC.labels.size>400)MAPC.labels.clear();MAPC.labels.set(k,s);return s;}
+ function overlay(){if(MAPC.overlay)return MAPC.overlay;const cv=document.createElement('canvas');cv.width=720;cv.height=840;const x=cv.getContext('2d');const g=x.createRadialGradient(360,420,200,360,420,580);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.62)');x.fillStyle=g;x.fillRect(0,0,720,840);
+  x.fillStyle='rgba(0,229,255,.035)';for(let y=0;y<840;y+=4)x.fillRect(0,y,720,1);x.strokeStyle='rgba(0,229,255,.8)';x.lineWidth=2;for(const [cx,cy,sx,sy] of [[8,8,1,1],[712,8,-1,1],[8,832,1,-1],[712,832,-1,-1]]){x.beginPath();x.moveTo(cx,cy+sy*26);x.lineTo(cx,cy);x.lineTo(cx+sx*26,cy);x.stroke();}
+  MAPC.overlay=cv;return cv;}
+@@ -1250,9 +1252,9 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
+   if(town&&d.has(town[0],town[1]))add(town[0],town[1],'■','#ffa84a','SETTLER TOWN',3);if(farm&&d.has(farm[0],farm[1]))add(farm[0],farm[1],'✿','#9fd85a','FARMS',2);if(wall&&d.has(wall[0],wall[1]))add(wall[0],wall[1],'▮','#46eeff','FRONTIER WALL · MILITARY',2);}
+  for(const w of S.wrecks||[])if(d.has(w.x,w.z))add(w.x,w.z,'◇','#8ee6ef','YOUR WRECK',8);add(Cb.refuge.x,Cb.refuge.z,'●','#3fe9ff','REFUGE',10);
+  for(const k of marks){if(k.p.x<-12||k.p.x>372||k.p.y<-12||k.p.y>432)continue;if(k.dot){ctx.fillStyle=k.c;ctx.beginPath();ctx.arc(k.p.x,k.p.y,2,0,TAU);ctx.fill();}else if(k.big){ctx.save();ctx.strokeStyle=k.c;ctx.globalAlpha=.55+.35*Math.sin((m.time||0)*3);ctx.lineWidth=2;ctx.beginPath();ctx.arc(k.p.x,k.p.y,17,0,TAU);ctx.stroke();ctx.restore();ctx.drawImage(glyph(k.g,k.c),k.p.x-18,k.p.y-18,36,36);}else ctx.drawImage(glyph(k.g,k.c),k.p.x-12,k.p.y-12,24,24);}   // Find My Base: the base is the one big, pulsing marker
+- const ys=label(['YOU'],'#ffffff',false),obst=[{x:0,y:403,w:360,h:17},{x:you.x-13,y:you.y-13,w:26,h:26},{x:you.x-ys.w/2,y:you.y-16-ys.h,w:ys.w,h:ys.h}];
++ const ks=Math.max(1,Math.min(1.8,Math.round((m.labelScale||1)*10)/10)),ys=label(['YOU'],'#ffffff',false,ks),obst=[{x:0,y:403,w:360,h:17},{x:you.x-13,y:you.y-13,w:26,h:26},{x:you.x-ys.w/2,y:you.y-16-ys.h,w:ys.w,h:ys.h}];
+  for(const k of marks)if(!k.dot)obst.push(k.big?{x:k.p.x-17,y:k.p.y-17,w:34,h:34}:{x:k.p.x-9,y:k.p.y-9,w:18,h:18});   // 5E-2d2: a marker keeps its whole glyph clear (labels sat on the glyphs' edges and on each other: reviewer note)
+- const items=[];for(const k of marks){if(!k.t||k.p.x<-10||k.p.x>370||k.p.y<-10||k.p.y>430)continue;items.push({p:k.p,s:label(wrap(k.t),k.c,k.dim),pri:k.pri,c:k.c,left:k.left});}
++ const items=[];for(const k of marks){if(!k.t||k.p.x<-10||k.p.x>370||k.p.y<-10||k.p.y>430)continue;items.push({p:k.p,s:label(wrap(k.t),k.c,k.dim,ks),pri:k.pri,c:k.c,left:k.left});}
+  items.sort((a,b)=>b.pri-a.pri||(Math.hypot(a.p.x-you.x,a.p.y-you.y)-Math.hypot(b.p.x-you.x,b.p.y-you.y)));
+  const placed=obst.slice(),fits=r=>r.x>=13&&r.y>=13&&r.x+r.w<=358&&r.y+r.h<=402&&!placed.some(o=>r.x<o.x+o.w+2&&r.x+r.w+2>o.x&&r.y<o.y+o.h+1&&r.y+r.h+1>o.y);   // labels keep 2 px between them
+  for(const it of items){const w=it.s.w,h=it.s.h;let cands;

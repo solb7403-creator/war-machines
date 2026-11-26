@@ -1,0 +1,218 @@
+diff --git a/js/conquest/dropship.js b/js/conquest/dropship.js
+index 222f152..4a4fd5b 100644
+--- a/js/conquest/dropship.js
++++ b/js/conquest/dropship.js
+@@ -20,12 +20,20 @@ function hash(n){let h=Math.imul(n|0,374761393)^0x5bd1e995;h=Math.imul(h^(h>>>13
+ const hash3=(a,b,c)=>hash(Math.imul((a|0)+1,73856093)^Math.imul((b|0)+7,19349663)^Math.imul((c|0)+13,83492791));
+ const wrap=a=>{a=(a+Math.PI)%TAU;if(a<0)a+=TAU;return a-Math.PI;},turn=(a,b,t)=>a+wrap(b-a)*t;
+ // The ships' own measures. kit/warmodels.js exports the real ones (ConquestWarModels); these stand in until it has loaded.
+-const DIMS={hauler:{size:[16,9,26],hinge:[0,1.2,11],rampLen:7,rampW:9,closedAngle:-1.25,openAngle:.17,deckY:1.2},shuttle:{size:[10,4.4,13],hoverY:5.5,bay:[0,.6,0]}};
+-function dims(kind){const W=root.ConquestWarModels,d=W&&W[kind];return Object.assign({},DIMS[kind],d||{});}
++const DIMS={hauler:{size:[16,9,26],hinge:[0,1.2,11],rampLen:7,rampW:9,closedAngle:-1.25,openAngle:.17,deckY:1.2,noz:[[6.4,1.1,6.4],[-6.4,1.1,6.4],[6.4,1.1,-7.3],[-6.4,1.1,-7.3]],pod:[9.4,1.5,7.6]},
++ shuttle:{size:[14,6.4,16.4],hoverY:7.5,bay:[0,.7,-.5],bayW:3,bayL:7,noz:[[5.5,1.8,-1],[-5.5,1.8,-1]],door:{hinge:[1.5,1.8,-.5],open:1.9},pod:[-7.6,1.4,4]}};
++// the model's own measures win: ConquestWarModels[kind], and what its slot registered beside its builder (kit/warmodels.js `ship`)
++function dims(kind){const W=root.ConquestWarModels,d=W&&W[kind],m=root.ConquestWorldKit?.MODELS?.['par-'+kind]?.o?.ship;return Object.assign({},DIMS[kind],d||{},m||{});}
+ // Seconds from the wave's moment (0 = the moment its units appear). The clock is the caller's (the drill plays 1.6 x real time).
++// 5E-2d2 critic round 2 ("see the Parasites getting off": the hauler stood 4.2 s of drill time before the moment and its
++// whole wave rolled in the last 1.9; the shuttle's whole load fell at once in the last 1.15): the hauler is down 6.8 s
++// before the moment (4.2 s of real time in the drill) and its units come down the ramp one after another from 4.8 s before;
++// the shuttle is in its hover 5.6 s before, the bay doors open, and its units drop one after another from 4.4 s before
++// (unitPose). The moment itself and where each unit stands at it are untouched. A caller with its own schedule passes
++// spec.T (the Citadel's tier III ship keeps the fight's: citadelview.js).
+ const TL=Object.freeze({
+- hauler:Object.freeze({in:-15,flare:-6.4,down:-4.2,rampOpen:-3.8,rampDown:-2.2,roll:-1.9,rampUp:1.6,rampShut:3,lift:3.4,out:13}),
+- shuttle:Object.freeze({in:-13,flare:-5.2,hover:-3,bay:-2.6,drop:-1.15,lift:1.2,out:10})});
++ hauler:Object.freeze({in:-16,flare:-9,down:-6.8,rampOpen:-6.4,rampDown:-5,roll:-4.8,rampUp:1.6,rampShut:3,lift:3.4,out:13}),
++ shuttle:Object.freeze({in:-15,flare:-7.6,hover:-5.6,bay:-5.2,drop:-4.4,lift:1.2,out:10})});
+ 
+ /* One ship's flight. spec:
+  *   kind 'hauler' | 'shuttle'; at = the wave's moment; pad {x,z} = where the ship stands (hauler) or hovers over (shuttle);
+@@ -33,7 +41,7 @@ const TL=Object.freeze({
+  *   ground(x,z) -> height; seed + lane give every lane its own approach path, side and exit;
+  *   hitAt (optional) = the time it is shot down: it flashes, falls burning and ends as a wreck (its wave never unloads). */
+ function flight(spec){
+- const kind=spec.kind==='shuttle'?'shuttle':'hauler',T=TL[kind],D=dims(kind),at=+spec.at||0,pad=spec.pad,ox=spec.out[0],oz=spec.out[1],gnd=spec.ground||(()=>0),seed=spec.seed|0,lane=spec.lane|0;
++ const kind=spec.kind==='shuttle'?'shuttle':'hauler',T=spec.T||TL[kind],D=dims(kind),at=+spec.at||0,pad=spec.pad,ox=spec.out[0],oz=spec.out[1],gnd=spec.ground||(()=>0),seed=spec.seed|0,lane=spec.lane|0;
+  const h=k=>hash3(seed,lane,k),side=h(1)<.5?-1:1,sx=-oz*side,sz=ox*side;   // the lane's own side: which way the approach bends in
+  const gy=gnd(pad.x,pad.z),rest=kind==='shuttle'?(spec.hoverY??D.hoverY):0,yawLand=Math.atan2(-ox,-oz);
+  // the approach: a cubic Bezier from far out and high (off the lane's axis, its own distance and bend) onto the lane's axis
+@@ -43,15 +51,15 @@ function flight(spec){
+  // the exit: up, turn to the lane's other side, away (never back over the approach)
+  const ea=Math.atan2(ox*.55-sx,oz*.55-sz)+(h(6)-.5)*.5,ex=Math.sin(ea),ez=Math.cos(ea),tDown=at+(kind==='shuttle'?T.hover:T.down),tLift=at+T.lift,tOut=at+T.out,tIn=at+T.in,tFlare=at+T.flare;
+  function intact(t){
+-  const o={kind,vis:t>=tIn&&t<=tOut,x:pad.x,y:gy+rest,z:pad.z,yaw:yawLand,pitch:0,roll:0,ramp:0,bay:0,thrust:0,dust:0,phase:'gone',wreck:0,flash:0,fire:0,down:0};if(!o.vis)return o;
++  const o={kind,vis:t>=tIn&&t<=tOut,x:pad.x,y:gy+rest,z:pad.z,yaw:yawLand,pitch:0,roll:0,ramp:0,bay:0,thrust:0,dust:0,phase:'gone',wreck:0,flash:0,fire:0,down:0,downK:t-tDown,hitK:-1,impK:-1,pod:null};if(!o.vis)return o;   // downK: seconds since it set down (the touchdown's dust ring)
+   if(t<tFlare){const u=easeOut((t-tIn)/(tFlare-tIn));o.x=bez(u,0);o.y=bez(u,1);o.z=bez(u,2);const dx=dbez(u,0),dz=dbez(u,2),u2=Math.min(1,u+.04),ddx=dbez(u2,0),ddz=dbez(u2,2);
+    o.yaw=Math.atan2(dx,dz);o.roll=Math.max(-.5,Math.min(.5,wrap(Math.atan2(ddx,ddz)-o.yaw)*-9))*(1-u*u);o.pitch=.1*(1-u);o.thrust=.55+.25*u;o.phase='approach';}
+   else if(t<tDown){const u=(t-tFlare)/(tDown-tFlare),e=smooth(u);o.x=lerp(P3[0],pad.x,e);o.z=lerp(P3[2],pad.z,e);o.y=lerp(P3[1],gy+rest,easeOut(u));
+-   o.pitch=-.24*Math.sin(Math.PI*Math.min(1,u*1.25));o.thrust=1+.3*Math.sin(Math.PI*u);o.dust=kind==='shuttle'?.5*u:u*u;o.phase='flare';}
++   o.pitch=-.24*Math.sin(Math.PI*Math.min(1,u*1.25));o.thrust=1+.3*Math.sin(Math.PI*u);o.dust=kind==='shuttle'?.7*u:u*u;o.phase='flare';}
+   else if(t<tLift){const k=t-tDown;o.down=1;
+    if(kind==='hauler'){o.y=gy+.22*Math.exp(-k*3.2)*Math.cos(k*9);o.thrust=.18+.5*Math.exp(-k*2.5);o.dust=Math.exp(-k*1.4);   // the suspension settles
+     o.ramp=t<at+T.rampUp?smooth((t-(at+T.rampOpen))/(T.rampDown-T.rampOpen)):1-smooth((t-(at+T.rampUp))/(T.rampShut-T.rampUp));o.phase=t<at+T.roll?'landed':t<at?'unload':'landed';}
+-   else{o.y=gy+rest+.28*Math.sin(k*2.1+lane);o.roll=.03*Math.sin(k*1.3+lane*2);o.thrust=.85;o.dust=.4;o.bay=t<at+T.drop+.9?smooth((t-(at+T.bay))/.5):1-smooth((t-(at+.5))/.5);o.phase=t<at+T.drop?'hover':t<at?'unload':'hover';}}
++   else{o.y=gy+rest+.28*Math.sin(k*2.1+lane);o.roll=.03*Math.sin(k*1.3+lane*2);o.thrust=.85;o.dust=.7;o.bay=t<at+T.drop+.9?smooth((t-(at+T.bay))/.5):1-smooth((t-(at+.5))/.5);o.phase=t<at+T.drop?'hover':t<at?'unload':'hover';}}
+   else{const k=(t-tLift)/(tOut-tLift),up=easeOut(Math.min(1,k*3.2)),go=easeIn(Math.max(0,(k-.12)/.88)),Rx=520;o.y=gy+rest+up*16+go*90;o.x=pad.x+ex*go*Rx;o.z=pad.z+ez*go*Rx;
+    o.yaw=turn(yawLand,ea,smooth(Math.min(1,k*2.6)));o.pitch=.16*go;o.roll=-side*.3*Math.sin(Math.PI*Math.min(1,k*2.2));o.thrust=1.2;o.dust=Math.max(0,1-k*6)*(kind==='hauler'?1:.4);o.phase='leave';}
+   return o;}
+@@ -61,12 +69,28 @@ function flight(spec){
+   // the fall ends on the ground under it (a few steps settle the height as it travels)
+   let tf=1;for(let i=0;i<6;i++){const gx=a.x+vx*tf,gz=a.z+vz*tf,dy=a.y-(gnd(gx,gz)+1.1);tf=(vy0+Math.sqrt(vy0*vy0+2*g*Math.max(.2,dy)))/g;}
+   const ix=a.x+vx*tf,iz=a.z+vz*tf,sp=Math.hypot(vx,vz),skid=Math.min(26,sp*.55),ux=sp?vx/sp:0,uz=sp?vz/sp:0,spin=(h(7)<.5?-1:1)*(1.7+h(8));
+-  crash={th,tf,ix,iz,a,vx,vz,vy0,g,skid,ux,uz,spin,yawEnd:a.yaw+spin*.35,rollEnd:(h(9)<.5?-1:1)*(.22+.2*h(10))};}
++  // 5E-2d2 critic round 2 (a real crash): the hit tears one engine pod off; it tumbles down on its own, thrown to one side,
++  // and lies burning where it lands (the views draw it: stage() below, citadelview.js)
++  const ps=h(11)<.5?-1:1,lx=-uz*ps||ps,lz=ux*ps,pv=[vx*.8+lx*9,vy0+6,vz*.8+lz*9],p0=[a.x+lx*D.size[0]*.4,a.y+2,a.z+lz*D.size[0]*.4];
++  let tp=1;for(let i=0;i<6;i++){const dy=p0[1]-(gnd(p0[0]+pv[0]*tp,p0[2]+pv[2]*tp)+1.3);tp=(pv[1]+Math.sqrt(pv[1]*pv[1]+2*g*Math.max(.2,dy)))/g;}
++  const pod=k=>{const q=Math.min(k,tp),e=k>tp?1-Math.exp(-(k-tp)*3):0,x=p0[0]+pv[0]*q+pv[0]*.12*e,z=p0[2]+pv[2]*q+pv[2]*.12*e;return {x,z,y:k<tp?p0[1]+pv[1]*q-.5*g*q*q:gnd(x,z)+1.3,rx:ps*(4.2*q+.9*e),rz:2.6*q+.5,air:k<tp?1:0,k:k-tp};};
++  crash={th,tf,ix,iz,a,vx,vz,vy0,g,skid,ux,uz,spin,pod,yawEnd:a.yaw+spin*.35,rollEnd:(h(9)<.5?-1:1)*(.22+.2*h(10))};}
+  function pose(t){
+-  if(!crash||t<crash.th)return intact(t);const c=crash,k=t-c.th,o=Object.assign({},c.a);o.vis=true;o.ramp=0;o.bay=0;o.flash=k<.14?1:0;o.dust=0;
++  // flash: the hull's own white hit state, at most 0.12 s (the views draw it on a few plates only: the whole hull flat white
++  // read as a missing texture); hitK / impK: seconds since the hit / the impact (the burst, the fireball, the smoke: FX3D.ship)
++  if(!crash||t<crash.th)return intact(t);const c=crash,k=t-c.th,o=Object.assign({},c.a);o.vis=true;o.ramp=0;o.bay=0;o.flash=k<.12?1:0;o.dust=0;o.hitK=k;o.impK=k-c.tf;o.pod=c.pod(k);o.downK=-1;o.ix=c.ix;o.iz=c.iz;
+   if(k<c.tf){o.x=c.a.x+c.vx*k;o.z=c.a.z+c.vz*k;o.y=c.a.y+c.vy0*k-.5*c.g*k*k;o.roll=c.a.roll+c.spin*k;o.pitch=c.a.pitch+.5*easeIn(k/c.tf);o.yaw=c.a.yaw+c.spin*.2*k;o.thrust=.3*Math.max(0,1-k*1.5);o.fire=1;o.phase='falling';return o;}
+   const s=k-c.tf,e=1-Math.exp(-s*2.4),x=c.ix+c.ux*c.skid*e,z=c.iz+c.uz*c.skid*e;o.x=x;o.z=z;o.y=gnd(x,z);o.yaw=c.yawEnd+.25*e;o.pitch=.05;o.roll=c.rollEnd;o.thrust=0;o.wreck=1;o.fire=Math.max(.35,1-s*.12);o.dust=Math.exp(-s*1.2);o.phase='wreck';o.down=1;return o;}
+  return {kind,at,pad:{x:pad.x,y:gy,z:pad.z},out:[ox,oz],side,seed,lane,dims:D,T,tIn,tDown,tLift,tOut,yawLand,hitAt:crash?crash.th:null,impactAt:crash?crash.th+crash.tf:null,pose};}
++/* What FX3D.ship() needs for one ship this frame (the drill and the Citadel both call it, so a ship looks the same in both):
++ * the pose plus the ship's own measures, the ground under it, and where it was a moment ago (the burning trail of a fall).
++ * F = its flight, P = the pose drawn (a view may have moved it: the Citadel carries the flight's fall to the fight's ship),
++ * t = the flight's clock, o: gy (ground under the hull), rate (clock seconds per real second: the drill plays 1.6), low. */
++function fxOf(F,P,t,o={}){const D=F.dims,low=!!o.low,n=low?6:12,q={kind:P.kind,x:P.x,y:P.y,z:P.z,yaw:P.yaw,pitch:P.pitch,roll:P.roll,gy:o.gy??F.pad.y,W:D.size[0],L:D.size[2],H:D.size[1],thrust:P.thrust,dust:P.dust,ramp:P.ramp||0,bay:P.bay||0,
++  noz:D.noz,low,seed:(F.seed|0)*31+(F.lane|0)+1,rate:o.rate||1,downK:P.wreck||P.phase==='falling'?-1:P.downK,hitK:P.hitK,impK:P.impK,fall:P.phase==='falling',wreck:!!P.wreck,fire:P.fire,pod:P.pod,ix:P.ix,iz:P.iz,trail:null,
++  foot:P.kind==='hauler'?D.hinge[2]+D.rampLen*Math.cos(D.openAngle):0,rampW:D.rampW||0,deckY:D.deckY||0,hinge:D.hinge,bayAt:D.bay,bayW:D.bayW,bayL:D.bayL};
++ if(P.hitK>=0&&P.impK<1.2&&F.hitAt!==null){const tr=[],dx=P.x-F.pose(t).x,dy=P.y-F.pose(t).y,dz=P.z-F.pose(t).z,step=.075;for(let i=1;i<=n;i++){const u=t-i*step*(low?2:1);if(u<F.hitAt)break;const p=F.pose(u);tr.push(p.x+dx,p.y+dy,p.z+dz);}q.trail=tr;q.step=step*(low?2:1);}
++ return q;}
+ 
+ /* The drill's ships. r = a recorded drill (ConquestPlot.drill: frames of [id, kind, x, z]); the first wave enters as it always
+  * did (no ship); every later wave gets one ship per lane it uses: the hauler where the lane's share has a sentinel, a brute or
+@@ -92,42 +116,60 @@ function planDrill(P,plot,r,o={}){
+ /* Where a unit is shown while it rides its ship (t before its wave's moment), ending exactly on its recorded spawn spot at the
+  * moment itself. Returns null when the unit is not on show (the ship has not reached the unload, the ship was shot down, or
+  * the moment has passed: from then on the drill's own recorded positions are drawn, untouched).
+- * {x,y,z,yaw,air}: y is the height of the unit's base. */
+-const ORDER={b:0,s:1,r:2,w:3,d:4};
++ * {x,y,z,yaw,air,tau}: y is the height of the unit's base; tau 0..1 its own way off the ship; move = it is rolling or falling
++ * now; land = seconds since it touched the ground (a dropped unit's dust puff), else -1.
++ * 5E-2d2 critic round 2 ("a stream of units coming off it" / "units fall one after another"): every unit has its own start,
++ * the heavy ones first, so the wave comes off as a stream; a unit that has reached its spot stands on it until the moment. */
++const ORDER={b:0,s:1,r:2,w:3,d:4},ROLL=2.4,FALL=.9,GAP=.8;
++function turnOf(ship){if(!ship.ord){const hv=ship.kind==='hauler',l=ship.units.map((u,n)=>({id:u.id,r:hv?(ORDER[u.k]??2):0,n})).sort((a,b)=>a.r-b.r||a.n-b.n);ship.ord=new Map(l.map((u,i)=>[u.id,i]));}return ship.ord;}   // who leaves when: the heavy ones stand at the bow
+ function unitPose(plan,id,t){
+  const e=plan.byUnit.get(id);if(!e)return null;const {ship,u,n}=e,F=ship.flight,T=F.T,at=ship.at;if(t>=at||F.hitAt!==null)return null;
+- const gy=plan.ground(u.x,u.z),yaw=Math.atan2(-u.x,-u.z),air=u.k==='d';
++ const gy=plan.ground(u.x,u.z),yaw=Math.atan2(-u.x,-u.z),air=u.k==='d',N=ship.units.length,i=turnOf(ship).get(id)||0;
+  if(ship.kind==='hauler'){const t0=at+T.roll;if(t<at+T.rampOpen)return null;const D=F.dims,ox=ship.out[0],oz=ship.out[1],px=-oz,pz=ox;
+-  // the heavy ones stand at the bow and leave first; the small ones wait deeper in the well. Everyone reaches their own spot at `at`.
+-  const rank=ORDER[u.k]??2,depth=3.2+rank*2.6+((n*7)%5)*.9+D.rampLen*.6,tau=t<=t0?0:smooth((t-t0)/(at-t0)),d=depth*(1-tau);
++  // the heavy ones stand at the bow and leave first; the small ones wait deeper in the well. Each rolls for ROLL seconds, the
++  // last one reaching its spot exactly at `at`; everyone is on their own spot at `at`.
++  const roll=Math.min(ROLL,at-t0),ts=t0+(N>1?(at-t0-roll)*i/(N-1):at-t0-roll),rank=ORDER[u.k]??2,depth=3.2+rank*2.6+((n*7)%5)*.9+D.rampLen*.6,tau=t<=ts?0:smooth((t-ts)/roll),d=depth*(1-tau);
+   const lat=(u.x-ship.row.x)*px+(u.z-ship.row.z)*pz,along=(u.x-ship.row.x)*ox+(u.z-ship.row.z)*oz,squeeze=1-Math.min(1,d/6)*(1-Math.min(1,(D.rampW*.5-1.2)/Math.max(1,ship.row.w/2+1)));
+   const x=ship.row.x+px*lat*squeeze+ox*(along+d),z=ship.row.z+pz*lat*squeeze+oz*(along+d);
+   // the ramp's foot is `foot` out from the row; from there the floor climbs to the deck
+   const foot=F.pad.x*ox+F.pad.z*oz-(ship.row.x*ox+ship.row.z*oz)-(D.hinge[2]+D.rampLen*Math.cos(D.openAngle)),run=along+d-foot,deck=F.pad.y+D.deckY,yd=run<=0?gy:lerp(plan.ground(x,z),deck,clamp01(run/(D.rampLen*Math.cos(D.openAngle))));
+-  return {x,y:air?lerp(yd+.4,gy+7,tau):yd,z,yaw:Math.atan2(-ox,-oz)+wrap(yaw-Math.atan2(-ox,-oz))*tau,air,tau};}
+- const t0=at+T.drop;if(t<at+T.bay)return null;const D=F.dims,p=F.pose(Math.max(t,F.tDown)),tau=t<=t0?0:(t-t0)/(at-t0),e2=tau*tau,k=((n*5)%7)/7-.5,m=((n*3)%5)/5-.5;
+- // hanging in the bay (a rack across the hull), then a free fall onto the unit's own spot
+- const bx=p.x+Math.cos(F.yawLand)*k*D.size[0]*.6+Math.sin(F.yawLand)*m*D.size[2]*.5,bz=p.z-Math.sin(F.yawLand)*k*D.size[0]*.6+Math.cos(F.yawLand)*m*D.size[2]*.5,by=p.y+D.bay[1]-.4;
+- return {x:lerp(bx,u.x,smooth(tau)),y:lerp(by,air?gy+7:gy,e2),z:lerp(bz,u.z,smooth(tau)),yaw,air,tau};}
++  return {x,y:air?lerp(yd+.4,gy+7,tau):yd,z,yaw:Math.atan2(-ox,-oz)+wrap(yaw-Math.atan2(-ox,-oz))*tau,air,tau,move:tau>0&&tau<1,land:-1,ramp:run>0?1:0};}
++ // the shuttle: a unit comes down into the open bay shortly before its turn, then falls onto its own spot; the drops are GAP
++ // apart (closer when the load is big), the last one landing exactly at `at`
++ const t0=at+T.drop,fall=Math.min(FALL,at-t0),gap=N>1?Math.min(GAP,(at-t0-fall)/(N-1)):0,ts=at-fall-(N-1-i)*gap;if(t<Math.max(at+T.bay+.4,ts-.7))return null;
++ const D=F.dims,p=F.pose(Math.max(t,F.tDown)),tau=t<=ts?0:Math.min(1,(t-ts)/fall),e2=tau*tau,k=((n*5)%7)/7-.5,m=((n*3)%5)/5-.5,cy=Math.cos(F.yawLand),sy=Math.sin(F.yawLand),bw=(D.bayW||3)*.7,bl=(D.bayL||7)*.8,bz0=D.bay[2]||0;
++ // hanging in the bay (a rack inside the belly frame), then a free fall onto the unit's own spot
++ const bx=p.x+cy*k*bw+sy*(bz0+m*bl),bz=p.z-sy*k*bw+cy*(bz0+m*bl),by=p.y+D.bay[1]-1.1*(1-clamp01((t-(ts-.7))/.5)*.0);
++ return {x:lerp(bx,u.x,smooth(tau)),y:lerp(by,air?gy+7:gy,e2),z:lerp(bz,u.z,smooth(tau)),yaw,air,tau,move:tau>0&&tau<1,land:tau>=1&&!air?t-(ts+fall):-1,ramp:0};}
+ 
+ /* The draws (any view that has a ConquestStyle instance S and its world kit K): one instanced draw for the haulers, one for
+- * their ramps, one for the shuttles, and one each for a ship caught in its hit flash and for a wreck, only while there is
+- * one. o.variant (0..5) = this raid's patching (kit/warmodels.js o.seed). draw(list of poses) -> what happened this frame. */
++ * their ramps, one for the shuttles and one for their bay doors; a ship shot down adds its own while it lasts (the burning
++ * hull, the plates caught in the 0.12 s hit flash, the engine pod it lost, the wreck). Those are built the first time one is
++ * needed (nothing shoots a ship in the drill today: no drill pays for a wreck's geometry).
++ * o.variant (0..5) = this raid's patching (kit/warmodels.js o.seed). draw(list of poses) -> what happened this frame. */
+ function stage(S,K,o={}){
+  const T=S.T,g=new T.Group(),v=(o.variant|0)+1,D={hauler:dims('hauler'),shuttle:dims('shuttle')},max=o.max||6,low=!!S.low;g.name='cq-dropships';
+  const PM=S.MAT.par||S.MAT.solid,PH=S.MAT.parHit||S.MAT.solidHit,mk=(id,par,mat,n)=>{const im=new T.InstancedMesh(K.geometry(id,par),mat||PM,n||max);im.count=0;im.visible=false;im.frustumCulled=false;im.userData.noPick=true;im.userData.slot=id;g.add(im);return im;};
+- const M={hull:mk('par-hauler',{part:'hull',seed:v}),ramp:mk('par-hauler',{part:'ramp',seed:v}),shuttle:mk('par-shuttle',{seed:v}),
+-  hitH:mk('par-hauler',{part:'hull',seed:v},PH,2),hitS:mk('par-shuttle',{seed:v},PH,2),wreckH:mk('par-hauler',{wreck:1,seed:v},null,3),wreckS:mk('par-shuttle',{wreck:1,seed:v},null,3)};
+- const m=new T.Matrix4(),m2=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(),p=new T.Vector3(),s=new T.Vector3(1,1,1),was=new Map();
+- function draw(list){const n={hull:0,ramp:0,shuttle:0,hitH:0,hitS:0,wreckH:0,wreckS:0},ev=[];
+-  for(const it of list){const P=it.pose;if(!P||!P.vis)continue;const hauler=P.kind==='hauler',key=it.key,prev=was.get(key);e.set(P.pitch,P.yaw,P.roll,'YXZ');q.setFromEuler(e);m.compose(p.set(P.x,P.y,P.z),q,s);
+-   const slot=P.wreck?(hauler?'wreckH':'wreckS'):P.flash?(hauler?'hitH':'hitS'):hauler?'hull':'shuttle',im=M[slot];if(n[slot]<im.instanceMatrix.count)im.setMatrixAt(n[slot]++,m);
+-   if(hauler&&!P.wreck&&n.ramp<M.ramp.instanceMatrix.count){const d=D.hauler;e.set(lerp(d.closedAngle,d.openAngle,P.ramp),0,0);q.setFromEuler(e);m2.compose(p.set(d.hinge[0],d.hinge[1],d.hinge[2]),q,s);M.ramp.setMatrixAt(n.ramp++,m2.premultiply(m));}
++ const DEF={hull:['par-hauler',{part:'hull',seed:v}],ramp:['par-hauler',{part:'ramp',seed:v}],shuttle:['par-shuttle',{part:'hull',seed:v}],door:['par-shuttle',{part:'door',seed:v},null,max*2],
++  hitH:['par-hauler',{part:'hit',seed:v},PH,2],hitS:['par-shuttle',{part:'hit',seed:v},PH,2],fallH:['par-hauler',{fall:1,seed:v},null,3],fallS:['par-shuttle',{fall:1,seed:v},null,3],
++  podH:['par-hauler',{part:'pod',seed:v},null,3],podS:['par-shuttle',{part:'pod',seed:v},null,3],wreckH:['par-hauler',{wreck:1,seed:v},null,3],wreckS:['par-shuttle',{wreck:1,seed:v},null,3]};
++ const M={},get=k=>M[k]||(M[k]=mk(...DEF[k]));for(const k of ['hull','ramp','shuttle','door'])get(k);
++ const m=new T.Matrix4(),m2=new T.Matrix4(),q=new T.Quaternion(),e=new T.Euler(),p=new T.Vector3(),s=new T.Vector3(1,1,1),was=new Map(),n={};
++ const put=(k,mat)=>{const im=get(k);n[k]=n[k]||0;if(n[k]<im.instanceMatrix.count)im.setMatrixAt(n[k]++,mat);};
++ function draw(list){const ev=[];for(const k in n)n[k]=0;
++  for(const it of list){const P=it.pose;if(!P||!P.vis)continue;const hauler=P.kind==='hauler',key=it.key,prev=was.get(key),d=hauler?D.hauler:D.shuttle,X=hauler?'H':'S';e.set(P.pitch,P.yaw,P.roll,'YXZ');q.setFromEuler(e);m.compose(p.set(P.x,P.y,P.z),q,s);
++   if(P.wreck||P.phase==='falling'){put((P.wreck?'wreck':'fall')+X,m);if(P.flash)put('hit'+X,m);   // the hull keeps its paint (darkened) and burns; a few plates flash
++    // the engine pod it lost: tumbling on its own, then lying by the wreck (a ship that died on the ground: beside the hull)
++    if(P.pod){e.set(P.pod.rx,P.yaw,P.pod.rz,'YXZ');q.setFromEuler(e);put('pod'+X,m2.compose(p.set(P.pod.x,P.pod.y,P.pod.z),q,s));}
++    else if(P.wreck){e.set(1.6,.5,0,'YXZ');q.setFromEuler(e);put('pod'+X,m2.compose(p.set(d.pod[0],d.pod[1],d.pod[2]),q,s).premultiply(m));}}
++   else if(hauler){put('hull',m);e.set(lerp(d.closedAngle,d.openAngle,P.ramp),0,0);q.setFromEuler(e);put('ramp',m2.compose(p.set(d.hinge[0],d.hinge[1],d.hinge[2]),q,s).premultiply(m));}
++   else{put('shuttle',m);   // the two bay doors: one panel, the other the same panel turned half round (the bay is symmetric)
++    for(const sd of [0,1]){const hg=d.door.hinge;e.set(0,sd*Math.PI,-(P.bay||0)*d.door.open,'YXZ');q.setFromEuler(e);put('door',m2.compose(p.set(sd?-hg[0]:hg[0],hg[1],hg[2]),q,s).premultiply(m));}}
+    // what a view may want to answer with dust, fire and sound
+    if(prev){if(!prev.down&&P.down&&!P.wreck)ev.push({k:'down',key,kind:P.kind,x:P.x,y:P.y,z:P.z});if(!prev.flash&&P.flash)ev.push({k:'hit',key,kind:P.kind,x:P.x,y:P.y,z:P.z});if(!prev.wreck&&P.wreck)ev.push({k:'crash',key,kind:P.kind,x:P.x,y:P.y,z:P.z});
+     if(prev.phase!=='leave'&&P.phase==='leave')ev.push({k:'lift',key,kind:P.kind,x:P.x,y:P.y,z:P.z});}
+    was.set(key,{down:P.down,flash:P.flash,wreck:P.wreck,phase:P.phase});}
+-  for(const [k,im] of Object.entries(M)){im.count=n[k];im.visible=n[k]>0;if(n[k])im.instanceMatrix.needsUpdate=true;}return ev;}
++  for(const [k,im] of Object.entries(M)){const c=n[k]||0;im.count=c;im.visible=c>0;if(c)im.instanceMatrix.needsUpdate=true;}return ev;}
+  return {group:g,meshes:M,draw,low,clear(){was.clear();for(const im of Object.values(M)){im.count=0;im.visible=false;}},dispose(){g.parent&&g.parent.remove(g);}};}
+-root.ConquestDropship=Object.freeze({TL,DIMS,dims,flight,planDrill,unitPose,stage,hash3});
++root.ConquestDropship=Object.freeze({TL,DIMS,dims,flight,planDrill,unitPose,fxOf,stage,hash3});
+ })(typeof globalThis!=='undefined'?globalThis:window);
+diff --git a/js/conquest/kit/warmodels.js b/js/conquest/kit/warmodels.js
+index df08e9e..5d45c99 100644
+--- a/js/conquest/kit/warmodels.js
++++ b/js/conquest/kit/warmodels.js
+@@ -59,15 +59,28 @@ function flag(b,h,w,fh,m,o={}){const n=b.hi?3:2,pm=o.pole,wv=k=>k?Math.sin(k*2.1
+ 
+ // ------------------------------------------------------------------ the Parasite look -----------------------------------
+ // the shared Parasite palette plus this file's paints; a wreck gets every surface sooted and every glow dead (fires stay)
+-function parPal(b,wreck){const K=b.k,P=Object.assign({},K.pal.par,{blue:K.mat(0x1f5f8a,'paint',.6),white:K.mat(0xc9c2b0,'paint',.6),deck:K.mat(0x4d4c52,'metal',.75),tread:K.mat(0x5c5a5e,'metal',.8),
++function parPal(b,wreck,fall){const K=b.k,P=Object.assign({},K.pal.par,{blue:K.mat(0x1f5f8a,'paint',.6),white:K.mat(0xc9c2b0,'paint',.6),deck:K.mat(0x4d4c52,'metal',.75),tread:K.mat(0x5c5a5e,'metal',.8),
+    growth:K.mat(0x5a141a,'flat',0,.1),growthD:K.mat(0x30090d,'flat',0,.1),glassTop:{c:K.col(0x1c0508),a:1.5,j:0},lamp:K.glow(WK.PAR.red,1)});
++ // 5E-2d2 critic round 2 (the ships read brown, cream and orange from the drill's high camera, and LOW lost the red: its shader
++ // draws no paint chips): the SHIPS' own paints. Oxide-red hull paint in the vertex colours (three shades), a red cap along
++ // every top edge, a keel in red lead, the hold floor and the ramp's tread lit red from inside (a soft glow of the one Parasite
++ // red: emission .1 to .5, so the floor still takes the light), and the engines' glow in the pre-scaled red (P.lamp is the full-strength
++ // red: under the shader's 2.3x glow gain it burned out to orange).
++ {const c=K.col(WK.PAR.red),g=(k,a)=>({c:[c[0]*k,c[1]*k,c[2]*k],a,j:0});Object.assign(P,{hullR:[0x8a2e1e,0x74241a,0x9a3a22].map(h=>K.mat(h,'paint',.55,.1)),cap:K.mat(0xa02c1c,'paint',.4),keel:K.mat(0x8c3020,'paint',.7),
++   hold:g(.5,.3),holdHi:g(.62,.6),holdLo:g(.4,.1),spill:g(.52,.5),spill0:g(.3,.06)});}
++ // a ship shot down keeps its paint in the fall, darkened about 40% (it was drawn lit, belly up: a black box); its glows gutter
++ if(fall&&!wreck){const dim=m=>m.a>0?{c:[m.c[0]*.6,m.c[1]*.6,m.c[2]*.6],a:m.a,j:0}:{c:[m.c[0]*.6,m.c[1]*.6,m.c[2]*.6],a:m.a,j:m.j};for(const k in P)P[k]=Array.isArray(P[k])?P[k].map(dim):dim(P[k]);}
+  if(wreck){const soot=m=>m.a>0?{c:[.006,.005,.005],a:K.surfA(K.SURF.metal,.9),j:0}:{c:[m.c[0]*.3+.007,m.c[1]*.3+.006,m.c[2]*.3+.005],a:m.a,j:m.j};for(const k in P)P[k]=Array.isArray(P[k])?P[k].map(soot):soot(P[k]);P.glassDead={c:[.012,.011,.011],a:K.surfA(K.SURF.metal,.9),j:0};}
+  P.fire=K.glow(0xff5a1c,1.9);P.ember=K.glow(0xff3410,1);P.wreck=!!wreck;return P;}
+ // what one raid stole: the seed picks the paint of the plundered plates, the stripe, the trophies and the loot
+ function livery(P,sd,tint){const L=((sd%6)+6)%6,S=P.plateSet,main=[P.plateMil,S[0],S[1],P.hazard,S[2],S[4]][L],second=[P.plateMilD,S[3],S[2],P.ironL,S[0],S[3]][L],stripe=[P.blue,P.white,P.hazard,P.rust,S[0],P.gold][L],
+   F=P.flagSet,flags=[[P.flagLDF,F[1]],[F[3],F[2]],[F[1],P.flagLDF],[F[0],F[4]],[F[2],F[3]],[F[4],F[0]]][L];
+- return {L,main,second,stripe,flags,hull:main,hullD:tint(main,.8),hullIn:tint(main,.42),cowl:tint(second,.82),art:['teeth','tally','bars','teeth','bars','tally'][L],pick:k=>{const h=hz(sd,k);return h<.5?main:h<.7?second:h<.8?P.ironL:h<.89?P.rust:S[(h*977|0)%5];},
+-  patch:k=>{const h=hz(sd,k);return h<.4?second:h<.54?P.ironL:h<.66?P.rust:h<.74?P.iron:S[(h*977|0)%5];},has:(k,p=.85)=>hz(sd,k+500)<p,r:k=>hz(sd,k+900)};}
++ // 5E-2d2 critic round 2: a ship's own hull is painted the Parasites' oxide red in every look (it was the look's first plundered
++ // paint: cream, hazard yellow or khaki hulls read as anything but Parasite from above); the look still picks the plundered
++ // plates, the stripe, the flags and the nose art, and now one in three flank patches is the hull's red in another shade
++ const hull=P.hullR[L%3],hull2=P.hullR[(L+1)%3];
++ return {L,main,second,stripe,flags,hull,hullD:tint(hull,.8),hullIn:tint(hull,.5),cowl:tint(second,.82),art:['teeth','tally','bars','teeth','bars','tally'][L],pick:k=>{const h=hz(sd,k);return h<.5?main:h<.7?second:h<.8?P.ironL:h<.89?P.rust:S[(h*977|0)%5];},
++  patch:k=>{const h=hz(sd,k);return h<.3?hull2:h<.52?second:h<.62?P.ironL:h<.72?P.rust:h<.78?P.iron:S[(h*977|0)%5];},has:(k,p=.85)=>hz(sd,k+500)<p,r:k=>hz(sd,k+900)};}
+ // a bolted-on plate on a surface whose outward normal is +z of the frame: centred on x, base y. A hazard plate is striped.
+ function plate(q,P,x,y,w,h,m,o={}){const t=o.t||.12,z0=o.z||0,hzd=m===P.hazard;
+  q.at(x,y+h/2,z0,0,p=>{if(!p.hi){face(p,[[-w/2,-h/2,t],[w/2,-h/2,t],[w/2,h/2,t],[-w/2,h/2,t]],m,[0,0,-9]);return;}
+@@ -98,7 +111,10 @@ function splitter(wreck,ZB,F,P){const cutS=(S,z0,z1)=>{const at=z=>{for(let i=0;
+ const HAUL={size:[16.2,10.3,26],deckY:1.3,zH:10.2,rampLen:5.6,rampW:7.9,closed:-1.33,open:Math.asin(1.3/5.6),rake:Math.cos(1.33)/Math.sin(1.33)};
+ function haulRamp(q,P,LV,sd){const hi=q.hi,L=HAUL.rampLen,hw=HAUL.rampW/2,wreck=P.wreck;
+  zloft(q,[[0,-.4],[4.6,-.4],[L,-.1]].map(([z,yb])=>({z,p:[[-hw,yb],[hw,yb],[hw,0],[-hw,0]]})),(z,i)=>i===2?P.tread:i===0?P.iron:P.ironD,{a:P.ironD,z:P.hazard});
+- for(const s of [-1,1])qb(q,s*(hw-.17),0,L/2+.15,.34,.28,L-.5,P.iron,'b');
++ // 5E-2d2 critic round 2 ("the ramp is dark on dark ground: give it yellow edges and red light from the hold"): both kerbs are
++ // hazard yellow (banded on HIGH), and the tread is lit red from the hold, strongest at the hinge, fading toward the foot
++ for(const s of [-1,1]){qb(q,s*(hw-.2),0,L/2+.15,.4,.3,L-.5,P.hazard,'b');if(hi&&!wreck)for(let k=0;k<4;k++)qb(q,s*(hw-.2),.3,.8+k*1.25,.42,.012,.5,P.hazardD,'b');}
++ if(!wreck)face(q,[[-hw+.42,.02,.05],[hw-.42,.02,.05],[hw-.42,.02,L-.6],[-hw+.42,.02,L-.6]],[P.spill,P.spill,P.spill0,P.spill0],[0,-9,0]);
+  if(hi){for(let k=1;k<=7;k++)qb(q,0,0,k*.68,HAUL.rampW-.8,.05,.14,P.ironD,'b');for(const [x0,x1] of [[-3.7,-1.5],[-1.1,1.1],[1.5,3.7]])q.tube([x0,-.2,-.02],[x1,-.2,-.02],.3,P.ironD,{n:6,caps:true});}
+  else qb(q,0,-.42,-.02,7.4,.46,.5,P.ironD,'t');
+  for(let k=0;k<8;k++){const x0=-hw+.4+k*(HAUL.rampW-.8)/8;face(q,[[x0,.014,L-.55],[x0+(HAUL.rampW-.8)/8,.014,L-.55],[x0+(HAUL.rampW-.8)/8,.014,L-.12],[x0,.014,L-.12]],k%2?P.hazardD:P.hazard,[0,-9,0]);}
