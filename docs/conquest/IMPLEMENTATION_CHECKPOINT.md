@@ -6574,6 +6574,13 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md fi
   rounds" (a fresh context restarts a lost builder from those decisions). The lead merges each branch when its builder
   reports, runs the tests, re-captures what changed and runs critic round 3 (the last planned; a 4th only for an item
   marked clearly below). The 47 node commands that had not reported are running again.
+- **Nov 26, 09:45 UTC: a usage limit stopped all four builders at about 08:35; they were resumed at 09:45 from their own
+  transcripts (worktrees intact).** Their uncommitted work at that moment is saved in this branch as patches
+  (`docs/conquest/session5e2d2/wip/<branch>.patch` against the base named in its README; `git apply` restores it; the
+  folder is removed before the PR). **If a builder cannot be resumed:** apply its patch on this branch, read the
+  decisions under "Critic rounds" and finish its items. The node list: 129 of 149 commands have passed; the runner
+  stopped a second time on `conquest-fortress.mjs` (a 50-minute limit of the runner while four builders shared the
+  machine; CI gives it its own job); the last 20 are running with a longer limit.
 - **Next, in order (as first written on Nov 26):** (0) the check of the snapshot above; (1) captures at the five sizes on HIGH and LOW
   (`dev/tests/conquest-parasite-captures.py`, `conquest-warscenery-captures.py`, `conquest-dropship-browser.py`,
   `conquest-citadel-ship.py`: the six units side by side at chase distance, the five commanders, the drone, both dropship
