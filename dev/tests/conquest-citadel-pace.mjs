@@ -42,7 +42,7 @@ const W={r1:[8,18],g1:[5,7],h1:[5,11],r3:[28,30+RF],g3:[8,12+RF],h3:[15,17+RF]};
 ok(W.r1[0]>=TARGETS[1].regular[0]&&W.r1[1]<=TARGETS[1].regular[1],'tier I for the regular on days '+W.r1.join('-')+': weeks 2-3 ('+TARGETS[1].regular.join('-')+')');
 ok(W.g1[0]>=TARGETS[1].grinder[0]&&W.g1[1]<=TARGETS[1].grinder[1],'tier I for the grinder on days '+W.g1.join('-')+': days '+TARGETS[1].grinder.join('-'));
 ok(W.h1[0]>=W.g1[0]&&W.h1[1]<=W.r1[1],'tier I for the heavy player on days '+W.h1.join('-')+': between the grinder and the regular');
-ok(W.h3[0]>=W.g3[0]&&W.h3[1]<=W.r3[1],'tier III for the heavy player on days '+W.h3.join('-')+': between the grinder ('+W.g3.join('-')+') and the regular ('+W.r3.join('-')+')');
+ok(W.h3[0]>W.g3[1]&&W.h3[1]<W.r3[0],'tier III for the heavy player on days '+W.h3.join('-')+': between the grinder ('+W.g3.join('-')+') and the regular ('+W.r3.join('-')+')');
 // tier III comes when the kit breaks it: lost on common gear, broken on the day tier II falls (above). REPORTED against the owner's brief
 // targets (Rule 2: not asserted, not changed; see the header), with the step from tier II on the same kit (SIMULATED)
 const med=x=>x.sec.length?x.sec[x.sec.length>>1]:null,rep=(n,d,T)=>console.log('REPORT (simulated) tier III for the '+n+' broken by day '+d+' (this test\'s boundary day; the full search in citadel-pace.json may find it earlier) against the 7B brief target '+(Array.isArray(T)?'days '+T.join('-'):T)+': '+(Array.isArray(T)?(d>=T[0]&&d<=T[1]?'inside':'OUTSIDE (the target window was met only by the old two 7-day waits; Checkpoint 51)'):'see the regular and the grinder'));
