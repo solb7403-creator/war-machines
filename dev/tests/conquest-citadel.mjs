@@ -104,6 +104,7 @@ ok(JSON.stringify(R.CIT_BOUNTY)==='[0,25000,37500,50000,75000,100000,150000,2250
  // the next tier opens the moment the first clear settles, and a Throne Run of tier I stays open
  {const T=s.cit.fc[1],h={...s,mission:null,battle:{...s.battle,enemies:[]},hp:100};for(const id of WR.APPROACH)h.war.o[id]='h';
   ok(CI.CIT.refortMs===0&&CI.CIT.refortMs<=DAY,'no cooldown between Citadel tiers (refortMs '+CI.CIT.refortMs+'; the owner\'s maximum is 24 h)');
+  ok(CI.opensAt(h.cit,2)===0&&CI.launchWhy(h,2,T-3*60000)==='','no phantom wait: a phone clock 3 minutes behind the server\'s still sees Citadel II open (review round 1)');
   ok(CI.opensAt(h.cit,2)<=T&&CI.launchWhy(h,2,T)===''&&CI.launchWhy(h,2,T+H)===''&&CI.launchWhy(h,1,T+H)==='','Citadel II opens the moment Citadel I\'s first clear settles; a Throne Run of tier I is open too');
   let threw='',m=null;try{m=act(structuredClone(h),{action:'start-mission',mission:'citadel-2'},T+1000);}catch(e){threw=e.message;}ok(!threw&&!!m?.mission,'the Worker launches Citadel II right after the first clear of Citadel I'+(threw?' (refused: '+threw+')':''));}
  // a second clear of tier I (a Throne Run) pays loot, never first-clear points

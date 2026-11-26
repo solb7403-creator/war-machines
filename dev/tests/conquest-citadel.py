@@ -129,6 +129,8 @@ async def main():
     if not paid:assert '+25,000 airdrop bounty' in rt and 'already paid' not in rt,('the account is paid the bounty once: the card shows it',rt)
     else:assert 'already paid to this account' in rt and '25,000' not in rt,('the account already holds the bounty (a reset record): the card shows no number',rt)
     r['bounty']='paid +25,000' if not paid else 'already paid (reset record)';paid=True
+    # no wait between tiers (owner rule, Nov 25, 2026): the result card names the next tier as open now, never a re-fortify wait (review round 1)
+    assert 'open now' in rt and 're-fortif' not in rt.lower() and '0 days' not in rt,('the next tier is open now',rt)
     st=await inspect();assert st['cit']['t']==1 and st['cit']['fc'].get('1'),('the Worker settled the first clear',st.get('cit'))
     dlg=page.locator('.cq-result');back=dlg.locator('button',has_text='RETURN TO EXPLORATION');await reach(page,back,'.cq-result',mobile,h)
     await page.screenshot(path=str(OUT/f'first-clear-{w}x{h}.png'));r['result']=' · '.join(l for l in rt.split('\n') if l.strip())[:160]

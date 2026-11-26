@@ -145,7 +145,7 @@ function prepOf(s,now){const c=norm(s?.cit),w=s?.war,live=k=>!!c.prep[k]&&c.prep
  try{po=!!w&&!WR().portalOpen(WR().norm(structuredClone(w),now),now)&&int(w.por?.until)>int(c.pu);}catch(_){po=false;}
  return {aa:live('aa'),cv:live('cv'),po,until:{aa:live('aa')?c.prep.aa.until:0,cv:live('cv')?c.prep.cv.until:0,po:po?int(w.por.until):0}};}
 // why this tier cannot be launched now ('' when it can). FORCE and DEFENSE are advice: they never block
-const opensAt=(c,t)=>{c=norm(c);t=int(t);return t>1&&t===c.t+1&&int(c.fc[t-1])>0?int(c.fc[t-1])+CIT.refortMs:0;};   // 0: open now (tier I, or a cleared tier's Throne Run)
+const opensAt=(c,t)=>{c=norm(c);t=int(t);return CIT.refortMs>0&&t>1&&t===c.t+1&&int(c.fc[t-1])>0?int(c.fc[t-1])+CIT.refortMs:0;};   // 0: open now (tier I, a cleared tier's Throne Run, or no cooldown: a phone clock behind the server's never shows a wait)
 const dhm=ms=>{const m=Math.max(1,Math.ceil(ms/60000)),d=Math.floor(m/1440),h=Math.floor(m%1440/60);return d?d+' d '+h+' h':h?h+' h '+m%60+' m':m+' m';};
 function launchWhy(s,tier,now){const c=norm(s?.cit),t=int(tier);if(t<1||t>CIT.live)return 'that Citadel tier is not built yet';
  if(t>c.t+1)return 'break Citadel '+ROMAN[c.t+1]+' first';{const at=opensAt(c,t);if(at&&num(now)<at)return 'the Hive re-fortifies Citadel '+ROMAN[t]+': it opens in '+dhm(at-num(now));}if(!frontHeld(s?.war))return 'hold both approach territories first (Ash Redoubt and Oxygen Spear)';
