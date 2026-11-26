@@ -98,8 +98,176 @@ index 8f2d2fd..8f19de1 100644
 -ap.add_argument('--sharp',action='store_true')
 +ap.add_argument('--sharp',action='store_true');ap.add_argument('--shake',type=int,default=0)
  asyncio.run(main(ap.parse_args()))
+diff --git a/js/conquest/kit/parstruct.js b/js/conquest/kit/parstruct.js
+index e6ef63f..5107d10 100644
+--- a/js/conquest/kit/parstruct.js
++++ b/js/conquest/kit/parstruct.js
+@@ -158,44 +158,62 @@ function fit(b,sx,sy,sz,fn){const T=b.k.T;b.st.push(new T.Matrix4().multiplyMatr
+ // ------------------------------------------------------------------ cover-wall ------------------------------------------
+ // cover-wall (EXACT box o.w x o.h x o.d, default 18 x 5 x 3; all art inside the box, in plan and in height): a barricade
+ // welded from plundered armour, the collision box of a raid obstacle, so it FILLS its box: a dark steel bulkhead between
+-// four corner posts that reach the box height (the bulkhead top is a lip lower, so the loot on it stays inside the box), every face plated with big mismatched plates (LDF ceramic with its blue band, settler container sides with faded
+-// paint, hazard panels, tank hull sections, rust sheet) of unequal width and height, strongback girders on the long faces,
+-// loot crates and a sack lashed on its flat top, a looted flag draped over one face, and a thin red vein glowing in the
+-// seams between the plates (the only glow: the wall reads as steel). Plates, loot and flag change with o.seed and the size.
+-// The long axis is x when w >= d, else z. o.sink (default 1.2) = how far it runs below y = 0.
+-// HIGH <= 400 / LOW <= 100.
++// four corner posts, every face plated with big mismatched plates (LDF ceramic, settler container sides with faded paint,
++// hazard panels, tank hull sections, rust sheet) of unequal width.
++// 5E-2d2 critic round 2 ("big flat panels with no growth"): (1) the TOP LINE IS BROKEN: the bulkhead ends a good metre under
++// the box top and the plates stand over it as a ragged parapet, each to its own height (a third reach the box top, a third
++// stop short of the bulkhead), with slanted cuts, and on each long face one plate has slipped: it hangs askew, the dark
++// bulkhead showing beside it; the corner posts are unequal too. (2) THE INFECTION CLIMBS IT: thick red roots come out of
++// the ground and fork up the plates (the old hair-thin seam veins stay, wider). (3) TROPHIES: a looted flag flies from a
++// rail on one long face, a captured LDF shield hangs askew from straps on the other, the loot lies behind the parapet.
++// Plates, loot and trophies change with o.seed and the size. The long axis is x when w >= d, else z. o.sink (default 1.2) =
++// how far it runs below y = 0. The box, and so the collision, is unchanged.
++// HIGH <= 900 / LOW <= 200 (the 18 m wall; a raid has one to three walls).
+ WK.model('cover-wall',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,long=o.w>=o.d,L=long?o.w:o.d,T=long?o.d:o.w,h=o.h,sink=o.sink??1.2,sd=(o.seed|0)*7+Math.round(L*3+T*5);
+- const PW=clamp(T*.2,.5,.8),REC=.32,area=2*(L+T),rich=area<=44,lip=Math.min(clamp(T*.2,.55,.9),h*.14),top=h-lip;   // corner post width; how far the bulkhead stands behind the box planes
++ const PW=clamp(T*.2,.5,.8),REC=.32,area=2*(L+T),rich=area<=44,lip=clamp(h*.24,.9,1.4),top=h-lip,HT=h-.04;   // corner post width; how far the bulkhead stands behind the box planes; top = the bulkhead's top, HT = the highest a plate reaches
+  b.at(0,0,0,long?0:Math.PI/2,()=>{
+-  // the bulkhead and the four corner posts (they stand a little proud of the top)
++  // the bulkhead and the four corner posts (unequal: one or two stop short)
+   qb(b,0,-sink,0,L-2*REC,top+sink,T-2*REC,o2=>o2==='t'?P.iron:P.weld,'b');
+-  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz],k)=>{const ph=h-.3*hz(sd,k+70);b.part();qb(b,sx*(L-PW)/2,-sink,sz*(T-PW)/2,PW,ph+sink,PW,P.ironD,hi?'b':'b'+(sx>0?'l':'r')+(sz>0?'k':'f'));});
++  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz],k)=>{const ph=HT-(hz(sd,k+70)<.4?lip*(.5+.6*hz(sd,k+74)):.25*hz(sd,k+74));b.part();qb(b,sx*(L-PW)/2,-sink,sz*(T-PW)/2,PW,ph+sink,PW,P.ironD,hi?'b':'b'+(sx>0?'l':'r')+(sz>0?'k':'f'));});
+   // the four faces: bays of plates between the posts
+-  let pi=0,last=-1;
++  let pi=0,last=-1;const pmax=[0,0,0,0];
+   for(let f=0;f<4;f++){const Lf=f%2?T:L,half=(f%2?L:T)/2,zc=half-REC,x0=-Lf/2+PW,x1=Lf/2-PW,span=x1-x0;if(span<.6)continue;
+    b.at(0,0,0,f*Math.PI/2,q=>{const np=Math.max(1,Math.round(span/(hi?3.1:3.6))),wt=[],X=[x0];let sum=0;for(let k=0;k<np;k++){wt.push(1+.5*(hz(sd,f*20+k)-.5));sum+=wt[k];}for(let k=0;k<np;k++)X.push(k===np-1?x1:X[k]+span*wt[k]/sum);
+-    const g=hi?.07:.08,tops=[];
+-    for(let k=0;k<np;k++){let ki=(hz(sd,f*31+k*7+5)*KINDS.length)|0;if(ki===last)ki=(ki+1)%KINDS.length;last=ki;const kind=KINDS[ki],ci=(hz(sd,f*13+k*3)*5)|0,m=plateMat(q,kind,ci),p=.09+.17*hz(sd,f*17+k+90);
+-     const xa=X[k]+(k?g:.03),xb=X[k+1]-(k<np-1?g:.03),drop=.1+.75*hz(sd,f*11+k+33),tl=top-drop*(hi?1:.5),tr=hi?clamp(tl+(hz(sd,f*19+k+7)-.5)*.5,top-.95,top-.06):tl;tops.push(Math.min(tl,tr));
+-     slab(q,xa,xb,-sink,tl,tr,zc,p,m);
++    const g=hi?.07:.08,tops=[],sag=Lf>=8&&np>1?(hz(sd,f+300)*np)|0:-1;let tall=false;
++    for(let k=0;k<np;k++){let ki=(hz(sd,f*31+k*7+5)*KINDS.length)|0;if(ki===last)ki=(ki+1)%KINDS.length;last=ki;const kind=KINDS[ki],ci=(hz(sd,f*13+k*3)*5)|0,m=plateMat(q,kind,ci),p=.08+.12*hz(sd,f*17+k+90);pmax[f]=Math.max(pmax[f],p);
++     const xa=X[k]+(k?g:.03),xb=X[k+1]-(k<np-1?g:.03);let u=hz(sd,f*11+k+33);if(k===np-1&&!tall&&Lf>=8)u=0;   // every long face has a plate that reaches the box top
++     const v=hz(sd,f*23+k+41),mid=u<.36?HT-.3*v:u<.7?top+.15+(lip-.55)*v:top-.15-.6*v,cut=(hz(sd,f*19+k+7)-.5)*.7;let tl=clamp(mid+cut/2,top-.9,HT),tr=clamp(mid-cut/2,top-.9,HT);if(u<.36)tall=true;
++     const back=Math.max(tl,tr)>top+.03;
++     if(k===sag){   // the slipped plate: turned in its own plane about its middle, narrower so that its corners stay in its bay and under the box top
++      const a=(hz(sd,f+310)<.5?-1:1)*(.08+.05*hz(sd,f+311)),sn=Math.abs(Math.sin(a)),cx=(xa+xb)/2,cy=(Math.max(tl,tr)-sink)/2,hw=(xb-xa)/2-(Math.max(tl,tr)-cy)*sn,drop=hw*sn+.03;tl=Math.min(tl,HT-drop);tr=Math.min(tr,HT-drop);
++      q.at(cx,cy,0,0,r=>{slab(r,-hw,hw,-sink-cy,tl-cy,tr-cy,zc,p,m,{back});if(hi)dress(r,kind,-hw,hw,.12-cy,Math.min(tl,tr)-.08-cy,zc+p+.03,ci);},0,a);tops.push(Math.min(tl,tr)-drop);pi++;continue;}
++     tops.push(Math.min(tl,tr));slab(q,xa,xb,-sink,tl,tr,zc,p,m,{back});
+      if(hi){dress(q,kind,xa,xb,.12,Math.min(tl,tr)-.08,zc+p+.03,ci);
+       // a smaller patch welded over a big plate, tack welds on the others
+-      if(pi%3===1&&xb-xa>2.2){const pk=KINDS[(ki+3)%KINDS.length],px=xa+(xb-xa)*(.18+.2*hz(sd,pi+50)),pw=(xb-xa)*.46,py=h*(.16+.2*hz(sd,pi+60)),ph=h*.3;q.at(px+pw/2,py+ph/2,zc+p,0,r=>slab(r,-pw/2,pw/2,-ph/2,ph/2,ph/2,0,.07,plateMat(r,pk,ci+2),{bot:true}),0,(hz(sd,pi+80)-.5)*.3);}
+-      else if(rich||pi%2===0)q.detail(()=>{for(const [u,v] of [[.1,.9],[.9,.9]])tack(q,xa+(xb-xa)*u,-.1+(Math.min(tl,tr)+.1)*v,zc+p+.03,.09,P.weld);});}
++      if(pi%3===1&&xb-xa>2.2){const pk=KINDS[(ki+3)%KINDS.length],px=xa+(xb-xa)*(.18+.2*hz(sd,pi+50)),pw=(xb-xa)*.46,py=h*(.16+.2*hz(sd,pi+60)),ph=h*.3;q.at(px+pw/2,py+ph/2,zc+p,0,r=>slab(r,-pw/2,pw/2,-ph/2,ph/2,ph/2,0,.05,plateMat(r,pk,ci+2),{bot:true}),0,(hz(sd,pi+80)-.5)*.3);}
++      else if(rich||pi%2===0)q.detail(()=>{for(const [u2,v2] of [[.1,.9],[.9,.9]])tack(q,xa+(xb-xa)*u2,-.1+(Math.min(tl,tr)+.1)*v2,zc+p+.03,.09,P.weld);});}
++     // the infection climbs the plate: a thick root out of the ground, kinked, with a fork (every other plate of a long face; LOW: flat strips)
++     if(Lf>=8&&(pi%2===0||np<3)){const w=xb-xa,dir=hz(sd,pi+201)<.5?-1:1,xs=xa+w*(.3+.4*hz(sd,pi+200)),yt=Math.min(tl,tr)*(.55+.35*hz(sd,pi+202)),z=zc+p+.012,cl=x=>clamp(x,xa+.22,xb-.22),
++       R=[[cl(xs),-sink*.35,z],[cl(xs+dir*w*.12),yt*.3,z],[cl(xs-dir*w*.1),yt*.64,z],[cl(xs+dir*w*.13),yt,z]];
++      if(hi){vein(q,R,.14,.04,{seg:2,up:[0,0,1],rise:.55});vein(q,[R[1],[cl(R[1][0]+dir*w*.2),R[1][1]+yt*.18,z],[cl(R[1][0]+dir*w*.3),R[1][1]+yt*.4,z]],.08,.03,{seg:2,up:[0,0,1],rise:.55});}
++      else for(let j=1;j<R.length;j++){const A=R[j-1],B=R[j],wa=.13-.03*(j-1),wb=.13-.03*j;q.quad([A[0]-wa,A[1],z],[A[0]+wa,A[1],z],[B[0]+wb,B[1],z],[B[0]-wb,B[1],z],P.red,[A[0],A[1],z-9]);}}
+      pi++;}
+-    // the infection in the seams: a thin vein between two plates, kinked like a root
+-    for(let k=1;k<np;k++){const x=X[k],y1=Math.min(tops[k-1],tops[k])-.15,z=zc+.04,w=hi?.055:.075,K=hi?[[0,-.2],[.04,.33],[-.035,.68],[.02,1]]:[[0,-.2],[0,1]];
++    // the infection in the seams: a vein between two plates, kinked like a root
++    for(let k=1;k<np;k++){const x=X[k],y1=Math.min(tops[k-1],tops[k])-.15,z=zc+.04,w=hi?.07:.08,K=hi?[[0,-.2],[.04,.33],[-.035,.68],[.02,1]]:[[0,-.2],[0,1]];
+      for(let j=1;j<K.length;j++){const a=K[j-1],c=K[j],ya=-.2+(y1+.2)*Math.max(0,a[1]),yb=-.2+(y1+.2)*c[1];q.quad([x+a[0]-w,j===1?-sink*.3:ya,z],[x+a[0]+w,j===1?-sink*.3:ya,z],[x+c[0]+w,yb,z],[x+c[0]-w,yb,z],P.red,[x,ya,z-9]);}}
+-    // strongback girders on the long faces (HIGH): a rusty I-beam welded upright across the plates, short of the top
+-    if(hi&&Lf>=11){const ng=Lf>=20?2:1;for(let k=0;k<ng;k++){const x=x0+span*(ng===1?.5+.16*(hz(sd,f+44)-.5):(.3+.4*k)),gh=top-.3-.5*hz(sd,f*3+k);q.part();qb(q,x,-sink,half-.17,.3,gh+sink,.34,k%2?P.rust:P.iron,'bk');}}
++    // strongback girders on the long faces (HIGH): a rusty I-beam welded upright across the plates, to its own height
++    if(hi&&Lf>=11){const ng=Lf>=20?2:1;for(let k=0;k<ng;k++){const x=x0+span*(ng===1?.5+.16*(hz(sd,f+44)-.5):(.3+.4*k)),gh=top-.2+(lip-.1)*hz(sd,f*3+k+9);q.part();qb(q,x,-sink,half-.17,.3,gh+sink,.34,k%2?P.rust:P.iron,'bk');}}
+    });}
+-  // the loot on the flat top and the flag over one face
++  // the loot behind the parapet
+   {const nl=hi?(rich?3:2):1,along=L-2*PW-1.2;for(let k=0;k<nl;k++){const x=-along/2+along*(nl===1?.3:(k+.15+.7*hz(sd,k+120))/nl),z=(T-2*REC-1.1)*(hz(sd,k+130)-.5)*.8,s=clamp(T*.26,.62,1.05)*(.85+.3*hz(sd,k+140));
+     if(k===1&&hi){sack(b,x,top,z,Math.min(s*.52,(lip-.04)/1.15),sd+k);sack(b,x+s*.8,top,z+.1,Math.min(s*.42,(lip-.04)/1.15),sd+k+3,tint(P.sack,.8));}else crate(b,x,top,z,s*1.25,Math.min(s*.72,lip-.06),s*.9,(hz(sd,k+150)-.5)*.9,k%2?P.crateD:P.crate,{plain:!hi});}
+-   const fx=(L/2-PW-1.5)*(hz(sd,160)<.5?-1:1)*(.3+.5*hz(sd,161)),fz=T/2-.02,fm=hz(sd,162)<.5?P.flagLDF:P.flagSet[(hz(sd,163)*5)|0],fw=Math.min(1.9,L*.14);
+-   b.quad([fx-fw/2,top+.02,fz-REC-.5],[fx+fw/2,top+.02,fz-REC-.5],[fx+fw/2,top+.02,fz],[fx-fw/2,top+.02,fz],fm,[fx,top-9,fz]);
+-   b.quad([fx-fw/2,top+.02,fz],[fx+fw/2,top+.02,fz],[fx+fw/2,top-h*.42,fz],[fx-fw/2,top-h*.36,fz],fm,[fx,top,fz-9]);
+-   if(hi)b.quad([fx-fw/2,top-h*.12,fz+.012],[fx+fw/2,top-h*.12,fz+.012],[fx+fw/2,top-h*.22,fz+.012],[fx-fw/2,top-h*.2,fz+.012],fm===P.flagLDF?P.flagLDF2:P.strap,[fx,top,fz-9]);}
++   // trophies: a looted flag on a rail over one long face, a captured LDF shield hung askew on the other
++   const sg=hz(sd,160)<.5?-1:1,fx=(L/2-PW-1.5)*sg*(.3+.5*hz(sd,161)),fz=T/2-.05,ldf=hz(sd,162)<.5,fm=ldf?P.flagLDF:P.flagSet[(hz(sd,163)*5)|0],fw=Math.min(2.2,L*.16),fy=HT-.04;
++   flag(b,[fx-fw/2,fy,fz],[fx+fw/2,fy,fz],h*.46,fm,ldf?P.flagLDF2:P.strap);
++   if(hi){b.tube([fx-fw/2-.25,fy+.02,fz-.03],[fx+fw/2+.25,fy+.02,fz-.03],.03,P.ironL,{n:3});for(const s of [-1,1])b.tube([fx+s*(fw/2+.2),fy+.02,fz-.03],[fx+s*(fw/2+.2),top,fz-.2],.03,P.ironL,{n:3});}
++   if(L>=8)b.at(0,0,0,Math.PI,q=>{const tx=clamp(fx*.8+sg*1.2,-L/2+PW+1,L/2-PW-1),ty=Math.min(top,h*.68),zf=T/2-REC+pmax[2]+.02,a=(hz(sd,170)-.5)*.5;
++     q.at(tx,ty,zf,0,r=>{slab(r,-.62,.62,-.5,.5,.5,0,.05,P.plateMil,{thin:!hi,bot:true});r.quad([-.62,.12,.062],[.62,.12,.062],[.62,.32,.062],[-.62,.32,.062],P.flagLDF,[0,0,-9]);if(hi)r.quad([-.5,-.34,.062],[-.1,-.34,.062],[-.1,-.08,.062],[-.5,-.08,.062],P.plateMilD,[0,0,-9]);},0,a);
++     if(hi)for(const s of [-1,1]){const px=tx+s*.62*Math.cos(a)-.5*Math.sin(a),py=ty+s*.62*Math.sin(a)+.5*Math.cos(a);q.tube([px,py,zf+.03],[px+s*.1,Math.min(HT-.3,py+1.2),zf-.02],.02,P.strap,{n:3});}});}
+  });
+ },{aoH:4,aoMin:.55});
+ // a frame at angle a (from +x toward +z) and radius r whose +z looks outward; rx < 0 leans its top inward
+@@ -218,6 +236,8 @@ function dish(b,c,d,r,m,m2){const n=b.hi?8:6,u=Math.abs(d[1])>.9?[1,0,0]:[0,1,0]
+ // flank and a visor plate, an ammunition bustle with strapped loot, a whip aerial with a pennant, and the infection
+ // swelling out of the breech between the guns: a growth split by glowing fissures, veins running out along both barrels,
+ // red light in the cheek vents.
++// 5E-2d2 critic round 2 ("smooth the faceted dark-red lumps on the column; they edge toward crystal"): the growth lumps on
++// the column and at the breech are rounder: more sides and rings, half the lobing, squat instead of tall, calm crowns.
+ // o.part: undefined = the whole battery; 'base' = everything that does not turn (nothing above y = 5.3: the head's place
+ // is free); 'gun' = the turning head alone in its own frame, the pivot at the origin, the barrels toward +z (muzzles at
+ // z = 2.85; the head keeps inside r 2.6 of the pivot apart from the barrels). In the whole model the pivot is at y = 6.6.
+@@ -243,7 +263,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
+   // the infection: veins from the ground up between the plates to the turret ring, swollen where they grip the column
+   [H2+.66,H2+1.92,H2+3.12,H2+4.4,H2+5.66].forEach((a,k)=>{if(!hi&&k%2)return;const tw=k%2?-.7:.75,C=(t,r,y)=>{const q=a+tw*t+.16*Math.sin(t*9+k*2);return [Math.cos(q)*r,y,Math.sin(q)*r];},c=Math.cos(a),s=Math.sin(a);
+    vein(b,[[c*3.02,-.3,s*2.6],[c*2.8,.36,s*2.4],C(-.12,2.3,.5),C(.06,1.92,.62),C(-.05,1.9,1.3),C(.1,1.36,1.74),C(.3,1.3,2.5),C(.55,1.29,3.3),C(.8,1.28,4.1),C(1,1.27,4.72)],.16,.05,{seg:hi?2:1});
+-   if(hi&&k%2===0){const p=C(.42,1.12,2.75+.3*k);bulb(b,p[0],p[1],p[2],.34,sd+k,{lx:p[0]*.2,lz:p[2]*.2,sy:1.5,na:6,nr:4});}});
++   if(hi&&k%2===0){const p=C(.42,1.12,2.75+.3*k);bulb(b,p[0],p[1],p[2],.38,sd+k,{lx:p[0]*.14,lz:p[2]*.14,sy:1.05,na:10,nr:6,lob:.1,pole:.6});}});
+   if(hi)b.pool(0,.1,0,3.4,3,RED,.1);
+  };
+  const gun=()=>{const EL=.73,TY=.1,TZ=-.45,n8=hi?8:5;   // the cradle's elevation (42 degrees: the guns point at the sky) and the trunnion axis (y, z)
+@@ -261,7 +281,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
+     for(let i=0;i<n8;i++){const a0=i/n8*TAU,a1=(i+1)/n8*TAU;T3(q,[x,y,zm-.03],[x+Math.cos(a0)*.25,y+Math.sin(a0)*.25,zm-.03],[x+Math.cos(a1)*.25,y+Math.sin(a1)*.25,zm-.03],P.weld,[x,y,0]);}   // the dark bore
+     if(hi)for(const z of [.56,zj-.1])q.tube([x,y,z],[x,y,z+.08],.29,P.ironD,{n:8});});
+    q.part();qb(q,0,-.37,2.5,1.5,.14,.1,P.ironD);qb(q,0,.23,2.5,.72,.14,.1,P.ironD);qb(q,0,-.42,2.5,.14,.84,.1,P.ironD);
+-   if(hi){bulb(q,.5,.36,-.75,.3,sd+6,{sy:1.2,lz:-.1,core:false,na:6,nr:4});}},-EL);
++   if(hi){bulb(q,.5,.36,-.75,.3,sd+6,{sy:1.1,lz:-.1,core:false,na:9,nr:5,lob:.1,pole:.6});}},-EL);
+   // over-armour: two mismatched stolen plates bolted in front of the yoke as a gun shield, the guns in the gap between them
+   b.at(-1.72,-.98,.62,0,q=>{slab(q,-.66,.66,0,2.5,2.15,0,.14,P.plateMil,{bot:true,back:true});if(hi){dress(q,'mil',-.66,.66,.1,2.1,.17,0);q.detail(()=>{for(const [u,v] of [[-.5,2.0],[.5,1.85],[-.5,.25],[.5,.25]])tack(q,u,v,.175,.08,P.gold);});}},-.16,.05);
+   b.at(1.66,-.9,.7,0,q=>{slab(q,-.62,.62,0,1.55,1.9,0,.14,P.hazard,{bot:true,back:true});bars(q,-.58,.58,.08,1.5,.17,2,P.hazardD);if(hi)q.detail(()=>{for(const [u,v] of [[-.45,1.3],[.45,1.6]])tack(q,u,v,.175,.08,P.weld);});},-.22,-.08);
+@@ -271,7 +291,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
+   b.tube([-.8,-1,-2.02],[-1,3.4,-2.2],.03,P.ironL,{n:3,r2:.015});for(const sg of [1,-1])T3(b,[-.99,3.3,-2.2],[-.97,2.75,-2.19],[-.2,3.05,-2.25],P.flagSet[3],[-.6,3,-2.2+9*sg]);
+   // the infection: the growth swells out from under the breech, between the yoke's legs, split by glowing fissures; thick
+   // roots climb the front legs to the trunnions and one runs out under the guns. The only glow on the head.
+-  bulb(b,0,-1.04,-.72,.62,sd+2,{sy:1.4,sx:1.3,sz:1.1,na:hi?10:6,nr:hi?6:3,lob:.17});
++  bulb(b,0,-1.04,-.72,.62,sd+2,{sy:1.4,sx:1.3,sz:1.1,na:hi?12:7,nr:hi?7:4,lob:.12,pole:.5});
+   for(const sx of [-1,1]){if(!hi&&sx>0)continue;vein(b,[[sx*.55,-.86,-.2],[sx*1.0,-.98,.34],[sx*1.3,-.5,.12],[sx*1.3,-.05,-.2],[sx*1.32,.42,-.42]],.1,.04,{seg:hi?2:1});}
+   if(hi){vein(b,[[.1,-.5,-.2],[.2,-.2,.16],[.3,.12,.5],[.46,.36,1.1]],.09,.035,{seg:2});b.halo(0,-.5,-.6,1,RED,.1);}
+  };
+@@ -284,16 +304,28 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
+ // driven into a rusty collar; the growth sac swelling around the drill string inside the legs, split by glowing fissures,
+ // a root mound where it enters the ground, veins running down the legs and out across the ground to the edge of the box;
+ // a looted crate pile, a stolen LDF flag hung from a brace and the raiders' own black flag at the top (7.3 m).
++// 5E-2d2 critic round 2 (the critic could not tell it from a flag pole; captured at a real raid site and judged beside the
++// hive: the growth was right, but the machine under it was three thin dark legs, so it read as a red sac on a stand, not
++// as a nest on stolen human gear). The rig is unmistakably a plundered human machine now: the legs' upper halves keep their
++// yellow hazard paint, the winch sits in a hazard-striped housing, a stolen LDF relay dish is lashed to the head, and two
++// sides of the tripod are clad with plundered plates (an LDF ceramic sheet with its band, a hazard panel) leaned and
++// welded between the legs; the sac swells out over them and through the open third side, as the hive's growth does over
++// its roof. Paid for with one of the three bulbs: the triangle budget is unchanged.
+ // HIGH <= 2000 / LOW <= 700.
+ WK.model('raid-spire',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0;
+  fit(b,o.w/8.8,o.h/7.4,o.d/7.6,()=>{const FEET=[[0,3.1],[-2.78,-1.72],[2.78,-1.72]],TOPY=5.35,leg=(k,t)=>[FEET[k][0]*(1-.9*t),.14+(TOPY-.14)*t,FEET[k][1]*(1-.9*t)];
+   // the tripod: foot plates staked down, girder legs, braces
+   FEET.forEach(([fx,fz],k)=>{const a=Math.atan2(fz,fx);b.part();b.at(fx,0,fz,-a+Math.PI/2,q=>{qb(q,0,-.5,0,1.0,.64,1.0,P.ironD,'b');
+     if(hi){qb(q,0,.14,.38,1.0,.05,.2,P.hazard,'b');for(const sx of [-1,1])q.tube([sx*.36,.5,.3],[sx*.3,-.3,.36],.045,P.ironL,{n:3});q.loft([{p:b.k.rect(.5,.5,0,0,-.05),y:.14},{p:b.k.rect(.34,.3,0,0,-.2),y:.62}],P.iron,{top:false});}});
+-   beam(b,leg(k,0),leg(k,1),.36,.3,i=>i%2?P.ironL:P.iron,{w2:.26,d2:.22});
++   beam(b,leg(k,0),leg(k,.56),.36,.3,i=>i%2?P.ironL:P.iron,{w2:.3,d2:.26});beam(b,leg(k,.56),leg(k,1),.3,.26,i=>i%2?P.hazardD:P.hazard,{w2:.26,d2:.22});   // the upper half still in its hazard paint (round 2)
+    const n=(k+1)%3;b.tube(leg(k,.3),leg(n,.3),.075,P.ironL,{n:hi?4:3});if(hi){b.tube(leg(k,.3),leg(n,.66),.05,P.rust,{n:3});b.tube(leg(k,.66),leg(n,.66),.06,P.ironL,{n:3});}});
+   // the winch head and the beacon lamp in its cage
+-  b.cyl(0,TOPY-.2,0,.52,.6,P.ironD,{n:6,bev:.06});b.tube([-.55,TOPY+.62,0],[.55,TOPY+.62,0],.27,P.rust,{n:hi?8:5,caps:true});
++  b.part();qb(b,0,TOPY-.3,0,1.3,.72,1.1,P.hazard,'b');b.tube([-.55,TOPY+.66,0],[.55,TOPY+.66,0],.27,P.rust,{n:hi?8:5,caps:true});   // the winch housing: hazard yellow, striped (round 2: it was a dark drum)
++  if(hi)for(const sg of [1,-1])b.at(0,0,0,sg>0?0:Math.PI,q=>bars(q,-.6,.6,TOPY-.24,TOPY+.36,.562,2,P.hazardD));
++  dish(b,[.95,TOPY+.5,.55],[.62,.5,.6],.62,P.plateMil,P.plateMilD);b.tube([.3,TOPY+.3,.2],[.8,TOPY+.4,.45],.05,P.ironL,{n:3});   // a stolen LDF relay dish lashed to the head
++  // plundered plates leaned and welded between the legs on two sides (the third stays open: the sac shows through it)
++  rad(b,-Math.PI/2,1.74,.05,q=>{slab(q,-1.5,1.45,0,2.5,2.15,0,.12,P.plateMil,{back:true});if(hi){dress(q,'mil',-1.5,1.45,.1,2.1,.15,0);q.detail(()=>{for(const u of [-1.3,1.25])tack(q,u,1.9,.16,.09,P.gold);});}},-.28,.03);
++  rad(b,2.618,1.57,.05,q=>{slab(q,-1.55,1.2,0,1.9,2.35,0,.12,P.hazard,{back:true});bars(q,-1.5,1.15,.1,1.85,.15,hi?3:2,P.hazardD);},-.28,-.04);
+   if(hi){for(const sx of [-1,1])qb(b,sx*.6,TOPY+.3,0,.08,.66,.5,P.iron,'b');b.cyl(0,TOPY+.9,0,.2,.12,P.gold,{n:6});b.cyl(0,TOPY+1.4,0,.2,.07,P.ironD,{n:6});
+    for(let k=0;k<3;k++){const a=k*TAU/3+.4;b.tube([Math.cos(a)*.2,TOPY+1.0,Math.sin(a)*.2],[Math.cos(a)*.2,TOPY+1.42,Math.sin(a)*.2],.02,P.ironL,{n:3});}}
+   b.cyl(0,TOPY+1.02,0,.13,.36,P.red,{n:hi?6:4,top:!hi});b.halo(0,TOPY+1.2,0,.9,RED,.4);
+@@ -305,7 +337,7 @@ WK.model('raid-spire',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0
+   // the growth: the sac round the drill string (fissures on its flanks), a root mound at the collar
+   const SC=[0,2.9,0],S=mass(b,SC,[1.36,1.66,1.3],sd+3,{na:hi?14:8,nr:hi?8:4,lob:.2});mass(b,[0,-.1,0],[1.55,.95,1.45],sd+5,{na:hi?12:8,nr:hi?4:2,t0:.5,lob:.22});
+   const up=p=>{const x=p[0]-SC[0],y=(p[1]-SC[1])*.7,z=p[2]-SC[2],l=Math.hypot(x,y,z)||1;return [x/l,y/l,z/l];};
+-  [[.5,.66,.52],[2.7,.5,.6],[4.5,.72,.46]].forEach(([ph,t,r],k)=>{if(!hi&&k)return;const p=S(ph,t,.66);bulb(b,p[0],p[1]-r*.5,p[2],r,sd+k*7,{lx:Math.cos(ph)*r*.8,lz:Math.sin(ph)*r*.8,sy:1.5});});
++  [[.5,.66,.52],[2.7,.5,.6]].forEach(([ph,t,r],k)=>{if(!hi&&k)return;const p=S(ph,t,.66);bulb(b,p[0],p[1]-r*.5,p[2],r,sd+k*7,{lx:Math.cos(ph)*r*.8,lz:Math.sin(ph)*r*.8,sy:1.5});});
+   for(let k=0;k<(hi?4:2);k++){const ph=k*TAU/(hi?4:2)+1.5,n=hi?4:2,pts=[];for(let j=0;j<=n;j++)pts.push(S(ph+.5*Math.sin(j*1.9+k*2),.9-.84*j/n,1.05));vein(b,pts,.085,.05,{seg:hi?2:1,open:true,up});}
+   // veins down the legs and out over the ground to the edge of the box
+   FEET.forEach(([fx,fz],k)=>{const pts=[S(Math.atan2(fz,fx),.6,1)],n=hi?6:3;for(let j=0;j<=n;j++){const t=.5-.5*j/n,p=leg(k,t),a=j*1.25+k*2;pts.push([p[0]+Math.cos(a)*.22,p[1]+.05,p[2]+Math.sin(a)*.22]);}vein(b,pts,.11,.06,{seg:hi?2:1,open:true});
 diff --git a/js/conquest/kit/warmodels.js b/js/conquest/kit/warmodels.js
-index df08e9e..9b478b4 100644
+index df08e9e..c3c779b 100644
 --- a/js/conquest/kit/warmodels.js
 +++ b/js/conquest/kit/warmodels.js
 @@ -263,12 +263,19 @@ WK.model('par-shuttle',shuttle,{aoH:1.6,aoMin:.72});
@@ -150,8 +318,8 @@ index df08e9e..9b478b4 100644
 -  qb(b,s*6.6,8.7,0,.5,.3,.5,sup?P.weld:P.red,'b');if(!sup)b.halo(s*6.6,9.1,0,1.4,WK.PAR.red,.6);
 +  // cable stays (critic round 2: the black raking poles here read as thorns): a taut steel cable from a lug on the pier down to
 +  // a hazard-painted anchor block, a turnbuckle a third of the way up
-+  for(const f of [1,-1]){const A=[s*7.35,.14,f*2.8],B=[s*6.95,6.7,f*.95];b.tube(A,B,.055,P.ironL,{n:hi?4:3});qb(b,s*7.35,-.3,f*2.75,1.1,.44,.7,P.hazard,'b');
-+   if(hi){const T0=L3(A,B,.3),T1=L3(A,B,.4);b.tube(T0,T1,.12,P.gold,{n:5});qb(b,s*7.35,.14,f*2.8,.3,.26,.3,P.ironD,'b');qb(b,B[0],B[1]-.12,B[2],.4,.24,.3,P.ironD,'');qb(b,s*7.35,-.3,f*2.75,.5,.45,.72,P.hazardD,'b');}}
++  for(const f of [1,-1]){const A=[s*7.35,.14,f*2.8],B=[s*6.95,6.7,f*.95];b.tube(A,B,.055,P.ironL,{n:hi?4:3});qb(b,s*7.35,-.3,f*2.75,1.1,.44,.6,P.hazard,'b');
++   if(hi){const T0=L3(A,B,.3),T1=L3(A,B,.4);b.tube(T0,T1,.12,P.gold,{n:5});qb(b,s*7.35,.14,f*2.8,.3,.26,.3,P.ironD,'b');qb(b,B[0],B[1]-.12,B[2],.4,.24,.3,P.ironD,'');qb(b,s*7.35,-.3,f*2.75,.5,.45,.62,P.hazardD,'b');}}
 +  qb(b,s*6.6,8.7,0,.5,.3,.5,sup?P.weld:lampM,'b');if(!sup)b.halo(s*6.6,9.1,0,dorm?1:1.2,WK.PAR.red,dorm?.18:.3);
    // plundered plates on the outer face, the banner on the face that looks at the visitor
    b.at(s*7.72,0,0,s*HP,p=>{plate(p,P,0,1.3,1.9,1.8,s>0?P.plateMil:S[1],{t:.1,rz:.04});plate(p,P,.1,3.7,1.5,2.3,s>0?P.hazard:S[3],{t:.1,rz:-.05});},0,0);
@@ -190,18 +358,294 @@ index df08e9e..9b478b4 100644
   if(sup){   // suppressed: four LDF damper clamps on the ring, lock beams into a hub; cyan says who switched it off
    for(const a of [45,135,225,315])ang(a*D,p=>{const r1=6.95;qb(p,0,r0-.2,0,1.7,r1-r0+.2,2.2,M.hull2,'');
     for(const f of [1,-1]){qb(p,0,r0+.15,f*1.13,1.3,1.5,.08,M.plate,f>0?'k':'f');qb(p,0,r0+.62,f*1.18,.92,.2,.05,M.cyan,f>0?'k':'f');if(hi){qb(p,0,r0+1.75,f*1.13,1.5,.12,.06,M.gold,f>0?'k':'f');for(const x of [-.72,.72])qb(p,x,r0-.2,f*1.02,.14,r1-r0+.2,.18,M.hull,f>0?'k':'f');}}
-@@ -465,5 +472,5 @@ function ldfPost(b,o){const K=b.k,{mat,rect}=K,T=K.T,M=K.pal.mil,hi=b.hi,sd=(o.s
+@@ -340,26 +347,38 @@ function portal(b,o){const K=b.k,{tint,glow,col}=K,hi=b.hi,P=parPal(b,false),M=K
+ WK.model('portal-gate',portal,{aoH:5,aoMin:.6});
+ 
+ // ------------------------------------------------------------------ ldf-post --------------------------------------------
+-// A Lunar Defense Force field post (8 x 7 x 8, the front toward +z): the humans' own forward emplacement. An armoured pad
+-// (cyan corner lights) carries a ring of leaning blast shields (gunmetal frames, pale ceramic plates, a gold cap, a cyan
+-// slit), sandbag runs, a weapon, a shelter, a mast and the LDF flag. o.seed picks one of four layouts (seeds 5-8 are the
+-// same four mirrored, and every seed deals its own crates):
+-//   0 GUN POST      twin autocannon under a flat armoured roof, a guard booth, a lattice radar mast flying the flag
+-//   1 MISSILE POST  a missile rack in the open, the booth with a canvas porch, a dish mast, the flag on its own pole
+-//   2 WATCH POST    a stilted watch cabin with a searchlight, a field gun under an arched roof, the flag on the cabin
+-//   3 SIGNAL POST   a big uplink dish on its equipment hut, a beam lance in a sandbag ring, a signal-lamp mast, a field desk
+-const LDF={size:[8,7,8],variants:4,padY:.22};
+-function ldfPost(b,o){const K=b.k,{mat,rect}=K,T=K.T,M=K.pal.mil,hi=b.hi,sd=(o.seed|0)||1,V=((sd-1)%4+4)%4,mir=((sd-1)>>2)&1?-1:1,PY=LDF.padY,D=Math.PI/180,
+-  bagM=mat(0xb3a982,'cloth',0,.12),bagD=mat(0x968c68,'cloth',0,.12),tarp=mat(0x3d566e,'cloth',0,.05),fl=K.pal.par.flagLDF,fl2=K.pal.par.flagLDF2,WH=0xe8f6ff,CY=0x22e6ff,
++// A Lunar Defense Force field post (8 x 12 x 8, the front toward +z): the humans' own forward emplacement, and the human
++// world is BLUE: blue armour on the blast shields, blue roofs, blue-and-white markings (5E-2d2 critic round 2: the posts
++// were gunmetal, white and amber with almost no blue, "one kit rearranged", and vanished among the Refuge's buildings).
++// Every post has the same SIGNATURE: an armoured pad with cyan corner lights, a ring of leaning blue blast shields, and one
++// tall white-and-blue mast in a back corner that flies the LDF flag (1.5x its old size) under a lighthouse lantern; the
++// style sweeps a blue searchlight from that lantern (ConquestWarModels.ldf.light(seed) = where it is).
++// And every post has its own HERO module, so the nine posts of the world are nine designs (o.seed 1 .. 9, in the order of
++// the style's WAR_SCENERY.posts):
++//   1 AID POST (the Refuge)             a field aid tent with the medics' blue cross, a comms dish
++//   2 TANK RACK (the oxygen complex)    three tall oxygen tanks in a steel rack under a blue manifold, a beam lance
++//   3 CHECKPOINT (the viaduct, east)    a striped boom barrier across the front, the guard booth, concrete barriers, a twin gun
++//   4 RADAR (the viaduct, west)         a big search radar on its equipment hut, a missile rack
++//   5 HEAVY GUN (the Command Base)      a long-barrelled heavy gun in a blue gun house, its shells racked beside it
++//   6 SHIELD WALL (the frontier wall)   a section of armoured wall between field pylons, a firing step, a missile rack behind
++//   7 RELAY (the corridor pylon)        a lattice relay tower with two relay drums and a glowing insulator stack, a beam lance
++//   8 DRILL RIG (the ice mine)          a derrick over a drill floor, an ice core rack, a melt tank
++//   9 FLOODLIGHT GANTRY (the dam)       a gantry across the pad with four floodlights, a field gun under it
++// Odd designs are mirrored, and every seed deals its own crates.
++const LDF={size:[8,12,8],variants:9,padY:.22,mast:[-2.85,-2.85],lightY:10.1},ldfV=sd=>(((sd|0)||1)-1)%9,ldfMir=sd=>ldfV(sd)%2?-1:1;
++function ldfPost(b,o){const K=b.k,{mat,rect}=K,T=K.T,M=K.pal.mil,hi=b.hi,sd=(o.seed|0)||1,V=(ldfV(sd)+9)%9,mir=ldfMir(sd),PY=LDF.padY,D=Math.PI/180,
++  bagM=mat(0xb3a982,'cloth',0,.12),bagD=mat(0x968c68,'cloth',0,.12),WH=0xe8f6ff,CY=0x22e6ff,
++  BL=mat(0x2f6fd6,'paint',.25),BLd=mat(0x1c4594,'paint',.3),BLl=mat(0x6aa6f2,'paint',.15),WP=mat(0xdde5ee,'paint',.25),flB=mat(0x2f7fe6,'cloth',0),flW=mat(0xe9f0f7,'cloth',0),cv=mat(0xd6dde4,'cloth',0,.05),cvD=mat(0xaab4be,'cloth',0,.05),   // the LDF's blue and white (round 2)
++  
+   R=(w,d,y,ch=.14,cx=0,cz=0)=>({p:rect(w,d,hi?ch:0,cx,cz),y}),put=(x,z,ry,fn)=>b.at(mir*x,PY,z,mir*ry,fn),fly=s=>s*mir>0?0:Math.PI;   // fly(s): the yaw that sends a flag toward world x = s (mirrored with the layout)
+  // ---- the pad ----
+- b.loft([{p:rect(7.8,7.8,1.3),y:-.5},{p:rect(7.8,7.8,1.3),y:.1},{p:rect(7.5,7.5,1.2),y:PY}],r=>r?M.trim:M.hull2,{topMat:M.conc});
++ b.loft([{p:rect(7.8,7.8,1.3),y:-.5},{p:rect(7.8,7.8,1.3),y:.1},{p:rect(7.5,7.5,1.2),y:PY}],r=>r?BLd:M.hull2,{topMat:M.conc});
+  for(const sx of [-1,1])for(const sz of [-1,1])face(b,[[sx*2.75,PY+.012,sz*3.6],[sx*3.6,PY+.012,sz*2.75],[sx*3.48,PY+.012,sz*2.63],[sx*2.63,PY+.012,sz*3.48]],M.cyan,[0,-9,0]);
+  // ---- the parts ----
+  // a blast shield (frame: +z outward): a footing, a leaning gunmetal frame with a gold cap, a pale ceramic plate, a cyan slit
+  const bar=(q,w,h=1.5)=>{const hw=w/2,yb=.24;qb(q,0,0,.03,w,yb,.94,M.hull2,'b');
+-  skin(q,[[[-hw,yb,-.34],[hw,yb,-.34],[hw,yb,.42],[-hw,yb,.42]],[[-hw+.05,h,-.2],[hw-.05,h,-.2],[hw-.05,h,.02],[-hw+.05,h,.02]]],(r,i)=>i===0?M.hull:M.hull2,{z:M.gold});
+-  q.at(0,yb,.42,0,p=>{const sl=Math.hypot(h-yb,.4);if(hi)p.bev(0,.07,.03,w-.3,sl*.86,.07,M.plate,{ch:.035});else qb(p,0,.07,.03,w-.3,sl*.86,.06,M.plate,'kb');qb(p,0,sl*.66,.08,w*.5,.1,.03,M.cyan,'kb');
++  skin(q,[[[-hw,yb,-.34],[hw,yb,-.34],[hw,yb,.42],[-hw,yb,.42]],[[-hw+.05,h,-.2],[hw-.05,h,-.2],[hw-.05,h,.02],[-hw+.05,h,.02]]],(r,i)=>i===0?M.hull:M.hull2,{z:WP});
++  q.at(0,yb,.42,0,p=>{const sl=Math.hypot(h-yb,.4);if(hi)p.bev(0,.07,.03,w-.3,sl*.86,.07,BL,{ch:.035});else qb(p,0,.07,.03,w-.3,sl*.86,.06,BL,'kb');qb(p,0,sl*.66,.08,w*.5,.1,.03,M.cyan,'kb');qb(p,0,sl*.36,.08,w-.5,.12,.03,WP,'kb');
+    if(hi)for(const s of [-1,1])qb(p,s*(hw-.3),.14,.08,.09,sl*.42,.04,M.hull2,'kb');},-Math.atan(.4/(h-yb)));};
+  const ring=(angs,cz=.1,Rr=3.1,w=1.9)=>angs.forEach(a=>put(Math.sin(a*D)*Rr,cz+Math.cos(a*D)*Rr,a*D,q=>bar(q,w)));
+  // sandbags along the frame's x (LOW: stepped courses)
+@@ -368,102 +387,143 @@ function ldfPost(b,o){const K=b.k,{mat,rect}=K,T=K.T,M=K.pal.mil,hi=b.hi,sd=(o.s
+    for(let i=0;i<n;i++)bag(q,(i-(n-1)/2)*.66,r*.2,(hz(sd,k+r*9+i)-.5)*.07,(hz(sd,k+i*3+r+20)-.5)*.22,(i+r)%3===1?bagD:bagM);}};
+  // supplies: a banded crate, a canister
+  const box=(q,x,y,z,w,h,d,ry,m,band)=>q.at(x,y,z,ry,c=>{if(hi){c.bev(0,0,0,w,h,d,m,{ch:.04});qb(c,0,h*.56,0,w+.02,.09,d+.02,band,'tb');}else qb(c,0,0,0,w,h,d,m,'b');});
+- const can=(q,x,z,h=.66)=>{q.cyl(x,0,z,.2,h,M.plate2,{n:hi?8:5,bev:.04});if(hi)q.cyl(x,h*.5,z,.215,.08,M.gold,{n:8,top:false});};
+- const stock=(q,k)=>{const cm=[M.plate2,M.hull,M.plate,M.hull2],bm=[M.gold,M.cyan,M.hazard,M.gold],h=j=>hz(sd,k+j),a=(h(1)*4)|0,c=(h(2)*4)|0;
++ const can=(q,x,z,h=.66)=>{q.cyl(x,0,z,.2,h,M.plate2,{n:hi?8:5,bev:.04});if(hi)q.cyl(x,h*.5,z,.215,.08,BL,{n:8,top:false});};
++ const stock=(q,k)=>{const cm=[M.plate2,M.hull,M.plate,M.hull2],bm=[BL,M.cyan,WP,BL],h=j=>hz(sd,k+j),a=(h(1)*4)|0,c=(h(2)*4)|0;
+   box(q,-.5,0,0,1.15,.66,.8,(h(3)-.5)*.3,cm[a],bm[a]);box(q,.62,0,.05,.8,.52,.7,(h(4)-.5)*.5,cm[c],bm[c]);if(h(5)<.6)box(q,-.42,.66,0,.7,.42,.6,(h(6)-.5)*.6,cm[(a+2)%4],bm[(a+1)%4]);else can(q,-.1,.72,.56);
+   if(hi||h(7)<.5){can(q,1.3,.2);if(hi&&h(8)<.6)can(q,1.36,-.3,.56);}};
+  // the guard booth (door toward +z): gunmetal below, a lit window band, pale ceramic above, a gold cornice
+  const booth=q=>{q.loft([R(2.3,2.1,0),R(2.3,2.1,.28)],M.hull2,{top:false});q.loft([R(2.1,1.9,.28),R(2.04,1.84,1.5)],M.hull,{top:false});q.loft([R(1.98,1.78,1.5),R(1.98,1.78,1.98)],M.dark,{top:false});
+-  q.loft([R(2.1,1.9,1.98),R(2.02,1.82,2.5)],M.plate,{top:false,bot:hi});q.loft([R(2.5,2.3,2.5),R(2.5,2.3,2.62)],M.gold,{top:false,bot:hi});q.loft([R(2.5,2.3,2.62),R(1.8,1.6,2.9)],M.hull2,{topMat:M.plate2});
++  q.loft([R(2.1,1.9,1.98),R(2.02,1.82,2.5)],BL,{top:false,bot:hi});q.loft([R(2.5,2.3,2.5),R(2.5,2.3,2.62)],WP,{top:false,bot:hi});q.loft([R(2.5,2.3,2.62),R(1.8,1.6,2.9)],BLd,{topMat:BL});
+   for(const s of [-1,1])face(q,[[s*1,1.6,-.62],[s*1,1.6,.62],[s*1,1.9,.62],[s*1,1.9,-.62]],M.ice,[0,1.7,0]);
+   face(q,[[-.72,1.6,.9],[.72,1.6,.9],[.72,1.9,.9],[-.72,1.9,.9]],M.ice,[0,1.7,0]);face(q,[[-.5,1.64,-.9],[.5,1.64,-.9],[.5,1.86,-.9],[-.5,1.86,-.9]],M.cyan,[0,1.7,0]);
+   qb(q,0,.28,.95,.82,1.2,.06,M.dark,'kb');q.halo(0,1.75,1.2,1.2,0xa8f8ff,.2);
+   if(hi){for(const s of [-1,1]){qb(q,s*.5,.28,.95,.1,1.24,.08,M.trim,'kb');q.at(s*1.06,.5,0,s*HP,p=>p.bev(0,0,0,1.25,.8,.07,M.plate2,{ch:.035}));}qb(q,.24,.8,.96,.08,.2,.03,M.cyan,'kb');qb(q,0,.06,1.2,1.1,.1,.5,M.hull2,'b');
+    q.bev(.35,2.9,-.2,.6,.2,.5,M.trim,{ch:.04});q.tube([-.6,2.8,-.5],[-.68,4.05,-.58],.02,M.bare,{n:3});q.gem(-.68,4.08,-.58,.04,.06,.04,M.cyan);}};
+  // the LDF flag (blue, a pale stripe) flying from height h of whatever stands at the frame's origin
+- const flg=(q,h,ry,pole)=>q.at(0,0,0,ry,f=>{flag(f,h,1.5,.86,fl,{m2:fl2,sag:.1,ph:sd,pole:pole?M.bare:null,r:.045});if(pole){f.cyl(0,0,0,.2,.18,M.hull2,{n:6});f.gem(0,h+.16,0,.07,.1,.07,M.gold);}});
+- const lamp=(q,y,s=.9)=>{q.gem(0,y,0,.11,.14,.11,M.white);q.halo(0,y,0,s,WH,.45);};
+- // masts: a three-legged lattice with a radar bar / a pole with a dish / a pole with a signal-lamp head
+- const mastLat=q=>{const L=(i,y)=>{const a=i*TAU/3+.5,r=.56-.42*y/5.1;return [Math.cos(a)*r,y,Math.sin(a)*r];};q.cyl(0,0,0,.76,.16,M.hull2,{n:hi?9:6});
+-  for(let i=0;i<3;i++){q.tube(L(i,.16),L(i,5.1),.06,M.trim,{n:hi?4:3});for(let k=1;k<=4;k++){if(!hi&&k%2)continue;q.tube(L(i,k*1.275),L((i+1)%3,k*1.275),.035,M.trim,{n:3});if(hi)q.tube(L(i,(k-1)*1.275+(k===1?.16:0)),L((i+1)%3,k*1.275),.028,M.bare,{n:3});}}
+-  q.cyl(0,5.1,0,.3,.12,M.hull2,{n:6});q.tube([0,5.2,0],[0,5.66,0],.06,M.trim,{n:4});
+-  q.at(0,5.5,0,.7,r=>{qb(r,0,0,.03,1.7,.4,.1,M.plate,'');if(hi){qb(r,0,.14,-.07,1.5,.12,.1,M.hull2,'');for(const s of [-1,1])qb(r,s*.86,-.03,.03,.05,.46,.14,M.gold,'');}},-.2);
+-  q.tube([0,5.66,0],[0,6.6,0],.025,M.bare,{n:3});lamp(q,6.02);if(hi){q.cyl(0,2.5,0,.4,.08,M.hull2,{n:6,topMat:M.trim});q.gem(0,6.62,0,.04,.06,.04,M.cyan);}};
+- const mastDish=q=>{q.bev(0,0,0,.9,.38,.9,M.hull2,{ch:.08});q.cyl(0,.38,0,.17,5.1,M.trim,{n:hi?7:5,r2:.09,top:false});
+-  q.at(0,4.05,.14,0,d=>{rev(d,0,0,0,[[.08,0],[.92,.34],[.88,.39],[.06,.07]],hi?10:6,s=>s===0?M.hull2:s===1?M.gold:M.plate);d.tube([0,.05,0],[0,.64,0],.03,M.bare,{n:3});d.gem(0,.68,0,.07,.08,.07,M.cyan);},1.05);
+-  q.tube([-.62,5.15,0],[.62,5.15,0],.035,M.trim,{n:3});for(const s of [-1,1])q.tube([s*.62,5.15,0],[s*.62,6.05,0],.02,M.bare,{n:3});q.tube([0,5.48,0],[0,6.6,0],.022,M.bare,{n:3});lamp(q,5.72);
+-  if(hi){q.cyl(0,.38,0,.27,.3,M.hull,{n:7});q.cyl(0,2.7,0,.19,.12,M.gold,{n:7});for(let i=0;i<3;i++){const a=i*TAU/3+HP;q.tube([0,4.5,0],[Math.cos(a)*.8,.05,Math.sin(a)*.8],.012,M.bare,{n:3});}}};
+- const mastSig=q=>{q.bev(0,0,0,.8,.34,.8,M.hull2,{ch:.08});q.cyl(0,.34,0,.13,5.4,M.trim,{n:hi?6:4,r2:.07,top:false});
+-  q.bev(0,4.1,.2,.42,1.2,.3,M.dark,{ch:.05});[[4.2,M.white,WH],[4.58,M.cyan,CY],[4.96,M.ice,0xa8f8ff]].forEach(([y,m,c])=>{qb(q,0,y,.365,.26,.26,.04,m,'kb');for(const s of [-1,1])if(hi)qb(q,s*.225,y+.03,.2,.04,.2,.2,m,s>0?'l':'r');q.halo(0,y+.13,.42,.45,c,.4);});
+-  q.tube([-.7,5.45,0],[.7,5.45,0],.035,M.trim,{n:3});for(const s of [-1,1])q.tube([s*.7,5.45,0],[s*.7,6.2,0],.02,M.bare,{n:3});q.tube([0,5.7,0],[0,6.6,0],.022,M.bare,{n:3});lamp(q,5.9,.8);
+-  if(hi){q.tube([0,3.5,.12],[0,3.62,.62],.05,M.plate2,{n:6,r2:.2});q.cyl(0,2.6,0,.16,.12,M.gold,{n:6});for(let i=0;i<3;i++){const a=i*TAU/3+.8;q.tube([0,4,0],[Math.cos(a)*.75,.05,Math.sin(a)*.75],.012,M.bare,{n:3});}}};
+- // roofs: a flat armoured slab on four posts (front edge lower) / a canvas porch (z = 0 on the wall, falling outward) / an arched shell along x
++ const flg=(q,h,ry)=>q.at(0,0,0,ry,f=>flag(f,h,2.25,1.3,flB,{m2:flW,sag:.08,ph:sd}));   // 1.5x (round 2)
++ // a roof: a flat blue armoured slab on four posts (front edge lower)
+  const slab=(q,w,d,h)=>{const px=w/2-.22,pz=d/2-.26,tl=.13;for(const sx of [-1,1])for(const sz of [-1,1]){q.tube([sx*px,0,sz*pz],[sx*px,h-sz*pz*tl+.03,sz*pz],.075,M.trim,{n:4});if(hi)qb(q,sx*px,0,sz*pz,.3,.1,.3,M.hull2,'b');}
+-  q.at(0,h,0,0,r=>{r.bev(0,0,0,w,.16,d,M.hull2,{ch:.06});for(const s of [-1,1])if(hi)r.bev(s*w*.25,.16,-.04,w*.43,.07,d*.8,M.plate,{ch:.03});else qb(r,s*w*.25,.16,-.04,w*.43,.06,d*.8,M.plate,'b');
+-   qb(r,0,-.03,d/2+.03,w+.04,.22,.06,M.gold,'k');face(r,[[-w*.36,-.012,d*.16],[w*.36,-.012,d*.16],[w*.36,-.012,d*.3],[-w*.36,-.012,d*.3]],M.ice,[0,9,0]);
++  q.at(0,h,0,0,r=>{r.bev(0,0,0,w,.16,d,BLd,{ch:.06});for(const s of [-1,1])if(hi)r.bev(s*w*.25,.16,-.04,w*.43,.07,d*.8,BL,{ch:.03});else qb(r,s*w*.25,.16,-.04,w*.43,.06,d*.8,BL,'b');
++   qb(r,0,-.03,d/2+.03,w+.04,.22,.06,WP,'k');face(r,[[-w*.36,-.012,d*.16],[w*.36,-.012,d*.16],[w*.36,-.012,d*.3],[-w*.36,-.012,d*.3]],M.ice,[0,9,0]);
+    if(hi)for(const s of [-1,1])r.tube([s*px,-.05,-pz],[s*px,-.05,pz],.045,M.trim,{n:3});},tl);q.pool(0,.03,0,w*.42,d*.42,0xa8f8ff,.2);};
+- const porch=(q,w,d,h0,h1)=>{const hw=w/2,sag=.1;for(const x of [-hw,0,hw])q.tube([x,h0,0],[x,h1,d],.04,M.trim,{n:3});q.tube([-hw,h1,d],[hw,h1,d],.045,M.trim,{n:3});for(const s of [-1,1])q.tube([s*hw,0,d],[s*hw,h1,d],.06,M.trim,{n:4});
+-  for(const s of [-1,1]){const x0=s<0?-hw:0,x1=x0+hw,xm=(x0+x1)/2;dface(q,[[x0,h0+.04,0],[xm,h0+.04-sag,0],[xm,h1+.04-sag,d],[x0,h1+.04,d]],tarp);dface(q,[[xm,h0+.04-sag,0],[x1,h0+.04,0],[x1,h1+.04,d],[xm,h1+.04-sag,d]],tarp);
+-   dface(q,[[x0,h1+.04,d+.01],[xm,h1+.04-sag,d+.01],[xm,h1-.24,d+.03],[x0,h1-.16,d+.03]],fl2);dface(q,[[xm,h1+.04-sag,d+.01],[x1,h1+.04,d+.01],[x1,h1-.16,d+.03],[xm,h1-.24,d+.03]],fl2);}};
+- const arch=(q,L,zs,ph,rh)=>{const n=hi?8:4,hl=L/2,A=i=>{const a=i/n*Math.PI;return [ph+Math.sin(a)*rh,Math.cos(a)*zs];};for(const sx of [-1,1])for(const sz of [-1,1]){q.tube([sx*(hl-.14),0,sz*zs],[sx*(hl-.14),ph,sz*zs],.075,M.trim,{n:4});if(hi)qb(q,sx*(hl-.14),0,sz*zs,.3,.1,.3,M.hull2,'b');}
+-  for(let i=0;i<n;i++){const [y0,z0]=A(i),[y1,z1]=A(i+1),ym=(y0+y1)/2,zm=(z0+z1)/2,rib=hi?i===2||i===5:false;
+-   face(q,[[-hl,y0,z0],[hl,y0,z0],[hl,y1,z1],[-hl,y1,z1]],i===0||i===n-1?M.hull:rib?M.plate2:M.plate,[0,ph-1,0]);face(q,[[-hl,y0-.05,z0*.97],[hl,y0-.05,z0*.97],[hl,y1-.05,z1*.97],[-hl,y1-.05,z1*.97]],M.hull2,[0,ph+(ym-ph)*4,zm*4]);
+-   for(const sx of [-1,1])face(q,[[sx*hl,y0,z0],[sx*hl,y1,z1],[sx*hl,y1-.05,z1*.97],[sx*hl,y0-.05,z0*.97]],M.gold,[0,ym,zm]);}
+-  for(const sz of [-1,1])q.tube([-hl-.04,ph,sz*zs],[hl+.04,ph,sz*zs],.06,M.trim,{n:4});face(q,[[-hl*.6,ph+rh-.07,-.12],[hl*.6,ph+rh-.07,-.12],[hl*.6,ph+rh-.07,.12],[-hl*.6,ph+rh-.07,.12]],M.ice,[0,9,0]);q.pool(0,.03,0,L*.4,zs*.7,0xa8f8ff,.2);};
+  // weapons (muzzles toward +z): the turntable, then a twin autocannon / a missile rack / a field gun / a beam lance
+  const turn=(q,r=1)=>{q.cyl(0,0,0,r,.1,M.dark,{n:hi?12:8});q.cyl(0,.1,0,r*.66,.26,M.hull2,{n:hi?10:6,r2:r*.56});};
+  const twin=q=>{turn(q);q.bev(0,.36,-.1,.86,.62,1.1,M.hull,{ch:.08});for(const s of [-1,1])qb(q,s*.52,.44,0,.14,.92,.8,M.plate2,'b');
+   q.at(0,1.14,.05,0,g=>{qb(g,0,-.22,-.5,.78,.44,.9,M.hull2,'');
+    for(const s of [-1,1]){const x=s*.2,n=hi?6:4;g.tube([x,0,-.3],[x,0,2.25],.08,M.trim,{n});g.tube([x,0,2.25],[x,0,2.6],.125,M.dark,{n,caps:true});g.tube([x,0,-.2],[x,0,.75],.14,M.hull2,{n,caps:true});
+-    if(hi)g.bev(s*.66,-.34,-.42,.42,.6,.8,M.plate,{ch:.05});else qb(g,s*.66,-.34,-.42,.42,.6,.8,M.plate,'');
+-    if(hi){qb(g,s*.66,-.06,-.42,.44,.09,.82,M.gold,'tb');g.tube([s*.46,.1,-.2],[s*.24,.08,.1],.07,M.dark,{n:4});g.tube([x,0,1.1],[x,0,1.24],.115,M.gold,{n:6});}}
++    if(hi)g.bev(s*.66,-.34,-.42,.42,.6,.8,BL,{ch:.05});else qb(g,s*.66,-.34,-.42,.42,.6,.8,BL,'');
++    if(hi){qb(g,s*.66,-.06,-.42,.44,.09,.82,WP,'tb');g.tube([s*.46,.1,-.2],[s*.24,.08,.1],.07,M.dark,{n:4});g.tube([x,0,1.1],[x,0,1.24],.115,M.gold,{n:6});}}
+    qb(g,0,.2,-.2,.14,.16,.3,M.dark,'b');qb(g,0,.24,-.04,.1,.08,.03,M.cyan,'kb');},-.38);};
+  const rack=q=>{turn(q,.8);for(const s of [-1,1])skin(q,[[[s*.72,.3,-.55],[s*.9,.3,-.55],[s*.9,.3,.45],[s*.72,.3,.45]],[[s*.72,1.62,-.3],[s*.9,1.62,-.3],[s*.9,1.62,.06],[s*.72,1.62,.06]]],M.hull2,{z:M.trim});
+   q.at(0,1.5,-.08,0,g=>{if(hi)g.bev(0,-.5,0,1.44,1,2.1,M.hull,{ch:.09});else qb(g,0,-.5,0,1.44,1,2.1,M.hull,'');
+-   for(const s of [-1,1]){qb(g,s*.725,-.36,-.05,.05,.72,1.66,M.plate,s>0?'l':'r');qb(g,s*.755,-.08,.5,.03,.1,.5,M.cyan,s>0?'l':'r');}qb(g,0,.5,-.1,1.2,.05,1.6,M.plate2,'b');
++   for(const s of [-1,1]){qb(g,s*.725,-.36,-.05,.05,.72,1.66,BL,s>0?'l':'r');qb(g,s*.755,-.08,.5,.03,.1,.5,M.cyan,s>0?'l':'r');}qb(g,0,.5,-.1,1.2,.05,1.6,M.plate2,'b');
+    qb(g,0,-.44,1.05,1.3,.88,.03,M.dark,'k');for(let i=0;i<3;i++)for(let j=0;j<2;j++){const x=(i-1)*.42,y=(j-.5)*.42;g.gem(x,y,1.05,.14,.14,hi?.26:.2,M.plate);if(hi)qb(g,x,y-.17,1.075,.34,.34,.02,M.hull2,'ktbrl');}
+-   qb(g,0,-.53,.86,1.5,1.06,.12,M.gold,'kf');qb(g,0,-.4,-1.07,1.1,.8,.03,M.dark,'f');},-.6);};
++   qb(g,0,-.53,.86,1.5,1.06,.12,WP,'kf');qb(g,0,-.4,-1.07,1.1,.8,.03,M.dark,'f');},-.6);};
+  const field=q=>{for(const s of [-1,1]){q.tube([s*.28,.42,-.2],[s*.78,.1,-1.6],.09,M.hull2,{n:4});qb(q,s*.8,0,-1.66,.34,.22,.2,M.dark,'b');q.tube([s*.8,.48,.1],[s*1.06,.48,.1],.48,M.dark,{n:hi?10:6,caps:true});q.tube([s*.78,.48,.1],[s*1.09,.48,.1],.2,M.plate2,{n:6,caps:true});}
+   q.bev(0,.36,.1,1.5,.42,.66,M.hull,{ch:.07});
+   q.at(0,1,.1,0,g=>{const n=hi?8:5;g.tube([0,0,-.85],[0,0,.8],.21,M.hull2,{n,caps:true});g.tube([0,0,.8],[0,0,2.5],.125,M.trim,{n:hi?6:4,r2:.1});g.tube([0,0,2.5],[0,0,2.86],.18,M.dark,{n:hi?6:4,caps:true});g.tube([0,.27,-.3],[0,.27,1.3],.08,M.plate2,{n:4,caps:true});
+-   for(const s of [-1,1])g.at(s*.72,-.52,.7,-s*.16,p=>hi?p.bev(0,0,0,1.14,1.2,.07,M.plate,{ch:.04}):qb(p,0,0,0,1.14,1.2,.07,M.plate,''),-.24);
+-   qb(g,0,.36,.72,.5,.34,.07,M.plate,'');if(hi){for(const s of [-1,1])qb(g,s*.72,.4,.82,.9,.07,.05,M.gold,'k');g.tube([0,0,1.5],[0,0,1.66],.16,M.gold,{n:6});}qb(g,.34,.26,-.5,.1,.1,.26,M.cyan,'b');},-.2);};
++   for(const s of [-1,1])g.at(s*.72,-.52,.7,-s*.16,p=>hi?p.bev(0,0,0,1.14,1.2,.07,BL,{ch:.04}):qb(p,0,0,0,1.14,1.2,.07,BL,''),-.24);
++   qb(g,0,.36,.72,.5,.34,.07,BL,'');if(hi){for(const s of [-1,1])qb(g,s*.72,.4,.82,.9,.07,.05,WP,'k');g.tube([0,0,1.5],[0,0,1.66],.16,M.gold,{n:6});}qb(g,.34,.26,-.5,.1,.1,.26,M.cyan,'b');},-.2);};
+  const lance=q=>{turn(q,.85);q.cyl(0,.36,0,.36,.72,M.hull,{n:hi?8:5,r2:.26});for(const s of [-1,1])qb(q,s*.4,1,0,.12,.74,.5,M.plate2,'b');
+   q.at(0,1.5,0,0,g=>{if(hi)g.bev(0,-.28,-.5,.62,.56,1.3,M.hull2,{ch:.08});else qb(g,0,-.28,-.5,.62,.56,1.3,M.hull2,'');g.tube([0,0,.1],[0,0,2.9],.1,M.trim,{n:hi?6:4,r2:.05});
+    for(let i=0;i<4;i++){const z=.5+i*.52,r=.25-.035*i;g.tube([0,0,z],[0,0,z+.13],r,M.cyan,{n:hi?8:5,caps:true});}g.gem(0,0,2.95,.08,.08,.2,M.ice);g.halo(0,0,2.9,.8,CY,.5);
+    for(const s of [-1,1]){g.tube([s*.24,-.02,-.2],[s*.1,0,2.2],.03,M.plate2,{n:3});g.tube([s*.28,-.04,-.95],[s*.5,-.04,-.95],.25,M.plate,{n:hi?8:5,caps:true});}
+-   qb(g,0,.28,-.6,.4,.07,.9,M.gold,'b');if(hi)qb(g,0,.29,-.2,.2,.1,.05,M.cyan,'kb');},-.5);};
+- // ---- the four layouts ----
+- if(V===0){ring([-70,-35,0,35,70]);put(.2,.6,0,q=>{slab(q,3.9,3.3,3.45);twin(q);});put(-2.5,-2.55,HP,booth);put(2.8,-2.8,0,q=>{mastLat(q);flg(q,4.85,fly(-1));});
+-  put(-3.3,-.3,-HP,q=>bags(q,2.3,3,1));put(3.3,-.75,HP,q=>bags(q,2.3,3,7));put(.2,-3.1,.06,q=>stock(q,11));}
+- else if(V===1){ring([0,37,74],.1,3.1,2);put(1.45,.95,-.22,rack);put(-2.45,-1,HP,q=>{booth(q);q.at(0,0,1.02,0,a=>{porch(a,2.3,2.3,2.48,2.02);a.at(-.1,0,1.5,HP,c=>stock(c,31));});});
+-  put(.95,-3.05,0,mastDish);put(-2.85,2.85,0,q=>flg(q,5.3,fly(1),true));put(-1.6,3.3,0,q=>bags(q,2,3,3));put(-3.3,1.6,HP,q=>bags(q,2,3,9));
+-  put(2.75,-2.2,-.5,q=>{box(q,0,0,0,1.2,.7,.9,0,M.hull,M.gold);box(q,.05,.7,0,.9,.5,.7,.3,M.plate2,M.cyan);can(q,.2,1.1);if(hi)can(q,-.35,1.05,.56);});}
+- else if(V===2){ring([-72,-36,36,72]);put(0,3.3,0,q=>bags(q,2.3,3,5));put(0,.55,0,q=>{q.at(0,0,.15,0,a=>arch(a,3.6,1.5,2,.8));field(q);});
+-  put(0,-2.3,0,q=>{for(const sx of [-1,1])for(const sz of [-1,1]){q.tube([sx*1.08,0,sz*.98],[sx*.9,2.3,sz*.82],.1,M.trim,{n:4});if(hi)qb(q,sx*1.08,0,sz*.98,.36,.12,.36,M.hull2,'b');}
+-   if(hi)for(const sx of [-1,1]){q.tube([sx*1.06,.25,-.96],[sx*.92,2.1,.84],.04,M.bare,{n:3});q.tube([sx*1.06,.25,.96],[sx*.92,2.1,-.84],.04,M.bare,{n:3});}
+-   q.bev(0,2.3,0,2.7,.16,2.5,M.hull2,{ch:.06,bot:true});q.loft([R(2.04,1.84,2.46),R(2,1.8,3.3)],M.hull,{top:false});q.loft([R(1.94,1.74,3.3),R(1.94,1.74,3.76)],M.dark,{top:false});
+-   for(let k=0;k<4;k++){const w=k%2?.62:.72,hw2=k%2?.975:.875;q.at(0,0,0,k*HP,f=>face(f,[[-w,3.38,hw2],[w,3.38,hw2],[w,3.68,hw2],[-w,3.68,hw2]],M.ice,[0,3.5,0]));}
+-   q.loft([R(2.6,2.4,3.76),R(2.6,2.4,3.88)],M.gold,{top:false,bot:true});q.loft([R(2.6,2.4,3.88),R(2,1.8,4.14)],M.hull2,{topMat:M.plate});q.halo(0,3.52,1.15,1.3,0xa8f8ff,.2);
+-   // the searchlight, the whips, the flag, the ladder
+-   q.at(.62,4.1,.42,-.3,s=>{for(const e of [-1,1])qb(s,e*.36,0,0,.06,.52,.2,M.trim,'b');s.at(0,.46,0,0,l=>{const n=hi?8:6;l.tube([0,0,-.3],[0,0,.3],.3,M.hull,{n,caps:true});l.tube([0,0,.3],[0,0,.34],.25,M.white,{n,caps:true});if(hi)l.tube([0,0,.24],[0,0,.36],.32,M.gold,{n});l.halo(0,0,.45,1,WH,.55);},.3);});
+-   q.tube([-.7,4.1,-.6],[-.76,6.6,-.66],.02,M.bare,{n:3});if(hi)q.tube([-.3,4.1,-.7],[-.3,5.6,-.74],.02,M.bare,{n:3});q.at(-.95,4.02,.75,0,f=>flg(f,2.4,fly(-1),true));
+-   if(hi){q.detail(()=>q.ladder([1.36,0,-.3],[1.36,2.46,-.3],M.bare,{w:.5,dx:0,dz:1}));qb(q,.6,2.46,.93,.6,.5,.04,M.plate2,'kb');q.at(-.1,0,-.45,.1,c=>stock(c,51));}else box(q,-.4,0,-.45,1.1,.66,.8,.1,M.plate2,M.gold);});
+-  put(2.7,-2.3,.3,q=>{box(q,0,0,0,1,.62,.8,0,M.hull,M.gold);if(hi)box(q,0,.62,0,.7,.4,.6,.4,M.plate2,M.cyan);});put(-2.8,-2.2,0,q=>{can(q,0,0);can(q,.45,.2,.56);if(hi)can(q,.1,.5);});}
+- else{ring([15,50,85]);put(-1.2,1,-.35,lance);[-100,-55,-10].forEach((a,k)=>put(-1.2+Math.sin(a*D)*1.85,1+Math.cos(a*D)*1.85,a*D,q=>bags(q,1.9,3,60+k*5)));
+-  // the uplink dish on its equipment hut
+-  put(1.75,-2,0,q=>{q.loft([R(2.5,2.1,0),R(2.5,2.1,.26)],M.hull2,{top:false});q.loft([R(2.3,1.9,.26),R(2.24,1.84,1.3)],M.hull,{top:false});q.loft([R(2.44,2.04,1.3),R(2.44,2.04,1.42)],M.gold,{top:false,bot:hi});q.loft([R(2.44,2.04,1.42),R(2,1.6,1.62)],M.hull2,{topMat:M.plate});
+-   qb(q,-.5,.26,.93,.7,.9,.05,M.dark,'kb');face(q,[[.05,.8,.935],[.95,.8,.935],[.95,1.06,.935],[.05,1.06,.935]],M.ice,[0,.9,0]);for(const s of [-1,1])qb(q,s*1.13,.72,0,.04,.14,1.1,M.cyan,s>0?'l':'r');
+-   if(hi){for(let k=0;k<3;k++)qb(q,.5,.36+k*.13,.94,.8,.05,.03,M.trim,'kb');q.at(0,.42,-.93,Math.PI,p=>p.bev(0,0,0,1.7,.7,.07,M.plate2,{ch:.035}));}
+-   q.cyl(0,1.62,0,.34,1.5,M.trim,{n:hi?8:5,r2:.24,top:false});if(hi)q.cyl(0,1.62,0,.5,.2,M.hull,{n:8});
+-   q.at(0,3.15,0,-.5*mir,y=>{for(const s of [-1,1])qb(y,s*.4,-.2,0,.12,.62,.44,M.plate2,'');y.at(0,.2,0,0,d=>{const n=hi?12:7;rev(d,0,0,0,[[.16,0],[1.02,.22],[1.56,.6],[1.5,.66],[.98,.3],[.14,.08]],n,s=>s<2?M.hull2:s===2?M.gold:s===3?M.plate:M.plate2);
+-     for(let i=0;i<3;i++){const a=i*TAU/3;d.tube([Math.cos(a)*1.2,.42,Math.sin(a)*1.2],[0,1.3,0],.028,M.bare,{n:3});}d.gem(0,1.3,0,.1,.14,.1,M.cyan);d.halo(0,1.3,0,.8,CY,.4);if(hi)d.cyl(0,.06,0,.16,.2,M.gold,{n:6});},.62);});});
+-  put(-2.9,-2.9,0,q=>{mastSig(q);flg(q,5.3,fly(1));});
+-  // the field desk under a small roof, supplies behind the lance
+-  put(1.35,.6,0,q=>{slab(q,2.4,2.1,2.6);q.bev(0,0,-.1,1.1,.62,.6,M.hull,{ch:.05});q.at(0,.62,-.1,0,d=>{qb(d,0,0,0,1,.4,.06,M.dark,'b');qb(d,0,.05,.04,.86,.3,.02,M.ice,'kb');},-.35);if(hi){box(q,.75,0,.55,.5,.4,.5,.3,M.plate2,M.gold);q.halo(0,.9,.2,1,0xa8f8ff,.2);}});
+-  put(-.7,-2.7,.15,q=>stock(q,71));}
++   qb(g,0,.28,-.6,.4,.07,.9,BL,'b');if(hi)qb(g,0,.29,-.2,.2,.1,.05,M.cyan,'kb');},-.5);};
++ // ---- the signature (5E-2d2 critic round 2): one tall white-and-blue mast on every post, the LDF flag under a lighthouse lantern ----
++ const sig=q=>{const n=hi?6:4,n8=hi?8:6,Y=LDF.lightY-PY,rr=y=>.21-.09*(y-.9)/(Y-1.5);
++  q.bev(0,0,0,1,.42,1,M.hull2,{ch:.1});q.cyl(0,.42,0,.38,.48,BL,{n,r2:.25});q.cyl(0,.9,0,.21,Y-1.5,WP,{n,r2:.12,top:false});
++  for(const y of hi?[2.6,4.6,6.6]:[2.6,5.6])q.cyl(0,y,0,rr(y)+.03,.7,BL,{n,r2:rr(y+.7)+.03,top:false});
++  if(hi)for(let i=0;i<3;i++){const a=i*TAU/3+.6;q.tube([0,2.3,0],[Math.cos(a)*.8,.05,Math.sin(a)*.8],.03,M.trim,{n:3});}
++  // the lantern: a gallery, the lit drum, a blue cap, a whip with a cyan tip (the style's searchlight sweeps from the drum)
++  q.cyl(0,Y-.6,0,.52,.1,M.hull2,{n:n8});q.cyl(0,Y-.5,0,.3,.2,BLd,{n:n8});q.cyl(0,Y-.3,0,.3,.6,M.ice,{n:n8,top:false});q.cyl(0,Y+.3,0,.48,.1,BLd,{n:n8});q.cyl(0,Y+.4,0,.42,.44,BL,{n:n8,r2:.06});
++  q.tube([0,Y+.8,0],[0,Y+1.4,0],.02,M.bare,{n:3});q.gem(0,Y+1.42,0,.05,.07,.05,M.cyan);q.halo(0,Y,0,1.5,0x8fd0ff,.5);
++  if(hi)for(let i=0;i<4;i++){const a=i*HP+.4;q.tube([Math.cos(a)*.47,Y-.5,Math.sin(a)*.47],[Math.cos(a)*.47,Y+.3,Math.sin(a)*.47],.018,M.trim,{n:3});}
++  flg(q,Y-.85,mir>0?0:Math.PI);};   // the flag flies inward, over the pad
++ // ---- the hero modules (round 2): one per post ----
++ // an equipment hut (door toward +z): gunmetal walls, a white cornice, a blue roof
++ const hut=(q,w,d,h)=>{q.loft([R(w+.2,d+.2,0),R(w+.2,d+.2,.26)],M.hull2,{top:false});q.loft([R(w,d,.26),R(w-.06,d-.06,h)],M.hull,{top:false});q.loft([R(w+.14,d+.14,h),R(w+.14,d+.14,h+.12)],WP,{top:false,bot:hi});q.loft([R(w+.14,d+.14,h+.12),R(w-.3,d-.3,h+.32)],BLd,{topMat:BL});
++  qb(q,-w*.2,.26,d/2-.02,.7,Math.min(.9,h-.4),.05,M.dark,'kb');face(q,[[w*.05,h*.55,d/2-.012],[w*.4,h*.55,d/2-.012],[w*.4,h*.8,d/2-.012],[w*.05,h*.8,d/2-.012]],M.ice,[0,.9,0]);for(const s of [-1,1])qb(q,s*(w/2-.02),h*.5,0,.04,.14,d*.55,M.cyan,s>0?'l':'r');};
++ // 1 the aid tent (the ridge along x, the door in the +x gable): pale canvas, the medics' blue cross on both slopes
++ const tent=q=>{const hl=1.7,hw=1.45,wh=1.2,rh=2.4,G=sx=>[[sx*hl,0,-hw],[sx*hl,wh,-hw],[sx*hl,rh,0],[sx*hl,wh,hw],[sx*hl,0,hw]];
++  for(const s of [-1,1]){face(q,[[-hl,0,s*hw],[hl,0,s*hw],[hl,wh,s*hw],[-hl,wh,s*hw]],cvD,[0,1,0]);face(q,[[-hl-.12,wh-.06,s*(hw+.1)],[hl+.12,wh-.06,s*(hw+.1)],[hl+.12,rh,0],[-hl-.12,rh,0]],cv,[0,0,0]);face(q,G(s),cvD,[0,1,0]);
++   const P=(u,v)=>[u,wh+(rh-wh)*v+.035,s*(hw*(1-v)+.035)];face(q,[P(-.75,.36),P(.75,.36),P(.75,.64),P(-.75,.64)],BL,[0,0,0]);face(q,[P(-.22,.12),P(.22,.12),P(.22,.88),P(-.22,.88)],BL,[0,0,0]);}
++  face(q,[[hl+.012,0,-.5],[hl+.012,0,.5],[hl+.012,1.55,.34],[hl+.012,1.55,-.34]],M.dark,[0,1,0]);for(const s of [-1,1])face(q,[[hl+.02,0,s*.5],[hl+.02,1.55,s*.34],[hl+.02,.5,s*.86]],BL,[0,1,0]);
++  q.tube([-hl-.25,rh+.02,0],[hl+.25,rh+.02,0],.04,M.trim,{n:3});
++  if(hi){for(const sx of [-1,1])for(const sz of [-1,1])q.tube([sx*hl,wh,sz*hw],[sx*(hl+.25),0,sz*(hw+.5)],.015,M.bare,{n:3});qb(q,hl+.03,1.7,0,.03,.3,.3,WP,'');q.halo(hl+.3,1,0,1,0xa8f8ff,.2);}};
++ // a dish on a pedestal: white bowl, blue back
++ const dishOn=(q,r,elev,yaw,ph=1.5)=>{q.bev(0,0,0,.9,.4,.9,M.hull2,{ch:.08});q.cyl(0,.4,0,.19,ph,M.trim,{n:hi?7:5,r2:.13,top:false});
++  q.at(0,ph+.55,0,yaw,y=>{for(const s of [-1,1])qb(y,s*.32,-.2,0,.1,.5,.4,M.plate2,'');y.at(0,.14,0,0,d=>{rev(d,0,0,0,[[.14,0],[r*.65,.2*r],[r,.52*r],[r*.96,.57*r],[r*.62,.27*r],[.12,.08]],hi?12:7,s=>s<2?BL:s===2?BLd:WP);
++    for(let i=0;i<3;i++){const a=i*TAU/3;d.tube([Math.cos(a)*r*.75,.36*r,Math.sin(a)*r*.75],[0,r*.95,0],.026,M.bare,{n:3});}d.gem(0,r*.95,0,.09,.12,.09,M.cyan);d.halo(0,r*.95,0,.7,CY,.4);},elev);});};
++ // 2 the tank rack (along x): three tall white oxygen tanks with blue bands in a steel rack, a blue manifold down to the valve station
++ const tanks=q=>{const n=hi?10:6;qb(q,0,0,0,4.7,.16,1.9,M.hull2,'b');
++  for(const x of [-1.4,0,1.4]){q.cyl(x,.16,0,.6,.2,M.hull,{n});q.cyl(x,.36,0,.54,3,WP,{n,top:false});q.cyl(x,1.1,0,.555,.4,BL,{n,top:false});if(hi)q.cyl(x,2.6,0,.555,.12,BL,{n,top:false});q.dome(x,3.36,0,.54,.34,.54,WP,{n,rings:hi?3:2});q.cyl(x,3.66,0,.1,.3,M.trim,{n:5});}
++  for(const sx of [-1,1]){for(const sz of [-1,1])q.tube([sx*2.15,.16,sz*.82],[sx*2.15,3.3,sz*.82],.07,M.trim,{n:4});q.tube([sx*2.15,3.3,-.82],[sx*2.15,3.3,.82],.06,M.trim,{n:4});}
++  for(const sz of [-1,1]){q.tube([-2.15,3.3,sz*.82],[2.15,3.3,sz*.82],.06,M.trim,{n:4});q.tube([-2.15,1.75,sz*.82],[2.15,1.75,sz*.82],.05,M.trim,{n:3});if(hi)for(const sx of [-1,1])q.tube([sx*2.15,.2,sz*.82],[sx*.7,1.75,sz*.82],.035,M.bare,{n:3});}
++  q.tube([-1.4,3.9,0],[2.15,3.9,0],.09,BL,{n:hi?6:4});q.tube([2.15,3.9,0],[2.15,1.1,0],.09,BL,{n:hi?6:4});q.bev(2.15,.16,0,.4,1,.8,M.hull,{ch:.05});qb(q,2.15,.7,.41,.24,.2,.03,M.cyan,'kb');q.halo(2.15,.8,.6,.6,CY,.3);};
++ // 3 the checkpoint (along x): a blue-and-white boom on its pivot post, raised; a lit stop plate hangs from it; the catch post
++ const gate=q=>{q.bev(-2.7,0,0,.6,1.3,.6,BL,{ch:.07});qb(q,-2.7,1.3,0,.72,.1,.72,WP,'b');
++  q.at(-2.7,1.02,.36,0,a=>{const N=hi?6:3,L=5.4;for(let k=0;k<N;k++){const x0=k*L/N,x1=(k+1)*L/N;qb(a,(x0+x1)/2,-.08,0,x1-x0,.16,.12,k%2?WP:BL,(k?'l':'')+(k<N-1?'r':''));}
++   qb(a,-.5,-.22,0,.62,.44,.3,M.hull2,'');qb(a,2.7,-.66,0,1,.52,.04,M.dark,'');qb(a,2.7,-.58,.025,.8,.34,.02,M.cyan,'kb');if(hi)for(const x of [2.35,3.05])a.tube([x,-.08,0],[x,-.16,0],.015,M.bare,{n:3});a.halo(2.7,-.4,.2,.8,CY,.3);},0,.4);
++  q.bev(2.85,0,0,.4,1.15,.4,BL,{ch:.05});qb(q,2.85,1.15,0,.5,.08,.34,WP,'b');q.gem(2.85,1.42,0,.1,.13,.1,M.cyan);q.halo(2.85,1.42,0,.7,CY,.4);};
++ // a concrete road barrier along z, a blue block painted on each flank
++ const jersey=(q,L)=>{zloft(q,[-L/2,L/2].map(z=>({z,p:[[-.32,0],[.32,0],[.32,.22],[.11,.8],[-.11,.8],[-.32,.22]]})),(z,i)=>i===3?M.plate2:M.conc,{a:M.conc,z:M.conc});
++  if(hi)for(const s of [-1,1])for(const z of [-L*.25,L*.25])face(q,[[s*.312,.27,z-.25],[s*.312,.27,z+.25],[s*.14,.74,z+.25],[s*.14,.74,z-.25]],BL,[0,.4,z]);};
++ // 4 the search radar: a curved reflector (white face, blue back) on a pedestal on its equipment hut, the feed horn out in front
++ const radar=q=>{hut(q,2.5,2,1.35);q.cyl(0,1.67,0,.3,1.05,M.trim,{n:hi?8:5,r2:.22,top:false});if(hi)q.cyl(0,1.67,0,.46,.18,M.hull,{n:8});
++  q.at(0,2.72,0,.45,y=>{qb(y,0,0,-.1,1,.3,.6,M.hull2,'');
++   y.at(0,.3,0,0,d=>{const W=1.9,H=2.1,ns=hi?6:4,zq=x=>.17*x*x-.5;
++    for(let i=0;i<ns;i++){const x0=-W+i*2*W/ns,x1=x0+2*W/ns,z0=zq(x0),z1=zq(x1);face(d,[[x0,0,z0],[x1,0,z1],[x1,H,z1],[x0,H,z0]],i%2?WP:M.plate,[0,H/2,-9]);face(d,[[x0,0,z0-.05],[x1,0,z1-.05],[x1,H,z1-.05],[x0,H,z0-.05]],BL,[0,H/2,9]);
++     if(hi&&i)d.tube([x0,0,z0-.04],[x0,H,z0-.04],.035,BLd,{n:3});}
++    d.tube([-W,H*.5,zq(W)-.12],[W,H*.5,zq(W)-.12],.05,M.trim,{n:3});d.tube([0,.1,zq(0)],[0,H*.5,1.25],.035,M.bare,{n:3});d.gem(0,H*.5,1.3,.1,.1,.14,M.cyan);d.halo(0,H*.5,1.3,.7,CY,.4);},-.14);});};
++ // 5 the heavy gun: a faceted blue gun house on a wide turntable, a long barrel raised over the shields; its shells stand racked beside it
++ const heavy=q=>{turn(q,1.75);
++  q.at(0,.36,0,0,g=>{skin(g,[[[-1.3,0,-1.5],[1.3,0,-1.5],[1.3,0,1.2],[-1.3,0,1.2]],[[-1.3,.75,-1.5],[1.3,.75,-1.5],[1.3,.75,1.45],[-1.3,.75,1.45]],[[-.95,1.6,-1.3],[.95,1.6,-1.3],[.95,1.6,.45],[-.95,1.6,.45]]],(r,i)=>r?(i===2?BLl:BLd):BL,{z:BL});
++   for(const s of [-1,1])qb(g,s*1.31,.3,-.1,.03,.2,2.3,WP,s>0?'l':'r');g.cyl(-.4,1.6,-.6,.38,.26,BLd,{n:hi?8:5});qb(g,-.4,1.68,-.24,.4,.1,.03,M.cyan,'kb');
++   hi?g.bev(0,.5,1.5,1.1,.8,.5,M.hull2,{ch:.08}):qb(g,0,.5,1.5,1.1,.8,.5,M.hull2,'b');
++   g.at(0,.92,1.6,0,k=>{const n=hi?8:5;k.tube([0,0,0],[0,0,1.1],.3,M.hull2,{n,caps:true});k.tube([0,0,1.1],[0,0,3.3],.19,M.trim,{n:hi?7:5,r2:.15});k.tube([0,0,3.3],[0,0,3.85],.26,M.dark,{n,caps:true});
++    if(hi){k.tube([0,0,1.6],[0,0,1.8],.215,WP,{n:7});for(const s of [-1,1])k.tube([s*.36,.1,-.2],[s*.36,.1,.9],.09,M.plate2,{n:5,caps:true});}},-.28);
++   if(hi){g.tube([.6,1.6,-.9],[.66,3.2,-.96],.02,M.bare,{n:3});qb(g,.35,1.6,-.5,.7,.06,.6,BLl,'b');}});};
++ const shells=q=>{qb(q,0,0,0,1.6,.2,.7,M.hull2,'b');for(let i=0;i<(hi?4:3);i++){const x=-.52+i*.35;q.cyl(x,.2,0,.14,.62,M.plate2,{n:hi?7:5,top:false});q.cyl(x,.82,0,.14,.3,WP,{n:hi?7:5,r2:.03});if(hi)q.cyl(x,.5,0,.146,.07,BL,{n:7,top:false});}};
++ // 6 the shield wall (along x, its face toward +z): three blue armour panels between four field pylons (cyan caps), the emitter bar
++ //   across the tops; behind it raking buttresses and a firing step with a rail
++ const wall=q=>{for(let k=0;k<4;k++){const x=-3.3+k*2.2;hi?q.bev(x,0,0,.46,3.8,.74,M.hull2,{ch:.07}):qb(q,x,0,0,.46,3.8,.74,M.hull2,'b');qb(q,x,3.8,0,.3,.16,.5,M.cyan,'b');q.halo(x,4,0,.7,CY,.35);if(hi)qb(q,x,1.1,.38,.16,1.7,.03,M.cyan,'kb');}
++  for(let k=0;k<3;k++)q.at(-2.2+k*2.2,0,.04,0,p=>{qb(p,0,0,0,1.74,.5,.62,M.hull2,'b');hi?p.bev(0,.5,0,1.74,2.7,.3,BL,{ch:.06}):qb(p,0,.5,0,1.74,2.7,.3,BL,'b');qb(p,0,2.3,.16,1.5,.24,.03,WP,'kb');qb(p,0,1.55,.16,.9,.14,.03,M.dark,'kb');qb(p,0,3.2,0,1.74,.12,.22,BLl,'b');
++   if(hi)for(const s of [-1,1])qb(p,s*.62,.7,.16,.12,.6,.03,BLd,'kb');});
++  qb(q,0,3.42,0,6.2,.07,.1,M.ice,'lr');
++  for(const x of [-2.2,0,2.2])q.tube([x,2.4,-.15],[x,0,-1.45],.09,M.trim,{n:4});qb(q,0,.95,-.7,6,.1,.8,M.hull,'');for(const x of [-2.9,-1.1,1.1,2.9])qb(q,x,0,-.95,.12,.95,.12,M.trim,'tb');
++  if(hi){q.tube([-3,1.95,-1.08],[3,1.95,-1.08],.03,M.bare,{n:3});for(const x of [-3,-1.5,0,1.5,3])q.tube([x,1.05,-1.08],[x,1.95,-1.08],.025,M.bare,{n:3});}};
++ // 7 the relay: a lattice tower on its hut, two white relay drums with blue rims, a stack of glowing insulators at the top
++ const relay=q=>{hut(q,2.2,1.8,1.3);q.truss(0,1.62,0,1.2,.46,5,M.trim,{step:1.25,r:.05});
++  for(const [y,ry,r] of [[5.5,.5,.62],[4.2,-2.3,.5]])q.at(0,y,0,ry,d=>{const n=hi?10:6;d.tube([0,0,.3],[0,0,.72],r,WP,{n,caps:true});d.tube([0,0,.7],[0,0,.8],r+.04,BL,{n});d.tube([0,0,0],[0,0,.3],.08,M.trim,{n:4});});
++  for(let i=0;i<4;i++)q.cyl(0,6.7+i*.3,0,.32-.05*i,.13,M.cyan,{n:hi?8:5});q.tube([0,6.6,0],[0,8.6,0],.04,M.bare,{n:3});q.gem(0,8.62,0,.06,.08,.06,M.white);q.halo(0,7.2,0,1.3,CY,.45);
++  if(hi){q.cable([.5,6.4,.3],[1.3,1.7,1.1],.5,.03,M.dark,{n:4});q.detail(()=>q.ladder([-.62,1.62,0],[-.26,6.4,0],M.bare,{w:.4,dx:0,dz:1}));}};
++ // 8 the drill rig: a derrick over the drill floor, the blue motor head on the drill string, ice cores on a rack, a melt tank
++ const drill=q=>{const ICE=K.pal.nat.ice;q.bev(0,0,0,3.1,.5,3.1,M.hull2,{ch:.08});qb(q,0,.5,1.45,2.9,.05,.18,M.hazard,'b');
++  q.truss(0,.5,0,2.5,.7,5.4,M.trim,{step:1.35,r:.055});q.bev(0,5.9,0,1,.36,1,BL,{ch:.07});qb(q,0,6.26,0,.5,.3,.5,BLd,'b');q.gem(0,6.75,0,.08,.11,.08,M.white);q.halo(0,6.75,0,.8,WH,.4);
++  q.tube([0,5.9,0],[0,.5,0],.08,M.bare,{n:hi?6:4});q.cyl(0,3,0,.38,.85,BL,{n:hi?8:5});q.cyl(0,2.8,0,.22,.2,M.hull2,{n:6});q.cyl(0,3.85,0,.2,.25,WP,{n:6});q.cyl(0,.5,0,.62,.18,M.dark,{n:hi?10:6});
++  if(hi)for(const s of [-1,1])q.tube([s*.3,3.6,0],[s*.45,5.9,0],.02,M.dark,{n:3});
++  q.at(2.25,0,-.1,0,r=>{qb(r,0,0,0,.95,.45,2.3,M.hull,'b');for(let i=0;i<3;i++)r.tube([-.3+i*.3,.58,-1.05],[-.3+i*.3,.58,1.05],.13,ICE,{n:hi?6:4,caps:true});if(hi)for(const z of [-.8,.8])qb(r,0,.45,z,.95,.3,.06,M.trim,'b');});
++  q.at(-2.25,0,-.1,0,t=>{const n=hi?8:6;for(const z of [-.7,.7])qb(t,0,0,z,.8,.3,.2,M.hull2,'b');t.tube([0,.72,-1.15],[0,.72,1.15],.5,WP,{n,caps:true});t.tube([0,.72,-.3],[0,.72,.3],.52,BL,{n});if(hi)t.tube([0,1.2,.6],[0,1.5,.6],.07,M.trim,{n:4});});};
++ // 9 the floodlight gantry (across x): two lattice legs, a laced beam, a blue header board, four floodlights looking down the front
++ const gantry=q=>{for(const s of [-1,1]){q.bev(s*3.05,0,0,1.1,.3,1.1,M.hull2,{ch:.06});q.truss(s*3.05,.3,0,.85,.55,4.75,M.trim,{step:1.2,r:.05});}
++  if(hi){for(const y of [5.05,5.65])for(const z of [-.28,.28])q.tube([-3.3,y,z],[3.3,y,z],.05,M.trim,{n:4});for(let k=0;k<8;k++){const x0=-3.3+k*.825,x1=x0+.825;for(const z of [-.28,.28])q.tube([x0,k%2?5.65:5.05,z],[x1,k%2?5.05:5.65,z],.028,M.bare,{n:3});}}
++  else qb(q,0,5.05,0,6.6,.6,.56,M.trim,'');
++  qb(q,0,5.72,0,2.6,.5,.12,BL,'');qb(q,0,5.88,.07,2.2,.16,.02,WP,'kb');
++  for(let k=0;k<4;k++){const x=-2.1+k*1.4;q.at(x,5,.2,0,l=>{hi?l.bev(0,-.56,0,.95,.56,.36,BL,{ch:.05}):qb(l,0,-.56,0,.95,.56,.36,BL,'');qb(l,0,-.5,.19,.8,.44,.03,M.white,'kb');l.halo(0,-.28,.5,1.2,WH,.45);},.55);q.pool(x,.05,2.2,1,1.3,0xa8f8ff,.14);}
++  if(hi)q.cable([2.8,5,-.3],[2.3,.8,-2.4],.4,.03,M.dark,{n:4});};
++ // ---- the nine posts: the signature on every one, then its hero and what stands with it ----
++ put(LDF.mast[0],LDF.mast[1],0,sig);
++ if(V===0){ring([-38,0,38]);put(1.75,-1,-HP,tent);put(-1.75,.3,0,q=>dishOn(q,1.15,.7,-.6));put(-3.3,1.3,-HP,q=>bags(q,2,3,1));put(.2,1.6,.2,q=>stock(q,11));}
++ else if(V===1){ring([15,50,85]);put(.6,-1.9,0,tanks);put(-1.2,1,-.35,lance);[-100,-55,-10].forEach((a,k)=>put(-1.2+Math.sin(a*D)*1.85,1+Math.cos(a*D)*1.85,a*D,q=>bags(q,1.9,3,60+k*5)));put(2.5,.4,.3,q=>stock(q,21));}
++ else if(V===2){ring([-78,78],.4);put(0,2.55,0,gate);put(2.3,-1.7,0,booth);put(-1.3,3.4,HP,q=>jersey(q,2.2));put(1.7,3.4,HP,q=>jersey(q,2));put(-.9,-1.1,0,twin);put(-.9,.75,0,q=>bags(q,2.3,3,5));put(.9,-.2,.3,q=>stock(q,31));}
++ else if(V===3){ring([-35,0,35]);put(1,-1.5,0,radar);put(-1.5,1.1,-.2,rack);put(-3.3,-.5,-HP,q=>bags(q,2.2,3,3));put(2.6,.9,.3,q=>stock(q,41));}
++ else if(V===4){ring([-62,-28,28,62]);put(.35,-1.3,0,heavy);put(-2.35,.5,.3,shells);put(0,3.35,0,q=>bags(q,2.2,2,5));put(2.3,.9,-.4,q=>stock(q,51));}
++ else if(V===5){ring([-90,90],-.8,3.2);put(0,2.7,0,wall);put(.5,-1,0,rack);put(-1.6,.2,.2,q=>stock(q,61));put(2.7,-2.4,-.3,q=>{box(q,0,0,0,1.2,.7,.9,0,M.hull,BL);box(q,.05,.7,0,.9,.5,.7,.3,M.plate2,M.cyan);});}
++ else if(V===6){ring([-15,25,65]);put(1.1,-1.6,0,relay);put(-1.3,1,-.2,lance);[-100,-55,-10].forEach((a,k)=>put(-1.3+Math.sin(a*D)*1.85,1+Math.cos(a*D)*1.85,a*D,q=>bags(q,1.9,3,70+k*5)));put(2.2,.6,.2,q=>stock(q,71));}
++ else if(V===7){ring([-40,0,40]);put(.6,-.75,0,drill);put(-2.2,1.5,.2,q=>stock(q,81));put(2.9,1.5,HP,q=>bags(q,1.6,3,7));}
++ else{ring([-50,-20,20,50],.3);put(0,-.5,0,gantry);put(0,.4,0,field);put(2.3,-2.6,0,q=>{box(q,0,0,0,1.4,.9,1,0,M.hull,BL);if(hi){qb(q,0,.9,0,.5,.3,.5,M.dark,'b');q.tube([.4,.9,.2],[.4,1.5,.2],.05,M.trim,{n:4});}});put(-1.1,-2.5,.1,q=>stock(q,91));}
  }
  WK.model('ldf-post',ldfPost,{aoH:2.6,aoMin:.66});
  
 -root.ConquestWarModels={hauler:{size:HAUL.size,hinge:[0,HAUL.deckY,HAUL.zH+.02],rampLen:HAUL.rampLen,rampW:HAUL.rampW,closedAngle:HAUL.closed,openAngle:HAUL.open,deckY:HAUL.deckY},shuttle:SHUT,portal:{size:PORT.size},ldf:{size:LDF.size,variants:LDF.variants}};
-+root.ConquestWarModels={hauler:{size:HAUL.size,hinge:[0,HAUL.deckY,HAUL.zH+.02],rampLen:HAUL.rampLen,rampW:HAUL.rampW,closedAngle:HAUL.closed,openAngle:HAUL.open,deckY:HAUL.deckY},shuttle:SHUT,portal:{size:PORT.size,cy:PORT.cy,rIn:PORT.rIn},ldf:{size:LDF.size,variants:LDF.variants}};
++root.ConquestWarModels={hauler:{size:HAUL.size,hinge:[0,HAUL.deckY,HAUL.zH+.02],rampLen:HAUL.rampLen,rampW:HAUL.rampW,closedAngle:HAUL.closed,openAngle:HAUL.open,deckY:HAUL.deckY},shuttle:SHUT,portal:{size:PORT.size,cy:PORT.cy,rIn:PORT.rIn},ldf:{size:LDF.size,variants:LDF.variants,light:sd=>[ldfMir(sd)*LDF.mast[0],LDF.lightY,LDF.mast[1]]}};   // light(seed): the lantern on the post's mast, in the model's space (the style's searchlight sweeps from it)
  })(typeof globalThis!=='undefined'?globalThis:window);
+diff --git a/js/conquest/slots.js b/js/conquest/slots.js
+index f3c4cc7..038201f 100644
+--- a/js/conquest/slots.js
++++ b/js/conquest/slots.js
+@@ -124,7 +124,7 @@ root.ConquestSlots={version:1,items:{
+  'par-shuttle':S('parasite','Scavenger shuttle (light dropship)',[10.2,4.6,11.8],'none (flying)'),
+  'par-hauler':S('parasite','Heavy hauler (dropship with a ramp; the box holds it with the ramp raised)',[16.2,10.3,26],'none (flying)'),
+  // ---- the Lunar Defense Force post (scenery until Session 7; o.seed varies each post) ----
+- 'ldf-post':S('military','LDF post',[8,7,8],'none (scenery until Session 7)'),
++ 'ldf-post':S('military','LDF post',[8,12,8],'none (scenery until Session 7)'),   // 5E-2d2 critic round 2: 12 m tall (it was 7): every post carries the tall signature mast with the searchlight lantern; the footprint is unchanged
+  'loot-cache':S('prop','Loot cache',[2.4,1.6,1.8],'none'),
+  // ---- the four consumables (the 64 px HUD / drop icons are rendered from these: dev/tests/conquest-item-sprites.py) ----
+  'item-repair':S('prop','Repair Kit',[1.1,.9,.8],'none'),
 diff --git a/js/conquest/style.js b/js/conquest/style.js
-index 0a26b83..c20e593 100644
+index 0a26b83..d2ff400 100644
 --- a/js/conquest/style.js
 +++ b/js/conquest/style.js
-@@ -941,10 +941,27 @@ function create(T,opts={}){
+@@ -937,19 +937,50 @@ function create(T,opts={}){
+  // conquest-style.mjs checks each one), and a tank may pass through them like through every other dressing prop.
+  //   the portal: dormant (a low red glow, no effect) on the flat west of the OXYGEN SPEAR hive, its face toward the Refuge
+  //   the posts: the Refuge, the oxygen complex, both ends of the viaduct, the Command Base approach, the frontier wall and
+- //   the terraformers' works (the corridor pylon, the ice mine, the reservoir dam); each post is its own variant (o.seed)
++ //   the terraformers' works (the corridor pylon, the ice mine, the reservoir dam); each post is its own design (o.seed = its
++ //   place in this list + 1: the model's nine hero modules are in this order, kit/warmodels.js ldf-post)
   const WAR_SCENERY={portal:{x:1196,z:987,ry:0},posts:[{id:'refuge',x:1121,z:1158},{id:'oxygen',x:1169,z:1056},{id:'viaduct-east',x:1150,z:1020},{id:'viaduct-west',x:893,z:1032},{id:'base',x:1028,z:1166},
    {id:'frontier-wall',x:1018,z:1046},{id:'pylon',x:1006,z:1115},{id:'ice-mine',x:944,z:1163},{id:'dam',x:811,z:1371}]};
   S.WAR_SCENERY=WAR_SCENERY;
@@ -233,7 +677,26 @@ index 0a26b83..c20e593 100644
    WAR_SCENERY.posts.forEach((p,i)=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);let lo=1e9,hi=-1e9;for(const [dx,dz] of [[0,0],[3,0],[-3,0],[0,3],[0,-3]])hi=Math.max(hi,ground(p.x+dx,p.z+dz));for(const [dx,dz] of [[4.3,4.3],[-4.3,4.3],[4.3,-4.3],[-4.3,-4.3],[0,0]])lo=Math.min(lo,ground(p.x+dx,p.z+dz));
     let h=hives[0],hd=1e9;for(const q of hives){const d=Math.hypot(q.x-p.x,q.z-p.z);if(d<hd){hd=d;h=q;}}const ry=Math.round(Math.atan2(h.x-p.x,h.z-p.z)/(Math.PI/4))*(Math.PI/4),m=KM(p.x,hi,p.z,ry);   // it faces the nearest Parasite hive
     if(hi-lo>.25){const pb=Kk.part({});pb.box(0,-(hi-lo)-.4,0,8.6,hi-lo+.4,8.6,Kk.pal.mil.conc);Kk.emit(tk,pb,m);}   // a concrete footing down to the lowest corner (the ground here is rarely level)
-@@ -1150,7 +1167,8 @@ function create(T,opts={}){
+    Kk.place('ldf-post',tk,m,{seed:i+1});X.decal(p.x,p.z,6.5,6.5,0,AT.BLOB,[0,0,0],.5,4,.1);X.decal(p.x,p.z,9,9,0,AT.BLOB,E(0x22e6ff,.16),0,4,.14);
+-   const g=kdone(pair(Sb,X),tk);g.name='cq-style-ldf-'+p.id;g.userData.site={x:p.x,z:p.z,range:900};out.push(g);});
++   // the searchlight (5E-2d2 critic round 2: the post's signature, seen from far): two crossed blades of soft blue light from the mast's
++   // lantern, in the post's own glow draw. Their eight vertices start folded into the lantern; warTick swings them round.
++   const lp=WM.ldf.light(i+1),L0=new T.Vector3(lp[0],lp[1],lp[2]).applyMatrix4(m),rB=AT.BLOB,vm=(rB[1]+rB[3])/2,c0=E(0x62b6ff,low?.5:.42),c1=[0,0,0],b0=X.n;
++   for(let k=0;k<2;k++)X.q4(X.v(L0.x,L0.y,L0.z,rB[0],vm,c0,0),X.v(L0.x,L0.y,L0.z,rB[2],vm,c0,0),X.v(L0.x,L0.y,L0.z,rB[2],vm,c1,0),X.v(L0.x,L0.y,L0.z,rB[0],vm,c1,0));
++   const g=kdone(pair(Sb,X),tk);g.name='cq-style-ldf-'+p.id;g.userData.site={x:p.x,z:p.z,range:900};
++   {const geo=g.children[1].geometry,A=geo.attributes.position,P=A.array,o=b0*3,LEN=24,W0=.16,W1=1.9,DIP=.16,cd=Math.cos(DIP),sd=Math.sin(DIP),bs=geo.boundingSphere;
++    bs.radius=Math.max(bs.radius,bs.center.distanceTo(L0)+LEN+1);   // the sweep stays inside the draw's bounds
++    const put=(k,x,y,z)=>{P[o+k*3]=x;P[o+k*3+1]=y;P[o+k*3+2]=z;};
++    g.userData.warTick=(t,pl)=>{if(pl&&Math.hypot(pl.x-p.x,pl.z-p.z)>420)return;const a=t*.5+i*1.9,dx=Math.sin(a)*cd,dz=Math.cos(a)*cd,dy=-sd,hx=Math.cos(a),hz=-Math.sin(a),ux=-dy*hz,uy=dz*hx-dx*hz,uz=dy*hx;   // one turn in 12.6 s, every post at its own phase; u = dir x h
++     const nx=L0.x+dx*.35,ny=L0.y+dy*.35,nz=L0.z+dz*.35,fx=L0.x+dx*LEN,fy=L0.y+dy*LEN,fz=L0.z+dz*LEN;
++     put(0,nx-hx*W0,ny,nz-hz*W0);put(1,nx+hx*W0,ny,nz+hz*W0);put(2,fx+hx*W1,fy,fz+hz*W1);put(3,fx-hx*W1,fy,fz-hz*W1);
++     put(4,nx-ux*W0,ny-uy*W0,nz-uz*W0);put(5,nx+ux*W0,ny+uy*W0,nz+uz*W0);put(6,fx+ux*W1,fy+uy*W1,fz+uz*W1);put(7,fx-ux*W1,fy-uy*W1,fz-uz*W1);A.needsUpdate=true;};
++    g.userData.warTick(0);g.userData.light=L0;}
++   out.push(g);});
+   return out;};
+  // Raid-only Parasite spire (decor where the live build places raid art): the kit's raid-spire, a growth nest on scavenged steel.
+  S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});return kdone(pair(Sb,X),tk);};
+@@ -1150,7 +1181,8 @@ function create(T,opts={}){
     const b=Math.round(255*Math.min(1,Math.max(0,U.uAtmo.value))),d=guestAtmo.image.data;if(d[0]!==b){d[0]=d[1]=d[2]=b;guestAtmo.needsUpdate=true;}U.uShadowMap.value=guestNoShadow;U.uAtmoMap.value=guestAtmo;}
    else{if(!gSave.on)return;gSave.on=false;U.uShadowMap.value=gSave.sh;U.uAtmoMap.value=gSave.at;U.uSite.value.forEach((v,i)=>v.copy(gSave.sites[i]));}};
   S.atmoApply=(scene,near,far)=>{const k=U.uAtmo.value;if(!scene.fog)scene.fog=new T.Fog(0,near,far);scene.fog.color.copy(nightFog).lerp(dayFog,k);scene.fog.near=near*(1-.55*k);scene.fog.far=far*(1-.45*k);if(!scene.background)scene.background=new T.Color(0);scene.background.setRGB(.36*k,.27*k,.19*k);return k;};

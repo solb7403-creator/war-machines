@@ -1,5 +1,5 @@
 diff --git a/js/conquest/dropship.js b/js/conquest/dropship.js
-index 222f152..4a4fd5b 100644
+index 222f152..d4951ab 100644
 --- a/js/conquest/dropship.js
 +++ b/js/conquest/dropship.js
 @@ -20,12 +20,20 @@ function hash(n){let h=Math.imul(n|0,374761393)^0x5bd1e995;h=Math.imul(h^(h>>>13
@@ -123,7 +123,7 @@ index 222f152..4a4fd5b 100644
 + const t0=at+T.drop,fall=Math.min(FALL,at-t0),gap=N>1?Math.min(GAP,(at-t0-fall)/(N-1)):0,ts=at-fall-(N-1-i)*gap;if(t<Math.max(at+T.bay+.4,ts-.7))return null;
 + const D=F.dims,p=F.pose(Math.max(t,F.tDown)),tau=t<=ts?0:Math.min(1,(t-ts)/fall),e2=tau*tau,k=((n*5)%7)/7-.5,m=((n*3)%5)/5-.5,cy=Math.cos(F.yawLand),sy=Math.sin(F.yawLand),bw=(D.bayW||3)*.7,bl=(D.bayL||7)*.8,bz0=D.bay[2]||0;
 + // hanging in the bay (a rack inside the belly frame), then a free fall onto the unit's own spot
-+ const bx=p.x+cy*k*bw+sy*(bz0+m*bl),bz=p.z-sy*k*bw+cy*(bz0+m*bl),by=p.y+D.bay[1]-1.1*(1-clamp01((t-(ts-.7))/.5)*.0);
++ const bx=p.x+cy*k*bw+sy*(bz0+m*bl),bz=p.z-sy*k*bw+cy*(bz0+m*bl),by=p.y+D.bay[1]+1.2*(1-clamp01((t-(ts-.7))/.5));   // it comes down out of the hull into the frame
 + return {x:lerp(bx,u.x,smooth(tau)),y:lerp(by,air?gy+7:gy,e2),z:lerp(bz,u.z,smooth(tau)),yaw,air,tau,move:tau>0&&tau<1,land:tau>=1&&!air?t-(ts+fall):-1,ramp:0};}
  
  /* The draws (any view that has a ConquestStyle instance S and its world kit K): one instanced draw for the haulers, one for
@@ -169,7 +169,7 @@ index 222f152..4a4fd5b 100644
 +root.ConquestDropship=Object.freeze({TL,DIMS,dims,flight,planDrill,unitPose,fxOf,stage,hash3});
  })(typeof globalThis!=='undefined'?globalThis:window);
 diff --git a/js/conquest/kit/warmodels.js b/js/conquest/kit/warmodels.js
-index df08e9e..5d45c99 100644
+index df08e9e..58880ac 100644
 --- a/js/conquest/kit/warmodels.js
 +++ b/js/conquest/kit/warmodels.js
 @@ -59,15 +59,28 @@ function flag(b,h,w,fh,m,o={}){const n=b.hi?3:2,pm=o.pole,wv=k=>k?Math.sin(k*2.1
@@ -216,3 +216,377 @@ index df08e9e..5d45c99 100644
   if(hi){for(let k=1;k<=7;k++)qb(q,0,0,k*.68,HAUL.rampW-.8,.05,.14,P.ironD,'b');for(const [x0,x1] of [[-3.7,-1.5],[-1.1,1.1],[1.5,3.7]])q.tube([x0,-.2,-.02],[x1,-.2,-.02],.3,P.ironD,{n:6,caps:true});}
   else qb(q,0,-.42,-.02,7.4,.46,.5,P.ironD,'t');
   for(let k=0;k<8;k++){const x0=-hw+.4+k*(HAUL.rampW-.8)/8;face(q,[[x0,.014,L-.55],[x0+(HAUL.rampW-.8)/8,.014,L-.55],[x0+(HAUL.rampW-.8)/8,.014,L-.12],[x0,.014,L-.12]],k%2?P.hazardD:P.hazard,[0,-9,0]);}
+@@ -114,29 +130,54 @@ function haulRamp(q,P,LV,sd){const hi=q.hi,L=HAUL.rampLen,hw=HAUL.rampW/2,wreck=
+    if(hi){vein(f,crawl([-3.5,2.66,.2],[1.2,2.7,.2],5,.09,sd+3),.07,P.red);nodule(f,P,-1.22,2.68,.24,.3);vein(f,crawl([1.24,2.6,.2],[3.3,3.6,.2],3,.1,sd+4),.06,P.redDim);}
+    for(const s of [-1,1])qb(f,s*3.2,L-.38,.3,.5,.22,.12,P.lamp,'k');}
+  },HP);}
+-function hauler(b,o){const K=b.k,{tint}=K,hi=b.hi,wreck=!!o.wreck,fine=hi&&!wreck,sd=(o.seed|0)||1,part=wreck?null:o.part,P=parPal(b,wreck),LV=livery(P,sd,tint),H=HAUL,dY=H.deckY,zH=H.zH,ZB=-1.2;
++// the plundered plates along a flank: [z, base y, w, h]
++const HAUL_PL=[[-9.85,2.2,2.3,2.7],[-9.9,5,2.2,1],[-7.3,4.75,2.3,1.3],[-4.5,3.9,1.9,2.1],[-1.95,3.55,2.1,1.75],[.4,3.6,2.2,1.7],[2.75,3.5,2,1.8],[5.35,4.8,1.6,1.5],[7.2,4.7,1.8,1.6],[9.25,2.2,1.45,2.3],[9.3,4.7,1.4,1.55]];
++// 5E-2d2 critic round 2. o.part: hull | ramp, and for a ship shot down: `hit` (the few plates that take the 0.12 s white hit
++// flash: the whole hull flat white read as a missing texture) and `pod` (the engine it loses, tumbling on its own);
++// o.fall = the burning hull on its way down (its paint darkened 40%, one pod gone, fires on board); o.wreck = the hulk.
++function hauler(b,o){const K=b.k,{tint}=K,hi=b.hi,wreck=!!o.wreck,fall=!!o.fall&&!wreck,sd=(o.seed|0)||1,part=wreck||fall?null:o.part,P=parPal(b,wreck||part==='pod',fall),LV=livery(P,sd,tint),H=HAUL,dY=H.deckY,zH=H.zH,ZB=-1.2,L=LV.L;
+  if(part==='ramp'){haulRamp(b,P,LV,sd);return;}
++ // one silhouette-level patch per look (critic round 2: "differences are paint only"): 0 a signal mast on the bow, 1 a flank
++ // section missing down to its ribs, 2 a watch cupola on the bridge, 3 a crane jib with a captured turret hung from it,
++ // 4 an outrigger loot cage on one flank, 5 a picket of tall armour boards above both flanks
++ const cutS=L===1?-1:0,cut=(s,z)=>s===cutS&&z>-3.3&&z<4.1;
++ // ---- a lift engine pod (four of them; one is torn off a ship shot down) ----
++ const pod=(q,k,s)=>{const n=hi?12:8,out=s>0?0:Math.PI,dead=wreck||part==='pod';
++  // the intake on top and the nozzle below burn in the one Parasite red with a small hot core (they were the hot orange all over)
++  rev(q,0,0,0,[[0,1.08],[.8,1.3],[1,1.3],[1.06,1.46],[1.25,2.15],[1.45,2.4],[1.45,4.3],[1.32,4.52],[1.08,4.52],[1,4.2],[.76,4.2],[.3,4.2],[0,4.45]],n,
++   sg=>sg===0?(dead?P.weld:[P.redHot,P.redHot,P.red,P.red]):sg===1||sg===2?(dead?P.weld:P.red):sg===3?P.ironD:sg===4?P.iron:sg===5?LV.cowl:sg===6?P.ironL:sg===7?P.cap:sg===8?P.weld:sg===9?(dead?P.weld:P.red):sg===10?(dead?P.weld:[P.red,P.red,P.redHot,P.redHot]):dead?P.ironL:P.redHot,{smooth:hi});
++  if(hi)rev(q,0,0,0,[[1.47,2.42],[1.47,2.62]],n,P.gold,{smooth:true});
++  [-1.15,-.38,.38,1.15].forEach((da,j)=>{if(!LV.has(k*10+j,.8))return;const a=out+da,h=1+.6*LV.r(k*10+j),y0=2.75+.5*LV.r(k*10+j+5);q.at(Math.cos(a)*1.44,0,Math.sin(a)*1.44,-a+HP,p=>plate(p,P,0,y0,.98,Math.min(h,4.25-y0),LV.pick(k*10+j),{t:.1,bolts:0,rx:dead&&j%2?-.3:0}));});
++  if(!dead){if(hi){for(let j=0;j<2;j++){const a0=out+Math.PI*(.62+.5*j),pts=[];for(let i=0;i<=4;i++){const a=a0+i*.33*(j?-1:1);pts.push([Math.cos(a)*1.5,2.3+i*.52+.2*hz(sd,k*9+i),Math.sin(a)*1.5]);}vein(q,pts,.075,P.red);}}
++   q.halo(0,1.1,0,3.4,WK.PAR.red,.75);q.pool(0,.05,0,2.4,2.4,WK.PAR.red,.45);}};
++ if(part==='pod'){b.at(0,-2.8,0,0,r=>pod(r,0,1));qb(b,-1.5,-.9,0,1.3,1.7,2,P.ironD,'');fire(b,P,.2,.9,0,1.5);fire(b,P,-.6,-1.2,.5,1);return;}   // centred on its own middle: it tumbles
++ if(part==='hit'){for(const s of [-1,1]){HAUL_PL.forEach(([z,y,w,h],j)=>{if(j%2===(s>0?0:1)||cut(s,z))return;b.at(s*(z>8.4?5.25:4.95),0,z,s*HP,p=>face(p,[[-w/2,y,.26],[w/2,y,.26],[w/2,y+h,.26],[-w/2,y+h,.26]],P.white,[0,0,-9]));});
++   if(!cutS||s!==cutS)face(b,[[s*3.6,5.53,-3.1],[s*4.67,5.53,-3.1],[s*4.67,5.53,3.9],[s*3.6,5.53,3.9]],P.white,[0,-9,0]);}
++  face(b,[[-2.9,8.45,-11.2],[2.9,8.45,-11.2],[2.9,8.45,-8.7],[-2.9,8.45,-8.7]],P.white,[0,-9,0]);return;}
+  // a wreck is broken-backed: the stern half settles level, the bow half slews and digs its nose in
+  const F=(z,fn)=>!wreck?fn(b):z<ZB?b.at(-.25,-.68,0,.05,fn,-.03,.07):b.at(.5,-.6,ZB,-.2,q=>q.at(0,0,-ZB,0,fn),.065,-.13);
+  const body=splitter(wreck,ZB,F,P);
+  const flank=(s,z,x,fn)=>F(z,q=>q.at(s*x,0,z,s*HP,fn));   // a frame on a flank: +z outward, +x along the hull (toward the stern on the right side)
+- // ---- the tub and the cargo deck ----
+- body([[-11.6,1.12,2.7,4.3],[-9.8,.7,3.5,4.6],[7.8,.7,3.5,4.6],[zH,1.02,3.3,4.6]].map(([z,yb,hb,ht])=>({z,p:[[-hb,yb],[hb,yb],[ht,1.06],[ht,dY],[-ht,dY],[-ht,1.06]]})),(z,i)=>i===3?P.deck:i===0?P.weld:P.iron,{a:P.ironD,z:P.ironD});
++ // ---- the tub and the cargo deck (the hold's floor is red and lit from inside; the keel is red lead: the ship reads red
++ // from the drill's high camera and from under it in the Citadel) ----
++ body([[-11.6,1.12,2.7,4.3],[-9.8,.7,3.5,4.6],[7.8,.7,3.5,4.6],[zH,1.02,3.3,4.6]].map(([z,yb,hb,ht])=>({z,p:[[-hb,yb],[hb,yb],[ht,1.06],[ht,dY],[-ht,dY],[-ht,1.06]]})),(z,i)=>i===3?P.hold:i===0?P.keel:P.iron,{a:P.ironD,z:P.ironD});
+  // ---- the flanks: tall armoured walls, lower amidships, raked cheeks framing the bow ----
+- for(const s of [-1,1]){
+-  body([[-8.3,6.2],[-3.6,6.2],[-3.1,5.5],[3.9,5.5],[4.4,6.5],[8.5,6.5]].map(([z,t])=>({z,p:[[s*3.6,dY],[s*4.6,dY],[s*4.95,1.95],[s*4.95,t-.3],[s*4.67,t],[s*3.6,t]]})),(z,i)=>i===0?null:i===4?LV.stripe:i===5?LV.hullIn:i===3?P.ironL:i===2?LV.hull:P.iron);
++ for(const s of [-1,1]){const mid=s===cutS?3.7:5.5;
++  body([[-8.3,6.2],[-3.6,6.2],[-3.1,mid],[3.9,mid],[4.4,6.5],[8.5,6.5]].map(([z,t])=>({z,p:[[s*3.6,dY],[s*4.6,dY],[s*4.95,1.95],[s*4.95,t-.3],[s*4.67,t],[s*3.6,t]]})),(z,i)=>i===0?null:i===4?P.cap:i===5?LV.hullIn:i===3?LV.hullD:i===2?LV.hull:P.iron);
+   const ck=y=>({y,p:[[s*3.6,8.5],[s*5.25,8.5],[s*5.25,zH+(y-dY)*H.rake],[s*3.6,zH+(y-dY)*H.rake]]});
+-  F(9,q=>{yloft(q,[ck(dY-.24),ck(6.55),{y:6.85,p:[[s*3.75,8.7],[s*5.1,8.7],[s*5.1,zH+5.3*H.rake-.15],[s*3.75,zH+5.3*H.rake-.15]]}],(r,i)=>r?P.gold:i===3?P.ironD:i===1?LV.hull:P.iron,{z:P.ironL});
+-   if(!wreck)qb(q,s*4.42,6.85,10.6,.5,.26,.5,P.red,'b');q.halo(s*4.42,7.2,10.6,1.6,WK.PAR.red,wreck?0:.8);});}
++  F(9,q=>{yloft(q,[ck(dY-.24),ck(6.55),{y:6.85,p:[[s*3.75,8.7],[s*5.1,8.7],[s*5.1,zH+5.3*H.rake-.15],[s*3.75,zH+5.3*H.rake-.15]]}],(r,i)=>r?P.gold:i===3?P.ironD:i===1?LV.hull:P.iron,{z:P.cap});
++   if(!wreck)qb(q,s*4.42,6.85,10.6,.5,.26,.5,P.red,'b');q.halo(s*4.42,7.2,10.6,1.6,WK.PAR.red,wreck?0:.8);});
++  // the hold's walls take the red light from the floor (both qualities: LOW keeps the red)
++  if(!wreck)face(b,[[s*3.57,dY+.02,-8],[s*3.57,dY+.02,8.4],[s*3.57,dY+1.5,8.4],[s*3.57,dY+1.5,-8]],[P.hold,P.hold,P.holdLo,P.holdLo],[s*9,dY,0]);}
+  // ---- the stern castle and the bridge ----
+  F(-10,q=>{const SB=[[-4.95,dY],[4.95,dY],[4.95,4.9],[4.45,6.2],[-4.45,6.2],[-4.95,4.9]];
+-  zloft(q,[{z:-11.6,p:[[-4.4,1.75],[4.4,1.75],[4.4,4.7],[4,5.9],[-4,5.9],[-4.4,4.7]]},{z:-11.05,p:SB},{z:-8.2,p:SB}],(z,i)=>i===0?P.weld:i===3?P.ironL:i===1||i===5?LV.hull:P.iron,{a:P.iron,z:P.ironD});
++  zloft(q,[{z:-11.6,p:[[-4.4,1.75],[4.4,1.75],[4.4,4.7],[4,5.9],[-4,5.9],[-4.4,4.7]]},{z:-11.05,p:SB},{z:-8.2,p:SB}],(z,i)=>i===0?P.keel:i===3?P.cap:i===1||i===5?LV.hull:LV.hullD,{a:P.iron,z:P.ironD});
+   const R=(w,d,y,cz,ch=.5)=>({y,p:K.rect(w,d,hi?ch:.3,0,cz)}),gl=wreck?P.glassDead:[P.red,P.red,P.glassTop,P.glassTop];
+   yloft(q,[R(6.6,3,6.2,-9.9),R(6.9,3.4,6.95,-9.8,.55),R(6.5,3,7.85,-9.9),R(7.2,3.8,8,-9.72,.55),R(7.2,3.8,8.16,-9.72,.55),R(5.8,2.6,8.42,-9.95)],(r,i)=>r===1?(i>=2&&i<=6?gl:P.ironD):r===3?P.gold:r===2?P.ironD:r===4?(wreck?P.iron:LV.second):P.iron,{z:wreck?P.ironL:LV.cowl});
+   if(hi){const A=R(6.9,3.4,6.95,-9.8,.55).p,B=R(6.5,3,7.85,-9.9).p;for(const k of [2,3,4,5,6,7])q.tube([A[k][0],6.95,A[k][1]],[B[k][0],7.85,B[k][1]],.075,P.weld,{n:3});for(const x of [-1,1])q.tube([x,6.95,-8.08],[x*.94,7.85,-8.38],.06,P.weld,{n:3});}
+   // the back wall of the well: a shutter door in a hazard frame, vents the growth has taken
+   qb(q,0,dY,-8.16,4.6,3.5,.1,P.weld,'kb');qb(q,0,dY+3.5,-8.14,5,.3,.14,P.hazard,'kb');
+-  if(hi){for(let k=0;k<5;k++)qb(q,0,dY+.3+k*.62,-8.1,4.3,.1,.06,P.iron,'kb');for(const s of [-1,1]){qb(q,s*2.45,dY,-8.14,.3,3.5,.14,P.hazardD,'kb');qb(q,s*3.7,3.6,-8.14,1.1,1.3,.1,P.weld,'kb');for(let k=0;k<3;k++)qb(q,s*3.7,3.75+k*.38,-8.1,.9,.12,.06,P.lamp,'kb');}}
++  if(hi){for(let k=0;k<5;k++)qb(q,0,dY+.3+k*.62,-8.1,4.3,.1,.06,P.iron,'kb');for(const s of [-1,1]){qb(q,s*2.45,dY,-8.14,.3,3.5,.14,P.hazardD,'kb');qb(q,s*3.7,3.6,-8.14,1.1,1.3,.1,P.weld,'kb');for(let k=0;k<3;k++)qb(q,s*3.7,3.75+k*.38,-8.1,.9,.12,.06,P.red,'kb');}}
+   if(!wreck){qb(q,0,dY+3.9,-8.12,3.2,.14,.08,P.red,'kb');q.halo(0,5.2,-7.8,2.6,WK.PAR.red,.5);}
+   // roof kit: the mast, a stolen dish, a gold crest on the brow, trophy flags at the stern corners
+   q.tube([2.2,8.4,-10.6],[2.2,9.6,-10.6],.07,P.ironL,{n:4});if(!wreck)q.gem(2.2,9.56,-10.6,.12,.14,.12,P.red);
+@@ -147,33 +188,30 @@ function hauler(b,o){const K=b.k,{tint}=K,hi=b.hi,wreck=!!o.wreck,fine=hi&&!wrec
+    else q.at(-1.6,8.42,-9.75,.12,d=>{for(const z of [-.5,.5]){d.tube([-1.2,.47,z],[1.2,.47,z],.45,P.tank,{n:hi?8:6,caps:true});if(hi)for(const x of [-.6,.6])d.tube([x-.07,.47,z],[x+.07,.47,z],.47,P.tankBand,{n:8});}qb(d,0,0,0,1.2,.1,1.9,P.strap,'b');if(hi)qb(d,0,.9,0,.12,.05,2,P.strap,'');});
+    if(hi){q.tube([1.7,9.1,-10.6],[2.7,9.1,-10.6],.035,P.ironL,{n:3});q.gem(0,7.6,-7.82,.42,.5,.1,P.gold);for(const s of [-1,1])q.gem(s*.8,7.6,-7.86,.2,.3,.08,P.goldD);}}
+   for(const s of [-1,1])q.at(s*2.5,8.3,-11.1,HP+s*.12,f=>flag(f,1.9-(s>0?.3:0),1.7,1,LV.flags[s>0?0:1],{pole:P.ironL,m2:LV.flags[s>0?0:1]===P.flagLDF?P.flagLDF2:null,torn:true,ph:s,sag:.18}),0,-.12);
+-  // stern: two thrusters, a pair of stacks on the port quarter
+-  for(const s of [-1,1])q.at(s*2.3,3.5,-11.5,0,t=>rev(t,0,0,0,[[1,0],[1.22,.5],[1.12,.72],[.96,.72],[.82,.18],[0,.18]],hi?10:6,sg=>sg===4?(wreck?P.weld:[P.redHot,P.redHot,P.red,P.red]):sg===3?(wreck?P.weld:P.lamp):sg===2?P.ironL:P.ironD,{smooth:hi}),-HP);
+-  for(const z of [-10.6,-9.7]){q.tube([-4.2,6.1,z],[-4.2,8.7,z],.26,P.ironD,{n:hi?6:4});if(!wreck)q.tube([-4.2,8.7,z],[-4.2,8.86,z],.2,P.redHot,{n:hi?6:4,caps:true});}
++  // stern: two thrusters (the Parasite red, a hot core), a pair of stacks on the port quarter
++  for(const s of [-1,1])q.at(s*2.3,3.5,-11.5,0,t=>rev(t,0,0,0,[[1,0],[1.22,.5],[1.12,.72],[.96,.72],[.82,.18],[0,.18]],hi?10:6,sg=>sg===4?(wreck?P.weld:[P.red,P.red,P.redHot,P.redHot]):sg===3?(wreck?P.weld:P.red):sg===2?P.ironL:P.ironD,{smooth:hi}),-HP);
++  for(const z of [-10.6,-9.7]){q.tube([-4.2,6.1,z],[-4.2,8.7,z],.26,P.ironD,{n:hi?6:4});if(!wreck)q.tube([-4.2,8.7,z],[-4.2,8.86,z],.2,P.red,{n:hi?6:4,caps:true});}
+   if(wreck){fire(q,P,-1.5,6.2,-8.6,1.4);fire(q,P,2.6,8.3,-10,1);}
+  });
+- // ---- the four lift engines ----
+- const pod=(q,k,s)=>{const n=hi?12:8,out=s>0?0:Math.PI,dead=wreck;
+-  rev(q,0,0,0,[[0,1.08],[.8,1.3],[1,1.3],[1.06,1.46],[1.25,2.15],[1.45,2.4],[1.45,4.3],[1.32,4.52],[1.08,4.52],[1,4.2],[.76,4.2],[.3,4.2],[0,4.45]],n,
+-   sg=>sg===0?(dead?P.weld:[P.redHot,P.redHot,P.red,P.red]):sg===1||sg===2?(dead?P.weld:P.redHot):sg===3?P.ironD:sg===4?P.iron:sg===5?LV.cowl:sg===6?P.ironL:sg===7?P.ironL:sg===8?P.weld:sg===9?(dead?P.weld:P.red):sg===10?P.weld:P.ironL,{smooth:hi});
+-  if(hi)rev(q,0,0,0,[[1.47,2.42],[1.47,2.62]],n,P.gold,{smooth:true});
+-  [-1.15,-.38,.38,1.15].forEach((da,j)=>{if(!LV.has(k*10+j,.8))return;const a=out+da,h=1+.6*LV.r(k*10+j),y0=2.75+.5*LV.r(k*10+j+5);q.at(Math.cos(a)*1.44,0,Math.sin(a)*1.44,-a+HP,p=>plate(p,P,0,y0,.98,Math.min(h,4.25-y0),LV.pick(k*10+j),{t:.1,bolts:0,rx:wreck&&j%2?-.3:0}));});
+-  if(!dead){if(hi){for(let j=0;j<2;j++){const a0=out+Math.PI*(.62+.5*j),pts=[];for(let i=0;i<=4;i++){const a=a0+i*.33*(j?-1:1);pts.push([Math.cos(a)*1.5,2.3+i*.52+.2*hz(sd,k*9+i),Math.sin(a)*1.5]);}vein(q,pts,.075,P.red);}}
+-   q.halo(0,1.1,0,3.4,WK.PAR.red,.75);q.pool(0,.05,0,2.4,2.4,WK.PAR.red,.45);}};
++ // ---- the four lift engines (a ship shot down has lost the first: the views draw it tumbling, then lying by the wreck) ----
+  [[1,6.4],[-1,6.4],[1,-7.3],[-1,-7.3]].forEach(([s,z],k)=>{
+-  F(z,q=>{qb(q,s*5.3,2.5,z,1.3,1.7,2,P.ironD,'');});
+-  if(wreck&&k===0){b.at(9.3,1.42,7.6,.5,q=>q.at(0,-2.9,0,0,r=>pod(r,k,s)),0,HP*1.03);fire(b,P,6.2,.1,6.9,1.2);return;}
++  F(z,q=>{qb(q,s*5.3,2.5,z,1.3,1.7,2,P.ironD,'');if((wreck||fall)&&k===0)fire(q,P,s*6.1,3.2,z,fall?1.8:1.2);});
++  if((wreck||fall)&&k===0)return;
+   F(z,q=>q.at(s*6.45,0,z,0,r=>pod(r,k,s)));});
+  // ---- landing skids ----
+  if(!wreck)for(const s of [-1,1]){qb(b,s*2.9,0,-.4,.6,.24,15.4,P.ironD,'');for(const e of [-1,1])face(b,[[s*2.9-.3,.24,-.4+e*7.7],[s*2.9+.3,.24,-.4+e*7.7],[s*2.9+.3,.62,-.4+e*8.5],[s*2.9-.3,.62,-.4+e*8.5]],P.ironD,[s*2.9,2,-.4]);
+   for(const z of [-6.6,-.4,5.8]){qb(b,s*2.9,.24,z,.42,.5,1,P.iron,'tb');if(hi){b.tube([s*2.9,.3,z+.5],[s*2.9,.74,z+1.5],.09,P.ironL,{n:4});b.tube([s*2.9,.3,z-.5],[s*2.9,.74,z-1.5],.09,P.ironL,{n:4});}}}
+  // ---- the well: hazard lane edges, deck patches, ribs and work lamps on the inner walls ----
+  for(const s of [-1,1])for(let k=0;k<(hi?14:7);k++){const n=hi?14:7,z0=-8+k*17.6/n,z1=z0+17.6/n;F((z0+z1)/2,q=>face(q,[[s*3.55,dY+.015,z0],[s*3.05,dY+.015,z0],[s*3.05,dY+.015,z1],[s*3.55,dY+.015,z1]],k%2?P.hazardD:P.hazard,[0,-9,0]));}
+- for(let k=0;k<3;k++){const z=-4.6+k*5;F(z,q=>{for(const s of [-1,1])face(q,[[0,dY+.015,z+1.1],[s*1.5,dY+.015,z-.1],[s*1.5,dY+.015,z-.7],[0,dY+.015,z+.5]],wreck?P.iron:tint(LV.stripe===P.blue?P.white:LV.stripe,.7),[0,-9,0]);});}
+- if(hi){for(const [x,z,w,d,m] of [[-1.6,-6.2,2.6,2,P.scrap],[1.4,2.3,3,2.4,P.ironD],[-.9,7.6,2.2,1.6,P.rust]])F(z,q=>face(q,[[x-w/2,dY+.012,z-d/2],[x+w/2,dY+.012,z-d/2],[x+w/2,dY+.012,z+d/2],[x-w/2,dY+.012,z+d/2]],m,[0,-9,0]));
+-  for(const s of [-1,1])for(const z of [-6.4,-3.35,-.3,2.75,5.8])F(z,q=>{const top=z>-3.4&&z<4?5.5:6.2;qb(q,s*3.5,dY,z,.2,top-dY-.1,.26,P.iron,'tb'+(s>0?'r':'l'));if(!wreck)qb(q,s*3.42,top-.75,z,.1,.3,.34,P.lamp,'tb');});}
++ for(let k=0;k<3;k++){const z=-4.6+k*5;F(z,q=>{for(const s of [-1,1])face(q,[[0,dY+.015,z+1.1],[s*1.5,dY+.015,z-.1],[s*1.5,dY+.015,z-.7],[0,dY+.015,z+.5]],wreck?P.iron:P.hazard,[0,-9,0]);});}
++ // the infection has the hold's floor: one thick vein across it, bow to stern (LOW keeps it: three flat segments)
++ if(!wreck){const pts=crawl([-2.3,dY+.07,-7.5],[2.1,dY+.07,8.9],hi?7:3,1.1,sd+31,[1,0,0]);vein(b,pts,.17,P.red,hi?4:3);if(hi){vein(b,crawl(pts[3],[-2.9,dY+.07,pts[3][2]+3.4],3,.4,sd+33,[0,0,1]),.1,P.red);vein(b,crawl(pts[5],[2.9,dY+.07,pts[5][2]-2.6],3,.4,sd+35,[0,0,1]),.1,P.red);nodule(b,P,pts[3][0],dY+.05,pts[3][2],.42);}}
++ if(hi){for(const [x,z,w,d,m] of [[-1.6,-6.2,2.6,2,P.scrap],[1.4,2.3,3,2.4,P.ironD],[-.9,7.6,2.2,1.6,P.rust]])F(z,q=>face(q,[[x-w/2,dY+.012,z-d/2],[x+w/2,dY+.012,z-d/2],[x+w/2,dY+.012,z+d/2],[x-w/2,dY+.012,z+d/2]],m,[0,-9,0]));}
++ // ribs on the inner walls (HIGH; where a flank section is missing they stand exposed with their rail, on LOW too)
++ for(const s of [-1,1])for(const z of [-6.4,-3.35,-.3,2.75,5.8]){const bare=cut(s,z)&&z>-3.3;if(!hi&&!bare)continue;F(z,q=>{const top=z>-3.4&&z<4?5.5:6.2;qb(q,s*3.5,dY,z,bare?.26:.2,top-dY-.1,.26,P.iron,bare?'b':'tb'+(s>0?'r':'l'));if(!wreck&&hi)qb(q,s*3.42,top-.75,z,.1,.3,.34,P.red,'tb');});}
++ if(cutS)F(.3,q=>{q.tube([cutS*3.5,5.36,-3.5],[cutS*3.5,5.36,4.2],.11,P.ironL,{n:4});q.tube([cutS*4.7,3.7,-3.2],[cutS*3.5,5.3,-3.4],.09,P.iron,{n:3});if(hi)q.tube([cutS*4.7,3.7,1.2],[cutS*3.5,5.3,2.7],.08,P.iron,{n:3});});
+  // ---- plundered plates on the flanks ----
+- [[-9.85,2.2,2.3,2.7],[-9.9,5,2.2,1],[-7.3,4.75,2.3,1.3],[-4.5,3.9,1.9,2.1],[-1.95,3.55,2.1,1.75],[.4,3.6,2.2,1.7],[2.75,3.5,2,1.8],[5.35,4.8,1.6,1.5],[7.2,4.7,1.8,1.6],[9.25,2.2,1.45,2.3],[9.3,4.7,1.4,1.55]].forEach(([z,y,w,h],j)=>{for(const s of [-1,1]){const k=j*2+(s>0?1:0)+200;if(!LV.has(k,.86))continue;
++ HAUL_PL.forEach(([z,y,w,h],j)=>{for(const s of [-1,1]){const k=j*2+(s>0?1:0)+200;if(!LV.has(k,.86)||cut(s,z))continue;
+    flank(s,z+(LV.r(k)-.5)*.2,z>8.4?5.25:4.95,p=>plate(p,P,0,y+(LV.r(k+1)-.5)*.16,w,h,LV.patch(k),{t:.1+.1*LV.r(k+2),rz:(LV.r(k+3)-.5)*(wreck?.5:.09),rx:wreck&&LV.r(k+4)<.45?-.35:0}));}});
+  // the stripe a crew painted (or a stolen banner draped) along one flank, kill marks by the bridge
+  {const s=LV.L%2?1:-1;flank(s,.4,5.09,p=>face(p,[[-3.3,5.02,0],[3.3,5.02,0],[3.3,5.3,0],[-3.3,5.3,0]],LV.stripe,[0,0,-9]));
+@@ -190,58 +228,95 @@ function hauler(b,o){const K=b.k,{tint}=K,hi=b.hi,wreck=!!o.wreck,fine=hi&&!wrec
+  // ---- the infection: veins along the flank seams and out of the engine roots, growth where pods meet the hull ----
+  if(!wreck)for(const s of [-1,1]){const X=s*5.07;
+   F(1,q=>{vein(q,crawl([X,3.42,-5.4],[X,3.5,4.6],hi?8:3,.13,sd+s*7),.09,P.red);});
+-  if(hi){F(-3,q=>vein(q,crawl([X,3.45,-3.2],[X,5.9,-3.4],4,.12,sd+s*3+50,[0,0,1]),.07,P.red));F(1.6,q=>vein(q,crawl([X,3.5,1.6],[X,5.3,1.5],3,.12,sd+s*3+60,[0,0,1]),.065,P.red));
++  if(hi){F(-3,q=>vein(q,crawl([X,3.45,-3.2],[X,5.9,-3.4],4,.12,sd+s*3+50,[0,0,1]),.07,P.red));if(s!==cutS)F(1.6,q=>vein(q,crawl([X,3.5,1.6],[X,5.3,1.5],3,.12,sd+s*3+60,[0,0,1]),.065,P.red));
+    F(-8,q=>vein(q,crawl([X,4.6,-8.9],[X,6.1,-11],4,.14,sd+s*3+70),.07,P.red));F(6,q=>{nodule(q,P,s*5.05,4.62,5.1,.34);nodule(q,P,s*5.05,4.5,-5.9,.3);});
+    F(0,q=>vein(q,crawl([s*3.52,4.9,-8],[s*3.52,3.2,-2.5],5,.2,sd+s*3+80),.06,P.redDim));F(6,q=>vein(q,crawl([s*3.52,5.6,8.3],[s*3.52,2.6,5],4,.2,sd+s*3+90),.06,P.redDim));}}
+  if(!wreck&&LV.L%2===1){const s=LV.L%4===1?1:-1,A=[s*3.4,8.05,-8],B=[s*4.4,7,9.3],n=hi?7:4,at=t=>[A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t-2.2*t*(1-t),A[2]+(B[2]-A[2])*t];b.cable(A,B,.55,.03,P.strap,{n:hi?6:3});   // bunting of captured flags
+   for(let k=0;k<n;k++){const t=(k+.6)/(n+.2),q=at(t),q2=at(t+.045),m=k%3===0&&LV.flags[0]!==P.flagLDF?P.flagLDF:P.flagSet[(k+LV.L)%5];dface(b,[q,q2,[(q[0]+q2[0])/2,q[1]-.8,(q[2]+q2[2])/2]],m);}}
++ // ---- the look's own silhouette (5E-2d2 critic round 2; LOW keeps each one) ----
++ if(L===0)F(9.3,q=>{const x=-4.42;q.tube([x,6.85,9.25],[x,10.7,9.05],.1,P.ironL,{n:4,r2:.06});q.tube([x-.95,9.75,9.1],[x+.95,9.75,9.1],.05,P.ironL,{n:3});q.at(x,8.3,9.1,HP,f=>flag(f,2.25,2.5,1.2,LV.flags[1],{torn:true,ph:2,sag:.16}));
++   if(!wreck){q.gem(x,10.72,9.05,.15,.18,.15,P.red);if(hi)q.tube([x,9.75,9.1],[x+.9,7.1,9.6],.03,P.strap,{n:3});}});
++ else if(L===2)F(-9.6,q=>{const x=1.3,z=-9.6,n=hi?10:6;q.cyl(x,8.42,z,1.05,.55,LV.hull,{n});q.cyl(x,8.97,z,.95,.5,wreck?P.glassDead:P.redDim,{n,top:false});q.cyl(x,9.47,z,1.12,.16,P.gold,{n});q.cyl(x,9.63,z,.85,.42,P.cap,{n,r2:.3});
++   q.tube([x,10.05,z],[x,10.9,z],.05,P.ironL,{n:3});if(hi)for(let k=0;k<5;k++){const a=k/5*TAU;q.tube([x+Math.cos(a)*.97,8.97,z+Math.sin(a)*.97],[x+Math.cos(a)*.97,9.47,z+Math.sin(a)*.97],.06,P.weld,{n:3});}});
++ else if(L===3)F(-9,q=>{const T=[-1.3,10.9,-3.8];q.tube([-2.7,8.42,-10.7],T,.15,P.ironL,{n:4,r2:.09});q.tube([-.7,8.42,-10.7],T,.12,P.ironL,{n:4,r2:.08});q.tube([-1.7,8.42,-8.9],[-1.45,10.1,-5.6],.06,P.iron,{n:3});
++   if(hi)for(const t of [.3,.55,.8])q.tube([-2.7+1.4*t,8.42+2.48*t,-10.7+6.9*t],[-.7-.6*t,8.42+2.48*t,-10.7+6.9*t],.05,P.iron,{n:3});
++   if(wreck)return;q.tube(T,[T[0],8.75,T[2]],.045,P.strap,{n:3});
++   q.at(T[0],7.35,T[2],.5,d=>{yloft(d,[{y:0,p:K.rect(1.9,2.1,hi?.3:0)},{y:.9,p:K.rect(1.4,1.5,hi?.25:0,0,-.1)}],(r,i)=>i%2?P.plateMil:P.flagLDF,{a:P.plateMilD,z:P.plateMilD});d.tube([0,.5,.6],[0,.3,2.5],.13,P.ironD,{n:hi?5:4});   // a captured LDF turret, slung
++    for(const sx of [-1,1])for(const sz of [-1,1])d.tube([sx*.6,.9,sz*.65],[0,1.4,0],.03,P.strap,{n:3});});});
++ else if(L===4)F(-.35,q=>{const x0=6.05,x1=7.85,z0=-4.55,z1=3.85;qb(q,(x0+x1)/2,2.02,(z0+z1)/2,x1-x0,.14,z1-z0,P.ironD,'');
++   for(const z of [z0+.1,(z0+z1)/2,z1-.1]){qb(q,x1-.1,2.16,z,.16,2.4,.16,P.ironL,'b');q.tube([x1-.1,4.5,z],[4.97,5.3,z],.07,P.iron,{n:3});}q.tube([x1-.1,4.5,z0],[x1-.1,4.5,z1],.07,P.ironL,{n:3});q.tube([x1-.1,3.3,z0],[x1-.1,3.3,z1],.05,P.ironL,{n:3});
++   if(wreck)return;crate(q,P,6.9,2.16,-2.9,1.4,1.5,2.2,P.crate);crate(q,P,6.9,2.16,-.3,1.3,1.1,1.8,LV.second,.1);for(const z of [1.6,2.9])tank(q,P,6.9,2.16,z,.52,1.9);if(hi){crate(q,P,6.9,3.66,-2.8,1,.7,1.4,P.crateD,.2);q.at(x1,0,-.35,HP,p=>plate(p,P,0,2.5,3,1.2,P.hazard,{t:.08}));}});
++ else if(L===5)for(const s of [-1,1])[-6.7,-5,-1.9,.3,2.6,5.6,7.3].forEach((z,j)=>{const k=600+j*2+(s>0?1:0),top=z>-3.4&&z<4?5.5:z>4?6.5:6.2,r=LV.r(k);if(!LV.has(k,.9)&&j%3)return;
++   flank(s,z,4.97,p=>plate(p,P,0,top-.9,1.45,1.9+r*1.1,LV.patch(k),{t:.12,rz:(LV.r(k+1)-.5)*(wreck?.6:.22),bolts:0}));});
++ if(fall){fire(b,P,-2,dY+.3,1.4,2.4);fire(b,P,3,6.3,-9,1.5);fire(b,P,-4.4,6.4,5.5,1.3);}
+  if(wreck){fire(b,P,-3.6,1,ZB+.3,1.5);fire(b,P,3.2,.7,ZB-.4,1.1);fire(b,P,.6,.5,5,.9);}
+  // ---- the ramp: raised (the whole ship) or fallen open (a wreck) ----
+  if(part!=='hull')F(zH,q=>q.at(0,dY,zH+.02,0,r=>haulRamp(r,P,LV,sd),wreck?.02:H.closed,wreck?.07:0));
+ }
+-WK.model('par-hauler',hauler,{aoH:3.2,aoMin:.6});
++// `ship`: what the flight and the effects need of this model (js/conquest/dropship.js dims()): the four lift nozzles' mouths,
++// where the pod a shot-down ship loses lies beside a wreck that died on the ground
++WK.model('par-hauler',hauler,{aoH:3.2,aoMin:.6,ship:{noz:[[6.45,1.1,6.4],[-6.45,1.1,6.4],[6.45,1.1,-7.3],[-6.45,1.1,-7.3]],pod:[9.3,1.45,7.6]}});
+ 
+ // ------------------------------------------------------------------ par-shuttle -----------------------------------------
+ // The light scavenger shuttle: a stolen cargo hopper that hovers and drops its raiders from an open belly frame. A stubby
+ // faceted hull with a dead-glass cockpit, a stub wing carrying two vectoring engine pods (nozzles down in the hover), twin
+ // canted fins, a net of loot lashed on its back, grab clamps under the belly. y = 0 is the foot of the belly frame.
+-const SHUT={size:[10.2,4.55,11.7],hoverY:4.5,bay:[0,.5,-.4]};
+-function shuttle(b,o){const K=b.k,hi=b.hi,wreck=!!o.wreck,sd=(o.seed|0)||1,P=parPal(b,wreck),LV=livery(P,sd,K.tint),ZB=-2.9,R=P.red,Rd=P.redDim,D=P.glassTop;
++// 5E-2d2 critic round 2 ("about 65 CSS px, the same rust as the town boulders ... it hovers about one unit-height up, so nothing
++// drops ... no downwash, no bay light"): the shuttle is built 1.4 x its first size (SK; its slot box in slots.js grew with it),
++// it hovers 7.5 m up (it was 4.5: the height of one unit), its belly has two bay doors (o.part door: one panel, drawn twice
++// by the stage, js/conquest/dropship.js), its paint is the Parasites' oxide red with a pale stolen plate on the nose, the
++// brow and one flank (never the orange rust of the town's boulders), and its engines burn in the one Parasite red.
++// Everything the flight and the effects animate with is here, in metres as drawn: the bay's centre and size, the two
++// nozzles' mouths, the doors' hinge, where the pod a shot-down shuttle loses lies beside a wreck that died on the ground.
++const SK=1.4,SHUT={size:[14.3,6.5,16.5],hoverY:7.5,k:SK,bay:[0,.5*SK,-.4*SK],bayW:2.2*SK,bayL:5.2*SK,noz:[[3.95*SK,1.26*SK,-.75*SK],[-3.95*SK,1.26*SK,-.75*SK]],door:{hinge:[1.1*SK,1.31*SK,-.4*SK],open:1.85},pod:[-5.6*SK,.98*SK,3*SK]};
++// one bay door in its hinge's frame: the hinge runs along z through the origin, the panel reaches toward -x; its inside is lit red
++function shutDoor(q,P,LV){const w=1.1,h=2.6;qb(q,-w/2,-.07,0,w,.07,h*2,LV.hullD,'t');face(q,[[-w,0,-h],[0,0,-h],[0,0,h],[-w,0,h]],P.spill,[0,-9,0]);
++ face(q,[[-w,-.075,-h],[-w+.3,-.075,-h],[-w+.3,-.075,h],[-w,-.075,h]],P.hazard,[0,9,0]);qb(q,-w+.04,-.13,0,.08,.14,h*2,P.hazard,'');}
++function shuttle(b0,o){b0.at(0,0,0,0,b=>shuttleBody(b,o),0,0,SK);}
++function shuttleBody(b,o){const K=b.k,hi=b.hi,wreck=!!o.wreck,fall=!!o.fall&&!wreck,sd=(o.seed|0)||1,part=wreck||fall?null:o.part,P=parPal(b,wreck||part==='pod',fall),LV=livery(P,sd,K.tint),ZB=-2.9,R=P.red,Rd=P.redDim,D=P.glassTop,L=LV.L,pale=P.plateSet[3];
++ if(part==='door'){shutDoor(b,P,LV);return;}
++ // ---- an engine pod (two; a shuttle shot down loses the left one) ----
++ const pod=(q,k,s)=>{const n=hi?12:8,out=s>0?0:Math.PI,dead=wreck||part==='pod',hot=dead?P.weld:R,core=dead?P.weld:[R,R,P.redHot,P.redHot];
++  // the nozzle below and the intake on top burn in the one Parasite red with a small hot core
++  rev(q,0,0,0,hi?[[0,-1.46],[.8,-1.7],[.9,-1.74],[.85,-1.56],[.6,-1],[1,-.6],[1.02,.55],[.9,.85],[.72,.85],[.66,.55],[.5,.55],[.2,.55],[0,.75]]:[[0,-1.46],[.8,-1.7],[.9,-1.74],[.85,-1.56],[.6,-1],[1,-.6],[1.02,.55],[.86,.85],[.66,.55],[.5,.55],[0,.55]],n,
++   sg=>sg===0?(dead?P.weld:[P.redHot,P.redHot,R,R]):sg<3?hot:sg===3?P.ironD:sg===4?P.ironL:sg===5?LV.cowl:hi?(sg<8?P.gold:sg===8?P.weld:sg===9?hot:sg===10?core:dead?P.ironL:P.redHot):(sg===6?P.gold:sg===7?P.weld:sg===8?hot:core),{smooth:hi});
++  [-.95,0,.95].forEach((da,j)=>{if(!LV.has(k*10+j+40,.8))return;const a=out+da;q.at(Math.cos(a)*1.01,0,Math.sin(a)*1.01,-a+HP,p=>plate(p,P,0,-.45+.2*LV.r(k*7+j),.82,.8+.2*LV.r(k*5+j),LV.pick(k*10+j+40),{t:.08,bolts:0,rx:dead&&j===1?-.4:0}));});
++  if(!dead){if(hi){const pts=[];for(let i=0;i<=4;i++){const a=out+Math.PI*.75+i*.36*(k?1:-1);pts.push([Math.cos(a)*1.05,-.5+i*.3,Math.sin(a)*1.05]);}vein(q,pts,.06,R);}q.halo(0,-1.9,0,2.6,WK.PAR.red,.8);}};
++ if(part==='pod'){pod(b,1,-1);b.tube([.6,0,0],[1.5,.1,0],.44,P.ironD,{n:hi?8:6,caps:true});fire(b,P,.3,.5,0,1.1);return;}   // centred on its own middle: it tumbles
++ if(part==='hit'){face(b,[[-1.2,3.36,-3.4],[1.2,3.36,-3.4],[1.2,3.36,2.3],[-1.2,3.36,2.3]],P.white,[0,-9,0]);for(const s of [-1,1]){face(b,[[s*1.5,3.2,-2.2],[s*3.2,3.2,-1.8],[s*3.2,3.2,.2],[s*1.5,3.2,.8]],P.white,[0,-9,0]);face(b,[[s*1.86,1.9,-2.6],[s*1.86,1.9,1.4],[s*1.86,2.8,1.4],[s*1.86,2.8,-2.6]],P.white,[0,2.3,0]);}return;}
+  // a wreck: the hull lies rolled onto its right pod, the tail snapped off and slewed round, the left pod torn away
+  const F=(z,fn)=>!wreck?fn(b):z<ZB?b.at(.9,-1,ZB-.3,.5,q=>q.at(0,0,-ZB,0,fn),-.12,.32):b.at(0,-1.2,0,0,fn,.1,-.2),body=splitter(wreck,ZB,F,P);
+  const topF=(x,y,z,fn,ry=0)=>F(z,q=>q.at(x,y,z,ry,fn,-HP)),flank=(s,z,x,fn)=>F(z,q=>q.at(s*x,0,z,s*HP,fn));   // frames: +z up (y toward the stern) / +z outward
+- // ---- the hull: tail, cargo body, cockpit, nose ----
++ // ---- the hull: tail, cargo body, cockpit, nose (oxide-red sides, a red cap along the back, a pale stolen plate for a nose) ----
+  const sec=(z,hw,yb,yt,c=.5,t=.55)=>({z,p:[[-hw+c,yb],[hw-c,yb],[hw,yb+c],[hw,yt-t],[hw-t,yt],[-hw+t,yt],[-hw,yt-t],[-hw,yb+c]]});
+  body([sec(-5.3,.8,2.3,3.05,.25,.25),sec(-3.6,1.8,1.35,3.3),sec(2.5,1.8,1.35,3.3),sec(3.7,1.6,1.45,3.2,.5,.75),sec(5,1.05,1.7,2.5,.4,.45),sec(5.7,.55,1.85,2.2,.2,.2)],(z,i)=>{
+    if(z>3.7&&z<5&&i>=3&&i<=5)return wreck?P.glassDead:i===4?D:i===3?[Rd,D,D,Rd]:[D,Rd,Rd,D];if(z>2.5&&z<3.7&&(i===3||i===5))return wreck?P.glassDead:i===3?[Rd,D,D,Rd]:[D,Rd,Rd,D];
+-   return i===0?P.weld:i===1||i===7?P.ironD:i===4?(z>5?LV.main===P.hazard?P.plateMil:LV.main:z<2.5?LV.hull:P.ironL):(i===3||i===5)&&z<2.5&&z>-3.6?LV.hullD:P.iron;},{a:P.ironD,z:P.ironL});
++   return i===0?P.keel:i===1||i===7?P.ironD:i===4?(z>5?pale:z<2.5?P.cap:P.ironL):i===3||i===5?(z>5?pale:LV.hullD):z<2.5?LV.hull:LV.hullD;},{a:P.ironD,z:pale});
+  if(hi)F(4,q=>{for(const s of [-1,1]){q.tube([s*.85,3.3,2.5],[s*.85,3.22,3.7],.06,P.weld,{n:3});q.tube([s*.85,3.2,3.7],[s*.6,2.5,5],.06,P.weld,{n:3});q.tube([s*1.6,2.47,3.7],[s*1.05,2.07,5],.06,P.weld,{n:3});q.tube([s*1.6,2.45,3.7],[s*.85,3.2,3.7],.06,P.weld,{n:3});}q.tube([0,3.2,3.7],[0,2.5,5],.05,P.weld,{n:3});});
+  if(!wreck)b.halo(0,3,4.6,1.8,WK.PAR.red,.35);
+- // ---- the belly: the open cargo frame with its grab clamps, lit red from the bay ----
++ // ---- the belly: the cargo frame with its grab clamps; the bay in the belly above it, lit red, behind two doors ----
+  if(!wreck){for(const s of [-1,1]){qb(b,s*1.5,0,-.4,.26,.22,5.9,P.ironD,'');for(const z of [-2.9,-.4,2.1]){b.tube([s*1.5,.2,z],[s*1.64,1.75,z],.09,P.iron,{n:4});
+-    if(hi){const zc=z+1.2;if(zc<2.2){b.tube([s*1.25,1.38,zc],[s*1.05,.78,zc],.075,P.ironL,{n:4});b.tube([s*1.05,.78,zc],[s*.62,.5,zc],.06,P.ironL,{n:4});b.gem(s*.6,.5,zc,.1,.12,.1,P.gold);}}}}
++    if(hi){const zc=z+1.2;if(zc<2.2){b.tube([s*1.25,1.38,zc],[s*1.05,.78,zc],.075,P.ironL,{n:4});b.tube([s*1.05,.78,zc],[s*.62,.5,zc],.06,P.ironL,{n:4});b.gem(s*.6,.5,zc,.1,.12,.1,P.gold);}}}
++   face(b,[[s*1.37,.225,-3.2],[s*1.63,.225,-3.2],[s*1.63,.225,2.4],[s*1.37,.225,2.4]],P.hazard,[0,-9,0]);}   // hazard paint along both skids: the drop lane
+   for(const z of [-3.3,2.5])qb(b,0,.02,z,3.2,.18,.2,P.ironD,'');
+-  face(b,[[-1.1,1.33,-3],[1.1,1.33,-3],[1.1,1.33,2.2],[-1.1,1.33,2.2]],P.lamp,[0,9,0]);b.halo(0,.8,-.4,3.2,WK.PAR.red,.5);}
++  face(b,[[-1.1,1.33,-3],[1.1,1.33,-3],[1.1,1.33,2.2],[-1.1,1.33,2.2]],P.holdHi,[0,9,0]);b.halo(0,.8,-.4,3.2,WK.PAR.red,.5);
++  if(!part)for(const s of [0,1])b.at(s?-1.1:1.1,1.31,-.4,s*Math.PI,q=>shutDoor(q,P,LV));}   // the whole ship (the viewer): its doors shut
+  // ---- the stub wing and the two engine pods ----
+- const pod=(q,k,s)=>{const n=hi?12:8,out=s>0?0:Math.PI,hot=wreck?P.weld:P.redHot;
+-  rev(q,0,0,0,hi?[[0,-1.46],[.8,-1.7],[.9,-1.74],[.85,-1.56],[.6,-1],[1,-.6],[1.02,.55],[.9,.85],[.72,.85],[.66,.55],[.5,.55],[.2,.55],[0,.75]]:[[0,-1.46],[.8,-1.7],[.9,-1.74],[.85,-1.56],[.6,-1],[1,-.6],[1.02,.55],[.86,.85],[.66,.55],[.5,.55],[0,.55]],n,
+-   sg=>sg===0?(wreck?P.weld:[P.redHot,P.redHot,R,R]):sg<3?hot:sg===3?P.ironD:sg===4?P.ironL:sg===5?LV.cowl:hi?(sg<8?P.gold:sg===8?P.weld:sg===9?(wreck?P.weld:R):sg===10?P.weld:P.ironL):(sg===6?P.gold:sg===7?P.weld:sg===8?(wreck?P.weld:R):P.weld),{smooth:hi});
+-  [-.95,0,.95].forEach((da,j)=>{if(!LV.has(k*10+j+40,.8))return;const a=out+da;q.at(Math.cos(a)*1.01,0,Math.sin(a)*1.01,-a+HP,p=>plate(p,P,0,-.45+.2*LV.r(k*7+j),.82,.8+.2*LV.r(k*5+j),LV.pick(k*10+j+40),{t:.08,bolts:0,rx:wreck&&j===1?-.4:0}));});
+-  if(!wreck){if(hi){const pts=[];for(let i=0;i<=4;i++){const a=out+Math.PI*.75+i*.36*(k?1:-1);pts.push([Math.cos(a)*1.05,-.5+i*.3,Math.sin(a)*1.05]);}vein(q,pts,.06,R);}q.halo(0,-1.9,0,2.6,WK.PAR.red,.8);}};
+  for(const s of [-1,1]){const k=s>0?0:1;
+-  F(0,q=>{skin(q,[[[s*1.4,2.72,.9],[s*1.4,2.72,-2.3],[s*1.4,3.14,-2.3],[s*1.4,3.14,.9]],[[s*3.3,2.84,.3],[s*3.3,2.84,-1.9],[s*3.3,3.14,-1.9],[s*3.3,3.14,.3]]],(r,i)=>i===2?P.ironL:i===0?P.ironD:P.iron,{z:P.ironD});
++  F(0,q=>{skin(q,[[[s*1.4,2.72,.9],[s*1.4,2.72,-2.3],[s*1.4,3.14,-2.3],[s*1.4,3.14,.9]],[[s*3.3,2.84,.3],[s*3.3,2.84,-1.9],[s*3.3,3.14,-1.9],[s*3.3,3.14,.3]]],(r,i)=>i===2?P.cap:i===0?P.ironD:i===3?P.hazard:P.iron,{z:P.ironD});
+    topF(s*2.35,3.14,-.78,p=>plate(p,P,0,-.8,1.5,1.6,LV.pick(70+k),{t:.06,rz:s*.06}));
+    if(LV.L%2===k)topF(s*2.35,3.21,-.78,p=>face(p,[[-.75,-.2,0],[.75,-.2,0],[.75,.2,0],[-.75,.2,0]],LV.stripe,[0,0,-9]));
+    q.tube([s*3.1,3,-.75],[s*3.5,3,-.75],.44,P.ironD,{n:hi?8:6,caps:true});});
+-  if(wreck&&k===1){b.at(-5.6,.98,3,2.2,q=>pod(q,k,s),0,HP*1.02);fire(b,P,-3.1,1.5,-.2,1);continue;}
++  if((wreck||fall)&&k===1){F(0,q=>fire(q,P,s*3.5,3,-.75,fall?1.5:1));continue;}   // the left pod is gone: the views draw it tumbling, then lying by the wreck
+   F(0,q=>q.at(s*3.95,3,-.75,0,r=>pod(r,k,s),.07,s*.09));}
+- // ---- twin fins, the stern nozzle ----
+- for(const s of [-1,1])F(-4,q=>{skin(q,[[[s*.9,3,-3.15],[s*1.08,3,-3.15],[s*1.08,2.9,-5.15],[s*.9,2.9,-5.15]],[[s*1.52,4.4,-4.55],[s*1.64,4.4,-4.55],[s*1.64,4.4,-5.7],[s*1.52,4.4,-5.7]]],(r,i)=>i===1||i===3?(s>0?LV.main===P.hazard?P.rust:LV.main:LV.second):P.iron,{z:P.ironL});
+-   if(hi&&s>0)face(q,[[1.37,3.78,-3.98],[1.47,4.02,-4.26],[1.47,4.02,-5.45],[1.37,3.78,-5.38]],LV.stripe,[0,4,-4.5]);});
+- F(-5,q=>q.at(0,2.68,-5.25,0,t=>rev(t,0,0,0,[[.5,0],[.64,.42],[.58,.6],[.47,.6],[.4,.14],[0,.14]],hi?10:6,sg=>sg===4?(wreck?P.weld:[P.redHot,P.redHot,R,R]):sg===3?(wreck?P.weld:P.lamp):sg===2?P.ironL:P.ironD,{smooth:hi}),-HP));
++ // ---- twin fins, the stern nozzle (look 1 has lost its port fin: a stub and a bent strut) ----
++ for(const s of [-1,1])F(-4,q=>{if(L===1&&s<0){skin(q,[[[s*.9,3,-3.4],[s*1.08,3,-3.4],[s*1.08,2.9,-5.15],[s*.9,2.9,-5.15]],[[s*1.1,3.45,-3.9],[s*1.24,3.45,-3.9],[s*1.24,3.3,-5.3],[s*1.1,3.3,-5.3]]],P.iron,{z:P.weld});q.tube([s*1.15,3.35,-4.2],[s*1.9,4.2,-5],.06,P.ironL,{n:3});return;}
++   skin(q,[[[s*.9,3,-3.15],[s*1.08,3,-3.15],[s*1.08,2.9,-5.15],[s*.9,2.9,-5.15]],[[s*1.52,4.4,-4.55],[s*1.64,4.4,-4.55],[s*1.64,4.4,-5.7],[s*1.52,4.4,-5.7]]],(r,i)=>i===1||i===3?(s>0?LV.hull:LV.second):P.iron,{z:P.cap});
++   if(s>0)face(q,[[1.37,3.78,-3.98],[1.47,4.02,-4.26],[1.47,4.02,-5.45],[1.37,3.78,-5.38]],LV.stripe,[0,4,-4.5]);});
++ F(-5,q=>q.at(0,2.68,-5.25,0,t=>rev(t,0,0,0,[[.5,0],[.64,.42],[.58,.6],[.47,.6],[.4,.14],[0,.14]],hi?10:6,sg=>sg===4?(wreck?P.weld:[R,R,P.redHot,P.redHot]):sg===3?(wreck?P.weld:R):sg===2?P.ironL:P.ironD,{smooth:hi}),-HP));
+  // ---- plundered plates: the brow, the nose, the flanks; kill marks under the side window ----
+- topF(0,3.3,3.1,p=>plate(p,P,0,-.5,1.5,1,LV.pick(81),{t:.07}));
+- [[1.55,1.5],[-.5,1.9],[-2.6,1.4]].forEach(([z,w],j)=>{for(const s of [-1,1]){const k=90+j*2+(s>0?1:0);if(LV.has(k,.82))flank(s,z,1.8,p=>plate(p,P,0,1.88+.06*LV.r(k),w,.84,LV.pick(k),{t:.08,rz:(LV.r(k+3)-.5)*(wreck?.5:.1),rx:wreck&&j===1?-.4:0}));}});
++ topF(0,3.3,3.1,p=>plate(p,P,0,-.5,1.5,1,pale,{t:.07}));
++ [[1.55,1.5],[-.5,1.9],[-2.6,1.4]].forEach(([z,w],j)=>{for(const s of [-1,1]){const k=90+j*2+(s>0?1:0),own=j===1&&s===(L%2?1:-1);if(own||LV.has(k,.82))flank(s,z,1.8,p=>plate(p,P,0,1.88+.06*LV.r(k),w,.84,own?pale:LV.pick(k),{t:.08,rz:(LV.r(k+3)-.5)*(wreck?.5:.1),rx:wreck&&j===1?-.4:0}));}});
+  if(hi&&!wreck)flank(-1,3.1,1.62,p=>{for(let i=0;i<5;i++)face(p,[[-.4+i*.17,2,.03],[-.33+i*.17,2,.03],[-.33+i*.17,2.36,.03],[-.4+i*.17,2.36,.03]],P.white,[0,0,-9]);});
+  // ---- the loot on its back: crates, a tank, sacks under a cargo net; a trophy flag behind the cockpit ----
+  F(0,q=>{const c=LV.pick(110),v=sd%3;
+@@ -253,10 +328,19 @@ function shuttle(b,o){const K=b.k,hi=b.hi,wreck=!!o.wreck,sd=(o.seed|0)||1,P=par
+   q.at(-.95,3.3,2.05,HP,f=>flag(f,1.15,1,.55,LV.flags[0],{pole:P.ironL,m2:LV.flags[0]===P.flagLDF?P.flagLDF2:null,torn:true,sag:.2,r:.035}));});
+  // ---- the infection ----
+  if(!wreck){F(3,q=>{vein(q,crawl([.7,3.34,2.5],[.4,3.34,-.2],hi?4:2,.14,sd+3,[1,0,0]),.06,R);});
+-  if(hi)for(const s of [-1,1]){F(0,q=>{vein(q,crawl([s*1.84,2.8,2.4],[s*1.84,1.9,.3],4,.12,sd+s+9),.055,R);vein(q,crawl([s*1.84,1.86,-1.6],[s*1.84,2.75,-3.3],4,.1,sd+s+19),.055,R);nodule(q,P,s*1.45,3.2,.5,.26);});}}
++  for(const s of [-1,1]){F(0,q=>{vein(q,crawl([s*1.84,2.8,2.4],[s*1.84,1.9,.3],hi?4:2,.12,sd+s+9),.07,R);if(hi){vein(q,crawl([s*1.84,1.86,-1.6],[s*1.84,2.75,-3.3],4,.1,sd+s+19),.055,R);nodule(q,P,s*1.45,3.2,.5,.26);}});}}
++ // ---- the look's own silhouette (5E-2d2 critic round 2: "differences are paint only"; LOW keeps each one): 0 a stolen dish on
++ // a tail mast, 1 the port fin gone (above), 2 a chin turret, 3 a net of loot slung under the tail, 4 tall plates standing on
++ // both pods, 5 a third fin down the middle of the back ----
++ if(L===0)F(-4.4,q=>{q.tube([0,3.05,-4.5],[0,4.5,-4.6],.07,P.ironL,{n:4});q.at(0,4.5,-4.6,.4,d=>{rev(d,0,0,0,[[.08,0],[.85,.34],[.82,.39],[.06,.07]],hi?10:6,s=>s===0?P.plateMilD:P.plateMil);d.tube([0,.05,0],[0,.6,0],.035,P.ironD,{n:3});if(!wreck)d.gem(0,.62,0,.08,.1,.08,R);},-.8);});
++ else if(L===2)F(4.3,q=>{blob(q,0,1.42,4.25,.52,.46,.52,P.ironL);for(const s of [-1,1])q.tube([s*.2,1.36,4.5],[s*.2,1.02,6.1],.075,P.ironD,{n:hi?5:4});if(!wreck)q.gem(0,1.3,4.72,.1,.1,.06,R);});
++ else if(L===3)F(-4.4,q=>{if(wreck)return;blob(q,0,1.25,-4.4,.8,.62,.85,P.net,.4);for(const s of [-1,1])q.tube([s*.55,2.45,-4.2],[s*.35,1.6,-4.4],.035,P.strap,{n:3});crate(q,P,.1,.5,-4.3,.6,.4,.6,P.crate,.5);q.tube([0,.95,-4.35],[0,.7,-4.3],.03,P.strap,{n:3});});
++ else if(L===4)for(const s of [-1,1])F(0,q=>q.at(s*4.98,2.5,-.75,0,p=>{qb(p,0,0,0,.1,2,1.9,LV.patch(710+(s>0?1:0)),'b');if(hi)qb(p,0,1.3,0,.13,.22,1.94,P.hazard,'b');},0,-s*.2));
++ else if(L===5)F(-4,q=>skin(q,[[[-.08,3.3,-2.7],[.08,3.3,-2.7],[.08,3,-5.25],[-.08,3,-5.25]],[[-.05,4.85,-4.4],[.05,4.85,-4.4],[.05,4.85,-5.6],[-.05,4.85,-5.6]]],(r,i)=>i===1||i===3?LV.hull:P.iron,{z:P.cap}));
++ if(fall){fire(b,P,.2,3.3,-1,1.6);fire(b,P,-.6,2.2,3,1);}
+  if(wreck){fire(b,P,.3,1.5,ZB+.2,1.1);fire(b,P,-1,.4,2.6,.8);}
+ }
+-WK.model('par-shuttle',shuttle,{aoH:1.6,aoMin:.72});
++WK.model('par-shuttle',shuttle,{aoH:2.2,aoMin:.72});
+ 
+ // ------------------------------------------------------------------ portal-gate -----------------------------------------
+ // The Parasites' portal (16 x 14 x 6): a great ring of twelve mismatched plundered segments (no two alike in size or paint,
+diff --git a/js/conquest/slots.js b/js/conquest/slots.js
+index f3c4cc7..7b6c181 100644
+--- a/js/conquest/slots.js
++++ b/js/conquest/slots.js
+@@ -121,7 +121,7 @@ root.ConquestSlots={version:1,items:{
+  'par-brute':S('parasite','Wrecker (wall breaker)',[5.4,4.6,8],'none (moving; the sim owns the hitbox)'),
+  'par-drone':S('parasite','Stolen drone',[2.8,1.2,3],'none (flying)'),
+  // ---- Parasite dropships (o.part: hull | ramp; o.wreck: the shot-down hulk; o.seed patches each raid's ships differently) ----
+- 'par-shuttle':S('parasite','Scavenger shuttle (light dropship)',[10.2,4.6,11.8],'none (flying)'),
++ 'par-shuttle':S('parasite','Scavenger shuttle (light dropship)',[14.3,6.5,16.5],'none (flying)'),   // 5E-2d2 critic round 2: 1.4 x its first size (it was about 65 px on a phone and got lost among the boulders)
+  'par-hauler':S('parasite','Heavy hauler (dropship with a ramp; the box holds it with the ramp raised)',[16.2,10.3,26],'none (flying)'),
+  // ---- the Lunar Defense Force post (scenery until Session 7; o.seed varies each post) ----
+  'ldf-post':S('military','LDF post',[8,7,8],'none (scenery until Session 7)'),
+diff --git a/js/fx3d.js b/js/fx3d.js
+index 3c66b41..17c16fe 100644
+--- a/js/fx3d.js
++++ b/js/fx3d.js
+@@ -844,12 +844,89 @@ function create(T,host){
+  // The kill burst (5E addendum, a Session 6 hook): the infection bursting out of a destroyed Parasite machine. One pooled effect
+  // of at most 24 quads (a ground flash, two core sprites, a 16-step ring and four star rays = 23) in the Parasite accent colour, plus at
+  // most 14 pooled sparks; the white core is the short light flash (0.26 s).
+- function killBurst(x,y,z,r,hex){const h=hex||'#ff2030';spawn(fxKill,.26,x,y,z,rnd()*TAU,r||2,0,1,'',1).P={a:h};sparks(x,y+.3,z,Math.min(14,6+(r||2)*3),4+(r||2)*2,col(h),.24,.5,1.6,y-(r||2));}
+- // Session 5E-2d2: a dropship's effects (js/conquest/dropship.js; the town raid and the Citadel call them). thrustDust and
+- // hullSmoke spawn pooled particles: call them a few times a second while they last. hullFlame is immediate: every frame.
+- function thrustDust(x,y,z,r,k){if(!(k>.03))return;smoke(x,y+.2,z,2+3*k,r,col('#8b8275'),.9+.7*k,1.1,.5);}
+- function hullSmoke(x,y,z,r){smoke(x,y+r*.3,z,2,r*.4,col('#1d1a18'),1+.25*r,1.8,2.4);sparks(x,y+r*.2,z,2,3,col('#ffb35a'),.16,.5,1.6,y-r);}
+- function hullFlame(x,y,z,r,k){if(!(k>.02))return;const f=.75+.25*rnd();sprite(x,y+r*.35,z,r*(.8+.2*rnd()),col('#c9300f'),.55*k*f);sprite(x+(rnd()-.5)*r*.3,y+r*.45,z+(rnd()-.5)*r*.3,r*.5*f,col('#ff8a2a'),.8*k*f);sprite(x,y+r*.5,z,r*.24*f,col('#fff1c4'),.8*k);}
++ function killBurst(x,y,z,r,hex){const h=hex||'#ff3a1c';   /* 5E-2d2 critic round 2: the one Parasite red (ConquestWorldKit.PAR; this default was still the first red, #ff2030) */spawn(fxKill,.26,x,y,z,rnd()*TAU,r||2,0,1,'',1).P={a:h};sparks(x,y+.3,z,Math.min(14,6+(r||2)*3),4+(r||2)*2,col(h),.24,.5,1.6,y-(r||2));}
++ // ======================= THE PARASITE DROPSHIPS (Session 5E-2d2) =======================
++ // js/conquest/dropship.js flies them; the town's Defense Drill and the Citadel draw them and call ship() once a ship a frame
++ // (ConquestDropship.fxOf builds `o` from the flight's pose, so a ship looks the same in both).
++ // Critic round 2 ("no thrust plume or dust at flare and touchdown", "no downwash, no bay light", "the fall is a black box with
++ // one small red ball and no smoke or fire trail", "the drill wreck is a faint glow"): everything here is IMMEDIATE, drawn every
++ // frame from the ship's own pose and clock into the one glow batch (no draw call, no shader program added). The first version
++ // spawned a few pooled dust particles a tick: they were dark sand-coloured smoke on sand, two or three of them (none at all
++ // with reduced motion or on LOW, where the particle count is cut), so nothing read. An immediate effect also shows in a frame
++ // held still, with reduced motion and on LOW (LOW draws fewer quads of the same design, never a different one).
++ const PARC=rgbOf('#ff3a1c'),PARH=rgbOf('#ff8a4a'),FIRW=rgbOf('#fff1c4'),FIRO=rgbOf('#ff8a2a'),FIRD=rgbOf('#c9300f'),DUSTC=rgbOf('#ead9b6'),SOOT=[.05,.045,.04],S3=[0,0,0],S4=[0,0,0];
++ const fr=v=>v-Math.floor(v),eo=v=>{v=clamp(v,0,1);return 1-(1-v)*(1-v);};
++ // a point of the hull's own frame in the world (the pose's Euler order is YXZ: yaw, then pitch, then roll)
++ function shipAt(o,lx,ly,lz,out){const cy=Math.cos(o.yaw),sy=Math.sin(o.yaw),cp=Math.cos(o.pitch||0),sp=Math.sin(o.pitch||0),cr=Math.cos(o.roll||0),sr=Math.sin(o.roll||0),x1=lx*cr-ly*sr,y1=lx*sr+ly*cr,y2=y1*cp-lz*sp,z2=y1*sp+lz*cp;
++  out=out||S3;out[0]=o.x+x1*cy+z2*sy;out[1]=o.y+y2;out[2]=o.z-x1*sy+z2*cy;return out;}
++ // light dust that reads on sand: pale and a little opaque (the old puffs were darker than the ground)
++ function dust(x,y,z,r,a){sprite(x,y,z,r,DUSTC,a*.42,a*.5);}
++ // black smoke: it hides what is behind it and adds almost no light
++ function soot(x,y,z,r,a){sprite(x,y,z,r,SOOT,.5,a);}
++ // thrustDust(x, ground y, z, r, k): a ring of dust rolling outward over the ground from under a ship (r = the ship's half
++ // width, k 0..1 how hard it blows). IMMEDIATE: call it every frame while it lasts.
++ function thrustDust(x,y,z,r,k,seed){if(!(k>.03))return;const n=lowQ?7:12,sd=seed||0;
++  for(let i=0;i<n;i++){const f=fr(time*.6+i*.618+hsh(sd+i)*.3),a=i/n*TAU+hsh(sd+i*7)*.5+time*.12,rr=r+1+f*(5+r*.7);dust(x+Math.cos(a)*rr,y+.5+f*1.7,z+Math.sin(a)*rr,(1.4+2.8*f)*(.7+r*.05),k*(1-f)*Math.min(1,f*5));}}
++ // a hull on fire (immediate) and its black smoke rising (immediate: three puffs cycling upward)
++ function hullFlame(x,y,z,r,k){if(!(k>.02))return;const f=quiet()?.9:.75+.25*rnd();sprite(x,y+r*.35,z,r*(.8+.2*f),FIRD,.55*k*f);sprite(x+(f-.87)*r*.6,y+r*.45,z+(.87-f)*r*.6,r*.5*f,FIRO,.8*k*f);sprite(x,y+r*.5,z,r*.24*f,FIRW,.8*k);}
++ function hullSmoke(x,y,z,r,k,seed){const n=lowQ?2:3;for(let i=0;i<n;i++){const f=fr(time*.5+i/n+hsh((seed||0)+i)*.2);soot(x+f*f*r*.5,y+r*.3+f*r*1.6,z,r*(.35+.5*f),(k===undefined?1:k)*.6*(1-f)*Math.min(1,f*6));}}
++ // one rider coming off a ship (the drill draws the wave's own units riding it before the wave's moment): from the drill's
++ // high camera a unit was about 20 px of yellow on sand. Each gets the red light of its lamps on the ground under it, its
++ // headlights, the dust it kicks up while it moves, and a dust ring where one dropped from a shuttle lands.
++ // s = the unit's size (m), move = it is rolling or falling now, land = real seconds since it touched down (-1: it did not)
++ function shipRider(x,y,z,yaw,s,move,land,air,k){k=k===undefined?1:k;if(!(k>0))return;const sx=Math.sin(yaw),cz=Math.cos(yaw);
++  if(!air)disc(x,y+.14,z,s*1.7,PARC,.55*k);sprite(x+sx*s*.75,y+s*.5,z+cz*s*.75,s*.5,PARH,.95*k);if(!lowQ)sprite(x+sx*s*.75,y+s*.5,z+cz*s*.75,s*1.1,PARC,.4*k);
++  if(move&&!air){dust(x-sx*s*.9,y+.45,z-cz*s*.9,s*.95,.8*k);if(!lowQ)dust(x-sx*s*2,y+.7,z-cz*s*2,s*1.3,.5*k);}
++  if(land>=0&&land<.8){const e=eo(land/.8),f=1-land/.8;if(lowQ)dust(x,y+.3,z,s*(1+2.2*e),f);else{ring(x,y+.12,z,s*(.7+2.4*e),.3+.5*f,DUSTC,.7*f,10,0,0,0,TAU,.35*f);dust(x,y+.4+e,z,s*(.8+1.2*e),.8*f);}}}
++ // ship(o): one dropship's effects this frame (see ConquestDropship.fxOf for `o`). In flight: the lift engines' plumes in the
++ // one Parasite red with a hot core, their light on the ground, the dust ring of the flare and the touchdown; landed: the red
++ // light spilling from the hold down the ramp and onto the ground at its foot (the hauler); hovering: the bay's light cone and
++ // the drop circle (the shuttle). Shot down: a burst at the hit (0.12 s, about 1.5 x the ship's width, with sparks), a ribbon
++ // of fire and black smoke trailing the fall, the pod it lost burning, the impact (a ground ring, dust, a 2 s fireball), then
++ // about 20 s of smoke over the burning wreck and the scorch it lies in.
++ function ship(o){const hv=o.kind==='hauler',W=o.W,L=o.L,gy=o.gy,rate=o.rate||1,h=o.y-gy,sd=o.seed|0,q=quiet(),fl=q?.92:.84+.16*Math.sin(time*37+sd),th=Math.min(1.2,o.thrust||0);
++  const dead=o.wreck||o.fall;
++  // ---- the engines ----
++  if(th>.05&&!o.wreck&&o.noz){const sc=hv?1:.8,near=clamp(1-h/22,0,1);
++   for(let i=0;i<o.noz.length;i++){const nz=o.noz[i],p=shipAt(o,nz[0],nz[1],nz[2]),d=shipAt(o,nz[0],nz[1]-1,nz[2],S4),dx=d[0]-p[0],dy=d[1]-p[1],dz=d[2]-p[2],px=p[0],py=p[1],pz=p[2];
++    const len=Math.min((1+4.4*th)*sc,Math.max(.5,(py-gy)/Math.max(.25,-dy))),f2=fl*(.9+.1*Math.sin(time*29+i*2.3));
++    seg(px,py,pz,px+dx*len,py+dy*len,pz+dz*len,.95*sc,.3*sc,PARC,.6*th*f2);seg(px,py,pz,px+dx*len*.6,py+dy*len*.6,pz+dz*len*.6,.48*sc,.1*sc,PARH,.8*th*f2);
++    sprite(px,py,pz,1.7*sc,PARC,.5*th*f2);if(near>.02)disc(px+dx*(py-gy),gy+.1,pz+dz*(py-gy),(2+h*.2)*sc,PARC,.5*near*th);}}
++  // ---- dust: the flare and the hover blow a ring out over the ground; the touchdown throws one ----
++  if(!dead&&o.dust>.03&&h<20)thrustDust(o.x,gy,o.z,W*.5,o.dust*clamp(1.15-h/20,0,1),sd);
++  if(!dead&&hv&&o.downK>=0&&o.downK<1.5*rate){const k=o.downK/rate/1.5,e=eo(k),f=1-k;ring(o.x,gy+.12,o.z,W*.5+e*W*.95,.5+1.1*f,DUSTC,.75*f,lowQ?14:22,0,0,0,TAU,.4*f);
++   if(!lowQ)for(let i=0;i<6;i++){const a=i/6*TAU+hsh(sd+i)*1;dust(o.x+Math.cos(a)*(W*.5+e*W*.8),gy+.6+e*1.4,o.z+Math.sin(a)*(W*.5+e*W*.8),2.2+3*e,f);}}
++  // ---- the hauler's ramp: the hold's red light down the ramp and onto the ground at its foot ----
++  if(hv&&!dead&&o.ramp>.05){const k=o.ramp,hw=o.rampW*.5,z0=o.foot-1.2,z1=o.foot+8,a=shipAt(o,-hw,0,z0,S4),ax=a[0],az=a[2],b=shipAt(o,-hw*1.9,0,z1,S4),bx=b[0],bz=b[2],c=shipAt(o,hw*1.9,0,z1,S4),cx=c[0],cz=c[2],d=shipAt(o,hw,0,z0,S4),y=gy+.12;
++   quad(ax,y,az,bx,y,bz,cx,y,cz,d[0],y,d[2],0,-1,1,-1,1,1,0,1,PARC[0],PARC[1],PARC[2],.62*k,0);
++   const m=shipAt(o,0,o.deckY+1.5,o.hinge[2]-1.5);sprite(m[0],m[1],m[2],o.rampW*.62,PARC,.42*k*fl);const ft=shipAt(o,0,0,o.foot+.6);disc(ft[0],y,ft[2],hw*1.5,PARC,.4*k);}
++  // ---- the shuttle's bay: a cone of red light onto the drop circle ----
++  if(!hv&&!dead&&o.bay>.05&&o.bayAt){const k=o.bay,p=shipAt(o,o.bayAt[0],o.bayAt[1]+.6,o.bayAt[2]),px=p[0],py=p[1],pz=p[2],r=o.bayW*1.5;
++   seg(px,py,pz,px,gy+.2,pz,o.bayW*.5,r*1.05,PARC,.3*k*fl);seg(px,py,pz,px,gy+.2,pz,o.bayW*.3,r*.5,PARC,.26*k);sprite(px,py-.3,pz,o.bayW*.9,PARH,.55*k*fl);
++   disc(px,gy+.1,pz,r*1.25,PARC,.6*k);ring(px,gy+.13,pz,r,.22,PARH,.9*k,lowQ?14:22);if(!lowQ)disc(px,gy+.11,pz,r*.45,PARH,.35*k);}
++  // ---- the hit: a burst at the hit point, with sparks ----
++  if(o.hitK>=0){const t=o.hitK/rate,p=shipAt(o,W*.18,(o.H||6)*.45,L*.08),px=p[0],py=p[1],pz=p[2],R=W*.75;
++   if(t<.12){const k=t/.12,f=1-k;sprite(px,py,pz,R*(.6+.4*k),FIRW,.95*f+.05);sprite(px,py,pz,R*(.85+.4*k),FIRO,.7*f);sprite(px,py,pz,R*(1.1+.5*k),PARC,.4*f);star(px,py,pz,R*(1.1+k),2,sd,FIRW,f,.12);}
++   if(t<.5){const k=t/.5,f=1-k,n=lowQ?8:12;for(let i=0;i<n;i++){const a=hsh(sd+i*13)*TAU,up=hsh(sd+i*29)*1.6-.5,cs=Math.cos(a),sn=Math.sin(a),r0=R*(.2+1.5*k),r1=R*(.55+2*k),dr=-9*t*t;
++     seg(px+cs*r0,py+up*r0+dr,pz+sn*r0,px+cs*r1,py+up*r1+dr,pz+sn*r1,.2,.05,i%3?PARH:FIRW,f);}}}
++  // ---- the fall: fire on the hull, a ribbon of fire and black smoke behind it ----
++  if(o.fall||o.wreck&&o.impK>=0&&o.impK<1.2*rate){const tr=o.trail,n=tr?tr.length/3:0,nf=lowQ?2:5;
++   for(let i=n-1;i>=0;i--){const u=(i+1)/Math.max(n,1),x=tr[i*3],y=Math.max(gy+.5,tr[i*3+1]),z=tr[i*3+2],j=hsh(sd+i*5)-.5;
++    if(i>=(lowQ?2:3))soot(x+j*W*.1,y+W*.08+u*W*.3,z-j*W*.1,W*(.2+.34*u),.85*(1-u*.55));
++    if(i<nf)sprite(x+j*W*.06,y+W*.1,z,W*(.2+.16*u),i<2?FIRO:FIRD,(i<2?.9:.7)*(1-u*.5)*fl);}
++   if(o.fall){const c=shipAt(o,0,(o.H||6)*.4,0);hullFlame(c[0],c[1]-W*.12,c[2],W*.42,1);}}
++  // ---- the pod it lost ----
++  if(o.pod){const p=o.pod,r=hv?2.2:1.7;sprite(p.x,p.y+.4,p.z,r*1.5,FIRD,.6*fl);sprite(p.x,p.y+.6,p.z,r*.8,FIRO,.8*fl);if(p.air)soot(p.x,p.y+r*1.6,p.z,r*1.3,.6);else hullSmoke(p.x,p.y,p.z,r*1.5,.8,sd+90);}
++  // ---- the impact and the wreck ----
++  if(o.wreck){const t=o.impK>=0?o.impK/rate:99,x=o.x,z=o.z,ix=o.ix===undefined?x:o.ix,iz=o.iz===undefined?z:o.iz,sm=Math.min(1,t/.4),life=clamp((24-t)/7,0,1);
++   // the scorch it lies in: about 1.5 x the hull's length across, drawn out along the skid from where it struck
++   disc(x,gy+.05,z,L*.75,BLK,.02,.62*sm);disc((x+ix)/2,gy+.045,(z+iz)/2,L*.5,BLK,.02,.5*sm);disc(ix,gy+.04,iz,L*.36,BLK,.02,.45*sm);
++   if(t<.7){const e=eo(t/.7),f=1-t/.7;shock(ix,gy+.1,iz,L*(.3+1.5*e),1+2*f,FIRW,f,lowQ?18:30);disc(ix,gy+.09,iz,L*(.5+.8*e),FIRO,.6*f);}
++   if(t<1.9){const e=eo(t/1.9),f=1-t/1.9,n=lowQ?5:8;for(let i=0;i<n;i++){const a=i/n*TAU+hsh(sd+i)*.8,r=L*(.25+.75*e);dust(ix+Math.cos(a)*r,gy+1+e*2.5,iz+Math.sin(a)*r,3+5.5*e,f);}}
++   if(t<2){const e=eo(t/.45),f=1-t/2,y=gy+L*.1+t*L*.14;sprite(x,y,z,L*.44*(.45+.55*e),FIRD,.85*f);sprite(x,y+L*.02,z,L*.32*(.4+.6*e),FIRO,.95*f*fl);if(t<1.1)sprite(x,y+L*.03,z,L*.17*(.4+.6*e),FIRW,1-t/1.1);disc(x,gy+.1,z,L*.9,PARC,.45*f);}
++   // about 20 s of black smoke standing over it, the fire dying down to embers
++   if(life>0){const n=lowQ?4:7,H=14+L*.35,up=Math.min(1,t/1.5);for(let i=0;i<n;i++){const f=fr(time*.17+i/n+hsh(sd+i*3)*.13);soot(x+f*f*L*.22+(hsh(sd+i)-.5)*2,gy+2+f*H*up,z+(hsh(sd+i*11)-.5)*2,(L*.1+L*.2*f)*(.6+.4*up),.7*life*(1-f*.75)*Math.min(1,f*7));}}
++   const fk=(o.fire||.4)*(.35+.65*life);hullFlame(x,gy+L*.02,z,L*.2,fk);if(!lowQ)hullFlame(x+L*.16,gy,z-L*.1,L*.11,fk*.8);}}
+  function fxKill(e){const k=e.t/e.d,f=1-k,c=col(e.P.a),w=col('#ffffff'),R=e.a;disc(e.x,e.y-R*.45,e.z,R*(1.4+1.2*k),c,.5*f);sprite(e.x,e.y,e.z,R*(.5+1.3*k),c,.9*f*f);sprite(e.x,e.y,e.z,R*.5*(1-.6*k),w,.85*f*f);ring(e.x,e.y-R*.4,e.z,R*(.5+1.9*k),.12*R*f+.03,c,f,16);star(e.x,e.y,e.z,R*(.9+k),2,e.ang,w,f*.8,.05);}
+  function fxGlowBurst(e){const k=e.t/e.d,f=1-k,c=col(e.P.a),w=col('#ffffff');disc(e.x,e.y-.3,e.z,e.a*(1+k),c,.6*f);sprite(e.x,e.y,e.z,e.a*(.4+.7*k),c,.9*f*f);ring(e.x,e.y-.3,e.z,e.a*(.3+1.6*k),.1,w,f,30);if(e.b)star(e.x,e.y,e.z,e.a*(.8+k),4,e.ang,w,f,.06);}
+  // damage stages on a box-shaped object (called every frame it is damaged; frac = health left 0..1).
+@@ -894,7 +971,7 @@ function create(T,host){
+  function dispose(){host.scene.remove(qMesh);host.scene.remove(dMesh);qg.dispose();dg.dispose();}
+  const stats=()=>({quads:qn,debrisVerts:dn,particles:pn,chunks:cn,effects:E.filter(e=>e.on).length,marks:S.filter(s=>s.on).length,caps:{quads:QMAX,verts:VMAX,particles:pcap(),chunks:dcap()}});
+  const SUP_API=CQO?{superCharge:superChargeO,superLock:superLockO,superBeam:superBeamO,superNova:superNovaO,superShell:superShellO,superBlast:superBlastO,superImpact:superImpactO}:{superCharge,superLock,superBeam,superNova,superShell,superBlast,superImpact};
+- return {begin,end,clear,dispose,stats,shift,...SUP_API,blast,shatter,killBurst,thrustDust,hullSmoke,hullFlame,wear,
++ return {begin,end,clear,dispose,stats,shift,...SUP_API,blast,shatter,killBurst,thrustDust,hullSmoke,hullFlame,ship,shipRider,wear,
+   quad,seg,segc,cap,flow,disc,sprite,puff,churn,shock,ring,bolt:CQO?boltO:bolt,star,crack,part,sparks,smoke,chunk,mark,glow:qMesh,debris:dMesh};
+ }
+ root.FX3D={create,PAL,KIND,MATS};

@@ -1,15 +1,15 @@
 diff --git a/css/conquest.css b/css/conquest.css
-index d329009..6d9f9a1 100644
+index d329009..812040e 100644
 --- a/css/conquest.css
 +++ b/css/conquest.css
-@@ -601,11 +601,18 @@
+@@ -601,11 +601,23 @@
   .cq-world .cq-heat{top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 120px);bottom:auto;right:12px;width:112px;height:24px;display:flex;align-items:center;gap:6px;padding:2px 6px}
   .cq-world .cq-heat .cq-heat-label{font-size:9px;line-height:1;white-space:nowrap}.cq-world .cq-heat .cq-heat-track{flex:1;min-width:30px}
   .cq-map canvas{width:min(100%,calc(min(36vh,250px)*.857));height:auto}.cq-map h2{font-size:15px;white-space:nowrap}
 + /* 5E-2d2 (reviewer note: the docked heat panel touched the end of a long POWER pill): on the row the two share, the pill's pending
 +    line ("→ 60 at the Refuge") goes under its number as the second line it was written to be (in one line the pill ran 236 px
-+    wide, 38 px under the panel at 320 px and to within 2 px of it at 390 px); the pill is then at most 143 px wide */
-+ .cq-world .cq-combat-hud .cq-rating{display:inline-grid;grid-template-columns:auto auto;justify-content:start;gap:1px 6px}.cq-world .cq-combat-hud .cq-rating .cq-rating-next{grid-column:1/-1;justify-self:start}
++    wide: 38 px under the panel at 320 px, 2 px from it at 390 px); measured after: 137 px wide, 61 px clear of the panel at 320 px */
++ .cq-world .cq-combat-hud .cq-rating{display:inline-grid;grid-template-columns:auto 1fr;justify-content:start;gap:1px 6px}.cq-world .cq-combat-hud .cq-rating .cq-rating-next{grid-column:1/-1;justify-self:start}
  }
  @media(pointer:coarse) and (max-height:600px) and (orientation:portrait){.cq-map canvas{width:min(100%,190px);height:auto}
   /* the map's buttons (zoom, LOCATE SELF, CLOSE MAP) come straight after the map on a short phone: they were below the fold */
@@ -18,6 +18,11 @@ index d329009..6d9f9a1 100644
 +/* 5E-2d2 (reviewer note: minor HUD items at 320x568): the docked heat panel is as tall as the POWER pill beside it (it was 30 px
 +   beside 22, and the status line under the row ran behind its lower edge) */
 +@media(pointer:coarse) and (max-width:360px) and (max-height:720px) and (orientation:portrait){.cq-world .cq-heat{height:16px;top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 119px)}}
++/* 5E-2d2 (the same note; the critic's "panels cover the tank" at 320x568): on a screen 360 px wide and 600 px tall or less the left
++   column's prompts (the mission's, ENTER BASE, SCAN, GATHER, SUPPLY) are at most 96 px wide and wrap, so they end left of the
++   pilot's tank in the middle of the screen (the mission prompt was 150 px wide and covered a quarter of the tank's box); they
++   keep their 44 px height and their places in the column */
++@media(pointer:coarse) and (max-width:360px) and (max-height:600px) and (orientation:portrait){.cq-world .cq-mission-access,.cq-world #cq-base-access,.cq-world #cq-scan-access,.cq-world #cq-gather-access,.cq-world #cq-supply-access{max-width:96px;padding:5px 8px;line-height:1.25;white-space:normal;overflow-wrap:break-word}}
  
  /* ---- Session 7T Living Town (js/conquest/townui.js): town attacks, raided while away, the Strike Beacon, the streak line, the last
     chance, the live defense HUD, the Hangar gear picker, the alert switches. Fits or scrolls; 44 px touch targets. ---- */
@@ -238,6 +243,205 @@ index 0000000..a28cd13
 + await (town if a.mode=='town' else world)(a,ROOT,out,w,h)
 +ap=argparse.ArgumentParser();ap.add_argument('--mode',default='world');ap.add_argument('--quality',default='high');ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default=str(HERE/'docs/conquest/session5e2d2/leftovers'));ap.add_argument('--tag',default='after');ap.add_argument('--only',default='');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=900);ap.add_argument('--root',default='');ap.add_argument('--sharp',action='store_true')
 +asyncio.run(main(ap.parse_args()))
+diff --git a/dev/tests/conquest-townkit.mjs b/dev/tests/conquest-townkit.mjs
+index f845bef..cb09041 100644
+--- a/dev/tests/conquest-townkit.mjs
++++ b/dev/tests/conquest-townkit.mjs
+@@ -30,6 +30,15 @@ for(const q of ['high','low']){const S=CS.create(T,{low:q==='low'}),low=q==='low
+   ok(bad===0,q+' '+site+': the diorama uses only the Conquest style materials (no new shader programs)');
+   ok(draws<=20,q+' '+site+': the diorama is '+draws+' draws (merged static part + instanced walls)');
+   if(site==='ridge')console.log(' '+q+' CC10 diorama: '+draws+' draws, '+Math.round(tris/1000)+'k triangles');
++  // 5E-2d2 (owner, Nov 21: "hero pieces only: it is noise at phone size"): the model the world's pad draws (o.hero). The same
++  // town (its counts are the plan's), every standing wall cell still in its place as one plain block, no turret, home, lamp or
++  // rubble piece, the buildings drawn larger and never past the innermost wall; lighter than the whole model, style materials only.
++  {const hd=TK.diorama(S,p,{low,scale:.1,hero:true});let hdraws=0,hbad=0,htris=0,hwalls=0,merged=0;hd.traverse(o=>{if(!o.isMesh)return;hdraws++;if(o.material!==S.MAT.solid&&o.material!==S.MAT.fx&&!o.material?.userData?.conquestStyle)hbad++;const ix=o.geometry.index,t=(ix?ix.count:o.geometry.attributes.position.count)/3;htris+=t*(o.isInstancedMesh?Math.max(1,o.count):1);if(o.isInstancedMesh)hwalls+=o.count;if(o.userData.merged)merged+=t;});
++   ok(JSON.stringify(hd.userData.counts)===JSON.stringify(dc),q+' '+site+': the hero model is the same town (counts '+JSON.stringify(hd.userData.counts)+')');
++   ok(hbad===0&&hdraws<=draws,q+' '+site+': the hero model uses only the style materials, in no more draws ('+hdraws+' against '+draws+')');
++   ok(hwalls>=dc.walls&&hwalls<=dc.walls+dc.rubble+dc.posts,q+' '+site+': every standing wall cell is on the hero model ('+hwalls+' blocks for '+dc.walls+' cells)');
++   ok(htris<tris,q+' '+site+': the hero model is lighter than the whole one ('+Math.round(htris)+' against '+Math.round(tris)+' triangles)');
++   if(site==='ridge')console.log(' '+q+' CC10 hero model: '+hdraws+' draws, '+Math.round(htris/1000)+'k triangles ('+Math.round(merged/1000)+'k in the merged buildings and board)');}
+   const dfx=TK.damageFx(R,p,new T.Group());ok(dfx&&dfx.src.length===5&&dfx.src.filter(x=>x.spark).length===1,q+' '+site+': damaged walls smoke and the ruined turret sparks ('+dfx?.src.length+' sources)');}
+  // LOW is lighter than HIGH for every wall blend
+  if(!low){const S2=CS.create(T,{low:true}),kh=TK.kit(S),kl=TK.kit(S2);let lighter=0,heavier=0,th=0,tl=0;for(let o=0;o<=6;o++)for(let l=o?1:0;l<=(o?3:0);l++){const code=P.wcode(o,l),a=kl.wallGeo(code,true).index.count,b=kh.wallGeo(code,false).index.count;th+=b;tl+=a;if(a<b)lighter++;if(a>b)heavier++;}ok(heavier===0&&lighter>=12&&tl<th*.8,'LOW walls are never heavier than HIGH, lighter for '+lighter+' of 19 blend looks, '+Math.round(100*tl/th)+'% of HIGH in all');
+diff --git a/docs/conquest/occluder/chromium-results.json b/docs/conquest/occluder/chromium-results.json
+index 73a0d2a..c743a33 100644
+--- a/docs/conquest/occluder/chromium-results.json
++++ b/docs/conquest/occluder/chromium-results.json
+@@ -1,7 +1,7 @@
+ {
+  "engine": "chromium",
+  "status": "PASS",
+- "programs": 10,
++ "programs": 8,
+  "outlinePixelsOpen": 0,
+  "outlinePixelsBehind": 330,
+  "cameraOpen": 45.306166904823606,
+@@ -13,7 +13,7 @@
+    9,
+    9
+   ],
+-  "k": 0.7313086404000013,
++  "k": 0.655106540399998,
+   "cam": 40.98688631256012
+  },
+  "physicalDeviceVerified": false
+diff --git a/docs/conquest/session5b/town-rules.json b/docs/conquest/session5b/town-rules.json
+index ddf2d19..c11ff04 100644
+--- a/docs/conquest/session5b/town-rules.json
++++ b/docs/conquest/session5b/town-rules.json
+@@ -196,71 +196,71 @@
+    "walls": 2000,
+    "turrets": 42,
+    "homes": 50,
+-   "replayMedianMs": 205,
+-   "replayWorstMs": 315,
+-   "workerMedianMs": 106,
+-   "workerWorstMs": 128
++   "replayMedianMs": 230,
++   "replayWorstMs": 261,
++   "workerMedianMs": 116,
++   "workerWorstMs": 178
+   },
+   "delta": {
+    "walls": 2000,
+    "turrets": 42,
+    "homes": 72,
+-   "replayMedianMs": 77,
+-   "replayWorstMs": 89,
+-   "workerMedianMs": 55,
+-   "workerWorstMs": 56
++   "replayMedianMs": 171,
++   "replayWorstMs": 190,
++   "workerMedianMs": 151,
++   "workerWorstMs": 170
+   },
+   "ridge": {
+    "walls": 2000,
+    "turrets": 42,
+    "homes": 56,
+-   "replayMedianMs": 37,
+-   "replayWorstMs": 40,
+-   "workerMedianMs": 34,
+-   "workerWorstMs": 35
++   "replayMedianMs": 54,
++   "replayWorstMs": 54,
++   "workerMedianMs": 59,
++   "workerWorstMs": 73
+   },
+   "canyon": {
+    "walls": 2000,
+    "turrets": 42,
+    "homes": 63,
+-   "replayMedianMs": 55,
+-   "replayWorstMs": 111,
+-   "workerMedianMs": 58,
+-   "workerWorstMs": 80
++   "replayMedianMs": 82,
++   "replayWorstMs": 122,
++   "workerMedianMs": 72,
++   "workerWorstMs": 74
+   },
+   "plateau": {
+    "walls": 2000,
+    "turrets": 42,
+    "homes": 61,
+-   "replayMedianMs": 54,
+-   "replayWorstMs": 61,
+-   "workerMedianMs": 51,
+-   "workerWorstMs": 52
++   "replayMedianMs": 106,
++   "replayWorstMs": 111,
++   "workerMedianMs": 60,
++   "workerWorstMs": 63
+   },
+   "ice": {
+    "walls": 2000,
+    "turrets": 42,
+    "homes": 67,
+-   "replayMedianMs": 59,
+-   "replayWorstMs": 71,
+-   "workerMedianMs": 50,
+-   "workerWorstMs": 55
++   "replayMedianMs": 68,
++   "replayWorstMs": 72,
++   "workerMedianMs": 67,
++   "workerWorstMs": 118
+   },
+   "ash": {
+    "walls": 2000,
+    "turrets": 42,
+    "homes": 56,
+-   "replayMedianMs": 52,
+-   "replayWorstMs": 53,
+-   "workerMedianMs": 55,
+-   "workerWorstMs": 102
++   "replayMedianMs": 83,
++   "replayWorstMs": 89,
++   "workerMedianMs": 53,
++   "workerWorstMs": 58
+   },
+   "adversarial": {
+    "walls": 2600,
+-   "workerMedianMs": 60,
+-   "workerWorstMs": 124,
+-   "replayMedianMs": 49,
+-   "replayWorstMs": 52
++   "workerMedianMs": 69,
++   "workerWorstMs": 88,
++   "replayMedianMs": 69,
++   "replayWorstMs": 74
+   }
+  }
+ }
+\ No newline at end of file
+diff --git a/docs/conquest/session5e2d1/town/results.json b/docs/conquest/session5e2d1/town/results.json
+index 6188453..632253d 100644
+--- a/docs/conquest/session5e2d1/town/results.json
++++ b/docs/conquest/session5e2d1/town/results.json
+@@ -16,7 +16,7 @@
+    "h": 104,
+    "left": 16
+   },
+-  "drove": 21.9,
++  "drove": 22.4,
+   "behind": {
+    "n": 1,
+    "ghost": 0,
+@@ -42,8 +42,8 @@
+    "k": 0.78
+   },
+   "drive": {
+-   "calls": 66,
+-   "programs": 12
++   "calls": 60,
++   "programs": 11
+   }
+  },
+  "low": {
+@@ -63,7 +63,7 @@
+    "h": 104,
+    "left": 16
+   },
+-  "drove": 19.1,
++  "drove": 19.3,
+   "behind": {
+    "n": 1,
+    "ghost": 0,
+@@ -86,11 +86,11 @@
+     -2,
+     8.3
+    ],
+-   "k": 0.7784132819029214
++   "k": 0.7782383369114995
+   },
+   "drive": {
+    "calls": 66,
+-   "programs": 10
++   "programs": 9
+   }
+  }
+ }
+\ No newline at end of file
 diff --git a/js/conquest/app.js b/js/conquest/app.js
 index ecff95c..0b9a99e 100644
 --- a/js/conquest/app.js
@@ -259,7 +463,7 @@ index ecff95c..0b9a99e 100644
   ctx.setTransform(2,0,0,2,0,0);ctx.fillStyle='#080e16';ctx.fillRect(0,0,360,420);ctx.save();ctx.translate(40+px,py+420*scale);ctx.scale(unit,-unit);
   const cells=discovery.cellsIn({x:left,z:bottom,width:right-left,height:top-bottom});
 diff --git a/js/conquest/style.js b/js/conquest/style.js
-index 0a26b83..ed48edf 100644
+index 0a26b83..7c2d3e0 100644
 --- a/js/conquest/style.js
 +++ b/js/conquest/style.js
 @@ -1216,9 +1216,11 @@ function glyph(gl,c){const k=gl+c;let s=MAPC.glyphs.get(k);if(s)return s;s=docum
@@ -282,10 +486,45 @@ index 0a26b83..ed48edf 100644
   for(const w of S.wrecks||[])if(d.has(w.x,w.z))add(w.x,w.z,'◇','#8ee6ef','YOUR WRECK',8);add(Cb.refuge.x,Cb.refuge.z,'●','#3fe9ff','REFUGE',10);
   for(const k of marks){if(k.p.x<-12||k.p.x>372||k.p.y<-12||k.p.y>432)continue;if(k.dot){ctx.fillStyle=k.c;ctx.beginPath();ctx.arc(k.p.x,k.p.y,2,0,TAU);ctx.fill();}else if(k.big){ctx.save();ctx.strokeStyle=k.c;ctx.globalAlpha=.55+.35*Math.sin((m.time||0)*3);ctx.lineWidth=2;ctx.beginPath();ctx.arc(k.p.x,k.p.y,17,0,TAU);ctx.stroke();ctx.restore();ctx.drawImage(glyph(k.g,k.c),k.p.x-18,k.p.y-18,36,36);}else ctx.drawImage(glyph(k.g,k.c),k.p.x-12,k.p.y-12,24,24);}   // Find My Base: the base is the one big, pulsing marker
 - const ys=label(['YOU'],'#ffffff',false),obst=[{x:0,y:403,w:360,h:17},{x:you.x-13,y:you.y-13,w:26,h:26},{x:you.x-ys.w/2,y:you.y-16-ys.h,w:ys.w,h:ys.h}];
-+ const ks=Math.max(1,Math.min(1.8,Math.round((m.labelScale||1)*10)/10)),ys=label(['YOU'],'#ffffff',false,ks),obst=[{x:0,y:403,w:360,h:17},{x:you.x-13,y:you.y-13,w:26,h:26},{x:you.x-ys.w/2,y:you.y-16-ys.h,w:ys.w,h:ys.h}];
++ const ks=Math.max(1,Math.min(1.8,Math.round((m.labelScale||1)*10)/10)),ys=label(['YOU'],'#ffffff',false,ks),obst=[ks>1?{x:0,y:390,w:360,h:30}:{x:0,y:403,w:360,h:17},{x:you.x-13,y:you.y-13,w:26,h:26},{x:you.x-ys.w/2,y:you.y-16-ys.h,w:ys.w,h:ys.h}];
   for(const k of marks)if(!k.dot)obst.push(k.big?{x:k.p.x-17,y:k.p.y-17,w:34,h:34}:{x:k.p.x-9,y:k.p.y-9,w:18,h:18});   // 5E-2d2: a marker keeps its whole glyph clear (labels sat on the glyphs' edges and on each other: reviewer note)
 - const items=[];for(const k of marks){if(!k.t||k.p.x<-10||k.p.x>370||k.p.y<-10||k.p.y>430)continue;items.push({p:k.p,s:label(wrap(k.t),k.c,k.dim),pri:k.pri,c:k.c,left:k.left});}
 + const items=[];for(const k of marks){if(!k.t||k.p.x<-10||k.p.x>370||k.p.y<-10||k.p.y>430)continue;items.push({p:k.p,s:label(wrap(k.t),k.c,k.dim,ks),pri:k.pri,c:k.c,left:k.left});}
   items.sort((a,b)=>b.pri-a.pri||(Math.hypot(a.p.x-you.x,a.p.y-you.y)-Math.hypot(b.p.x-you.x,b.p.y-you.y)));
   const placed=obst.slice(),fits=r=>r.x>=13&&r.y>=13&&r.x+r.w<=358&&r.y+r.h<=402&&!placed.some(o=>r.x<o.x+o.w+2&&r.x+r.w+2>o.x&&r.y<o.y+o.h+1&&r.y+r.h+1>o.y);   // labels keep 2 px between them
   for(const it of items){const w=it.s.w,h=it.s.h;let cands;
+@@ -1265,8 +1267,8 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
+  if(!player.none){ctx.save();ctx.translate(you.x,you.y);ctx.fillStyle='rgba(0,229,255,.16)';ctx.beginPath();ctx.arc(0,0,14,0,TAU);ctx.fill();ctx.strokeStyle='rgba(170,250,255,.95)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,11,0,TAU);ctx.stroke();
+  ctx.rotate(player.heading||0);ctx.shadowColor='#00e5ff';ctx.shadowBlur=8;ctx.fillStyle='#3fe9ff';ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(6.5,6.5);ctx.lineTo(0,3);ctx.lineTo(-6.5,6.5);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();ctx.restore();
+  ctx.drawImage(ys.cv,you.x-ys.w/2,you.y-16-ys.h,ys.w,ys.h);}ctx.drawImage(overlay(),0,0,360,420);
+- ctx.font=MFONT;ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillStyle='#5fd8e8';ctx.fillText('N ↑',14,414);
+- const sb=100*unit;if(sb>8&&sb<200){ctx.strokeStyle='#5fd8e8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(350-sb,411);ctx.lineTo(350,411);ctx.moveTo(350-sb,407);ctx.lineTo(350-sb,414);ctx.moveTo(350,407);ctx.lineTo(350,414);ctx.stroke();ctx.textAlign='right';ctx.fillText('100 m',350,404);ctx.textAlign='left';}}
++ ctx.font=ks>1?MFONT.replace('10px',(10*ks).toFixed(1)+'px'):MFONT;ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillStyle='#5fd8e8';ctx.fillText('N ↑',14,414);
++ const sb=100*unit;if(sb>8&&sb<200){ctx.strokeStyle='#5fd8e8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(350-sb,411);ctx.lineTo(350,411);ctx.moveTo(350-sb,407);ctx.lineTo(350-sb,414);ctx.moveTo(350,407);ctx.lineTo(350,414);ctx.stroke();ctx.textAlign='right';ctx.fillText('100 m',350,404-(ks>1?1:0));ctx.textAlign='left';}}
+ const MAP_LEGEND=[['●','#3fe9ff','Refuge'],['⌂','#ffc45a','My base'],['◆','#ffd36b','Mission'],['⬢','#c0703f','Ore'],['✿','#7dff8a','Bio-flora'],['▲','#ff3040','Parasites'],['■','#ffa84a','Settlers'],['■','#46eeff','Military'],['!','#ff4060','Alert']].map(([g,c,t])=>'<span class="cq-key"><b style="color:'+c+'">'+g+'</b> '+t+'</span>').join('');
+ 
+ root.ConquestStyle=Object.freeze({id:'neon-frontline',version:1,create,footprints,allSites,map:mapPaint,MAP_LEGEND,resetMapCache(){if(MAPC.relief)MAPC.relief.canvas.width=MAPC.relief.canvas.height=0;MAPC.relief=null;}});
+diff --git a/js/conquest/townkit.js b/js/conquest/townkit.js
+index dc9735c..c50fdd8 100644
+--- a/js/conquest/townkit.js
++++ b/js/conquest/townkit.js
+@@ -213,6 +213,8 @@ function standIn(S,k,t,lvl){const T=S.T,b=new S.Bld();if(t==='home'){b.box(0,1.4
+ // the largest first), the banner and the halo. The buildings keep their places round the Command Center but are drawn larger
+ // (up to 2.3x, as far as the innermost wall allows), since the homes, turrets, lamps and rocks that stood between them are not
+ // drawn: about ten pieces that read at phone size instead of several hundred specks. counts stays the town's own plan.
++// On LOW the hero buildings are the kit's own LOW models, not the plain stand-in blocks (drawn 2.3x as large, nine blocks read
++// as black cubes; seen at 390x844 LOW): ten models weigh less than the homes and turrets the pad no longer draws.
+ function heroPick(pl){const sc=e=>{const z=P.sizeOf(e[1].t,0);return (e[1].t==='cc'?1e9:0)+(P.VITALS[e[1].t]?1e6:0)+z.w*z.d*1e3+e[2]*10;},seen=new Set(),out=[];
+  for(const e of pl.builds.slice().sort((a,b)=>sc(b)-sc(a))){if(out.length>=10)break;const t=e[1].t;if(t==='gate'||seen.has(t))continue;seen.add(t);out.push(e);}return out;}
+ function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,hero=!!o.hero,R={T,S,k,wv:o.wv||1,ymin:o.floor??-6,wgeo:o.cache?.wgeo||new Map(),hgeo:o.cache?.hgeo||new Map(),tgeo:o.cache?.tgeo||new Map()},g=new T.Group(),town=new T.Group(),pl=plan(p),h=P.townH(p.cc),c=P.GRID.cell,half=Math.min((h+2.5)*c,P.GRID.n*c/2);   // never past the site grid (its edge row took the off-grid heights)
+@@ -235,8 +237,8 @@ function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,hero=!!o.hero
+  if(hero){let rm=0,lim=half-c;for(const e of blds){const f=fp(e[1]),z=P.sizeOf(e[1].t,e[1].r|0);rm=Math.max(rm,Math.max(Math.abs(f.x-Cc.x),Math.abs(f.z-Cc.z))+Math.max(z.w,z.d)*c*.6);}
+   for(const kk of Object.keys(p.w||{})){const [i,j]=kk.split(',').map(Number);lim=Math.min(lim,Math.max(Math.abs(P.cellX(i)-Cc.x),Math.abs(P.cellZ(j)-Cc.z))-c);}
+   hz=Math.max(1,Math.min(2.3,lim*.9/Math.max(1,rm)));_one.set(hz,bv,hz);_nv.set(1/hz,1/bv,1/hz);}
+- for(const [id,b,lvl,building] of blds){if(++yc%40===0)yield;const f=fp(b);f.x=Cc.x+(f.x-Cc.x)*hz;f.z=Cc.z+(f.z-Cc.z)*hz;const y=hY(f.x,f.z);_q.setFromAxisAngle(up,-(b.r|0)*Math.PI/2);M4.compose(_v.set(f.x,y,f.z),_q,_one);NM.compose(_z,_q,_nv);mg.add(low&&b.t!=='cc'?cached(R.tgeo,'si:'+b.t+':'+Math.max(1,lvl),()=>standIn(S,k,b.t,lvl)):cached(R.tgeo,'d:'+b.t+':'+Math.max(1,lvl)+':'+(theme?.finish||'')+(theme?.light||''),()=>k.building(b.t,Math.max(1,lvl),theme).geometry()),M4,NM);nB++;
+-  if(b.t==='radar'&&!low){M4.compose(_v.set(f.x,y+k.headY('radar',lvl)*bv,f.z),_q.setFromAxisAngle(up,.7),_one);NM.compose(_z,_q,_nv);mg.add(cached(R.tgeo,'dh:radar:'+Math.max(1,lvl),()=>k.head('radar',Math.max(1,lvl)).geometry()),M4,NM);}}
++ for(const [id,b,lvl,building] of blds){if(++yc%40===0)yield;const f=fp(b);f.x=Cc.x+(f.x-Cc.x)*hz;f.z=Cc.z+(f.z-Cc.z)*hz;const y=hY(f.x,f.z);_q.setFromAxisAngle(up,-(b.r|0)*Math.PI/2);M4.compose(_v.set(f.x,y,f.z),_q,_one);NM.compose(_z,_q,_nv);mg.add(low&&!hero&&b.t!=='cc'?cached(R.tgeo,'si:'+b.t+':'+Math.max(1,lvl),()=>standIn(S,k,b.t,lvl)):cached(R.tgeo,'d:'+b.t+':'+Math.max(1,lvl)+':'+(theme?.finish||'')+(theme?.light||''),()=>k.building(b.t,Math.max(1,lvl),theme).geometry()),M4,NM);nB++;
++  if(b.t==='radar'&&(!low||hero)){M4.compose(_v.set(f.x,y+k.headY('radar',lvl)*bv,f.z),_q.setFromAxisAngle(up,.7),_one);NM.compose(_z,_q,_nv);mg.add(cached(R.tgeo,'dh:radar:'+Math.max(1,lvl),()=>k.head('radar',Math.max(1,lvl)).geometry()),M4,NM);}}
+  yield;   // buildings done
+  if(!hero)for(const [kk,list] of pl.turrets){const [t,l]=kk.split(':'),bg=low?cached(R.tgeo,'si:'+t,()=>standIn(S,k,t,1)):cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':b',()=>k.building(t,+l,theme).geometry()),hg=low?null:cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':h',()=>k.head(t,+l).geometry());
+   for(const [,b] of list){if(++yc%40===0)yield;const x=P.cellX(b.i),z=P.cellZ(b.j),y=gY2(b.i,b.j);_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6);M4.compose(_v.set(x,y,z),low?_q:_q.identity(),_one);NM.compose(_z,_q,_nv);mg.add(bg,M4,NM);if(hg){M4.compose(_v.set(x,y+k.headY(t,+l)*bv,z),_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6),_one);NM.compose(_z,_q,_nv);mg.add(hg,M4,NM);}nT++;}}
