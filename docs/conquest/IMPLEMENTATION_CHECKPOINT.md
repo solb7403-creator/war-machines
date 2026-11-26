@@ -6566,7 +6566,15 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md fi
   `app.js` 5, `slots.js` 2, `conquest-parasite-captures.py` recording each unit's box, `conquest-session6c.py`,
   `conquest-style.mjs`, 93 re-taken pictures). Step 0 of this resume: run the node list and the session's browser tests
   on the merged tree, read each of those edits, keep and finish what holds up, fix what does not.
-- **Next, in order:** (0) the check of the snapshot above; (1) captures at the five sizes on HIGH and LOW
+- **State at Nov 26, 08:15 UTC:** step 0 is done (see "The Nov 26 resume"); critic round 2 is in (see "Critic rounds");
+  **four builders are running, each in its own git worktree on a local branch, none pushed: `f2-leftovers` (the ten
+  reviewer notes and the colony on LOW), `a3-units` (the faction repaint, silhouettes, generals, drone, wrecks),
+  `g-ships` (ships, unload, shuttle, crash effects, drill camera assist), `s-structures` (portal polish, LDF posts, cover
+  walls, raid spire, battery).** Their briefs: the scratchpad's `builder-common.md` and the decisions under "Critic
+  rounds" (a fresh context restarts a lost builder from those decisions). The lead merges each branch when its builder
+  reports, runs the tests, re-captures what changed and runs critic round 3 (the last planned; a 4th only for an item
+  marked clearly below). The 47 node commands that had not reported are running again.
+- **Next, in order (as first written on Nov 26):** (0) the check of the snapshot above; (1) captures at the five sizes on HIGH and LOW
   (`dev/tests/conquest-parasite-captures.py`, `conquest-warscenery-captures.py`, `conquest-dropship-browser.py`,
   `conquest-citadel-ship.py`: the six units side by side at chase distance, the five commanders, the drone, both dropship
   sequences and a ship shot down, the portal open and suppressed, the LDF posts, the town view with the real tank);
@@ -6662,6 +6670,62 @@ If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md fi
 - **Page load, measured on Nov 26 against main `25c83d6`:** +276,965 bytes raw, +105.5 KB gzipped (+8.9% of the page's
   JS and CSS): `kit/parunits.js` 28.6 KB, `kit/warmodels.js` 24.5 KB, `kit/parstruct.js` 23.4 KB, `dropship.js` 7.3 KB,
   `style.js` 7.2 KB gzipped; `kit/nature.js` is 7.2 KB lighter (the alien hive, mast, wall and spire deleted).
+
+### Critic rounds
+- **Round 1 (Nov 25, run by the builders of the snapshot; its only record is in the code's comments and the capture
+  tool's docstring):** the units were darker than the ground (median 15 to 29 of 255 against 31 to 44) and their red
+  drifted to wine and plum under the Moon's blue light; wrecks read as tilted live units; the Hoard Fortress was a low
+  mound; a general's marker sat on its emblem; a Grabber's marker was as big as the buggy; on LOW nothing separated a unit
+  from the ground. Acted on: the Parasite red is `#ff3a1c`; `pal.parUnit` (mid values); the Parasites' own warm light;
+  the wreck poses and `MAT.parDead`; the Hoard Fortress rebuilt; the markers; `S.glowSync`.
+- **Round 2 (Nov 26; an independent read-only critic on 390x844 and 1366x768, HIGH and LOW, with 320x568 sampled; sharp
+  captures; the desktop pictures of the drill's ships were not taken yet and the desktop hauler was judged in the Citadel).**
+  AT BAR: the portal gate (three unmistakable states; the suppressed X of cyan clamps "the best design here"), the hives
+  and masts ("the strongest Parasite read in the game"), the anti-air battery, the town with the real tank, the Warlord's
+  and the Siphon's shapes. CLOSE: Hoard Fortress, Wrecker, Scavenger and Grabber silhouettes; the pack; the generals; the
+  drone; the wrecks; the hauler in the Citadel; variety; the LDF posts; the cover walls. **CLEARLY BELOW: (2) the faction
+  read** ("yellow construction machines with red floor lights": sand and ochre hulls, red only in the ground pool and
+  2 px strokes, khaki like the player's Titan in shade, flat toy blocks beside the Meshy tank, no veins on LOW); **(7) the
+  unload in the drill on a phone** (units 20 px of yellow on sand, orange engines, no red on LOW); **(8) the shuttle** (65
+  px, the boulders' rust, hovers one unit high so nothing drops, no downwash or bay light); **(9) a ship shot down** (a
+  flat white ship at the hit, a black box falling, a faint glow for a wreck); (13) the raid spire, if the banner pole it
+  saw is the spire (it could not find it).
+- **The lead's decisions on round 2 (each built by a builder in its own worktree, then seen by the lead):**
+  1. **The faction is repainted**: a mid-value oxide red-brown hull (about `#8a3226`, never darker than the ground: round
+     1's finding stands), pale plundered plates as accents on at most about 30%, hazard stripes on one element a unit,
+     gold kept as the greed accent; veins at least 3 CSS px wide at chase distance on top faces (the main trunks kept on
+     LOW); one big red "heart" a unit where the infection lives; a glowing red skirt so the red survives a slope; grime
+     and creases in vertex colour (the gap to the Meshy tank); one small scorched stolen flag a unit. **The critic asked
+     for `#ff2030`; the one Parasite red stays `#ff3a1c`** (round 1 measured `#ff2030` drifting to plum under the Moon's
+     blue light: green must stay above blue). The Siphon keeps its stolen white oxygen tanks (the owner's design), dirty
+     and strapped, the hoses infected.
+  2. Silhouettes: the Wrecker's ram wider than its hull and no gold ring; the Hoard Fortress's pile taller and broken in
+     outline; the Scavenger's engine a tall block at the rear with red vents; the Grabber's claws raised and its sack pale;
+     three visibly different Grabbers in a pack.
+  3. Generals: the red pool stays, the doctrine colour is a ring outside it (the shield general was the player's cyan from
+     top to bottom); a sail on every general, the Hoard Fortress too; the carrier's emblem a filled shape; the orb larger;
+     the marker clear of the emblem.
+  4. The drone's rotors blurred discs, its glow smaller; wrecks dark with scorch, embers and smoke, no marker.
+  5. Ships: a red deck, PAR-red engine cores, red plates on LOW too; a lit ramp with hazard edges; a plume and a dust ring
+     at flare and touchdown; dust and lights on each unit coming off; **a camera assist in the drill** (the first hauler
+     of a drill: the camera eases to its lane and in by a third for the unload unless the pilot touched the camera in the
+     last 3 s; any input cancels it: the owner's words are "you see the Parasites getting off the ship", and at the
+     drill's height they were 20 px); the shuttle hovers at 6 m or more, opens a lit bay and drops its units one after
+     another before the wave's moment (they stand on their recorded spots at the moment, as the identity test proves);
+     a shot-down ship is a crash (a burst and sparks at the hit, the hull keeps its paint, a fire and smoke ribbon, a
+     pod tumbling off, an impact ring, dust and fireball, a smoke column, a scorch mark); one silhouette-level patch per
+     look.
+  6. Structures: the portal's dormant node dimmer with a slow pulse, the open bloom clamped, a counter-rotating layer in
+     the vortex, the thorn-like stays replaced by bent rebar; the LDF posts BLUE (roofs, panels), a larger flag, a
+     searchlight mast on each and one hero module per site; cover walls with a broken top line and veins; the raid
+     spire found, captured and judged against the hive; the battery's growth rounder.
+  7. **Not changed, with the reason:** the town's top-tier walls are a saturated red and the reddest thing in a drill
+     (critic 15): that is the owner's Moonheart wall blend ("glowing crimson crystal", `docs/art/references/08-wall-blends.png`);
+     PROPOSAL only. LOW's stair-stepped edges: LOW is 1x by the owner's resolution rule. The HEAT panel over a far enemy
+     at 320 wide: in the leftovers builder's note 10. Capture faults the critic listed (a boulder in the line-up, subjects
+     under the top bar, a wall in front of one hive, tiny LDF posts) are the tools' and are fixed in the tools.
+- **Found by the lead in the same pictures:** the heavy hauler settled on top of a boulder of the town's scenery: no
+  decorative rock is drawn on a lane's landing strip now (`townkit.js` terrain: the row to 37 m out, 11 m either side).
 
 ### Integration (Nov 25): the choices made while wiring the models in (each with its reason)
 - **Size on screen is unchanged.** Measured in the client before the change (HIGH, metres, width x height x length): raider
