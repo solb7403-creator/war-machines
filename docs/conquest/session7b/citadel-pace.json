@@ -1,7 +1,8 @@
 {
- "about": "Session 7B pacing: the first day each profile's kit breaks each Citadel tier with the real assault (citadel-model.mjs bot, 4 seeded assaults a day, won at least half); a tier after the first opens 0 days after the previous first clear",
+ "about": "Session 7B pacing: the first day each profile's kit breaks each Citadel tier with the real assault (citadel-model.mjs bot, 4 seeded assaults a day, won at least half); a tier after the first opens 0 days after the previous first clear (Session 7R: no wait, owner rule Nov 25, 2026). SIMULATED results, not playtesting. The tier III targets are the 7B brief's, unchanged: tier III outside them is reported, not asserted (owner Rule 2; Checkpoint 51)",
  "seeds": 4,
  "refortDays": 0,
+ "refortHours": 0,
  "check": {
   "1": {
    "regular": {
