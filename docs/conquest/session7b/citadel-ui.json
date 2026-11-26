@@ -4,26 +4,29 @@
   "390x844": {
    "card": "THE CAMPAIGN \u00b7 NEXT: CITADEL I \u00b7 BREACH POINT",
    "hud": "CITADEL I \u00b7 BREACH \u00b7 7:58 \u00b7  \u00b7 GATE GENERATORS 3 / 3 standing \u00b7 the shield gate holds \u00b7  \u00b7 BREACH \u00b7 DESTROY THE GATE GENERATORS TO DROP THE SHIELD GATE",
+   "bounty": "paid +25,000",
    "result": "FIRST CLEAR \u00b7 CITADEL I \u00b7 BREACH POINT BROKEN \u00b7 CLEAR TIME 6:53 \u00b7 YOUR BEST \u00b7 +25,000 airdrop bounty (once per account, outside the daily cap) \u00b7 Production +5% ",
-   "locked": "\u25cb THE HIVE RE-FORTIFIES CITADEL II: IT OPENS IN 7 D 0 H",
+   "next": "LAUNCH THE ASSAULT \u00b7 CITADEL II",
    "throne": "THRONE RUN \u00b7 THIS WEEK'S GAMBITS \u00b7 OPEN BARRAGE \u00b7 A marked strike falls on you every 12 seconds \u00b7 LDF AIR WING \u00b7 One more LDF airstrike \u00b7 CITADEL I \u00b7 BREACH POI",
    "loss": "THE ASSAULT FAILED \u00b7 CITADEL I HOLDS \u00b7 The siege window closed \u00b7 No siege prep was used \u00b7 Downed allies need repair (hal",
    "inputs": "touch"
   },
   "390x700": {
    "card": "THE CAMPAIGN \u00b7 NEXT: CITADEL I \u00b7 BREACH POINT",
-   "hud": "CITADEL I \u00b7 BREACH \u00b7 7:58 \u00b7  \u00b7 GATE GENERATORS 3 / 3 standing \u00b7 the shield gate holds \u00b7  \u00b7 BREACH \u00b7 DESTROY THE GATE GENERATORS TO DROP THE SHIELD GATE",
-   "result": "FIRST CLEAR \u00b7 CITADEL I \u00b7 BREACH POINT BROKEN \u00b7 CLEAR TIME 6:53 \u00b7 YOUR BEST \u00b7 +25,000 airdrop bounty (once per account, outside the daily cap) \u00b7 Production +5% ",
-   "locked": "\u25cb THE HIVE RE-FORTIFIES CITADEL II: IT OPENS IN 7 D 0 H",
+   "hud": "CITADEL I \u00b7 BREACH \u00b7 7:59 \u00b7  \u00b7 GATE GENERATORS 3 / 3 standing \u00b7 the shield gate holds \u00b7  \u00b7 BREACH \u00b7 DESTROY THE GATE GENERATORS TO DROP THE SHIELD GATE",
+   "bounty": "already paid (reset record)",
+   "result": "FIRST CLEAR \u00b7 CITADEL I \u00b7 BREACH POINT BROKEN \u00b7 CLEAR TIME 6:53 \u00b7 YOUR BEST \u00b7 Airdrop bounty: already paid to this account (each tier pays once per account) \u00b7 P",
+   "next": "LAUNCH THE ASSAULT \u00b7 CITADEL II",
    "throne": "THRONE RUN \u00b7 THIS WEEK'S GAMBITS \u00b7 OPEN BARRAGE \u00b7 A marked strike falls on you every 12 seconds \u00b7 LDF AIR WING \u00b7 One more LDF airstrike \u00b7 CITADEL I \u00b7 BREACH POI",
    "loss": "THE ASSAULT FAILED \u00b7 CITADEL I HOLDS \u00b7 The siege window closed \u00b7 No siege prep was used \u00b7 Downed allies need repair (hal",
    "inputs": "touch"
   },
   "320x568": {
    "card": "THE CAMPAIGN \u00b7 NEXT: CITADEL I \u00b7 BREACH POINT",
-   "hud": "CITADEL I \u00b7 BREACH \u00b7 7:58 \u00b7  \u00b7 GATE GENERATORS 3 / 3 standing \u00b7 the shield gate holds \u00b7  \u00b7 BREACH \u00b7 DESTROY THE GATE GENERATORS TO DROP THE SHIELD GATE",
-   "result": "FIRST CLEAR \u00b7 CITADEL I \u00b7 BREACH POINT BROKEN \u00b7 CLEAR TIME 6:53 \u00b7 YOUR BEST \u00b7 +25,000 airdrop bounty (once per account, outside the daily cap) \u00b7 Production +5% ",
-   "locked": "\u25cb THE HIVE RE-FORTIFIES CITADEL II: IT OPENS IN 7 D 0 H",
+   "hud": "CITADEL I \u00b7 BREACH \u00b7 7:59 \u00b7  \u00b7 GATE GENERATORS 3 / 3 standing \u00b7 the shield gate holds \u00b7  \u00b7 BREACH \u00b7 DESTROY THE GATE GENERATORS TO DROP THE SHIELD GATE",
+   "bounty": "already paid (reset record)",
+   "result": "FIRST CLEAR \u00b7 CITADEL I \u00b7 BREACH POINT BROKEN \u00b7 CLEAR TIME 6:53 \u00b7 YOUR BEST \u00b7 Airdrop bounty: already paid to this account (each tier pays once per account) \u00b7 P",
+   "next": "LAUNCH THE ASSAULT \u00b7 CITADEL II",
    "throne": "THRONE RUN \u00b7 THIS WEEK'S GAMBITS \u00b7 OPEN BARRAGE \u00b7 A marked strike falls on you every 12 seconds \u00b7 LDF AIR WING \u00b7 One more LDF airstrike \u00b7 CITADEL I \u00b7 BREACH POI",
    "loss": "THE ASSAULT FAILED \u00b7 CITADEL I HOLDS \u00b7 The siege window closed \u00b7 No siege prep was used \u00b7 Downed allies need repair (hal",
    "inputs": "touch"
@@ -31,17 +34,19 @@
   "1366x768": {
    "card": "THE CAMPAIGN \u00b7 NEXT: CITADEL I \u00b7 BREACH POINT",
    "hud": "CITADEL I \u00b7 BREACH \u00b7 7:57 \u00b7  \u00b7 GATE GENERATORS 3 / 3 standing \u00b7 the shield gate holds \u00b7  \u00b7 BREACH \u00b7 DESTROY THE GATE GENERATORS TO DROP THE SHIELD GATE",
-   "result": "FIRST CLEAR \u00b7 CITADEL I \u00b7 BREACH POINT BROKEN \u00b7 CLEAR TIME 6:53 \u00b7 YOUR BEST \u00b7 +25,000 airdrop bounty (once per account, outside the daily cap) \u00b7 Production +5% ",
-   "locked": "\u25cb THE HIVE RE-FORTIFIES CITADEL II: IT OPENS IN 7 D 0 H",
+   "bounty": "already paid (reset record)",
+   "result": "FIRST CLEAR \u00b7 CITADEL I \u00b7 BREACH POINT BROKEN \u00b7 CLEAR TIME 6:53 \u00b7 YOUR BEST \u00b7 Airdrop bounty: already paid to this account (each tier pays once per account) \u00b7 P",
+   "next": "LAUNCH THE ASSAULT \u00b7 CITADEL II",
    "throne": "THRONE RUN \u00b7 THIS WEEK'S GAMBITS \u00b7 OPEN BARRAGE \u00b7 A marked strike falls on you every 12 seconds \u00b7 LDF AIR WING \u00b7 One more LDF airstrike \u00b7 CITADEL I \u00b7 BREACH POI",
    "loss": "THE ASSAULT FAILED \u00b7 CITADEL I HOLDS \u00b7 The siege window closed \u00b7 No siege prep was used \u00b7 Downed allies need repair (hal",
    "inputs": "mouse 6, keyboard 5"
   },
   "1920x1080": {
    "card": "THE CAMPAIGN \u00b7 NEXT: CITADEL I \u00b7 BREACH POINT",
-   "hud": "CITADEL I \u00b7 BREACH \u00b7 7:55 \u00b7  \u00b7 GATE GENERATORS 3 / 3 standing \u00b7 the shield gate holds \u00b7  \u00b7 BREACH \u00b7 DESTROY THE GATE GENERATORS TO DROP THE SHIELD GATE",
-   "result": "FIRST CLEAR \u00b7 CITADEL I \u00b7 BREACH POINT BROKEN \u00b7 CLEAR TIME 6:53 \u00b7 YOUR BEST \u00b7 +25,000 airdrop bounty (once per account, outside the daily cap) \u00b7 Production +5% ",
-   "locked": "\u25cb THE HIVE RE-FORTIFIES CITADEL II: IT OPENS IN 7 D 0 H",
+   "hud": "CITADEL I \u00b7 BREACH \u00b7 7:56 \u00b7  \u00b7 GATE GENERATORS 3 / 3 standing \u00b7 the shield gate holds \u00b7  \u00b7 BREACH \u00b7 DESTROY THE GATE GENERATORS TO DROP THE SHIELD GATE",
+   "bounty": "already paid (reset record)",
+   "result": "FIRST CLEAR \u00b7 CITADEL I \u00b7 BREACH POINT BROKEN \u00b7 CLEAR TIME 6:53 \u00b7 YOUR BEST \u00b7 Airdrop bounty: already paid to this account (each tier pays once per account) \u00b7 P",
+   "next": "LAUNCH THE ASSAULT \u00b7 CITADEL II",
    "throne": "THRONE RUN \u00b7 THIS WEEK'S GAMBITS \u00b7 OPEN BARRAGE \u00b7 A marked strike falls on you every 12 seconds \u00b7 LDF AIR WING \u00b7 One more LDF airstrike \u00b7 CITADEL I \u00b7 BREACH POI",
    "loss": "THE ASSAULT FAILED \u00b7 CITADEL I HOLDS \u00b7 The siege window closed \u00b7 No siege prep was used \u00b7 Downed allies need repair (hal",
    "inputs": "mouse 6, keyboard 5"

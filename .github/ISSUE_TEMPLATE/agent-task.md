@@ -17,6 +17,7 @@ List only known relevant paths and branch/base commit. Reinspect source before e
 - [ ] Preserve iPhone/Android/desktop/Telegram UX and 2D fallback.
 - [ ] No merging, deploying or paid third-party charges without owner approval.
 - [ ] Use one agent per working branch; hand off through PR and tests.
+- [ ] Follow the owner rules of Nov 25, 2026 (full text in `AGENTS.md`): enjoyment first, simulations are not proof of fun, guard thresholds never adjusted automatically to match simulation results (only when independently justified by the approved gameplay change, documented).
 
 ## Acceptance criteria
 Define objective visible and functional outcomes, including failure and LOW/2D cases when relevant.
