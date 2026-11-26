@@ -8173,8 +8173,22 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
   PASSES, as it must. Every mutation reverted.
 - **Slice 5 (reviews round 1 at `5cf8ae7`, fixes `7364d51`-`0355b02` + the paraphrase fix):** details under "Reviews" below.
 - **Slice 6 (review round 2 at `a183a00`, fix `a251615`):** every brief item and every owner rule PASS from all three reviewers (below).
-- Next: slice 7 (release): PR #160 ready + `auto-release` once CI is green on the head; verify the deploy; then a docs-only PR with the
-  release record and the ROADMAP row.
+- **Slice 7 (release, in progress):** PR #160 marked ready with `auto-release` at `0384276`. CI's `boards-titan` job failed: a real
+  game bug from Session 7C, red on main too (fixed in `8de1769`, under "CI fix" below). Next: CI green on the head -> the workflow merges;
+  verify the deploy; then a docs-only PR with the release record and the ROADMAP row.
+
+### CI fix: the Hive Titan hunt failed at once on most strike craters (found Nov 26 by CI; Session 7C's bug, red on main `ae22fcb` too)
+- **Symptom:** `dev/tests/conquest-7c-browser.py` timed out waiting for the hunt's clock: the battle had ended in its first step,
+  "DEFENSE LOST · You left the operation area". Reproduced locally on this branch and on main.
+- **Root cause:** the Hunt (js/conquest/titan.js) inherits Operation's perimeter check (js/conquest/combat.js: defeat beyond 260 m of
+  `operation.x/z`), and the `hive-titan` operation's position is the FIRST strike site (REFUGE CORRIDOR). The Titan rises at the slot's
+  own crater, which rotates over 8 sites: at 6 of them the pilot stood about 480 m from the "centre" and the hunt failed at once (the
+  Worker runs the same code, so live hunts there failed too). 7C's journey had run on a REFUGE slot.
+- **Fix (no number changed):** `Hunt.centre()` sets the perimeter to the slot's crater at the Worker's `setup` and re-derives it on
+  `restore` (the Worker's hydrate and the phone's both call it). Test: `conquest-titan` now builds a hunt at every strike site, steps it
+  and saves / restores it: all 8 stay active (34 PASS); on the old code 6 of 8 fail at once. `conquest-7c-browser.py` 5 of 5 sizes PASS;
+  `wtest/conquest-boards` 35, `wtest/conquest-standing` 19, `conquest-fingerprints` 21, `conquest-citadel` 84 PASS. Not a third review
+  round (the brief allows two): the mutation-proven test is the evidence.
 
 ### Tests run locally at the end (head `a251615`; all PASS)
 `owner-rules` 58 (+ 7 mutation proofs, slice 4); `conquest-citadel` 84; `wtest/conquest-citadel-payout` 25; `conquest-citadel-pace` 33
