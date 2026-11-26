@@ -8312,3 +8312,167 @@ what each changed here:
   for the workspace after 7 days unused (a workspace owner resumes them on Graphify's Repositories page).
 - **Agents used:** one research agent (before STEPs 2-4) and three read-only reviewers (two rule reviewers, one airdrop-integrity
   reviewer), two rounds each, each in its own copy of the branch.
+
+## Checkpoint 51 — Session 7R: owner rules + Citadel cooldown (branch `claude/owner-rules-citadel-cooldown-69wg3f`, from main `ae22fcb`)
+
+### Resume here (kept current after every slice)
+If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first; it governs everything, then this section.
+- **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_07R_BRIEF.md`; this checkpoint opened.
+- **Slice 2 (STEP 1):** both owner rules of Nov 25, 2026 recorded word for word (generated from the saved brief, so byte-identical)
+  in CLAUDE.md, AGENTS.md, docs/ROADMAP.md (a Standing owner decisions bullet + the full section), docs/AI_TOOLCHAIN.md,
+  docs/conquest/CONQUEST_FLAGSHIP_EXECUTION_HANDOFF.md, docs/conquest/CONQUEST_BLUEPRINT.md, and docs/owner-rules.json (new `rules`
+  + `rulesEnforced` entries; every constant and limit unchanged). The PR and issue templates get a pointer checkbox, not the full text
+  (it would be copied into every PR body). `dev/tests/owner-rules.mjs` section 9: the three rule texts' SHA-256 pinned in the test, the
+  six files (pinned in the test, not only the JSON) hold both texts word for word, and the Citadel cooldown is at most 24 h. The
+  last check fails against the old 7-day code on purpose (the rule is in force): slice 3 makes it pass.
+- **Slice 3 (STEP 2, `5f80a60`-`bc95699` + the fortress json):** the Citadel cooldown 7 days -> **none** (`refortMs:0`; reason under
+  "STEP 2" below); the tests that encoded the 7 days updated; the Citadel pace model and the fortress model re-run (SIMULATED, below).
+  Draft PR #160 with the `owner-rules-change` label (the brief orders the owner-rules.json entry).
+- **Slice 4 (mutation proofs of owner-rules section 9, at `5cf8ae7`):** baseline 58 PASS. Each mutation made
+  `node dev/tests/owner-rules.mjs` FAIL (exit 1) on the expected check: one word of Rule 1 changed in AGENTS.md; Rule 2's section
+  removed from docs/ROADMAP.md; "24 hours" -> "48 hours" in the owner-rules.json rule text (the pinned hash and all six files fail);
+  the owner-rules.json `rules` entry dropped; refortMs back to 7 days (168 h); refortMs 25 h. refortMs 24 h (the owner's maximum)
+  PASSES, as it must. Every mutation reverted.
+- **Slice 5 (reviews round 1 at `5cf8ae7`, fixes `7364d51`-`0355b02` + the paraphrase fix):** details under "Reviews" below.
+- **Slice 6 (review round 2 at `a183a00`, fix `a251615`):** every brief item and every owner rule PASS from all three reviewers (below).
+- **SESSION 7R IS RELEASED** (Nov 26, 2026: PR #160 merged as `a58acff`, PR #161 (the build stamp) merged as `42e9382`; live build
+  `20261126053718` = repo; section "Release record" below; ROADMAP row 7R). Open for the owner: PROPOSALs 1 and 2 below. Next on the
+  roadmap: as Checkpoint 50 lists (5E-2d2, 6B-V, 7-V, 7.5, 7.8, 8, 9); a later session should also make `signup-browser.cjs` wait for
+  the 3D models before it leaves the play page (the WebKit note in the release record).
+- **Slice 7 (release):** PR #160 marked ready with `auto-release` at `0384276`. CI's `boards-titan` job failed: a real game bug from
+  Session 7C, red on main too (fixed in `8de1769`, under "CI fix" below). Every check green on `50ebfaa`; merged at 05:36 UTC.
+- **Slice 8 (follow-up PR):** PR #160 shipped without a `dev/bump.sh` build stamp (7C's release had one): a phone with the old build
+  cached would keep the old `citadel.js` and show the 7-day lock while the Worker already has none. The follow-up stamps build
+  `20261126053718` into index.html (every css/js tag, the Citadel and Titan files included), web/play.html, worker/src/index.js and
+  version.json, with this record and the ROADMAP row.
+
+### CI fix: the Hive Titan hunt failed at once on most strike craters (found Nov 26 by CI; Session 7C's bug, red on main `ae22fcb` too)
+- **Symptom:** `dev/tests/conquest-7c-browser.py` timed out waiting for the hunt's clock: the battle had ended in its first step,
+  "DEFENSE LOST · You left the operation area". Reproduced locally on this branch and on main.
+- **Root cause:** the Hunt (js/conquest/titan.js) inherits Operation's perimeter check (js/conquest/combat.js: defeat beyond 260 m of
+  `operation.x/z`), and the `hive-titan` operation's position is the FIRST strike site (REFUGE CORRIDOR). The Titan rises at the slot's
+  own crater, which rotates over 8 sites: at 6 of them the pilot stood about 480 m from the "centre" and the hunt failed at once (the
+  Worker runs the same code, so live hunts there failed too). 7C's journey had run on a REFUGE slot.
+- **Fix (no number changed):** `Hunt.centre()` sets the perimeter to the slot's crater at the Worker's `setup` and re-derives it on
+  `restore` (the Worker's hydrate and the phone's both call it). Test: `conquest-titan` now builds a hunt at every strike site, steps it
+  and saves / restores it: all 8 stay active (34 PASS); on the old code 6 of 8 fail at once. `conquest-7c-browser.py` 5 of 5 sizes PASS;
+  `wtest/conquest-boards` 35, `wtest/conquest-standing` 19, `conquest-fingerprints` 21, `conquest-citadel` 84 PASS. Not a third review
+  round (the brief allows two): the mutation-proven test is the evidence.
+
+### Tests run locally at the end (head `a251615`; all PASS)
+`owner-rules` 58 (+ 7 mutation proofs, slice 4); `conquest-citadel` 84; `wtest/conquest-citadel-payout` 25; `conquest-citadel-pace` 33
+(SIMULATED); `conquest-citadel.py` 5 of 5 sizes (390x844, 390x700, 320x568 touch; 1366x768, 1920x1080 mouse + keyboard);
+`conquest-fortress` 14 (SIMULATED); `conquest-analytics` 24; `conquest-streak` 64; `wtest/conquest-boards` 35; `wtest/conquest-wareffort` 33;
+`wtest/accounts` 18; `wtest/referrals` 29; the Citadel pace model `dev/tools/citadel-pace.mjs` (SIMULATED). No playtesting was done:
+nothing here is evidence of enjoyment.
+
+### Reviews (three independent read-only reviewers in their own worktrees, given the branch, head, brief and checkpoint, not the lead's conclusions)
+**Round 1 (`5cf8ae7`).** Reviewer A (every brief item, every owner rule): STEP 1 PASS (texts byte-identical in all seven places, its own
+four mutations each fail the test), STEP 2 PASS, Rule 1 PASS (caveat: an unevidenced "most likely to stay" claim), Rule 2 PASS narrowly,
+existing rules and guards PASS. Reviewer B (gameplay quality + guardrails): the choice PASS, the stated reason FAIL, Rule 2 PASS (one
+dropped assertion), side effects FAIL, correctness FAIL (the card text). Reviewer C (first-clear bounties + airdrop points): bounties
+exactly once PASS (time was never part of the once-only guarantee: first = tier === c.t+1, ids by `cbty`, watermark, outbox dedupe),
+airdrop points and numbers PASS (one constant changed), no exploit path found, Rule 2 PASS, Rule 1 FAIL (minor: the card text).
+Findings and what was done:
+1. **The first-clear result card said "the Hive re-fortifies it for 0 days"** (B, C; medium; the 160-character cut in citadel-ui.json
+   hid it from the journey's record and the eye check missed it) -> FIXED: "Next: CITADEL II · IRON RAIN · open now (or replay this tier
+   as a Throne Run)"; a cooldown of hours would print in hours; `conquest-citadel.py` asserts "open now" and no "re-fortif" / "0 days"
+   at all five sizes (PASS); captures re-taken and checked at 320x568 and 1920x1080.
+2. **A phone clock behind the server's showed a phantom wait** (A, C; low-medium) -> FIXED: `opensAt` returns 0 when `refortMs` is 0;
+   `conquest-citadel.mjs` checks a phone 3 minutes behind sees Citadel II open (84 PASS).
+3. **The stated reason was wrong** (B: the wait delayed tier III for every profile, not only the strongest) -> FIXED in citadel.js and
+   STEP 2 above; the unevidenced "most likely to stay" claim (A) removed with it.
+4. **The pace tools rounded a cooldown of hours to days** (B) -> FIXED: `Math.ceil` (a wait of hours moves the next tier to the next
+   model day).
+5. **A still-true assertion was dropped: the heavy player's tier III between the grinder and the regular** (A, B; Rule 2) -> RESTORED as
+   an assertion (heavy 15-17 inside grinder 8-12 .. regular 28-30).
+6. **Side effects not reported** (B: the undefended REPAIR bill +20%, tier II and III bounties on the same day, a misquoted card line) ->
+   recorded in STEP 2 and PROPOSAL 2 corrected.
+7. **Report wording** (B: "by day 12" vs the json's day 10) -> the REPORT lines say "this test's boundary day".
+8. **Paraphrases stricter than Rule 2** (A: "never adjusted") -> the ROADMAP bullet, both templates and the owner-rules.json title now
+   say "never adjusted automatically to match new simulation results; only when independently justified ... documented" (the full text
+   follows each).
+9. Recorded, no change: the grinder's tier II loss on day 7 wins 1 of 3 (A: thin margin; the seeds are fixed, so it is deterministic);
+   `docs/conquest/session6b/OWNER_RULES_6B.md` not given the text (A: it is Session 6B's record of its own prompt, not a file sessions
+   read as instructions); the `owner-rules-change` label added by the lead (A: the brief orders the owner-rules.json entry, as in
+   Sessions 7T and 7C); Act I is shallow on rare gear (A, B: PROPOSAL 1, ships as the owner's approved change).
+
+**Round 2 (`a183a00`).** Reviewer A: STEP 1, STEP 2, Rule 1, Rule 2, the existing owner rules and guards, correctness: all PASS; every
+round-1 finding fixed or recorded (it put the old `opensAt` back and the new clock check failed, so the check guards the bug; it ran the
+journey at five sizes: PASS). Reviewer B: Rule 1, Rule 2, side effects, correctness: all PASS (the re-taken captures read "open now" and
+fit). Reviewer C: bounties exactly once, airdrop points, no exploit path (the `opensAt` change is display-side: the tier-order gate runs
+first and the Worker judges launches on its own clock), Rule 1, Rule 2: all PASS. Two low points (A and B): the restored heavy-player
+check used a looser form than main's -> FIXED in `a251615` (main's strict form: heavy after the grinder's latest day and before the
+regular's earliest; PASS, 33); "1 days" for a cooldown of exactly 24 h -> FIXED ("1 day"). No round 3 (the brief: at most 2 rounds).
+
+### STEP 2: the Citadel cooldown (owner Rule 1: "a matter of hours, with 24 hours being the absolute maximum, if a cooldown is even necessary")
+- **Choice: none** (`js/conquest/citadel.js` `CIT.refortMs:0`; the field and the gate code stay, so a future owner decision of some hours
+  is one number: the result card prints it in hours or days and the pace tools round it up to whole model days; `dev/tests/owner-rules.mjs` fails above 24 h). **Reason:** a cooldown is not necessary. (1) Nothing else waits between
+  Citadel attacks (`launchWhy` has no timer after a loss; a loss spends the prep it used and downed allies need repair; siege prep is
+  optional, each objective valid 48 h). (2) The pacing model shows
+  the kit (rare gear, the full Battalion, ranks) is what gates tier II: on common gear every profile loses tiers II and III. (3) The
+  7-day wait was the only thing between tier II and tier III for every profile (tier III a week later for the regular too, and tier II
+  three days later for the grinder): a timer, not difficulty, exactly the "arbitrary waiting period" the owner ruled out. The step it
+  hid (tier III barely harder than tier II on rare gear) is fixed by difficulty, not by a timer (PROPOSAL 1). (Corrected in review
+  round 1: an earlier version said the wait only held back the strongest pilots; the data says every profile.) (4) No integrity reason: the first-clear bounties pay exactly once per account
+  (unchanged; `conquest-citadel`, `wtest/conquest-citadel-payout`: tier II now cleared right after tier I still pays 37,500 once), and an
+  alt account still needs the kit. A few hours would add only a return timer for the strongest pilots.
+- **Copies of the 7 days updated (only these):** `js/conquest/citadel.js`; `dev/tests/conquest-citadel.mjs` (the next tier opens the
+  moment the first clear settles; the Worker launches Citadel II right after); `dev/tests/wtest/conquest-citadel-payout.mjs` (tier II 2
+  minutes after, not 8 days); `dev/tests/conquest-citadel.py` (LAUNCH THE ASSAULT · CITADEL II enabled right after the first clear, at
+  390x844, 390x700, 320x568, 1366x768, 1920x1080: all PASS; capture `next-tier-open-*` replaces `refortify-*`, checked by eye at 320x568
+  and 1366x768: the button fits. Review round 1 found what that look missed: the first-clear result card still said "the Hive
+  re-fortifies it for 0 days"; fixed (it says the next tier is open now) and asserted in the journey); `dev/tools/citadel-pace.mjs` (comments, the json's about); `dev/tests/conquest-citadel-pace.mjs`
+  (Rule 2 below); `dev/tools/fortress-model.mjs` (the profiles' Citadel days were the 7B measurements with the wait in them).
+  `conquest-analytics` 24, `conquest-streak` 64, `wtest/conquest-boards` 35, `wtest/conquest-wareffort` 33, `wtest/accounts` 18,
+  `wtest/referrals` 29: all PASS unchanged (nothing in them encodes the 7 days, so nothing in them was edited).
+- **Citadel pacing (SIMULATED: the bot pilot on each profile's modelled kit, 4 seeded assaults a day; not playtesting):** tier I
+  unchanged (regular day 15, heavy 9, grinder 6). Tier II / III: regular **30 / 30** (was 30 / 37), heavy **17 / 17** (was 17 / 24),
+  grinder **10 / 10** (was 13 / 20). Median clears on the same kit: tier II about 7:00, tier III 7:27-7:32 (6-8 minutes kept).
+- **Fortress model (SIMULATED):** all 14 guards PASS. The regular's town hold rate by day: 62 / 67 / 86 / **52** / 81 / 67 / 100 / 62%
+  (day 30 was 86%: tier III and its Retaliation now land on day 30, a week earlier), year mean 72% (was 76%; guard: about 3 in 4). The
+  model also shows the choice this gives the pilot: building ahead of the Citadel holds 90-100%, pushing it without building 24-71%.
+  The undefended reference builder's REPAIR bill on the way to CC10 rises from 432,759 to 518,555 CP (+20%; stronger raids earlier;
+  the coached pilot's stays 660 CP). Tier II and tier III first-clear bounties (37,500 + 50,000, outside the daily cap) can now land on
+  the same day; the total per account (112,500 for Act I) and the once-per-account rule are unchanged.
+- **Rule 2 (guardrails) on the pace guard:** two checks failed with the wait gone: tier III for the regular in weeks 6-8 (day 36-56) and
+  for the grinder in week 3 (15-21). Investigation: they were met only by the two 7-day waits (the 7B test computed tier III = tier II +
+  7); with no wait tier III falls on the day the kit breaks tier II. Fixing the calendar without a wait would need harder tier III numbers,
+  which this session may not change. Decision: the owner's targets (`TARGETS`) are **unchanged** and still **reported** against every run
+  (OUTSIDE, in the test output and citadel-pace.json); the two calendar assertions are no longer asserted, because the approved change (no
+  waiting period; progression limited by difficulty and strength) removes the mechanism that produced them. Not masked: every difficulty
+  gate stays (tier I windows, tier II lost on common gear and won on rare, 6-8 minute clears), four new difficulty checks are added (tier
+  III lost on common gear by the regular on day 27, the heavy on day 14, the grinder on day 7; tier II lost by the grinder on day 7), and
+  the genuine problem the wait hid is a PROPOSAL below. Every other guard threshold is unchanged.
+
+### PROPOSALs for the owner (Session 7R)
+1. **Tier III is barely harder than tier II on rare gear (simulated):** the kit day that breaks tier II breaks tier III too, 4 of 4,
+   about 30 s slower. With the wait gone, Act I ends the day tier II falls. Proposal for the next Citadel session (Session 11 or a Citadel
+   tuning pass): make THE CARRIER DECK a real step up through tactics, never bigger numbers (the fixed-stats rule): e.g. dropships that
+   land in two waves at once, a warden phase that punishes ignoring the deck, or a tier III that needs one siege prep objective's effect
+   to be countered. Then judge it by playtesting, not only the bot.
+2. **Retaliation arrives a week earlier for a regular who pushes tier III on day 30 (simulated hold rate 52% that day):** the result card
+   already warns ("Retaliation III: your town and the front meet stronger attacks") and the War Map shows DEFENSE beside its recommended band, so
+   this is a real choice (build first, or push). If playtests show it feels punishing, the fix is a clearer DEFENSE warning on the tier
+   card before launch, not a wait.
+
+### Release record (Nov 26, 2026)
+- PR #160 merged by the auto-release workflow at 05:36 UTC as `a58acff` (head `50ebfaa`): every check green on the head (owner-rules
+  with the `owner-rules-change` label, guardrails, asset-integrity, fortress, boards-titan, citadel, town-ui, transmission chromium +
+  webkit, conquest). Release pre-approved in the brief. The PR stayed a draft until both review rounds and this checkpoint were done.
+- CI along the way: `boards-titan` red on `0384276` (and on main): the Titan perimeter bug, fixed with a test (above);
+  `transmission (chromium)` red once on `0384276` (the flagship journey's bot pilot lost a battery raid at 71 s): passed on both this
+  branch and main locally, and passed on the next head in CI; this PR touches no raid code. No test skipped, deleted or loosened.
+- Worker for PR #160: `Deploy Stars server (Cloudflare)` run 45762739999 SUCCESS on `a58acff` (server tests, the live-match smoke test,
+  deployed 05:43 UTC): `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`; live `version.json` still
+  `20261125032217` (no stamp yet: the follow-up).
+- PR #161 (`release(7R)`: the build stamp `20261126053718`, the record, ROADMAP row 7R) merged by the auto-release workflow at 06:21 UTC
+  as `42e9382` (head `6a12207`), every check green. `signup-browsers (webkit)` failed once (nine "Cannot load blob ... due to access
+  control checks" with the GLB loads "cancelled": WebKit reporting in-flight texture loads a navigation cancelled; the test exempts the
+  "Fetch API" variant of that message for this cause, not the blob one); its one re-run passed; noted on the PR with the proposed fix
+  (wait for the models before leaving the play page), left for a later session.
+- Worker for PR #161: run 45767630415 SUCCESS on `42e9382` (deployed 06:26 UTC): `/pvp/health` ok (`v` 7), live `version.json` =
+  `{"v":"20261126053718"}` = repo. GitHub Pages: `pages build and deployment` run 45767623694 SUCCESS on `42e9382`. The other push
+  checks on main: owner-rules, the lab UI, the Graphify index: SUCCESS. This container cannot reach workers.dev (network policy), so
+  the live values come from the deploy job's own checks.
+

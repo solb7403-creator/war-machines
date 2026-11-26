@@ -119,5 +119,19 @@ for(const g of O.guards){const src=fs.existsSync(g.file)?fs.readFileSync(g.file,
   ok(J(Bo.neverSold)===J(['pilots','ranks','roleCoreLevels'])&&!/\bbat\b|\.rc\[|rcLevel|rank/.test(open),'never sold: pilots, ranks, Role Core levels (no store grant touches them)');}
  {const s=mk();s.bat={p:[{id:'p1',n:'A B',cs:'ANVIL',r:'',xp:0,rk:1,k:0,h:1}],ch:{e:0,d:0,bs:0}};const pend=J(s.airdrop?.pend||null);outcome(s,{friends:[{side:'mine',pid:'p1',kills:2}],time:60},CQ.Combat.operations.rescue,'victory',day);
   ok(J(s.airdrop?.pend||null)===pend&&s.bat.ch.e===1&&s.bat.p.length===2&&J(Bo.noPoints)===J(['chips','recruits','liveries']),'command chips and recruits (and liveries) never award points: a won rescue gave a chip and a recruit, no points');}}
+// ---- 9. the owner rules of Nov 25, 2026 (Session 7R brief docs/conquest/audit/SESSION_07R_BRIEF.md): Rule 1 (gameplay quality first)
+// and Rule 2 (guardrails, permanent), word for word. Their SHA-256 is pinned HERE, so the rules entry of docs/owner-rules.json cannot be
+// edited or dropped alone; every governing file below (pinned here too, not only in the JSON) must hold both texts word for word; and the
+// Citadel cooldown is never above the owner's 24-hour absolute maximum. Only the owner can change them ----
+{const {createHash}=await import('node:crypto'),sha=t=>createHash('sha256').update(String(t),'utf8').digest('hex');
+ const PIN={'gameplay-quality-first':'116374e9610bb105487706bda2a2161387c66e25ab8b7db4ed83188d6866bdf8','guardrails':'7634d8e683499b58b46c63b9ab01c571235364f07985406943ced6cb8eb7f05e','additive':'2e4897b07e1ec1cb5a3ac1a5df6398b4c987468b24a3aad9263bce6aa0d4ccc3'};
+ const by=Object.fromEntries((Array.isArray(O.rules)?O.rules:[]).map(r=>[r?.id,r]));
+ for(const [id,h] of Object.entries(PIN))ok(by[id]&&by[id].owner==='owner'&&by[id].date==='2026-11-25'&&sha(by[id].text)===h,'owner rule "'+id+'" (owner, Nov 25, 2026) present and unchanged in docs/owner-rules.json');
+ const FILES=['CLAUDE.md','AGENTS.md','docs/ROADMAP.md','docs/AI_TOOLCHAIN.md','docs/conquest/CONQUEST_FLAGSHIP_EXECUTION_HANDOFF.md','docs/conquest/CONQUEST_BLUEPRINT.md'],E=O.rulesEnforced||{};
+ ok(FILES.every(f=>(E.recordedIn||[]).includes(f)),'docs/owner-rules.json lists every governing file that records the Nov 25 rules');
+ for(const f of FILES){const src=fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';
+  ok(['gameplay-quality-first','guardrails'].every(id=>by[id]&&sha(by[id].text)===PIN[id]&&src.includes(by[id].text))&&src.includes('no existing owner-approved rule is ever removed or weakened'),f+' holds Rule 1 and Rule 2 (Nov 25, 2026) word for word');}
+ const cd=CONQUEST.Citadel.CIT.refortMs;
+ ok(Number.isFinite(cd)&&cd>=0&&cd<=86400000&&E.citadelCooldownMaxMs===86400000,'the Citadel cooldown between tiers is '+(cd/36e5)+' h (Rule 1: a matter of hours, 24 h the absolute maximum, or none; never the old seven days)');}
 if(fails.length){console.log('FAIL owner-rules: '+fails.length+' of '+(fails.length+passed)+' checks: '+fails.join(' || '));process.exit(1);}
 console.log('PASS owner-rules ('+passed+' checks)');

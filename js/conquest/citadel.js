@@ -29,7 +29,11 @@ const CIT=Object.freeze({
  par:7,                                       // the assault's par minutes (lead's design: the brief's 6-8 minutes with the full Battalion)
  ring:5,                                      // the Inner Ring: the ring's danger in the battle points formula (war.js WAR.danger)
  prepMs:48*HOUR,                              // each siege prep objective stays valid 48 hours
- refortMs:7*DAY,                              // lead's design (measured pacing): after a tier's first clear the Hive re-fortifies the next one for 7 days
+ // owner rule (Nov 25, 2026, AGENTS.md "Gameplay quality first"): no seven-day wait between Citadel attacks; a cooldown is a matter of
+ // hours, 24 hours the absolute maximum, if one is needed at all (dev/tests/owner-rules.mjs fails above 24 h). Session 7R's choice:
+ // none. Nothing else waits between attacks and the siege prep is optional; the kit (rare gear, the Battalion) gates tier II, and the
+ // wait was the only thing between tier II and tier III for every profile (the pacing model): a timer, not difficulty (Checkpoint 51)
+ refortMs:0,
  // lead's design numbers (fixed for every tier): the warden's hull and shield core (re-formed twice), the gate and its generators
  warden:Object.freeze({hp:18500,core:2800,reform:Object.freeze([2/3,1/3]),tellS:2.5,enrage:.4}),
  gate:Object.freeze({hp:15000}),gen:Object.freeze({hp:6000}),mortar:Object.freeze({hp:600,everyS:9,tellS:2.4,r:8,zoneR:14,dmg:80}),
@@ -141,7 +145,7 @@ function prepOf(s,now){const c=norm(s?.cit),w=s?.war,live=k=>!!c.prep[k]&&c.prep
  try{po=!!w&&!WR().portalOpen(WR().norm(structuredClone(w),now),now)&&int(w.por?.until)>int(c.pu);}catch(_){po=false;}
  return {aa:live('aa'),cv:live('cv'),po,until:{aa:live('aa')?c.prep.aa.until:0,cv:live('cv')?c.prep.cv.until:0,po:po?int(w.por.until):0}};}
 // why this tier cannot be launched now ('' when it can). FORCE and DEFENSE are advice: they never block
-const opensAt=(c,t)=>{c=norm(c);t=int(t);return t>1&&t===c.t+1&&int(c.fc[t-1])>0?int(c.fc[t-1])+CIT.refortMs:0;};   // 0: open now (tier I, or a cleared tier's Throne Run)
+const opensAt=(c,t)=>{c=norm(c);t=int(t);return CIT.refortMs>0&&t>1&&t===c.t+1&&int(c.fc[t-1])>0?int(c.fc[t-1])+CIT.refortMs:0;};   // 0: open now (tier I, a cleared tier's Throne Run, or no cooldown: a phone clock behind the server's never shows a wait)
 const dhm=ms=>{const m=Math.max(1,Math.ceil(ms/60000)),d=Math.floor(m/1440),h=Math.floor(m%1440/60);return d?d+' d '+h+' h':h?h+' h '+m%60+' m':m+' m';};
 function launchWhy(s,tier,now){const c=norm(s?.cit),t=int(tier);if(t<1||t>CIT.live)return 'that Citadel tier is not built yet';
  if(t>c.t+1)return 'break Citadel '+ROMAN[c.t+1]+' first';{const at=opensAt(c,t);if(at&&num(now)<at)return 'the Hive re-fortifies Citadel '+ROMAN[t]+': it opens in '+dhm(at-num(now));}if(!frontHeld(s?.war))return 'hold both approach territories first (Ash Redoubt and Oxygen Spear)';

@@ -129,6 +129,8 @@ async def main():
     if not paid:assert '+25,000 airdrop bounty' in rt and 'already paid' not in rt,('the account is paid the bounty once: the card shows it',rt)
     else:assert 'already paid to this account' in rt and '25,000' not in rt,('the account already holds the bounty (a reset record): the card shows no number',rt)
     r['bounty']='paid +25,000' if not paid else 'already paid (reset record)';paid=True
+    # no wait between tiers (owner rule, Nov 25, 2026): the result card names the next tier as open now, never a re-fortify wait (review round 1)
+    assert 'open now' in rt and 're-fortif' not in rt.lower() and '0 days' not in rt,('the next tier is open now',rt)
     st=await inspect();assert st['cit']['t']==1 and st['cit']['fc'].get('1'),('the Worker settled the first clear',st.get('cit'))
     dlg=page.locator('.cq-result');back=dlg.locator('button',has_text='RETURN TO EXPLORATION');await reach(page,back,'.cq-result',mobile,h)
     await page.screenshot(path=str(OUT/f'first-clear-{w}x{h}.png'));r['result']=' · '.join(l for l in rt.split('\n') if l.strip())[:160]
@@ -141,9 +143,10 @@ async def main():
     assert 'THRONE RUN' in tt and 'FULL CHEST READY' in tt and 'RUN CITADEL I' in tt,tt
     gam=await page.evaluate('ConquestCitadel.gambitsOf(ConquestCitadel.weekOf(Date.now())).map(k=>ConquestCitadel.GAMBITS[k].name)');assert all(g in tt for g in gam),(gam,tt)
     nx=await page.locator('.cq-warmap .cq-cit-card').inner_text();assert 'NEXT: CITADEL II · IRON RAIN' in nx,nx
-    # the Hive re-fortifies the next tier for 7 days after a first clear: LAUNCH reads it and stays shut (Throne Runs stay open)
-    lk=page.locator('.cq-warmap .cq-cit-card .cq-cit-launch');lt=await lk.inner_text();assert 'RE-FORTIFIES CITADEL II' in lt and ('OPENS IN 7 D 0 H' in lt or 'OPENS IN 6 D' in lt) and not await lk.is_enabled(),lt
-    await reach(page,lk,'.cq-dialog.cq-warmap',mobile,h);await page.screenshot(path=str(OUT/f'refortify-{w}x{h}.png'));r['locked']=lt.strip()[:80]
+    # no wait between Citadel attacks (owner rule, Nov 25, 2026; Session 7R: no cooldown): right after the first clear the next tier's
+    # LAUNCH is open (the old 7-day re-fortify lock is gone) and the Throne Run stays open beside it
+    lk=page.locator('.cq-warmap .cq-cit-card .cq-cit-launch');lt=await lk.inner_text();assert 'RE-FORTIFIES' not in lt and 'LAUNCH THE ASSAULT · CITADEL II' in lt and await lk.is_enabled(),lt
+    await reach(page,lk,'.cq-dialog.cq-warmap',mobile,h);await page.screenshot(path=str(OUT/f'next-tier-open-{w}x{h}.png'));r['next']=lt.strip()[:80]
     run=th.locator('.cq-cit-run').first;await reach(page,run,'.cq-dialog.cq-warmap',mobile,h);await page.screenshot(path=str(OUT/f'throne-run-{w}x{h}.png'))
     bd=th.locator('.cq-cit-board-btn').first;await press(page,bd,mobile);await page.locator('.cq-cit-board').wait_for(timeout=20000);bt=await page.locator('.cq-cit-board').inner_text();assert 'CLEAR TIMES' in bt,bt
     await page.screenshot(path=str(OUT/f'board-{w}x{h}.png'));r['throne']=' · '.join(l for l in tt.split('\n') if l.strip())[:160]
