@@ -8166,8 +8166,13 @@ If your context was cleared, read docs/conquest/audit/SESSION_07R_BRIEF.md first
 - **Slice 3 (STEP 2, `5f80a60`-`bc95699` + the fortress json):** the Citadel cooldown 7 days -> **none** (`refortMs:0`; reason under
   "STEP 2" below); the tests that encoded the 7 days updated; the Citadel pace model and the fortress model re-run (SIMULATED, below).
   Draft PR #160 with the `owner-rules-change` label (the brief orders the owner-rules.json entry).
-- Next: slice 4 (mutation proofs of owner-rules section 9), slice 5 (three independent reviewers, at most 2 rounds), slice 6 (release:
-  ready + `auto-release`, verify the deploy, then the release record).
+- **Slice 4 (mutation proofs of owner-rules section 9, at `5cf8ae7`):** baseline 58 PASS. Each mutation made
+  `node dev/tests/owner-rules.mjs` FAIL (exit 1) on the expected check: one word of Rule 1 changed in AGENTS.md; Rule 2's section
+  removed from docs/ROADMAP.md; "24 hours" -> "48 hours" in the owner-rules.json rule text (the pinned hash and all six files fail);
+  the owner-rules.json `rules` entry dropped; refortMs back to 7 days (168 h); refortMs 25 h. refortMs 24 h (the owner's maximum)
+  PASSES, as it must. Every mutation reverted.
+- Next: slice 5 (three independent reviewers, at most 2 rounds; round 1 started at `5cf8ae7`), slice 6 (release: ready +
+  `auto-release`, verify the deploy, then the release record).
 
 ### STEP 2: the Citadel cooldown (owner Rule 1: "a matter of hours, with 24 hours being the absolute maximum, if a cooldown is even necessary")
 - **Choice: none** (`js/conquest/citadel.js` `CIT.refortMs:0`; the field and the gate code stay, so a future owner decision of some hours
