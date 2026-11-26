@@ -8324,4 +8324,93 @@ If your context was cleared, read docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.
 - **Slice 1:** the brief saved word for word to `docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.md`; this checkpoint opened.
 - **5E-2d2** (`claude/conquest-models-addendum-yg3oj6`, also changes js/core.js, js/net.js, js/ui.js) was NOT merged into main at the
   start (its head `8392bd3`); merge main again before release and keep both sides.
-- **Next:** read the documents and code the brief names; review old PR #21; plan the slices (below, once written).
+- **Slice 2 (plan, this commit):** the reading done (list below); the design and the slice plan below ("Design" and "Slices").
+  Two background helpers started (AGENTS.md: independent workstreams, zero file overlap): (1) web research of comparable games'
+  stores and checkout (read only; findings go under "Store research" below); (2) the fortress-model sizing of the wall-only ore
+  crates in its own worktree `/home/user/wt-fortress` (files: dev/tools/fortress-model.mjs, dev/tools/ore-crate-sizing.mjs,
+  dev/tests/conquest-fortress.mjs, docs/conquest/session8/ore-crates.json; the lead copies them back). The definitions of "fully
+  built" and "noticeably stronger" were fixed BEFORE any measurement (Rule 2): see "Design" 7.
+- **Next:** slice 3 (the one price table + the new kinds in js/rules.js), then slice 4 (server orders + Stars certification).
+
+### What was read (slice 1-2)
+CLAUDE.md, AGENTS.md, ROADMAP row 8 + Standing owner decisions, DECISIONS 12, CONQUEST_1_0_SPEC §9-10, RESOURCE_ECONOMY §7.5,
+§9, §16, owner-rules.json + owner-rules.mjs, Checkpoint 39 (the two gaps), 41 (open item 6), 47-51 (the late fortress), PR #21
+(its PAYMENT_COMPLETION.md and module list), and the code: js/net.js, js/core.js, js/rules.js (prices, ecoPrice/ecoOwned/ecoGrant/
+ecoRefund, the RS_* Lab store, the BAT store), js/conquest/catalog.js, js/conquest/plot.js (STORE) + plotview.js (storeList),
+worker/src/index.js (descOf, payLog, verifyTon, verifySol, solValueOk, starsInvoice, the webhook: pre-checkout, successful and
+refunded payments), worker/src/eco.js (tx, claimOnce, creditConquest, act 'paid'), worker/src/conquest.js (account reads),
+conquest-research.js (the Legendary outbox), conquest-store.js, conquest-cosmetics.js, pay.html, web/boot.js, web/game.js (the
+website shop note), web/play.html and the website CSP (worker/src/index.js: script-src and connect-src 'self' only).
+
+### PR #21 review (old open draft against `release/graphics-rc1`, Oct 31; not mergeable here)
+Reused (the ideas that hold up): server-issued quotes for GRAM and SOL that freeze the buyer, the goods, the price, the exact base
+amount (nanoGRAM / lamports), the memo / reference and an expiry, checked for ownership, limits and price BEFORE the wallet opens;
+one open quote per item across every rail (Stars, GRAM, SOL); a late, mismatched or no-longer-eligible payment is kept on record
+with nothing granted (for a refund), never silently re-rolled; SOL verified against the order's own reference key and the transfer
+instruction (never "any signature with a large enough balance change": today's `verifySol` lets a player claim someone else's
+payment to our wallet); SOL quotes refuse when the price feed is down (fail closed); each chain transaction claimed once
+permanently. Not reused: the per-account Durable Object job, the SQLite migration, operator tooling and the testnet harness (a new
+DO migration and ops surface for no live players; the phone and every sync re-check open orders instead), its Telegram Stars-only
+rule and its passkey-only rule for crypto (both superseded by the owner's Nov 26 decisions: GRAM in Telegram with a switch; the
+website store for every website account type), and its code (written against a base three weeks and ~100 PRs older).
+
+### Telegram policy note (owner instruction, recorded as asked)
+Telegram's Nov 17, 2026 developer notice says digital goods sold inside bots and Mini Apps must be paid in Telegram Stars. The
+owner's answer to that risk is the server-side GRAM switch: GRAM is on inside Telegram by default and the owner can turn it off in
+one step, with no release (Design 2). Stars stay the default currency in Telegram; the website (GRAM and SOL) is the main store.
+
+### Design (decisions and reasons)
+1. **Where each payment works.** Website (first-party session + CSRF, every account type): GRAM and SOL. Telegram Mini App
+   (initData): Stars and GRAM (no SOL: the owner named Stars and GRAM). Stars stay Telegram-only (an invoice needs Telegram).
+   The server enforces it: an order's currency is checked against the request's surface and the switch; the phone only mirrors it.
+2. **The GRAM switch:** `cfg/gramTg` in the database (absent = on), read through the cached `cfg()`; flipped by the admin's
+   in-game Admin screen toggle (Telegram) or the bot command `/gram off` / `/gram on` / `/gram` (status) from the pinned admin
+   account; `/api/sync` tells the phone; a Telegram GRAM order while it is off is refused on the server ('gram_off').
+3. **Orders (GRAM and SOL):** `/api/order` {a:'quote'|'status'|'cancel'|'list'}. A quote runs every check on the server state
+   (descOf names, store open, ecoOwned, the limits, the deal, ecoPrice) and stores `orders/<pid>/<oid>` with the frozen price, the
+   exact amount (GRAM: the price in nanoGRAM; SOL: GRAM x live GRAM/SOL rate, a unique lamport tail), the memo (`LWM|<pid>|<oid>`),
+   the SOL reference, an expiry (30 min) and the reservation key. `status` finds the payment on chain (GRAM: toncenter, the exact
+   memo and at least the amount; SOL: the order's reference and a System transfer to our wallet of at least the amount, finalized;
+   an exact-amount send without the reference as the fallback), claims the transaction once (`tonTx/`, `solTx/`), then grants in
+   the account CAS. The old orderless `/api/pay-log` is retired (no live players: nothing to migrate).
+4. **One open quote per item, every rail (gap 1 and 2):** the account record holds `S.ord = {key: {q, c, e}}` (reservation keys:
+   the one-time item, or the price step / limit a repeatable item moves: a crate's buy key, a pack's week, a crate-a-day count).
+   A second quote for the same key returns the open one (same invoice or the same payment instructions). Stars invoices are quotes
+   too: the pre-checkout re-reads the account and refuses unless the quote is the open one, the item is not owned, the limits
+   hold and `total_amount` equals the current price (an invoice opened before another purchase moved the price can never be paid).
+   GRAM and SOL check ownership and limits at the quote, and again when the payment lands (an owned item: paid, nothing granted,
+   kept for a refund). Exactly once: the durable `starsPaid/<pid>/<charge>` record is read before a Stars grant and every grant
+   is keyed by its quote / charge in `S.gout` inside the same CAS; each chain transaction is claimed once forever.
+5. **`solValueOk` fails closed:** a SOL quote needs live rates (no rates: 'pending', no quote); the paid amount is checked against
+   the order's frozen lamports, so no live price is needed (or trusted) at grant time.
+6. **Legendary research vs. purchase, atomic (Checkpoint 41 item 6):** a Legendary research start first reserves the mod on the
+   account (`S.rsj[id]` in the account CAS, refused if bought); a purchase grant checks `S.lsm`, `S.rm` and `S.rsj` in the same
+   CAS, so exactly one wins; a reservation whose Conquest job never started is released by the same request.
+7. **Wall-only rare ore:** its own account bucket `S.wmn` (only a verified purchase adds to it; never moved to the wallet, base
+   stores, plating, buildings or Foundry research; never traded, gifted or counted for points), spent only by wall blends
+   (`plot.wmSpent`, the base stores' monotonic rule). Sizing (fixed before measuring): "fully built within the year" = day-365
+   mean wall blend quality >= 0.99 with the full wall cap; "noticeably stronger" = mean hold rate over days 300/330/365 at least 5
+   points above the free heavy pilot's and a higher day-365 wall quality; free profiles bit-for-bit unchanged.
+8. **Conquest store entitlements** live on the account (bought in the account CAS, exactly once, refundable) and the Conquest
+   record reads them at the session open and in the actions that use them (the research `rsx` / `lsm` pattern): second builder
+   (a second job slot `p.job2`), the extra layout slot (+1; the Lunar Pass +2), wall extension packs (`ext.buy`, +10% each up to
+   the +50% cap with earned ones), the Foundry speed-up (4x for 24 h), the Gilded wall skin, Neon turret skins and Aurora town
+   lighting (real finishes in the town renderer), the catalog cosmetics (owned as 'bought'), construction speed-ups (a paid credit
+   for one running construction job, priced on the server from the Conquest record's time left with RS_FIN; repairs excluded).
+9. **The one table:** `SHOP` in js/rules.js holds every price and limit on sale (the existing constants are referenced from it;
+   every new price lives only there); plot.js STORE and catalog.js read their prices from it. USD prices convert like rsFinPrice
+   with integer cents (Stars = ceil(USD x 77), GRAM = USD x 1.25 to 2 decimals); SOL at the live GRAM rate.
+10. **GRAM naming:** every player-visible "TON" becomes "GRAM" (shop, labels, toasts, wiki, pay page, terms); ids stay.
+11. **Not on sale (kept off, reported):** the Battalion store (chip pack, liveries, RECRUIT finish: not in the brief's sale list,
+   and chips are research-like), plate finishes (row 6B-V), the earnable second builder (the spec names Trophy Hall III but it
+   was never built; building it would change every free pilot's pace, so it stays a PROPOSAL and the store copy stops claiming it).
+
+### Slices (each tested, committed and pushed)
+3. The one table + the new kinds in js/rules.js (prices, limits, grants, refunds; Lab: Legendary 1,500 Stars / 23 GRAM, one a
+   UTC week); unit tests. 4. Server: orders, Stars pre-checkout re-check, exactly-once, refunds, GRAM switch, website access,
+   Legendary atomicity; the new `wtest/payments.mjs`. 5. Conquest entitlements in the Conquest record (+ town finishes) and the
+   pass perks. 6. The phone: net.js checkout per surface, the Shop, the Lab store live, the Conquest store, receipts, the website
+   checkout sheet (transfer link + QR, Solana Pay QR), pay.html bound to orders, GRAM naming; store research applied. 7. Fortress
+   sizing (helper) and the Lab pacing report. 8. Docs (RESOURCE_ECONOMY §9, spec §9, ROADMAP standing decision, wiki, terms).
+9. Switches on (CRYPTO_PAY, LAB_STORE_OPEN, catalog checkout, STORE.checkout), every CI test. 10. Captures (5 sizes, website and
+   Telegram). 11. Three reviewers (<= 2 rounds). 12. Release.
