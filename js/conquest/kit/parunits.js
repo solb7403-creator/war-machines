@@ -69,24 +69,37 @@ function track(b,s,xc,w,z0,z1,H,o={}){const cf=o.cf??.5,hf=o.hf??.45,cr=o.cr??.4
 function plate(b,x,y,w,h,m,o={}){const t=o.t??.06,x0=x-w/2,x1=x+w/2,y1=y+h,ch=Math.min(o.ch??.05,w*.2,h*.2),e=o.edge||tint(m,1.34,.014),ins=[x,y+h/2,-1],
   A=[[x0,y,0],[x1,y,0],[x1,y1,0],[x0,y1,0]],B=[[x0+ch,y+ch,t],[x1-ch,y+ch,t],[x1-ch,y1-ch,t],[x0+ch,y1-ch,t]];
  b.quad(B[0],B[1],B[2],B[3],m,ins);for(let i=0;i<4;i++){const j=(i+1)%4;b.quad(A[i],A[j],B[j],B[i],i===0?tint(m,.62):e,ins);}
- const zf=t+.006;
+ // 5E-2d2 critic round 2 (weathering: "flat toy blocks beside a weathered Meshy model"): a dark crease round the plate where it
+ // is bolted on (the joint holds the grime), and the plate's lower third a quarter darker
+ if(o.joint!==0){const g=o.joint||.05;b.quad([x0-g,y-g,.004],[x1+g,y-g,.004],[x1+g,y1+g,.004],[x0-g,y1+g,.004],P.soot,ins);}
+ const zf=t+.006;if(b.hi&&o.grime!==0)b.quad([x0+ch,y+ch,zf-.003],[x1-ch,y+ch,zf-.003],[x1-ch,y+ch+(h-2*ch)*.34,zf-.003],[x0+ch,y+ch+(h-2*ch)*.34,zf-.003],tint(m,.74),ins);
  if(o.haz){const n=o.haz,hw=(w-2*ch)/n;for(let k=0;k<n;k+=2){const xa=x0+ch+k*hw,sl=Math.min(hw*.9,(h-2*ch)*.7);b.quad([xa,y+ch,zf],[xa+hw,y+ch,zf],[Math.min(x1-ch,xa+hw+sl),y1-ch,zf],[Math.min(x1-ch,xa+sl),y1-ch,zf],P.hazardD,ins);}}
  if(o.stripe)b.quad([x0+ch,y+h*(o.sy??.56),zf],[x1-ch,y+h*(o.sy??.56),zf],[x1-ch,y+h*((o.sy??.56)+(o.sh??.2)),zf],[x0+ch,y+h*((o.sy??.56)+(o.sh??.2)),zf],o.stripe,ins);
  if(b.hi&&o.bolts!==0){const bm=o.bolt||P.weld,r=.035,d=ch+.07;b.detail(q=>{for(const [bx,by] of [[x0+d,y+d],[x1-d,y+d],[x1-d,y1-d],[x0+d,y1-d]])q.quad([bx-r,by-r,zf+.012],[bx+r,by-r,zf+.012],[bx+r,by+r,zf+.012],[bx-r,by+r,zf+.012],bm,ins);});}
  return b;}
 // a louvred vent on the +z plane of the current frame: the red glow of the infection behind dark slats, in a frame
-function vent(b,x,y,w,h,n,o={}){const ins=[x,y+h/2,-1],g=o.glow||P.red,fm=o.frame||P.ironD,f=o.f??.05,x0=x-w/2,x1=x+w/2,y1=y+h;
- b.quad([x0,y,.012],[x1,y,.012],[x1,y1,.012],[x0,y1,.012],g,ins);
- if(b.hi||o.low){const sh=h/n;for(let k=0;k<n;k++)b.quad([x0,y+sh*(k+.5),.05],[x1,y+sh*(k+.5),.05],[x1,y+sh*(k+1),.02],[x0,y+sh*(k+1),.02],fm,ins);}
+// 5E-2d2 critic round 2 (the HEART: "one big pulsing red heart per unit, where the infection lives"): the slats were half of
+// the opening, so a vent read as a red-and-black grille; they are a third now and o.heart puts a hotter core behind them (both
+// glows pulse: the solid shader's own pulse for a glowing vertex colour, no new program)
+function vent(b,x,y,w,h,n,o={}){const ins=[x,y+h/2,-1],g=o.glow||P.red,fm=o.frame||P.ironD,f=o.f??.05,x0=x-w/2,x1=x+w/2,y1=y+h,sk=o.heart?.7:.62;
+ b.quad([x0,y,.012],[x1,y,.012],[x1,y1,.012],[x0,y1,.012],g,ins);if(o.heart)b.quad([x0+w*.16,y+h*.2,.016],[x1-w*.16,y+h*.2,.016],[x1-w*.16,y1-h*.2,.016],[x0+w*.16,y1-h*.2,.016],P.redHot,ins);
+ if(b.hi||o.low){const sh=h/n;for(let k=0;k<n;k++)b.quad([x0,y+sh*(k+sk),.05],[x1,y+sh*(k+sk),.05],[x1,y+sh*(k+1),.02],[x0,y+sh*(k+1),.02],fm,ins);}
  if(b.hi&&f){b.quad([x0-f,y-f,0],[x1+f,y-f,0],[x1+f,y,.06],[x0-f,y,.06],fm,ins).quad([x0-f,y1,.06],[x1+f,y1,.06],[x1+f,y1+f,0],[x0-f,y1+f,0],tint(fm,1.4,.01),ins).quad([x0-f,y-f,0],[x0,y-f,.06],[x0,y1+f,.06],[x0-f,y1+f,0],fm,ins).quad([x1,y-f,.06],[x1+f,y-f,0],[x1+f,y1+f,0],[x1,y1+f,.06],fm,ins);}
  return b;}
-// the infection: a thick glowing ROOT creeping from a (where it breaks out: a vent, a seam) to c over a surface whose
-// normal is nr. Critic round 1 (Nov 25): the old hairline veins with side shoots were one-pixel dashes at phone size (noise).
-// A root is as thick as a wrist (r 0.08 and up on a tank), bends two or three times and tapers to half; a unit carries two
-// or three of them, all running out of ONE large glowing vent. o.low keeps a straight root on LOW.
-function vein(b,a,c,nr,o={}){if(!b.hi&&!o.low)return b;const n=b.hi?(o.n||3):1,amp=o.amp??.14,r=o.r??.09,sd=o.seed||1,m=o.m||P.red,d=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+// the infection: a thick glowing ROOT creeping from a (where it breaks out: the unit's heart, a seam) to c over a surface
+// whose normal is nr. Critic round 1 (Nov 25): hairline veins were one-pixel dashes at phone size. 5E-2d2 critic round 2
+// ("red is only the ground pool and 2 px strokes; on LOW the veins vanish completely"): a root is a RAISED GLOWING STRIP at
+// least 0.22 m wide on a tank (r .12: three CSS pixels at chase distance on a phone), it runs over TOP and upper side
+// faces, where the chase camera looks, bends two or three times, tapers to half and throws a short branch at a bend.
+// o.low = a TRUNK: it stays on LOW (two straight pieces, no branch), so LOW keeps fewer veins, never none.
+function vein(b,a,c,nr,o={}){if(!b.hi&&!o.low)return b;const n=b.hi?(o.n||3):Math.min(2,o.n||2),amp=o.amp??.16,r=o.r??.12,sd=o.seed||1,m=o.m||P.red,ns=b.hi?4:3,d=[c[0]-a[0],c[1]-a[1],c[2]-a[2]],L=Math.hypot(d[0],d[1],d[2])||1;
  let px=d[1]*nr[2]-d[2]*nr[1],py=d[2]*nr[0]-d[0]*nr[2],pz=d[0]*nr[1]-d[1]*nr[0];const pl=Math.hypot(px,py,pz)||1;px/=pl;py/=pl;pz/=pl;let prev=a;
- for(let k=1;k<=n;k++){const t=k/n,off=k<n?(hz(sd,k)-.5)*2*amp:0,q=[a[0]+d[0]*t+px*off,a[1]+d[1]*t+py*off,a[2]+d[2]*t+pz*off];b.tube(prev,q,r*(1-.5*(k-1)/n),m,{n:b.hi?5:3,r2:r*(1-.5*k/n),caps:k===n});prev=q;}return b;}
+ // the glowing strip rides on a bed of dark infected tissue half as wide again (red on an oxide-red hull had nothing to stand against)
+ const nl=Math.hypot(nr[0],nr[1],nr[2])||1,up=[nr[0]/nl,nr[1]/nl,nr[2]/nl],bed=o.bed===0?null:mix(P.strap,P.fleshD,1),lift=(p,k)=>[p[0]+up[0]*k,p[1]+up[1]*k,p[2]+up[2]*k];
+ for(let k=1;k<=n;k++){const t=k/n,off=k<n?(hz(sd,k)-.5)*2*amp:0,q=[a[0]+d[0]*t+px*off,a[1]+d[1]*t+py*off,a[2]+d[2]*t+pz*off],r0=r*(1-.45*(k-1)/n),r1=r*(1-.45*k/n);
+  if(bed)b.tube(prev,q,r0*1.5,bed,{n:ns,r2:r1*1.5,caps:k===n});b.tube(lift(prev,r0*.75),lift(q,r1*.75),r0,m,{n:ns,r2:r1,caps:k===n});
+  if(b.hi&&o.br!==0&&k<n&&(k===1||k===3)){const sg=hz(sd,k+20)<.5?-1:1,bl=L/n*(.5+.3*hz(sd,k+30)),u=.5/L,e=[q[0]+(d[0]*u+px*sg*.85)*bl,q[1]+(d[1]*u+py*sg*.85)*bl,q[2]+(d[2]*u+pz*sg*.85)*bl];if(bed)b.tube(q,e,r1*.95,bed,{n:3,r2:r1*.4,caps:true});b.tube(lift(q,r1*.6),lift(e,r1*.3),r1*.62,m,{n:3,r2:r1*.25,caps:true});}
+  prev=q;}return b;}
 // a knot of infected tissue where the growth breaks out of a seam: two soft dark red lumps (never a shell, a spike or a crystal)
 function knot(b,x,y,z,r,sd=1){if(!b.hi)return b;const a=hz(sd,1)*TAU;b.ball(x,y-r*.3,z,r*.85,mix(P.strap,P.flesh,1),true);b.ball(x+Math.cos(a)*r*.6,y-r*.2,z+Math.sin(a)*r*.6,r*.55,mix(P.strap,P.fleshL,1),true);return b;}
 // a looted crate (stolen supply paint by seed), strapped down
@@ -132,77 +145,99 @@ function girder(b,a,c,r,m){b.tube(a,c,r,m||P.rust,{n:4});if(b.hi){const up=r*.86
 function deadGlass(b,x,y,w,h,o={}){const ins=[x,y+h/2,-1],x0=x-w/2,x1=x+w/2;b.quad([x0,y,.01],[x1,y,.01],[x1,y+h,.01],[x0,y+h,.01],P.glassDead,ins);const gh=Math.min(h*.3,o.gh||.05);b.quad([x0,y,.02],[x1,y,.02],[x1,y+gh,.02],[x0,y+gh,.02],o.glow||P.red,ins);
  if(b.hi&&o.cracks!==0){const sd=o.seed||1;for(let k=0;k<(o.cracks||2);k++){const xa=x0+w*(.2+.6*hz(sd,k));b.tube([xa,y+gh,.03],[xa+(hz(sd,k+9)-.5)*w*.3,y+h*(.55+.4*hz(sd,k+5)),.03],.012+.008*hz(sd,k+3),P.redDim,{n:3,r2:.004});}}return b;}
 
+// ---- 5E-2d2 critic round 2: what every unit carries now ----
+// Red that survives shade and slopes ("in shade on a slope the pool is hidden and the units turn khaki"): a low glowing strip
+// along the hull's lower edge, on the unit itself (it leans outward, so the camera above sees it). pts = the run [x, y, z]
+// along the edge, h = its height, inside = a point it faces away from. Steady, never pulsing (the heart pulses).
+function skirt(b,pts,h,inside,o={}){const m=o.m||P.redDim,ln=o.lean??.05;for(let i=1;i<pts.length;i++){const p=pts[i-1],q=pts[i],mx=(p[0]+q[0])/2-inside[0],mz=(p[2]+q[2])/2-inside[2],l=Math.hypot(mx,mz)||1,ox=mx/l*ln,oz=mz/l*ln;
+  b.quad([p[0]+ox,p[1],p[2]+oz],[q[0]+ox,q[1],q[2]+oz],[q[0],q[1]+h,q[2]],[p[0],p[1]+h,p[2]],m,inside);}return b;}
+// a scorch patch: soot burnt onto the +z plane of the current frame (an uneven six-sided blot, r across)
+function scorch(b,x,y,r,sd=1,k=1){const R=[];for(let i=0;i<6;i++){const a=i/6*TAU+hz(sd,i)*.7,rr=r*(.55+.45*hz(sd,i+9));R.push([x+Math.cos(a)*rr,y+Math.sin(a)*rr*k,.012]);}return fan(b,R,P.soot,[x,y,-1]);}
+// the trophy: ONE small scorched panel of a conquered colony's flag bolted on (critic round 2: the big clean blue-and-white
+// stolen panels on the two biggest units read as human LDF machines; the conquered blue stays as a dirty, small trophy).
+// On the +z plane of the current frame, x, y = its lower centre.
+function trophy(b,x,y,w=.62,h=.44,sd=1){const ins=[x,y+h/2,-1],x0=x-w/2,x1=x+w/2,z=.03;b.quad([x0-.04,y-.04,.008],[x1+.04,y-.04,.008],[x1+.04,y+h+.04,.008],[x0-.04,y+h+.04,.008],P.soot,ins);
+ b.quad([x0,y,z],[x1,y,z],[x1,y+h,z],[x0,y+h,z],P.flagLDF,ins);b.quad([x0,y+h*.52,z+.004],[x1,y+h*.52,z+.004],[x1,y+h*.74,z+.004],[x0,y+h*.74,z+.004],P.flagLDF2,ins);
+ // burnt: soot eats one corner and a bite out of the top edge
+ b.at(0,0,z-.004,0,q=>{scorch(q,x1-w*.14,y+h*.2,w*.3,sd);scorch(q,x0+w*.3,y+h*.92,w*.2,sd+3);});
+ if(b.hi)b.detail(q=>{for(const [bx,by] of [[x0+.05,y+.05],[x1-.05,y+h-.05]])q.quad([bx-.03,by-.03,z+.014],[bx+.03,by-.03,z+.014],[bx+.03,by+.03,z+.014],[bx-.03,by+.03,z+.014],P.weld,ins);});return b;}
+
 // ------------------------------------------------------------------ par-raider: the Scavenger ---------------------------
-// 2.9 x 2.6 x 5.4. A scout hull stripped to its frame (bare roll cage, a fender torn off, exposed road wheels) under an engine
-// far too big for it: a blower and a gold scoop over the block, six stacks, louvred vents glowing red on both sides and a
-// grille across the stern. Loot under rope nets on rear panniers and a tail basket. Twin guns on a ring over the cab.
-const RAIDER_PIVOT=[0,1.44,.4];
-function raiderHull(b,o){const sd=o.seed|0,hi=b.hi,hull=P.ironL,dk=P.iron,st=pick(P.plateSet,sd),st2=pick(P.plateSet,sd+2);
+// 2.9 x 2.6 x 5.4. A scout hull stripped to its frame (bare roll cage, a fender torn off, exposed road wheels), low and long,
+// in front of an engine far too big for it. 5E-2d2 critic round 2 ("the oversized engine is invisible and two front stacks
+// read as claws"): the engine is a BLOCK ONE AND A HALF TIMES THE HULL'S HEIGHT at the rear now (its head 2.24 m against the
+// cab's 1.44), wider than the cab, so it stands behind the low hull from the front three-quarter as well as from behind; the
+// six swept stacks are gone (two short ones at the stern corners). The HEART is the engine: a glowing grille on its top
+// (facing up), one on its stern (facing back), one each side and a slot on its front face over the cab roof. Loot under
+// rope nets on rear panniers and a tail basket. Twin guns on a ring over the cab, their shield lower than the engine.
+const RAIDER_PIVOT=[0,1.44,.4],RE={z:-1.42,y0:1.02,y1:1.62,y2:2.24};   // RE: the engine (centre z, the deck, the shoulder where its head flares out over the panniers, its top)
+function raiderHull(b,o){const sd=o.seed|0,hi=b.hi,hull=P.hull,hl=P.hullL,dk=P.hullD,st=P.iron,eng=P.ironL,H=P.hullSet,R=K.rect,{z:EZ,y0:E0,y1:E1,y2:E2}=RE;
  const W=[[-1.55,.37,.34],[-.62,.37,.34],[.32,.37,.34],[1.22,.37,.34],[1.72,.6,.2],[-1.98,.57,.22]];
- for(const s of [-1,1])track(b,s,1.1,.56,-2.3,2.05,.9,{cf:.55,hf:.5,cr:.45,hr:.42,wheels:W,wt:.05,hub:s>0?P.gold:P.rust,wheel2:P.scrap,lowSkip:[4,5]});
- // the tub and the long low hull: a shallow glacis running to a blunt nose
+ for(const s of [-1,1])track(b,s,1.1,.56,-2.3,2.05,.9,{cf:.55,hf:.5,cr:.45,hr:.42,wheels:W,wt:.05,hub:s>0?P.goldD:P.rust,wheel2:P.scrap,lowSkip:[4,5]});
+ // the tub and the long low hull: a shallow glacis running to a blunt nose (oxide red-brown: lit glacis, shaded flanks)
  cb(b,0,.26,-.1,1.66,.4,4.2,P.ironD);
- xpr(b,[[-2.25,.5],[2.3,.45],[2.62,.62],[2.55,.8],[1.35,1.02],[-2.25,1.02]],-.86,.86,i=>i===0?null:i===3?tint(hull,1.1):i===2?tint(hull,1.3,.01):i===4?dk:hull,{cap:tint(hull,.8)});
- // the glacis: a pale LDF plate bolted on, the colony's band still on it; a hazard ram bar across the nose
- b.at(0,.84,1.98,0,q=>plate(q,sd%2?.12:-.1,-.5,1.3,.98,P.plateMil,{stripe:P.flagLDF,sy:.6,sh:.16,t:.05}),-1.39);
- if(hi){b.at(0,.5,2.61,0,q=>plate(q,0,0,1.9,.24,P.hazard,{haz:8,t:.07,bolts:0}));for(const s of [-1,1])b.tube([s*.6,.62,2.5],[s*.6,.62,2.63],.05,P.ironD,{n:4});}else cb(b,0,.5,2.6,1.9,.24,.1,P.hazard);
- // fenders: the right one whole (a settler's painted panel), the left front torn off; a looted panel hung on the right flank
- blk(b,1.1,.9,-.1,.62,.06,4.3,st,{ch:.03});blk(b,-1.1,.9,-1.2,.62,.06,2.1,P.scrap,{ch:.03});
- side(b,1,1.385,.42,.95,q=>plate(q,0,0,1.25,.46,st2,{t:.04}));if(hi)side(b,-1,1.385,.84,.2,q=>q.quad([0,0,0],[.5,0,0],[.42,.1,.02],[0,.06,0],P.rust,[0,0,-1]));
+ xpr(b,[[-2.25,.5],[2.3,.45],[2.62,.62],[2.55,.8],[1.35,1.02],[-2.25,1.02]],-.86,.86,i=>i===0?null:i===3?hl:i===2?tint(hl,1.12,.01):i===4?hull:dk,{cap:dk});
+ // the glacis: ONE pale plundered plate (the accent) and the trophy, a small scorched panel of a conquered colony's flag;
+ // the hazard ram bar across the nose is the Scavenger's one hazard element
+ b.at(0,.91,1.98,0,q=>{const e=sd%2?1:-1;plate(q,e*.34,-.44,.78,.8,pick(P.plateSet,sd),{t:.05});trophy(q,-e*.42,-.3,.56,.4,sd);if(hi)scorch(q,e*.5,.2,.3,sd+4);},-1.39);   // (.91: on the glacis; at .84 the old plate lay a centimetre under it and never showed)
+ if(hi){b.at(0,.5,2.61,0,q=>plate(q,0,0,1.9,.24,P.hazard,{haz:8,t:.07,bolts:0,joint:0,grime:0}));for(const s of [-1,1])b.tube([s*.6,.62,2.5],[s*.6,.62,2.63],.05,P.ironD,{n:4});}else cb(b,0,.5,2.6,1.9,.24,.1,P.hazard);
+ // fenders: the right one whole (a patch plate that never matched), the left front torn off; a patch plate on the right flank
+ blk(b,1.1,.9,-.1,.62,.06,4.3,pick(H,sd),{ch:.03});blk(b,-1.1,.9,-1.2,.62,.06,2.1,P.scrap,{ch:.03});
+ side(b,1,1.385,.42,.95,q=>plate(q,0,0,1.25,.46,pick(H,sd+2),{t:.04}));if(hi)side(b,-1,1.385,.84,.2,q=>q.quad([0,0,0],[.5,0,0],[.42,.1,.02],[0,.06,0],P.rust,[0,0,-1]));
  // the cab: a faceted pod, dead glass with the red glow behind it
- const R=K.rect;
- b.loft([{p:R(1.36,1.8,0,0,.5),y:1.02},{p:R(1.24,1.5,0,0,.42),y:1.3},{p:R(1.02,1.16,0,0,.38),y:1.44}],(r,i)=>r===1?tint(hull,1.25,.01):(i===1||i===3)?dk:hull,{topMat:P.ironD});
+ b.loft([{p:R(1.36,1.8,0,0,.5),y:1.02},{p:R(1.24,1.5,0,0,.42),y:1.3},{p:R(1.02,1.16,0,0,.38),y:1.44}],(r,i)=>r===1?hl:(i===1||i===3)?dk:hull,{topMat:P.ironD});
  b.at(0,1.045,1.385,0,q=>deadGlass(q,0,0,1.1,.24,{seed:sd+2,cracks:3}),-.26);
- if(hi){for(const s of [-1,1])b.at(s*.668,1.07,.5,s*HP,q=>deadGlass(q,0,0,1.0,.19,{seed:sd+s,cracks:1,gh:.035}),-.2*1);
-  vein(b,[.3,1.06,1.42],[.72,.86,2.2],[0,1,.2],{seed:sd+3,r:.035,n:4});vein(b,[-.5,1.06,1.42],[-.84,.94,1.75],[0,1,.2],{seed:sd+5,r:.03,n:3});vein(b,[-.2,1.3,1.2],[.1,1.45,.95],[0,.6,1],{seed:sd+6,r:.025,n:3,amp:.06});}
- // the bare roll cage
- for(const s of [-1,1]){const n=hi?5:3;b.tube([s*.82,1.02,1.62],[s*.74,1.56,.98],.045,dk,{n});b.tube([s*.74,1.56,.98],[s*.74,1.56,-.3],.045,dk,{n});if(hi){b.tube([s*.74,1.56,-.3],[s*.8,1.02,-.5],.045,dk,{n});b.tube([s*.74,1.56,.3],[s*.8,1.02,.3],.035,dk,{n:4});}}
- // ---- the oversized engine ----
- ab(b,0,1.02,-1.45,1.52,.78,1.72,dk,.09);
- // side vents and the stern grille: where the infection lives
- for(const s of [-1,1])side(b,s,.765,1.16,-1.45,q=>vent(q,0,0,1.26,.46,4,{low:1,frame:P.ironD}));
- stern(b,0,1.14,-2.315,q=>vent(q,0,0,1.16,.52,5,{low:1,frame:P.ironD}));
- // the blower and its scoop (gold: the Scavenger is proud of this engine)
- blk(b,0,1.8,-1.5,.94,.3,1.24,o.cmd?P.goldD:hull,{ch:.07});
- if(hi){for(const z of [-1.92,-1.5,-1.08])cb(b,0,1.8,z,1,.33,.09,P.gold);for(const s of [-1,1])for(const z of [-1.92,-1.5,-1.08])b.tube([s*.47,1.9,z+.14],[s*.62,1.74,z+.14],.05,P.rust,{n:4});}
- xpr(b,[[-1.3,2.1],[-.66,2.1],[-.5,2.16],[-.5,2.48],[-.72,2.52],[-1.3,2.3]],-.4,.4,i=>i===2?P.redHot:i===3||i===4?P.gold:P.goldD,{cap:P.goldD});
- if(hi)for(const x of [-.14,.14])cb(b,x,2.16,-.49,.05,.32,.04,P.ironD);
- // six stacks, three a side, swept up and back
- const pipe=tint(P.rust,1.15,.01);
- for(const s of [-1,1])for(let k=0;k<3;k++){const z=-.96-k*.42,m=k===1?P.gold:pipe;if(!hi&&k===1)continue;stack(b,[[s*.7,1.72,z],[s*.98,1.98,z-.08],[s*1.06,2.44-k*.05,z-.34]],.085,m);}
- // red growth breaking out of the engine seams
- if(hi){knot(b,.5,1.8,-.72,.13,sd);knot(b,-.62,1.8,-2.2,.12,sd+1);vein(b,[.5,1.82,-.74],[.3,1.04,-.1],[0,1,0],{seed:sd+9,n:5,r:.045});vein(b,[-.62,1.82,-2.2],[-.2,2.1,-1.6],[0,1,0],{seed:sd+11,n:4,r:.04});vein(b,[.78,1.62,-.75],[.9,.98,.1],[1,.3,0],{seed:sd+13,n:4,r:.035});vein(b,[-.78,1.64,-.8],[-.95,.96,-.2],[-1,.3,0],{seed:sd+14,n:3,r:.035});}
+ if(hi)for(const s of [-1,1])b.at(s*.668,1.07,.5,s*HP,q=>deadGlass(q,0,0,1.0,.19,{seed:sd+s,cracks:1,gh:.035}),-.2);
+ // the bare roll cage, run back into the engine
+ for(const s of [-1,1]){const n=hi?5:3;b.tube([s*.82,1.02,1.62],[s*.74,1.56,.98],.045,st,{n});b.tube([s*.74,1.56,.98],[s*.74,1.56,-.5],.045,st,{n});if(hi)b.tube([s*.74,1.56,.3],[s*.8,1.02,.3],.035,st,{n:4});}
+ // ---- the oversized engine: a block between the panniers, a head wider than the cab ----
+ ab(b,0,E0,EZ,1.56,E1-E0,1.72,st,.07);
+ b.loft([{p:R(1.6,1.76,.1,0,EZ),y:E1-.06},{p:R(2.14,1.86,.16,0,EZ),y:E1+.14},{p:R(2.14,1.86,.16,0,EZ),y:E2-.12},{p:R(1.9,1.62,.12,0,EZ),y:E2}],(r,i)=>r===0?P.ironD:r===2?tint(eng,1.25,.01):(i%2?tint(eng,.86):eng),{topMat:st});
+ // the HEART: the grille on the engine's top (up), on its stern (back), on both sides, and a slot on its front face
+ deck(b,0,E2+.006,EZ-.2,q=>vent(q,0,-.5,1.44,1.0,4,{low:1,heart:1,frame:P.ironD,f:.06}));
+ stern(b,0,E1+.14,EZ-.936,q=>vent(q,0,0,1.5,.44,3,{low:1,heart:1,frame:P.ironD}));
+ for(const s of [-1,1])side(b,s,1.076,E1+.16,EZ,q=>vent(q,0,0,1.3,.4,3,{low:1,frame:P.ironD}));
+ b.at(0,E1+.2,EZ+.936,0,q=>vent(q,0,0,1.5,.34,2,{low:1,heart:1,frame:P.ironD}));
+ // the intake scoop (gold: the Scavenger is proud of this engine), its throat red hot; two short stacks at the stern corners
+ xpr(b,[[-1.1,E2],[-.62,E2],[-.5,E2+.05],[-.5,E2+.28],[-.68,E2+.32],[-1.1,E2+.1]],-.36,.36,i=>i===2?P.redHot:i===3||i===4?P.gold:P.goldD,{cap:P.goldD});
+ if(hi)for(const x of [-.13,.13])cb(b,x,E2+.05,-.49,.05,.23,.04,P.ironD);
+ for(const s of [-1,1])stack(b,[[s*.74,E2-.3,-2.12],[s*.8,E2+.06,-2.26],[s*.83,E2+.2,-2.4]],.1,s>0?P.goldD:P.rust);
+ // the growth: roots out of the engine over the TOP faces (down the right fender, down the glacis, over the engine head)
+ vein(b,[.98,.98,-.5],[1.14,.98,1.7],[0,1,0],{seed:sd+9,n:4,low:1});vein(b,[-.3,1.06,1.44],[-.62,.87,2.36],[0,1,.2],{seed:sd+5,n:3,r:.11,low:1});
+ if(hi){knot(b,.62,E2+.02,-.95,.14,sd);vein(b,[.6,E2+.02,-1.0],[1.0,E2-.06,-.62],[0,1,0],{seed:sd+11,n:2,r:.1});vein(b,[-.74,E2+.02,-1.5],[-1.07,E1+.2,-1.0],[-1,.6,0],{seed:sd+13,n:3,r:.1});vein(b,[.3,1.46,.9],[.1,1.46,-.3],[0,1,0],{seed:sd+6,n:3,r:.08,amp:.1});}
+ // red that survives shade: a glowing strip along the lower edge of both flanks and under the nose
+ for(const s of [-1,1])skirt(b,[[s*1.4,.78,-2.2],[s*1.4,.78,1.9]],.14,[0,.8,0],{lean:.04});skirt(b,[[-.8,.3,2.5],[.8,.3,2.5]],.14,[0,.4,0]);
  // ---- loot: panniers on both rear fenders, a tail basket, all under rope nets ----
  for(const s of [-1,1]){const x=s*1.13;
-  if(hi){for(const z of [-2.12,-.72]){b.tube([x-.28,.96,z],[x-.28,1.5,z],.03,dk,{n:4});b.tube([x+.28,.96,z],[x+.28,1.42,z],.03,dk,{n:4});}b.tube([x+.28,1.42,-2.12],[x+.28,1.42,-.72],.03,dk,{n:4});b.tube([x+.28,1.2,-2.12],[x+.28,1.2,-.72],.025,dk,{n:4});}
-  crate(b,x,.96,-1.75,.5,.4,.56,s*.12,{m:s>0?P.crate:pick(P.plateSet,sd+1),mark:s>0?P.hazard:P.flagLDF2});sack(b,x,.96,-1.08,.25,.52,{lx:s*.05,lz:.06,rot:s});
-  if(hi){crate(b,x-.02,1.36,-1.78,.34,.24,.36,.5,{strap:0});net(b,x,.96,-1.42,.58,.74,1.36,4);}}
- if(hi){for(const s of [-1,1]){b.tube([s*.7,.62,-2.3],[s*.7,.62,-2.62],.035,dk,{n:4});b.tube([s*.7,.62,-2.62],[s*.7,1.06,-2.62],.035,dk,{n:4});}b.tube([-.7,1.06,-2.62],[.7,1.06,-2.62],.035,dk,{n:4});b.tube([-.7,.62,-2.62],[.7,.62,-2.62],.035,dk,{n:4});
-  crate(b,-.28,.62,-2.45,.62,.36,.28,0,{mark:P.gold});sack(b,.36,.62,-2.45,.17,.44,{rot:1});stern(b,.02,1.07,-2.645,q=>flag(q,0,0,.9,.56,sd%2?2:0,{tail:.3,sway:.03}));}
- else{cb(b,-.28,.62,-2.46,.62,.4,.34,P.crate);cb(b,.36,.62,-2.46,.4,.36,.34,P.sack);}
- // a whip aerial with a stolen pennant
- pole(b,[-.66,1.8,-2.22],[-.72,2.56,-2.34],.022,dk,0);b.at(-.7,2.5,-2.33,PI+.4,q=>{const m=pick(P.flagSet,sd+1);for(const z of [-9,9])q.tri([0,0,0],[.42,-.1,0],[0,-.22,0],m,[0,0,z]);});
+  if(hi){for(const z of [-2.12,-.72]){b.tube([x-.28,.96,z],[x-.28,1.5,z],.03,st,{n:4});b.tube([x+.28,.96,z],[x+.28,1.42,z],.03,st,{n:4});}b.tube([x+.28,1.42,-2.12],[x+.28,1.42,-.72],.03,st,{n:4});b.tube([x+.28,1.2,-2.12],[x+.28,1.2,-.72],.025,st,{n:4});}
+  crate(b,x,.96,-1.75,.5,.4,.56,s*.12,{m:s>0?P.crate:P.crateD,mark:s>0?P.gold:P.flagLDF2});sack(b,x,.96,-1.08,.25,.52,{lx:s*.05,lz:.06,rot:s,m:s>0?P.sackL:P.sack});
+  if(hi)net(b,x,.96,-1.42,.58,.66,1.36,4);}
+ if(hi){for(const s of [-1,1]){b.tube([s*.7,.62,-2.3],[s*.7,.62,-2.62],.035,st,{n:4});b.tube([s*.7,.62,-2.62],[s*.7,1.06,-2.62],.035,st,{n:4});}b.tube([-.7,1.06,-2.62],[.7,1.06,-2.62],.035,st,{n:4});b.tube([-.7,.62,-2.62],[.7,.62,-2.62],.035,st,{n:4});
+  crate(b,-.32,.62,-2.45,.56,.36,.28,0,{mark:P.gold});sack(b,.4,.62,-2.45,.17,.44,{rot:1,m:P.sackL});}
+ else{cb(b,-.32,.62,-2.46,.56,.4,.34,P.crate);cb(b,.4,.62,-2.46,.36,.36,.34,P.sackL);}
 }
 function raiderGun(b,o){const sd=o.seed|0,hi=b.hi,n=hi?10:6,D=doc(o);
  b.cyl(0,0,0,.44,.1,P.ironD,{n,topMat:P.iron});if(hi)b.cyl(0,.1,0,.36,.05,P.gold,{n});
- blk(b,0,.1,.02,.46,.3,.62,pick(P.plateSet,sd+3),{ch:.05});
- // the gun shield: two mismatched plates either side of the cradle
- for(const s of [-1,1])b.at(s*.4,.08,.36,s*.16,q=>D?plate(q,0,0,.42,.52,D.paint,{t:.05,edge:P.gold,stripe:P.gold,sy:.42,sh:.12,bolt:P.gold}):plate(q,0,0,.42,.52,s>0?P.plateMil:P.hazard,{haz:s>0?0:4,t:.05,stripe:s>0?P.flagLDF:null}));
+ blk(b,0,.1,.02,.46,.3,.62,P.hullD,{ch:.05});
+ // the gun shield: two mismatched plates either side of the cradle, lower than the engine behind them (critic round 2)
+ for(const s of [-1,1])b.at(s*.4,.08,.36,s*.16,q=>D?plate(q,0,0,.42,.44,D.paint,{t:.05,edge:P.gold,stripe:P.gold,sy:.42,sh:.12,bolt:P.gold,joint:.03,grime:0}):plate(q,0,0,.42,.44,s>0?pick(P.hullSet,sd+1):P.ironL,{t:.05,joint:.03}));
  for(const s of [-1,1]){const x=s*.19,y=.3;b.tube([x,y,.2],[x,y,1.0],.085,P.ironD,{n:hi?7:4});b.tube([x,y,1.0],[x,y,1.66],.052,P.ironL,{n:hi?6:4});b.tube([x,y,1.56],[x,y,1.74],.085,P.ironD,{n:hi?6:4,caps:true});
   if(hi){b.tube([x,y,1.0],[x,y,1.04],.1,P.gold,{n:7});b.tube([x,y,.2],[x,y,.24],.1,P.gold,{n:7});zdisc(b,x,y,1.745,.05,6,P.redLow);}}
  // ammo drums, a red-lit sight
- if(hi){for(const s of [-1,1])xwheel(b,s*.24,s*.44,.22,-.08,.17,8,P.scrap,P.gold);cb(b,0,.4,.1,.12,.1,.26,P.ironD);b.quad([-.05,.42,.235],[.05,.42,.235],[.05,.48,.235],[-.05,.48,.235],P.red,[0,.45,0]);vein(b,[.08,.4,-.2],[.2,.12,.3],[1,.5,0],{seed:sd+2,n:3,r:.022,amp:.05});}
+ if(hi){for(const s of [-1,1])xwheel(b,s*.24,s*.44,.22,-.08,.17,8,P.scrap,P.gold);cb(b,0,.4,.1,.12,.1,.26,P.ironD);b.quad([-.05,.42,.235],[.05,.42,.235],[.05,.48,.235],[-.05,.48,.235],P.red,[0,.45,0]);}
 }
-function raiderTown(b,o){const sd=o.seed|0;
+// the town raider (one piece, at most the 162 triangles it had): the same oxide hull, the tall engine whose whole top glows
+// (the town raid is watched from above), the pale glacis plate, the red strip along both flanks
+function raiderTown(b,o){const {z:EZ,y2:E2}=RE;
  for(const s of [-1,1])track(b,s,1.1,.56,-2.3,2.05,.9,{cf:.55,hf:.5,cr:.45,hr:.42,lod:0});
- xpr(b,[[-2.25,.5],[2.3,.45],[2.62,.7],[1.35,1.02],[-2.25,1.02]],-.86,.86,i=>i===0?null:P.ironL,{cap:tint(P.ironL,.8)});
- b.quad([-.6,.72,2.56],[.6,.72,2.56],[.6,.99,1.5],[-.6,.99,1.5],P.plateMil,[0,-2,0]);
- b.loft([{p:K.rect(1.3,1.7,0,0,.5),y:1.02},{p:K.rect(1.02,1.16,0,0,.38),y:1.44}],(r,i)=>i===2?P.glassDead:P.ironL,{topMat:P.ironD});b.quad([-.6,1.03,1.365],[.6,1.03,1.365],[.56,1.2,1.21],[-.56,1.2,1.21],P.red,[0,1,0]);
- cb(b,0,1.02,-1.45,1.52,.78,1.72,P.iron);for(const s of [-1,1])b.quad([s*.77,1.18,-2.05],[s*.77,1.18,-.85],[s*.77,1.6,-.85],[s*.77,1.6,-2.05],P.red,[0,1.4,-1.45]);
- b.quad([-.58,1.16,-2.32],[.58,1.16,-2.32],[.58,1.64,-2.32],[-.58,1.64,-2.32],P.red,[0,1.4,-1.45]);
- cb(b,0,1.8,-1.4,.9,.62,1.2,P.goldD,{top:P.gold});
- for(const s of [-1,1]){b.tube([s*.72,1.7,-1.3],[s*1.05,2.44,-1.75],.11,P.rust,{n:3});cb(b,s*1.13,.94,-1.4,.56,.5,1.3,s>0?P.crate:P.sack);b.tube([s*.19,1.74,.5],[s*.19,1.74,2.1],.08,P.ironD,{n:3});}
- cb(b,0,1.44,.42,.7,.4,.6,pick(P.plateSet,sd+3));cb(b,0,.62,-2.5,1.3,.4,.34,P.crate);
+ xpr(b,[[-2.25,.5],[2.3,.45],[2.62,.7],[1.35,1.02],[-2.25,1.02]],-.86,.86,i=>i===0?null:i===2?P.hullL:P.hull,{cap:P.hullD});
+ b.quad([-.2,.76,2.42],[.62,.76,2.42],[.62,.985,1.56],[-.2,.985,1.56],P.plateMil,[0,-2,0]);
+ b.loft([{p:K.rect(1.3,1.7,0,0,.5),y:1.02},{p:K.rect(1.02,1.16,0,0,.38),y:1.44}],(r,i)=>i===2?P.glassDead:P.hull,{topMat:P.ironD});b.quad([-.6,1.03,1.365],[.6,1.03,1.365],[.56,1.2,1.21],[-.56,1.2,1.21],P.red,[0,1,0]);
+ cb(b,0,1.02,EZ,2.0,E2-1.02,1.8,P.ironL,{top:P.red});
+ for(const s of [-1,1]){b.quad([s*1.005,1.6,-2.1],[s*1.005,1.6,-.8],[s*1.005,2.06,-.8],[s*1.005,2.06,-2.1],P.red,[0,1.8,EZ]);b.quad([s*1.44,.72,-2.2],[s*1.44,.72,1.9],[s*1.4,.9,1.9],[s*1.4,.9,-2.2],P.redDim,[0,.8,0]);
+  cb(b,s*1.13,.94,-1.4,.56,.5,1.3,s>0?P.crate:P.sackL);b.tube([s*.19,1.74,.5],[s*.19,1.74,2.1],.08,P.ironD,{n:3});}
+ b.quad([-.8,1.5,-2.325],[.8,1.5,-2.325],[.8,2.06,-2.325],[-.8,2.06,-2.325],P.red,[0,1.8,EZ]);b.quad([-.8,1.72,-.515],[.8,1.72,-.515],[.8,2.1,-.515],[-.8,2.1,-.515],P.red,[0,1.8,EZ]);
+ cb(b,0,E2,-.84,.72,.32,.6,P.goldD,{top:P.gold});cb(b,0,1.44,.42,.7,.4,.6,P.hullD);cb(b,0,.62,-2.5,1.3,.4,.34,P.crate);
 }
 
 // ------------------------------------------------------------------ par-breacher: the Siphon ----------------------------
@@ -658,8 +693,8 @@ function general(b,o,g){const D=doc(o);if(!D)return;const hi=b.hi,s=g.s,[px,py,p
   if(hi)for(const k of [-1,0,1])b.quad([e*x-w*.3,y+.124,z+k*d*.26-.05],[e*x,y+.124,z+k*d*.26+.07],[e*x,y+.124,z+k*d*.26+.15],[e*x-w*.3,y+.124,z+k*d*.26+.03],P.gold,[0,0,0]).quad([e*x+w*.3,y+.124,z+k*d*.26-.05],[e*x,y+.124,z+k*d*.26+.07],[e*x,y+.124,z+k*d*.26+.15],[e*x+w*.3,y+.124,z+k*d*.26+.03],P.gold,[0,0,0]);}
  if(g.gold)g.gold(b,hi,D);
 }
-const RAIDER_CMD={pole:[0,1.8,-2.1],top:4.52,s:1,rails:[[1.4,.9,-2.2,1.95]],pads:[[1.1,.93,1.4,.62,1.1]],
-  gold(b,hi){for(const s of [-1,1])trim(b,[s*.84,1.03,-.55],[s*.84,1.03,1.55],.035);if(hi)b.loft([{p:K.rect(1.6,1.8,.1,0,-1.45),y:1.74},{p:K.rect(1.6,1.8,.1,0,-1.45),y:1.82}],P.gold,{top:false});}},
+const RAIDER_CMD={pole:[.06,.62,-2.47],top:4.52,s:1,rails:[[1.4,.94,-2.2,1.95]],pads:[[1.1,.93,1.4,.62,1.1]],   // (5E-2d2 critic round 2: the standard stands in the tail basket, behind the tall engine)
+  gold(b,hi){for(const s of [-1,1])trim(b,[s*.84,1.03,-.5],[s*.84,1.03,1.55],.035);if(hi)b.loft([{p:K.rect(2.18,1.9,.17,0,RE.z),y:RE.y2-.2},{p:K.rect(2.18,1.9,.17,0,RE.z),y:RE.y2-.12}],P.gold,{top:false});}},
  SENTINEL_CMD={pole:[0,2.0,-2.5],top:7.05,s:1.4,rails:[[2.27,1.75,-2.72,2.62]],pads:[[1.83,1.75,2.12,.96,1.05]],
   gold(b,hi){for(const s of [-1,1])trim(b,[s*1.36,2.02,-2.3],[s*1.36,2.02,1.9],.045);if(hi)for(const s of [-1,1])b.gem(s*2.06,1.86,2.68,.09,.16,.09,P.gold);}},
  COMMAND_CMD={pole:[0,6.0,-1.15],top:8.34,s:1.3,rails:[[2.18,3.32,-2.66,.46],[2.26,1.65,.5,2.5]],pads:[[1.78,1.65,2.24,.96,.72]],
