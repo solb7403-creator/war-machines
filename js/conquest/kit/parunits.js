@@ -318,9 +318,9 @@ function sentinelGun(b,o){const sd=o.seed|0,hi=b.hi,R=K.rect,S=P.plateSet,tm=tin
  if(hi){b.tube([0,y,3.5],[0,y,3.7],.355,P.hazard,{n:nb});for(const s of [-1,1])b.tube([s*.5,y,4.2],[s*.5,y,4.36],.09,P.weld,{n:5,caps:true});b.tube([.82,1.86,ZF+.3],[.82,1.86,ZF+.9],.09,P.iron,{n:5,caps:true});}
  // the roof: a cupola (dead glass, a dim red behind it), and the hoard that breaks the top line
  b.cyl(-1.5,RY,.55,.5,.14,P.ironD,{n:8,top:false});b.cyl(-1.5,RY+.14,.55,.46,.2,P.glassDead,{n:8,top:false,flat:true});b.cyl(-1.5,RY+.13,.55,.475,.05,P.redDim,{n:8,top:false});b.cyl(-1.5,RY+.34,.55,.54,.1,P.gold,{n:8,topMat:P.goldD});
- crate(b,.8,RY,-.85,1.7,.78,1.4,.12,{mark:P.flagLDF});crate(b,.95,RY+.78,-.9,1.0,.48,.86,-.3,{lid:P.gold,strap:P.gold,m:pick(S,sd+1)});
+ crate(b,.8,RY,-.85,1.7,.78,1.4,.12,{mark:P.flagLDF});crate(b,.95,RY+.78,-.9,1.0,.44,.86,-.3,{lid:P.gold,strap:P.gold,m:pick(S,sd+1)});
  sack(b,-.55,RY,-1.15,.46,.82,{rot:.6,lx:.06});crate(b,1.55,RY,.8,.86,.56,.8,-.15,{m:pick(S,sd+4),mark:P.hazard});
- if(hi){sack(b,.3,RY,.55,.34,.6,{rot:2,lx:.05});net(b,.8,RY,-.85,1.8,1.3,1.5,4,{r:.03});b.cyl(-.2,RY,-.2,.26,.62,P.hazard,{n:8,topMat:P.ironD});}
+ if(hi){sack(b,.3,RY,.55,.34,.6,{rot:2,lx:.05});net(b,.8,RY,-.85,1.8,1.26,1.5,4,{r:.03});   /* the hoard's top stays inside the slot box (6 m): the net is 1.26 high over a .44 crate (it stood 4 cm proud) */b.cyl(-.2,RY,-.2,.26,.62,P.hazard,{n:8,topMat:P.ironD});}
  // a banner taken from a conquered colony on a tall pole at the rear corner (a general flies the standard there instead)
  if(!D){pole(b,[-2.1,RY,-1.5],[-2.1,3.92,-1.5],.05,P.ironD,0);b.tube([-2.1,3.86,-1.5],[-.9,3.86,-1.5],.035,P.gold,{n:4});b.at(-1.5,3.84,-1.5,0,q=>flag(q,0,0,1.16,1.08,sd%2?0:1+sd%4,{ph:1,sway:.06}));}
  // the growth: three thick roots out of the cheek vent (over the roof, down the cheek, along the flank)
