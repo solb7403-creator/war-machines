@@ -1655,7 +1655,7 @@ const rsTreeCost=()=>RTREE.order.reduce((a,t)=>(a[RTREE.tracks[t].part]=RTREE.co
 // the website GRAM and SOL. Ownership is server-verified: only ecoGrant, after a verified payment, writes S.bpt (bonus parts) / S.lsm
 // (Legendary set mods) / S.rsx (finish credits), and the client can never sync them (ECO_KEYS). Nothing here gives points (owner:
 // research, mods and purchases give no airdrop points).
-const LAB_STORE_OPEN=false;
+const LAB_STORE_OPEN=true;
 const RS_STARS_USD=77,RS_TON_USD=1.25;
 // instant finish, priced by the time left: concave like the genre's skip prices (Clash of Clans: 1 h ~20 gems, 1 day ~260): the
 // longer the skip, the cheaper each hour. $0.22 x hours^0.85 (5-minute steps, $0.10 at least): 20 min 8 Stars, 2 h 31, 8 h 100.
@@ -1711,8 +1711,8 @@ function ecoAddParts(S,n){S.bpt=S.bpt&&typeof S.bpt==='object'?S.bpt:{};const o=
 // GRAM rate (the Worker's quote: no rate, no SOL quote). Guardrails (owner): nothing sold gives airdrop points; never sold: anything
 // in the loot tables, points, Gambits, consumables on their own, trophies, boards; research, mods and wall-only rare ore only as the
 // brief says. DAILY_CAP and CQ_PTS are untouched by every purchase.
-const CRYPTO_OPEN=false;   // GRAM (website and Telegram, the GRAM switch) and SOL (website) checkout on the Worker (/api/order); js/core.js CRYPTO_PAY mirrors it
-const CQ_STORE_OPEN=false;   // the Conquest store: ConquestPlot.STORE, the catalog's cosmetics, the mineral and wall-only ore crates, construction speed-ups
+const CRYPTO_OPEN=true;   // GRAM (website and Telegram, the GRAM switch) and SOL (website) checkout on the Worker (/api/order); js/core.js CRYPTO_PAY mirrors it
+const CQ_STORE_OPEN=true;   // the Conquest store: ConquestPlot.STORE, the catalog's cosmetics, the mineral and wall-only ore crates, construction speed-ups
 function usdPrice(usd){const c=Math.round((Number(usd)||0)*100);if(!(c>0))return null;return {usd:c/100,stars:Math.floor((c*RS_STARS_USD+99)/100),ton:Math.round(c*RS_TON_USD)/100};}   // integer cents: no float drift
 const SHOP=Object.freeze({
  rate:Object.freeze({stars:RS_STARS_USD,gram:RS_TON_USD}),

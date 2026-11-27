@@ -10,7 +10,7 @@ const WEB_EDITION=!!window.LUNAR_WEB_EDITION;
 const IN_WEB=WEB_EDITION&&!!window.LUNAR_WEB?.user;
 // TON and SOL checkout stay off until they pass test-network certification (docs/launch); Stars only in Telegram.
 // The server still verifies any crypto payment already sent, so nothing in flight is lost.
-const CRYPTO_PAY=false;
+const CRYPTO_PAY=true;
 const ACCOUNT_OK=IN_TG||IN_WEB;
 const TG_USER=IN_TG?TG.initDataUnsafe.user:IN_WEB?window.LUNAR_WEB.user:null;
 const DEV_IDS=[]; // Telegram numeric user IDs allowed to use the dev panel inside Telegram
