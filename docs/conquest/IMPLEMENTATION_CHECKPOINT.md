@@ -8378,8 +8378,52 @@ If your context was cleared, read docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.
   the page), one check in flight at a time; the test asserts the status request goes out at once. Also: the store's buy buttons are 44 px
   tall (were 36), the GRAM sheet shows the dollar figure at the live rate (as SOL did), pay.html says "ANOTHER SOLANA WALLET?" (it said
   "KEEPER", a TON wallet, on the SOL page).
-- **Next:** finish slice 9 (the python browser suite), then commit with the switches ON; slice 10 (captures into
-  `docs/conquest/session8/captures/`), slice 11 (three reviewers, worktrees at that commit), slice 12 (release).
+- **Slice 9 results (switches ON):** every CI node test PASS (163 in one parallel run; `conquest-fortress.mjs` alone: 17 PASS in
+  945 s, its first try only hit the local runner's 25-minute cap under load, CI allows 60); `store-browser.cjs` 159 PASS (both
+  surfaces, five sizes); `store-looks.py` (the Gilded walls, Neon turrets and Aurora light visibly change 2.6% / 1.3% of the town
+  picture; a whole-screen mean was the wrong measure for a change confined to the walls and turrets). The switches are ON from commit
+  `8e8d0fb` (every certification check passed). The 32 CI python browser commands are running (chromium); CI runs the other engines.
+- **Slice 10 (captures):** `docs/conquest/session8/captures/` (WebP, index.json): the store, checkout and receipts on the website and
+  in Telegram at 390x844, 390x700, 320x568 (touch) and 1366x768, 1920x1080 (keyboard and mouse), the terms sheet, the "Protect your
+  purchases" prompt, the GRAM switch off in Telegram, and the town plain vs with the three looks.
+- **Slice 11 (reviews, round 1):** three fresh read-only reviewers started at `8e8d0fb` (1: payments and exactly-once; 2: owner rules,
+  guardrails and prices; 3: payout and airdrop integrity).
+- **Python browser suite (chromium, switches ON):** 27 of 34 PASS incl. `store-looks.py` and `store-browser.cjs` (160); 4 could not
+  start (Playwright 1.55 wants its own headless-shell build: a local symlink to the preinstalled one was added, retry pending:
+  conquest-earned-browser, conquest-earned-end-to-end, both conquest-flagship-browser runs); `conquest-war-browser.py` FAILED once
+  ("the last card was not reached" on the War Map alerts: re-run alone pending).
+- **Review round 1, reviewer 2 (owner rules / prices): FAIL.** Blockers: (1) the paid Second builder is unusable in the town screens
+  (every start-a-job control reads only `p.job`: plotview.js UPGRADE / CONFIRM BUILD / REPAIR ALL, app.js MAP CC upgrade); (2) the
+  extra layout slots (store + pass) never show (plotview uses `P.LAYOUT.slots`, never `P.layoutSlots(p)`); (3) a late GRAM / SOL
+  payment is credited zero times if the phone stops checking (it checks only open, unexpired orders; nothing else looks). Majors: (4)
+  the War Map ignores the pass's Fortify perks (warmap.js `pass=false`: blocks the second fortification, shows 100% prices); (5) bought
+  wall-only ore is invisible in the wall tools, which offer a one-way MOVE of earned ore it does not need ("rare ores are earn-only"
+  text); (6) shop-table.mjs, conquest-store.mjs and wtest/payments.mjs are in no CI workflow. Minors: BUY shown for things the server
+  refuses (wall pack vs earned extensions, earned collection pieces), the pass card lists none of its Conquest perks, notices
+  'pass-repair' / 'plot-finished' have no text, the 5-pack literal outside the table, the not-on-sale list wording (plain liveries:
+  no owner-approved price; gate ornaments, banner sets, more lightings / skins, animated liveries not built), Telegram invoice titles
+  cut mid-word at 32, stale comments.
+- **Reviewer 1 (payments): FAIL.** Blocker: a GRAM / SOL payment after Cancel or after the quote expired while away is never credited
+  nor recorded (= reviewer 2's (3)). Majors: a DB write failure after the grant CAS loses the receipt / order state / sales record for
+  good (a replay is a dup and skips them; db writes return false, never throw); quote reuse compares reservation keys only (a crate
+  request can get an open chosen-item quote back); SOL unique-amount claims (`solAmt/`) are never released (999 per 0.001-SOL bucket,
+  then 503 for everyone). Minors: two devices racing a quote (the second unreserved, then held); a Stars invoice superseded after its
+  pre-checkout passed; SOL quotes use a rate up to 15 min old while the feed is down; SOL amounts truncated to 0.001 SOL (cheap items
+  mispriced); a forged unowned chassis reset is quoted and 'paid' with nothing granted; a deal dropped from a price stays in the stored
+  descriptor (the pre-checkout then refuses); refunds of held payments count toward the anti-abuse flag and stay listed as held; a
+  second chain payment of a paid quote is never recorded; lookups scan only the newest few signatures / transactions.
+- **Reviewer 3 (payout / airdrop): FAIL.** Blocker: a PAID crate (any rail; the Starter / Founder packs; the premium pass's crate
+  tiers) that rolls a duplicate pays airdrop points (DUP_PTS via ecoAward) and a day played, streak and the referral base (pre-existing
+  code, live now). Major: a payment source shared by several pilots (exchange / custodial wallets) auto-links them as a farm cluster
+  and flags all but one. Minors: Town Score / defense boards count bought wall quality (an owner decision: indirect gain, report it);
+  a Stars refund delivered twice can lower the revenue counter twice; the admin revenue view reads 300 payments by key, not by time.
+- **Fix plan (all blockers and majors; the minors listed):** the town UI reads `P.freeSlot` / `P.layoutSlots`; a cron sweep of
+  recent chain orders (index `chainq/`) credits late payments, holds second payments, releases SOL amount claims; Cancel / Purchases
+  copy; paid duplicates pay no points (a non-points consolation); payment sources recorded, never auto-linked; post-CAS writes redone
+  on a replay and checked; quote reuse only for the same goods; SOL: fresh rate or 'pending', 10-lamport tails; respec ownership;
+  the deal dropped from the stored descriptor; held refunds kept off the flag; the War Map pass perks; wall-only ore in the wall tools;
+  the three certification tests in CI; UI honesty (BUY vs refused), pass card perks, notices, invoice titles, stale text. Round 2 after.
+- **Next:** the fixes above, round 2, then slice 12 (release).
 
 ### What was read (slice 1-2)
 CLAUDE.md, AGENTS.md, ROADMAP row 8 + Standing owner decisions, DECISIONS 12, CONQUEST_1_0_SPEC §9-10, RESOURCE_ECONOMY §7.5,
