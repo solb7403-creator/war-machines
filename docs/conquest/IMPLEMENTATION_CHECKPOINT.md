@@ -8454,7 +8454,15 @@ If your context was cleared, read docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.
 - **Round-2 fix plan:** settled index entries marked done and skipped without reads; GRAM costs charged as spent (a settled transaction
   = one claimOnce); SOL by a rotating cursor; prune last; budget 30; tests at the production budget with traffic; revenue once per
   payment (`claimOnce revd/`); the quote write checked (release + 503); the rest of the minors.
-- **Next:** the round-2 fixes, the node + browser suites, then slice 12 (release). No round 3 unless something is clearly broken.
+- **Round 2 fixed (commit `e6b95bb`; wtest/payments 112, shop-table 35, farm 55, owner-rules 58):** the sweep has its own cron run
+  ("3-58/5", budget 40 of the 50 a run), settled quotes are marked done and cost one claim check, a GRAM cursor, SOL quotes in turn
+  (oldest first, rotating), pruning last; tested at the production budget behind 20 ordinary payments and behind newer unpaid SOL quotes;
+  revenue once per payment (`revd/`); the quote's write checked (released + 503); a replay finishes a lost sales record; a Stars invoice
+  being paid (pre-checkout under 60 s ago) is never replaced; the older of two payments of one quote is held; the crate texts; the
+  admin's shared-paying-address review list (spec and admin text updated); REPAIR ALL; earned-unclaimed pieces; source guards for the
+  town screens. A narrow confirmation of the clearly broken item (the sweep) was asked of the three reviewers (the brief's third look).
+- **Next:** the reviewers' confirmations, the affected browser tests, then slice 12 (release: merge main if it moved, dev/bump.sh, the
+  draft PR, ready + auto-release, verify the deploy and Pages, ROADMAP row 8, the release record, the final report).
 
 ### What was read (slice 1-2)
 CLAUDE.md, AGENTS.md, ROADMAP row 8 + Standing owner decisions, DECISIONS 12, CONQUEST_1_0_SPEC §9-10, RESOURCE_ECONOMY §7.5,
