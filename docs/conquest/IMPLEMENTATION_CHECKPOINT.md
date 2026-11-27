@@ -8423,7 +8423,38 @@ If your context was cleared, read docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.
   on a replay and checked; quote reuse only for the same goods; SOL: fresh rate or 'pending', 10-lamport tails; respec ownership;
   the deal dropped from the stored descriptor; held refunds kept off the flag; the War Map pass perks; wall-only ore in the wall tools;
   the three certification tests in CI; UI honesty (BUY vs refused), pass card perks, notices, invoice titles, stale text. Round 2 after.
-- **Next:** the fixes above, round 2, then slice 12 (release).
+- **Round 1 fixed (commit `f1cbeca`; wtest/payments 110, shop-table 31, farm 55):** every blocker and major above, and the minors
+  listed in the plan. Decisions taken with them (reasons):
+  18. **A paid crate's duplicate becomes a gem cache of its rarity** (bought crates in any currency, the Starter and Founder packs, the
+      premium pass track's crate tiers), never DUP_PTS points, a day played or a streak day: the owner's guardrail "paid items never
+      grant airdrop points directly" (the code predates Session 8 but was live for Stars and now for every rail). Same shop price as
+      the crate, so the payer loses no value; a crate bought with earned points still refunds its DUP_PTS (points in, points out). The
+      wiki says so.
+  19. **A paying GRAM / SOL address no longer links accounts by itself** (it is kept under `wal/` for the owner's review): an exchange
+      or custodial wallet pays for unrelated pilots and the farm rule flagged all but one off the board and the airdrop snapshot; paying
+      earns no points, so the signal protected little. `wtest/farm.mjs`'s wallet assertion now states this rule. The owner may reverse it.
+  20. **The late-payment sweep** runs in the existing 5-minute cron within about 20 outside calls (the Free plan's 50 a run are shared
+      with the leaderboard), a GRAM history cursor so each run only reads new transactions; SOL quotes are looked up by reference,
+      newest first. Not swept: a second SOL payment of a paid quote (rare; Solana Pay sends once).
+  21. **SOL amounts:** a 0.00001-SOL base with a unique 10-lamport tail (was 0.001 SOL + 1,000 lamports: a $0.10 finish was off by up to
+      45%); claims freed on payment, 2 h after an unpaid quote's expiry and after 7 days; the exact-amount fallback only inside the quote's
+      window + 2 h; SOL quotes need rates read in the last 2 minutes (fail closed while the feed is down).
+  22. **Not changed (reported):** a Stars invoice superseded after its pre-checkout passed still lands held (refundable); the Town Score
+      and defense boards count bought wall quality (an owner decision: indirect gain, as the brief allows "through power or base level").
+- **Review round 2 at `f1cbeca`:** reviewer 3 PASS (two majors), reviewers 1 and 2 FAIL on one blocker: **the sweep starves at the
+  production budget** (20 calls: every memo-matching GRAM transaction charged 8 even when already settled, so about one a run; SOL
+  newest-first so older unpaid quotes are never reached; prune first on the same budget; the tests used budget 400). Majors: two
+  attempts of one payment can both add the revenue (`revAdd`) on the replay path; the quote's own order write is unchecked (a 503 there
+  loses the payment); the crate sheet still says a duplicate pays points (ui.js); the farm-rule change needs the admin / spec text and
+  a review tool for shared paying addresses (an owner decision in the report). Minors: the replay redo checks only the order record
+  (also the sales record); the 7-day prune may delete a re-claimed SOL amount; ERR_TXT has `busy` twice; a Stars invoice superseded
+  after its pre-checkout (guard with o.pc); REPAIR ALL enabled while a repair runs on the other builder; no screen test for the
+  round-1 UI fixes; earnedCos misses eligible-unclaimed pieces; the wiki pass section and §9.2 miss the Fortify perks; "a Epic";
+  a quote paid twice before any check loses the older payment; the 6b swap checks are weak.
+- **Round-2 fix plan:** settled index entries marked done and skipped without reads; GRAM costs charged as spent (a settled transaction
+  = one claimOnce); SOL by a rotating cursor; prune last; budget 30; tests at the production budget with traffic; revenue once per
+  payment (`claimOnce revd/`); the quote write checked (release + 503); the rest of the minors.
+- **Next:** the round-2 fixes, the node + browser suites, then slice 12 (release). No round 3 unless something is clearly broken.
 
 ### What was read (slice 1-2)
 CLAUDE.md, AGENTS.md, ROADMAP row 8 + Standing owner decisions, DECISIONS 12, CONQUEST_1_0_SPEC §9-10, RESOURCE_ECONOMY §7.5,

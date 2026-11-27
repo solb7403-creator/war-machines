@@ -1721,7 +1721,7 @@ const SHOP=Object.freeze({
  rate:Object.freeze({stars:RS_STARS_USD,gram:RS_TON_USD}),
  // the Conquest town store (ConquestPlot.STORE shows these rows): capacity, convenience, cosmetics and time; never points
  cq:Object.freeze({
-  'wall-ext-10':Object.freeze({n:'Wall extension pack',d:'+10% wall capacity at your level (capacity only: strength still comes from composite and ore)',usd:2.99,step:10,limit:'up to +50% in all: the extensions you earn later count toward the same cap, so a pack brings capacity forward'}),
+  'wall-ext-10':Object.freeze({n:'Wall extension pack',d:'+10% wall capacity at your level (capacity only: strength still comes from composite and ore)',usd:2.99,step:10,limit:'up to +50% in all: the extensions you earn later fill the same cap, so a pack gives the capacity sooner'}),
   'skin-gilded':Object.freeze({n:'Gilded wall skin',d:'a gold finish on every wall (looks only: stats unchanged)',usd:4.99,once:1}),
   'skin-turret-neon':Object.freeze({n:'Neon turret skins',d:'a neon finish on all eleven turret types (looks only)',usd:4.99,once:1}),
   'foundry-rush':Object.freeze({n:'Foundry speed-up',d:'your Foundry turns loaded alloy into composite 4x faster for 24 h',usd:1.99,ms:86400000,x:4,limit:'each one adds 24 h'}),
