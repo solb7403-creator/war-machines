@@ -769,7 +769,7 @@ the same as Moonbeam today.
 | Base cosmetics (`js/conquest/catalog.js`, 20 pieces) | yes, at their proposedUsd ($2.99-$29.99) | looks only; also earned by play | hitboxes and readability unchanged |
 | Plate finishes (cosmetic) | NOT on sale: not built (row 6B-V) | | |
 | Raid shields | NOT on sale: only once PvP base raids exist | | |
-| Lunar Pass Conquest perks | yes, inside the existing pass (799 Stars / 13 GRAM): RECALL in 5 minutes, scanner +50 m, two more layout slots, one Repair Kit a UTC day (up to the consumables' cap) | the plate finish waits for row 6B-V | never points, never minerals |
+| Lunar Pass Conquest perks | yes, inside the existing pass (799 Stars / 13 GRAM): RECALL in 5 minutes, scanner +50 m, two more layout slots, one Repair Kit a UTC day (up to the consumables' cap), a second Fortify slot, Fortify 20% cheaper and faster | the plate finish waits for row 6B-V | never points, never minerals |
 | Battalion store (chip pack, liveries, RECRUIT finish) | NOT on sale (not in the Nov 26 sale list) | | |
 
 ### 9.3 Science Lab store (owner, Nov 26: OPEN)

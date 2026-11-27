@@ -314,7 +314,9 @@ async function admin(env, user, b = {}) {
   const [clu, conf, lkok] = await Promise.all([dbGet(env, "clu").catch(() => null), dbGet(env, "cfg/proof").catch(() => null), dbGet(env, "lkok").catch(() => null)]);
   const clusters = (Array.isArray(clu) ? clu : Object.values(clu || {})).filter(Boolean).slice(0, 40).map((c) => Object.assign({}, c, { ok: !!(lkok && lkok[c.sig]) }));   // a cluster cleared a moment ago shows as cleared
   const heldPays = (await dbGet(env, "held", { orderBy: '"$key"', limitToLast: 40 }).catch(() => null)) || {};
-  const body0 = { gramTg: await gramInTelegram(env, true), held: Object.entries(heldPays).map(([id, h]) => ({ id, ...h })).sort((x, y) => (y.t || 0) - (x.t || 0)).slice(0, 40), flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters, funnel: await funnelDays(env, 7).catch(() => []), conquest: await analyticsDays(env, 7).catch(() => null) };
+  // Session 8: paying addresses that paid for several accounts (worker/src/shop.js wal/): a review hint only, never an automatic link
+  const walAll = (await dbGet(env, "wal").catch(() => null)) || {}, sharedPay = Object.entries(walAll).map(([h, m]) => ({ h, pids: Object.keys(m || {}).filter((k) => k !== "nx").slice(0, 12) })).filter((x) => x.pids.length >= 2).slice(0, 20);
+  const body0 = { sharedPay, gramTg: await gramInTelegram(env, true), held: Object.entries(heldPays).map(([id, h]) => ({ id, ...h })).sort((x, y) => (y.t || 0) - (x.t || 0)).slice(0, 40), flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters, funnel: await funnelDays(env, 7).catch(() => []), conquest: await analyticsDays(env, 7).catch(() => null) };
   // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
@@ -633,9 +635,9 @@ export default {
       // two schedules, each its own run with its own budget of outside calls (50 on the Workers Free plan):
       // every minute 15:00-18:59 UTC, reminders only; every 5 minutes, the board and the farm check
       if (event && event.cron === "* 15-18 * * *") { await sendReminders(env).catch((e) => console.log("ntf", e && e.message)); return; }
+      if (event && event.cron === "3-58/5 * * * *") { await chainSweep(env).catch((e) => console.log("sweep", e && e.message)); return; }   // Session 8: late and second GRAM / SOL payments (worker/src/shop.js), its own run and budget
       if (event && event.cron === "1-56/5 * * * *") { await sendWarAlerts(env, Date.now(), { tg: (m, b) => tg(env, m, b), gameUrl: GAME_URL, webUrl: "/web/play.html" }).catch((e) => console.log("wal", e && e.message)); return; }   // Session 7: war alerts
       await buildLeaderboard(env).catch((e) => console.log("lb", e && e.message));
-      await chainSweep(env).catch((e) => console.log("sweep", e && e.message));   // Session 8: late and second GRAM / SOL payments (worker/src/shop.js)
       await dbDel(env, `sgn/${dayOf(Date.now()) - 2}`).catch(() => {});   // signup counters are only needed for a day
     })());
   },

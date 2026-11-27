@@ -337,13 +337,14 @@ const WP = 'tg_888001';
   const res = await K.stars(A, { kind: 'box', tk: 'weapon', ri: 0 }, 'ch.dupS');
   const out = (res.o && E('tg_111').gout && Object.values(E('tg_111').gout).flat()) || [];
   t(res.pre && res.pre.ok && snap('tg_111') === b0, 'Stars: a Common weapon crate with every Common weapon owned pays no points, earned points, day or board score');
-  const gem = J(E('tg_111').gsc || {}) !== J({}) || JSON.stringify(E('tg_111')).includes('"swap":"weapon"');
-  t(gem, 'its duplicate became a Common gem cache (shards), never points');
+  const g1 = ((E('tg_111').gout || {})[res.o && res.o.oid] || [])[0] || {};
+  t(g1.swap === 'weapon' && !!g1.gem && g1.n > 0 && g1.ri === 0, 'its duplicate became a Common gem cache (' + g1.n + ' ' + g1.gem + ' shards), never points');
   // GRAM (Telegram) and SOL (website) the same
   setEco('tg_111', all); const b1 = snap('tg_111');
   let [s, r] = await K.quote(A, 'TON', { kind: 'box', tk: 'weapon', ri: 0 });
   if (s === 200) { tonTxs.unshift(K.tonTx(r.order, 'dupgram1')); shop.resetLookups(); [s] = await K.status(A, r.order.oid); }
-  t(s === 200 && E('tg_111').gout && JSON.stringify(E('tg_111')).includes('"swap":"weapon"'), 'GRAM: the paid duplicate was delivered as a gem cache');
+  const g2 = ((E('tg_111').gout || {})[r && r.order && r.order.oid] || [])[0] || {};
+  t(s === 200 && g2.swap === 'weapon' && !!g2.gem, 'GRAM: the paid duplicate was delivered as a gem cache');
   t(snap('tg_111') === b1, 'GRAM: the same paid duplicate pays no points');
 }
 // ======================= 7. a construction speed-up: priced on the server from the real job, held while its timer runs =======================
@@ -380,26 +381,42 @@ const WP = 'tg_888001';
   await K.cancel(A, o1.oid);
   tonTxs.unshift(K.tonTx(o1, 'late1')); shop.resetLookups();
   t(db.get('/chainq/' + o1.oid + '/c') === 'TON', 'every GRAM quote is indexed for the sweep');
-  let sw = await shop.chainSweep(env, Date.now(), 400);   // a test budget: every earlier payment in this suite is in the history too
+  let sw = { matched: 0 }, runs0 = 0;   // the production budget: every earlier payment in this suite is in the history too (traffic): up to three 5-minute runs
+  while (runs0 < 3 && db.get('/orders/tg_111/' + o1.oid + '/st') !== 'paid') { const x = await shop.chainSweep(env); sw.matched += x.matched; runs0++; }
   t(db.get('/orders/tg_111/' + o1.oid + '/st') === 'paid' && E('tg_111').mn.fe === fe0 + 150 && sw.matched >= 1, 'GRAM paid after Cancel: the sweep credits it (+150 Ferrite), with no status call from the phone');
   // (b) the same quote paid a second time: recorded for a refund, never granted twice
   tonTxs.unshift(K.tonTx(o1, 'late1b', { source: 'EQsecondPayer' })); shop.resetLookups();
-  sw = await shop.chainSweep(env, Date.now(), 400);
+  sw = await shop.chainSweep(env);
   t(E('tg_111').mn.fe === fe0 + 150 && sw.extra === 1 && Object.keys(db.get('/orders/tg_111/' + o1.oid + '/dup') || {}).length === 1 && Object.keys(db.get('/held') || {}).some((k) => k.startsWith(o1.oid + '_')), 'a second payment of a paid GRAM quote: held for a refund (listed with its order), nothing granted twice');
-  sw = await shop.chainSweep(env, Date.now(), 400);
+  sw = await shop.chainSweep(env);
   t(sw.extra === 0 && sw.matched === 0, 'the next sweep finds nothing new (each transaction claimed once)');
   // (c) a quote that ran out while the app was closed: paid after its expiry, the sweep credits it if still for sale
   [s, r] = await K.quote(A, 'TON', { kind: 'cos', tk: 'fire-sunlance' });
   const o2 = r.order; db.root.orders.tg_111[o2.oid].e = Date.now() - 3600000;   // 30 minutes ran out an hour ago
   tonTxs.unshift(K.tonTx(o2, 'late2')); shop.resetLookups();
-  await shop.chainSweep(env, Date.now(), 400);
+  await shop.chainSweep(env);
   t(db.get('/orders/tg_111/' + o2.oid + '/st') === 'paid' && E('tg_111').cqc && E('tg_111').cqc['fire-sunlance'] === 1, 'GRAM paid after the quote expired (app closed): credited by the sweep');
   // (d) SOL on the website: quote, Cancel, paid with its reference: the sweep credits it and frees its unique amount
   let [s3, r3] = await W({ a: 'quote', cur: 'SOL', desc: { kind: 'cos', tk: 'command-wings' } });
   const o3 = r3.order; await W({ a: 'cancel', q: o3.oid });
   sol.add('lateSol1', { lamports: Number(o3.base), ref: o3.ref }); shop.resetLookups();
-  await shop.chainSweep(env, Date.now(), 400);
+  await shop.chainSweep(env);
   t(s3 === 200 && db.get('/orders/' + WP + '/' + o3.oid + '/st') === 'paid' && db.get('/solAmt/' + o3.base) === null, 'SOL paid after Cancel: the sweep finds it by its reference, credits it and frees its unique amount');
+  // (f) traffic at the production budget (review round 2): 20 ordinary GRAM purchases paid and settled by the phone, then one paid after
+  // Cancel: the sweep reaches it within two runs; and an older SOL quote paid after Cancel behind three newer unpaid ones: reached in turn
+  setEco('tg_111', (S) => { delete S.ord; S.buys = {}; });
+  for (let k = 0; k < 20; k++) { const [, rq] = await K.quote(B, 'TON', { kind: 'vault', tk: 'pouch' }); if (!rq.order) continue; tonTxs.unshift(K.tonTx(rq.order, 'trf' + k)); shop.resetLookups(); await K.status(B, rq.order.oid); }
+  let [, rl] = await K.quote(A, 'TON', { kind: 'mncrate', tk: 'il' });
+  const ol = rl.order; await K.cancel(A, ol.oid); tonTxs.unshift(K.tonTx(ol, 'lateTraffic')); shop.resetLookups();
+  let runs = 0; while (runs < 3 && db.get('/orders/tg_111/' + ol.oid + '/st') !== 'paid') { await shop.chainSweep(env); runs++; }
+  t(db.get('/orders/tg_111/' + ol.oid + '/st') === 'paid', 'GRAM after Cancel behind 20 ordinary payments: credited at the production budget in ' + runs + ' run(s)');
+  const [, rs0] = await W({ a: 'quote', cur: 'SOL', desc: { kind: 'mncrate', tk: 'fe' } }), os0 = rs0.order;
+  await W({ a: 'cancel', q: os0.oid });
+  for (const k of ['il', 'pass']) { const [, rr] = await W({ a: 'quote', cur: 'SOL', desc: k === 'pass' ? { kind: 'pass' } : { kind: 'mncrate', tk: k } }); }
+  const [, rr3] = await W({ a: 'quote', cur: 'SOL', desc: { kind: 'vault', tk: 'pouch' } });
+  sol.add('lateSol2', { lamports: Number(os0.base), ref: os0.ref }); shop.resetLookups();
+  runs = 0; while (runs < 6 && db.get('/orders/' + WP + '/' + os0.oid + '/st') !== 'paid') { await shop.chainSweep(env); runs++; }
+  t(db.get('/orders/' + WP + '/' + os0.oid + '/st') === 'paid', 'SOL after Cancel behind newer unpaid SOL quotes: reached in turn and credited in ' + runs + ' run(s)');
   // (e) a quote's reuse is for the very same goods only: a crate request never gets an open chosen-item quote back
   setEco('tg_111', (S) => { delete S.ord; S.buys = {}; S.wOwn = { pulse: [0], twin: [0], siege: [0] }; });
   [s, r] = await K.quote(A, 'TON', { kind: 'gear', tk: 'twin', ri: 1 });

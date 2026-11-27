@@ -41,6 +41,12 @@ ok(R.DAILY_CAP===50000,'DAILY_CAP stays 50,000');
  const o=R.ecoOpenBox(S,'weapon',1,X,undefined,true);ok(o.gem&&o.swap==='weapon'&&J([S.pts,S.earned,S.dailyPts,S.weeklyPts,S.days])===b,'a paid Rare weapon crate with every Rare weapon owned gives a Rare gem cache, never points or a day played');
  const o2=R.ecoOpenBox(S,'weapon',1,X,undefined,false);ok(o2.kind==='dup'&&o2.pts>0,'a crate bought with earned points still refunds DUP_PTS of them');
  const src=readFileSync('js/rules.js','utf8');ok(/ecoOpenBox\(S,r\.tk,r\.ri,X,c,prem\)/.test(src)&&/ecoOpenBox\(S,d\.tk,d\.ri,X,d\.c,true\)/.test(src)&&/ecoOpenBox\(S,'weapon',1,X,undefined,true\),ecoOpenBox\(S,'chassis',1,X,undefined,true\)/.test(src)&&/ecoOpenBox\(S,'weapon',2,X,undefined,true\)/.test(src),'every paid crate source opens as paid: a bought crate, the Starter and Founder packs, the premium pass track');}
+// 4c. the town screens use what was bought (review round 1): both builders, every layout slot, the pass's Fortify perks, wall-only ore
+{const pv=readFileSync('js/conquest/plotview.js','utf8'),app=readFileSync('js/conquest/app.js','utf8'),wm=readFileSync('js/conquest/warmap.js','utf8');
+ ok(!/[^.\w]p\.job\b(?!2)/.test(pv.replace(/p\.job2/g,''))&&(pv.match(/P\.freeSlot\(p\)/g)||[]).length>=5&&/!PL\.freeSlot\(p\)/.test(app),'the town screens start jobs on any free builder (P.freeSlot), never only builder 1');
+ ok(!/P\.LAYOUT\.slots/.test(pv)&&(pv.match(/P\.layoutSlots\(p\)/g)||[]).length>=2,'TOWN LAYOUTS shows every slot the town has (P.layoutSlots: the store slot and the pass)');
+ ok(/const pass=passOn\(\)/.test(wm)&&!/const pass=false/.test(wm),'the War Map applies the pass\'s Fortify perks (passOn)');
+ ok(/function wallOreOf\(p\)/.test(pv)&&/storesShort\(s,p,plan\.cost,true\)/.test(pv),'the wall tools count the wall-only ore first');}
 // 5. the switches (Session 8: turned on only once every certification check passes)
 ok(typeof R.CRYPTO_OPEN==='boolean'&&typeof R.CQ_STORE_OPEN==='boolean'&&typeof R.LAB_STORE_OPEN==='boolean'&&R.BAT_STORE_OPEN===false,'the store switches exist; the Battalion store stays off (not in the Nov 26 sale list)');
 {const core=readFileSync('js/core.js','utf8'),m=/const CRYPTO_PAY=(true|false);/.exec(core);ok(m&&(m[1]==='true')===R.CRYPTO_OPEN,'the phone\'s CRYPTO_PAY mirrors the Worker\'s CRYPTO_OPEN ('+R.CRYPTO_OPEN+')');}

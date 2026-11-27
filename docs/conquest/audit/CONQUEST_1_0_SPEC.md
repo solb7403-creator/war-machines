@@ -201,7 +201,7 @@ Guardrails (owner wording): paid features never grant airdrop points or rare+ mi
 
 ## 10. Anti-cheat and airdrop integrity
 
-Existing: server-stepped simulation; immutable outbox with exactly-once credit; 50,000 shared cap; 90 requests/min; 120 points outcomes/h; `cqppm` and `hours` flags; device/IP/wallet/replay clusters; new-account weighting; dev mode never earns.
+Existing: server-stepped simulation; immutable outbox with exactly-once credit; 50,000 shared cap; 90 requests/min; 120 points outcomes/h; `cqppm` and `hours` flags; device/IP/replay clusters (Session 8: a shared paying wallet is an admin review hint only, never an automatic link: exchange and custodial addresses pay for unrelated pilots); new-account weighting; dev mode never earns.
 
 New (Sessions 6–7):
 - Yield steps (Decision 2a) and the field-mission points taper (Decision 3a).
