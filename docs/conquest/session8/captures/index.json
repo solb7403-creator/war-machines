@@ -1,0 +1,516 @@
+{
+ "about": "Session 8 captures: the store, checkout and receipts on the website and in Telegram (dev/tests/store-browser.cjs, chromium)",
+ "captures": [
+  {
+   "surface": "website",
+   "screen": "store-lab",
+   "size": "390x844",
+   "input": "touch",
+   "file": "website-store-lab-390x844.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "store-lab",
+   "size": "390x700",
+   "input": "touch",
+   "file": "website-store-lab-390x700.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "store-lab",
+   "size": "320x568",
+   "input": "touch",
+   "file": "website-store-lab-320x568.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "store-lab",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "website-store-lab-1366x768.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "store-lab",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "website-store-lab-1920x1080.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "store-conquest",
+   "size": "390x844",
+   "input": "touch",
+   "file": "website-store-conquest-390x844.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "store-conquest",
+   "size": "390x700",
+   "input": "touch",
+   "file": "website-store-conquest-390x700.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "store-conquest",
+   "size": "320x568",
+   "input": "touch",
+   "file": "website-store-conquest-320x568.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "store-conquest",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "website-store-conquest-1366x768.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "store-conquest",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "website-store-conquest-1920x1080.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "terms",
+   "size": "390x844",
+   "input": "touch",
+   "file": "website-terms-390x844.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "terms",
+   "size": "390x700",
+   "input": "touch",
+   "file": "website-terms-390x700.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "terms",
+   "size": "320x568",
+   "input": "touch",
+   "file": "website-terms-320x568.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "terms",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "website-terms-1366x768.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "terms",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "website-terms-1920x1080.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram",
+   "size": "390x844",
+   "input": "touch",
+   "file": "website-checkout-gram-390x844.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram",
+   "size": "390x700",
+   "input": "touch",
+   "file": "website-checkout-gram-390x700.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram",
+   "size": "320x568",
+   "input": "touch",
+   "file": "website-checkout-gram-320x568.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "website-checkout-gram-1366x768.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "website-checkout-gram-1920x1080.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram-delivered",
+   "size": "390x844",
+   "input": "touch",
+   "file": "website-checkout-gram-delivered-390x844.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram-delivered",
+   "size": "390x700",
+   "input": "touch",
+   "file": "website-checkout-gram-delivered-390x700.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram-delivered",
+   "size": "320x568",
+   "input": "touch",
+   "file": "website-checkout-gram-delivered-320x568.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram-delivered",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "website-checkout-gram-delivered-1366x768.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-gram-delivered",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "website-checkout-gram-delivered-1920x1080.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-sol",
+   "size": "390x844",
+   "input": "touch",
+   "file": "website-checkout-sol-390x844.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-sol",
+   "size": "390x700",
+   "input": "touch",
+   "file": "website-checkout-sol-390x700.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-sol",
+   "size": "320x568",
+   "input": "touch",
+   "file": "website-checkout-sol-320x568.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-sol",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "website-checkout-sol-1366x768.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "checkout-sol",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "website-checkout-sol-1920x1080.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "receipts",
+   "size": "390x844",
+   "input": "touch",
+   "file": "website-receipts-390x844.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "receipts",
+   "size": "390x700",
+   "input": "touch",
+   "file": "website-receipts-390x700.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "receipts",
+   "size": "320x568",
+   "input": "touch",
+   "file": "website-receipts-320x568.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "receipts",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "website-receipts-1366x768.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "receipts",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "website-receipts-1920x1080.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "protect-prompt",
+   "size": "390x844",
+   "input": "touch",
+   "file": "website-protect-prompt-390x844.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "protect-prompt",
+   "size": "390x700",
+   "input": "touch",
+   "file": "website-protect-prompt-390x700.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "protect-prompt",
+   "size": "320x568",
+   "input": "touch",
+   "file": "website-protect-prompt-320x568.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "protect-prompt",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "website-protect-prompt-1366x768.webp"
+  },
+  {
+   "surface": "website",
+   "screen": "protect-prompt",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "website-protect-prompt-1920x1080.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-conquest",
+   "size": "390x844",
+   "input": "touch",
+   "file": "telegram-store-conquest-390x844.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-conquest",
+   "size": "390x700",
+   "input": "touch",
+   "file": "telegram-store-conquest-390x700.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-conquest",
+   "size": "320x568",
+   "input": "touch",
+   "file": "telegram-store-conquest-320x568.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-conquest",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "telegram-store-conquest-1366x768.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-conquest",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "telegram-store-conquest-1920x1080.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-lab",
+   "size": "390x844",
+   "input": "touch",
+   "file": "telegram-store-lab-390x844.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-lab",
+   "size": "390x700",
+   "input": "touch",
+   "file": "telegram-store-lab-390x700.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-lab",
+   "size": "320x568",
+   "input": "touch",
+   "file": "telegram-store-lab-320x568.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-lab",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "telegram-store-lab-1366x768.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "store-lab",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "telegram-store-lab-1920x1080.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-stars",
+   "size": "390x844",
+   "input": "touch",
+   "file": "telegram-checkout-stars-390x844.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-stars",
+   "size": "390x700",
+   "input": "touch",
+   "file": "telegram-checkout-stars-390x700.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-stars",
+   "size": "320x568",
+   "input": "touch",
+   "file": "telegram-checkout-stars-320x568.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-stars",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "telegram-checkout-stars-1366x768.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-stars",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "telegram-checkout-stars-1920x1080.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "stars-delivered",
+   "size": "390x844",
+   "input": "touch",
+   "file": "telegram-stars-delivered-390x844.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "stars-delivered",
+   "size": "390x700",
+   "input": "touch",
+   "file": "telegram-stars-delivered-390x700.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "stars-delivered",
+   "size": "320x568",
+   "input": "touch",
+   "file": "telegram-stars-delivered-320x568.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "stars-delivered",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "telegram-stars-delivered-1366x768.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "stars-delivered",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "telegram-stars-delivered-1920x1080.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-gram",
+   "size": "390x844",
+   "input": "touch",
+   "file": "telegram-checkout-gram-390x844.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-gram",
+   "size": "390x700",
+   "input": "touch",
+   "file": "telegram-checkout-gram-390x700.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-gram",
+   "size": "320x568",
+   "input": "touch",
+   "file": "telegram-checkout-gram-320x568.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-gram",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "telegram-checkout-gram-1366x768.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "checkout-gram",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "telegram-checkout-gram-1920x1080.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "gram-switch-off",
+   "size": "390x700",
+   "input": "touch",
+   "file": "telegram-gram-switch-off-390x700.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "gram-switch-off",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "telegram-gram-switch-off-1366x768.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "receipts",
+   "size": "390x844",
+   "input": "touch",
+   "file": "telegram-receipts-390x844.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "receipts",
+   "size": "390x700",
+   "input": "touch",
+   "file": "telegram-receipts-390x700.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "receipts",
+   "size": "320x568",
+   "input": "touch",
+   "file": "telegram-receipts-320x568.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "receipts",
+   "size": "1366x768",
+   "input": "keyboard+mouse",
+   "file": "telegram-receipts-1366x768.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "receipts",
+   "size": "1920x1080",
+   "input": "keyboard+mouse",
+   "file": "telegram-receipts-1920x1080.webp"
+  },
+  {
+   "surface": "telegram",
+   "screen": "terms",
+   "size": "390x844",
+   "input": "touch",
+   "file": "telegram-terms-390x844.webp"
+  }
+ ]
+}

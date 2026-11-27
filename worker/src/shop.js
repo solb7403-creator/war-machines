@@ -162,7 +162,7 @@ const orderPath = (pid, oid) => `orders/${pid}/${oid}`;
 export function publicOrder(o, now = Date.now()) {
   if (!o) return null;
   const out = { oid: o.oid, cur: o.cur, item: o.item, d: o.dp || null, st: o.st, amt: o.amt, base: o.base || null, t: o.t, e: o.e, open: o.st === "open" && o.e > now, price: o.price };
-  if (o.cur === "TON") { out.to = TON_RECIPIENT; out.memo = o.memo; }
+  if (o.cur === "TON") { out.to = TON_RECIPIENT; out.memo = o.memo; out.usd = o.usd || null; }
   if (o.cur === "SOL") { out.to = SOL_RECIPIENT; out.ref = o.ref; out.usd = o.usd || null; }
   if (o.cur === "STARS") out.link = o.link || null;
   if (o.tx) out.tx = o.tx;
@@ -209,7 +209,7 @@ export async function quote(env, a, cur, raw, now = Date.now()) {
   if (reuse) { const o = await dbGet(env, orderPath(pid, reuse)).catch(() => null); if (o && o.st === "open") return { status: 200, body: { ok: true, reused: true, order: publicOrder(o, now) } }; }
   for (const q of superseded) await dbPatch(env, orderPath(pid, q), { st: "cancelled", cx: now }).catch(() => {});
   const S = t.S, item = labelOf(d), rec = { v: 1, oid, pid, cur, sf: web ? "web" : "tg", d, dp: dpOf(d), rk, price, item, t: now, e: now + QUOTE_MS, st: "open", name: cleanName(a.user || {}) };
-  if (cur === "TON") { rec.amt = price.ton; rec.base = String(Math.round(price.ton * 1e9)); rec.memo = "LWM|" + pid + "|" + oid; const r0 = await liveRates(now); if (r0.ton > 0) rec.rate = { ton: r0.ton }; }
+  if (cur === "TON") { rec.amt = price.ton; rec.base = String(Math.round(price.ton * 1e9)); rec.memo = "LWM|" + pid + "|" + oid; const r0 = await liveRates(now); if (r0.ton > 0) { rec.rate = { ton: r0.ton }; rec.usd = Math.round(price.ton * r0.ton * 100) / 100; } }   // the dollar figure at the live GRAM rate, shown beside the amount (as for SOL)
   if (cur === "SOL") {
     const sol = { sol: price.ton * rate.sol, ton: rate.ton, solUsd: rate.solUsd, usd: Math.round(price.ton * rate.ton * 100) / 100 }, lam0 = Math.floor((sol.sol * 1e9) / 1e6) * 1e6;
     let lam = 0;

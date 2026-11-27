@@ -153,7 +153,7 @@ async def steps(browser,base,ready,w,h,R):
  # ---- 7. the Shop's Science Lab section ----
  await press(page.locator('[data-act="tab"][data-arg="shop"]:visible,[data-tab="shop"]:visible').first)
  await page.wait_for_selector('.labshop',timeout=15000);await page.locator('.labshop').scroll_into_view_if_needed();await page.wait_for_timeout(300)
- R['shop']=await page.evaluate('(()=>{const d=document.querySelector(".labshop");const b=[...d.querySelectorAll("button")];return {items:[...d.querySelectorAll(".labshop-item b")].map(n=>n.textContent),prices:b.map(x=>x.textContent),allDisabled:b.every(x=>x.disabled),off:d.querySelectorAll(".labshop-off").length,note:d.querySelector(".labshop-note")?.textContent,fits:document.documentElement.scrollWidth<=innerWidth+1};})()')
+ R['shop']=await page.evaluate('(()=>{const d=document.querySelector(".labshop");const b=[...d.querySelectorAll("button")];return {items:[...d.querySelectorAll(".labshop-item b")].map(n=>n.textContent),prices:b.map(x=>x.textContent),allDisabled:b.every(x=>x.disabled),open:LAB_STORE_OPEN,live:b.filter(x=>!x.disabled&&x.dataset.act==="labbuy").length,off:d.querySelectorAll(".labshop-off").length,note:d.querySelector(".labshop-note")?.textContent,fits:document.documentElement.scrollWidth<=innerWidth+1};})()')
  await shot('shop-lab')
  R['errors']=errors[:8];R.pop('_page',None);await ctx.close();return R
 async def main():
@@ -190,7 +190,7 @@ async def main():
   if r['ambience']['bed']!='cq-core':bad.append(t+' ambience '+json.dumps(r['ambience']))
   if not (r['volume']['vol'] is not None and r['volume']['vol']<1 and r['volume']['stored']==r['volume']['vol']):bad.append(t+' volume '+json.dumps(r['volume']))
   if not (r['muted']['sound'] is False and r['muted']['slider'] is True and not r['muted']['bed']):bad.append(t+' mute '+json.dumps(r['muted']))
-  if not (r['shop']['allDisabled'] and len(r['shop']['items'])>=7 and r['shop']['fits'] and all('⭐' in p for p in r['shop']['prices'])):bad.append(t+' shop '+json.dumps(r['shop']))
+  if not ((r['shop']['live']>=3 if r['shop']['open'] else r['shop']['allDisabled']) and len(r['shop']['items'])>=7 and r['shop']['fits'] and all('⭐' in p for p in r['shop']['prices'])):bad.append(t+' shop '+json.dumps(r['shop']))   # Session 8: open, its buttons are live quotes
   if r['errors']:bad.append(t+' page errors '+json.dumps(r['errors'][:3]))
  print(('FAIL conquest-session6b: '+' | '.join(bad)) if bad else 'PASS conquest-session6b ('+str(len(out))+' sizes)')
  sys.exit(1 if bad else 0)

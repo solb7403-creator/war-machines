@@ -196,8 +196,11 @@ async def run(args):
                 await item.get_by_role('button',name='PREVIEW · Sunlance Muzzle Halo',exact=True).click()
                 await item.get_by_role('button',name='EQUIP',exact=True).click()
                 await page.wait_for_function('Conquest.view.authority.state.cosmetics.equipped.trail==="fire-sunlance"')
-                assert await page.locator('.cq-product button').filter(has_text='CHECKOUT DISABLED').evaluate_all('buttons=>buttons.length===20&&buttons.every(b=>b.disabled)')
-                assert await page.get_by_role('button',name='CHECKOUT DISABLED',exact=True).first.is_disabled()
+                if await page.evaluate('ConquestCatalog.checkout.enabled'):   # Session 8 (owner, Nov 26, 2026): the 20 priced pieces are on sale: BUY · price, the earned one OWNED
+                    assert await page.locator('.cq-product button').evaluate_all("bs=>{const b=bs.filter(x=>/^BUY · /.test(x.textContent)||x.textContent==='OWNED');return b.length===20&&b.every(x=>x.textContent==='OWNED'?x.disabled:!x.disabled&&/⭐|GRAM|SOL/.test(x.textContent))&&b.filter(x=>x.textContent==='OWNED').length>=1&&!bs.some(x=>x.textContent==='CHECKOUT DISABLED');}")
+                else:
+                    assert await page.locator('.cq-product button').filter(has_text='CHECKOUT DISABLED').evaluate_all('buttons=>buttons.length===20&&buttons.every(b=>b.disabled)')
+                    assert await page.get_by_role('button',name='CHECKOUT DISABLED',exact=True).first.is_disabled()
                 for width,height in [(320,568),(390,844),(430,932),(1280,800)]:
                     await page.set_viewport_size({'width':width,'height':height});await page.wait_for_timeout(150)
                     assert await page.locator('.cq-dialog').evaluate('(e)=>e.getBoundingClientRect().width<=innerWidth')

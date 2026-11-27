@@ -586,7 +586,7 @@
  "payer": {
   "p": [
    0.8095238095238095,
-   0.9047619047619048
+   0.8571428571428571
   ],
   "wallQ365": 0.7999999999999993
  },
@@ -650,5 +650,51 @@
    "CC10": 27.8,
    "repairCP": 1374
   }
+ },
+ "payerHeavy": {
+  "crates": {
+   "ar": 20,
+   "tq": 8,
+   "se": 4,
+   "mh": 2
+  },
+  "source": "RULES.SHOP.ore",
+  "usd": {
+   "ar": 4.99,
+   "tq": 7.99,
+   "se": 9.99,
+   "mh": 14.99
+  },
+  "wallQ365": 1,
+  "cells365": 3000,
+  "fullCap": 3000,
+  "fullFromDay": 228,
+  "hold": {
+   "days": [
+    300,
+    330,
+    365
+   ],
+   "p": [
+    1,
+    1,
+    1
+   ],
+   "freeHeavy": [
+    0.8095238095238095,
+    0.8095238095238095,
+    0.8095238095238095
+   ]
+  },
+  "freeHeavyWallQ365": 0.6749866666666301,
+  "cratesBought": {
+   "ar": 41,
+   "tq": 71,
+   "se": 141,
+   "mh": 226
+  },
+  "wallOreUsd": 5568.21,
+  "feIlUsd": 2493.47,
+  "label": "SIMULATED (the fortress model), not playtesting"
  }
 }

@@ -8364,8 +8364,22 @@ If your context was cleared, read docs/conquest/audit/SESSION_08_PAYMENTS_BRIEF.
 - **Evidence noise (not regressions, checked on a clean main worktree):** `docs/conquest-session-2/earned-defense.json` (main's own
   code writes cp 165 and no chain item: the committed file is stale on main too) and the timing fields of town-rules / living-world
   JSONs under parallel load are never committed from this branch.
-- **Next:** slice 9 (switches on, every CI node and browser test, new browser tests for the store / checkout / receipts), slice 10
-  (captures), slice 11 (three reviewers), slice 12 (release). The switches stay OFF in every commit until slice 9 passes.
+- **Slice 9 (in progress, switches ON locally):** every CI node test (the 150 named in the workflows + the 14 more that
+  `dev/tests/conquest-regression.sh` runs) in one parallel run; the CI browser tests (32 python commands, chromium; CI runs the other
+  engines); the new `dev/tests/store-browser.cjs` (the store, checkout and receipts in a real browser on the website and in Telegram at
+  the five sizes; every rail end to end through the real Worker routes: Stars through Telegram's pre-checkout and the signed payment
+  webhook, GRAM by memo, SOL by reference, the GRAM switch off and on; local fakes for the chain and Telegram's Bot API:
+  `dev/tests/wtest/fakechain.mjs`, test-only routes in `dev/tests/conquest-server.mjs` and `dev/tests/webserver.mjs`), added to the
+  website CI job. Updated to the open store (asserting the new rule, never weaker): `lab-store-ui.mjs` (rewritten: live buttons send
+  exactly their Lab kind to the server quote, both surfaces and currencies, the GRAM switch, the weekly limits; the closed state still
+  checked), `conquest-base-builder.py` (the seven town tiles priced and enabled unless owned / maxed), `conquest-flagship-browser.py`
+  (the 20 collection pieces BUY or OWNED), `conquest-session6b.py`. **A real bug the browser test found:** "Check now" on the GRAM /
+  SOL sheet restarted a 2.5 s wait instead of checking (tapped every 2 s it never checked); it now checks at once (also on a return to
+  the page), one check in flight at a time; the test asserts the status request goes out at once. Also: the store's buy buttons are 44 px
+  tall (were 36), the GRAM sheet shows the dollar figure at the live rate (as SOL did), pay.html says "ANOTHER SOLANA WALLET?" (it said
+  "KEEPER", a TON wallet, on the SOL page).
+- **Next:** finish slice 9 (the python browser suite), then commit with the switches ON; slice 10 (captures into
+  `docs/conquest/session8/captures/`), slice 11 (three reviewers, worktrees at that commit), slice 12 (release).
 
 ### What was read (slice 1-2)
 CLAUDE.md, AGENTS.md, ROADMAP row 8 + Standing owner decisions, DECISIONS 12, CONQUEST_1_0_SPEC §9-10, RESOURCE_ECONOMY §7.5,

@@ -246,6 +246,9 @@ jobs:
         run: python dev/tests/conquest-town-ui.py
       - name: Session 7T-P screens (the coach ring step, the welcome-back kits; 5 sizes)
         run: python dev/tests/conquest-town-proposals.py
+      # Session 8: the store's three town looks (Gilded walls, Neon turrets, Aurora lighting) rendered in a town, owned on the account
+      - name: Session 8 town looks (390x844 touch, 1366x768 mouse)
+        run: python dev/tests/store-looks.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -253,6 +256,7 @@ jobs:
           path: |
             docs/conquest/session7t
             docs/conquest/session7tp
+            docs/conquest/session8/captures
 
   # Session 7B Citadel Act I (docs/conquest/audit/SESSION_07B_CITADEL_BRIEF.md): the rules, the Worker's settlement and the first-clear
   # bounty paid exactly once (conquest-citadel), the pacing with the real assault (conquest-citadel-pace: the bot pilot on each profile's

@@ -27,6 +27,7 @@ async function checkout(desc){
  if(!save.termsOk&&typeof askTerms==='function'){askTerms(()=>checkout(desc));return;}
  const c=payCurOk(),cur=CUR_SRV[c];
  if(checkout.busy)return;checkout.busy=true;
+ if(c!=='stars'&&!narrowPay())qrLib().catch(()=>{});
  try{
   const r=await api('/api/order',{a:'quote',cur,desc});
   if(r.E&&typeof applyEco==='function')applyEco(r.E);
@@ -66,12 +67,12 @@ function coSheet(o,desc,step){coOpen={o,desc,step:step||'start',at:Date.now()};s
 function coStep(oid,step){if(coOpen&&coOpen.o.oid===oid){coOpen.step=step;coRedraw();}}
 function coRedraw(){const ov=findOv('checkout');if(!ov||!coOpen)return;const b=ov.box.querySelector('.cosheet');if(b){b.outerHTML=coHtml();coQr();}}
 function coHtml(){const {o,step}=coOpen,t=o.cur==='TON',left=Math.max(0,o.e-Date.now()),m=Math.floor(left/60000),st=o.st,done=st==='paid',held=st==='held';
- const steps=[['approve',t?'Approve in your wallet':'Approve in your wallet'],['confirm','Confirming on '+(t?'chain':'Solana')],['done','Delivered']],cur=done?2:step==='confirm'||coOpen.seen?1:0;
+ const steps=[['approve',t?'Approve in your wallet':'Approve in your wallet'],['confirm','Confirming on '+(t?'chain':'Solana')],['done','Delivered']],cur=done?3:step==='confirm'||coOpen.seen?1:0;
  const row=(lbl,val,k)=>'<div class="corow"><div><span class="lbl">'+lbl+'</span><b class="val'+(k==='addr'?' addr':'')+'">'+esc(val)+'</b></div><button class="btn sm btn-quiet" data-act="cocopy" data-arg="'+k+'">Copy</button></div>';
  const wal=t?'<a class="btn btn-go block" href="'+esc(tonLink(o,true))+'" target="_blank" rel="noopener">Pay '+o.amt+' GRAM in Keeper (Tonkeeper)</a><a class="btn btn-quiet block" href="'+esc(tonLink(o,false))+'">Another GRAM wallet</a>'+(IN_TG&&tonConnectUI?'<button class="btn btn-quiet block" data-act="cotonc">Pay with a connected wallet (TON Connect)</button>':''):
   ['phantom','solflare','backpack'].map(w=>'<a class="btn '+(w==='phantom'?'btn-go':'btn-quiet')+' block" href="'+esc(SOL_WALLETS[w].ul(solPage(o,w)))+'" target="_blank" rel="noopener">Pay in '+SOL_WALLETS[w].n+'</a>').join('');
  return '<div class="cosheet" data-oid="'+o.oid+'"><h3>'+esc(o.item)+'</h3>'+
-  '<div class="coamt"><b class="num">'+o.amt+'</b> '+(t?'GRAM':'SOL')+(o.usd?'<span class="mut"> ≈ $'+o.usd+'</span>':'')+'</div>'+
+  '<div class="coamt"><b class="num">'+o.amt+'</b> '+(t?'GRAM':'SOL')+(o.usd?'<span class="mut"> ≈ $'+Number(o.usd).toFixed(2)+'</span>':'')+'</div>'+
   '<ol class="costeps">'+steps.map(([k,l],i)=>'<li class="'+(i<cur?'ok':i===cur?'on':'')+'">'+l+'</li>').join('')+'</ol>'+
   (done?'<p class="cook">✓ Delivered. It is already in your account.</p>'+(o.tx?'<p class="mut">'+txLink(o)+'</p>':'')+'<button class="btn btn-go block" data-act="coclose">Done</button>':
    held?'<p class="cobad">This payment arrived but nothing could be granted ('+esc(o.err||'held')+'). A refund is due: message @LunarBattle with your Player ID.</p>'+(o.tx?'<p class="mut">'+txLink(o)+'</p>':'')+'<button class="btn btn-quiet block" data-act="coclose">Close</button>':
@@ -87,13 +88,22 @@ let qrLoad=null;
 function coQr(){const ov=findOv('checkout'),box=ov&&ov.box.querySelector('.coqr');if(!box||!coOpen||narrowPay()||coOpen.o.st!=='open')return;
  const draw=()=>{try{const q=qrcode(0,'M');q.addData(coOpen.o.cur==='TON'?tonLink(coOpen.o,false):solPayUrl(coOpen.o));q.make();box.innerHTML=q.createSvgTag({cellSize:6,margin:3,scalable:true});const sv=box.querySelector('svg');if(sv){sv.setAttribute('role','img');sv.setAttribute('aria-label','Scan with your phone\'s wallet');}box.insertAdjacentHTML('beforeend','<small>Scan with your phone\'s wallet</small>');}catch(e){box.remove();}};
  if(typeof qrcode==='function'){draw();return;}
- if(!qrLoad)qrLoad=new Promise((ok,no)=>{const s=document.createElement('script');s.src=(IN_WEB?'/js/':'js/')+'vendor/qrcode.js';s.onload=ok;s.onerror=no;document.head.appendChild(s);});
- qrLoad.then(draw).catch(()=>box.remove());}
+ qrLib().then(draw).catch(()=>box.remove());}
+// the QR library, loaded once on demand (a computer's GRAM / SOL checkout starts loading it while the quote is on its way)
+function qrLib(){if(typeof qrcode==='function')return Promise.resolve();if(!qrLoad)qrLoad=new Promise((ok,no)=>{const s=document.createElement('script');s.src=(IN_WEB?'/js/':'js/')+'vendor/qrcode.js';s.onload=ok;s.onerror=()=>{qrLoad=null;no();};document.head.appendChild(s);});return qrLoad;}
 // the order's status, every 4 s while the sheet is open (and on return to the page), then every 20 s in the background
-function coWatch(){clearTimeout(coPoll);const tick=async()=>{if(!coOpen)return;const o=coOpen.o;
-  try{const r=await api('/api/order',{a:'status',q:o.oid});if(r.E&&typeof applyEco==='function')applyEco(r.E);if(r.order){coOpen.o={...o,...r.order};coOpen.short=!!r.short;if(r.order.st==='paid'){coDone(coOpen.o,r.outs||r.order.out||[]);return;}if(r.order.st==='held'){coRedraw();save.coOpen=null;store();return;}if(r.order.st==='cancelled'){coOpen=null;save.coOpen=null;store();return;}}}catch(e){}
-  coRedraw();coPoll=setTimeout(tick,findOv('checkout')?4000:20000);};
- coQr();coPoll=setTimeout(tick,2500);}
+// now: check at once (Check now, a return to the page); otherwise the first check 2.5 s after the sheet opens. One check in flight at a
+// time (a tap during one waits for it); the Worker throttles the chain lookup itself (4 s an order)
+let coTick=false;
+function coWatch(now){clearTimeout(coPoll);
+ const tick=async()=>{if(!coOpen)return;if(coTick){coPoll=setTimeout(tick,800);return;}coTick=true;const o=coOpen.o;let done=false;
+  try{const r=await api('/api/order',{a:'status',q:o.oid});if(r.E&&typeof applyEco==='function')applyEco(r.E);
+   if(r.order&&coOpen&&coOpen.o.oid===o.oid){coOpen.o={...o,...r.order};coOpen.short=!!r.short;
+    if(r.order.st==='paid'){done=true;coDone(coOpen.o,r.outs||r.order.out||[]);}
+    else if(r.order.st==='held'){done=true;coRedraw();save.coOpen=null;store();}
+    else if(r.order.st==='cancelled'){done=true;coOpen=null;save.coOpen=null;store();}}}catch(e){}finally{coTick=false;}
+  if(done||!coOpen)return;coRedraw();coPoll=setTimeout(tick,findOv('checkout')?4000:20000);};
+ coQr();coPoll=setTimeout(tick,now?0:2500);}
 function coDone(o,outs){save.coOpen=null;save.purchases=save.purchases||[];save.purchases.push({cur:o.cur,amt:o.amt,what:o.item,memo:o.memo||o.oid,proof:o.tx||'',ts:Date.now()});store();
  coOpen={o,desc:coOpen&&coOpen.desc,step:'done'};coRedraw();showOuts(outs||[]);showToast('Delivered: '+o.item);uiDirty('shop');coAfter(o);}
 // a Conquest purchase: the town reads the account at once (the second builder, a finish, the looks...): the Conquest session's own
@@ -105,8 +115,8 @@ function coAfterOuts(outs){if((outs||[]).some(x=>x&&CQ_OUTS.includes(x.tk)))conq
 // resume: an open GRAM / SOL order from the server (sync) or this phone keeps being checked until it confirms
 function coResume(list){const open=(list||[]).filter(o=>o&&o.open);if(!open.length)return;const o=open.find(x=>x.oid===save.coOpen)||open[0];if(coOpen&&coOpen.o.oid===o.oid)return;coOpen={o,step:'confirm',at:Date.now()};coWatch();}
 async function coResumeAll(show){try{const r=await api('/api/order',{a:'list'});const open=(r.orders||[]).filter(o=>o.open&&o.cur!=='STARS');if(!open.length)return;coOpen={o:open[0],step:'confirm',at:Date.now()};if(show)sheet('checkout',()=>coHtml());coWatch();}catch(e){}}
-addEventListener('focus',()=>{if(coOpen&&coOpen.o.st==='open'){clearTimeout(coPoll);coWatch();}});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&coOpen&&coOpen.o.st==='open'){clearTimeout(coPoll);coWatch();}});
+addEventListener('focus',()=>{if(coOpen&&coOpen.o.st==='open')coWatch(true);});   // back from the wallet: check at once
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&coOpen&&coOpen.o.st==='open')coWatch(true);});
 // ---- receipts: Settings > Purchases (every order: item, amount, method, time, status, the transaction link) ----
 const RST={paid:'Delivered',held:'Held: refund due',refunded:'Refunded',cancelled:'Cancelled',open:'Waiting for payment'};
 function purchasesHtml(L){
@@ -115,7 +125,7 @@ function purchasesHtml(L){
 async function openPurchases(){let L;try{L=(await api('/api/order',{a:'list'})).orders||[];}catch(e){showToast('Purchases are unavailable right now.');return;}sheet('purchases',()=>purchasesHtml(L));}
 Object.assign(ACT,{
  cocopy:a=>{const o=coOpen&&coOpen.o;if(!o)return;const v=a==='amt'?String(o.amt):a==='addr'?o.to:o.memo;try{navigator.clipboard.writeText(v).then(()=>showToast('Copied'),()=>prompt('Copy:',v));}catch(e){prompt('Copy:',v);}},
- cocheck:()=>{if(coOpen){coOpen.seen=1;clearTimeout(coPoll);coWatch();showToast('Checking the chain…');}},
+ cocheck:()=>{if(coOpen){coOpen.seen=1;coWatch(true);showToast('Checking the chain…');}},   // checks now (it used to restart the 2.5 s wait: tapped every 2 s it never checked)
  cocancel:async()=>{const o=coOpen&&coOpen.o;if(!o)return;try{await api('/api/order',{a:'cancel',q:o.oid});}catch(e){}coOpen=null;save.coOpen=null;store();const ov=findOv('checkout');if(ov)closeOverlay(ov);showToast('Order cancelled. If you already paid, it still arrives.');},
  coclose:()=>{const ov=findOv('checkout');if(ov)closeOverlay(ov);if(coOpen&&coOpen.o.st!=='open')coOpen=null;},
  cotonc:()=>{const o=coOpen&&coOpen.o;if(!o)return;if(!tonConnectUI){initTonConnect();showToast('Loading wallets…');return;}if(!tonWallet){tonConnectUI.openModal();return;}tonConnectPay(o,coOpen.desc);},

@@ -1003,5 +1003,6 @@ button.q{display:flex;width:100%;text-align:left}
 .receipt.st-paid .rst{color:var(--ok)}.receipt.st-held .rst{color:var(--bad)}.receipt.st-open .rst{color:var(--gold)}.receipt.st-refunded .rst{color:var(--rare)}
 .cqshop .cqart,.cqshop .cosart{width:64px;height:44px;flex:0 0 64px;border-radius:8px;background:var(--rock);border:1px solid var(--edge)}
 .labshop-item.ore b{color:var(--rare)}
+.labshop .btn.sm,.cqshop .btn.sm,.labshop-bat .btn.sm{min-height:44px;min-width:88px}   /* the store's buy buttons: 44 px tap targets */
 @media (min-width:720px){.cosheet{max-width:520px;margin:0 auto}}
 @media (max-width:360px){.costeps{grid-template-columns:1fr}.costeps li{padding:6px 6px 6px 28px}.coamt .num{font-size:26px}}

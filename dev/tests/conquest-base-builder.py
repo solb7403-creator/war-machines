@@ -102,7 +102,9 @@ async def main():
    await page.locator('.cq-plot-tabs button',has_text='HOME').click();await page.wait_for_timeout(300)
    if not await page.locator('button',has_text='SHARE MY TOWN').is_visible():await page.locator('summary',has_text='TOWN LOOK').click()
    await page.locator('button',has_text='SHARE MY TOWN').click();await page.wait_for_selector('.cq-plot-share-img');await page.wait_for_timeout(300);await page.locator('.cq-plot-share-img').screenshot(path=str(OUT/'share-card.png'))
-   storeDisabled=await page.evaluate('ConquestPlot.STORE.checkout===false&&[...document.querySelectorAll(".cq-plot-store")].every(b=>b.disabled)&&(document.querySelectorAll(".cq-plot-store").length===0||document.querySelectorAll(".cq-plot-store").length===ConquestPlot.STORE.items.length)')   # 5C: the store is hidden from players until checkout opens; every tile disabled
+   # 5C: the store is hidden from players until checkout opens (every tile disabled); Session 8 (owner, Nov 26, 2026): it is open (CQ_STORE_OPEN):
+   # all seven tiles, each with its price in the surface's currency, enabled unless OWNED / MAXED (a closed store still keeps every tile disabled)
+   storeDisabled=await page.evaluate('(()=>{const t=[...document.querySelectorAll(".cq-plot-store")];if(ConquestPlot.STORE.checkout!==CQ_STORE_OPEN)return false;if(!ConquestPlot.STORE.checkout)return t.every(b=>b.disabled)&&(t.length===0||t.length===ConquestPlot.STORE.items.length);return t.length===ConquestPlot.STORE.items.length&&t.every(b=>/OWNED|MAXED/.test(b.textContent)?b.disabled:!b.disabled&&/⭐|GRAM|SOL/.test(b.textContent));})()')
    results['phase2']={'visitList':visitText[:200],'visiting':visiting,'readOnly':readOnly,'storeDisabled':storeDisabled}
    assert 'TOP 20' in visitText and 'VISITING' in visiting and readOnly and storeDisabled,results['phase2']
    await page.locator('.cq-plot-leave').click();await page.wait_for_timeout(500);left=await page.evaluate('!document.querySelector(".cq-plot")&&!!document.querySelector("#cq-base-access")')
