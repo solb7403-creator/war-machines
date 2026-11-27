@@ -51,7 +51,7 @@ export function makeDB({pruneEmptyUnder=[]}={}) {
     const method = (init.method || 'GET').toUpperCase();
     log.push(method + ' ' + path + (u.search.replace(/auth=SECRET&?/, '') ? ' ' + u.search.replace(/[?&]?auth=SECRET/, '') : ''));
     if (method === 'GET') {
-      const indexed = ['/players:pts', '/players:ref', '/players:vg', '/ntf:last', '/ntf:nx', '/gh:pw', '/rfs:s', '/wal:nx'].includes(path + ':' + (q.orderBy ? JSON.parse(q.orderBy) : '')) || /^\/(dly|wly)\/\d+$/.test(path) || (/^\/orders\/[^/]+$/.test(path) && q.orderBy === '"t"');   // Session 8: orders/$pid indexed on t (database.rules.json)
+      const indexed = ['/players:pts', '/players:ref', '/players:vg', '/ntf:last', '/ntf:nx', '/gh:pw', '/rfs:s', '/wal:nx'].includes(path + ':' + (q.orderBy ? JSON.parse(q.orderBy) : '')) || /^\/(dly|wly)\/\d+$/.test(path) || (/^\/orders\/[^/]+$/.test(path) && q.orderBy === '"t"') || (path === '/payments' && q.orderBy === '"t"');   // Session 8: orders/$pid and payments indexed on t (database.rules.json)
       const headers = hdr(init, 'X-Firebase-ETag') === 'true' ? { ETag: etag(path) } : {};
       return new Response(JSON.stringify(query(get(path), { ...q, _indexed: indexed })), { status: 200, headers });
     }

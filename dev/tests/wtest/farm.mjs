@@ -179,7 +179,10 @@ const mutate = (pf, fn) => { const b = Buffer.from(pf.s, 'base64'); fn(b, pf.n *
   await call('/api/order', { initData: initData(W1), a: 'status', q: q1.oid });
   (await import('../../../worker/src/shop.js')).resetLookups();
   const [, pr] = await call('/api/order', { initData: initData(W2), a: 'status', q: q2.oid });
-  t(pr.order && pr.order.st === 'paid' && linked('tg_6102', 'tg_6101') === 'wallet', 'two accounts paying from the same GRAM wallet: linked ("wallet")');
+  // Session 8 (review round 1): with GRAM / SOL checkout live, a paying address is often an exchange's or a custodial wallet's, shared by
+  // unrelated pilots; it is kept for the owner's review (wal/) and never links or flags accounts by itself (device and the other signals do)
+  const wal = Object.values(db.root.wal || {}).find((w) => w && w.tg_6101 && w.tg_6102);
+  t(pr.order && pr.order.st === 'paid' && !linked('tg_6102', 'tg_6101') && !!wal, 'two accounts paying from the same GRAM address: recorded for the owner\'s review, never auto-linked (an exchange address pays for unrelated pilots)');
   // starting together, again and again, on one network
   const G = [6201, 6202, 6203].map((id) => ({ id, username: 'grp' + id }));
   for (let d = 0; d < 3; d++) for (const hr of [10, 16]) {

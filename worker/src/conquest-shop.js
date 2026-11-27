@@ -18,7 +18,7 @@ function passEnd(S, now) { const day = Math.floor(now / DAY), s = R.ecoSeason({ 
 // what the Conquest record reads from the account (eco record S)
 export function shopCtx(S, now) {
   const cq = record(S && S.cq) ? S.cq : {};
-  return { cq: { b2: cq.b2 ? 1 : 0, lay: cq.lay ? 1 : 0, ext: Math.max(0, Math.min(5, cq.ext | 0)), fr: Number(cq.fr) || 0, frs: Number(cq.frs) || 0, gild: cq.gild ? 1 : 0, neon: cq.neon ? 1 : 0, aur: cq.aur ? 1 : 0 },
+  return { cq: { b2: cq.b2 ? 1 : 0, lay: cq.lay ? 1 : 0, ext: Math.max(0, Math.min(R.EXT_MAX_PCT / R.SHOP.cq['wall-ext-10'].step, cq.ext | 0)), fr: Number(cq.fr) || 0, frs: Number(cq.frs) || 0, gild: cq.gild ? 1 : 0, neon: cq.neon ? 1 : 0, aur: cq.aur ? 1 : 0 },
     cqc: Object.keys(record(S && S.cqc) ? S.cqc : {}).filter((k) => R.SHOP.cos[k]), wmn: R.mnOf(S && S.wmn), cfx: Object.keys(record(S && S.cfx) ? S.cfx : {}).filter((k) => R.cfxKey(k)), pe: passEnd(S, now), at: now };
 }
 // apply the account's entitlements to the Conquest record (inside the Conquest CAS). acct: shopCtx(S) read fresh for this request

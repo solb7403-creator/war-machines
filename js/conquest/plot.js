@@ -172,7 +172,7 @@ function themeError(p,a){const own=p?.own||{};if(!(LIGHTS.includes(a.light)||PAI
  if(!FINISHES.includes(a.finish))return 'invalid theme';if(a.ws!==undefined&&a.ws!=='none'&&!(PAID_LOOKS.ws[a.ws]&&own[PAID_LOOKS.ws[a.ws]]))return PAID_LOOKS.ws[a.ws]?'the Gilded wall skin is in the store':'invalid theme';
  if(a.ts!==undefined&&a.ts!=='none'&&!(PAID_LOOKS.ts[a.ts]&&own[PAID_LOOKS.ts[a.ts]]))return PAID_LOOKS.ts[a.ts]?'the Neon turret skins are in the store':'invalid theme';return '';}
 // Wall extensions (owner decision 4): up to +50% of the level's base cap. Earned by Foundry research with rarer ores, Defense
-// Drill milestones and real base defenses won; or bought (store, capacity only, disabled until payments are certified).
+// Drill milestones and real base defenses won; or bought (the store's wall extension packs, capacity only, within the same +50% cap).
 const EXT=T({max:50,research:T([T({pct:6,fl:1,cost:T({il:30})}),T({pct:6,fl:2,cost:T({ar:12})}),T({pct:6,fl:3,cost:T({ar:25})}),T({pct:6,fl:4,cost:T({tq:6})}),T({pct:6,fl:5,cost:T({se:2})})]),
  drill:T([T({cc:1,pct:4}),T({cc:3,pct:4}),T({cc:5,pct:4}),T({cc:7,pct:4}),T({cc:9,pct:4})]),defense:T([T({wins:3,pct:5}),T({wins:10,pct:5})]),pack:10});
 // The base store (owner decision 11; MONEY RULE: what is sold and its limits are the owner's business decisions). Session 8 (owner,

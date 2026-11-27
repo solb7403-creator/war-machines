@@ -83,14 +83,17 @@ function territoryCard(host,s,o,now,id){const WR=W(),w=s.war,t=WR.BY[id],c=o.el(
  const gives=[];if(t.cap&&t.start==='h')gives.push('SUPPLY: each fortification level here adds +'+(Math.round(1600*WR.WAR.fortify.danger[t.ring]/69.5)/100)+'% town production (materials and CP) while held; the whole front at level 5 gives +16%');if(t.sector)gives.push((s.territory?.[t.sector]?.owner==='humanity'?'its fast-travel node (your Frontline holds it)':'its fast-travel node once you secure its Frontline sector'));if(WR.APPROACH.includes(id))gives.push('FRONT readiness: an approach to the Citadel');if(t.ex&&!t.inner&&!t.town)gives.push('its veins and missions, safe to work while held');
  if(gives.length){o.el('p','wm-kicker','HOLDING IT GIVES',c);const ul=o.el('ul','wm-gives',null,c);for(const x of gives)o.el('li','',x,ul);}
  return c;}
+// Session 8: the Lunar Pass's Fortify perks are live with the store (decision 8; the Worker's conquest-war.js passLive): the current season's
+// premium pass on this account (the phone's own copy of the account, as the Worker reads it)
+const passOn=()=>{try{const day=Math.floor(Date.now()/864e5);return typeof save!=='undefined'&&!!save&&!!save.pass&&save.pass.prem===true&&typeof ecoSeason==='function'&&save.pass.s===ecoSeason({day})&&typeof LAB_STORE_OPEN!=='undefined'&&LAB_STORE_OPEN===true;}catch(e){return false;}};
 function fortify(c,s,o,now,id){const WR=W(),w=s.war,t=WR.BY[id],F=WR.WAR.fortify,lv=w.f[id]||0,job=w.jobs.find(j=>j.t===id),b=o.el('div','wm-fort',null,c);
  o.el('p','wm-kicker','FORTIFY · LEVEL '+lv+' / '+F.max+' · +1 DEFENSE A LEVEL',b);
  if(job){o.el('p','wm-job','BUILDING LEVEL '+job.l+' · READY IN '+left(job.ready-now),b);return;}
  if(lv>=F.max){o.el('p','','Fully fortified. An assault decided by the strength roll wears it down a level; a defense you win in person keeps it.',b);return;}
- const pass=false,re=lv+1<=(w.pk[id]||0),price=WR.fortifyCost(id,lv+1,pass,re),L=s.ledger||{},have={cp:L.cp||0,alloy:L.banked?.alloy||0,helium:L.banked?.helium||0},short=['cp','alloy','helium'].filter(k=>have[k]<price[k]),busy=w.jobs.length>=WR.fortifySlots(pass);
+ const pass=passOn(),re=lv+1<=(w.pk[id]||0),price=WR.fortifyCost(id,lv+1,pass,re),L=s.ledger||{},have={cp:L.cp||0,alloy:L.banked?.alloy||0,helium:L.banked?.helium||0},short=['cp','alloy','helium'].filter(k=>have[k]<price[k]),busy=w.jobs.length>=WR.fortifySlots(pass);
  o.el('p','wm-price',(re?'REBUILD (a quarter of the price) · ':'')+fmtN(price.cp)+' CP · '+fmtN(price.alloy)+' ALLOY · '+fmtN(price.helium)+' HE-3 · '+left(WR.fortifyTime(lv+1,pass)),b);
- const btn=o.button(busy?'ONE FORTIFICATION AT A TIME':short.length?'NEED MORE '+short.map(k=>k==='helium'?'HE-3':k.toUpperCase()).join(' + '):'FORTIFY TO LEVEL '+(lv+1),()=>o.act('war-fortify',{t:id}),'wm-act');btn.disabled=busy||!!short.length;b.append(btn);
- o.el('small','wm-fine','Banked resources only. A fallen territory loses its fortification. Lunar Pass (when the store opens): a second slot, 20% cheaper, 20% faster.',b);}
+ const btn=o.button(busy?(pass?'TWO FORTIFICATIONS AT A TIME':'ONE FORTIFICATION AT A TIME'):short.length?'NEED MORE '+short.map(k=>k==='helium'?'HE-3':k.toUpperCase()).join(' + '):'FORTIFY TO LEVEL '+(lv+1),()=>o.act('war-fortify',{t:id}),'wm-act');btn.disabled=busy||!!short.length;b.append(btn);
+ o.el('small','wm-fine','Banked resources only. A fallen territory loses its fortification. Lunar Pass: a second slot, 20% cheaper, 20% faster'+(pass?' (yours this season).':'.'),b);}
 // Station (decision 7): up to two reserve pilots on a threatened territory, DEFENSE from their rating, up to +1 for the pair
 function station(c,s,o,now,id){const WR=W(),BT=root.ConquestBattalion,w=s.war,bat=s.bat||{},pilots=bat.p||[];if(!BT||!pilots.length)return;const b=o.el('div','wm-station',null,c);
  const lv=Object.values(s.plot?.b||{}).reduce((m,x)=>x?.t==='hangar'?Math.max(m,x.l|0):m,0),fielded=new Set(BT.picked(bat,lv,'battalion').map(p=>p.id)),here=w.st[id]||[],elsewhere=new Set(Object.entries(w.st).filter(([k])=>k!==id).flatMap(([,v])=>v));

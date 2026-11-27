@@ -12,7 +12,7 @@ import {lunarAuth,resolveTelegramAccount,approveTelegramLunarLink} from "./lunar
 import {accountAuth,googleAuth,apiCallsign,apiTelegramLink,csOf,funnelDays} from "./accounts.js";
 import {ACCOUNT_TYPES} from "./web-auth.js";
 import { ownerGemEpic, ownerCheck } from "./owner.js";
-import { orderApi, quote, preCheckout, starsPaid, starsRefund, liveRates, railsFor, gramInTelegram, publicOrder } from "./shop.js";   // Session 8: the certified checkout
+import { orderApi, quote, preCheckout, starsPaid, starsRefund, liveRates, railsFor, gramInTelegram, publicOrder, chainSweep } from "./shop.js";   // Session 8: the certified checkout
 import {conquestSession,conquestInput,conquestAction,conquestEvent} from "./conquest.js";
 import {conquestStanding} from "./conquest-standing.js";   // Session 7C STEP 2
 import {cqAltScan} from "./conquest-alt.js";
@@ -279,7 +279,7 @@ async function admin(env, user, b = {}) {
     dbGet(env, "meta/n").catch(() => 0),
     dbGet(env, "players", { orderBy: '"pts"', limitToLast: 10 }).catch(() => ({})),
     dbGet(env, `dly/${today}`, { shallow: "true" }).catch(() => ({})),
-    dbGet(env, "payments", { orderBy: '"$key"', limitToLast: 300 }).catch(() => ({})),
+    dbGet(env, "payments", { orderBy: '"t"', limitToLast: 300 }).catch(() => ({})),   // the newest 300 by time (review round 1: by key it was an arbitrary 300)
     dbGet(env, "starsPaid", { shallow: "true" }).catch(() => ({})),
   ]);
   // Session 8: revenue counts verified, granted sales; a payment held with nothing granted (owned, over a limit, a second payment of one
@@ -635,6 +635,7 @@ export default {
       if (event && event.cron === "* 15-18 * * *") { await sendReminders(env).catch((e) => console.log("ntf", e && e.message)); return; }
       if (event && event.cron === "1-56/5 * * * *") { await sendWarAlerts(env, Date.now(), { tg: (m, b) => tg(env, m, b), gameUrl: GAME_URL, webUrl: "/web/play.html" }).catch((e) => console.log("wal", e && e.message)); return; }   // Session 7: war alerts
       await buildLeaderboard(env).catch((e) => console.log("lb", e && e.message));
+      await chainSweep(env).catch((e) => console.log("sweep", e && e.message));   // Session 8: late and second GRAM / SOL payments (worker/src/shop.js)
       await dbDel(env, `sgn/${dayOf(Date.now()) - 2}`).catch(() => {});   // signup counters are only needed for a day
     })());
   },

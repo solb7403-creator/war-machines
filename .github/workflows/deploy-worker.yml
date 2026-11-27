@@ -64,6 +64,11 @@ jobs:
           node dev/tests/wtest/lab-store.mjs
           node dev/tests/wtest/proof-mods.mjs
           node dev/tests/owner-rules.mjs
+          # Session 8: the certified checkout (every rail, both Checkpoint 39 gaps, fail closed, exactly once), the one price table and
+          # the wiki's copy of it, the Conquest store's entitlements
+          node dev/tests/wtest/payments.mjs
+          node dev/tests/shop-table.mjs
+          node dev/tests/conquest-store.mjs
       - name: Live-match smoke test in the Workers runtime
         working-directory: worker
         env:

@@ -1,7 +1,8 @@
 // Farm defense: accounts that belong to one person, found from what they share, grouped into clusters.
 // Links (lk/<a>/<b> = why), written as they're found:
 //   device    the same phone (a random id kept on the device, shared by every Telegram account on it)   (sync)
-//   wallet    paid from the same TON or SOL wallet                                                     (pay-log)
+//   wallet    (Session 8: no longer linked automatically: a paying GRAM / SOL address is often an exchange's, shared by unrelated pilots;
+//             worker/src/shop.js keeps it under wal/ for the owner's review)
 //   replay    the exact same controls, move for move, in a match on each account                        (match/end)
 //   trade     8+ live matches against each other in one day                                              (live rooms)
 //   together  start playing in the same minute on the same network, 6+ times over 3+ days               (here)

@@ -8,7 +8,7 @@ const TG=(window.Telegram&&window.Telegram.WebApp)||null;
 const IN_TG=!!(TG&&TG.initData&&TG.initDataUnsafe&&TG.initDataUnsafe.user);
 const WEB_EDITION=!!window.LUNAR_WEB_EDITION;
 const IN_WEB=WEB_EDITION&&!!window.LUNAR_WEB?.user;
-// TON and SOL checkout stay off until they pass test-network certification (docs/launch); Stars only in Telegram.
+// Session 8: GRAM (formerly TON) and SOL checkout, on since payments were certified (the website: GRAM and SOL; Telegram: Stars, and GRAM behind the server switch).
 // The server still verifies any crypto payment already sent, so nothing in flight is lost.
 const CRYPTO_PAY=true;
 const ACCOUNT_OK=IN_TG||IN_WEB;
@@ -252,7 +252,7 @@ function bankPts(n){
 function revealOf(r){
  if(!r)return null;
  if(r.gem){const G=GEM[r.gem],lv=r.lv,cn=isCh(r.c)?' for your '+CH[r.c].n:'';return {tk:r.tk==='core'?'gem':r.tk||'gem',ri:r.ri,rar:r.ri||0,color:G.c,gem:r.gem,lv:r.lv,up:r.up||0,c:r.c,title:'+'+r.n+' '+G.name+(r.n===1?' shard':' shards')+cn,
-  sub:(r.was&&GEM[r.was]?GEM[r.was].name+' was already at level 5, so these went to '+G.name+'. ':'')+(r.up>0?G.name+' core'+cn+' reached level '+lv+'!':G.name+' core'+cn+': level '+lv+(lv<5?' ('+(r.sh!==undefined?r.sh:myGs(r.c)[r.gem]|0)+'/'+SHARD_NEED[lv]+' shards to next)':' (max)'))};}
+  sub:(r.swap?'Every '+TIER_N[r.ri|0]+' '+(r.swap==='weapon'?'weapon':'chassis')+' is already yours, so this crate became a '+TIER_N[r.ri|0]+' gem cache. ':'')+(r.was&&GEM[r.was]?GEM[r.was].name+' was already at level 5, so these went to '+G.name+'. ':'')+(r.up>0?G.name+' core'+cn+' reached level '+lv+'!':G.name+' core'+cn+': level '+lv+(lv<5?' ('+(r.sh!==undefined?r.sh:myGs(r.c)[r.gem]|0)+'/'+SHARD_NEED[lv]+' shards to next)':' (max)'))};}
  if(r.tk==='paint'){const P=PAINTS[r.id]||PAINTS.stock;return r.id==='founder'?{tk:'paint',rar:2,color:P.trim,paint:'founder',title:'Founder paint',sub:'Yours for good. It’s never sold again.'}:
   {tk:'paint',rar:2,color:P.trim,paint:r.id,title:P.n+' paint',sub:'Equipped. Change it in the Garage.'};}
  if(r.tk==='moonbeam')return {tk:'moonbeam',rar:2,color:'#e8f4ff',title:'Moonbeam unlocked',sub:'Equipped. Its super is Moonfall.'};

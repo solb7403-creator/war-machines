@@ -1020,7 +1020,7 @@ function ecoPrice(S,d,X){
 function ecoOwned(S,d,X){
  if(d.kind==='starter')return S.starter;if(d.kind==='founder')return S.founder||!FOUNDER_OPEN;if(d.kind==='moonbeam')return S.moonbeam;
  if(d.kind==='skin')return S.skin==='lunar';if(d.kind==='paint')return !!(S.paints&&S.paints[d.id]);if(d.kind==='pass')return ecoPassState(S,X).prem;
- if(d.kind==='respec')return !!S.rsCr;   // a paid reset is already waiting
+ if(d.kind==='respec')return !!S.rsCr||(d.c!==undefined&&d.c!==null&&d.c!==''&&!ownsCh(S,d.c));   // a paid reset is already waiting; or it names a chassis you don't own (review round 1: it was quoted, then 'paid' for nothing)
  if(d.kind==='rsleg'){const set=rsLegSet(d.tk);return !set||!!(S.lsm&&S.lsm[d.tk])||!!(S.rm&&S.rm[d.tk])||!!(S.rsj&&S.rsj[d.tk])||!(S.rm&&S.rm[set]);}   // bought, researched or being researched (one ownership), or its track's set mod not researched yet: nothing to sell
  if(d.kind==='rspack')return !RS_PACKS[d.tk]||((S.buys&&S.buys[rsPackKey(d.tk,X)])|0)>=1;   // this week's one is bought
  if(d.kind==='rsfin')return !/^j\d{1,6}$/.test(String(d.job||''))||!!(S.rsx&&S.rsx[d.job]);   // that job is already paid for
@@ -1038,10 +1038,10 @@ function ecoOwned(S,d,X){
 }
 // open a crate. Returns what came out (the phone words it): gem {gem,n,lv,up}; gear {isW,k,tier,roll,kind: new|up|dup,old,pts}
 // c: the chassis a gem cache's shards are for (owned; else the one the pilot flies now)
-function ecoOpenBox(S,tk,ri,X,c){const r=ecoOpenBoxRaw(S,tk,ri,X,c);labGain(S,r);return r;}
+function ecoOpenBox(S,tk,ri,X,c,paid){const r=ecoOpenBoxRaw(S,tk,ri,X,c,paid);labGain(S,r);return r;}   // paid: bought (any currency) or the premium pass: a duplicate never pays points
 // n shards of core k for chassis c: level-ups as they fill (shards past level 5 stay as surplus)
 function coreShards(S,c,k,n){const gl=S.glc[c],gs=S.gsc[c];gs[k]+=n;let lv=gl[k],up=0;while(lv<5&&gs[k]>=SHARD_NEED[lv]){gs[k]-=SHARD_NEED[lv];lv++;up++;}gl[k]=lv;return {lv,up,sh:gs[k]};}
-function ecoOpenBoxRaw(S,tk,ri,X,c){
+function ecoOpenBoxRaw(S,tk,ri,X,c,paid){
  const R=X.rnd;
  if(tk==='gem'){
   c=chFor(S,c);
@@ -1055,6 +1055,9 @@ function ecoOpenBoxRaw(S,tk,ri,X,c){
  // collection complete: re-roll a random item of this rarity, keep the better roll
  const k=keys[(R()*3)|0],old=rollIn(S,k,ri);
  if(roll>old){S.roll[k+':'+ri]=roll;return {tk,ri,isW,k,tier:ri,roll,old,kind:'up'};}
+ // Session 8 (owner guardrail: paid items never grant airdrop points): a PAID crate's duplicate becomes a gem cache of its rarity (the
+ // same price in the shop), never points or a day played; a crate bought with earned points still refunds DUP_PTS of them
+ if(paid){const g=ecoOpenBoxRaw(S,'gem',ri,X,c);return {...g,swap:tk};}
  return {tk,ri,isW,k,tier:ri,roll,old,kind:'dup',pts:ecoAward(S,DUP_PTS[ri],X)};
 }
 // a crate or cache for points. Gem caches: GEM_PTS (every rarity, Epic included), for chassis ch, and they don't raise the money price
@@ -1176,11 +1179,11 @@ const LAB_KINDS=Object.freeze(['rspack','rsleg','rsfin']),labSaleOk=(S,d,X)=>LAB
 function ecoGrant(S,d,X){
  const outs=[];
  if(d.kind==='box'){const bk=ecoBuyKey(d.tk,d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;if(d.deal==='d')S.dealD=X.day;else if(d.deal==='w')S.dealW=X.week;
-  S.spendGram+=Number(d.price)||RPRICE[d.ri]||0;outs.push({...ecoOpenBox(S,d.tk,d.ri,X,d.c),bk});}   // bk: a refund steps the price back (Session 8)
+  S.spendGram+=Number(d.price)||RPRICE[d.ri]||0;outs.push({...ecoOpenBox(S,d.tk,d.ri,X,d.c,true),bk});}   // bk: a refund steps the price back (Session 8)
  else if(d.kind==='core'){const bk=ecoBuyKey('gem',d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||RPRICE[d.ri]*CORE_X||0;outs.push({...ecoCoreAdd(S,d.tk,d.ri,d.c),bk});}   // counts toward the day's gem-cache price steps, like a cache
  else if(d.kind==='gear'){const tk=gearTk(d.tk);if(tk){const bk=ecoBuyKey(tk,d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||RPRICE[d.ri]*CORE_X||0;outs.push({...ecoGearAdd(S,d.tk,d.ri,X),bk});}}   // counts toward that crate's price steps, like a crate (as a chosen core does for its cache)
- else if(d.kind==='starter'){if(!S.starter){S.starter=true;S.spendGram+=STARTER.ton;outs.push(ecoOpenBox(S,'weapon',1,X),ecoOpenBox(S,'chassis',1,X),ecoOpenBox(S,'gem',1,X,d.c));}}
- else if(d.kind==='founder'){if(!S.founder){S.founder=true;S.spendGram+=FOUNDER.ton;S.paints.founder=1;outs.push({tk:'paint',id:'founder'},ecoOpenBox(S,'weapon',2,X),ecoOpenBox(S,'gem',1,X,d.c),ecoOpenBox(S,'gem',1,X,d.c));}}
+ else if(d.kind==='starter'){if(!S.starter){S.starter=true;S.spendGram+=STARTER.ton;outs.push(ecoOpenBox(S,'weapon',1,X,undefined,true),ecoOpenBox(S,'chassis',1,X,undefined,true),ecoOpenBox(S,'gem',1,X,d.c));}}
+ else if(d.kind==='founder'){if(!S.founder){S.founder=true;S.spendGram+=FOUNDER.ton;S.paints.founder=1;outs.push({tk:'paint',id:'founder'},ecoOpenBox(S,'weapon',2,X,undefined,true),ecoOpenBox(S,'gem',1,X,d.c),ecoOpenBox(S,'gem',1,X,d.c));}}
  else if(d.kind==='moonbeam'){if(!S.moonbeam){S.moonbeam=true;S.spendGram+=MOONBEAM_PRICE;outs.push({tk:'moonbeam'});}}
  else if(d.kind==='skin'){if(S.skin!=='lunar'){S.skin='lunar';S.spendGram+=SKIN_PRICE;outs.push({tk:'skin'});}}
  else if(d.kind==='paint'){const P=PAINTS[d.id];if(P&&P.stars&&!S.paints[d.id]){S.paints[d.id]=1;S.spendGram+=P.ton||0;outs.push({tk:'paint',id:d.id});}}
@@ -1327,7 +1330,7 @@ function ecoClaimPass(S,track,i,X,c){
  const ex=prem&&passPartsAt(i)?{parts:ecoAddParts(S,passPartsAt(i))}:{};   // Session 6B: research parts on some premium tiers, on top of the tier's reward
  if(r.k==='pts')return {pts:ecoAward(S,r.n,X,1),...ex};   // free track only: the premium track never gives points
  if(r.k==='paint'){S.paints[r.id]=1;labGain(S,{tk:'paint',id:r.id});return {paint:r.id,...ex};}
- return {box:ecoOpenBox(S,r.tk,r.ri,X,c),...ex};
+ return {box:ecoOpenBox(S,r.tk,r.ri,X,c,prem),...ex};   // the premium track is paid: its crates never pay points (a duplicate becomes a gem cache)
 }
 // ---- matches ----
 // points for a finished match: mode pay, best of 3, featured, win streak, then the league: base pay and the spendable multiplier
@@ -1718,7 +1721,7 @@ const SHOP=Object.freeze({
  rate:Object.freeze({stars:RS_STARS_USD,gram:RS_TON_USD}),
  // the Conquest town store (ConquestPlot.STORE shows these rows): capacity, convenience, cosmetics and time; never points
  cq:Object.freeze({
-  'wall-ext-10':Object.freeze({n:'Wall extension pack',d:'+10% wall capacity at your level (capacity only: strength still comes from composite and ore)',usd:2.99,step:10,limit:'up to the +50% extension cap together with the ones you earn'}),
+  'wall-ext-10':Object.freeze({n:'Wall extension pack',d:'+10% wall capacity at your level (capacity only: strength still comes from composite and ore)',usd:2.99,step:10,limit:'up to +50% in all: the extensions you earn later count toward the same cap, so a pack brings capacity forward'}),
   'skin-gilded':Object.freeze({n:'Gilded wall skin',d:'a gold finish on every wall (looks only: stats unchanged)',usd:4.99,once:1}),
   'skin-turret-neon':Object.freeze({n:'Neon turret skins',d:'a neon finish on all eleven turret types (looks only)',usd:4.99,once:1}),
   'foundry-rush':Object.freeze({n:'Foundry speed-up',d:'your Foundry turns loaded alloy into composite 4x faster for 24 h',usd:1.99,ms:86400000,x:4,limit:'each one adds 24 h'}),

@@ -16,7 +16,7 @@
 //    is owned, over a limit, superseded or priced higher now is kept with nothing granted (st 'held', for a refund): never re-rolled.
 //  - SOL quotes need the live GRAM and SOL rates: when the price service is down, no quote ('pending', fail closed); a paid SOL quote
 //    is judged against its own frozen lamports, so no live rate is needed (or trusted) when it lands.
-import { dayOf, hex, hmac, dbGet, dbPut, dbPatch, cleanName } from "./db.js";
+import { dayOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
 import { RULES as R, CONQUEST } from "./sim.gen.js";
 import { tx, pub, readEco, readTag, writeIf, claimOnce, setLoadout, link, cfg, ctxOf } from "./eco.js";
 import { readState } from "./conquest-store.js";
@@ -111,9 +111,9 @@ export const itemLabelOf = labelOf;
 // The website's price labels and every SOL quote read these. Cached five minutes per isolate; a failed lookup is remembered for a
 // minute and one lookup is shared by every request in flight (no upstream fan-out). CoinGecko's id for GRAM is still the-open-network.
 let RATES = { ton: 0, sol: 0, t: 0, fail: 0 }, RATES_P = null;
-export async function liveRates(now = Date.now()) {
-  if (RATES.t && now - RATES.t < 300000) return RATES;
-  if (RATES.fail && now - RATES.fail < 60000) return RATES;
+export async function liveRates(now = Date.now(), maxAge = 300000) {
+  if (RATES.t && now - RATES.t < maxAge) return RATES;
+  if (RATES.fail && now - RATES.fail < Math.min(60000, maxAge / 2)) return RATES;
   if (RATES_P) return RATES_P;
   RATES_P = (async () => {
     try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json(); const t = Number(d["the-open-network"].usd), so = Number(d.solana.usd); if (t > 0 && so > 0) { RATES = { ton: t, sol: so, t: Date.now(), fail: 0 }; return RATES; } } catch {}
@@ -123,16 +123,24 @@ export async function liveRates(now = Date.now()) {
 }
 export const resetRates = () => { RATES = { ton: 0, sol: 0, t: 0, fail: 0 }; RATES_P = null; };
 // a SOL amount for a GRAM price at the live rates, or null when the price service is down or its numbers are stale (fail closed:
-// this replaces the old solValueOk, which let a SOL payment through when the rates could not be read). Rates older than 15 minutes
-// are not used for a new quote.
+// this replaces the old solValueOk, which let a SOL payment through when the rates could not be read). A SOL quote needs rates read in
+// the last 2 minutes: while the price service is down no quote is made (review round 1: a 15-minute-old rate was still used).
 export async function solValueOk(gram, now = Date.now()) {
-  const r = await liveRates(now);
-  if (!(r.ton > 0 && r.sol > 0) || !r.t || now - r.t > 900000) return null;
+  const r = await liveRates(now, 120000);
+  if (!(r.ton > 0 && r.sol > 0) || !r.t || now - r.t > 120000) return null;
   const sol = gram * r.ton / r.sol;
   return sol > 0 && Number.isFinite(sol) ? { sol, ton: r.ton, solUsd: r.sol, usd: Math.round(gram * r.ton * 100) / 100 } : null;
 }
 // the launch liquidity fund (LP_SHARE of every verified sale, counted in US cents as the server prices it; refunds come off)
 export const revAdd = (env, cents) => (cents ? dbPatch(env, "meta", { revc: { ".sv": { increment: Math.round(cents) } } }).catch(() => {}) : null);
+// a Stars invoice's title (Telegram allows 32 characters): the item without its section name, cut at a word (review round 1: titles were cut
+// mid-word, e.g. "Collection: Captured Parasite Si"); the full name stays in the description
+export function invoiceTitle(item) {
+  let t = String(item || "").replace(/^(Collection|Science Lab|Conquest|Conquest store): /, "").replace(/^Legendary set mod: /, "Legendary: ");
+  if (t.length <= 32) return t;
+  t = t.slice(0, 31); const k = t.lastIndexOf(" ");
+  return (k > 12 ? t.slice(0, k) : t) + "…";
+}
 // ---------------------------------------------------------------- the GRAM switch -------------------------------------------------
 // Owner decision (Nov 26, 2026): GRAM is sold inside Telegram as well as Stars, behind a server-side switch (cfg/gramTg; absent = on)
 // that the owner flips in one step with no release (the Admin screen, or /gram on | off in the bot). Telegram's Nov 17, 2026
@@ -173,7 +181,7 @@ export function publicOrder(o, now = Date.now()) {
 }
 const dpOf = (d) => { const o = { kind: d.kind }; for (const k of ["tk", "ri", "id", "c", "deal", "job"]) if (d[k] !== undefined && d[k] !== null) o[k] = d[k]; return o; };   // the goods as the phone named them
 // a quote: every sale rule on the server's records, the price frozen, one open quote per item. cur: 'STARS' | 'TON' | 'SOL'
-export async function quote(env, a, cur, raw, now = Date.now()) {
+export async function quote(env, a, cur, raw, now = Date.now(), depth = 0) {
   const web = !!a.web, pid = a.pid;
   if (!["STARS", "TON", "SOL"].includes(cur)) return { status: 400, body: { error: "cur" } };
   const rails = await railsFor(env, web, cur === "TON");
@@ -195,7 +203,7 @@ export async function quote(env, a, cur, raw, now = Date.now()) {
     price = R.ecoPrice(S, d, X);
     if (!price) { err = "item"; return { abort: true }; }
     if (d.deal && price.deal !== d.deal) { err = "deal_used"; return { abort: true }; }
-    if (price.deal) { const dv = o[safeKey("deal:" + price.deal)]; if (dv && !rksOf(d, X, null).every((k) => o[k] && o[k].q === dv.q)) price = R.ecoPrice(S, { ...d, deal: null }, X); }   // the deal is held by another open quote: this one is priced without it
+    if (price.deal) { const dv = o[safeKey("deal:" + price.deal)]; if (dv && !rksOf(d, X, null).every((k) => o[k] && o[k].q === dv.q)) price = R.ecoPrice(S, { ...d, deal: null }, X); if (price && !price.deal && d.deal) d = { ...d, deal: null }; }   // the deal is held by another open quote: this one is priced without it
     rk = rksOf(d, X, price);
     const held = [...new Set(rk.map((k) => o[k]).filter(Boolean).map((v) => v.q))];
     if (held.length === 1 && rk.every((k) => o[k] && o[k].q === held[0]) && o[rk[0]].c === cur[0]) { reuse = held[0]; return { abort: true }; }   // the same item, same rail, still open: that quote again
@@ -206,24 +214,32 @@ export async function quote(env, a, cur, raw, now = Date.now()) {
   }, now);
   if (err === "open_order") { const open = await dbGet(env, orderPath(pid, reuse)).catch(() => null); return { status: 409, body: { error: "open_order", order: publicOrder(open, now), msg: "You have an open " + (open && open.cur === "SOL" ? "SOL" : "GRAM") + " payment for this item. Finish it, or cancel it first." } }; }
   if (err) return { status: err === "item" ? 400 : 409, body: { error: err } };
-  if (reuse) { const o = await dbGet(env, orderPath(pid, reuse)).catch(() => null); if (o && o.st === "open") return { status: 200, body: { ok: true, reused: true, order: publicOrder(o, now) } }; }
+  if (reuse) {
+    const o = await dbGet(env, orderPath(pid, reuse)).catch(() => null);
+    if (o && o.st === "open" && JSON.stringify(o.dp || null) === JSON.stringify(dpOf(d))) return { status: 200, body: { ok: true, reused: true, order: publicOrder(o, now) } };
+    // the same price step or limit, other goods (a crate and its chosen item share one): an unpaid Stars invoice is replaced; a GRAM / SOL one must be finished or cancelled
+    if (o && o.st === "open" && o.cur === "STARS" && !depth) { await cancelOrder(env, a, reuse, now); return quote(env, a, cur, raw, now, 1); }
+    if (o && o.st === "open") return { status: 409, body: { error: "open_order", order: publicOrder(o, now), msg: "You have an open " + (o.cur === "SOL" ? "SOL" : "GRAM") + " payment for " + o.item + ". Finish it, or cancel it first." } };
+    return { status: 409, body: { error: "busy", msg: "Another device is starting this purchase. Try again in a moment." } };   // the other request has not written its order yet: never a second, unreserved order
+  }
   for (const q of superseded) await dbPatch(env, orderPath(pid, q), { st: "cancelled", cx: now }).catch(() => {});
   const S = t.S, item = labelOf(d), rec = { v: 1, oid, pid, cur, sf: web ? "web" : "tg", d, dp: dpOf(d), rk, price, item, t: now, e: now + QUOTE_MS, st: "open", name: cleanName(a.user || {}) };
   if (cur === "TON") { rec.amt = price.ton; rec.base = String(Math.round(price.ton * 1e9)); rec.memo = "LWM|" + pid + "|" + oid; const r0 = await liveRates(now); if (r0.ton > 0) { rec.rate = { ton: r0.ton }; rec.usd = Math.round(price.ton * r0.ton * 100) / 100; } }   // the dollar figure at the live GRAM rate, shown beside the amount (as for SOL)
   if (cur === "SOL") {
-    const sol = { sol: price.ton * rate.sol, ton: rate.ton, solUsd: rate.solUsd, usd: Math.round(price.ton * rate.ton * 100) / 100 }, lam0 = Math.floor((sol.sol * 1e9) / 1e6) * 1e6;
+    const sol = { sol: price.ton * rate.sol, ton: rate.ton, solUsd: rate.solUsd, usd: Math.round(price.ton * rate.ton * 100) / 100 }, lam0 = Math.floor((sol.sol * 1e9) / 1e4) * 1e4;
     let lam = 0;
-    for (let i = 0; i < 6 && !lam; i++) { const cand = lam0 + (1 + Math.floor(Math.random() * 999)) * 1e3; if ((await claimOnce(env, "solAmt/" + cand, { pid, oid, t: now })).ok) lam = cand; }   // a unique exact amount: an exact-amount send without the reference still finds its own quote
+    for (let i = 0; i < 6 && !lam; i++) { const cand = lam0 + (1 + Math.floor(Math.random() * 999)) * 10; if ((await claimOnce(env, "solAmt/" + cand, { pid, oid, t: now })).ok) lam = cand; }   // a unique exact amount: an exact-amount send without the reference still finds its own quote
     if (!lam) { await release(env, pid, oid, now); return { status: 503, body: { error: "busy" } }; }
-    rec.base = String(lam); rec.amt = Number((lam / 1e9).toFixed(6)); rec.ref = b58(crypto.getRandomValues(new Uint8Array(32))); rec.usd = sol.usd; rec.rate = { ton: sol.ton, sol: sol.solUsd };
+    rec.base = String(lam); rec.amt = Number((lam / 1e9).toFixed(9)); rec.ref = b58(crypto.getRandomValues(new Uint8Array(32))); rec.usd = sol.usd; rec.rate = { ton: sol.ton, sol: sol.solUsd };
   }
   if (cur === "STARS") {
     rec.amt = price.stars;
-    const title = item.slice(0, 32), r = await tg(env, "createInvoiceLink", { title, description: ("LUNAR: War Machines · " + item).slice(0, 255), payload: JSON.stringify({ u: Number(a.user && a.user.id) || 0, q: oid }), currency: "XTR", prices: [{ label: title, amount: price.stars }] }).catch(() => null);
+    const title = invoiceTitle(item), r = await tg(env, "createInvoiceLink", { title, description: ("LUNAR: War Machines · " + item).slice(0, 255), payload: JSON.stringify({ u: Number(a.user && a.user.id) || 0, q: oid }), currency: "XTR", prices: [{ label: title, amount: price.stars }] }).catch(() => null);
     if (!r || !r.ok) { await release(env, pid, oid, now); return { status: 502, body: { error: (r && r.description) || "telegram" } }; }
     rec.link = r.result;
   }
   await dbPut(env, orderPath(pid, oid), rec);
+  if (cur !== "STARS") await dbPut(env, `chainq/${oid}`, { p: pid, c: cur, t: now, e: rec.e, ...(cur === "SOL" ? { l: Number(rec.base) } : {}) }).catch(() => {});   // chainSweep
   return { status: 200, body: { ok: true, order: publicOrder(rec, now), E: pub(S) } };
 }
 async function release(env, pid, oid, now) { await tx(env, pid, (S) => { const o = ordOf(S); let n = 0; for (const [k, v] of Object.entries(o)) if (v && v.q === oid) { delete o[k]; n++; } return n ? {} : { abort: true }; }, now).catch(() => {}); }
@@ -248,7 +264,7 @@ export async function grantOrder(env, pid, o, pay, now = Date.now()) {
     res = null;
     const go = sweepGo(S, X), ord = sweepOrd(S, now);
     S.gout = S.gout && typeof S.gout === "object" ? S.gout : {};
-    if (go[pk]) { res = { dup: true, outs: S.gout[o.oid] || [], held: o.err || null }; return { abort: true }; }   // this very payment again (a replay, a retried webhook, a second tab)
+    if (go[pk]) { const dk = o.oid + ":" + pk, outs = S.gout[dk] || S.gout[o.oid] || []; res = { dup: true, dupPay: !!S.gout[dk], outs, held: (outs.find((x) => x && x.none) || {}).err || null }; return { abort: true }; }   // this very payment again (a replay, a retried webhook, a second tab)
     let held = null;
     if (go[ok0]) held = "duplicate";   // the quote was already paid by another payment: this one is a second payment, kept for a refund
     const mine = (o.rk || []).every((k) => !ord[k] || ord[k].q === o.oid);
@@ -262,30 +278,39 @@ export async function grantOrder(env, pid, o, pay, now = Date.now()) {
       const S0 = JSON.parse(JSON.stringify(S));
       try { outs = R.ecoGrant(S, { ...d, deal: o.price.deal || null, price: o.price.ton }, X); }
       catch (e) { for (const k of Object.keys(S)) delete S[k]; Object.assign(S, S0); outs = []; held = "grant: " + String((e && e.message) || e).slice(0, 60); }   // a grant that throws never loses the paid record
+      if (!held && outs.some((x) => x && x.err)) { held = "grant: " + String(outs.find((x) => x && x.err).err).slice(0, 40); for (const k of Object.keys(S)) delete S[k]; Object.assign(S, S0); outs = []; }   // a grant that refused itself (e.g. a reset of a chassis not owned) is held, nothing spent
       if (!outs.length) { held = held || "nothing"; outs = [{ none: 1, err: held }]; }
       if (!held && needsLoadout(d.kind) && S.L) setLoadout(S, S.L);   // the build changed: power and league follow
     }
     for (const [k, v] of Object.entries(ord)) if (v && v.q === o.oid) delete ord[k];   // the quote's reservation is spent either way
     go[pk] = X.day; if (!held) go[ok0] = X.day;
-    S.gout[o.oid] = outs; const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
+    S.gout[held === "duplicate" ? o.oid + ":" + pk : o.oid] = outs; const ks = Object.keys(S.gout);   // a second payment never overwrites what the quote's own payment gave
+    if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
     res = { outs, held };
     return {};
   }, now);
-  const outs = (res.outs || []).filter((x) => x && !x.none), held = res.held || null;
-  if (!res.dup) {
-    const st = held ? "held" : "paid";
-    if (held === "duplicate") await dbPatch(env, orderPath(pid, o.oid) + "/dup", { [pk]: { tx: String(pay.id).slice(0, 120), t: now } });   // the quote stays paid; the second payment is listed with it (and under held/ for a refund)
-    else await dbPatch(env, orderPath(pid, o.oid), { st, gt: now, tx: String(pay.id).slice(0, 120), out: outs, ...(held ? { err: held } : {}), ...(pay.src ? { src: String(pay.src).slice(0, 80) } : {}), ...(pay.amt !== undefined ? { paid: pay.amt } : {}) });
+  const outs = (res.outs || []).filter((x) => x && !x.none), held = res.held || null, dupPay = !!res.dupPay || held === "duplicate";
+  // the records (the order, the sales record, the refund list): written after the grant, and again on a replay of this payment when an
+  // earlier attempt lost them (review round 1: a failed write after the grant was never redone). Each write is checked: a failure throws,
+  // so Telegram retries the webhook and the phone retries its status call, and the replay finishes them; the revenue counts once.
+  const ord0 = res.dup ? await dbGet(env, orderPath(pid, o.oid)).catch(() => null) : o;
+  const settled = res.dup && !!ord0 && (dupPay ? !!(ord0.dup && ord0.dup[pk]) : ["paid", "held", "refunded"].includes(ord0.st));
+  if (!settled) {
+    const st = held ? "held" : "paid", must = async (w) => { if (!(await w)) throw new Error("db write"); };
+    if (dupPay) await must(dbPatch(env, orderPath(pid, o.oid) + "/dup", { [pk]: { tx: String(pay.id).slice(0, 120), t: now } }));   // the quote stays paid; the second payment is listed with it (and under held/ for a refund)
+    else await must(dbPatch(env, orderPath(pid, o.oid), { st, gt: now, tx: String(pay.id).slice(0, 120), out: outs, ...(held ? { err: held } : {}), ...(pay.src ? { src: String(pay.src).slice(0, 80) } : {}), ...(pay.amt !== undefined ? { paid: pay.amt } : {}) }));
     // the admin's sales record (revenue, and every held payment for a refund)
     const usdC = o.cur === "STARS" ? (Number(pay.amt) || o.price.stars) * 1.3 : o.cur === "SOL" ? (o.usd || 0) * 100 : o.price.ton * ((o.rate && o.rate.ton) || (await liveRates(now)).ton || 0) * 100;   // cents: Stars at ~1.3 cents, GRAM at its quote-time rate
-    await dbPut(env, `payments/LWM_${safeKey(pid)}_${o.oid}${held === "duplicate" ? "_" + pk : ""}`.slice(0, 160), { pid, name: o.name || "", cur: o.cur, amt: o.amt, gram: o.price.ton, usd: Math.round(usdC) / 100, item: o.item, memo: o.memo || "STARS|" + o.oid, proof: String(pay.id).slice(0, 120), verified: true, granted: !held, ...(held ? { err: held } : {}), o: outs, oid: o.oid, t: { ".sv": "timestamp" } }).catch(() => {});
-    if (held) await dbPut(env, `held/${held === "duplicate" ? o.oid + "_" + pk : o.oid}`.slice(0, 120), { pid, oid: o.oid, cur: o.cur, amt: o.amt, item: o.item, err: held, tx: String(pay.id).slice(0, 120), t: now }).catch(() => {});
-    else await revAdd(env, usdC);
-    if (pay.src && pay.src !== "payer" && o.cur !== "STARS") {   // farms: accounts paying from one wallet are one person's
-      const wh = hex(await hmac(env.BOT_TOKEN, "w|" + pay.src)).slice(0, 16), others = (await dbGet(env, `wal/${wh}`).catch(() => null)) || {};
-      for (const x of Object.keys(others).slice(0, 20)) if (x !== pid) await link(env, pid, x, "wallet").catch(() => {});
-      await dbPatch(env, `wal/${wh}`, { [pid]: dayOf(now) }).catch(() => {});
+    const payKey = `payments/LWM_${safeKey(pid)}_${o.oid}${dupPay ? "_" + pk : ""}`.slice(0, 160), had = res.dup ? await dbGet(env, payKey).catch(() => null) : null;
+    if (!had) {
+      await must(dbPut(env, payKey, { pid, name: o.name || "", cur: o.cur, amt: o.amt, gram: o.price.ton, usd: Math.round(usdC) / 100, item: o.item, memo: o.memo || "STARS|" + o.oid, proof: String(pay.id).slice(0, 120), verified: true, granted: !held, ...(held ? { err: held } : {}), ...(pay.src ? { src: String(pay.src).slice(0, 80) } : {}), o: outs, oid: o.oid, t: { ".sv": "timestamp" } }));
+      if (held) await dbPut(env, `held/${dupPay ? o.oid + "_" + pk : o.oid}`.slice(0, 120), { pid, oid: o.oid, cur: o.cur, amt: o.amt, item: o.item, err: held, tx: String(pay.id).slice(0, 120), t: now }).catch(() => {});
+      else await revAdd(env, usdC);
     }
+    // a paying address is kept as a hint for the owner's review only: an exchange or custodial wallet pays for many unrelated pilots,
+    // so it never links accounts or flags anyone by itself (review round 1)
+    if (pay.src && pay.src !== "payer" && o.cur !== "STARS") { const wh = hex(await hmac(env.BOT_TOKEN, "w|" + pay.src)).slice(0, 16); await dbPatch(env, `wal/${wh}`, { [pid]: dayOf(now) }).catch(() => {}); }
+    if (o.cur === "SOL" && o.base && !dupPay) await dbDel(env, `solAmt/${o.base}`).catch(() => {});   // the unique amount is free again
   }
   return { st: held ? "held" : "paid", outs, held, dup: !!res.dup, E: t && t.S ? pub(t.S) : null };
 }
@@ -348,9 +373,9 @@ export async function findSol(env, o, now = Date.now()) {
     const cfgT = { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "finalized" };
     // 1) the quote's own reference key (Solana Pay; our pay page adds it to the transfer)
     const sigs = (await solRpc("getSignaturesForAddress", [o.ref, { limit: 5, commitment: "finalized" }])) || [];
-    for (const sg of sigs.slice(0, 3)) { if (sg.err) continue; const t = await solRpc("getTransaction", [sg.signature, cfgT]); const hit = solTransfer(t, o, false); if (hit) return { id: sg.signature, ...hit }; }
+    for (const sg of sigs.slice(0, 5)) { if (sg.err) continue; const t = await solRpc("getTransaction", [sg.signature, cfgT]); const hit = solTransfer(t, o, false); if (hit) return { id: sg.signature, ...hit }; }
     // 2) an exact-amount send without the reference (a wallet that can't add it): the quote's unique lamports, sent after the quote
-    const recent = ((await solRpc("getSignaturesForAddress", [SOL_RECIPIENT, { limit: 25, commitment: "finalized" }])) || []).filter((sg) => !sg.err && (!sg.blockTime || sg.blockTime * 1000 >= o.t - 60000));
+    const recent = ((await solRpc("getSignaturesForAddress", [SOL_RECIPIENT, { limit: 25, commitment: "finalized" }])) || []).filter((sg) => !sg.err && (!sg.blockTime || (sg.blockTime * 1000 >= o.t - 60000 && sg.blockTime * 1000 <= (Number(o.e) || o.t) + 2 * 3600000)));   // inside the quote's window (+2 h): its unique amount is freed after that
     for (const sg of recent.slice(0, 8)) { const t = await solRpc("getTransaction", [sg.signature, cfgT]); const hit = solTransfer(t, o, true); if (hit) return { id: sg.signature, ...hit }; }
   } catch {}
   return null;
@@ -391,6 +416,77 @@ export async function orderApi(env, a, now = Date.now()) {
   if (act === "rails") return { status: 200, body: { ok: true, rails: await railsFor(env, !!a.web) } };
   return { status: 400, body: { error: "action" } };
 }
+// ---------------------------------------------------------------- the sweep (the 5-minute cron) --------------------------------------
+// Review round 1: a GRAM / SOL payment must be credited even when the phone never asks again (paid after Cancel, or the 30 minutes ran
+// out while the app was closed), and a second payment of a settled quote must be recorded for a refund. Every GRAM / SOL quote is indexed
+// for 7 days (chainq/<oid>); each run reads our GRAM wallet's history once (memos LWM|pid|oid) and looks up the newest unpaid SOL quotes
+// by their reference, granting through the same path as the phone's status call (orderStatus: claimed once, sale rules again, else held).
+// After 7 days an entry goes and its SOL unique amount is freed; an unpaid SOL quote's amount is freed 2 hours after its expiry. A run
+// spends at most about 20 outside calls (the Workers Free plan allows 50 a run, shared with the leaderboard).
+const DAY7 = 7 * 86400000;
+export async function chainSweep(env, now = Date.now(), budget = 20) {
+  const idx = (await dbGet(env, "chainq").catch(() => null)) || {}, out = { matched: 0, extra: 0, pruned: 0, freed: 0 };
+  budget--;
+  const live = [];
+  for (const [oid, v] of Object.entries(idx)) {
+    if (v && now - (Number(v.t) || 0) < DAY7) { live.push([oid, v]); continue; }
+    if (budget < 2) continue;
+    await dbDel(env, `chainq/${oid}`).catch(() => {}); budget--;
+    if (v && v.l && !v.fr) { await dbDel(env, `solAmt/${v.l}`).catch(() => {}); budget--; }
+    out.pruned++;
+  }
+  // GRAM: one history read covers every indexed quote
+  const tonQ = new Map(live.filter(([, v]) => v.c === "TON").map(([oid, v]) => [oid, v]));
+  if (tonQ.size && budget > 6) {
+    const cur = await dbGet(env, "chainc/ton").catch(() => null), lt = (t) => { try { return BigInt(String(t.transaction_id.lt)); } catch { return 0n; } };
+    let hist = [];
+    try { hist = await tonHistory(env, Math.min(...[...tonQ.values()].map((v) => v.t)), now); } catch {}
+    budget -= 4;
+    // only the transactions newer than the last run's (a cursor), oldest first, so a run cut short by its budget resumes where it stopped
+    const fresh = hist.filter((t) => t && t.transaction_id && (!cur || lt(t) > BigInt(String(cur)))).sort((x, y) => (lt(x) < lt(y) ? -1 : 1));
+    let last = cur;
+    for (const t of fresh) {
+      const m = /^LWM\|([A-Za-z0-9_]{3,40})\|([a-z0-9]{8,14})$/.exec(String((t.in_msg && t.in_msg.message) || ""));
+      if (m && tonQ.has(m[2]) && tonQ.get(m[2]).p === m[1]) { if (budget < 8) break; const r = await sweepTon(env, m[1], m[2], t, now); budget -= 8; if (r) out[r]++; }
+      last = String(t.transaction_id.lt);
+    }
+    if (last && last !== cur) await dbPut(env, "chainc/ton", last).catch(() => {});
+  }
+  // SOL: the newest unpaid quotes, each by its reference (two calls)
+  const solQ = live.filter(([, v]) => v.c === "SOL" && !v.done).sort((x, y) => y[1].t - x[1].t);
+  for (const [oid, v] of solQ) {
+    if (budget < 9) break;
+    const o = await dbGet(env, orderPath(v.p, oid)).catch(() => null); budget--;
+    if (!o || o.st === "paid" || o.st === "held" || o.st === "refunded") { await dbPatch(env, `chainq/${oid}`, { done: 1 }).catch(() => {}); budget--; continue; }
+    LOOK.delete(oid);
+    const r = await orderStatus(env, { pid: v.p }, oid, now); budget -= 7;
+    if (r && r.body && r.body.order && (r.body.order.st === "paid" || r.body.order.st === "held")) out.matched++;
+    else if (v.l && !v.fr && now > (Number(v.e) || 0) + 2 * 3600000) { await dbDel(env, `solAmt/${v.l}`).catch(() => {}); await dbPatch(env, `chainq/${oid}`, { fr: 1 }).catch(() => {}); budget -= 2; out.freed++; }
+  }
+  return out;
+}
+// one GRAM payment the sweep found for an indexed quote: an unpaid quote is settled like a status call; a second payment of a settled one
+// is claimed once and kept for a refund (never a second grant)
+async function sweepTon(env, pid, oid, t, now) {
+  const o = await dbGet(env, orderPath(pid, oid)).catch(() => null);
+  if (!o || o.pid !== pid || o.cur !== "TON") return null;
+  if (!["paid", "held", "refunded"].includes(o.st)) {
+    LOOK.delete(oid);
+    const r = await orderStatus(env, { pid }, oid, now);
+    return r && r.body && r.body.order && (r.body.order.st === "paid" || r.body.order.st === "held") ? "matched" : null;
+  }
+  const hash = t && t.transaction_id && t.transaction_id.hash, src = t && t.in_msg && t.in_msg.source;
+  if (!hash || !src || String(o.tx) === String(hash).slice(0, 120)) return null;
+  let v = 0n; try { v = BigInt(String(t.in_msg.value || "0")); } catch { return null; }
+  if (v <= 0n) return null;
+  const once = await claimOnce(env, `tonTx/${safeKey(hash)}`, { pid, oid, t: now, second: 1 });
+  if (!once.ok) return null;
+  const pk = payId("TON", hash), amt = Number(v) / 1e9;
+  await dbPatch(env, orderPath(pid, oid) + "/dup", { [pk]: { tx: String(hash).slice(0, 120), t: now, amt } }).catch(() => {});
+  await dbPut(env, `held/${oid}_${pk}`.slice(0, 120), { pid, oid, cur: "TON", amt, item: o.item, err: "duplicate", tx: String(hash).slice(0, 120), src: String(src).slice(0, 80), t: now }).catch(() => {});
+  await dbPut(env, `payments/LWM_${safeKey(pid)}_${oid}_${pk}`.slice(0, 160), { pid, name: o.name || "", cur: "TON", amt, gram: amt, usd: 0, item: o.item, memo: o.memo, proof: String(hash).slice(0, 120), verified: true, granted: false, err: "duplicate", src: String(src).slice(0, 80), oid, t: { ".sv": "timestamp" } }).catch(() => {});
+  return "extra";
+}
 // ---------------------------------------------------------------- Telegram Stars --------------------------------------------------
 // pre-checkout (answered within Telegram's 10 seconds): the invoice's quote must be the open one for its item, the item still for sale
 // to this account (not owned, inside every limit, the store open), and the invoice's total the CURRENT price (Checkpoint 39 gap 1: an
@@ -427,7 +523,8 @@ export async function starsPaid(env, m, pid, now = Date.now()) {
     return { outs: [], held: "no quote" };
   }
   const g = await grantOrder(env, pid, o, { cur: "STARS", id: charge, amt: sp.total_amount }, now);
-  if (!g.dup) await dbPut(env, `starsPaid/${pid}/${charge}`, { k: o.d.kind, t: o.d.tk || o.d.id || null, r: o.d.ri ?? null, g: o.price.ton, x: o.price.deal || null, c: o.d.c || null, q: o.oid, stars: sp.total_amount, n: o.oid, o: g.outs, ...(g.held ? { err: g.held } : {}), ts: { ".sv": "timestamp" } });
+  const rcp = `starsPaid/${pid}/${charge}`;
+  if (!g.dup || !(await dbGet(env, rcp).catch(() => null))) if (!(await dbPut(env, rcp, { k: o.d.kind, t: o.d.tk || o.d.id || null, r: o.d.ri ?? null, g: o.price.ton, x: o.price.deal || null, c: o.d.c || null, q: o.oid, stars: sp.total_amount, n: o.oid, o: g.outs, ...(g.held ? { err: g.held } : {}), ts: { ".sv": "timestamp" } }))) throw new Error("db write");   // checked: a lost receipt would make a later refund take nothing back
   return g;
 }
 // a Stars refund: take back exactly what that purchase gave (once)
@@ -435,21 +532,24 @@ export async function starsRefund(env, m, pid, now = Date.now()) {
   const rp = m.refunded_payment, charge = safeKey(rp.telegram_payment_charge_id);
   const sp = await dbGet(env, `starsPaid/${pid}/${charge}`).catch(() => null);
   if (!sp || sp.rf) return 0;
-  let n = 0;
+  let n = 0, did = false;
   await tx(env, pid, (S) => {
+    did = false;
     S.rfd = Array.isArray(S.rfd) ? S.rfd : [];
-    if (S.rfd.includes(charge)) return { abort: true };
-    S.rfd = S.rfd.concat(charge).slice(-40);
+    if (S.rfd.includes(charge) || S.rfd.includes("h:" + charge)) return { abort: true };   // refunded already (a redelivered refund)
+    S.rfd = S.rfd.concat(sp.err ? "h:" + charge : charge).slice(-40);   // a held payment's refund (nothing was granted) never counts toward the refund flag
     if (!sp.err) R.ecoRefund(S, sp.k, sp.o || []);   // a held payment granted nothing: nothing to take back
     if (needsLoadout(sp.k) && S.L) setLoadout(S, S.L);
     S.spendGram = Math.max(0, (S.spendGram || 0) - (sp.err ? 0 : Number(sp.g) || 0));
-    n = S.rfd.length;
+    n = S.rfd.filter((x) => !String(x).startsWith("h:")).length; did = true;
     return {};
   }, now);
+  if (!did) return 0;   // the same refund delivered twice: its records and the revenue counter are touched once (review round 1)
   // a granted payment refunded: its order shows refunded; a held one (nothing was granted, e.g. a second payment of a paid quote) is
   // marked on its own records only, never on the order another payment paid
   const pk = payId("STARS", charge), own = sp.q && !sp.err ? { [`orders/${pid}/${sp.q}/st`]: "refunded", [`orders/${pid}/${sp.q}/rf`]: now, [`payments/LWM_${safeKey(pid)}_${sp.q}/refunded`]: true } : sp.q ? { [`payments/LWM_${safeKey(pid)}_${sp.q}${sp.err === "duplicate" ? "_" + pk : ""}`.slice(0, 160) + "/refunded"]: true } : {};
-  await dbPatch(env, "", { [`starsPaid/${pid}/${charge}/rf`]: now, ...own });
+  const heldKey = sp.err && sp.q ? `held/${sp.err === "duplicate" ? sp.q + "_" + pk : sp.q}`.slice(0, 120) + "/refunded" : null;   // a held payment refunded leaves the held list
+  await dbPatch(env, "", { [`starsPaid/${pid}/${charge}/rf`]: now, ...own, ...(heldKey ? { [heldKey]: now } : {}) });
   if (!sp.err) await revAdd(env, -(Number(sp.stars) || 0) * 1.3);
   return n;
 }

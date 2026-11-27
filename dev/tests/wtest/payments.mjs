@@ -10,14 +10,14 @@ import { payKit, fakeSol } from './pay.mjs';
 import { buildSim } from '../../../worker/build-sim.mjs';
 buildSim();
 const db = makeDB(), tgCalls = [];
-let tonTxs = [], ratesUp = true;
+let tonTxs = [], ratesUp = true, failOnce = null;   // failOnce: a regex: the next database write to a matching path fails with a 503 (fault injection)
 const SOLR = 'A37J13iXXA47n4kFKvR9Cao1u8A6v3HP8qMCSCJDi7AE', TONR = 'UQAq3MBfPQ7Wqo5kL7631yEDKf2E9GOmZdhOfLUWhUiACfzu', sol = fakeSol(SOLR);
 const pair = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['sign', 'verify']);
 const jwk = await crypto.subtle.exportKey('jwk', pair.publicKey); jwk.kid = 'test-key'; jwk.alg = 'RS256'; jwk.use = 'sig';
 let tonCalls = 0, solCalls = 0;
 globalThis.fetch = async (url, init) => {
   url = String(url);
-  if (url.startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/')) return db.handle(url, init);
+  if (url.startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/')) { if (failOnce && init && (init.method === 'PATCH' || init.method === 'PUT') && failOnce.test(decodeURIComponent(url))) { failOnce = null; return new Response('{}', { status: 503 }); } return db.handle(url, init); }
   if (url.startsWith('https://api.telegram.org/')) { const body = JSON.parse(init.body); tgCalls.push([url.split('/').pop(), body]); return new Response(JSON.stringify({ ok: true, result: url.endsWith('/createInvoiceLink') ? 'https://t.me/$inv' + tgCalls.length : true })); }
   if (url.startsWith('https://toncenter.com/')) { tonCalls++; return new Response(JSON.stringify({ ok: true, result: tonTxs })); }
   if (url.startsWith('https://api.coingecko.com/')) { if (!ratesUp) throw new Error('down'); return new Response(JSON.stringify({ 'the-open-network': { usd: 2 }, solana: { usd: 100 } })); }
@@ -231,7 +231,7 @@ const WP = 'tg_888001';
   ratesUp = true; shop.resetRates();
   [s, r] = await W({ a: 'quote', cur: 'SOL', desc: { kind: 'paint', id: 'arctic' } });
   const o = r.order, lam = Number(o.base), want = R.PAINTS.arctic.ton * 2 / 100;
-  t(s === 200 && o.cur === 'SOL' && o.to === SOLR && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(o.ref) && lam % 1000 === 0 && Math.abs(lam / 1e9 - want) < 0.0011 && db.get('/solAmt/' + lam + '/oid') === o.oid, 'a SOL quote at the live GRAM rate: ' + o.amt + ' SOL, its own reference and a unique exact amount');
+  t(s === 200 && o.cur === 'SOL' && o.to === SOLR && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(o.ref) && lam % 10 === 0 && Math.abs(lam / 1e9 - want) < 0.00002 && db.get('/solAmt/' + lam + '/oid') === o.oid, 'a SOL quote at the live GRAM rate: ' + o.amt + ' SOL (within 0.00002 SOL of the exact price: a unique 10-lamport tail), its own reference');
   sol.add('sigOther', { lamports: lam + 5e6 });   // somebody else's payment to our wallet (the old verifySol let anyone claim it)
   shop.resetLookups();
   [s, r] = await W({ a: 'status', q: o.oid });
@@ -302,6 +302,7 @@ const WP = 'tg_888001';
 // ======================= 6. the Conquest store: one-time items, limits, the wall-only ore, prices from the one table =======================
 {
   setEco('tg_111', (S) => { delete S.ord; S.buys = {}; });
+  const pts0 = J(['pts', 'earned', 'dailyPts', 'weeklyPts', 'days', 'as', 'ac'].map((k) => E('tg_111')[k] ?? null));
   let res = await K.stars(A, { kind: 'cq', tk: 'builder-2' }, 'ch.b2');
   t(res.o.amt === 770 && E('tg_111').cq.b2 === 1, 'Second builder: 770 Stars ($9.99), granted');
   let [s, r] = await K.quote(A, 'STARS', { kind: 'cq', tk: 'builder-2' });
@@ -326,7 +327,24 @@ const WP = 'tg_888001';
   t(s === 200 && r.order.amt === 616, 'a collection piece at its price: Bastion Ramparts 616 Stars ($7.99)');
   await K.refund(A, 'ch.mh', 1155);
   t(E('tg_111').wmn.mh === 0, 'a refunded wall crate takes its ore back');
-  t(E('tg_111').pts === 5e6 || E('tg_111').pts >= 0, 'no purchase touched points');
+  t(J(['pts', 'earned', 'dailyPts', 'weeklyPts', 'days', 'as', 'ac'].map((k) => E('tg_111')[k] ?? null)) === pts0, 'no Conquest store purchase or refund touched points, earned points, the day or week boards, days played or the airdrop score');
+}
+// ======================= 6b. a PAID crate's duplicate never pays airdrop points (owner guardrail), on every rail =======================
+{
+  const all = (S) => { delete S.ord; S.buys = {}; S.wOwn = { pulse: [0, 1, 2], twin: [0, 1, 2], siege: [0, 1, 2] }; S.roll = { 'pulse:0': 1.1, 'twin:0': 1.1, 'siege:0': 1.1 }; };   // every Common weapon owned, each at the top roll
+  const keys = ['pts', 'earned', 'dailyPts', 'weeklyPts', 'days', 'as', 'ac', 'rb'], snap = (pid) => J(keys.map((k) => E(pid)[k] ?? null));
+  setEco('tg_111', all); const b0 = snap('tg_111');
+  const res = await K.stars(A, { kind: 'box', tk: 'weapon', ri: 0 }, 'ch.dupS');
+  const out = (res.o && E('tg_111').gout && Object.values(E('tg_111').gout).flat()) || [];
+  t(res.pre && res.pre.ok && snap('tg_111') === b0, 'Stars: a Common weapon crate with every Common weapon owned pays no points, earned points, day or board score');
+  const gem = J(E('tg_111').gsc || {}) !== J({}) || JSON.stringify(E('tg_111')).includes('"swap":"weapon"');
+  t(gem, 'its duplicate became a Common gem cache (shards), never points');
+  // GRAM (Telegram) and SOL (website) the same
+  setEco('tg_111', all); const b1 = snap('tg_111');
+  let [s, r] = await K.quote(A, 'TON', { kind: 'box', tk: 'weapon', ri: 0 });
+  if (s === 200) { tonTxs.unshift(K.tonTx(r.order, 'dupgram1')); shop.resetLookups(); [s] = await K.status(A, r.order.oid); }
+  t(s === 200 && E('tg_111').gout && JSON.stringify(E('tg_111')).includes('"swap":"weapon"'), 'GRAM: the paid duplicate was delivered as a gem cache');
+  t(snap('tg_111') === b1, 'GRAM: the same paid duplicate pays no points');
 }
 // ======================= 7. a construction speed-up: priced on the server from the real job, held while its timer runs =======================
 {
@@ -352,6 +370,64 @@ const WP = 'tg_888001';
   let n = 0;
   for (let i = 0; i < 6; i++) { const x = await K.stars(A, { kind: 'cq', tk: 'wall-ext-10' }, 'ch.ext' + i); if (x.s === 200 && x.pre && x.pre.ok) n++; else { s = x.s; r = x.r; break; } }
   t(n === 3 && E('tg_111').cq.ext === 3 && s === 409 && r.error === 'cap', 'wall extension packs with a town: 12% earned + 3 packs = 42%; a 4th would pass the +50% cap (refused before any payment)');
+}
+// ======================= 8. the sweep: a GRAM / SOL payment is credited even when the phone never asks again (review round 1) =======================
+{
+  setEco('tg_111', (S) => { delete S.ord; S.buys = {}; });
+  // (a) GRAM in Telegram: quote, Cancel, then the payment lands: the 5-minute sweep credits it (the item is still for sale)
+  let [s, r] = await K.quote(A, 'TON', { kind: 'mncrate', tk: 'fe' });
+  const o1 = r.order, fe0 = E('tg_111').mn.fe;
+  await K.cancel(A, o1.oid);
+  tonTxs.unshift(K.tonTx(o1, 'late1')); shop.resetLookups();
+  t(db.get('/chainq/' + o1.oid + '/c') === 'TON', 'every GRAM quote is indexed for the sweep');
+  let sw = await shop.chainSweep(env, Date.now(), 400);   // a test budget: every earlier payment in this suite is in the history too
+  t(db.get('/orders/tg_111/' + o1.oid + '/st') === 'paid' && E('tg_111').mn.fe === fe0 + 150 && sw.matched >= 1, 'GRAM paid after Cancel: the sweep credits it (+150 Ferrite), with no status call from the phone');
+  // (b) the same quote paid a second time: recorded for a refund, never granted twice
+  tonTxs.unshift(K.tonTx(o1, 'late1b', { source: 'EQsecondPayer' })); shop.resetLookups();
+  sw = await shop.chainSweep(env, Date.now(), 400);
+  t(E('tg_111').mn.fe === fe0 + 150 && sw.extra === 1 && Object.keys(db.get('/orders/tg_111/' + o1.oid + '/dup') || {}).length === 1 && Object.keys(db.get('/held') || {}).some((k) => k.startsWith(o1.oid + '_')), 'a second payment of a paid GRAM quote: held for a refund (listed with its order), nothing granted twice');
+  sw = await shop.chainSweep(env, Date.now(), 400);
+  t(sw.extra === 0 && sw.matched === 0, 'the next sweep finds nothing new (each transaction claimed once)');
+  // (c) a quote that ran out while the app was closed: paid after its expiry, the sweep credits it if still for sale
+  [s, r] = await K.quote(A, 'TON', { kind: 'cos', tk: 'fire-sunlance' });
+  const o2 = r.order; db.root.orders.tg_111[o2.oid].e = Date.now() - 3600000;   // 30 minutes ran out an hour ago
+  tonTxs.unshift(K.tonTx(o2, 'late2')); shop.resetLookups();
+  await shop.chainSweep(env, Date.now(), 400);
+  t(db.get('/orders/tg_111/' + o2.oid + '/st') === 'paid' && E('tg_111').cqc && E('tg_111').cqc['fire-sunlance'] === 1, 'GRAM paid after the quote expired (app closed): credited by the sweep');
+  // (d) SOL on the website: quote, Cancel, paid with its reference: the sweep credits it and frees its unique amount
+  let [s3, r3] = await W({ a: 'quote', cur: 'SOL', desc: { kind: 'cos', tk: 'command-wings' } });
+  const o3 = r3.order; await W({ a: 'cancel', q: o3.oid });
+  sol.add('lateSol1', { lamports: Number(o3.base), ref: o3.ref }); shop.resetLookups();
+  await shop.chainSweep(env, Date.now(), 400);
+  t(s3 === 200 && db.get('/orders/' + WP + '/' + o3.oid + '/st') === 'paid' && db.get('/solAmt/' + o3.base) === null, 'SOL paid after Cancel: the sweep finds it by its reference, credits it and frees its unique amount');
+  // (e) a quote's reuse is for the very same goods only: a crate request never gets an open chosen-item quote back
+  setEco('tg_111', (S) => { delete S.ord; S.buys = {}; S.wOwn = { pulse: [0], twin: [0], siege: [0] }; });
+  [s, r] = await K.quote(A, 'TON', { kind: 'gear', tk: 'twin', ri: 1 });
+  const og = r.order;
+  [s, r] = await K.quote(A, 'TON', { kind: 'box', tk: 'weapon', ri: 1 });
+  t(s === 409 && r.error === 'open_order' && r.order && r.order.oid === og.oid, 'a crate quoted while its chosen item has an open GRAM quote: refused with that open order (never that order handed back as the crate)');
+  [s, r] = await K.quote(A, 'STARS', { kind: 'gear', tk: 'twin', ri: 1 });
+  t(s === 409 && r.error === 'open_order', 'the same goods in another currency while a GRAM payment may be on its way: finish or cancel it first');
+  await K.cancel(A, og.oid);
+}
+// ======================= 9. a database write that fails after the grant is finished by the retry, never lost (review round 1) =======================
+{
+  setEco('tg_111', (S) => { delete S.ord; S.buys = {}; });
+  const il0 = E('tg_111').mn.il;
+  const [s, r] = await K.quote(A, 'STARS', { kind: 'mncrate', tk: 'il' });
+  const o = r.order, p = await K.pre(A, o);
+  failOnce = new RegExp('/orders/tg_111/' + o.oid);   // the order's paid record: a 503 once
+  let first = 200; try { first = (await K.paid(A, o, 'ch.lost1')).status; } catch { first = 500; }
+  const mid = db.get('/orders/tg_111/' + o.oid + '/st');
+  await K.paid(A, o, 'ch.lost1');   // Telegram retries the webhook
+  t(s === 200 && p.ok && first >= 500 && mid === 'open' && db.get('/orders/tg_111/' + o.oid + '/st') === 'paid' && db.get('/starsPaid/tg_111/ch_lost1/q') === o.oid && db.get('/payments/LWM_tg_111_' + o.oid + '/granted') === true && E('tg_111').mn.il === il0 + 60, 'a failed write after the grant fails the webhook (Telegram retries); the retry finishes the order, the receipt and the sales record, the crate granted once');
+  failOnce = new RegExp('/starsPaid/tg_111/ch_lost2');   // the refund receipt itself: a 503 once
+  setEco('tg_111', (S) => { delete S.ord; S.buys = {}; });
+  const [s2, r2] = await K.quote(A, 'STARS', { kind: 'mncrate', tk: 'fe' }); await K.pre(A, r2.order);
+  let f2 = 200; try { f2 = (await K.paid(A, r2.order, 'ch.lost2')).status; } catch { f2 = 500; }
+  await K.paid(A, r2.order, 'ch.lost2');
+  t(s2 === 200 && f2 >= 500 && db.get('/starsPaid/tg_111/ch_lost2/q') === r2.order.oid, 'a lost refund receipt is written by the retry, so a later refund still takes the purchase back');
+  failOnce = null;
 }
 console.log((bad ? 'FAIL' : 'PASS') + ' wtest payments: ' + ok + ' passed, ' + bad + ' failed');
 if (bad) process.exit(1);

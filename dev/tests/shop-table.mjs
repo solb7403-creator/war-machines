@@ -35,6 +35,12 @@ ok(['ar','tq','se','mh'].every(k=>!Object.values(R.SHOP.mn).some(m=>m.give[k]))&
 {const src=readFileSync('js/rules.js','utf8'),g=src.slice(src.indexOf('function cqGrant('),src.indexOf('function cqRefund('));ok(g.length>200&&!/ecoAward|\.pts\b|earned|dailyPts|ptsRaw|cqd\b/.test(g),'the Conquest store grant never gives points');}
 ok(!R.SHOP.cq.ward&&!JSON.stringify(R.SHOP).includes('repair')&&!JSON.stringify(R.SHOP).includes('gambit'),'no consumable on its own and no Gambit is sold');
 ok(R.DAILY_CAP===50000,'DAILY_CAP stays 50,000');
+// 4b. a PAID crate's duplicate (bought in any currency, the Starter / Founder packs, the premium pass track) pays no points: it becomes a
+// gem cache of its rarity; a crate bought with earned points still refunds its DUP_PTS (points in, points out)
+{const S=R.ecoNorm({});for(const k of ['pulse','twin','siege']){S.wOwn[k]=[0,1,2];S.roll[k+':1']=1.1;}const X={day:20000,week:2857,rnd:()=>0.5},b=J([S.pts,S.earned,S.dailyPts,S.weeklyPts,S.days]);
+ const o=R.ecoOpenBox(S,'weapon',1,X,undefined,true);ok(o.gem&&o.swap==='weapon'&&J([S.pts,S.earned,S.dailyPts,S.weeklyPts,S.days])===b,'a paid Rare weapon crate with every Rare weapon owned gives a Rare gem cache, never points or a day played');
+ const o2=R.ecoOpenBox(S,'weapon',1,X,undefined,false);ok(o2.kind==='dup'&&o2.pts>0,'a crate bought with earned points still refunds DUP_PTS of them');
+ const src=readFileSync('js/rules.js','utf8');ok(/ecoOpenBox\(S,r\.tk,r\.ri,X,c,prem\)/.test(src)&&/ecoOpenBox\(S,d\.tk,d\.ri,X,d\.c,true\)/.test(src)&&/ecoOpenBox\(S,'weapon',1,X,undefined,true\),ecoOpenBox\(S,'chassis',1,X,undefined,true\)/.test(src)&&/ecoOpenBox\(S,'weapon',2,X,undefined,true\)/.test(src),'every paid crate source opens as paid: a bought crate, the Starter and Founder packs, the premium pass track');}
 // 5. the switches (Session 8: turned on only once every certification check passes)
 ok(typeof R.CRYPTO_OPEN==='boolean'&&typeof R.CQ_STORE_OPEN==='boolean'&&typeof R.LAB_STORE_OPEN==='boolean'&&R.BAT_STORE_OPEN===false,'the store switches exist; the Battalion store stays off (not in the Nov 26 sale list)');
 {const core=readFileSync('js/core.js','utf8'),m=/const CRYPTO_PAY=(true|false);/.exec(core);ok(m&&(m[1]==='true')===R.CRYPTO_OPEN,'the phone\'s CRYPTO_PAY mirrors the Worker\'s CRYPTO_OPEN ('+R.CRYPTO_OPEN+')');}
