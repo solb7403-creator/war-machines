@@ -124,7 +124,7 @@ root.ConquestSlots={version:1,items:{
  'par-shuttle':S('parasite','Scavenger shuttle (light dropship)',[10.2,4.6,11.8],'none (flying)'),
  'par-hauler':S('parasite','Heavy hauler (dropship with a ramp; the box holds it with the ramp raised)',[16.2,10.3,26],'none (flying)'),
  // ---- the Lunar Defense Force post (scenery until Session 7; o.seed varies each post) ----
- 'ldf-post':S('military','LDF post',[8,7,8],'none (scenery until Session 7)'),
+ 'ldf-post':S('military','LDF post',[8,12,8],'none (scenery until Session 7)'),   // 5E-2d2 critic round 2: 12 m tall (it was 7): every post carries the tall signature mast with the searchlight lantern; the footprint is unchanged
  'loot-cache':S('prop','Loot cache',[2.4,1.6,1.8],'none'),
  // ---- the four consumables (the 64 px HUD / drop icons are rendered from these: dev/tests/conquest-item-sprites.py) ----
  'item-repair':S('prop','Repair Kit',[1.1,.9,.8],'none'),

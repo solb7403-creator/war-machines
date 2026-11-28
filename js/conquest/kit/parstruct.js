@@ -158,44 +158,68 @@ function fit(b,sx,sy,sz,fn){const T=b.k.T;b.st.push(new T.Matrix4().multiplyMatr
 // ------------------------------------------------------------------ cover-wall ------------------------------------------
 // cover-wall (EXACT box o.w x o.h x o.d, default 18 x 5 x 3; all art inside the box, in plan and in height): a barricade
 // welded from plundered armour, the collision box of a raid obstacle, so it FILLS its box: a dark steel bulkhead between
-// four corner posts that reach the box height (the bulkhead top is a lip lower, so the loot on it stays inside the box), every face plated with big mismatched plates (LDF ceramic with its blue band, settler container sides with faded
-// paint, hazard panels, tank hull sections, rust sheet) of unequal width and height, strongback girders on the long faces,
-// loot crates and a sack lashed on its flat top, a looted flag draped over one face, and a thin red vein glowing in the
-// seams between the plates (the only glow: the wall reads as steel). Plates, loot and flag change with o.seed and the size.
-// The long axis is x when w >= d, else z. o.sink (default 1.2) = how far it runs below y = 0.
-// HIGH <= 400 / LOW <= 100.
+// four corner posts, every face plated with big mismatched plates (LDF ceramic, settler container sides with faded paint,
+// hazard panels, tank hull sections, rust sheet) of unequal width.
+// 5E-2d2 critic round 2 ("big flat panels with no growth"): (1) the TOP LINE IS BROKEN: the bulkhead ends a good metre under
+// the box top and the plates stand over it as a ragged parapet, each to its own height (a third reach the box top, a third
+// stop short of the bulkhead), with slanted cuts, and on each long face one plate has slipped: it hangs askew, the dark
+// bulkhead showing beside it; the corner posts are unequal too. (2) THE INFECTION CLIMBS IT: thick red roots come out of
+// the ground and fork up the plates (the old hair-thin seam veins stay, wider). (3) TROPHIES: a looted flag flies from a
+// rail on one long face, a captured LDF shield hangs askew from straps on the other, the loot lies behind the parapet.
+// Plates, loot and trophies change with o.seed and the size. The long axis is x when w >= d, else z. o.sink (default 1.2) =
+// how far it runs below y = 0. The box, and so the collision, is unchanged.
+// HIGH <= 900 / LOW <= 200 (the 18 m wall; a raid has one to three walls).
 WK.model('cover-wall',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,long=o.w>=o.d,L=long?o.w:o.d,T=long?o.d:o.w,h=o.h,sink=o.sink??1.2,sd=(o.seed|0)*7+Math.round(L*3+T*5);
- const PW=clamp(T*.2,.5,.8),REC=.32,area=2*(L+T),rich=area<=44,lip=Math.min(clamp(T*.2,.55,.9),h*.14),top=h-lip;   // corner post width; how far the bulkhead stands behind the box planes
+ const PW=clamp(T*.2,.5,.8),REC=.32,area=2*(L+T),rich=area<=44,lip=clamp(h*.24,.9,1.4),top=h-lip,HT=h-.04;   // corner post width; how far the bulkhead stands behind the box planes; top = the bulkhead's top, HT = the highest a plate reaches
  b.at(0,0,0,long?0:Math.PI/2,()=>{
-  // the bulkhead and the four corner posts (they stand a little proud of the top)
+  // the bulkhead and the four corner posts (unequal: one or two stop short)
   qb(b,0,-sink,0,L-2*REC,top+sink,T-2*REC,o2=>o2==='t'?P.iron:P.weld,'b');
-  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz],k)=>{const ph=h-.3*hz(sd,k+70);b.part();qb(b,sx*(L-PW)/2,-sink,sz*(T-PW)/2,PW,ph+sink,PW,P.ironD,hi?'b':'b'+(sx>0?'l':'r')+(sz>0?'k':'f'));});
+  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz],k)=>{const ph=HT-(hz(sd,k+70)<.4?lip*(.5+.6*hz(sd,k+74)):.25*hz(sd,k+74));b.part();qb(b,sx*(L-PW)/2,-sink,sz*(T-PW)/2,PW,ph+sink,PW,P.ironD,hi?'b':'b'+(sx>0?'l':'r')+(sz>0?'k':'f'));});
   // the four faces: bays of plates between the posts
-  let pi=0,last=-1;
+  let pi=0,last=-1;const pmax=[0,0,0,0];
   for(let f=0;f<4;f++){const Lf=f%2?T:L,half=(f%2?L:T)/2,zc=half-REC,x0=-Lf/2+PW,x1=Lf/2-PW,span=x1-x0;if(span<.6)continue;
    b.at(0,0,0,f*Math.PI/2,q=>{const np=Math.max(1,Math.round(span/(hi?3.1:3.6))),wt=[],X=[x0];let sum=0;for(let k=0;k<np;k++){wt.push(1+.5*(hz(sd,f*20+k)-.5));sum+=wt[k];}for(let k=0;k<np;k++)X.push(k===np-1?x1:X[k]+span*wt[k]/sum);
-    const g=hi?.07:.08,tops=[];
-    for(let k=0;k<np;k++){let ki=(hz(sd,f*31+k*7+5)*KINDS.length)|0;if(ki===last)ki=(ki+1)%KINDS.length;last=ki;const kind=KINDS[ki],ci=(hz(sd,f*13+k*3)*5)|0,m=plateMat(q,kind,ci),p=.09+.17*hz(sd,f*17+k+90);
-     const xa=X[k]+(k?g:.03),xb=X[k+1]-(k<np-1?g:.03),drop=.1+.75*hz(sd,f*11+k+33),tl=top-drop*(hi?1:.5),tr=hi?clamp(tl+(hz(sd,f*19+k+7)-.5)*.5,top-.95,top-.06):tl;tops.push(Math.min(tl,tr));
-     slab(q,xa,xb,-sink,tl,tr,zc,p,m);
+    const g=hi?.07:.08,tops=[],sag=Lf>=8&&np>1?(hz(sd,f+300)*np)|0:-1;let tall=false;
+    for(let k=0;k<np;k++){let ki=(hz(sd,f*31+k*7+5)*KINDS.length)|0;if(ki===last)ki=(ki+1)%KINDS.length;last=ki;const kind=KINDS[ki],ci=(hz(sd,f*13+k*3)*5)|0,m=plateMat(q,kind,ci),p=.08+.12*hz(sd,f*17+k+90);pmax[f]=Math.max(pmax[f],p);
+     const xa=X[k]+(k?g:.03),xb=X[k+1]-(k<np-1?g:.03);let u=hz(sd,f*11+k+33);if(k===np-1&&!tall&&Lf>=8)u=0;   // every long face has a plate that reaches the box top
+     const v=hz(sd,f*23+k+41),mid=u<.36?HT-.3*v:u<.7?top+.15+(lip-.55)*v:top-.15-.6*v,cut=(hz(sd,f*19+k+7)-.5)*.7;let tl=clamp(mid+cut/2,top-.9,HT),tr=clamp(mid-cut/2,top-.9,HT);if(u<.36)tall=true;
+     const back=Math.max(tl,tr)>top+.03;
+     if(k===sag){   // the slipped plate: turned in its own plane about its middle, narrower so that its corners stay in its bay and under the box top
+      const a=(hz(sd,f+310)<.5?-1:1)*(.08+.05*hz(sd,f+311)),sn=Math.abs(Math.sin(a)),cx=(xa+xb)/2,cy=(Math.max(tl,tr)-sink)/2,hw=(xb-xa)/2-(Math.max(tl,tr)-cy)*sn,drop=hw*sn+.03;tl=Math.min(tl,HT-drop);tr=Math.min(tr,HT-drop);
+      q.at(cx,cy,0,0,r=>{slab(r,-hw,hw,-sink-cy,tl-cy,tr-cy,zc,p,m,{back});if(hi)dress(r,kind,-hw,hw,.12-cy,Math.min(tl,tr)-.08-cy,zc+p+.03,ci);},0,a);tops.push(Math.min(tl,tr)-drop);pi++;continue;}
+     tops.push(Math.min(tl,tr));slab(q,xa,xb,-sink,tl,tr,zc,p,m,{back});
      if(hi){dress(q,kind,xa,xb,.12,Math.min(tl,tr)-.08,zc+p+.03,ci);
       // a smaller patch welded over a big plate, tack welds on the others
-      if(pi%3===1&&xb-xa>2.2){const pk=KINDS[(ki+3)%KINDS.length],px=xa+(xb-xa)*(.18+.2*hz(sd,pi+50)),pw=(xb-xa)*.46,py=h*(.16+.2*hz(sd,pi+60)),ph=h*.3;q.at(px+pw/2,py+ph/2,zc+p,0,r=>slab(r,-pw/2,pw/2,-ph/2,ph/2,ph/2,0,.07,plateMat(r,pk,ci+2),{bot:true}),0,(hz(sd,pi+80)-.5)*.3);}
-      else if(rich||pi%2===0)q.detail(()=>{for(const [u,v] of [[.1,.9],[.9,.9]])tack(q,xa+(xb-xa)*u,-.1+(Math.min(tl,tr)+.1)*v,zc+p+.03,.09,P.weld);});}
+      if(pi%3===1&&xb-xa>2.2){const pk=KINDS[(ki+3)%KINDS.length],px=xa+(xb-xa)*(.18+.2*hz(sd,pi+50)),pw=(xb-xa)*.46,py=h*(.16+.2*hz(sd,pi+60)),ph=h*.3;q.at(px+pw/2,py+ph/2,zc+p,0,r=>slab(r,-pw/2,pw/2,-ph/2,ph/2,ph/2,0,.05,plateMat(r,pk,ci+2),{bot:true}),0,(hz(sd,pi+80)-.5)*.3);}
+      else if(rich||pi%2===0)q.detail(()=>{for(const [u2,v2] of [[.1,.9],[.9,.9]])tack(q,xa+(xb-xa)*u2,-.1+(Math.min(tl,tr)+.1)*v2,zc+p+.03,.09,P.weld);});}
+     // the infection climbs the plate: a thick root out of the ground, kinked, with a fork (every other plate of a long face; LOW: flat strips)
+     if(Lf>=8&&(pi%2===0||np<3)){const w=xb-xa,dir=hz(sd,pi+201)<.5?-1:1,xs=xa+w*(.3+.4*hz(sd,pi+200)),yt=Math.min(tl,tr)*(.55+.35*hz(sd,pi+202)),z=zc+p+.012,cl=x=>clamp(x,xa+.22,xb-.22),kk=hi?1:.5,   // kk: LOW has no curve through the kinks, so they are half as wide (at full width the strips read as painted chevrons)
+       R=[[cl(xs),-sink*.35,z],[cl(xs+dir*w*.12*kk),yt*.3,z],[cl(xs-dir*w*.1*kk),yt*.64,z],[cl(xs+dir*w*.13*kk),yt,z]];
+      if(hi){vein(q,R,.14,.04,{seg:2,up:[0,0,1],rise:.55});vein(q,[R[1],[cl(R[1][0]+dir*w*.2),R[1][1]+yt*.18,z],[cl(R[1][0]+dir*w*.3),R[1][1]+yt*.4,z]],.08,.03,{seg:2,up:[0,0,1],rise:.55});}
+      else{for(let j=1;j<R.length;j++){const A=R[j-1],B=R[j],wa=.16-.04*(j-1),wb=.16-.04*j;q.quad([A[0]-wa,A[1],z],[A[0]+wa,A[1],z],[B[0]+wb,B[1],z],[B[0]-wb,B[1],z],P.red,[A[0],A[1],z-9]);}
+       const A=R[1],B=[cl(A[0]+dir*w*.26),A[1]+yt*.34,z];q.quad([A[0]-.09,A[1],z],[A[0]+.09,A[1],z],[B[0]+.03,B[1],z],[B[0]-.03,B[1],z],P.red,[A[0],A[1],z-9]);}}   // LOW: a wider tapered strip and its fork (a root, not a line)
      pi++;}
-    // the infection in the seams: a thin vein between two plates, kinked like a root
-    for(let k=1;k<np;k++){const x=X[k],y1=Math.min(tops[k-1],tops[k])-.15,z=zc+.04,w=hi?.055:.075,K=hi?[[0,-.2],[.04,.33],[-.035,.68],[.02,1]]:[[0,-.2],[0,1]];
+    // the infection in the seams: a vein between two plates, kinked like a root
+    for(let k=1;k<np;k++){const x=X[k],y1=Math.min(tops[k-1],tops[k])-.15,z=zc+.04,w=hi?.07:.08,K=hi?[[0,-.2],[.04,.33],[-.035,.68],[.02,1]]:[[0,-.2],[0,1]];
      for(let j=1;j<K.length;j++){const a=K[j-1],c=K[j],ya=-.2+(y1+.2)*Math.max(0,a[1]),yb=-.2+(y1+.2)*c[1];q.quad([x+a[0]-w,j===1?-sink*.3:ya,z],[x+a[0]+w,j===1?-sink*.3:ya,z],[x+c[0]+w,yb,z],[x+c[0]-w,yb,z],P.red,[x,ya,z-9]);}}
-    // strongback girders on the long faces (HIGH): a rusty I-beam welded upright across the plates, short of the top
-    if(hi&&Lf>=11){const ng=Lf>=20?2:1;for(let k=0;k<ng;k++){const x=x0+span*(ng===1?.5+.16*(hz(sd,f+44)-.5):(.3+.4*k)),gh=top-.3-.5*hz(sd,f*3+k);q.part();qb(q,x,-sink,half-.17,.3,gh+sink,.34,k%2?P.rust:P.iron,'bk');}}
+    // strongback girders on the long faces (HIGH): a rusty I-beam welded upright across the plates, to its own height
+    if(hi&&Lf>=11){const ng=Lf>=20?2:1;for(let k=0;k<ng;k++){const x=x0+span*(ng===1?.5+.16*(hz(sd,f+44)-.5):(.3+.4*k)),gh=top-.2+(lip-.1)*hz(sd,f*3+k+9);q.part();qb(q,x,-sink,half-.17,.3,gh+sink,.34,k%2?P.rust:P.iron,'bk');}}
    });}
-  // the loot on the flat top and the flag over one face
+  // the loot behind the parapet
   {const nl=hi?(rich?3:2):1,along=L-2*PW-1.2;for(let k=0;k<nl;k++){const x=-along/2+along*(nl===1?.3:(k+.15+.7*hz(sd,k+120))/nl),z=(T-2*REC-1.1)*(hz(sd,k+130)-.5)*.8,s=clamp(T*.26,.62,1.05)*(.85+.3*hz(sd,k+140));
     if(k===1&&hi){sack(b,x,top,z,Math.min(s*.52,(lip-.04)/1.15),sd+k);sack(b,x+s*.8,top,z+.1,Math.min(s*.42,(lip-.04)/1.15),sd+k+3,tint(P.sack,.8));}else crate(b,x,top,z,s*1.25,Math.min(s*.72,lip-.06),s*.9,(hz(sd,k+150)-.5)*.9,k%2?P.crateD:P.crate,{plain:!hi});}
-   const fx=(L/2-PW-1.5)*(hz(sd,160)<.5?-1:1)*(.3+.5*hz(sd,161)),fz=T/2-.02,fm=hz(sd,162)<.5?P.flagLDF:P.flagSet[(hz(sd,163)*5)|0],fw=Math.min(1.9,L*.14);
-   b.quad([fx-fw/2,top+.02,fz-REC-.5],[fx+fw/2,top+.02,fz-REC-.5],[fx+fw/2,top+.02,fz],[fx-fw/2,top+.02,fz],fm,[fx,top-9,fz]);
-   b.quad([fx-fw/2,top+.02,fz],[fx+fw/2,top+.02,fz],[fx+fw/2,top-h*.42,fz],[fx-fw/2,top-h*.36,fz],fm,[fx,top,fz-9]);
-   if(hi)b.quad([fx-fw/2,top-h*.12,fz+.012],[fx+fw/2,top-h*.12,fz+.012],[fx+fw/2,top-h*.22,fz+.012],[fx-fw/2,top-h*.2,fz+.012],fm===P.flagLDF?P.flagLDF2:P.strap,[fx,top,fz-9]);}
+   // the growth swells up through the wall (5E-2d2 critic round 2: "human wreckage the infection grows through"; the roots alone read as
+   // paint on a steel wall): bulbs split by glowing fissures sit on the bulkhead behind the parapet and show over every plate that
+   // stops short. Inside the box: under its top, within the bulkhead's width.
+   {const nb=hi&&L>=14?2:1,rb=Math.min((T-2*REC)/2-.14,(lip-.1)/1.45,.95);for(let k=0;k<nb;k++){const x=(L/2-PW-1.4)*(nb===1?(hz(sd,180)-.5)*1.2:(k?1:-1)*(.3+.5*hz(sd,181+k))),z=(T-2*REC-2*rb*1.16)*(hz(sd,184+k)-.5)*.8;
+     bulb(b,x,top-.1,z,rb*(k?.86:1),sd+k*5+2,{sy:1.25,na:hi?8:6,nr:hi?4:3,lob:.14,pole:.6});}}
+   // trophies: a looted flag on a rail over one long face, a captured LDF shield hung askew on the other
+   const sg=hz(sd,160)<.5?-1:1,fx=(L/2-PW-1.5)*sg*(.3+.5*hz(sd,161)),fz=T/2-.05,ldf=hz(sd,162)<.5,fm=ldf?P.flagLDF:P.flagSet[(hz(sd,163)*5)|0],fw=Math.min(2.2,L*.16),fy=HT-.04;
+   flag(b,[fx-fw/2,fy,fz],[fx+fw/2,fy,fz],h*.46,fm,ldf?P.flagLDF2:P.strap);
+   if(hi){b.tube([fx-fw/2-.25,fy+.02,fz-.03],[fx+fw/2+.25,fy+.02,fz-.03],.03,P.ironL,{n:3});for(const s of [-1,1])b.tube([fx+s*(fw/2+.2),fy+.02,fz-.03],[fx+s*(fw/2+.2),top,fz-.2],.03,P.ironL,{n:3});}
+   if(L>=8)b.at(0,0,0,Math.PI,q=>{const tx=clamp(fx*.8+sg*1.2,-L/2+PW+1,L/2-PW-1),ty=Math.min(top,h*.68),zf=T/2-REC+pmax[2]+.02,a=(hz(sd,170)-.5)*.5;
+     q.at(tx,ty,zf,0,r=>{slab(r,-.62,.62,-.5,.5,.5,0,.05,P.plateMil,{thin:!hi,bot:true});r.quad([-.62,.12,.062],[.62,.12,.062],[.62,.32,.062],[-.62,.32,.062],P.flagLDF,[0,0,-9]);if(hi)r.quad([-.5,-.34,.062],[-.1,-.34,.062],[-.1,-.08,.062],[-.5,-.08,.062],P.plateMilD,[0,0,-9]);},0,a);
+     if(hi)for(const s of [-1,1]){const px=tx+s*.62*Math.cos(a)-.5*Math.sin(a),py=ty+s*.62*Math.sin(a)+.5*Math.cos(a);q.tube([px,py,zf+.03],[px+s*.1,Math.min(HT-.3,py+1.2),zf-.02],.02,P.strap,{n:3});}});}
  });
 },{aoH:4,aoMin:.55});
 // a frame at angle a (from +x toward +z) and radius r whose +z looks outward; rx < 0 leans its top inward
@@ -218,6 +242,8 @@ function dish(b,c,d,r,m,m2){const n=b.hi?8:6,u=Math.abs(d[1])>.9?[1,0,0]:[0,1,0]
 // flank and a visor plate, an ammunition bustle with strapped loot, a whip aerial with a pennant, and the infection
 // swelling out of the breech between the guns: a growth split by glowing fissures, veins running out along both barrels,
 // red light in the cheek vents.
+// 5E-2d2 critic round 2 ("smooth the faceted dark-red lumps on the column; they edge toward crystal"): the growth lumps on
+// the column and at the breech are rounder: more sides and rings, half the lobing, squat instead of tall, calm crowns.
 // o.part: undefined = the whole battery; 'base' = everything that does not turn (nothing above y = 5.3: the head's place
 // is free); 'gun' = the turning head alone in its own frame, the pivot at the origin, the barrels toward +z (muzzles at
 // z = 2.85; the head keeps inside r 2.6 of the pivot apart from the barrels). In the whole model the pivot is at y = 6.6.
@@ -243,7 +269,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
   // the infection: veins from the ground up between the plates to the turret ring, swollen where they grip the column
   [H2+.66,H2+1.92,H2+3.12,H2+4.4,H2+5.66].forEach((a,k)=>{if(!hi&&k%2)return;const tw=k%2?-.7:.75,C=(t,r,y)=>{const q=a+tw*t+.16*Math.sin(t*9+k*2);return [Math.cos(q)*r,y,Math.sin(q)*r];},c=Math.cos(a),s=Math.sin(a);
    vein(b,[[c*3.02,-.3,s*2.6],[c*2.8,.36,s*2.4],C(-.12,2.3,.5),C(.06,1.92,.62),C(-.05,1.9,1.3),C(.1,1.36,1.74),C(.3,1.3,2.5),C(.55,1.29,3.3),C(.8,1.28,4.1),C(1,1.27,4.72)],.16,.05,{seg:hi?2:1});
-   if(hi&&k%2===0){const p=C(.42,1.12,2.75+.3*k);bulb(b,p[0],p[1],p[2],.34,sd+k,{lx:p[0]*.2,lz:p[2]*.2,sy:1.5,na:6,nr:4});}});
+   if(hi&&k%2===0){const p=C(.42,1.12,2.75+.3*k);bulb(b,p[0],p[1],p[2],.38,sd+k,{lx:p[0]*.14,lz:p[2]*.14,sy:1.05,na:10,nr:6,lob:.1,pole:.6});}});
   if(hi)b.pool(0,.1,0,3.4,3,RED,.1);
  };
  const gun=()=>{const EL=.73,TY=.1,TZ=-.45,n8=hi?8:5;   // the cradle's elevation (42 degrees: the guns point at the sky) and the trunnion axis (y, z)
@@ -261,7 +287,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
     for(let i=0;i<n8;i++){const a0=i/n8*TAU,a1=(i+1)/n8*TAU;T3(q,[x,y,zm-.03],[x+Math.cos(a0)*.25,y+Math.sin(a0)*.25,zm-.03],[x+Math.cos(a1)*.25,y+Math.sin(a1)*.25,zm-.03],P.weld,[x,y,0]);}   // the dark bore
     if(hi)for(const z of [.56,zj-.1])q.tube([x,y,z],[x,y,z+.08],.29,P.ironD,{n:8});});
    q.part();qb(q,0,-.37,2.5,1.5,.14,.1,P.ironD);qb(q,0,.23,2.5,.72,.14,.1,P.ironD);qb(q,0,-.42,2.5,.14,.84,.1,P.ironD);
-   if(hi){bulb(q,.5,.36,-.75,.3,sd+6,{sy:1.2,lz:-.1,core:false,na:6,nr:4});}},-EL);
+   if(hi){bulb(q,.5,.36,-.75,.3,sd+6,{sy:1.1,lz:-.1,core:false,na:9,nr:5,lob:.1,pole:.6});}},-EL);
   // over-armour: two mismatched stolen plates bolted in front of the yoke as a gun shield, the guns in the gap between them
   b.at(-1.72,-.98,.62,0,q=>{slab(q,-.66,.66,0,2.5,2.15,0,.14,P.plateMil,{bot:true,back:true});if(hi){dress(q,'mil',-.66,.66,.1,2.1,.17,0);q.detail(()=>{for(const [u,v] of [[-.5,2.0],[.5,1.85],[-.5,.25],[.5,.25]])tack(q,u,v,.175,.08,P.gold);});}},-.16,.05);
   b.at(1.66,-.9,.7,0,q=>{slab(q,-.62,.62,0,1.55,1.9,0,.14,P.hazard,{bot:true,back:true});bars(q,-.58,.58,.08,1.5,.17,2,P.hazardD);if(hi)q.detail(()=>{for(const [u,v] of [[-.45,1.3],[.45,1.6]])tack(q,u,v,.175,.08,P.weld);});},-.22,-.08);
@@ -271,7 +297,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
   b.tube([-.8,-1,-2.02],[-1,3.4,-2.2],.03,P.ironL,{n:3,r2:.015});for(const sg of [1,-1])T3(b,[-.99,3.3,-2.2],[-.97,2.75,-2.19],[-.2,3.05,-2.25],P.flagSet[3],[-.6,3,-2.2+9*sg]);
   // the infection: the growth swells out from under the breech, between the yoke's legs, split by glowing fissures; thick
   // roots climb the front legs to the trunnions and one runs out under the guns. The only glow on the head.
-  bulb(b,0,-1.04,-.72,.62,sd+2,{sy:1.4,sx:1.3,sz:1.1,na:hi?10:6,nr:hi?6:3,lob:.17});
+  bulb(b,0,-1.04,-.72,.62,sd+2,{sy:1.4,sx:1.3,sz:1.1,na:hi?12:7,nr:hi?7:4,lob:.12,pole:.5});
   for(const sx of [-1,1]){if(!hi&&sx>0)continue;vein(b,[[sx*.55,-.86,-.2],[sx*1.0,-.98,.34],[sx*1.3,-.5,.12],[sx*1.3,-.05,-.2],[sx*1.32,.42,-.42]],.1,.04,{seg:hi?2:1});}
   if(hi){vein(b,[[.1,-.5,-.2],[.2,-.2,.16],[.3,.12,.5],[.46,.36,1.1]],.09,.035,{seg:2});b.halo(0,-.5,-.6,1,RED,.1);}
  };
@@ -284,16 +310,28 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
 // driven into a rusty collar; the growth sac swelling around the drill string inside the legs, split by glowing fissures,
 // a root mound where it enters the ground, veins running down the legs and out across the ground to the edge of the box;
 // a looted crate pile, a stolen LDF flag hung from a brace and the raiders' own black flag at the top (7.3 m).
+// 5E-2d2 critic round 2 (the critic could not tell it from a flag pole; captured at a real raid site and judged beside the
+// hive: the growth was right, but the machine under it was three thin dark legs, so it read as a red sac on a stand, not
+// as a nest on stolen human gear). The rig is unmistakably a plundered human machine now: the legs' upper halves keep their
+// yellow hazard paint, the winch sits in a hazard-striped housing, a stolen LDF relay dish is lashed to the head, and two
+// sides of the tripod are clad with plundered plates (an LDF ceramic sheet with its band, a hazard panel) leaned and
+// welded between the legs; the sac swells out over them and through the open third side, as the hive's growth does over
+// its roof. Paid for with one of the three bulbs: the triangle budget is unchanged.
 // HIGH <= 2000 / LOW <= 700.
 WK.model('raid-spire',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0;
  fit(b,o.w/8.8,o.h/7.4,o.d/7.6,()=>{const FEET=[[0,3.1],[-2.78,-1.72],[2.78,-1.72]],TOPY=5.35,leg=(k,t)=>[FEET[k][0]*(1-.9*t),.14+(TOPY-.14)*t,FEET[k][1]*(1-.9*t)];
   // the tripod: foot plates staked down, girder legs, braces
-  FEET.forEach(([fx,fz],k)=>{const a=Math.atan2(fz,fx);b.part();b.at(fx,0,fz,-a+Math.PI/2,q=>{qb(q,0,-.5,0,1.0,.64,1.0,P.ironD,'b');
+  FEET.forEach(([fx,fz],k)=>{const a=Math.atan2(fz,fx);b.part();b.at(fx,0,fz,-a+Math.PI/2,q=>{qb(q,0,-.5,0,1.0,.64,1.0,P.ironD,'b');qb(q,0,-4,0,.56,3.5,.56,P.iron,'tb');   // a pile under each foot (5E-2d2 critic round 2: two raid layouts stand it on a slope, and its downhill foot hung in the air)
     if(hi){qb(q,0,.14,.38,1.0,.05,.2,P.hazard,'b');for(const sx of [-1,1])q.tube([sx*.36,.5,.3],[sx*.3,-.3,.36],.045,P.ironL,{n:3});q.loft([{p:b.k.rect(.5,.5,0,0,-.05),y:.14},{p:b.k.rect(.34,.3,0,0,-.2),y:.62}],P.iron,{top:false});}});
-   beam(b,leg(k,0),leg(k,1),.36,.3,i=>i%2?P.ironL:P.iron,{w2:.26,d2:.22});
+   beam(b,leg(k,0),leg(k,.56),.36,.3,i=>i%2?P.ironL:P.iron,{w2:.3,d2:.26});beam(b,leg(k,.56),leg(k,1),.3,.26,i=>i%2?P.hazardD:P.hazard,{w2:.26,d2:.22});   // the upper half still in its hazard paint (round 2)
    const n=(k+1)%3;b.tube(leg(k,.3),leg(n,.3),.075,P.ironL,{n:hi?4:3});if(hi){b.tube(leg(k,.3),leg(n,.66),.05,P.rust,{n:3});b.tube(leg(k,.66),leg(n,.66),.06,P.ironL,{n:3});}});
   // the winch head and the beacon lamp in its cage
-  b.cyl(0,TOPY-.2,0,.52,.6,P.ironD,{n:6,bev:.06});b.tube([-.55,TOPY+.62,0],[.55,TOPY+.62,0],.27,P.rust,{n:hi?8:5,caps:true});
+  b.part();qb(b,0,TOPY-.3,0,1.3,.72,1.1,P.hazard,'b');b.tube([-.55,TOPY+.66,0],[.55,TOPY+.66,0],.27,P.rust,{n:hi?8:5,caps:true});   // the winch housing: hazard yellow, striped (round 2: it was a dark drum)
+  if(hi)for(const sg of [1,-1])b.at(0,0,0,sg>0?0:Math.PI,q=>bars(q,-.6,.6,TOPY-.24,TOPY+.36,.562,2,P.hazardD));
+  dish(b,[.95,TOPY+.5,.55],[.62,.5,.6],.62,P.plateMil,P.plateMilD);b.tube([.3,TOPY+.3,.2],[.8,TOPY+.4,.45],.05,P.ironL,{n:3});   // a stolen LDF relay dish lashed to the head
+  // plundered plates leaned and welded between the legs on two sides (the third stays open: the sac shows through it)
+  rad(b,-Math.PI/2,1.74,.05,q=>{slab(q,-1.5,1.45,0,2.5,2.15,0,.12,P.plateMil,{back:true});if(hi){dress(q,'mil',-1.5,1.45,.1,2.1,.15,0);q.detail(()=>{for(const u of [-1.3,1.25])tack(q,u,1.9,.16,.09,P.gold);});}},-.28,.03);
+  rad(b,2.618,1.57,.05,q=>{slab(q,-1.55,1.2,0,1.9,2.35,0,.12,P.hazard,{back:true});bars(q,-1.5,1.15,.1,1.85,.15,hi?3:2,P.hazardD);},-.28,-.04);
   if(hi){for(const sx of [-1,1])qb(b,sx*.6,TOPY+.3,0,.08,.66,.5,P.iron,'b');b.cyl(0,TOPY+.9,0,.2,.12,P.gold,{n:6});b.cyl(0,TOPY+1.4,0,.2,.07,P.ironD,{n:6});
    for(let k=0;k<3;k++){const a=k*TAU/3+.4;b.tube([Math.cos(a)*.2,TOPY+1.0,Math.sin(a)*.2],[Math.cos(a)*.2,TOPY+1.42,Math.sin(a)*.2],.02,P.ironL,{n:3});}}
   b.cyl(0,TOPY+1.02,0,.13,.36,P.red,{n:hi?6:4,top:!hi});b.halo(0,TOPY+1.2,0,.9,RED,.4);
@@ -305,7 +343,7 @@ WK.model('raid-spire',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0
   // the growth: the sac round the drill string (fissures on its flanks), a root mound at the collar
   const SC=[0,2.9,0],S=mass(b,SC,[1.36,1.66,1.3],sd+3,{na:hi?14:8,nr:hi?8:4,lob:.2});mass(b,[0,-.1,0],[1.55,.95,1.45],sd+5,{na:hi?12:8,nr:hi?4:2,t0:.5,lob:.22});
   const up=p=>{const x=p[0]-SC[0],y=(p[1]-SC[1])*.7,z=p[2]-SC[2],l=Math.hypot(x,y,z)||1;return [x/l,y/l,z/l];};
-  [[.5,.66,.52],[2.7,.5,.6],[4.5,.72,.46]].forEach(([ph,t,r],k)=>{if(!hi&&k)return;const p=S(ph,t,.66);bulb(b,p[0],p[1]-r*.5,p[2],r,sd+k*7,{lx:Math.cos(ph)*r*.8,lz:Math.sin(ph)*r*.8,sy:1.5});});
+  [[.5,.66,.52],[2.7,.5,.6]].forEach(([ph,t,r],k)=>{if(!hi&&k)return;const p=S(ph,t,.66);bulb(b,p[0],p[1]-r*.5,p[2],r,sd+k*7,{lx:Math.cos(ph)*r*.8,lz:Math.sin(ph)*r*.8,sy:1.5});});
   for(let k=0;k<(hi?4:2);k++){const ph=k*TAU/(hi?4:2)+1.5,n=hi?4:2,pts=[];for(let j=0;j<=n;j++)pts.push(S(ph+.5*Math.sin(j*1.9+k*2),.9-.84*j/n,1.05));vein(b,pts,.085,.05,{seg:hi?2:1,open:true,up});}
   // veins down the legs and out over the ground to the edge of the box
   FEET.forEach(([fx,fz],k)=>{const pts=[S(Math.atan2(fz,fx),.6,1)],n=hi?6:3;for(let j=0;j<=n;j++){const t=.5-.5*j/n,p=leg(k,t),a=j*1.25+k*2;pts.push([p[0]+Math.cos(a)*.22,p[1]+.05,p[2]+Math.sin(a)*.22]);}vein(b,pts,.11,.06,{seg:hi?2:1,open:true});

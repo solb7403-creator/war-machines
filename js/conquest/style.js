@@ -930,29 +930,71 @@ function create(T,opts={}){
   X.decal(cx,cz,15,12,0,AT.BLOB,[0,0,0],.6,low?6:10,.12);X.decal(cx,cz,21,18,0,AT.BLOB,E(PAR.red,.35),0,low?6:10,.16);}
  S.installations=()=>F.installations.map(inst=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);hive(tk,X,inst);const g=kdone(pair(Sb,X),tk);g.name='cq-style-hive-'+inst.id;g.userData.site={x:inst.solid.x,z:inst.solid.z,range:1100};return g;});
  S.cover=()=>{const groups=new Map();for(const o of F.obstacles){let e=groups.get(o.layout);if(!e){e={Sb:new Bld(),X:new Fx(),x:0,z:0,n:0};e.tk=kt(e.Sb,e.X);groups.set(o.layout,e);}coverWall(e.tk,e.X,o);e.x+=o.x;e.z+=o.z;e.n++;}
-  return [...groups.entries()].map(([layout,e])=>{const g=kdone(pair(e.Sb,e.X),e.tk);g.name='cq-style-cover-'+layout;g.userData.site={x:e.x/e.n,z:e.z/e.n,range:900};return g;});};
+  // 5E-2d2 critic round 2: the walls are lit as the Parasite machines are (MAT.par: the same program with the Parasites' own warm light;
+  // no new program, no extra draw). Under the Moon's light a wall's shaded side was a black and teal block on LOW (the night sky's blue
+  // on tan and ochre plates) and one flat dark red on HIGH: its plundered plates lost their colours exactly where a pilot takes cover.
+  return [...groups.entries()].map(([layout,e])=>{const g=kdone(pair(e.Sb,e.X),e.tk);g.children[0].material=MAT.par;g.name='cq-style-cover-'+layout;g.userData.site={x:e.x/e.n,z:e.z/e.n,range:900};return g;});};
  // ---------- the portal gate and the LDF posts (Session 5E-2d2; owner, Nov 21): SCENERY ONLY until the Living Front's visual
  // session makes them active (ConquestWar.portalOf / ldfPosts). No collision, no layout change: every spot is open ground
  // beside a military place (found by a search for flat ground clear of solids, roads, lots, fields, water and forest; the test
  // conquest-style.mjs checks each one), and a tank may pass through them like through every other dressing prop.
  //   the portal: dormant (a low red glow, no effect) on the flat west of the OXYGEN SPEAR hive, its face toward the Refuge
  //   the posts: the Refuge, the oxygen complex, both ends of the viaduct, the Command Base approach, the frontier wall and
- //   the terraformers' works (the corridor pylon, the ice mine, the reservoir dam); each post is its own variant (o.seed)
+ //   the terraformers' works (the corridor pylon, the ice mine, the reservoir dam); each post is its own design (o.seed = its
+ //   place in this list + 1: the model's nine hero modules are in this order, kit/warmodels.js ldf-post)
  const WAR_SCENERY={portal:{x:1196,z:987,ry:0},posts:[{id:'refuge',x:1121,z:1158},{id:'oxygen',x:1169,z:1056},{id:'viaduct-east',x:1150,z:1020},{id:'viaduct-west',x:893,z:1032},{id:'base',x:1028,z:1166},
   {id:'frontier-wall',x:1018,z:1046},{id:'pylon',x:1006,z:1115},{id:'ice-mine',x:944,z:1163},{id:'dam',x:811,z:1371}]};
  S.WAR_SCENERY=WAR_SCENERY;
- S.warScenery=(o={})=>{const out=[],Kk=KW(),hives=F.installations;
-  {const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X),P=WAR_SCENERY.portal,st=o.portal||'dormant',y=ground(P.x,P.z);Kk.place('portal-gate',tk,KM(P.x,y,P.z,P.ry),{state:st});
-   X.decal(P.x,P.z,11,6,0,AT.BLOB,[0,0,0],.5,low?4:8,.1);if(st!=='suppressed')X.decal(P.x,P.z,15,9,0,AT.BLOB,E(PAR.red,st==='open'?.5:.22),0,low?4:8,.14);
-   const g=kdone(pair(Sb,X),tk);g.name='cq-style-portal';g.userData.site={x:P.x,z:P.z,range:1100};g.userData.portal=st;out.push(g);}
+ // 5E-2d2 critic round 2: what moves on the war scenery (g.userData.warTick(t), called by S.update for the groups in view).
+ // No new program and, for the dormant portal and the posts, no new draw: a handful of vertices of the group's OWN glow draw
+ // are rewritten (the ember halo's brightness, a searchlight's blades). The open portal's swirl is two small glow meshes
+ // that turn against each other by their transform alone (a state Session 7-V switches on; only at the portal).
+ // an arm of soft light along a spiral in the plane z (lit across its width by the BLOB mask's middle row, like Fx.shaft)
+ const swirl=(arms,turn,ra,rb,w0,w1,ea,eb,ph,core)=>{const X=new Fx(),r=AT.BLOB,vm=(r[1]+r[3])/2,ns=low?5:9;
+  for(const z of [.4,-.4])for(let k=0;k<arms;k++){const a0=ph+k/arms*TAU,pt=t=>{const rr=ra+(rb-ra)*t,a=a0+turn*Math.pow(t,1.25);return [Math.cos(a)*rr,Math.sin(a)*rr];};let prev=null;
+   for(let i=0;i<=ns;i++){const t=i/ns,c=pt(t),d=pt(Math.min(1,t+.02)),e=pt(Math.max(0,t-.02));let tx=d[0]-e[0],ty=d[1]-e[1];const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;const w=(w0+(w1-w0)*t)/2,f=Math.pow(Math.sin(Math.PI*t),.7),col=[(ea[0]+(eb[0]-ea[0])*t)*f,(ea[1]+(eb[1]-ea[1])*t)*f,(ea[2]+(eb[2]-ea[2])*t)*f];
+    const i0=X.v(c[0]-ty*w,c[1]+tx*w,z,r[0],vm,col,0),i1=X.v(c[0]+ty*w,c[1]-tx*w,z,r[2],vm,col,0);if(prev)X.q4(prev[0],prev[1],i1,i0);prev=[i0,i1];}}
+  if(core)X.bill(0,0,0,core,AT.BLOB,E(PAR.hot,.3));return fxMesh(X.geometry(),3);};
+ S.warScenery=(o={})=>{const out=[],Kk=KW(),hives=F.installations,WM=root.ConquestWarModels;
+  {const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X),P=WAR_SCENERY.portal,st=o.portal||'dormant',y=ground(P.x,P.z),cy=y+WM.portal.cy;Kk.place('portal-gate',tk,KM(P.x,y,P.z,P.ry),{state:st});
+   X.decal(P.x,P.z,11,6,0,AT.BLOB,[0,0,0],.5,low?4:8,.1);if(st!=='suppressed')X.decal(P.x,P.z,15,9,0,AT.BLOB,E(PAR.red,st==='open'?.3:.14),0,low?4:8,.14);   // (round 2: the open gate's ground glow was .5 and the dormant one's .22: part of the burn-out, and of a dormant gate that looked awake)
+   const b0=X.n;if(st==='dormant'){X.bill(P.x,cy,P.z,3.4,AT.BLOB,E(PAR.red,.16));X.bill(P.x,cy,P.z,1.2,AT.BLOB,E(PAR.red,.5));}const b1=X.n;   // dormant: the sleeping ember's halo
+   const g=kdone(pair(Sb,X),tk);g.name='cq-style-portal';g.userData.site={x:P.x,z:P.z,range:1100};g.userData.portal=st;
+   // dormant: the ember breathes, one slow swell every 4 s (the solid shader's own pulse is a 2 s shimmer: too lively for a gate that sleeps)
+   if(b1>b0){const A=g.children[1].geometry.attributes.aCol,base=A.array.slice(b0*4,b1*4);g.userData.warTick=t=>{const k=.3+.7*Math.pow(.5-.5*Math.cos(t*TAU/4),1.6);for(let i=0;i<base.length;i++)if(i%4<3)A.array[b0*4+i]=base[i]*k;A.needsUpdate=true;};}
+   // open: the swirl, two layers turning against each other (it was a flat pinwheel fixed to the surface): five thin hot arms one way, three broad deep ones the other way under them
+   if(st==='open'){const a=swirl(5,1.9,.9,4.55,.45,1.5,E(PAR.red,.42),E(PAR.hot,.6),0,0),c=swirl(3,-2.5,.3,3.9,1.3,2.5,E(PAR.deep,.5),E(PAR.red,.34),.5,low?0:1.5);
+    for(const m of [a,c]){m.position.set(P.x,cy,P.z);m.rotation.order='YXZ';m.rotation.y=P.ry;g.add(m);}g.userData.warTick=t=>{a.rotation.z=t*.42;c.rotation.z=-t*.27;};g.userData.swirl=[a,c];}
+   out.push(g);}
   WAR_SCENERY.posts.forEach((p,i)=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);let lo=1e9,hi=-1e9;for(const [dx,dz] of [[0,0],[3,0],[-3,0],[0,3],[0,-3]])hi=Math.max(hi,ground(p.x+dx,p.z+dz));for(const [dx,dz] of [[4.3,4.3],[-4.3,4.3],[4.3,-4.3],[-4.3,-4.3],[0,0]])lo=Math.min(lo,ground(p.x+dx,p.z+dz));
    let h=hives[0],hd=1e9;for(const q of hives){const d=Math.hypot(q.x-p.x,q.z-p.z);if(d<hd){hd=d;h=q;}}const ry=Math.round(Math.atan2(h.x-p.x,h.z-p.z)/(Math.PI/4))*(Math.PI/4),m=KM(p.x,hi,p.z,ry);   // it faces the nearest Parasite hive
    if(hi-lo>.25){const pb=Kk.part({});pb.box(0,-(hi-lo)-.4,0,8.6,hi-lo+.4,8.6,Kk.pal.mil.conc);Kk.emit(tk,pb,m);}   // a concrete footing down to the lowest corner (the ground here is rarely level)
    Kk.place('ldf-post',tk,m,{seed:i+1});X.decal(p.x,p.z,6.5,6.5,0,AT.BLOB,[0,0,0],.5,4,.1);X.decal(p.x,p.z,9,9,0,AT.BLOB,E(0x22e6ff,.16),0,4,.14);
-   const g=kdone(pair(Sb,X),tk);g.name='cq-style-ldf-'+p.id;g.userData.site={x:p.x,z:p.z,range:900};out.push(g);});
+   // the searchlight (5E-2d2 critic round 2: the post's signature, seen from far): two crossed blades of soft blue light from the mast's
+   // lantern, in the post's own glow draw. Their eight vertices start folded into the lantern; warTick swings them round.
+   const lp=WM.ldf.light(i+1),L0=new T.Vector3(lp[0],lp[1],lp[2]).applyMatrix4(m),rB=AT.BLOB,vm=(rB[1]+rB[3])/2,c0=E(0x62b6ff,low?.5:.42),c1=[0,0,0],b0=X.n;
+   for(let k=0;k<2;k++)X.q4(X.v(L0.x,L0.y,L0.z,rB[0],vm,c0,0),X.v(L0.x,L0.y,L0.z,rB[2],vm,c0,0),X.v(L0.x,L0.y,L0.z,rB[2],vm,c1,0),X.v(L0.x,L0.y,L0.z,rB[0],vm,c1,0));
+   const g=kdone(pair(Sb,X),tk);g.name='cq-style-ldf-'+p.id;g.userData.site={x:p.x,z:p.z,range:900};
+   {const geo=g.children[1].geometry,A=geo.attributes.position,P=A.array,o=b0*3,LEN=24,W0=.16,W1=1.9,DIP=.16,cd=Math.cos(DIP),sd=Math.sin(DIP),bs=geo.boundingSphere;
+    bs.radius=Math.max(bs.radius,bs.center.distanceTo(L0)+LEN+1);   // the sweep stays inside the draw's bounds
+    const put=(k,x,y,z)=>{P[o+k*3]=x;P[o+k*3+1]=y;P[o+k*3+2]=z;};
+    g.userData.warTick=(t,pl)=>{if(pl&&Math.hypot(pl.x-p.x,pl.z-p.z)>420)return;const a=t*.5+i*1.9,dx=Math.sin(a)*cd,dz=Math.cos(a)*cd,dy=-sd,hx=Math.cos(a),hz=-Math.sin(a),ux=-dy*hz,uy=dz*hx-dx*hz,uz=dy*hx;   // one turn in 12.6 s, every post at its own phase; u = dir x h
+     const nx=L0.x+dx*.35,ny=L0.y+dy*.35,nz=L0.z+dz*.35,fx=L0.x+dx*LEN,fy=L0.y+dy*LEN,fz=L0.z+dz*LEN;
+     put(0,nx-hx*W0,ny,nz-hz*W0);put(1,nx+hx*W0,ny,nz+hz*W0);put(2,fx+hx*W1,fy,fz+hz*W1);put(3,fx-hx*W1,fy,fz-hz*W1);
+     put(4,nx-ux*W0,ny-uy*W0,nz-uz*W0);put(5,nx+ux*W0,ny+uy*W0,nz+uz*W0);put(6,fx+ux*W1,fy+uy*W1,fz+uz*W1);put(7,fx-ux*W1,fy-uy*W1,fz-uz*W1);A.needsUpdate=true;};
+    g.userData.warTick(0);g.userData.light=L0;}
+   out.push(g);});
   return out;};
  // Raid-only Parasite spire (decor where the live build places raid art): the kit's raid-spire, a growth nest on scavenged steel.
- S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});return kdone(pair(Sb,X),tk);};
+ S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});const g=kdone(pair(Sb,X),tk);g.children[0].material=MAT.par;return g;};   // lit as the Parasite machines are, like the cover walls beside it (5E-2d2 critic round 2)
+ // Where a raid's spire is drawn (5E-2d2 critic round 2: the critic could not find the spire; in 4 of the 25 raids its spot, the raid's
+ // site + (45, 15), is inside a boulder and only its lamp showed): the nearest spot to (x, z) with 4.6 m of clear ground around it
+ // (no rock or structure, no cover wall, no water), the nearest and most level of the spots on rings 4 m apart; (x, z) itself where it is clear, so the other 21 raids
+ // are unchanged. Decor only: nothing collides with the spire, here as there.
+ S.raidSpireSpot=(x,z)=>{const W=root.ConquestWorld,ok=(px,pz)=>{for(let a=0;a<9;a++){const r=a?4.6:0,qx=px+Math.cos(a*TAU/8)*r,qz=pz+Math.sin(a*TAU/8)*r;if(W.solidAt(qx,qz)||W.raidSolidAt(qx,qz)||W.waterAt(qx,qz))return false;}return true;};
+  if(ok(x,z))return [x,z];let best=[x,z],bc=1e9;for(let r=4;r<=28;r+=4)for(let a=0;a<8;a++){const px=x+Math.cos(a*TAU/8)*r,pz=z+Math.sin(a*TAU/8)*r;if(!ok(px,pz))continue;
+   let lo=1e9,hi=-1e9;for(const [dx,dz] of [[0,0],[3.2,0],[-3.2,0],[0,3.2],[0,-3.2]]){const g=W.groundAt(px+dx,pz+dz);lo=Math.min(lo,g);hi=Math.max(hi,g);}const c=r+3*(hi-lo);if(c<bc){bc=c;best=[px,pz];}}   // near, and on the most level ground there (its tripod spans 6 m)
+  return best;};
  // Blender-authored GLB (constrained parser) adopted into the style: per-mesh PBR factors become vertex colour + emission.
  S.adopt=group=>{group.traverse(o=>{if(!o.isMesh||o.material===MAT.solid)return;const geo=o.geometry,m=o.material;if(!geo.attributes.aCol){const n=geo.attributes.position.count,a=new Float32Array(n*4),c=m.color||new T.Color(1,1,1),e=m.emissive||new T.Color(0,0,0),em=Math.max(e.r,e.g,e.b);
    geo.computeBoundingBox();const y0=geo.boundingBox.min.y,h=Math.max(.01,geo.boundingBox.max.y-y0),p=geo.attributes.position;
@@ -1182,7 +1224,8 @@ function create(T,opts={}){
    const b=Math.round(255*Math.min(1,Math.max(0,U.uAtmo.value))),d=guestAtmo.image.data;if(d[0]!==b){d[0]=d[1]=d[2]=b;guestAtmo.needsUpdate=true;}U.uShadowMap.value=guestNoShadow;U.uAtmoMap.value=guestAtmo;}
   else{if(!gSave.on)return;gSave.on=false;U.uShadowMap.value=gSave.sh;U.uAtmoMap.value=gSave.at;U.uSite.value.forEach((v,i)=>v.copy(gSave.sites[i]));}};
  S.atmoApply=(scene,near,far)=>{const k=U.uAtmo.value;if(!scene.fog)scene.fog=new T.Fog(0,near,far);scene.fog.color.copy(nightFog).lerp(dayFog,k);scene.fog.near=near*(1-.55*k);scene.fog.far=far*(1-.45*k);if(!scene.background)scene.background=new T.Color(0);scene.background.setRGB(.36*k,.27*k,.19*k);return k;};
- S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);if(view?.p)S.atmo(view.p,dt);
+ S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.styleGroups)for(const g of view.styleGroups){const f=g.userData.warTick;if(f&&g.visible)f(t,view.p);}   /* 5E-2d2 critic round 2: the war scenery's motion (the portal, the posts' searchlights) */
+  if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);if(view?.p)S.atmo(view.p,dt);
   const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)*100003+Math.round(p.z/32);if(siteKey.k===k&&siteKey.t===terr)return;siteKey.k=k;siteKey.t=terr;
   const list=allSites(F,terr).map(s=>[s,Math.hypot(s[0]-p.x,s[1]-p.z)-s[2]]).sort((a,b)=>a[1]-b[1]).slice(0,8);for(let i=0;i<8;i++){const s=list[i]?.[0];U.uSite.value[i].set(s?s[0]:0,s?s[1]:0,s?s[2]:0,s?s[3]:0);}};
  // HIGH shading can drop to the LOW branch at runtime (adaptive quality, LOW setting): same programs, no recompile.

@@ -37,7 +37,12 @@ for(const low of [false,true]){
  // Installations: hive inside the 22 x 16 tank box (+1.2 m for spike tips), mast within r 2 + 1.
  for(const [i,s] of F.installations.entries()){for(const [x,y,z] of verts(parts.installs[i],solid)){const inBox=Math.abs(x-s.solid.x)<=12.2&&Math.abs(z-s.solid.z)<=9.2,inMast=Math.hypot(x-s.mast.x,z-s.mast.z)<=3.2;assert.ok(inBox||inMast,q+' installation art outside its footprint at '+[x,z].map(n=>n.toFixed(1)));}}
  // Raid cover: walls exactly on the authoritative boxes (±0.2 m).
- const cv=parts.cover.flatMap(g=>verts(g,solid));for(const [x,,z] of cv)assert.ok(W.raidObstacles.some(o=>Math.abs(x-o.x)<=o.width/2+.2&&Math.abs(z-o.z)<=o.depth/2+.2),q+' cover art off its box at '+[x,z].map(n=>n.toFixed(1)));
+ // 5E-2d2 critic round 2: the walls are drawn with MAT.par (the Parasites' own light, the same program); the check reads that mesh, and is never empty.
+ // The raid spire is drawn on clear ground (it was inside a boulder in 4 raids): its own spot where that is clear, else the nearest clear spot.
+ for(const g of parts.cover)assert.equal(g.children[0].material,S.MAT.par,q+' a cover group is lit as the Parasite machines are');assert.equal(parts.spire.children[0].material,S.MAT.par,q+' the raid spire is lit as the Parasite machines are');
+ for(const id of C.raidIds){const o=C.operations[id],sp=S.raidSpireSpot(o.x+45,o.z+15),free=(x,z)=>!W.solidAt(x,z)&&!W.raidSolidAt(x,z)&&!W.waterAt(x,z);assert.ok(Math.hypot(sp[0]-o.x-45,sp[1]-o.z-15)<=28.01,q+' '+id+': the spire stays by its spot');
+  assert.ok(free(sp[0],sp[1])&&[0,1,2,3,4,5,6,7].every(a=>free(sp[0]+Math.cos(a*Math.PI/4)*4.6,sp[1]+Math.sin(a*Math.PI/4)*4.6)),q+' '+id+': the spire stands on clear ground');if(free(o.x+45,o.z+15)&&[0,1,2,3,4,5,6,7].every(a=>free(o.x+45+Math.cos(a*Math.PI/4)*4.6,o.z+15+Math.sin(a*Math.PI/4)*4.6)))assert.deepEqual([sp[0],sp[1]],[o.x+45,o.z+15],q+' '+id+': a clear spot is kept');}
+ const cv=parts.cover.flatMap(g=>verts(g,m=>solid(m)||m.material===S.MAT.par));assert.ok(cv.length>1000,q+' the cover walls are read: '+cv.length+' vertices');for(const [x,,z] of cv)assert.ok(W.raidObstacles.some(o=>Math.abs(x-o.x)<=o.width/2+.2&&Math.abs(z-o.z)<=o.depth/2+.2),q+' cover art off its box at '+[x,z].map(n=>n.toFixed(1)));
  // Command Base: perimeter wall solids sit inside the shared baseBlocked() region.
  const B5=parts.base[5],D=C.baseDefinition,yb=W.groundAt(D.x,D.z);let wallChecked=0;
  for(const [x,y,z] of verts(B5,solid)){if(y<yb+1.5||y>yb+4.4)continue;const onWallLine=Math.abs(Math.abs(x)-17)<2.2&&Math.abs(z)<17||Math.abs(z-16)<2.2&&Math.abs(x)<14.5;if(!onWallLine)continue;wallChecked++;
