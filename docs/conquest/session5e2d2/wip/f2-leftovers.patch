@@ -28,10 +28,10 @@ index d329009..812040e 100644
     chance, the live defense HUD, the Hangar gear picker, the alert switches. Fits or scrolls; 44 px touch targets. ---- */
 diff --git a/dev/tests/conquest-leftovers-captures.py b/dev/tests/conquest-leftovers-captures.py
 new file mode 100644
-index 0000000..3163398
+index 0000000..b92850a
 --- /dev/null
 +++ b/dev/tests/conquest-leftovers-captures.py
-@@ -0,0 +1,213 @@
+@@ -0,0 +1,214 @@
 +"""Session 5E-2d2 captures (brief section 7, "5E-2d1 LEFTOVERS"): one picture per reviewer note of Checkpoint 44, framed the same
 +way before (a tree given with --root, e.g. `git archive origin/main`) and after, plus the colony on LOW.
 +Shipped client (index.html), real renderer, scenario placements only (a jump, a camera framing, a UI tap). Software GL: looks
@@ -81,6 +81,7 @@ index 0000000..3163398
 + ('note05-base-wall',BASE,0,30,.28,24,'fort'),
 + ('note05-base-tower','[ConquestCombat.baseDefinition.x+15,ConquestCombat.baseDefinition.z-13]',300,14,.25,16,'fort'),
 + ('note05-base-tower-west','[ConquestCombat.baseDefinition.x-15,ConquestCombat.baseDefinition.z-13]',240,15,.5,19,'fort'),   # the other corner tower from higher up (a colony pole stands in the first one's line)
++ ('note05-base-tower-low','[ConquestCombat.baseDefinition.x-15,ConquestCombat.baseDefinition.z-13]',240,15,.2,25,'fort'),   # from low behind the tank: the whole tower against the sky
 + ('note05-base-tower-high','[ConquestCombat.baseDefinition.x+15,ConquestCombat.baseDefinition.z-13]',270,16,.62,20,'fort'),
 + ('note06-bank-steepest',STEEP,90,16,.3,22,''),
 + ('note06-bank-terminal','[F.terminal.x,F.terminal.z]',90,9,.8,24,''),
@@ -266,6 +267,79 @@ index f845bef..4b49536 100644
    const dfx=TK.damageFx(R,p,new T.Group());ok(dfx&&dfx.src.length===5&&dfx.src.filter(x=>x.spark).length===1,q+' '+site+': damaged walls smoke and the ruined turret sparks ('+dfx?.src.length+' sources)');}
   // LOW is lighter than HIGH for every wall blend
   if(!low){const S2=CS.create(T,{low:true}),kh=TK.kit(S),kl=TK.kit(S2);let lighter=0,heavier=0,th=0,tl=0;for(let o=0;o<=6;o++)for(let l=o?1:0;l<=(o?3:0);l++){const code=P.wcode(o,l),a=kl.wallGeo(code,true).index.count,b=kh.wallGeo(code,false).index.count;th+=b;tl+=a;if(a<b)lighter++;if(a>b)heavier++;}ok(heavier===0&&lighter>=12&&tl<th*.8,'LOW walls are never heavier than HIGH, lighter for '+lighter+' of 19 blend looks, '+Math.round(100*tl/th)+'% of HIGH in all');
+diff --git a/docs/conquest/occluder/chromium-results.json b/docs/conquest/occluder/chromium-results.json
+index 73a0d2a..37728e3 100644
+--- a/docs/conquest/occluder/chromium-results.json
++++ b/docs/conquest/occluder/chromium-results.json
+@@ -1,7 +1,7 @@
+ {
+  "engine": "chromium",
+  "status": "PASS",
+- "programs": 10,
++ "programs": 8,
+  "outlinePixelsOpen": 0,
+  "outlinePixelsBehind": 330,
+  "cameraOpen": 45.306166904823606,
+@@ -13,7 +13,7 @@
+    9,
+    9
+   ],
+-  "k": 0.7313086404000013,
++  "k": 0.6150346008299984,
+   "cam": 40.98688631256012
+  },
+  "physicalDeviceVerified": false
+diff --git a/docs/conquest/session5e2d1/town/results.json b/docs/conquest/session5e2d1/town/results.json
+index 6188453..41e7c26 100644
+--- a/docs/conquest/session5e2d1/town/results.json
++++ b/docs/conquest/session5e2d1/town/results.json
+@@ -16,7 +16,7 @@
+    "h": 104,
+    "left": 16
+   },
+-  "drove": 21.9,
++  "drove": 21.0,
+   "behind": {
+    "n": 1,
+    "ghost": 0,
+@@ -39,11 +39,11 @@
+     -2,
+     8.3
+    ],
+-   "k": 0.78
++   "k": 0.7799690346073064
+   },
+   "drive": {
+    "calls": 66,
+-   "programs": 12
++   "programs": 11
+   }
+  },
+  "low": {
+@@ -63,7 +63,7 @@
+    "h": 104,
+    "left": 16
+   },
+-  "drove": 19.1,
++  "drove": 18.8,
+   "behind": {
+    "n": 1,
+    "ghost": 0,
+@@ -86,11 +86,11 @@
+     -2,
+     8.3
+    ],
+-   "k": 0.7784132819029214
++   "k": 0.7776415669225789
+   },
+   "drive": {
+    "calls": 66,
+-   "programs": 10
++   "programs": 9
+   }
+  }
+ }
+\ No newline at end of file
 diff --git a/js/conquest/app.js b/js/conquest/app.js
 index ecff95c..0b9a99e 100644
 --- a/js/conquest/app.js
@@ -287,10 +361,32 @@ index ecff95c..0b9a99e 100644
   ctx.setTransform(2,0,0,2,0,0);ctx.fillStyle='#080e16';ctx.fillRect(0,0,360,420);ctx.save();ctx.translate(40+px,py+420*scale);ctx.scale(unit,-unit);
   const cells=discovery.cellsIn({x:left,z:bottom,width:right-left,height:top-bottom});
 diff --git a/js/conquest/style.js b/js/conquest/style.js
-index 0a26b83..7c2d3e0 100644
+index 0a26b83..de3483f 100644
 --- a/js/conquest/style.js
 +++ b/js/conquest/style.js
-@@ -1216,9 +1216,11 @@ function glyph(gl,c){const k=gl+c;let s=MAPC.glyphs.get(k);if(s)return s;s=docum
+@@ -519,7 +519,10 @@ function create(T,opts={}){
+      else{if(!hit)set.nh++;const need=set.whole&&frame<=set.hot?2:3,left=CELLS+1-ph;if(set.nh>=need){set.ph=0;set.whole=true;set.hot=frame+CELLS+8;}else if(set.nh+left<need){set.ph=0;set.hot=Math.min(set.hot,frame+2);}else set.ph=ph+1;}}
+     else if(frame-set.pend>40){set.pend=0;set.lost=frame+40;try{set.gl.deleteQuery(set.q);}catch(_){}set.q=null;}}   // an answer that never comes (a lost context): draw the twins as they were drawn before and ask again
+    if(!set.pend){   // the next question's box (the one in flight keeps its own)
+-    for(const o of set.src){const b=o.geometry.boundingBox||(o.geometry.computeBoundingBox(),o.geometry.boundingBox);_pm.multiplyMatrices(_pi,o.matrixWorld);for(let i=0;i<8;i++){_pv.set(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z).applyMatrix4(_pm);x0=Math.min(x0,_pv.x);x1=Math.max(x1,_pv.x);y0=Math.min(y0,_pv.y);y1=Math.max(y1,_pv.y);z0=Math.min(z0,_pv.z);z1=Math.max(z1,_pv.z);}}
++    // 5E-2d2 section 7 (note 1, seen at 320x568: the tank behind a 2.4 m pillar, most of its hull out of sight, had NO outline): the
++    // cells are cut from the hull's own box, not from the box of every part. With the gun's long barrel in it the box of a tank
++    // seen cornerwise is 7 m across, a column 1.2 m, and a pillar that hides the hull hid one column (2 cells of the 3 asked).
++    for(const o of set.ph>1?set.hull:set.src){const b=o.geometry.boundingBox||(o.geometry.computeBoundingBox(),o.geometry.boundingBox);_pm.multiplyMatrices(_pi,o.matrixWorld);for(let i=0;i<8;i++){_pv.set(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z).applyMatrix4(_pm);x0=Math.min(x0,_pv.x);x1=Math.max(x1,_pv.x);y0=Math.min(y0,_pv.y);y1=Math.max(y1,_pv.y);z0=Math.min(z0,_pv.z);z1=Math.max(z1,_pv.z);}}
+     const px=(x1-x0)*.04,pz=(z1-z0)*.04,h=y1-y0;x0-=px;x1+=px;z0-=pz;z1+=pz;y0+=h*.3;y1+=h*.06;_pc.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2).applyMatrix4(rt.matrixWorld);
+     const dx=_pc.x-cp.x,dy=_pc.y-cp.y,dz=_pc.z-cp.z,dl=Math.hypot(dx,dy,dz)||1,sh=1/dl;   // the shader brings the box 1.3 m nearer in depth (as it does the outline); 1 m back here leaves it .3 m nearer than it stands
+     for(let i=0;i<8;i++){_pv.set(i&1?x1:x0,i&2?y1:y0,i&4?z1:z0).applyMatrix4(rt.matrixWorld);A[i*3]=_pv.x;A[i*3+1]=_pv.y;A[i*3+2]=_pv.z;}
+@@ -540,7 +543,8 @@ function create(T,opts={}){
+     for(const it of list){const rt=it.root;if(!rt||!rt.parent)continue;let shown=true;for(let p=rt;p;p=p.parent)if(!p.visible){shown=false;break;}if(!shown)continue;live.add(rt);rt.updateWorldMatrix(true,true);
+      const src=[];rt.traverse(o=>{if(!ok(o))return;for(let p=o;p&&p!==rt;p=p.parent)if(!p.visible)return;if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();if(o.geometry.boundingSphere.radius*o.matrixWorld.getMaxScaleOnAxis()>.3)src.push(o);});
+      let set=sets.get(rt);if(!set||set.src.length!==src.length||set.src.some((o,i)=>o!==src[i]||set.geo[i]!==o.geometry)){if(set)drop(set);set={src,geo:src.map(o=>o.geometry),tw:[]};
+-      for(const o of src){const a=new T.Mesh(o.geometry,MAT.outlineMask),b=new T.Mesh(o.geometry,it.ally?MAT.outlineAlly:MAT.outline);a.renderOrder=9000;b.renderOrder=9001;for(const m of [a,b]){m.matrixAutoUpdate=false;m.frustumCulled=false;m.userData.noPick=true;m.userData.noOutline=true;m.userData.outlineTwin=true;}b.onBeforeRender=()=>{b.material.depthFunc=set.whole?1:6;};/* the whole ring (always), or only where the tank is hidden (no occlusion queries: as before) */g.add(a,b);set.tw.push([a,b]);}set.probe=src.length?probe(set):null;sets.set(rt,set);}
++      for(const o of src){const a=new T.Mesh(o.geometry,MAT.outlineMask),b=new T.Mesh(o.geometry,it.ally?MAT.outlineAlly:MAT.outline);a.renderOrder=9000;b.renderOrder=9001;for(const m of [a,b]){m.matrixAutoUpdate=false;m.frustumCulled=false;m.userData.noPick=true;m.userData.noOutline=true;m.userData.outlineTwin=true;}b.onBeforeRender=()=>{b.material.depthFunc=set.whole?1:6;};/* the whole ring (always), or only where the tank is hidden (no occlusion queries: as before) */g.add(a,b);set.tw.push([a,b]);}set.probe=src.length?probe(set):null;sets.set(rt,set);
++      let hv=-1;set.hull=src;for(const o of src){const bb=o.geometry.boundingBox||(o.geometry.computeBoundingBox(),o.geometry.boundingBox),k=o.matrixWorld.getMaxScaleOnAxis(),v=(bb.max.x-bb.min.x)*(bb.max.y-bb.min.y)*(bb.max.z-bb.min.z)*k*k*k;if(v>hv){hv=v;set.hull=[o];}}}   /* the hull: the part with the largest box (ask: the cells) */
+      const on=ask(set,rt,cam);set.on=on;set.src.forEach((o,i)=>{for(const m of set.tw[i]){m.visible=on;if(on){m.matrix.copy(o.matrixWorld);m.matrixWorldNeedsUpdate=true;}}});}
+     for(const [rt,set] of sets)if(!live.has(rt)){drop(set);sets.delete(rt);}},
+    clear(){for(const set of sets.values())drop(set);sets.clear();},dispose(){this.clear();g.parent?.remove(g);}};};
+@@ -1216,9 +1220,11 @@ function glyph(gl,c){const k=gl+c;let s=MAPC.glyphs.get(k);if(s)return s;s=docum
   x.shadowColor=c;x.shadowBlur=11;x.fillStyle=c;x.fillText(gl,24,25);x.shadowBlur=0;x.fillText(gl,24,25);x.lineWidth=1;x.strokeStyle='rgba(255,255,255,.6)';x.strokeText(gl,24,25);MAPC.glyphs.set(k,s);return s;}
  function wrap(t){t=String(t).toUpperCase();if(t.length<=17)return [t];const p=t.split(' / ');if(p.length===2)return [p[0]+' /',p[1]];const w=t.split(' ');let best=[t],score=1e9;
   for(let i=1;i<w.length;i++){const a=w.slice(0,i).join(' '),b=w.slice(i).join(' '),sc=Math.max(a.length,b.length);if(sc<score){score=sc;best=[a,b];}}return best;}
@@ -305,7 +401,7 @@ index 0a26b83..7c2d3e0 100644
  function overlay(){if(MAPC.overlay)return MAPC.overlay;const cv=document.createElement('canvas');cv.width=720;cv.height=840;const x=cv.getContext('2d');const g=x.createRadialGradient(360,420,200,360,420,580);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.62)');x.fillStyle=g;x.fillRect(0,0,720,840);
   x.fillStyle='rgba(0,229,255,.035)';for(let y=0;y<840;y+=4)x.fillRect(0,y,720,1);x.strokeStyle='rgba(0,229,255,.8)';x.lineWidth=2;for(const [cx,cy,sx,sy] of [[8,8,1,1],[712,8,-1,1],[8,832,1,-1],[712,832,-1,-1]]){x.beginPath();x.moveTo(cx,cy+sy*26);x.lineTo(cx,cy);x.lineTo(cx+sx*26,cy);x.stroke();}
   MAPC.overlay=cv;return cv;}
-@@ -1250,9 +1252,9 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
+@@ -1250,9 +1256,9 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
    if(town&&d.has(town[0],town[1]))add(town[0],town[1],'■','#ffa84a','SETTLER TOWN',3);if(farm&&d.has(farm[0],farm[1]))add(farm[0],farm[1],'✿','#9fd85a','FARMS',2);if(wall&&d.has(wall[0],wall[1]))add(wall[0],wall[1],'▮','#46eeff','FRONTIER WALL · MILITARY',2);}
   for(const w of S.wrecks||[])if(d.has(w.x,w.z))add(w.x,w.z,'◇','#8ee6ef','YOUR WRECK',8);add(Cb.refuge.x,Cb.refuge.z,'●','#3fe9ff','REFUGE',10);
   for(const k of marks){if(k.p.x<-12||k.p.x>372||k.p.y<-12||k.p.y>432)continue;if(k.dot){ctx.fillStyle=k.c;ctx.beginPath();ctx.arc(k.p.x,k.p.y,2,0,TAU);ctx.fill();}else if(k.big){ctx.save();ctx.strokeStyle=k.c;ctx.globalAlpha=.55+.35*Math.sin((m.time||0)*3);ctx.lineWidth=2;ctx.beginPath();ctx.arc(k.p.x,k.p.y,17,0,TAU);ctx.stroke();ctx.restore();ctx.drawImage(glyph(k.g,k.c),k.p.x-18,k.p.y-18,36,36);}else ctx.drawImage(glyph(k.g,k.c),k.p.x-12,k.p.y-12,24,24);}   // Find My Base: the base is the one big, pulsing marker
@@ -317,7 +413,7 @@ index 0a26b83..7c2d3e0 100644
   items.sort((a,b)=>b.pri-a.pri||(Math.hypot(a.p.x-you.x,a.p.y-you.y)-Math.hypot(b.p.x-you.x,b.p.y-you.y)));
   const placed=obst.slice(),fits=r=>r.x>=13&&r.y>=13&&r.x+r.w<=358&&r.y+r.h<=402&&!placed.some(o=>r.x<o.x+o.w+2&&r.x+r.w+2>o.x&&r.y<o.y+o.h+1&&r.y+r.h+1>o.y);   // labels keep 2 px between them
   for(const it of items){const w=it.s.w,h=it.s.h;let cands;
-@@ -1265,8 +1267,8 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
+@@ -1265,8 +1271,8 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
   if(!player.none){ctx.save();ctx.translate(you.x,you.y);ctx.fillStyle='rgba(0,229,255,.16)';ctx.beginPath();ctx.arc(0,0,14,0,TAU);ctx.fill();ctx.strokeStyle='rgba(170,250,255,.95)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,11,0,TAU);ctx.stroke();
   ctx.rotate(player.heading||0);ctx.shadowColor='#00e5ff';ctx.shadowBlur=8;ctx.fillStyle='#3fe9ff';ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(6.5,6.5);ctx.lineTo(0,3);ctx.lineTo(-6.5,6.5);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();ctx.restore();
   ctx.drawImage(ys.cv,you.x-ys.w/2,you.y-16-ys.h,ys.w,ys.h);}ctx.drawImage(overlay(),0,0,360,420);
@@ -376,10 +472,29 @@ index dc9735c..8f2378c 100644
   if(!hero)for(const [kk,list] of pl.turrets){const [t,l]=kk.split(':'),bg=low?cached(R.tgeo,'si:'+t,()=>standIn(S,k,t,1)):cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':b',()=>k.building(t,+l,theme).geometry()),hg=low?null:cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':h',()=>k.head(t,+l).geometry());
    for(const [,b] of list){if(++yc%40===0)yield;const x=P.cellX(b.i),z=P.cellZ(b.j),y=gY2(b.i,b.j);_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6);M4.compose(_v.set(x,y,z),low?_q:_q.identity(),_one);NM.compose(_z,_q,_nv);mg.add(bg,M4,NM);if(hg){M4.compose(_v.set(x,y+k.headY(t,+l)*bv,z),_q.setFromAxisAngle(up,(b.i*7+b.j*3)%6),_one);NM.compose(_z,_q,_nv);mg.add(hg,M4,NM);}nT++;}}
 diff --git a/js/conquest/view.js b/js/conquest/view.js
-index 8dc47c7..c7f1759 100644
+index 8dc47c7..ab61418 100644
 --- a/js/conquest/view.js
 +++ b/js/conquest/view.js
-@@ -261,21 +261,31 @@ class View {
+@@ -103,7 +103,7 @@ class View {
+  // Long-range light columns over the Refuge supply terminal and the Command Base, visible across the whole region.
+  makeHomeBeacons(){const C=root.ConquestCombat;if(!C?.refuge)return;this.homeBeacons=[['refuge',C.refuge,0x8ff3ff],['base',C.baseDefinition,0xffc96b]].map(([id,at,color])=>{const St=this.style;
+   if(St?.Fx){   /* 5E-2d2 (reviewer note: the beam was a wide flat slab): two light shafts that face the camera, a soft glow and a thin bright core, with a star at the top (js/conquest/style.js Fx.shaft); the same widening with distance (homeBeaconRender) */
+-   const g=new this.T.Group(),c=new this.T.Color(color),E=k=>[c.r*k,c.g*k,c.b*k],H=new St.Fx(),K=new St.Fx();H.shaft(0,0,0,5.2,3.4,150,E(.4),E(.14),4);K.shaft(0,0,0,1.5,.9,150,E(1.5),E(.7),4);K.keep=true;K.bill(0,150,0,2.6,St.AT.FLARE,E(1.2));
++   const g=new this.T.Group(),c=new this.T.Color(color),E=k=>[c.r*k,c.g*k,c.b*k],H=new St.Fx(),K=new St.Fx();H.shaft(0,0,0,5.2,3.4,150,E(.4),E(.14),4);K.shaft(0,0,0,1.5,1.44,14,E(.3),E(1.45),1);K.shaft(0,0,14,1.44,.9,136,E(1.45),E(.7),4);/* 5E-2d2 section 7 (note 4, seen at 1920x1080 from 40 m): the bright core fades in over its first 14 m; at full strength from the ground it washed out the middle of the BUILD SITE sign that stands in front of it */K.keep=true;K.bill(0,150,0,2.6,St.AT.FLARE,E(1.2));
+    const halo=new this.T.Mesh(H.geometry(),St.MAT.fx),core=new this.T.Mesh(K.geometry(),St.MAT.fx);for(const m of [halo,core]){m.renderOrder=2;m.frustumCulled=false;m.userData.noPick=true;}g.add(halo,core);g.userData={id,x:at.x,z:at.z,halo};g.name='cq-home-beacon-'+id;this.scene.add(g);return g;}
+   const g=new this.T.Group(),halo=new this.T.Mesh(this.cylinder,this.effectMaterial(color,true)),core=new this.T.Mesh(this.cylinder,this.effectMaterial(color,false)),top=new this.T.Mesh(this.sphere,this.effectMaterial(color,false));
+  halo.scale.set(2.4,150,2.4);halo.position.y=75;core.scale.set(.55,150,.55);core.position.y=75;top.scale.setScalar(2.6);top.position.y=150;g.add(halo,core,top);g.userData={id,x:at.x,z:at.z,halo};g.name='cq-home-beacon-'+id;this.scene.add(g);return g;});}
+@@ -128,7 +128,8 @@ class View {
+  mineralRender(ox,oz){if(!this.style?.mineralWorld)return;if(!this.mineralsG){this.mineralsG=this.style.mineralWorld();this.scene.add(this.mineralsG);}this.mineralsG.position.set(-ox,0,-oz);this.mineralsG.userData.update?.(this.authority?.state,Date.now());}
+  terraRender(ox,oz){if(!this.style?.terraWorld)return;if(!this.terra){this.terra=this.style.terraWorld();this.scene.add(this.terra);}this.terra.position.set(-ox,0,-oz);this.terra.userData.update?.(this.authority?.state?.harvest,Date.now());this.terra.userData.lod?.(this.camera);
+   if(this.style.colonyWorld){if(!this.colony){this.colony=this.style.colonyWorld();this.frontier=this.style.frontierWorld?.();this.veil=this.style.atmoVeil?.();this.scene.add(this.colony);if(this.frontier)this.scene.add(this.frontier);if(this.veil)this.scene.add(this.veil);}this.colony.position.set(-ox,0,-oz);if(this.frontier){this.frontier.position.set(-ox,0,-oz);this.frontier.userData.update?.(this.camera);}if(this.veil)this.veil.position.set(-ox,0,-oz);this.colony.userData.update?.(Date.now(),this.camera);}}
+- homeBeaconRender(ox,oz){for(const g of this.homeBeacons||[]){const {x,z,halo}=g.userData,d=Math.hypot(this.p.x-x,this.p.z-z),w=Math.max(1,Math.min(6,d/160));g.position.set(x-ox,W.groundAt(x,z),z-oz);g.scale.set(w,1,w);g.visible=!this.battle&&d>14;halo.visible=d>40;}}
++ homeBeaconRender(ox,oz){const site=!this.authority?.state?.base?.tier;   /* 5E-2d2 section 7 (note 4): over a build site (no base yet) the shaft starts above the BUILD SITE sign (its top is 7.1 m up); light added from the ground hid the sign's middle letters from the road (seen at 320x568 and 1920x1080) */
++  for(const g of this.homeBeacons||[]){const {x,z,halo,id}=g.userData,d=Math.hypot(this.p.x-x,this.p.z-z),w=Math.max(1,Math.min(6,d/160));g.position.set(x-ox,W.groundAt(x,z)+(site&&id==='base'?8:0),z-oz);g.scale.set(w,1,w);g.visible=!this.battle&&d>14;halo.visible=d>40;}}
+  clearBattle(){if(this.battle&&this.encounter){for(const e of this.battle.enemies.filter(e=>e.resident)){const old=this.encounter.enemies.find(x=>x.key===e.key);if(old){const id=old.id;Object.assign(old,JSON.parse(JSON.stringify(e)),{id,resident:false});if(old.hp<=0)this.encounter.cleared[old.key]=true;}}root.ConquestControl?.carry(this.battle,this.encounter);this.selectedId=null;this.encounter.playerHp=Math.min(this.encounter.playerMax,this.battle.playerHp);if(this.encounter.playerHp<=0)this.encounter.state='defeat';}this.battle=null;this.flushHealth();if(this.explorationCamera){Object.assign(this,this.explorationCamera);this.explorationCamera=null;}if(this.gun)this.gun.rotation.y=0;if(this.reticle)this.reticle.visible=false;if(this.camera){this.camera.fov=55;this.camera.updateProjectionMatrix();}this.firing=false;for(const g of this.enemyMeshes?.values()||[]){this.scene.remove(g);g.traverse(o=>{if(o.geometry&&!o.geometry.userData.hfShared&&!this.shared?.includes(o.geometry))o.geometry.dispose();});}this.enemyMeshes?.clear();for(const m of [...this.shotMeshes||[],...this.effectMeshes||[]])this.scene.remove(m);this.shotMeshes=[];this.effectMeshes=[];if(this.vehicle)this.syncLoadout();}
+  clearEnemyVisuals(){for(const g of this.enemyMeshes?.values()||[]){this.scene.remove(g);g.traverse(o=>{if(o.geometry&&!this.shared?.includes(o.geometry)&&!o.geometry.userData.hfShared)o.geometry.dispose();});}this.enemyMeshes?.clear();}
+  // Shader programs die with their last material, and adaptive LOD swaps release the vehicle's Equipment3D materials. Keep one
+@@ -261,21 +262,31 @@ class View {
   // Session 5C: the pad shows the pilot's real town (a diorama in the gate courtyard), rebuilt only when the town changes.
   if(s!==this.dioState){this.dioState=s;const k=plot?JSON.stringify([plot.cc,plot.site,plot.w,plot.b,plot.dmg,plot.banner,plot.theme,plot.nm,plot.job?.id]):'';if(k!==this.dioFull){this.dioFull=k;let h=5381;for(let i=0;i<k.length;i++)h=(h*33^k.charCodeAt(i))|0;this.dioKey=k?(h>>>0).toString(36)+':'+k.length:'';}}
   const key=JSON.stringify([this.dioKey,base.tier,base.modules,base.defense?.damage,this.loadout.paint,!!s?.achievements?.['field-veteran'],s?.cosmetics?.equipped,root.ConquestAssets?.status.state,!!this.autoLow,typeof gfxMode==='function'?gfxMode():'auto']);
