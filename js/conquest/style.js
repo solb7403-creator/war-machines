@@ -937,7 +937,8 @@ function create(T,opts={}){
  // conquest-style.mjs checks each one), and a tank may pass through them like through every other dressing prop.
  //   the portal: dormant (a low red glow, no effect) on the flat west of the OXYGEN SPEAR hive, its face toward the Refuge
  //   the posts: the Refuge, the oxygen complex, both ends of the viaduct, the Command Base approach, the frontier wall and
- //   the terraformers' works (the corridor pylon, the ice mine, the reservoir dam); each post is its own variant (o.seed)
+ //   the terraformers' works (the corridor pylon, the ice mine, the reservoir dam); each post is its own design (o.seed = its
+ //   place in this list + 1: the model's nine hero modules are in this order, kit/warmodels.js ldf-post)
  const WAR_SCENERY={portal:{x:1196,z:987,ry:0},posts:[{id:'refuge',x:1121,z:1158},{id:'oxygen',x:1169,z:1056},{id:'viaduct-east',x:1150,z:1020},{id:'viaduct-west',x:893,z:1032},{id:'base',x:1028,z:1166},
   {id:'frontier-wall',x:1018,z:1046},{id:'pylon',x:1006,z:1115},{id:'ice-mine',x:944,z:1163},{id:'dam',x:811,z:1371}]};
  S.WAR_SCENERY=WAR_SCENERY;
@@ -966,7 +967,20 @@ function create(T,opts={}){
    let h=hives[0],hd=1e9;for(const q of hives){const d=Math.hypot(q.x-p.x,q.z-p.z);if(d<hd){hd=d;h=q;}}const ry=Math.round(Math.atan2(h.x-p.x,h.z-p.z)/(Math.PI/4))*(Math.PI/4),m=KM(p.x,hi,p.z,ry);   // it faces the nearest Parasite hive
    if(hi-lo>.25){const pb=Kk.part({});pb.box(0,-(hi-lo)-.4,0,8.6,hi-lo+.4,8.6,Kk.pal.mil.conc);Kk.emit(tk,pb,m);}   // a concrete footing down to the lowest corner (the ground here is rarely level)
    Kk.place('ldf-post',tk,m,{seed:i+1});X.decal(p.x,p.z,6.5,6.5,0,AT.BLOB,[0,0,0],.5,4,.1);X.decal(p.x,p.z,9,9,0,AT.BLOB,E(0x22e6ff,.16),0,4,.14);
-   const g=kdone(pair(Sb,X),tk);g.name='cq-style-ldf-'+p.id;g.userData.site={x:p.x,z:p.z,range:900};out.push(g);});
+   // the searchlight (5E-2d2 critic round 2: the post's signature, seen from far): two crossed blades of soft blue light from the mast's
+   // lantern, in the post's own glow draw. Their eight vertices start folded into the lantern; warTick swings them round.
+   const lp=WM.ldf.light(i+1),L0=new T.Vector3(lp[0],lp[1],lp[2]).applyMatrix4(m),rB=AT.BLOB,vm=(rB[1]+rB[3])/2,c0=E(0x62b6ff,low?.5:.42),c1=[0,0,0],b0=X.n;
+   for(let k=0;k<2;k++)X.q4(X.v(L0.x,L0.y,L0.z,rB[0],vm,c0,0),X.v(L0.x,L0.y,L0.z,rB[2],vm,c0,0),X.v(L0.x,L0.y,L0.z,rB[2],vm,c1,0),X.v(L0.x,L0.y,L0.z,rB[0],vm,c1,0));
+   const g=kdone(pair(Sb,X),tk);g.name='cq-style-ldf-'+p.id;g.userData.site={x:p.x,z:p.z,range:900};
+   {const geo=g.children[1].geometry,A=geo.attributes.position,P=A.array,o=b0*3,LEN=24,W0=.16,W1=1.9,DIP=.16,cd=Math.cos(DIP),sd=Math.sin(DIP),bs=geo.boundingSphere;
+    bs.radius=Math.max(bs.radius,bs.center.distanceTo(L0)+LEN+1);   // the sweep stays inside the draw's bounds
+    const put=(k,x,y,z)=>{P[o+k*3]=x;P[o+k*3+1]=y;P[o+k*3+2]=z;};
+    g.userData.warTick=(t,pl)=>{if(pl&&Math.hypot(pl.x-p.x,pl.z-p.z)>420)return;const a=t*.5+i*1.9,dx=Math.sin(a)*cd,dz=Math.cos(a)*cd,dy=-sd,hx=Math.cos(a),hz=-Math.sin(a),ux=-dy*hz,uy=dz*hx-dx*hz,uz=dy*hx;   // one turn in 12.6 s, every post at its own phase; u = dir x h
+     const nx=L0.x+dx*.35,ny=L0.y+dy*.35,nz=L0.z+dz*.35,fx=L0.x+dx*LEN,fy=L0.y+dy*LEN,fz=L0.z+dz*LEN;
+     put(0,nx-hx*W0,ny,nz-hz*W0);put(1,nx+hx*W0,ny,nz+hz*W0);put(2,fx+hx*W1,fy,fz+hz*W1);put(3,fx-hx*W1,fy,fz-hz*W1);
+     put(4,nx-ux*W0,ny-uy*W0,nz-uz*W0);put(5,nx+ux*W0,ny+uy*W0,nz+uz*W0);put(6,fx+ux*W1,fy+uy*W1,fz+uz*W1);put(7,fx-ux*W1,fy-uy*W1,fz-uz*W1);A.needsUpdate=true;};
+    g.userData.warTick(0);g.userData.light=L0;}
+   out.push(g);});
   return out;};
  // Raid-only Parasite spire (decor where the live build places raid art): the kit's raid-spire, a growth nest on scavenged steel.
  S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});return kdone(pair(Sb,X),tk);};
