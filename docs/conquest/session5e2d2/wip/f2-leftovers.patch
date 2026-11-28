@@ -360,6 +360,28 @@ index ecff95c..0b9a99e 100644
  const unit=280/W.WIDTH*scale,left=(-40-px)/unit,right=(320-px)/unit,top=W.LENGTH+py/unit,bottom=W.LENGTH+(py-420)/unit;
   ctx.setTransform(2,0,0,2,0,0);ctx.fillStyle='#080e16';ctx.fillRect(0,0,360,420);ctx.save();ctx.translate(40+px,py+420*scale);ctx.scale(unit,-unit);
   const cells=discovery.cellsIn({x:left,z:bottom,width:right-left,height:top-bottom});
+diff --git a/js/conquest/kit/military.js b/js/conquest/kit/military.js
+index 8a757cb..dcb6ee3 100644
+--- a/js/conquest/kit/military.js
++++ b/js/conquest/kit/military.js
+@@ -474,11 +474,15 @@ WK.model('base-tower',(b,o)=>{const {pal,glow}=b.k,M=pal.mil,hi=b.hi,sink=o.sink
+   // 5E-2d2 (reviewer note: the tower was the plainest military piece; HIGH only, LOW's triangles are unchanged): a lit
+   // observation slit in a dark frame on the three plain faces of the pale band, a hazard band round the foot of the shaft, a
+   // conduit down the right of every face from the cap to the base, and two floodlamps under the cap's front corners.
+-  const lit=b.k.tint(M.ice,.75);
+   for(let k=0;k<4;k++)b.at(0,0,0,k*Math.PI/2,q=>{
+-   if(k)q.at(0,0,2.74,0,p=>{qb(p,0,7.1,.15,2.1,.52,.05,M.dark,'kb');qb(p,0,7.27,.19,1.8,.16,.03,lit,'kb');for(const x of [-1.14,1.14])qb(p,x,7.04,.17,.1,.64,.07,M.hull2,'kb');},-.028);
++   if(k)q.at(0,0,2.74,0,p=>{qb(p,0,7.1,.15,2.1,.52,.05,M.dark,'kb');qb(p,0,7.22,.19,1.8,.27,.03,M.ice,'kb');for(const x of [-1.14,1.14])qb(p,x,7.04,.17,.1,.64,.07,M.hull2,'kb');},-.028);
+    q.detail(()=>{for(let i=0;i<8;i++)q.quad([-2.8+i*.7,2.02,2.97],[-2.1+i*.7,2.02,2.97],[-2.1+i*.7+.2,2.34,2.955],[-2.8+i*.7+.2,2.34,2.955],i%2?M.hazardD:M.hazard,[0,2.2,0]);
+     q.tube([2.36,2.3,2.99],[2.36,5.3,2.86],.07,M.dark,{n:4});q.tube([2.36,5.74,2.84],[2.36,8.6,2.76],.07,M.dark,{n:4});for(const y of [3.2,4.6,6.6,7.9])qb(q,2.36,y,2.92-(y-2)*.03,.22,.12,.2,M.trim,'kb');});});
++  // 5E-2d2 section 7 (note 5, seen from the road at 390x844 and 1366x768: at game distance the tower still read as a dark box
++  // beside the wall's row of lamps): the observation slits are lit glass with a soft glow (a pale strip did not read from
++  // afar) and an amber marker lamp in a dark housing stands on each corner of the parapet: the wall's lamps carried up the tower.
++  for(let k=1;k<4;k++){const a=k*Math.PI/2;b.halo(Math.sin(a)*3.15,7.36,Math.cos(a)*3.15,1.3,0xa8f8ff,.2);}
++  {const amb=b.k.tint(M.amber,.8);for(const sx of [-1,1])for(const sz of [-1,1]){qb(b,sx*2.94,9.7,sz*2.94,.3,.36,.3,M.dark,'b');qb(b,sx*2.94,10.06,sz*2.94,.2,.16,.2,amb,'b');b.halo(sx*2.94,10.16,sz*2.94,.7,0xffb347,.5);}}
+   for(const s of [-1,1]){qb(b,s*2.9,9.34,3.06,.5,.3,.44,M.dark,'t');b.quad([s*2.9-.19,9.37,3.285],[s*2.9+.19,9.37,3.285],[s*2.9+.19,9.6,3.285],[s*2.9-.19,9.6,3.285],M.white,[s*2.9,9.5,3]);b.halo(s*2.9,9.46,3.42,.9,0xdff4ff,.55);}}
+ },{aoH:3,aoMin:.6});
+ 
 diff --git a/js/conquest/style.js b/js/conquest/style.js
 index 0a26b83..de3483f 100644
 --- a/js/conquest/style.js
