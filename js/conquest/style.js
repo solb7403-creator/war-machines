@@ -1041,12 +1041,21 @@ function create(T,opts={}){
  // A wreck is dark (5E-2d2 critic round 1: veins, vents and cupola bands stayed lit on the dead). The same solid program with
  // its own light values (uniforms only, like MAT.par): no emission at all (uGlow 0: every vein, vent, band and lamp goes
  // black) and well under half the light, grey in place of the Parasites' red rim, so the hull reads as char.
- MAT.parDead=mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail},uGlow:{value:0},uSiteRim:{value:0},uRimCol:{value:new T.Color().setRGB(.022,.022,.028)},uAmbUp:{value:new T.Color().setRGB(.075,.075,.085)},uAmbDn:{value:new T.Color().setRGB(.034,.033,.036)},
-  uSunCol:{value:U.uSunCol.value.clone().multiplyScalar(.4)},uDaySun:{value:U.uDaySun.value.clone().multiplyScalar(.36)},uDayAmbUp:{value:U.uDayAmbUp.value.clone().multiplyScalar(.4)},uDayAmbDn:{value:U.uDayAmbDn.value.clone().multiplyScalar(.4)}});
+  // 5E-2d2 critic round 2 ("wrecks dark with scorch"): on the repainted oxide-red hulls 0.4 of the light still read as a tilted
+ // live unit, red and mid-bright. A wreck now gets a sixth of the sun and a little grey sky, and a faint grey haze over every
+ // face (uFlash is the shader's mix toward white: 0.006 of it is the ash that greys the red), so the hull is char.
+ MAT.parDead=mk(SOLID_VS,SOLID_FS,{uFlash:{value:.006},uDetail:{value:tex.detail},uGlow:{value:0},uSiteRim:{value:0},uRimCol:{value:new T.Color().setRGB(.014,.014,.018)},uAmbUp:{value:new T.Color().setRGB(.046,.046,.052)},uAmbDn:{value:new T.Color().setRGB(.02,.02,.022)},
+  uSunCol:{value:U.uSunCol.value.clone().multiplyScalar(.16)},uDaySun:{value:U.uDaySun.value.clone().multiplyScalar(.18)},uDayAmbUp:{value:U.uDayAmbUp.value.clone().multiplyScalar(.22)},uDayAmbDn:{value:U.uDayAmbDn.value.clone().multiplyScalar(.22)}});
  S.unit=e=>{const kind=S.unitKind(e),PU=(root.ConquestParUnits||{})[kind]||{},slot=PU.slot||'par-'+kind,cmd=e.commander&&PU.cmd!==false?(PATTERN[e.pattern]?e.pattern:'ambush'):null,seed=1+(((e.id|0)%3)+3)%3,key=kind+'|'+(cmd||'')+'|'+seed;
   let c=unitCache.get(key);
   if(!c){const o=Object.assign({seed},cmd?{cmd}:{}),Kk=KW(),box=root.ConquestSlots.items[slot].size,X=new Fx();
-   X.flat(0,.05,0,box[0]*.62,box[2]*.58,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,box[0]*.86,box[2]*.76,AT.BLOB,E(cmd?PATTERN[cmd]:PAR.red,cmd?.55:.5),0);   // the contact shadow, then the ground glow (S.glowSync draws them)
+   X.flat(0,.05,0,box[0]*.62,box[2]*.58,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,box[0]*(cmd?.72:.86),box[2]*(cmd?.64:.76),AT.BLOB,E(PAR.red,cmd?.6:.5),0);   // the contact shadow, then the ground glow (S.glowSync draws them)
+   // 5E-2d2 critic round 2 ("the shield general was the player's cyan from top to bottom"): a general stands in the same
+   // Parasite-red pool as every unit (it is a Parasite first), and its doctrine colour is a RING on the ground outside the pool
+   // (the ring mask peaks at 0.8 of its half size: outside the hull's edge), one more quad in the same batched draw. A
+   // general's pool is a little smaller and hotter, so it ends inside the ring: where the two overlapped, red under a
+   // violet or a white ring made magenta and pink, which the Parasites never show.
+   if(cmd)X.flat(0,.07,0,box[0]*.86,box[2]*.76,AT.RING,E(PATTERN[cmd],.4),0);
    c={hull:Kk.geometry(slot,Object.assign({part:'hull'},o)),gun:Kk.geometry(slot,Object.assign({part:'gun'},o)),fx:keep(X.geometry()),pivot:PU.pivot||[0,box[1]*.6,0],box};
    for(const q of [c.hull,c.gun])if(!q.boundingBox)q.computeBoundingBox();c.top=Math.max(c.hull.boundingBox.max.y,c.pivot[1]+c.gun.boundingBox.max.y);unitCache.set(key,c);}   // top: the highest point of the model as built (a general's emblem included)
   const g=new T.Group(),body=new T.Group(),gun=new T.Group(),mk=markers(),hm=new T.Mesh(c.hull,MAT.par),gm=new T.Mesh(c.gun,MAT.par);body.add(hm);gun.position.set(c.pivot[0],c.pivot[1],c.pivot[2]);gun.add(gm);body.add(gun);g.add(body);
@@ -1059,15 +1068,17 @@ function create(T,opts={}){
  // it rolls and pitches into its wreck pose and comes to rest on the lowest corner of its box as it now lies; the gun slumps
  // (a Hoard Fortress's turret is blown off its ring and lands canted on the flank); after the killing blow's white flash the
  // hull chars and every light on it goes out (MAT.parDead), and its ground glow fades (the contact shadow stays under the
- // wreck). Two draws, as alive. The kill burst and the flying plates are FX3D's (killBurst, shatter).
+ // wreck). Two draws, as alive. The kill burst and the flying plates are FX3D's (killBurst, shatter). The scorch mark under
+ // the wreck, its smoke and its embers are quads in the glow batch (S.glowSync): nothing new in draw calls.
  S.unitPose=(g,dead)=>{const u=g?.userData,b=u?.body,D=u?.death;if(!b||!D)return;const gun=u.gun,pv=u.pivot||[0,0,0];
-  if(!(dead>0)){if(u.posed){b.rotation.set(0,0,0);b.position.y=0;gun.rotation.x=0;gun.rotation.z=0;gun.position.set(pv[0],pv[1],pv[2]);u.glowK=1;for(const m of u.solids||[])if(m.material===MAT.parDead)m.material=MAT.par;u.posed=false;}return;}
+  if(!(dead>0)){if(u.posed){b.rotation.set(0,0,0);b.position.y=0;gun.rotation.x=0;gun.rotation.z=0;gun.position.set(pv[0],pv[1],pv[2]);u.glowK=1;u.wreck=0;if(u.marker)u.marker.visible=true;for(const m of u.solids||[])if(m.material===MAT.parDead)m.material=MAT.par;u.posed=false;}return;}
   const k=Math.min(1,dead/.7),e=1-(1-k)*(1-k)*(1-k),hop=Math.sin(Math.min(1,dead/.4)*Math.PI)*D.hop,sd=u.side||1;
   b.rotation.set(D.pitch*e,sd*(D.yaw||0)*e,sd*D.roll*e);b.updateMatrix();
   const m=b.matrix.elements,bx=u.box||[u.half*2,2,u.half*2],dip=Math.abs(m[1])*bx[0]/2+Math.abs(m[9])*bx[2]/2-Math.min(0,m[5]*bx[1]*.8);   // how far the box's lowest corner now reaches under the body's origin
   b.position.y=hop+dip*(1-(D.dig??.3))-D.sink*e;gun.rotation.x=D.gun*e;gun.rotation.z=-sd*(D.gz??.22)*e;
   if(D.throw)gun.position.set(pv[0]+sd*D.throw[0]*e,pv[1]+D.throw[1]*e+Math.sin(k*Math.PI)*1.5,pv[2]+D.throw[2]*e);
-  u.glowK=Math.max(0,1-k*1.7);if(dead>.09)for(const q of u.solids||[])if(q.material!==MAT.parDead)q.material=MAT.parDead;u.posed=true;};
+  u.glowK=Math.max(0,1-k*1.7);if(dead>.09)for(const q of u.solids||[])if(q.material!==MAT.parDead)q.material=MAT.parDead;u.posed=true;
+  u.wreck=dead;if(u.marker)u.marker.visible=false;};   // 5E-2d2 critic round 2: a wreck carries no marker (whoever poses it), and S.glowSync draws its scorch, smoke and embers from its age
  // ---------- one draw for every hostile's ground glow and every shot's glow (5E-2d2) ----------
  // A hostile's contact shadow, ground glow and lamp glow were one draw per hostile on HIGH and nothing on LOW (critic round 1:
  // on LOW nothing separated a unit from the ground); a shot's glow was one more draw per shot. Now a model only carries its
@@ -1076,7 +1087,7 @@ function create(T,opts={}){
  // quad per shot ([x, y, z, half size, 0 pilot cyan | 1 Parasite red] five numbers a shot, emptied here), into ONE mesh on the
  // fx material: the plain fx program, no instancing, the same quads, colours and mask as before, on HIGH and on LOW. It runs
  // right before the world's frame, once the scene's matrices are current. Models are found among the scene's own children.
- const GQ=224,shotCol=[E(0x5fe6ff,1),E(PAR.red,1)];
+ const GQ=320,shotCol=[E(0x5fe6ff,1),E(PAR.red,1)],emberCol=E(PAR.hot,1),hsh=(a,b)=>{const v=Math.sin(a*127.1+b*311.7)*43758.5453;return v-Math.floor(v);};   // 320 quads (was 224): a wreck adds up to ten
  const glowMesh=scene=>{const g=new T.BufferGeometry(),I=new Uint16Array(GQ*6);for(let q=0;q<GQ;q++)I.set([q*4,q*4+1,q*4+2,q*4,q*4+2,q*4+3],q*6);
   for(const [n,k] of [['position',3],['uv',2],['aCol',4],['aBill',3]]){const a=new T.BufferAttribute(new Float32Array(GQ*4*k),k);a.usage=35048;g.setAttribute(n,a);}   // 35048: DYNAMIC_DRAW
   g.setIndex(new T.BufferAttribute(I,1));g.setDrawRange(0,0);const m=fxMesh(keep(g),3);m.frustumCulled=false;m.visible=false;m.name='cq-glows';m.userData.noOutline=true;scene.add(m);return scene.userData.cqGlows=m;};
@@ -1087,7 +1098,24 @@ function create(T,opts={}){
    for(let q=0;q<nq&&n<GQ;q++){if(gk<=.004&&sa[q*16+3]<=0)continue;   // a glow that is out is not drawn at all (the shadow has an alpha: it stays)
     for(let v=0;v<4;v++){const i=q*4+v,o=n*4+v,x=sp[i*3],y=sp[i*3+1],z=sp[i*3+2],bz=sb[i*3+2],kb=bz?bs:1;
      if(put(P,o*3,e[0]*x+e[4]*y+e[8]*z+e[12])|put(P,o*3+1,e[1]*x+e[5]*y+e[9]*z+e[13])|put(P,o*3+2,e[2]*x+e[6]*y+e[10]*z+e[14]))dP=true;
-     if(put(Uv,o*2,su[i*2])|put(Uv,o*2+1,su[i*2+1])|put(A,o*4,sa[i*4]*gk)|put(A,o*4+1,sa[i*4+1]*gk)|put(A,o*4+2,sa[i*4+2]*gk)|put(A,o*4+3,sa[i*4+3])|put(B,o*3,sb[i*3]*kb)|put(B,o*3+1,sb[i*3+1]*kb)|put(B,o*3+2,bz))dO=true;}n++;}}
+     if(put(Uv,o*2,su[i*2])|put(Uv,o*2+1,su[i*2+1])|put(A,o*4,sa[i*4]*gk)|put(A,o*4+1,sa[i*4+1]*gk)|put(A,o*4+2,sa[i*4+2]*gk)|put(A,o*4+3,sa[i*4+3])|put(B,o*3,sb[i*3]*kb)|put(B,o*3+1,sb[i*3+1]*kb)|put(B,o*3+2,bz))dO=true;}n++;}
+   // 5E-2d2 critic round 2 ("wrecks dark with scorch, embers and smoke"): a wreck (userData.wreck = seconds dead, set by
+   // S.unitPose) adds, in this same draw: a scorch mark burnt into the ground under it, a smouldering glow in its middle that
+   // dies in twelve seconds, grey smoke puffs that rise, drift and thin out (thick for twenty seconds, a wisp after), and
+   // embers that rise and go out for the first twenty-five. Each is one quad placed from the wreck's age and the clock, so
+   // nothing is stored per puff. LOW keeps all four (fewer puffs and embers).
+   const wk=u.wreck;if(wk>0&&u.box){const bx=u.box,wx=e[12],wy=e[13],wz=e[14],R=Math.max(bx[0],bx[2])*bs,H=bx[1]*bs,sd=(g.id%97)+1,r=AT.BLOB,now=(root.performance?root.performance.now():Date.now())/1000,
+     q4=(x,y,z,hw,hd,bb,cr,cg,cb,al)=>{if(n>=GQ)return;for(let v=0;v<4;v++){const o=n*4+v,sx=v===1||v===2?1:-1,sy=v>1?1:-1;
+       if(put(P,o*3,bb?x:x+sx*hw)|put(P,o*3+1,y)|put(P,o*3+2,bb?z:z+sy*hd))dP=true;
+       if(put(Uv,o*2,sx>0?r[2]:r[0])|put(Uv,o*2+1,sy>0?r[3]:r[1])|put(A,o*4,cr)|put(A,o*4+1,cg)|put(A,o*4+2,cb)|put(A,o*4+3,al)|put(B,o*3,bb?sx*hw:0)|put(B,o*3+1,bb?sy*hd:0)|put(B,o*3+2,bb))dO=true;}n++;};
+    q4(wx,wy+.08,wz,R*.82,R*.82,0,0,0,0,.66*Math.min(1,wk/.5));   // the scorch mark
+    const hot=Math.max(0,1-wk/12)*Math.min(1,wk/.3);if(hot>.01){const fl=.7+.3*Math.sin(now*7.3+sd);q4(wx,wy+H*.22,wz,R*.15,R*.15,1,emberCol[0]*.32*hot*fl,emberCol[1]*.32*hot*fl,emberCol[2]*.32*hot*fl,0);}   // the fire dying inside it
+    const NS=low?3:6,thick=wk<20?1:Math.max(.4,1-(wk-20)/10),TS=3.4;
+    for(let i=0;i<NS;i++){const ph=(now/TS+i/NS+hsh(sd,i)*.13)%1,born=wk-ph*TS;if(born<.25)continue;   // (a puff that would have left before the unit died is not there yet)
+     const f=Math.min(1,ph*6)*Math.pow(1-ph,1.2)*thick,sz=(.36+.8*ph)*R*.3,dx=(hsh(sd,i+7)-.5)*R*.26+ph*(1.1+.6*hsh(sd,i+3))*R*.24,dz=(hsh(sd,i+11)-.5)*R*.26+Math.sin(ph*4+i)*R*.05,gr=(.085+.05*ph)*f;   // a warm grey that stands off the night ground (at the ground's own value a puff was invisible)
+     q4(wx+dx,wy+H*.3+ph*(H*.4+R*.55),wz+dz,sz,sz,1,gr,gr*.93,gr*.86,.8*f);}
+    if(wk<25){const NE=low?3:5,TE=1.9,fade=Math.min(1,(25-wk)/6);for(let i=0;i<NE;i++){const ph=(now/TE+i/NE+hsh(sd,i+20)*.3)%1;if(wk-ph*TE<.2)continue;
+      const f=(1-ph)*fade*(.6+.4*Math.sin(now*11+i*2.1)),sz=(.11-.05*ph)*Math.max(1,R*.22);q4(wx+(hsh(sd,i+31)-.5)*R*.5+Math.sin(ph*5+i)*.2,wy+H*.25+ph*(1.6+R*.35),wz+(hsh(sd,i+41)-.5)*R*.5,sz,sz,1,emberCol[0]*f*1.6,emberCol[1]*f*1.6,emberCol[2]*f*1.6,0);}}}}
   if(shots&&shots.length){if(!P)open();const r=AT.BLOB;for(let k=0;k+4<shots.length&&n<GQ;k+=5,n++){const x=shots[k],y=shots[k+1],z=shots[k+2],sz=shots[k+3],col=shotCol[shots[k+4]?1:0];
     for(let v=0;v<4;v++){const o=n*4+v,sx=v===1||v===2?1:-1,sy=v>1?1:-1;
      if(put(P,o*3,x)|put(P,o*3+1,y)|put(P,o*3+2,z))dP=true;
@@ -1101,7 +1129,11 @@ function create(T,opts={}){
   const mk=markers();mk.position.y=11;g.add(mk);Object.assign(g.userData,{gun,body,marker:mk,slot:'par-battery',glowFx:batteryFx,glowK:1,solids:[bm,hm],death:DEATH.battery,half:3.35,box:[6.7,11.6,5.8],pivot:[0,6.6,0],side:1});g.scale.setScalar(1.65);return g;};   // 1.65: the size the battery has always been drawn at (11 x 9.6 m on the ground)
  // Airborne drone: a stolen human quad-rotor (the kit's par-drone), the same footprint as before
  let droneFx=null;
- S.drone=()=>{const Kk=KW();if(!droneFx){const X=new Fx();X.bill(0,1.3,.9,.7,AT.BLOB,E(PAR.red,.9));X.flat(0,-1.2,0,1.6,1.7,AT.BLOB,E(PAR.red,.35),0);droneFx=keep(X.geometry());}
+ // 5E-2d2 critic round 2 ("rotors are static, the glow washes out the body"): the glow at the dead canopy is half the size it
+ // was (0.36: the nose, not the whole airframe), and each rotor is a BLURRED DISC: a faint grey-blue wash filling its guard
+ // hoop over the thin blades (the kit's ConquestParUnits.droneRotors lists the hubs), additive, in the batched glow draw.
+ S.drone=()=>{const Kk=KW();if(!droneFx){const X=new Fx(),RT=(root.ConquestParUnits||{}).droneRotors||[];X.bill(0,1.34,.9,.36,AT.BLOB,E(PAR.red,.8));X.flat(0,-1.2,0,1.6,1.7,AT.BLOB,E(PAR.red,.35),0);
+   for(const [hx,ry,hz,rr] of RT){X.flat(hx,.75+ry+.012,hz,rr*1.5,rr*1.5,AT.BLOB,E(0xa9bccf,.3),0);X.flat(hx,.75+ry+.014,hz,rr*1.24,rr*1.24,AT.RING,E(0xa9bccf,.16),0);}droneFx=keep(X.geometry());}
   const g=new T.Group(),body=new T.Group();body.position.y=.75;body.add(new T.Mesh(Kk.geometry('par-drone',{}),MAT.par));g.add(body);
   const gun=new T.Group();g.add(gun);const mk=markers();mk.position.y=3;g.add(mk);g.userData.gun=gun;g.userData.marker=mk;g.userData.slot='par-drone';g.userData.glowFx=droneFx;g.userData.glowK=1;g.scale.setScalar(1.65);return g;};   // 1.65: today's drone footprint (4.6 x 4.9 m)
 

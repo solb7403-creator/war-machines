@@ -206,14 +206,20 @@ function kit(S){if(S.worldKit)return S.worldKit;
    flesh:mat(0x4a140c,'chitin',.3),fleshD:mat(0x2a0a06,'chitin',.2),fleshL:mat(0x7a2014,'chitin',.15),   // (round 1: green above blue, as the red; they were 0x4a1016 / 0x2a080c / 0x7a1c22)
    red:parGlow(PAR.red,.52,1.85),redHot:parGlow(PAR.hot,.62,1.95),redDim:parGlow(PAR.red,.34,1),redLow:parGlow(PAR.deep,.5,.6)},
   // The Parasite UNITS' own values over pal.par (kit/parunits.js; critic round 1, Nov 25: the units were darker than the
-  // ground). A unit's big top and side faces are MID values (tan wreck steel, bone ceramic, khaki, oxide plate, hazard
-  // paint); dark steel (pal.par.ironD) only in recesses, tracks and frames. The stolen oxygen tanks are white with the
-  // humans' blue band; the conquered colonies' flags are bright enough to read as trophies. The hive, the masts and the
-  // ships keep pal.par as it was.
-  parUnit:{iron:mat(0x6e5e50,'metal',.55),ironL:mat(0x9a8872,'metal',.5),rust:mat(0xa85a2c,'scrap',.8),scrap:mat(0x8a7a66,'scrap',.6),wreck:mat(0xb8ae9c,'metal',.6),wreckD:mat(0x8e8474,'metal',.6),
-   plateMil:mat(0xd0c6b2,'metal',.45),plateMilD:mat(0x9c8e7a,'metal',.5),plateSet:[0xb86a3c,0xa8523a,0xc4a868,0xd6cab0,0x8e8a58].map(h=>mat(h,'paint',.6,.1)),hazard:mat(0xd8a622,'paint',.6),
-   gold:mat(0xd8b044,'metal',0),goldD:mat(0x9a7828,'metal',.2),crate:mat(0x9a6e40,'timber',.4,.12),crateD:mat(0x6a4a2c,'timber',.5,.12),sack:mat(0xb4a482,'cloth',0,.12),
-   tank:mat(0xe8e4da,'paint',.3),tankBand:mat(0x2f6fc0,'paint',.3),flagLDF:mat(0x3a6ea8,'cloth',0),flagLDF2:mat(0xc8c0b0,'cloth',0),flagSet:[0x4f9a6a,0xd0a848,0x3a6ea8,0xc86a34,0xd8d0bc].map(h=>mat(h,'cloth',0,.06)),tyre:mat(0x1c1e22,'flat',0)},
+  // ground, so nothing on a unit's big faces is dark). 5E-2d2 critic round 2 (faction read: "sand and ochre hulls with hazard
+  // stripes: yellow construction machines with red floor lights; in shade they turn khaki, the player's olive Titan"): the
+  // HULL is a mid-value oxide red-brown now (hull, lit hullL, shaded hullD, and hullSet: the patch plates that never match),
+  // so the machine itself is red in sun and in shade; tracks, frames and engines are darker warm steel (iron, ironL); the
+  // pale plundered plates (plateSet: bone, tan, khaki; plateMil: stolen ceramic) are ACCENTS on at most about 30% of what
+  // the chase camera sees; hazard paint is on ONE element a unit; gold is the greed accent (cannon, trim), never a body
+  // colour. The stolen oxygen tanks are a dirty white under red-brown straps (strapR), one blue band left; the conquered
+  // LDF blue (flagLDF) is a dirty, small trophy; soot = scorch patches. The hive, the masts and the ships keep pal.par.
+  parUnit:{hull:mat(0x9a3626,'metal',.8),hullL:mat(0xb4492f,'metal',.7),hullD:mat(0x6e281d,'metal',.85),hullSet:[0x8a3226,0xa8452c,0x7a2a20,0x9c4a30].map(h=>mat(h,'paint',.8,.1)),
+   iron:mat(0x54443c,'metal',.6),ironL:mat(0x7c6a5c,'metal',.5),rust:mat(0x8e4522,'scrap',.85),scrap:mat(0x6e5a4c,'scrap',.7),wreck:mat(0x8c6654,'metal',.8),wreckD:mat(0x5e4238,'metal',.8),
+   plateMil:mat(0xd0c6b2,'metal',.6),plateMilD:mat(0x9c8e7a,'metal',.6),plateSet:[0xcbbf9e,0xb9a676,0x8e8a58,0xd6cab0].map(h=>mat(h,'paint',.75,.1)),hazard:mat(0xd8a622,'paint',.7),
+   gold:mat(0xd8b044,'metal',0),goldD:mat(0x9a7828,'metal',.2),crate:mat(0x8a5c36,'timber',.5,.12),crateD:mat(0x5c3e26,'timber',.6,.12),sack:mat(0xb4a482,'cloth',0,.12),sackL:mat(0xe2d6b6,'cloth',0,.08),
+   tank:mat(0xd2cab8,'paint',.85),tankBand:mat(0x2f6fc0,'paint',.5),strapR:mat(0x6a2418,'flat',0),soot:mat(0x120e0c,'flat',0),flagLDF:mat(0x2c5484,'cloth',0),flagLDF2:mat(0xa8a090,'cloth',0),
+   flagSet:[0x4a8a62,0xc49c40,0x2c5484,0xb8602e,0xc8c0ac].map(h=>mat(h,'cloth',0,.06)),tyre:mat(0x1c1e22,'flat',0)},
   wreck:{hull:mat(0x3a3530,'scrap',.7),rust:mat(0x6a3f26,'scrap',.95),track:mat(0x1e1c1a,'metal',.8),moss:mat(0x3e5a2e,'leaf',0,.2),bag:mat(0x8f8064,'dirt',0,.15),wire:mat(0x2a2a2a,'metal',.9),post:mat(0x4a4038,'timber',.8),mud:mat(0x2a2018,'dirt',0)}};
  const K={S,T,hi,KB,pal,emit,part,mat,glow,tint,mix,rect,circ,col,SURF,surfA,hash,rng,build,place,geometry,instanced,setAt,tris,swapMeshes,swapped,pendingSwap,unit,M:(x,y,z,ry=0,s=1)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(s,s,s));},clear(){cache.clear();geos.clear();}};
  S.worldKit=K;return K;}
