@@ -67,7 +67,9 @@ PHONE={
  'dead':(rows([U('raider'),U('swarm'),U('breacher')],[U('sentinel'),U('command'),U('brute')],6.2,17,7.6),0,14,.36,23,3),
  'generals':(rows(G('command',CMD[:2]),G('command',CMD[2:]),7,17,7.4),0,14,.36,23,0),
  'generals-raider':(rows(G('raider',CMD[:2]),G('raider',CMD[2:]),5,12,5.4),0,13,.36,21,0),
- 'generals-sentinel':(rows(G('sentinel',CMD[:2]),G('sentinel',CMD[2:]),7,17,7.4),0,14,.36,23,0)}
+ 'generals-sentinel':(rows(G('sentinel',CMD[:2]),G('sentinel',CMD[2:]),7,17,7.4),0,14,.36,23,0),
+ # 5E-2d2 critic round 2: three drones in a row were wider than a phone (the outer two were cut in half): one in front, two behind
+ 'drones':(rows([U('raider',drone=True,alt=3.2,rot=.75)],[U('raider',drone=True,alt=3.6,rot=0),U('raider',drone=True,alt=3.6,rot=1.5708)],0,8,6.2),0,9,.3,18,0)}
 SHARP='''for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){const v=g.call(this,p);return typeof v==='string'&&/swiftshader|llvmpipe|softpipe|software/i.test(v)?'Capture GPU':v;};}'''   # --sharp: the game holds a CPU rasterizer at .75x of the screen (js/graphics.js); a capture for LOOKS is drawn at the resolution a real device gets (HIGH on a phone: the device's own ratio, here the context's; LOW: 1x), by not telling the game the renderer is SwiftShader. Never used by a test that measures a budget.
 async def main(a):
  ROOT=pathlib.Path(a.root).resolve() if a.root else HERE
