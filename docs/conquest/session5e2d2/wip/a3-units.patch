@@ -1,8 +1,43 @@
+diff --git a/dev/tests/conquest-parasite-captures.py b/dev/tests/conquest-parasite-captures.py
+index b0d58dd..06b5a2c 100644
+--- a/dev/tests/conquest-parasite-captures.py
++++ b/dev/tests/conquest-parasite-captures.py
+@@ -67,7 +67,9 @@ PHONE={
+  'dead':(rows([U('raider'),U('swarm'),U('breacher')],[U('sentinel'),U('command'),U('brute')],6.2,17,7.6),0,14,.36,23,3),
+  'generals':(rows(G('command',CMD[:2]),G('command',CMD[2:]),7,17,7.4),0,14,.36,23,0),
+  'generals-raider':(rows(G('raider',CMD[:2]),G('raider',CMD[2:]),5,12,5.4),0,13,.36,21,0),
+- 'generals-sentinel':(rows(G('sentinel',CMD[:2]),G('sentinel',CMD[2:]),7,17,7.4),0,14,.36,23,0)}
++ 'generals-sentinel':(rows(G('sentinel',CMD[:2]),G('sentinel',CMD[2:]),7,17,7.4),0,14,.36,23,0),
++ # 5E-2d2 critic round 2: three drones in a row were wider than a phone (the outer two were cut in half): one in front, two behind
++ 'drones':(rows([U('raider',drone=True,alt=3.2,rot=.75)],[U('raider',drone=True,alt=3.6,rot=0),U('raider',drone=True,alt=3.6,rot=1.5708)],0,8,6.2),0,9,.3,18,0)}
+ SHARP='''for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){const v=g.call(this,p);return typeof v==='string'&&/swiftshader|llvmpipe|softpipe|software/i.test(v)?'Capture GPU':v;};}'''   # --sharp: the game holds a CPU rasterizer at .75x of the screen (js/graphics.js); a capture for LOOKS is drawn at the resolution a real device gets (HIGH on a phone: the device's own ratio, here the context's; LOW: 1x), by not telling the game the renderer is SwiftShader. Never used by a test that measures a budget.
+ async def main(a):
+  ROOT=pathlib.Path(a.root).resolve() if a.root else HERE
 diff --git a/js/conquest/kit/parunits.js b/js/conquest/kit/parunits.js
-index ab270cf..c1f009d 100644
+index ab270cf..891cd8f 100644
 --- a/js/conquest/kit/parunits.js
 +++ b/js/conquest/kit/parunits.js
-@@ -69,24 +69,37 @@ function track(b,s,xc,w,z0,z1,H,o={}){const cf=o.cf??.5,hf=o.hf??.45,cr=o.cr??.4
+@@ -19,13 +19,15 @@
+  *         has no turret: its gun is a pintle stub on the cab roof. The drone's is a twin gun under the chin.
+  * o.town  1 = the light town-raid model (one piece, big shapes, 2-3 glow accents, the same on HIGH and LOW, nothing in the
+  *         detail batch): raider, sentinel, swarm, brute, drone. It is fitted to the town raid's own footprint, not to the
+- *         slot box (width x height x length, standing on y = 0): raider 3.4 x 2.9 x 4.4 (162 triangles), sentinel
+- *         5.2 x 4.6 x 6.8 (228), swarm 1.6 x 1.1 x 2.2 (132), brute 6.8 x 5.4 x 7.6 (310), drone 3.4 x 1 x 2.6 centred on
+- *         y = 0 (116; the town view lifts it). ConquestParUnits.townSize lists them.
++ *         slot box (width x height x length, standing on y = 0): raider 3.4 x 2.9 x 4.4 (156 triangles), sentinel
++ *         5.2 x 4.6 x 6.8 (232), swarm 1.6 x 1.1 x 2.2 (250), brute 6.8 x 5.4 x 7.6 (256), drone 3.4 x 1 x 2.6 centred on
++ *         y = 0 (116; the town view lifts it). ConquestParUnits.townSize lists them. (Counted Nov 28: before critic round
++ *         2 they were 162, 228, 252, 282 and 116.)
+  * o.cmd   'shield' | 'ambush' | 'artillery' | 'carrier' | 'plasma' = a GENERAL (raider, command, sentinel): a tall standard
+  *         (a doctrine-colour banner under a glowing 3D emblem: a hex shield, crossed blades, a trio of shells, a winged
+  *         drone, an orb in a cage), doctrine light rails on both flanks, painted shoulder plates and gun plates, more gold.
+- *         The hull stays in the slot box; the standard rises up to 2.6 m above it (ConquestParUnits.standardTop).
++ *         The hull stays in the slot box; the standard rises up to 2.6 m above it (ConquestParUnits.standardTop). The
++ *         Hoard Fortress carries its standard on the turret (the gun part), clear of the hoard.
+  * o.seed  small variation of trophies and plate colours (silhouettes never change).
+  * b.hi === false is LOW: the same silhouette and colour blocks, the small parts dropped. One material, vertex colours. */
+ (function(root){
+@@ -69,24 +71,37 @@ function track(b,s,xc,w,z0,z1,H,o={}){const cf=o.cf??.5,hf=o.hf??.45,cr=o.cr??.4
  function plate(b,x,y,w,h,m,o={}){const t=o.t??.06,x0=x-w/2,x1=x+w/2,y1=y+h,ch=Math.min(o.ch??.05,w*.2,h*.2),e=o.edge||tint(m,1.34,.014),ins=[x,y+h/2,-1],
    A=[[x0,y,0],[x1,y,0],[x1,y1,0],[x0,y1,0]],B=[[x0+ch,y+ch,t],[x1-ch,y+ch,t],[x1-ch,y1-ch,t],[x0+ch,y1-ch,t]];
   b.quad(B[0],B[1],B[2],B[3],m,ins);for(let i=0;i<4;i++){const j=(i+1)%4;b.quad(A[i],A[j],B[j],B[i],i===0?tint(m,.62):e,ins);}
@@ -50,7 +85,7 @@ index ab270cf..c1f009d 100644
  // a knot of infected tissue where the growth breaks out of a seam: two soft dark red lumps (never a shell, a spike or a crystal)
  function knot(b,x,y,z,r,sd=1){if(!b.hi)return b;const a=hz(sd,1)*TAU;b.ball(x,y-r*.3,z,r*.85,mix(P.strap,P.flesh,1),true);b.ball(x+Math.cos(a)*r*.6,y-r*.2,z+Math.sin(a)*r*.6,r*.55,mix(P.strap,P.fleshL,1),true);return b;}
  // a looted crate (stolen supply paint by seed), strapped down
-@@ -121,428 +134,504 @@ const side=(b,s,x,y,z,fn)=>b.at(s*x,y,z,s*HP,fn),stern=(b,x,y,z,fn)=>b.at(x,y,z,
+@@ -121,428 +136,508 @@ const side=(b,s,x,y,z,fn)=>b.at(s*x,y,z,s*HP,fn),stern=(b,x,y,z,fn)=>b.at(x,y,z,
  function zdisc(b,x,y,z,r,n,m,dir=1,rot=0){const R=[];for(let i=0;i<n;i++){const a=i/n*TAU+rot;R.push([x+Math.cos(a)*r,y+Math.sin(a)*r,z]);}return fan(b,R,m,[x,y,z-dir]);}
  // a two-sided flat polygon (convex, [dx, dy] from x, y) in the x-y plane, or the z-y plane when across = 1
  function poly2(b,pts,x,y,z,m,across){const R=pts.map(p=>across?[x,y+p[1],z+p[0]]:[x+p[0],y+p[1],z]);fan(b,R,m,across?[x-9,y,z]:[x,y,z-9]);fan(b,R,m,across?[x+9,y,z]:[x,y,z+9]);return b;}
@@ -333,8 +368,7 @@ index ab270cf..c1f009d 100644
  }
  
  // ------------------------------------------------------------------ par-sentinel: the Hoard Fortress --------------------
--// 5.6 x 6 x 8.6 (critic round 1: it was a low mound, shorter than the Warlord and narrower than the Wrecker; the owner's words:
-+// 5.6 x 6.6 x 8.6 (critic round 1: it was a low mound, shorter than the Warlord and narrower than the Wrecker; the owner's words:
+ // 5.6 x 6 x 8.6 (critic round 1: it was a low mound, shorter than the Warlord and narrower than the Wrecker; the owner's words:
  // "a titan hull buried under layers of plundered armour, crates and trophies, with a big gaudy turret; tall, wide,
 -// top-heavy"). A titan hull under three looted skirt slabs a side, and on it a SLAB-SIDED TURRET far too big for it: under-cut
 +// top-heavy"). A titan hull under three patch skirts a side, and on it a SLAB-SIDED TURRET far too big for it: under-cut
@@ -345,8 +379,10 @@ index ab270cf..c1f009d 100644
 +// a gold parapet, and a LONG FAT GOLD CANNON that reaches well past the nose. Nothing on the HULL stands higher than the
 +// turret's under-cut (the turret turns over it).
 +// 5E-2d2 critic round 2 ("Hoard Fortress and Wrecker from the front both read tan box, gold-ringed gun, red slat grille"):
-+// THE HOARD on the roof is 1.4 times taller and broken in outline (it stood 1.34 m over the roof, now 1.88: the slot box
-+// grew from 6 to 6.6 m for it): a big crate, a gold-lidded one askew on it and a sack on that at the right rear, a fat
++// THE HOARD on the roof is taller and broken in outline. The slot box is 6 m and stays 6 m (slots.js is not this model's
++// to change; the first repaint stood 6.59 m and failed conquest-style.mjs), so the height comes from the turret: its roof
++// is 0.38 m lower (4.34 m over the ground, the mantlet 0.2 m shorter) and the pile stands 1.64 m over it (it stood 1.34),
++// to 5.98 m, with a second tier on the left (the fat sack on a crate): a big crate, a gold-lidded one askew on it and a sack on that at the right rear, a fat
 +// sack, a drum and a stolen oxygen bottle stepping down to the left, a second stack at the right front, and a conquered
 +// colony's banner on a pole over the left rear corner. The gaudy gold cannon stays its own. The HEART is the turret ring
 +// (a glowing band under the turret) and ONE large vent on the turret's left cheek.
@@ -392,8 +428,8 @@ index ab270cf..c1f009d 100644
 + for(const s of [-1,1])skirt(b,[[s*2.39,.5,-2.75],[s*2.39,.5,2.6]],.15,[0,.6,0],{lean:.04});skirt(b,[[-1.25,.74,2.7],[1.25,.74,2.7]],.14,[0,.8,0]);skirt(b,[[-1.15,.56,-2.82],[1.15,.56,-2.82]],.14,[0,.6,0]);
  }
 -function sentinelGun(b,o){const sd=o.seed|0,hi=b.hi,R=K.rect,S=P.plateSet,tm=tint(P.ironL,1.06),n=hi?12:8,D=doc(o),TW=5.3,TD=3.7,TZ=-.2,ZF=TZ+TD/2,ZB=TZ-TD/2,RY=2.72;
-+const ST={TW:5.3,TD:3.7,TZ:-.2,RY:2.72};   // the turret (gun frame): its width, depth, centre and roof
-+function sentinelGun(b,o){const sd=o.seed|0,hi=b.hi,R=K.rect,S=P.plateSet,H=P.hullSet,hull=P.hull,n=hi?12:8,D=doc(o),{TW,TD,TZ,RY}=ST,ZF=TZ+TD/2;
++const ST={TW:5.3,TD:3.7,TZ:-.2,RY:2.34,WY:2.08};   // the turret (gun frame): its width, depth, centre, roof and wall top (5E-2d2 critic round 2: the roof 0.38 m lower, so a taller hoard still ends inside the 6 m slot box)
++function sentinelGun(b,o){const sd=o.seed|0,hi=b.hi,R=K.rect,S=P.plateSet,H=P.hullSet,hull=P.hull,n=hi?12:8,D=doc(o),{TW,TD,TZ,RY,WY}=ST,ZF=TZ+TD/2;
   b.cyl(0,0,0,1.5,.26,P.ironD,{n,top:false});
 - // the infection glows in the turret ring
 - b.loft([{p:K.circ(1.54,n),y:.06},{p:K.circ(1.54,n),y:.2}],P.red,{top:false,smooth:true});
@@ -406,19 +442,21 @@ index ab270cf..c1f009d 100644
 - // the front: the mantlet in a gold frame between a bone cheek slab and the ONE large vent where the growth lives
 - b.at(1.72,1.18,ZF,0,q=>plate(q,0,0,1.5,1.16,pick(S,sd+3),{t:.1,stripe:P.flagLDF2,sy:.62,sh:.16}));
 - b.at(-1.72,1.22,ZF+.005,0,q=>vent(q,0,0,1.3,.96,4,{low:1,frame:P.ironD,f:.07}));
+- ab(b,0,.62,ZF+.2,2.0,1.5,.44,P.ironD,.08);
+- cb(b,0,2.1,ZF+.44,2.06,.12,.07,P.gold);cb(b,0,.6,ZF+.44,2.06,.12,.07,P.gold);for(const s of [-1,1])cb(b,s*.97,.7,ZF+.44,.12,1.42,.07,P.gold);
 + // the HEART, first half: the infection glows in the turret ring (a hot band inside a red one)
 + b.loft([{p:K.circ(1.56,n),y:.03},{p:K.circ(1.56,n),y:.25}],P.red,{top:false,smooth:true});b.loft([{p:K.circ(1.58,n),y:.1},{p:K.circ(1.58,n),y:.18}],P.redHot,{top:false,smooth:true});
 + // the slab-sided body: under-cut below (dark: it is in the turret's own shadow), straight oxide walls wider than the tracks, a gold parapet, an oxide roof
-+ b.loft([{p:R(3.5,2.9,.3,0,TZ),y:.24},{p:R(TW,TD,.2,0,TZ),y:.95},{p:R(TW,TD,.2,0,TZ),y:2.46},{p:R(TW-.44,TD-.44,.24,0,TZ),y:RY}],(r,i)=>r===0?P.ironD:r===2?P.gold:(i===4?P.hullL:i===0?P.hullD:hull),{topMat:hull});
++ b.loft([{p:R(3.5,2.9,.3,0,TZ),y:.24},{p:R(TW,TD,.2,0,TZ),y:.95},{p:R(TW,TD,.2,0,TZ),y:WY},{p:R(TW-.44,TD-.44,.24,0,TZ),y:RY}],(r,i)=>r===0?P.ironD:r===2?P.gold:(i===4?P.hullL:i===0?P.hullD:hull),{topMat:hull});
 + b.loft([{p:R(TW+.06,TD+.06,.22,0,TZ),y:.95},{p:R(TW+.06,TD+.06,.22,0,TZ),y:1.13}],D?D.glow:P.ironD,{top:false});
 + // bolted-on slabs of other people's armour on both flanks: ONE pale, the rest patch oxide and bare steel (a general's are in the doctrine colour)
-+ side(b,1,TW/2,1.2,TZ,q=>{plate(q,.88,0,1.62,1.2,D?D.paint:pick(S,sd+1),{stripe:D?P.gold:null,sy:.56,sh:.2,t:.1});plate(q,-.88,.06,1.56,1.08,pick(H,sd),{t:.08});});
-+ side(b,-1,TW/2,1.2,TZ,q=>{plate(q,-.88,0,1.62,1.2,D?D.paint:pick(H,sd+2),{stripe:D?P.gold:null,sy:.56,sh:.2,t:.1});plate(q,.88,.04,1.56,1.12,P.ironL,{t:.08});if(hi)scorch(q,.7,.5,.4,sd+2);});
++ side(b,1,TW/2,1.2,TZ,q=>{plate(q,.88,0,1.62,.86,D?D.paint:pick(S,sd+1),{stripe:D?P.gold:null,sy:.56,sh:.2,t:.1});plate(q,-.88,.06,1.56,.78,pick(H,sd),{t:.08});});
++ side(b,-1,TW/2,1.2,TZ,q=>{plate(q,-.88,0,1.62,.86,D?D.paint:pick(H,sd+2),{stripe:D?P.gold:null,sy:.56,sh:.2,t:.1});plate(q,.88,.04,1.56,.8,P.ironL,{t:.08});if(hi)scorch(q,.7,.5,.4,sd+2);});
 + // the front: the mantlet in a gold frame between a patch cheek slab and the HEART's other half: the ONE large vent on the left cheek
-+ b.at(1.72,1.18,ZF,0,q=>{plate(q,0,0,1.5,1.16,pick(H,sd+3),{t:.1});if(hi)scorch(q,.3,.7,.34,sd);});
-+ b.at(-1.72,1.14,ZF+.005,0,q=>vent(q,0,0,1.46,1.12,4,{low:1,heart:1,frame:P.ironD,f:.07}));
-  ab(b,0,.62,ZF+.2,2.0,1.5,.44,P.ironD,.08);
-  cb(b,0,2.1,ZF+.44,2.06,.12,.07,P.gold);cb(b,0,.6,ZF+.44,2.06,.12,.07,P.gold);for(const s of [-1,1])cb(b,s*.97,.7,ZF+.44,.12,1.42,.07,P.gold);
++ b.at(1.72,1.18,ZF,0,q=>{plate(q,0,0,1.5,.86,pick(H,sd+3),{t:.1});if(hi)scorch(q,.3,.56,.3,sd);});
++ b.at(-1.72,1.14,ZF+.005,0,q=>vent(q,0,0,1.46,.88,4,{low:1,heart:1,frame:P.ironD,f:.07}));
++ ab(b,0,.62,ZF+.2,2.0,1.3,.44,P.ironD,.08);
++ cb(b,0,1.9,ZF+.44,2.06,.12,.07,P.gold);cb(b,0,.6,ZF+.44,2.06,.12,.07,P.gold);for(const s of [-1,1])cb(b,s*.97,.7,ZF+.44,.12,1.22,.07,P.gold);
   // the gun: long, fat and gold, well past the nose
   const y=1.36,nb=hi?10:6,z0=ZF+.38;b.tube([0,y,z0],[0,y,z0+.62],.5,P.ironD,{n:nb});b.tube([0,y,z0+.56],[0,y,4.2],.34,P.gold,{n:nb});b.tube([0,y,4.04],[0,y,4.52],.5,P.gold,{n:nb,caps:true});zdisc(b,0,y,4.526,.3,nb,P.weld);
   for(const z of [z0+.62,3.1])b.tube([0,y,z],[0,y,z+.14],.42,P.goldD,{n:nb,caps:true});
@@ -433,21 +471,21 @@ index ab270cf..c1f009d 100644
 - // the growth: three thick roots out of the cheek vent (over the roof, down the cheek, along the flank)
 - vein(b,[-1.9,2.18,ZF+.03],[-1.3,RY+.02,.0],[0,1,.4],{seed:sd+2,r:.1,low:1});
 - if(hi){vein(b,[-2.3,1.7,ZF+.03],[-TW/2-.02,1.5,.4],[-.7,0,.7],{seed:sd+3,r:.09,n:2});vein(b,[-1.4,1.24,ZF+.03],[-.9,.4,ZF-.5],[0,-.3,1],{seed:sd+4,r:.09,n:2});knot(b,-1.72,2.24,ZF+.02,.16,sd+1);}
-+ if(hi){for(const s of [-1,1])b.tube([s*.5,y,4.2],[s*.5,y,4.36],.09,P.weld,{n:5,caps:true});b.tube([.82,1.86,ZF+.3],[.82,1.86,ZF+.9],.09,P.iron,{n:5,caps:true});}
++ if(hi){for(const s of [-1,1])b.tube([s*.5,y,4.2],[s*.5,y,4.36],.09,P.weld,{n:5,caps:true});b.tube([.82,1.7,ZF+.3],[.82,1.7,ZF+.9],.09,P.iron,{n:5,caps:true});}
 + // the roof: a cupola (dead glass, a dim red behind it) ...
 + b.cyl(-1.5,RY,.55,.5,.14,P.ironD,{n:8,top:false});b.cyl(-1.5,RY+.14,.55,.46,.2,P.glassDead,{n:8,top:false,flat:true});b.cyl(-1.5,RY+.13,.55,.475,.05,P.redDim,{n:8,top:false});b.cyl(-1.5,RY+.34,.55,.54,.1,P.goldD,{n:8,topMat:P.hullD});
-+ // ... and THE HOARD that breaks the top line (to 4.6 here: 6.6 m over the ground): the tall stack at the right rear,
-+ crate(b,.95,RY,-.8,1.9,.9,1.5,.1,{mark:P.flagLDF2});crate(b,1.2,RY+.9,-.9,1.2,.6,1.0,-.25,{lid:P.gold,strap:P.gold,m:P.crateD});sack(b,1.25,RY+1.5,-.92,.32,.37,{rot:.5,lx:.04,m:P.sackL});
-+ // stepping down to the left: a drum, a fat sack, a stolen oxygen bottle; a second stack at the right front
-+ b.cyl(.2,RY+.9,-.45,.27,.56,P.rust,{n:hi?8:5,topMat:P.ironD});sack(b,-.82,RY,-1.12,.56,1.02,{rot:.6,lx:.06});
-+ b.cyl(-.2,RY,.5,.28,.98,P.tank,{n:hi?8:5,topMat:P.goldD});if(hi)b.cyl(-.2,RY+.6,.5,.29,.14,P.strapR,{n:8,top:false});
-+ crate(b,1.62,RY,.78,.9,.6,.84,-.15,{m:P.crateD,mark:P.gold});if(hi){crate(b,1.7,RY+.6,.72,.5,.36,.5,.4,{strap:0});sack(b,.5,RY,.62,.34,.6,{rot:2,lx:.05,m:P.sackL});net(b,.95,RY,-.8,2.0,1.5,1.6,4,{r:.03});}
++ // ... and THE HOARD that breaks the top line (to 3.98 here: 5.98 m over the ground): the tall stack at the right rear,
++ crate(b,.95,RY,-.8,1.9,.82,1.5,.1,{mark:P.flagLDF2});crate(b,1.2,RY+.82,-.9,1.2,.5,1.0,-.25,{lid:P.gold,strap:P.gold,m:P.crateD});sack(b,1.25,RY+1.32,-.92,.32,.3,{rot:.5,lx:.04,m:P.sackL});
++ // stepping down to the left: a drum, a fat sack on a low crate (the second tier), a stolen oxygen bottle; a second stack at the right front
++ b.cyl(.2,RY+.82,-.45,.27,.5,P.rust,{n:hi?8:5,topMat:P.ironD});crate(b,-.92,RY,-1.02,1.3,.42,1.24,-.12,{m:P.crateD,strap:0});sack(b,-.86,RY+.42,-1.08,.52,.96,{rot:.6,lx:.06});
++ b.cyl(-.2,RY,.5,.28,1.1,P.tank,{n:hi?8:5,topMat:P.goldD});if(hi)b.cyl(-.2,RY+.7,.5,.29,.14,P.strapR,{n:8,top:false});
++ crate(b,1.62,RY,.78,.9,.6,.84,-.15,{m:P.crateD,mark:P.gold});if(hi){crate(b,1.7,RY+.6,.72,.5,.36,.5,.4,{strap:0});sack(b,.5,RY,.62,.34,.6,{rot:2,lx:.05,m:P.sackL});net(b,.95,RY,-.8,2.0,1.34,1.6,4,{r:.03});}
 + // a banner taken from a conquered colony on a tall pole over the left rear corner (a general flies the standard instead)
-+ if(!D){pole(b,[-2.1,RY,-1.5],[-2.1,4.5,-1.5],.05,P.ironD,0);b.tube([-2.1,4.44,-1.5],[-1.05,4.44,-1.5],.035,P.goldD,{n:4});b.at(-1.56,4.42,-1.5,0,q=>flag(q,0,0,.98,.92,pick([1,3,4],sd),{ph:1,sway:.06}));}
++ if(!D){pole(b,[-2.1,RY,-1.5],[-2.1,3.97,-1.5],.05,P.ironD,0);b.tube([-2.1,3.92,-1.5],[-1.05,3.92,-1.5],.035,P.goldD,{n:4});b.at(-1.56,3.9,-1.5,0,q=>flag(q,0,0,.98,.92,pick([1,3,4],sd),{ph:1,sway:.06}));}
 + // the growth: thick roots out of the cheek vent, up the wall and over the ROOF (where the camera above looks)
-+ vein(b,[-1.2,2.3,ZF+.04],[-.95,RY+.03,ZF-.3],[0,.5,1],{seed:sd+1,n:1,r:.12,low:1,br:0});vein(b,[-.95,RY+.04,ZF-.3],[-.62,RY+.04,-.5],[0,1,0],{seed:sd+2,n:3,r:.13,low:1});
++ vein(b,[-1.2,1.94,ZF+.04],[-.95,RY+.03,ZF-.3],[0,.5,1],{seed:sd+1,n:1,r:.12,low:1,br:0});vein(b,[-.95,RY+.04,ZF-.3],[-.62,RY+.04,-.5],[0,1,0],{seed:sd+2,n:3,r:.13,low:1});
 + vein(b,[2.22,RY+.04,1.3],[2.2,RY+.04,-1.2],[0,1,0],{seed:sd+7,n:3,low:1});
-+ if(hi){vein(b,[-2.3,1.9,ZF+.04],[-TW/2-.03,1.75,ZF-.5],[-.7,0,.7],{seed:sd+3,r:.1,n:2});vein(b,[-1.4,1.1,ZF+.04],[-.9,.5,ZF-.4],[0,-.3,1],{seed:sd+4,r:.1,n:2});knot(b,-1.72,2.3,ZF+.02,.17,sd+1);}
++ if(hi){vein(b,[-2.3,1.9,ZF+.04],[-TW/2-.03,1.75,ZF-.5],[-.7,0,.7],{seed:sd+3,r:.1,n:2});vein(b,[-1.4,1.1,ZF+.04],[-.9,.5,ZF-.4],[0,-.3,1],{seed:sd+4,r:.1,n:2});knot(b,-1.72,1.98,ZF+.02,.17,sd+1);}
  }
  
  // ------------------------------------------------------------------ par-command: the Warlord ----------------------------
@@ -576,10 +614,12 @@ index ab270cf..c1f009d 100644
 +// 5E-2d2 critic round 2 ("about 38 px on a phone; claws and sack unreadable; a pack must read as a pack of raiders, not seven
 +// toy buggies"): the booms are BOLD (0.19 m thick, hazard yellow: the Grabber's one hazard element) with pale steel
 +// pincers, the sack is pale cream and stands higher than the cage, and the THREE VARIANTS differ in outline, not in
-+// trim: (0) claws RAISED to 1.36 times the body's height and open, one huge cream sack; (1) claws FORWARD holding a
-+// stolen crate, a khaki sack and a rust drum; (2) claws half raised, two sacks, and a FLAG on a whip (to 1.78 m: the slot
-+// box grew from 1.4 to 1.8 m for the raised claws and the flag). The HEART is the open cockpit (the seat glows red through
-+// the cage); a red seam runs down the sack. No turret: the "gun" is a pintle stub.
++// trim: (0) claws RAISED over the cage and open, one huge cream sack; (1) claws FORWARD holding a stolen crate, a khaki
++// sack and a rust drum; (2) claws half raised, two sacks, and a FLAG on a whip. Everything ends inside the 1.4 m slot box,
++// which is not this model's to change (the first repaint raised the claws to 1.69 m and the flag to 1.78 m and failed
++// conquest-style.mjs): the raised booms start lower on the hood's shoulder and are longer, so they still stand over the
++// cage (1.38 m against 1.22), and the flag flies from a short whip at the same height. The HEART is the open cockpit (the
++// seat glows red through the cage); a red seam runs down the sack. No turret: the "gun" is a pintle stub.
  const SWARM_PIVOT=[0,1.0,-.1];
  // a flat steel bar between two points [x, z] (claw fingers): w0 -> w1 wide, t thick, its underside at y (12 triangles)
  function bar(b,a,c,w0,w1,y,t,m,o={}){const dx=c[0]-a[0],dz=c[1]-a[1],L=Math.hypot(dx,dz)||1,nx=-dz/L*.5,nz=dx/L*.5,p=[[a[0]+nx*w0,a[1]+nz*w0],[c[0]+nx*w1,c[1]+nz*w1],[c[0]-nx*w1,c[1]-nz*w1],[a[0]-nx*w0,a[1]-nz*w0]],ins=[(a[0]+c[0])/2,y+t/2,(a[1]+c[1])/2],V=(i,yy)=>[p[i][0],yy,p[i][1]];
@@ -592,10 +632,10 @@ index ab270cf..c1f009d 100644
 - b.tube(A,E,lite?.08:.072,P.hazard,{n:lite?3:4});
 - if(!lite){b.tube([x,.5,.5],[x,(A[1]+E[1])/2-.03,(A[2]+E[2])/2+.04],.032,P.plateMil,{n:4});b.tube([x-.1,E[1],E[2]],[x+.1,E[1],E[2]],.09,P.goldD,{n:hi?6:4,caps:true});
 -  if(hi)b.tube([x,A[1]+(E[1]-A[1])*.45,A[2]+(E[2]-A[2])*.45],[x,A[1]+(E[1]-A[1])*.62,A[2]+(E[2]-A[2])*.62],.078,P.hazardD,{n:4});}
-+const SWARM_V=[{ang:1.15,len:.95,open:1},{ang:.3,len:.58,open:.55,hold:1},{ang:.72,len:.74,open:.8,flag:1}];
++const SWARM_V=[{ang:1.05,len:.78,open:1,ay:.6,az:.36},{ang:.3,len:.58,open:.55,hold:1},{ang:.72,len:.74,open:.8,flag:1}];   // ay, az: where a boom starts (the raised pair lower and further forward, so it is long and still ends under 1.4 m)
 +// one loader boom with its grab claw (s = side): the boom rises at `ang` from the hood's shoulder to a knuckle, a hydraulic
 +// ram under it, a two-finger pale steel pincer pointing forward. lite = the town model (flat faces, no ram).
-+function claw(b,s,V,lite){const hi=b.hi,x=s*.32,A=[x,.72,.26],BL=V.len,E=[x,.72+Math.sin(V.ang)*BL,.26+Math.cos(V.ang)*BL],jaw=tint(P.ironL,1.12,.01),tip=P.plateMil,t=.13,y=E[1]-.065,op=V.open;
++function claw(b,s,V,lite){const hi=b.hi,x=s*.32,A=[x,V.ay??.72,V.az??.26],BL=V.len,E=[x,.72+Math.sin(V.ang)*BL,.26+Math.cos(V.ang)*BL],jaw=tint(P.ironL,1.12,.01),tip=P.plateMil,t=.13,y=E[1]-.065,op=V.open;
 + b.tube(A,E,lite?.1:.095,P.hazard,{n:lite?3:4});
 + if(!lite){b.tube([x,.5,.5],[x,(A[1]+E[1])/2-.03,(A[2]+E[2])/2+.04],.04,P.plateMil,{n:4});b.tube([x-.12,E[1],E[2]],[x+.12,E[1],E[2]],.105,P.goldD,{n:hi?6:4,caps:true});
 +  if(hi)b.tube([x,A[1]+(E[1]-A[1])*.45,A[2]+(E[2]-A[2])*.45],[x,A[1]+(E[1]-A[1])*.62,A[2]+(E[2]-A[2])*.62],.102,P.hazardD,{n:4});}
@@ -650,11 +690,11 @@ index ab270cf..c1f009d 100644
 -  pole(b,[-.34,1.17,-.5],[-.38,1.39,-.58],.016,dk,0);b.at(-.37,1.38,-.56,PI+.3,q=>{const m=pick(P.flagSet,sd);for(const z of [-9,9])q.tri([0,0,0],[.34,-.07,0],[0,-.17,0],m,[0,0,z]);});}
 - if(hi&&vi!==2)net(b,0,.5,-.88,.7,.5,.5,2,{r:.018});
 + if(hi){for(const s of [-1,1]){b.tube([s*.36,.5,-.78],[s*.36,.5,-1.17],.026,st,{n:3});b.tube([s*.36,.5,-1.17],[s*.36,.86,-1.18],.026,st,{n:3});}b.tube([-.36,.86,-1.18],[.36,.86,-1.18],.026,st,{n:3});b.tube([-.36,.5,-1.17],[.36,.5,-1.17],.026,st,{n:3});}
-+ if(vi===0)lootSack(b,0,.5,-.78,.42,1.02,{rot:.4,lz:.05,lx:.04,m:P.sackL});
++ if(vi===0)lootSack(b,0,.5,-.78,.42,.88,{rot:.4,lz:.05,lx:.04,m:P.sackL});
 + else if(vi===1){lootSack(b,-.14,.5,-.82,.34,.84,{rot:1.3,lz:.04,m:P.sack});b.cyl(.27,.5,-.94,.16,.5,P.rust,{n:hi?7:5,topMat:P.ironD});}
-+ else{lootSack(b,-.17,.5,-.84,.31,.8,{rot:.9,lx:-.03,m:P.sackL});sack(b,.2,.5,-.9,.25,.6,{rot:2.2,lx:.03,m:tint(P.sack,.8)});
++ else{lootSack(b,-.13,.5,-.84,.31,.72,{rot:.9,lx:.03,m:P.sackL});sack(b,.22,.5,-.9,.25,.56,{rot:2.2,lx:.03,m:tint(P.sack,.8)});
 +  // the flag: a conquered colony's pennant on a whip over the cage
-+  b.tube([-.34,1.17,-.5],[-.4,1.78,-.64],.02,st,{n:3});b.at(-.4,1.76,-.63,PI+.3,q=>{const m=pick(P.flagSet,sd+1);for(const z of [-9,9])q.quad([0,0,0],[.46,-.05,0],[.46,-.25,0],[0,-.3,0],m,[0,0,z]);});}
++  b.tube([-.34,1.17,-.5],[-.39,1.39,-.6],.022,st,{n:3});b.at(-.39,1.385,-.6,PI+.3,q=>{const m=pick(P.flagSet,sd+1);for(const z of [-9,9])q.quad([0,0,0],[.46,-.04,0],[.46,-.24,0],[0,-.3,0],m,[0,0,z]);});}
 + if(hi&&vi!==2)net(b,0,.5,-.82,.7,.5,.5,2,{r:.018});
  }
 -function swarmGun(b,o){const hi=b.hi;b.cyl(0,.17,-.12,.1,.05,P.ironD,{n:hi?8:5,topMat:P.goldD});cb(b,0,.22,-.1,.15,.09,.2,pick(P.plateSet,(o.seed|0)+3));
@@ -666,7 +706,7 @@ index ab270cf..c1f009d 100644
 - cb(b,0,.27,-.08,.62,.15,1.86,P.ironD);
 - xpr(b,[[.12,.42],[.9,.42],[.96,.54],[.3,.8],[.12,.8]],-.33,.33,i=>i===0?null:i===2||i===3?pm:P.iron,{cap:tint(pm,.82)});
 - cb(b,0,.42,-.3,.5,.42,.12,P.plateMilD);cb(b,0,.42,-.6,.52,.3,.4,P.iron);b.quad([-.23,.45,-.805],[.23,.45,-.805],[.23,.7,-.805],[-.23,.7,-.805],P.red,[0,.5,0]);
-+// the town Grabber (one piece, at most the 132 triangles it had): the oxide hood, the bold yellow booms, the pale sack, the red seat
++// the town Grabber (one piece, 250 triangles; it had 252): the oxide hood, the bold yellow booms, the pale sack, the red seat
 +function swarmTown(b,o){const sd=o.seed|0,vi=((sd%3)+3)%3,V=[{ang:.8,len:.7,open:1},{ang:.3,len:.58,open:.55},{ang:.55,len:.66,open:.8}][vi],   /* the town model keeps its old height (the raid fits it to its own footprint): the booms a little lower */pm=pick(P.hullSet,sd+1),cage=vi===1?P.rust:vi===2?P.ironL:P.iron;
 + for(const s of [-1,1])for(const z of [.52,-.62])xwheel(b,s*.48,s*.78,.33,z,.33,5,P.tyre,null,{face:s>0===(z>0)?P.ironL:P.goldD,rot:.3});
 + cb(b,0,.27,-.08,.62,.15,1.86,P.redDim);
@@ -688,8 +728,8 @@ index ab270cf..c1f009d 100644
 +// round 1: the first ram was a picket of upright slabs in six colours; head-on it read as a fort): a wedge prow, an
 +// arrowhead in plan, taller than the glacis, carried out of it by a rust beam as thick as a doorway and two push girders.
 +// 5E-2d2 critic round 2 ("Hoard Fortress and Wrecker from the front both read tan box, gold-ringed gun, red slat grille"):
-+// the ram is 1.36 TIMES WIDER THAN THE HULL behind it now (5.36 m against 3.95: the hull, its tracks and its casemate were
-+// narrowed inside the same slot box), and it is visibly WELDED FROM WRECKAGE: scarred steel faces under patch plates that
++// the ram is 1.34 TIMES WIDER THAN THE HULL behind it now (5.3 m against 3.95, its foot lip 5.42 m: the 5.4 m slot box's
++// full width; the hull, its tracks and its casemate were narrowed inside the same slot box), and it is visibly WELDED FROM WRECKAGE: scarred steel faces under patch plates that
 +// never matched (oxide, bare steel, one pale, a torn length of hazard barrier on the left face: the Wrecker's one hazard
 +// element), rust girders along its top. NO gold on it anywhere; the gun is a small plain stub on a small plain turret.
 +// The HEART is the ram's core: a glowing slit down the prow's tip and a glowing hatch in the ram's top behind it, thick
@@ -697,7 +737,7 @@ index ab270cf..c1f009d 100644
  const BRUTE_PIVOT=[0,2.6,-2.15];
  // the ram head: plan rings (the tip toward +z); lean = how far the top is pulled back
 -const RAM={hw:2.62,z0:2.4,z1:2.95,zt:3.9,tw:.5,y0:.22,y1:.52,y2:2.74,y3:2.96,lean:.3};
-+const RAM={hw:2.68,z0:2.4,z1:2.95,zt:3.9,tw:.5,y0:.22,y1:.52,y2:2.74,y3:2.96,lean:.3};
++const RAM={hw:2.65,z0:2.4,z1:2.95,zt:3.9,tw:.5,y0:.22,y1:.52,y2:2.74,y3:2.96,lean:.3};
  const ramRing=(y,inset=0,dz=0)=>{const {hw,z0,z1,zt,tw}=RAM,w=hw-inset;return {p:[[-w,z0+dz],[-w,z1+dz-inset*.4],[-tw,zt+dz-inset],[tw,zt+dz-inset],[w,z1+dz-inset*.4],[w,z0+dz]],y};};
 -function ramHead(b,o,lite){const sd=o.seed|0,hi=b.hi,M=P.wreck,{hw,z1,zt,tw,y1,y2,lean}=RAM;
 - b.loft([ramRing(RAM.y0,.1),ramRing(y1,-.06),ramRing(y1,0),ramRing(y2,0,-lean),ramRing(RAM.y3,.14,-lean)],(r,i)=>r<2?P.ironD:r===3?tint(M,1.12,.01):i===5?P.wreckD:i===2?tint(M,.92):i===0||i===4?tint(M,.86):M,{topMat:tint(M,1.08),bot:!lite});
@@ -848,7 +888,7 @@ index ab270cf..c1f009d 100644
  const DRONE_PIVOT=[0,.42,.66];
  const ring8=(w,h,ch,yc,z)=>{const x=w/2,y=h/2,c=Math.min(ch,x*.9,y*.9);return [[-x+c,yc-y,z],[x-c,yc-y,z],[x,yc-y+c,z],[x,yc+y-c,z],[x-c,yc+y,z],[-x+c,yc+y,z],[-x,yc+y-c,z],[-x,yc-y+c,z]];};
  // a rotor guard: a short open duct (outside, inside and both rims), n sides
-@@ -551,44 +640,49 @@ function duct(b,x,y,z,r,h,m,o={}){const n=o.n||(b.hi?10:6),ri=r-(o.w||.05),mi=ti
+@@ -551,44 +646,49 @@ function duct(b,x,y,z,r,h,m,o={}){const n=o.n||(b.hi?10:6),ri=r-(o.w||.05),mi=ti
    b.quad(A,B,C,D,m,[x,y+h/2,z]).quad(E,F,G,H,mi,[mx,y+h/2,mz]).quad(D,C,G,H,rim,[x,y-9,z]);if(b.hi)b.quad(A,B,F,E,mi,[x,y+9,z]);}return b;}
  // rotor blades: flat bars through the hub at height y (drawn on both faces)
  function rotor(b,x,y,z,r,a,m,n=2){for(let k=0;k<n;k++){const an=a+k*PI/n,c=Math.cos(an),s=Math.sin(an),w=.045,V=(t,u)=>[x+c*t-s*u,y,z+s*t+c*u],Q=[V(-r,-w),V(r,-w*.6),V(r,w*.6),V(-r,w)];b.quad(Q[0],Q[1],Q[2],Q[3],m,[x,y-9,z]).quad(Q[0],Q[1],Q[2],Q[3],tint(m,.7),[x,y+9,z]);}return b;}
@@ -930,25 +970,213 @@ index ab270cf..c1f009d 100644
   cb(b,0,.09,-.12,.52,.33,.46,P.crate,{bot:1});
  }
  
-@@ -658,8 +752,8 @@ function general(b,o,g){const D=doc(o);if(!D)return;const hi=b.hi,s=g.s,[px,py,p
+@@ -601,19 +701,25 @@ const TOWN={raider:[3.4,2.9,4.4],sentinel:[5.2,4.6,6.8],swarm:[1.6,1.1,2.2],brut
+ function fit(b,size,centred){const [w,h,d]=size,lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];for(const B of [b.buf.main,b.buf.det])for(let i=0;i<B.P.length;i+=3)for(let k=0;k<3;k++){const v=B.P[i+k];if(v<lo[k])lo[k]=v;if(v>hi[k])hi[k]=v;}
+  const sx=w/2/Math.max(-lo[0],hi[0]),sy=h/(hi[1]-lo[1]),sz=d/2/Math.max(-lo[2],hi[2]),y0=centred?-h/2:0;
+  for(const B of [b.buf.main,b.buf.det])for(let i=0;i<B.P.length;i+=3){B.P[i]*=sx;B.P[i+1]=(B.P[i+1]-lo[1])*sy+y0;B.P[i+2]*=sz;const nx=B.N[i]/sx,ny=B.N[i+1]/sy,nz=B.N[i+2]/sz,l=Math.hypot(nx,ny,nz)||1;B.N[i]=nx/l;B.N[i+1]=ny/l;B.N[i+2]=nz/l;}}
+-function sentinelTown(b,o){const sd=o.seed|0,S=P.plateSet,R=K.rect,tm=tint(P.iron,1.6,.012),dk=tint(P.iron,1.2);
++// 5E-2d2 critic round 2 (the unload in the drill: "units 20 px of yellow on sand, no red on LOW"): the town Hoard Fortress was
++// still the pale bone-and-khaki machine under two big blue flags (the first repaint missed it). It is oxide red-brown like
++// the world's now: lit glacis, shaded flanks, ONE pale skirt slab and one pale turret slab, the gold parapet and cannon,
++// the turret ring glowing red (the heart), a red stern vent, a glowing skirt strip under each flank (two quads more than
++// it had: 232 triangles), and the two trophy flags in conquered settlers' colours (never the humans' blue).
++function sentinelTown(b,o){const sd=o.seed|0,S=P.plateSet,H=P.hullSet,R=K.rect;
+  for(const s of [-1,1])track(b,s,1.82,1.0,-2.8,2.72,1.3,{cf:.7,hf:.72,cr:.55,hr:.62,lod:0});
+- xpr(b,[[-2.8,.65],[2.3,.6],[2.82,1.0],[1.95,2.0],[-2.8,2.0]],-1.34,1.34,i=>i===0?null:P.ironL,{cap:tint(P.ironL,.8)});
+- cb(b,1.83,1.3,-.05,1.0,.45,5.45,pick(S,sd+1));cb(b,-1.83,1.3,-.05,1.0,.45,5.45,P.plateMilD);
+- const SM=[P.plateMil,P.hazard,pick(S,sd),P.rust,pick(S,sd+2)];
+- for(const s of [-1,1])for(let k=0;k<3;k++){const z0=-2.62+k*1.78;b.quad([s*2.34,.72-k%2*.1,z0],[s*2.34,.72-k%2*.1,z0+1.66],[s*2.34,1.72,z0+1.66],[s*2.34,1.72,z0],SM[(k+(s>0?0:2))%5],[0,1,0]);}
+- b.quad([-1.2,1.13,2.74],[1.2,1.13,2.74],[1.2,1.93,2.045],[-1.2,1.93,2.045],P.plateMil,[0,-2,0]);
++ xpr(b,[[-2.8,.65],[2.3,.6],[2.82,1.0],[1.95,2.0],[-2.8,2.0]],-1.34,1.34,i=>i===0?null:i===2?P.hullL:i===3?P.hull:P.hullD,{cap:P.hullD});
++ cb(b,1.83,1.3,-.05,1.0,.45,5.45,pick(H,sd+2));cb(b,-1.83,1.3,-.05,1.0,.45,5.45,pick(H,sd));
++ const SM=[pick(H,sd+1),pick(S,sd),pick(H,sd+3),P.ironL,pick(H,sd)];
++ for(const s of [-1,1]){for(let k=0;k<3;k++){const z0=-2.62+k*1.78;b.quad([s*2.34,.72-k%2*.1,z0],[s*2.34,.72-k%2*.1,z0+1.66],[s*2.34,1.72,z0+1.66],[s*2.34,1.72,z0],SM[(k+(s>0?0:2))%5],[0,1,0]);}
++  b.quad([s*2.4,.46,-2.7],[s*2.4,.46,2.6],[s*2.35,.64,2.6],[s*2.35,.64,-2.7],P.redDim,[0,.6,0]);}
++ b.quad([-1.2,1.13,2.74],[1.2,1.13,2.74],[1.2,1.93,2.045],[-1.2,1.93,2.045],pick(S,sd+2),[0,-2,0]);
+  b.quad([-1.0,.76,-2.81],[1.0,.76,-2.81],[1.0,1.34,-2.81],[-1.0,1.34,-2.81],P.red,[0,1,0]);
+- b.at(0,2.0,-.25,0,q=>{const CM=[pick(S,sd+1),P.hazard,P.plateMil,pick(S,sd+3)];
+-  q.loft([{p:R(3.3,2.8,.5),y:.2},{p:R(4.0,3.3,.62),y:.68},{p:R(3.86,3.16,.6),y:1.72},{p:R(3.1,2.5,.5),y:2.1}],(r,i)=>r===0?P.red:r===2?P.gold:(i%2?CM[(i-1)/2]:tm),{topMat:dk});
++ b.at(0,2.0,-.25,0,q=>{const CM=[pick(H,sd+1),pick(S,sd+1),pick(H,sd+2),P.ironL];
++  q.loft([{p:R(3.3,2.8,.5),y:.2},{p:R(4.0,3.3,.62),y:.68},{p:R(3.86,3.16,.6),y:1.72},{p:R(3.1,2.5,.5),y:2.1}],(r,i)=>r===0?P.red:r===2?P.gold:(i%2?CM[(i-1)/2]:i===0?P.hullD:P.hull),{topMat:P.hullD});
+   cb(q,0,.3,1.86,1.7,.9,.4,P.ironD);q.tube([0,.72,2.05],[0,.72,3.02],.34,P.ironD,{n:5});q.tube([0,.72,2.96],[0,.72,3.22],.46,P.gold,{n:5,caps:true});
+-  cb(q,.55,2.1,-.5,.95,.56,.74,P.crate);cb(q,-.5,2.1,.3,.7,.46,.7,P.sack);});
+- for(const s of [-1,1]){b.tube([s*2.0,1.75,-2.6],[s*2.0,4.7,-2.6],.06,P.ironD,{n:3});const m=s>0?P.flagLDF:pick(P.flagSet,sd);for(const z of [-9,9])b.quad([s*2.0,4.66,-2.6],[s*1.0,4.66,-2.6],[s*1.0,3.6,-2.6],[s*2.0,3.6,-2.6],m,[0,4,-2.6+z]);}
++  cb(q,.55,2.1,-.5,.95,.6,.74,P.crate);cb(q,-.5,2.1,.3,.7,.46,.7,P.sackL);});
++ for(const s of [-1,1]){b.tube([s*2.0,1.75,-2.6],[s*2.0,4.7,-2.6],.06,P.ironD,{n:3});const m=pick(P.flagSet,[1,3,4][(sd+(s>0?0:1))%3]);for(const z of [-9,9])b.quad([s*2.0,4.66,-2.6],[s*1.0,4.66,-2.6],[s*1.0,3.6,-2.6],[s*2.0,3.6,-2.6],m,[0,4,-2.6+z]);}
+ }
+ 
+ // ------------------------------------------------------------------ the generals -----------------------------------------
+@@ -634,33 +740,41 @@ const EMBLEM={
+      poly2(g,[[-.04,-.56],[.04,-.56],[.04,-.33],[-.04,-.33]],0,0,0,P.ironD);poly2(g,[[-.07,-.64],[.07,-.64],[.07,-.55],[-.07,-.55]],0,0,s*.004,P.gold);},0,s*.72);});},
+  // artillery: a trio of shells standing nose up: gold cases, glowing warheads
+  artillery(q,D){const n=q.hi?7:5;for(const [x,z,y] of [[0,-.2,.12],[-.27,.14,-.04],[.27,.14,-.04]]){q.cyl(x,y-.58,z,.17,.07,P.goldD,{n,bot:true,top:false});q.cyl(x,y-.52,z,.15,.36,P.gold,{n,top:false});q.cyl(x,y-.16,z,.15,.3,D.glow,{n,top:false});q.cyl(x,y+.14,z,.15,.34,D.glow,{n,r2:.035,topMat:P.gold});}},
+- // carrier: a winged drone: a gold body, two raised glowing wings, a glowing tail fin
+- carrier(q,D){q.gem(0,0,.06,.13,.14,.56,P.gold);q.tube([0,-.64,0],[0,-.08,0],.05,P.gold,{n:4});for(const s of [-1,1]){const A=[s*.08,0,.34],B=[s*.74,.4,.02],C=[s*.7,.36,-.3],E=[s*.08,-.02,-.18];for(const y of [-9,9])q.quad(A,B,C,E,D.glow,[0,y,0]);
+-   if(q.hi)q.tube(A,B,.03,P.gold,{n:3});}
+-  poly2(q,[[-.5,.0],[-.12,.0],[-.44,.42],[-.56,.42]],0,.04,0,D.glow,1);for(const s of [-1,1])for(const y of [-9,9])q.quad([s*.04,.02,-.3],[s*.3,.1,-.42],[s*.3,.1,-.54],[s*.04,.02,-.5],D.soft,[0,y,0]);},
+- // plasma: an orb in a cage: a glowing ball between gold caps, gold bars around it
+- plasma(q,D){const n=q.hi?6:4;q.ball(0,0,0,.34,D.glow,!q.hi);q.cyl(0,-.62,0,.24,.1,P.gold,{n:n+2,bot:true});q.cyl(0,.52,0,.24,.1,P.gold,{n:n+2,bot:true});
+-  for(let i=0;i<n;i++){const a=i/n*TAU+.4,c=Math.cos(a)*.48,s=Math.sin(a)*.48;q.tube([c*.46,-.54,s*.46],[c,-.2,s],.03,P.gold,{n:3});q.tube([c,-.2,s],[c,.2,s],.03,P.gold,{n:3});q.tube([c,.2,s],[c*.46,.54,s*.46],.03,P.gold,{n:3});}}};
++ // carrier: a winged drone. 5E-2d2 critic round 2 ("the carrier's emblem a filled shape": two thin raised wings read as a
++ // bare Y on a stick at phone size): a FILLED swept delta seen from above (nose up, a notch in the tail), two crossed so it
++ // never turns edge-on: a gold plate, the glowing wing on both faces a step inside it, a gold spine and two glowing tail fins
++ carrier(q,D){const dl=(k,z)=>[[[0,.7*k,z],[-.78*k,-.4*k,z],[0,-.14*k,z]],[[0,.7*k,z],[0,-.14*k,z],[.78*k,-.4*k,z]]];
++  for(const ry of [0,HP])q.at(0,-.04,0,ry,f=>{for(const s of [-1,1]){for(const t of dl(1,s*.03))f.tri(t[0],t[1],t[2],P.gold,[0,0,-s]);for(const t of dl(.8,s*.05))f.at(0,.01,0,0,g=>g.tri(t[0],t[1],t[2],D.glow,[0,0,-s]));
++    fan(f,[[0,.5,s*.07],[.07,.1,s*.07],[0,-.2,s*.07],[-.07,.1,s*.07]],P.gold,[0,0,-s]);}});
++  q.tube([0,-.66,0],[0,-.16,0],.05,P.gold,{n:4});},
++ // plasma: an orb in a cage. 5E-2d2 critic round 2 ("the orb larger": a 0.68 m ball behind six gold bars was a dot at phone
++ // size): the ball is 1 m across, the cage four thin bars (three on LOW) standing clear of it, so the glow is the shape
++ plasma(q,D){const n=q.hi?4:3;q.ball(0,0,0,.5,D.glow,!q.hi);q.cyl(0,-.66,0,.24,.1,P.gold,{n:n+3,bot:true});q.cyl(0,.56,0,.24,.1,P.gold,{n:n+3,bot:true});
++  for(let i=0;i<n;i++){const a=i/n*TAU+.4,c=Math.cos(a)*.6,s=Math.sin(a)*.6;q.tube([c*.4,-.6,s*.4],[c,-.24,s],.026,P.gold,{n:3});q.tube([c,-.24,s],[c,.24,s],.026,P.gold,{n:3});q.tube([c,.24,s],[c*.4,.6,s*.4],.026,P.gold,{n:3});}}};
+ // g = {pole:[x, y, z] the foot of the standard, top: the emblem's centre height, s: its scale, rails:[[x, y, z0, z1]...],
+ // pads:[[x, y, z, w, d]...] (both mirrored), gold: more trim}
+-function general(b,o,g){const D=doc(o);if(!D)return;const hi=b.hi,s=g.s,[px,py,pz]=g.pole,top=g.top,yy=top-.74*s,n=hi?6:4;
+- // the standard
++// 5E-2d2 critic round 2 ("a sail on every general, the Hoard Fortress too": its standard stood on the stern deck, behind the
++// hoard, and from the front only the tip of the emblem showed): a unit's g.gun = {pole, top, s} plants the standard on the
++// TURRET instead (the gun's own frame; it turns with the gun), where the hoard steps down.
++function standard(b,o,g){const D=doc(o);if(!D)return;const hi=b.hi,s=g.s,[px,py,pz]=g.pole,top=g.top,yy=top-.74*s,n=hi?6:4;
+  b.cyl(px,py,pz,.17*s,.16*s,P.gold,{n:hi?8:5});b.tube([px,py,pz],[px,top-.6*s,pz],.06*s,P.ironD,{n,r2:.05*s});
+  b.cyl(px,top-.7*s,pz,.13*s,.12*s,P.gold,{n:hi?8:5,bot:true});
+  if(hi)for(let y=py+.7;y<yy-1.5*s;y+=.7)b.cyl(px,y,pz,.085*s,.07,P.gold,{n:6,bot:true});
+  b.tube([px-.66*s,yy,pz],[px+.66*s,yy,pz],.04*s,P.gold,{n:4});if(hi)for(const e of [-1,1])b.gem(px+e*.7*s,yy,pz,.07*s,.1*s,.07*s,P.gold);
+  b.at(px,yy-.02*s,pz,0,q=>flag(q,0,0,1.1*s,1.42*s,1,{m:D.cloth,m2:P.gold,b0:.1,b1:.18,tail:.2,sway:.05*s}));
+  b.tube([px,yy-.1*s,pz-.42*s],[px,yy-.1*s,pz+.42*s],.035*s,P.gold,{n:4});b.at(px,yy-.12*s,pz,HP,q=>flag(q,0,0,.7*s,1.0*s,1,{m:D.soft,m2:P.gold,b0:.12,b1:.22,tail:.3,sway:.04*s,ph:2}));
+- b.at(px,top,pz,0,q=>EMBLEM[o.cmd](q,D),0,0,s);
++ b.at(px,top,pz,0,q=>EMBLEM[o.cmd](q,D),0,0,s);}
++function general(b,o,g){const D=doc(o);if(!D)return;const hi=b.hi;
++ if(!g.gun)standard(b,o,g);
+  // the light rails and the painted shoulder plates
+  for(const [x,y,z0,z1] of g.rails)for(const e of [-1,1])cb(b,e*x,y,(z0+z1)/2,.08,.11,z1-z0,D.glow);
+  for(const [x,y,z,w,d] of g.pads)for(const e of [-1,1]){blk(b,e*x,y,z,w,.12,d,D.paint,{ch:.05,edge:P.gold,top:D.paint});
    if(hi)for(const k of [-1,0,1])b.quad([e*x-w*.3,y+.124,z+k*d*.26-.05],[e*x,y+.124,z+k*d*.26+.07],[e*x,y+.124,z+k*d*.26+.15],[e*x-w*.3,y+.124,z+k*d*.26+.03],P.gold,[0,0,0]).quad([e*x+w*.3,y+.124,z+k*d*.26-.05],[e*x,y+.124,z+k*d*.26+.07],[e*x,y+.124,z+k*d*.26+.15],[e*x+w*.3,y+.124,z+k*d*.26+.03],P.gold,[0,0,0]);}
   if(g.gold)g.gold(b,hi,D);
  }
 -const RAIDER_CMD={pole:[0,1.8,-2.1],top:4.52,s:1,rails:[[1.4,.9,-2.2,1.95]],pads:[[1.1,.93,1.4,.62,1.1]],
 -  gold(b,hi){for(const s of [-1,1])trim(b,[s*.84,1.03,-.55],[s*.84,1.03,1.55],.035);if(hi)b.loft([{p:K.rect(1.6,1.8,.1,0,-1.45),y:1.74},{p:K.rect(1.6,1.8,.1,0,-1.45),y:1.82}],P.gold,{top:false});}},
+- SENTINEL_CMD={pole:[0,2.0,-2.5],top:7.05,s:1.4,rails:[[2.27,1.75,-2.72,2.62]],pads:[[1.83,1.75,2.12,.96,1.05]],
 +const RAIDER_CMD={pole:[.06,.62,-2.47],top:4.52,s:1,rails:[[1.4,.94,-2.2,1.95]],pads:[[1.1,.93,1.4,.62,1.1]],   // (5E-2d2 critic round 2: the standard stands in the tail basket, behind the tall engine)
 +  gold(b,hi){for(const s of [-1,1])trim(b,[s*.84,1.03,-.5],[s*.84,1.03,1.55],.035);if(hi)b.loft([{p:K.rect(2.18,1.9,.17,0,RE.z),y:RE.y2-.2},{p:K.rect(2.18,1.9,.17,0,RE.z),y:RE.y2-.12}],P.gold,{top:false});}},
-  SENTINEL_CMD={pole:[0,2.0,-2.5],top:7.05,s:1.4,rails:[[2.27,1.75,-2.72,2.62]],pads:[[1.83,1.75,2.12,.96,1.05]],
++ SENTINEL_CMD={gun:{pole:[-2.0,ST.RY,-1.42],top:5.72,s:1.25},   /* the standard on the turret roof's left rear corner (gun frame: 7.72 m over the ground), where the plain unit flies its stolen banner */rails:[[2.27,1.75,-2.72,2.62]],pads:[[1.83,1.75,2.12,.96,1.05]],
    gold(b,hi){for(const s of [-1,1])trim(b,[s*1.36,2.02,-2.3],[s*1.36,2.02,1.9],.045);if(hi)for(const s of [-1,1])b.gem(s*2.06,1.86,2.68,.09,.16,.09,P.gold);}},
   COMMAND_CMD={pole:[0,6.0,-1.15],top:8.34,s:1.3,rails:[[2.18,3.32,-2.66,.46],[2.26,1.65,.5,2.5]],pads:[[1.78,1.65,2.24,.96,.72]],
-@@ -683,6 +777,6 @@ WK.model('par-drone',unit(droneHull,droneGun,DRONE_PIVOT,droneTown,null,TOWN.dro
+   gold(b,hi){for(const s of [-1,1])trim(b,[s*1.32,1.92,-2.7],[s*1.32,1.92,1.9],.045);}};
+@@ -670,7 +784,7 @@ const RAIDER_CMD={pole:[0,1.8,-2.1],top:4.52,s:1,rails:[[1.4,.9,-2.2,1.95]],pads
+ function unit(hull,gun,pivot,town,cmd,size){return (b,o)=>{use(b);if(o.cmd&&!(cmd&&typeof DOCTRINE[o.cmd]==='number'))o=Object.assign({},o,{cmd:null});   // not a doctrine, or a unit that is never a general
+   if(o.town&&town){const h=b.hi;b.hi=false;try{town(b,o);}finally{b.hi=h;}return fit(b,size,size===TOWN.drone);}const part=o.part;
+   if(part!=='gun'){hull(b,o);if(o.cmd&&cmd)general(b,o,cmd);}
+-  if(part!=='hull'&&gun){const ao=b.aoMin;b.aoMin=1;if(part==='gun')gun(b,o);else b.at(pivot[0],pivot[1],pivot[2],0,q=>gun(q,o));b.aoMin=ao;}};}
++  if(part!=='hull'&&gun){const ao=b.aoMin,gs=q=>{gun(q,o);if(o.cmd&&cmd&&cmd.gun)standard(q,o,cmd.gun);};b.aoMin=1;if(part==='gun')gs(b);else b.at(pivot[0],pivot[1],pivot[2],0,gs);b.aoMin=ao;}};}
+ WK.model('par-raider',unit(raiderHull,raiderGun,RAIDER_PIVOT,raiderTown,RAIDER_CMD,TOWN.raider),{aoH:1.6,aoMin:.56});
+ WK.model('par-breacher',unit(breacherHull,breacherGun,BREACHER_PIVOT,null,null),{aoH:2.2,aoMin:.56});
+ WK.model('par-sentinel',unit(sentinelHull,sentinelGun,SENTINEL_PIVOT,sentinelTown,SENTINEL_CMD,TOWN.sentinel),{aoH:2.4,aoMin:.56});
+@@ -683,6 +797,6 @@ WK.model('par-drone',unit(droneHull,droneGun,DRONE_PIVOT,droneTown,null,TOWN.dro
  // drone's is centred on y = 0); how high a general's standard reaches.
  const U=(slot,pivot,town,cmd)=>({slot,pivot,town,cmd});
  root.ConquestParUnits={raider:U('par-raider',RAIDER_PIVOT,true,true),breacher:U('par-breacher',BREACHER_PIVOT,false,false),sentinel:U('par-sentinel',SENTINEL_PIVOT,true,true),command:U('par-command',COMMAND_PIVOT,false,true),
 - swarm:U('par-swarm',SWARM_PIVOT,true,false),brute:U('par-brute',BRUTE_PIVOT,true,false),drone:U('par-drone',DRONE_PIVOT,true,false),
+- doctrines:DOCTRINE,townSize:TOWN,standardTop:{raider:RAIDER_CMD.top+.66*RAIDER_CMD.s,sentinel:SENTINEL_CMD.top+.66*SENTINEL_CMD.s,command:COMMAND_CMD.top+.66*COMMAND_CMD.s}};
 + swarm:U('par-swarm',SWARM_PIVOT,true,false),brute:U('par-brute',BRUTE_PIVOT,true,false),drone:U('par-drone',DRONE_PIVOT,true,false),droneRotors:DRONE_ROTORS,
-  doctrines:DOCTRINE,townSize:TOWN,standardTop:{raider:RAIDER_CMD.top+.66*RAIDER_CMD.s,sentinel:SENTINEL_CMD.top+.66*SENTINEL_CMD.s,command:COMMAND_CMD.top+.66*COMMAND_CMD.s}};
++ doctrines:DOCTRINE,townSize:TOWN,standardTop:{raider:RAIDER_CMD.top+.66*RAIDER_CMD.s,sentinel:SENTINEL_PIVOT[1]+SENTINEL_CMD.gun.top+.66*SENTINEL_CMD.gun.s,command:COMMAND_CMD.top+.66*COMMAND_CMD.s}};
  })(typeof globalThis!=='undefined'?globalThis:window);
+diff --git a/js/conquest/style.js b/js/conquest/style.js
+index 0a26b83..2077999 100644
+--- a/js/conquest/style.js
++++ b/js/conquest/style.js
+@@ -1041,12 +1041,21 @@ function create(T,opts={}){
+  // A wreck is dark (5E-2d2 critic round 1: veins, vents and cupola bands stayed lit on the dead). The same solid program with
+  // its own light values (uniforms only, like MAT.par): no emission at all (uGlow 0: every vein, vent, band and lamp goes
+  // black) and well under half the light, grey in place of the Parasites' red rim, so the hull reads as char.
+- MAT.parDead=mk(SOLID_VS,SOLID_FS,{uFlash:{value:0},uDetail:{value:tex.detail},uGlow:{value:0},uSiteRim:{value:0},uRimCol:{value:new T.Color().setRGB(.022,.022,.028)},uAmbUp:{value:new T.Color().setRGB(.075,.075,.085)},uAmbDn:{value:new T.Color().setRGB(.034,.033,.036)},
+-  uSunCol:{value:U.uSunCol.value.clone().multiplyScalar(.4)},uDaySun:{value:U.uDaySun.value.clone().multiplyScalar(.36)},uDayAmbUp:{value:U.uDayAmbUp.value.clone().multiplyScalar(.4)},uDayAmbDn:{value:U.uDayAmbDn.value.clone().multiplyScalar(.4)}});
++  // 5E-2d2 critic round 2 ("wrecks dark with scorch"): on the repainted oxide-red hulls 0.4 of the light still read as a tilted
++ // live unit, red and mid-bright. A wreck now gets a sixth of the sun and a little grey sky, and a faint grey haze over every
++ // face (uFlash is the shader's mix toward white: 0.006 of it is the ash that greys the red), so the hull is char.
++ MAT.parDead=mk(SOLID_VS,SOLID_FS,{uFlash:{value:.006},uDetail:{value:tex.detail},uGlow:{value:0},uSiteRim:{value:0},uRimCol:{value:new T.Color().setRGB(.014,.014,.018)},uAmbUp:{value:new T.Color().setRGB(.046,.046,.052)},uAmbDn:{value:new T.Color().setRGB(.02,.02,.022)},
++  uSunCol:{value:U.uSunCol.value.clone().multiplyScalar(.16)},uDaySun:{value:U.uDaySun.value.clone().multiplyScalar(.18)},uDayAmbUp:{value:U.uDayAmbUp.value.clone().multiplyScalar(.22)},uDayAmbDn:{value:U.uDayAmbDn.value.clone().multiplyScalar(.22)}});
+  S.unit=e=>{const kind=S.unitKind(e),PU=(root.ConquestParUnits||{})[kind]||{},slot=PU.slot||'par-'+kind,cmd=e.commander&&PU.cmd!==false?(PATTERN[e.pattern]?e.pattern:'ambush'):null,seed=1+(((e.id|0)%3)+3)%3,key=kind+'|'+(cmd||'')+'|'+seed;
+   let c=unitCache.get(key);
+   if(!c){const o=Object.assign({seed},cmd?{cmd}:{}),Kk=KW(),box=root.ConquestSlots.items[slot].size,X=new Fx();
+-   X.flat(0,.05,0,box[0]*.62,box[2]*.58,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,box[0]*.86,box[2]*.76,AT.BLOB,E(cmd?PATTERN[cmd]:PAR.red,cmd?.55:.5),0);   // the contact shadow, then the ground glow (S.glowSync draws them)
++   X.flat(0,.05,0,box[0]*.62,box[2]*.58,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,box[0]*(cmd?.72:.86),box[2]*(cmd?.64:.76),AT.BLOB,E(PAR.red,cmd?.6:.5),0);   // the contact shadow, then the ground glow (S.glowSync draws them)
++   // 5E-2d2 critic round 2 ("the shield general was the player's cyan from top to bottom"): a general stands in the same
++   // Parasite-red pool as every unit (it is a Parasite first), and its doctrine colour is a RING on the ground outside the pool
++   // (the ring mask peaks at 0.8 of its half size: outside the hull's edge), one more quad in the same batched draw. A
++   // general's pool is a little smaller and hotter, so it ends inside the ring: where the two overlapped, red under a
++   // violet or a white ring made magenta and pink, which the Parasites never show.
++   if(cmd)X.flat(0,.07,0,box[0]*.86,box[2]*.76,AT.RING,E(PATTERN[cmd],.4),0);
+    c={hull:Kk.geometry(slot,Object.assign({part:'hull'},o)),gun:Kk.geometry(slot,Object.assign({part:'gun'},o)),fx:keep(X.geometry()),pivot:PU.pivot||[0,box[1]*.6,0],box};
+    for(const q of [c.hull,c.gun])if(!q.boundingBox)q.computeBoundingBox();c.top=Math.max(c.hull.boundingBox.max.y,c.pivot[1]+c.gun.boundingBox.max.y);unitCache.set(key,c);}   // top: the highest point of the model as built (a general's emblem included)
+   const g=new T.Group(),body=new T.Group(),gun=new T.Group(),mk=markers(),hm=new T.Mesh(c.hull,MAT.par),gm=new T.Mesh(c.gun,MAT.par);body.add(hm);gun.position.set(c.pivot[0],c.pivot[1],c.pivot[2]);gun.add(gm);body.add(gun);g.add(body);
+@@ -1059,15 +1068,17 @@ function create(T,opts={}){
+  // it rolls and pitches into its wreck pose and comes to rest on the lowest corner of its box as it now lies; the gun slumps
+  // (a Hoard Fortress's turret is blown off its ring and lands canted on the flank); after the killing blow's white flash the
+  // hull chars and every light on it goes out (MAT.parDead), and its ground glow fades (the contact shadow stays under the
+- // wreck). Two draws, as alive. The kill burst and the flying plates are FX3D's (killBurst, shatter).
++ // wreck). Two draws, as alive. The kill burst and the flying plates are FX3D's (killBurst, shatter). The scorch mark under
++ // the wreck, its smoke and its embers are quads in the glow batch (S.glowSync): nothing new in draw calls.
+  S.unitPose=(g,dead)=>{const u=g?.userData,b=u?.body,D=u?.death;if(!b||!D)return;const gun=u.gun,pv=u.pivot||[0,0,0];
+-  if(!(dead>0)){if(u.posed){b.rotation.set(0,0,0);b.position.y=0;gun.rotation.x=0;gun.rotation.z=0;gun.position.set(pv[0],pv[1],pv[2]);u.glowK=1;for(const m of u.solids||[])if(m.material===MAT.parDead)m.material=MAT.par;u.posed=false;}return;}
++  if(!(dead>0)){if(u.posed){b.rotation.set(0,0,0);b.position.y=0;gun.rotation.x=0;gun.rotation.z=0;gun.position.set(pv[0],pv[1],pv[2]);u.glowK=1;u.wreck=0;if(u.marker)u.marker.visible=true;for(const m of u.solids||[])if(m.material===MAT.parDead)m.material=MAT.par;u.posed=false;}return;}
+   const k=Math.min(1,dead/.7),e=1-(1-k)*(1-k)*(1-k),hop=Math.sin(Math.min(1,dead/.4)*Math.PI)*D.hop,sd=u.side||1;
+   b.rotation.set(D.pitch*e,sd*(D.yaw||0)*e,sd*D.roll*e);b.updateMatrix();
+   const m=b.matrix.elements,bx=u.box||[u.half*2,2,u.half*2],dip=Math.abs(m[1])*bx[0]/2+Math.abs(m[9])*bx[2]/2-Math.min(0,m[5]*bx[1]*.8);   // how far the box's lowest corner now reaches under the body's origin
+   b.position.y=hop+dip*(1-(D.dig??.3))-D.sink*e;gun.rotation.x=D.gun*e;gun.rotation.z=-sd*(D.gz??.22)*e;
+   if(D.throw)gun.position.set(pv[0]+sd*D.throw[0]*e,pv[1]+D.throw[1]*e+Math.sin(k*Math.PI)*1.5,pv[2]+D.throw[2]*e);
+-  u.glowK=Math.max(0,1-k*1.7);if(dead>.09)for(const q of u.solids||[])if(q.material!==MAT.parDead)q.material=MAT.parDead;u.posed=true;};
++  u.glowK=Math.max(0,1-k*1.7);if(dead>.09)for(const q of u.solids||[])if(q.material!==MAT.parDead)q.material=MAT.parDead;u.posed=true;
++  u.wreck=dead;if(u.marker)u.marker.visible=false;};   // 5E-2d2 critic round 2: a wreck carries no marker (whoever poses it), and S.glowSync draws its scorch, smoke and embers from its age
+  // ---------- one draw for every hostile's ground glow and every shot's glow (5E-2d2) ----------
+  // A hostile's contact shadow, ground glow and lamp glow were one draw per hostile on HIGH and nothing on LOW (critic round 1:
+  // on LOW nothing separated a unit from the ground); a shot's glow was one more draw per shot. Now a model only carries its
+@@ -1076,7 +1087,7 @@ function create(T,opts={}){
+  // quad per shot ([x, y, z, half size, 0 pilot cyan | 1 Parasite red] five numbers a shot, emptied here), into ONE mesh on the
+  // fx material: the plain fx program, no instancing, the same quads, colours and mask as before, on HIGH and on LOW. It runs
+  // right before the world's frame, once the scene's matrices are current. Models are found among the scene's own children.
+- const GQ=224,shotCol=[E(0x5fe6ff,1),E(PAR.red,1)];
++ const GQ=320,shotCol=[E(0x5fe6ff,1),E(PAR.red,1)],emberCol=E(PAR.hot,1),hsh=(a,b)=>{const v=Math.sin(a*127.1+b*311.7)*43758.5453;return v-Math.floor(v);};   // 320 quads (was 224): a wreck adds up to ten
+  const glowMesh=scene=>{const g=new T.BufferGeometry(),I=new Uint16Array(GQ*6);for(let q=0;q<GQ;q++)I.set([q*4,q*4+1,q*4+2,q*4,q*4+2,q*4+3],q*6);
+   for(const [n,k] of [['position',3],['uv',2],['aCol',4],['aBill',3]]){const a=new T.BufferAttribute(new Float32Array(GQ*4*k),k);a.usage=35048;g.setAttribute(n,a);}   // 35048: DYNAMIC_DRAW
+   g.setIndex(new T.BufferAttribute(I,1));g.setDrawRange(0,0);const m=fxMesh(keep(g),3);m.frustumCulled=false;m.visible=false;m.name='cq-glows';m.userData.noOutline=true;scene.add(m);return scene.userData.cqGlows=m;};
+@@ -1087,7 +1098,24 @@ function create(T,opts={}){
+    for(let q=0;q<nq&&n<GQ;q++){if(gk<=.004&&sa[q*16+3]<=0)continue;   // a glow that is out is not drawn at all (the shadow has an alpha: it stays)
+     for(let v=0;v<4;v++){const i=q*4+v,o=n*4+v,x=sp[i*3],y=sp[i*3+1],z=sp[i*3+2],bz=sb[i*3+2],kb=bz?bs:1;
+      if(put(P,o*3,e[0]*x+e[4]*y+e[8]*z+e[12])|put(P,o*3+1,e[1]*x+e[5]*y+e[9]*z+e[13])|put(P,o*3+2,e[2]*x+e[6]*y+e[10]*z+e[14]))dP=true;
+-     if(put(Uv,o*2,su[i*2])|put(Uv,o*2+1,su[i*2+1])|put(A,o*4,sa[i*4]*gk)|put(A,o*4+1,sa[i*4+1]*gk)|put(A,o*4+2,sa[i*4+2]*gk)|put(A,o*4+3,sa[i*4+3])|put(B,o*3,sb[i*3]*kb)|put(B,o*3+1,sb[i*3+1]*kb)|put(B,o*3+2,bz))dO=true;}n++;}}
++     if(put(Uv,o*2,su[i*2])|put(Uv,o*2+1,su[i*2+1])|put(A,o*4,sa[i*4]*gk)|put(A,o*4+1,sa[i*4+1]*gk)|put(A,o*4+2,sa[i*4+2]*gk)|put(A,o*4+3,sa[i*4+3])|put(B,o*3,sb[i*3]*kb)|put(B,o*3+1,sb[i*3+1]*kb)|put(B,o*3+2,bz))dO=true;}n++;}
++   // 5E-2d2 critic round 2 ("wrecks dark with scorch, embers and smoke"): a wreck (userData.wreck = seconds dead, set by
++   // S.unitPose) adds, in this same draw: a scorch mark burnt into the ground under it, a smouldering glow in its middle that
++   // dies in twelve seconds, grey smoke puffs that rise, drift and thin out (thick for twenty seconds, a wisp after), and
++   // embers that rise and go out for the first twenty-five. Each is one quad placed from the wreck's age and the clock, so
++   // nothing is stored per puff. LOW keeps all four (fewer puffs and embers).
++   const wk=u.wreck;if(wk>0&&u.box){const bx=u.box,wx=e[12],wy=e[13],wz=e[14],R=Math.max(bx[0],bx[2])*bs,H=bx[1]*bs,sd=(g.id%97)+1,r=AT.BLOB,now=(root.performance?root.performance.now():Date.now())/1000,
++     q4=(x,y,z,hw,hd,bb,cr,cg,cb,al)=>{if(n>=GQ)return;for(let v=0;v<4;v++){const o=n*4+v,sx=v===1||v===2?1:-1,sy=v>1?1:-1;
++       if(put(P,o*3,bb?x:x+sx*hw)|put(P,o*3+1,y)|put(P,o*3+2,bb?z:z+sy*hd))dP=true;
++       if(put(Uv,o*2,sx>0?r[2]:r[0])|put(Uv,o*2+1,sy>0?r[3]:r[1])|put(A,o*4,cr)|put(A,o*4+1,cg)|put(A,o*4+2,cb)|put(A,o*4+3,al)|put(B,o*3,bb?sx*hw:0)|put(B,o*3+1,bb?sy*hd:0)|put(B,o*3+2,bb))dO=true;}n++;};
++    q4(wx,wy+.08,wz,R*.82,R*.82,0,0,0,0,.66*Math.min(1,wk/.5));   // the scorch mark
++    const hot=Math.max(0,1-wk/12)*Math.min(1,wk/.3);if(hot>.01){const fl=.7+.3*Math.sin(now*7.3+sd);q4(wx,wy+H*.22,wz,R*.15,R*.15,1,emberCol[0]*.32*hot*fl,emberCol[1]*.32*hot*fl,emberCol[2]*.32*hot*fl,0);}   // the fire dying inside it
++    const NS=S.low?3:5,thick=wk<20?1:Math.max(.4,1-(wk-20)/10),TS=3.4;
++    for(let i=0;i<NS;i++){const ph=(now/TS+i/NS+hsh(sd,i)*.13)%1,born=wk-ph*TS;if(born<.25)continue;   // (a puff that would have left before the unit died is not there yet)
++     const f=Math.min(1,ph*6)*Math.pow(1-ph,1.2)*thick,sz=(.3+.75*ph)*R*.3,dx=(hsh(sd,i+7)-.5)*R*.26+ph*(1.1+.6*hsh(sd,i+3))*R*.24,dz=(hsh(sd,i+11)-.5)*R*.26+Math.sin(ph*4+i)*R*.05,gr=(.085+.05*ph)*f;   // a warm grey that stands off the night ground (at the ground's own value a puff was invisible)
++     q4(wx+dx,wy+H*.3+ph*(H*.4+R*.55),wz+dz,sz,sz,1,gr,gr*.93,gr*.86,.8*f);}
++    if(wk<25){const NE=S.low?3:5,TE=1.9,fade=Math.min(1,(25-wk)/6);for(let i=0;i<NE;i++){const ph=(now/TE+i/NE+hsh(sd,i+20)*.3)%1;if(wk-ph*TE<.2)continue;
++      const f=(1-ph)*fade*(.6+.4*Math.sin(now*11+i*2.1)),sz=(.11-.05*ph)*Math.max(1,R*.22);q4(wx+(hsh(sd,i+31)-.5)*R*.5+Math.sin(ph*5+i)*.2,wy+H*.25+ph*(1.6+R*.35),wz+(hsh(sd,i+41)-.5)*R*.5,sz,sz,1,emberCol[0]*f*1.6,emberCol[1]*f*1.6,emberCol[2]*f*1.6,0);}}}}
+   if(shots&&shots.length){if(!P)open();const r=AT.BLOB;for(let k=0;k+4<shots.length&&n<GQ;k+=5,n++){const x=shots[k],y=shots[k+1],z=shots[k+2],sz=shots[k+3],col=shotCol[shots[k+4]?1:0];
+     for(let v=0;v<4;v++){const o=n*4+v,sx=v===1||v===2?1:-1,sy=v>1?1:-1;
+      if(put(P,o*3,x)|put(P,o*3+1,y)|put(P,o*3+2,z))dP=true;
+@@ -1101,7 +1129,11 @@ function create(T,opts={}){
+   const mk=markers();mk.position.y=11;g.add(mk);Object.assign(g.userData,{gun,body,marker:mk,slot:'par-battery',glowFx:batteryFx,glowK:1,solids:[bm,hm],death:DEATH.battery,half:3.35,box:[6.7,11.6,5.8],pivot:[0,6.6,0],side:1});g.scale.setScalar(1.65);return g;};   // 1.65: the size the battery has always been drawn at (11 x 9.6 m on the ground)
+  // Airborne drone: a stolen human quad-rotor (the kit's par-drone), the same footprint as before
+  let droneFx=null;
+- S.drone=()=>{const Kk=KW();if(!droneFx){const X=new Fx();X.bill(0,1.3,.9,.7,AT.BLOB,E(PAR.red,.9));X.flat(0,-1.2,0,1.6,1.7,AT.BLOB,E(PAR.red,.35),0);droneFx=keep(X.geometry());}
++ // 5E-2d2 critic round 2 ("rotors are static, the glow washes out the body"): the glow at the dead canopy is half the size it
++ // was (0.36: the nose, not the whole airframe), and each rotor is a BLURRED DISC: a faint grey-blue wash filling its guard
++ // hoop over the thin blades (the kit's ConquestParUnits.droneRotors lists the hubs), additive, in the batched glow draw.
++ S.drone=()=>{const Kk=KW();if(!droneFx){const X=new Fx(),RT=(root.ConquestParUnits||{}).droneRotors||[];X.bill(0,1.34,.9,.36,AT.BLOB,E(PAR.red,.8));X.flat(0,-1.2,0,1.6,1.7,AT.BLOB,E(PAR.red,.35),0);
++   for(const [hx,ry,hz,rr] of RT){X.flat(hx,.75+ry+.012,hz,rr*1.5,rr*1.5,AT.BLOB,E(0xa9bccf,.3),0);X.flat(hx,.75+ry+.014,hz,rr*1.24,rr*1.24,AT.RING,E(0xa9bccf,.16),0);}droneFx=keep(X.geometry());}
+   const g=new T.Group(),body=new T.Group();body.position.y=.75;body.add(new T.Mesh(Kk.geometry('par-drone',{}),MAT.par));g.add(body);
+   const gun=new T.Group();g.add(gun);const mk=markers();mk.position.y=3;g.add(mk);g.userData.gun=gun;g.userData.marker=mk;g.userData.slot='par-drone';g.userData.glowFx=droneFx;g.userData.glowK=1;g.scale.setScalar(1.65);return g;};   // 1.65: today's drone footprint (4.6 x 4.9 m)
+ 
 diff --git a/js/conquest/worldkit.js b/js/conquest/worldkit.js
 index f71df3a..9fb684e 100644
 --- a/js/conquest/worldkit.js

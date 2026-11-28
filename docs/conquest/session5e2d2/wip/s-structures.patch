@@ -1,13 +1,31 @@
+diff --git a/dev/tests/conquest-style.mjs b/dev/tests/conquest-style.mjs
+index 09ed33a..3740672 100644
+--- a/dev/tests/conquest-style.mjs
++++ b/dev/tests/conquest-style.mjs
+@@ -37,7 +37,12 @@ for(const low of [false,true]){
+  // Installations: hive inside the 22 x 16 tank box (+1.2 m for spike tips), mast within r 2 + 1.
+  for(const [i,s] of F.installations.entries()){for(const [x,y,z] of verts(parts.installs[i],solid)){const inBox=Math.abs(x-s.solid.x)<=12.2&&Math.abs(z-s.solid.z)<=9.2,inMast=Math.hypot(x-s.mast.x,z-s.mast.z)<=3.2;assert.ok(inBox||inMast,q+' installation art outside its footprint at '+[x,z].map(n=>n.toFixed(1)));}}
+  // Raid cover: walls exactly on the authoritative boxes (±0.2 m).
+- const cv=parts.cover.flatMap(g=>verts(g,solid));for(const [x,,z] of cv)assert.ok(W.raidObstacles.some(o=>Math.abs(x-o.x)<=o.width/2+.2&&Math.abs(z-o.z)<=o.depth/2+.2),q+' cover art off its box at '+[x,z].map(n=>n.toFixed(1)));
++ // 5E-2d2 critic round 2: the walls are drawn with MAT.par (the Parasites' own light, the same program); the check reads that mesh, and is never empty.
++ // The raid spire is drawn on clear ground (it was inside a boulder in 4 raids): its own spot where that is clear, else the nearest clear spot.
++ for(const g of parts.cover)assert.equal(g.children[0].material,S.MAT.par,q+' a cover group is lit as the Parasite machines are');assert.equal(parts.spire.children[0].material,S.MAT.par,q+' the raid spire is lit as the Parasite machines are');
++ for(const id of C.raidIds){const o=C.operations[id],sp=S.raidSpireSpot(o.x+45,o.z+15),free=(x,z)=>!W.solidAt(x,z)&&!W.raidSolidAt(x,z)&&!W.waterAt(x,z);assert.ok(Math.hypot(sp[0]-o.x-45,sp[1]-o.z-15)<=28.01,q+' '+id+': the spire stays by its spot');
++  assert.ok(free(sp[0],sp[1])&&[0,1,2,3,4,5,6,7].every(a=>free(sp[0]+Math.cos(a*Math.PI/4)*4.6,sp[1]+Math.sin(a*Math.PI/4)*4.6)),q+' '+id+': the spire stands on clear ground');if(free(o.x+45,o.z+15)&&[0,1,2,3,4,5,6,7].every(a=>free(o.x+45+Math.cos(a*Math.PI/4)*4.6,o.z+15+Math.sin(a*Math.PI/4)*4.6)))assert.deepEqual([sp[0],sp[1]],[o.x+45,o.z+15],q+' '+id+': a clear spot is kept');}
++ const cv=parts.cover.flatMap(g=>verts(g,m=>solid(m)||m.material===S.MAT.par));assert.ok(cv.length>1000,q+' the cover walls are read: '+cv.length+' vertices');for(const [x,,z] of cv)assert.ok(W.raidObstacles.some(o=>Math.abs(x-o.x)<=o.width/2+.2&&Math.abs(z-o.z)<=o.depth/2+.2),q+' cover art off its box at '+[x,z].map(n=>n.toFixed(1)));
+  // Command Base: perimeter wall solids sit inside the shared baseBlocked() region.
+  const B5=parts.base[5],D=C.baseDefinition,yb=W.groundAt(D.x,D.z);let wallChecked=0;
+  for(const [x,y,z] of verts(B5,solid)){if(y<yb+1.5||y>yb+4.4)continue;const onWallLine=Math.abs(Math.abs(x)-17)<2.2&&Math.abs(z)<17||Math.abs(z-16)<2.2&&Math.abs(x)<14.5;if(!onWallLine)continue;wallChecked++;
 diff --git a/dev/tests/conquest-warscenery-captures.py b/dev/tests/conquest-warscenery-captures.py
-index 8f2d2fd..8f19de1 100644
+index 8f2d2fd..1560f4c 100644
 --- a/dev/tests/conquest-warscenery-captures.py
 +++ b/dev/tests/conquest-warscenery-captures.py
 @@ -1,18 +1,33 @@
  """Session 5E-2d2 captures: the Parasite structures and the war scenery in the real Conquest world: the four hives (each on
  its own seed) with their masts, the dormant portal and its open and suppressed looks, the nine LDF posts, the raid cover
 -walls. Shipped client (index.html, local economy); the tank is stood near each place and the camera turned to it.
-+walls, the raid spire (spire-<layout>: the style's raid-spire stood where the view stands a live raid's centrepiece, 45 m east
-+and 15 m south of the raid's site, beside that layout's cover walls) and the plasma battery (battery: the style's own, on the
++walls, the raid spire (spire-<layout>: the style's raid-spire stood where the view stands a live raid's centrepiece: the clear
++ground nearest to 45 m east and 15 m south of the raid's site, style.js S.raidSpireSpot) and the plasma battery (battery: the style's own, on the
 +flat south of the portal). Shipped client (index.html, local economy); the tank is stood near each place and the camera
 +turned to it. A subject is framed from a side with a clear line of sight (5E-2d2 critic round 2: three LDF posts were tiny or
 +hidden behind a lattice): after the world around it has streamed in, rays from each candidate camera spot to the subject
@@ -48,8 +66,8 @@ index 8f2d2fd..8f19de1 100644
    if a.clean:await page.add_style_tag(content='.cq-hud,.cq-top,.cq-toast,.cq-guide,.cq-ticker,#cq-ui,.cq-ui{visibility:hidden!important}')
 -  data=await page.evaluate('''()=>{const S=Conquest.view.style,C=ConquestCombat,W=ConquestWorld;return {ws:S.WAR_SCENERY||null,hives:C.installations.map(s=>({id:s.id,x:s.x,z:s.z+8})),cover:Object.values(W.raidObstacles.reduce((m,o)=>{(m[o.layout]=m[o.layout]||[]).push(o);return m;},{})).map(L=>({id:L[0].layout,x:L.reduce((n,o)=>n+o.x,0)/L.length,z:L.reduce((n,o)=>n+o.z,0)/L.length}))};}''')
 -  shots=[]
-+  data=await page.evaluate('''()=>{const v=Conquest.view,S=v.style,C=ConquestCombat,W=ConquestWorld,L={};for(const id of C.raidIds){const o=C.operations[id];if(!L[o.layout])L[o.layout]={id:o.layout,x:o.x+45,z:o.z+15};}
-+   return {ws:S.WAR_SCENERY||null,hives:C.installations.map(s=>({id:s.id,x:s.x,z:s.z+8})),spires:Object.values(L),cover:Object.values(W.raidObstacles.reduce((m,o)=>{(m[o.layout]=m[o.layout]||[]).push(o);return m;},{})).map(L=>({id:L[0].layout,x:L.reduce((n,o)=>n+o.x,0)/L.length,z:L.reduce((n,o)=>n+o.z,0)/L.length}))};}''')
++  data=await page.evaluate('''()=>{const v=Conquest.view,S=v.style,C=ConquestCombat,W=ConquestWorld,L={};for(const id of C.raidIds){const o=C.operations[id];if(!L[o.layout]){const sp=S.raidSpireSpot?S.raidSpireSpot(o.x+45,o.z+15):[o.x+45,o.z+15];L[o.layout]={id:o.layout,x:sp[0],z:sp[1]};}}
++   return {ws:S.WAR_SCENERY||null,hives:C.installations.map(s=>({id:s.id,x:s.x,z:s.z+8})),spires:Object.values(L),cover:Object.values(W.raidObstacles.reduce((m,o)=>{(m[o.layout]=m[o.layout]||[]).push(o);return m;},{})).map(L=>{const b=L.reduce((m,o)=>Math.max(o.width,o.depth)>Math.max(m.width,m.depth)?o:m);return {id:L[0].layout,x:b.x,z:b.z,top:b.height};})};}''')   # a layout's cover shot looks at its longest wall (5E-2d2 critic round 2: the middle of a layout's walls was open ground with a boulder on it)
 +  # a subject the world does not hold by itself: the raid spire (the view stands it only during a live raid, at the raid's site + (45, 15):
 +  # view.js raidArchitecture) and the plasma battery (a raid objective), stood by the style's own builders at a real spot
 +  STAND='''([kind,x,z])=>{const v=Conquest.view,S=v.style,W=ConquestWorld;for(const o of v.props.children.filter(o=>o.userData.captureSubject))v.props.remove(o);const g=kind==='spire'?S.raidSpire():S.battery();g.userData.captureSubject=true;g.position.set(x,W.groundAt(x,z),z);if(kind==='battery'&&g.userData.gun)g.userData.gun.rotation.y=.6;v.props.add(g);let n=0;g.traverse(m=>{if(m.isMesh&&m.geometry.index)n+=m.geometry.index.count/3;});return n;}'''
@@ -60,10 +78,10 @@ index 8f2d2fd..8f19de1 100644
 -  shots+=[('hive-'+hv['id'],hv['x'],hv['z'],44,.32,24,None) for hv in data['hives']];shots+=[('cover-'+c['id'],c['x'],c['z'],30,.4,22,None) for c in data['cover'][:3]]
 +   P=data['ws']['portal'];shots+=[('portal-'+st,P['x'],P['z'],38 if h>w else 34,.3,23,st,'cq-style-portal',15) for st in ['dormant','open','suppressed']];shots+=[('portal-far',P['x'],P['z'],70,.34,24,'dormant','cq-style-portal',15)]
 +   shots+=[('ldf-'+q['id'],q['x'],q['z'],17 if h>w else 15,.3,15 if h>w else 13,None,'cq-style-ldf-'+q['id'],11) for q in data['ws']['posts']]
-+   shots+=[('battery',P['x']-4,P['z']+34,20,.3,15,None,None,18)]
++   shots+=[('battery',P['x']-4,P['z']+34,27,.34,19,None,None,18)]
 +  shots+=[('hive-'+hv['id'],hv['x'],hv['z'],44,.32,24,None,None,0) for hv in data['hives']];shots+=[('cover-'+c['id'],c['x'],c['z'],30,.4,22,None,None,0) for c in data['cover'][:3]]
-+  shots+=[('cover-near-'+c['id'],c['x'],c['z'],19,.3,13,None,None,0) for c in data['cover'][:2]]   # close enough to judge the plates, the veins and the trophies
-+  shots+=[('spire-'+c['id'],c['x'],c['z'],15,.3,12,None,None,8) for c in data['spires'][:2]]
++  shots+=[('cover-near-'+c['id'],c['x'],c['z'],19,.3,13,None,None,c['top']) for c in data['cover']]   # close enough to judge the plates, the veins and the trophies
++  shots+=[('spire-'+c['id'],c['x'],c['z'],15,.3,12,None,None,8) for c in data['spires']]
    info={}
 -  for name,x,z,back,pitch,dist,st in shots:
 +  for name,x,z,back,pitch,dist,st,own,top in shots:
@@ -99,10 +117,10 @@ index 8f2d2fd..8f19de1 100644
 +ap.add_argument('--sharp',action='store_true');ap.add_argument('--shake',type=int,default=0)
  asyncio.run(main(ap.parse_args()))
 diff --git a/js/conquest/kit/parstruct.js b/js/conquest/kit/parstruct.js
-index e6ef63f..5107d10 100644
+index e6ef63f..919dfdb 100644
 --- a/js/conquest/kit/parstruct.js
 +++ b/js/conquest/kit/parstruct.js
-@@ -158,44 +158,62 @@ function fit(b,sx,sy,sz,fn){const T=b.k.T;b.st.push(new T.Matrix4().multiplyMatr
+@@ -158,44 +158,68 @@ function fit(b,sx,sy,sz,fn){const T=b.k.T;b.st.push(new T.Matrix4().multiplyMatr
  // ------------------------------------------------------------------ cover-wall ------------------------------------------
  // cover-wall (EXACT box o.w x o.h x o.d, default 18 x 5 x 3; all art inside the box, in plan and in height): a barricade
  // welded from plundered armour, the collision box of a raid obstacle, so it FILLS its box: a dark steel bulkhead between
@@ -157,10 +175,11 @@ index e6ef63f..5107d10 100644
 +      if(pi%3===1&&xb-xa>2.2){const pk=KINDS[(ki+3)%KINDS.length],px=xa+(xb-xa)*(.18+.2*hz(sd,pi+50)),pw=(xb-xa)*.46,py=h*(.16+.2*hz(sd,pi+60)),ph=h*.3;q.at(px+pw/2,py+ph/2,zc+p,0,r=>slab(r,-pw/2,pw/2,-ph/2,ph/2,ph/2,0,.05,plateMat(r,pk,ci+2),{bot:true}),0,(hz(sd,pi+80)-.5)*.3);}
 +      else if(rich||pi%2===0)q.detail(()=>{for(const [u2,v2] of [[.1,.9],[.9,.9]])tack(q,xa+(xb-xa)*u2,-.1+(Math.min(tl,tr)+.1)*v2,zc+p+.03,.09,P.weld);});}
 +     // the infection climbs the plate: a thick root out of the ground, kinked, with a fork (every other plate of a long face; LOW: flat strips)
-+     if(Lf>=8&&(pi%2===0||np<3)){const w=xb-xa,dir=hz(sd,pi+201)<.5?-1:1,xs=xa+w*(.3+.4*hz(sd,pi+200)),yt=Math.min(tl,tr)*(.55+.35*hz(sd,pi+202)),z=zc+p+.012,cl=x=>clamp(x,xa+.22,xb-.22),
-+       R=[[cl(xs),-sink*.35,z],[cl(xs+dir*w*.12),yt*.3,z],[cl(xs-dir*w*.1),yt*.64,z],[cl(xs+dir*w*.13),yt,z]];
++     if(Lf>=8&&(pi%2===0||np<3)){const w=xb-xa,dir=hz(sd,pi+201)<.5?-1:1,xs=xa+w*(.3+.4*hz(sd,pi+200)),yt=Math.min(tl,tr)*(.55+.35*hz(sd,pi+202)),z=zc+p+.012,cl=x=>clamp(x,xa+.22,xb-.22),kk=hi?1:.5,   // kk: LOW has no curve through the kinks, so they are half as wide (at full width the strips read as painted chevrons)
++       R=[[cl(xs),-sink*.35,z],[cl(xs+dir*w*.12*kk),yt*.3,z],[cl(xs-dir*w*.1*kk),yt*.64,z],[cl(xs+dir*w*.13*kk),yt,z]];
 +      if(hi){vein(q,R,.14,.04,{seg:2,up:[0,0,1],rise:.55});vein(q,[R[1],[cl(R[1][0]+dir*w*.2),R[1][1]+yt*.18,z],[cl(R[1][0]+dir*w*.3),R[1][1]+yt*.4,z]],.08,.03,{seg:2,up:[0,0,1],rise:.55});}
-+      else for(let j=1;j<R.length;j++){const A=R[j-1],B=R[j],wa=.13-.03*(j-1),wb=.13-.03*j;q.quad([A[0]-wa,A[1],z],[A[0]+wa,A[1],z],[B[0]+wb,B[1],z],[B[0]-wb,B[1],z],P.red,[A[0],A[1],z-9]);}}
++      else{for(let j=1;j<R.length;j++){const A=R[j-1],B=R[j],wa=.16-.04*(j-1),wb=.16-.04*j;q.quad([A[0]-wa,A[1],z],[A[0]+wa,A[1],z],[B[0]+wb,B[1],z],[B[0]-wb,B[1],z],P.red,[A[0],A[1],z-9]);}
++       const A=R[1],B=[cl(A[0]+dir*w*.26),A[1]+yt*.34,z];q.quad([A[0]-.09,A[1],z],[A[0]+.09,A[1],z],[B[0]+.03,B[1],z],[B[0]-.03,B[1],z],P.red,[A[0],A[1],z-9]);}}   // LOW: a wider tapered strip and its fork (a root, not a line)
       pi++;}
 -    // the infection in the seams: a thin vein between two plates, kinked like a root
 -    for(let k=1;k<np;k++){const x=X[k],y1=Math.min(tops[k-1],tops[k])-.15,z=zc+.04,w=hi?.055:.075,K=hi?[[0,-.2],[.04,.33],[-.035,.68],[.02,1]]:[[0,-.2],[0,1]];
@@ -180,6 +199,11 @@ index e6ef63f..5107d10 100644
 -   b.quad([fx-fw/2,top+.02,fz-REC-.5],[fx+fw/2,top+.02,fz-REC-.5],[fx+fw/2,top+.02,fz],[fx-fw/2,top+.02,fz],fm,[fx,top-9,fz]);
 -   b.quad([fx-fw/2,top+.02,fz],[fx+fw/2,top+.02,fz],[fx+fw/2,top-h*.42,fz],[fx-fw/2,top-h*.36,fz],fm,[fx,top,fz-9]);
 -   if(hi)b.quad([fx-fw/2,top-h*.12,fz+.012],[fx+fw/2,top-h*.12,fz+.012],[fx+fw/2,top-h*.22,fz+.012],[fx-fw/2,top-h*.2,fz+.012],fm===P.flagLDF?P.flagLDF2:P.strap,[fx,top,fz-9]);}
++   // the growth swells up through the wall (5E-2d2 critic round 2: "human wreckage the infection grows through"; the roots alone read as
++   // paint on a steel wall): bulbs split by glowing fissures sit on the bulkhead behind the parapet and show over every plate that
++   // stops short. Inside the box: under its top, within the bulkhead's width.
++   {const nb=hi&&L>=14?2:1,rb=Math.min((T-2*REC)/2-.14,(lip-.1)/1.45,.95);for(let k=0;k<nb;k++){const x=(L/2-PW-1.4)*(nb===1?(hz(sd,180)-.5)*1.2:(k?1:-1)*(.3+.5*hz(sd,181+k))),z=(T-2*REC-2*rb*1.16)*(hz(sd,184+k)-.5)*.8;
++     bulb(b,x,top-.1,z,rb*(k?.86:1),sd+k*5+2,{sy:1.25,na:hi?8:6,nr:hi?4:3,lob:.14,pole:.6});}}
 +   // trophies: a looted flag on a rail over one long face, a captured LDF shield hung askew on the other
 +   const sg=hz(sd,160)<.5?-1:1,fx=(L/2-PW-1.5)*sg*(.3+.5*hz(sd,161)),fz=T/2-.05,ldf=hz(sd,162)<.5,fm=ldf?P.flagLDF:P.flagSet[(hz(sd,163)*5)|0],fw=Math.min(2.2,L*.16),fy=HT-.04;
 +   flag(b,[fx-fw/2,fy,fz],[fx+fw/2,fy,fz],h*.46,fm,ldf?P.flagLDF2:P.strap);
@@ -190,7 +214,7 @@ index e6ef63f..5107d10 100644
   });
  },{aoH:4,aoMin:.55});
  // a frame at angle a (from +x toward +z) and radius r whose +z looks outward; rx < 0 leans its top inward
-@@ -218,6 +236,8 @@ function dish(b,c,d,r,m,m2){const n=b.hi?8:6,u=Math.abs(d[1])>.9?[1,0,0]:[0,1,0]
+@@ -218,6 +242,8 @@ function dish(b,c,d,r,m,m2){const n=b.hi?8:6,u=Math.abs(d[1])>.9?[1,0,0]:[0,1,0]
  // flank and a visor plate, an ammunition bustle with strapped loot, a whip aerial with a pennant, and the infection
  // swelling out of the breech between the guns: a growth split by glowing fissures, veins running out along both barrels,
  // red light in the cheek vents.
@@ -199,7 +223,7 @@ index e6ef63f..5107d10 100644
  // o.part: undefined = the whole battery; 'base' = everything that does not turn (nothing above y = 5.3: the head's place
  // is free); 'gun' = the turning head alone in its own frame, the pivot at the origin, the barrels toward +z (muzzles at
  // z = 2.85; the head keeps inside r 2.6 of the pivot apart from the barrels). In the whole model the pivot is at y = 6.6.
-@@ -243,7 +263,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
+@@ -243,7 +269,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
    // the infection: veins from the ground up between the plates to the turret ring, swollen where they grip the column
    [H2+.66,H2+1.92,H2+3.12,H2+4.4,H2+5.66].forEach((a,k)=>{if(!hi&&k%2)return;const tw=k%2?-.7:.75,C=(t,r,y)=>{const q=a+tw*t+.16*Math.sin(t*9+k*2);return [Math.cos(q)*r,y,Math.sin(q)*r];},c=Math.cos(a),s=Math.sin(a);
     vein(b,[[c*3.02,-.3,s*2.6],[c*2.8,.36,s*2.4],C(-.12,2.3,.5),C(.06,1.92,.62),C(-.05,1.9,1.3),C(.1,1.36,1.74),C(.3,1.3,2.5),C(.55,1.29,3.3),C(.8,1.28,4.1),C(1,1.27,4.72)],.16,.05,{seg:hi?2:1});
@@ -208,7 +232,7 @@ index e6ef63f..5107d10 100644
    if(hi)b.pool(0,.1,0,3.4,3,RED,.1);
   };
   const gun=()=>{const EL=.73,TY=.1,TZ=-.45,n8=hi?8:5;   // the cradle's elevation (42 degrees: the guns point at the sky) and the trunnion axis (y, z)
-@@ -261,7 +281,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
+@@ -261,7 +287,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
      for(let i=0;i<n8;i++){const a0=i/n8*TAU,a1=(i+1)/n8*TAU;T3(q,[x,y,zm-.03],[x+Math.cos(a0)*.25,y+Math.sin(a0)*.25,zm-.03],[x+Math.cos(a1)*.25,y+Math.sin(a1)*.25,zm-.03],P.weld,[x,y,0]);}   // the dark bore
      if(hi)for(const z of [.56,zj-.1])q.tube([x,y,z],[x,y,z+.08],.29,P.ironD,{n:8});});
     q.part();qb(q,0,-.37,2.5,1.5,.14,.1,P.ironD);qb(q,0,.23,2.5,.72,.14,.1,P.ironD);qb(q,0,-.42,2.5,.14,.84,.1,P.ironD);
@@ -217,7 +241,7 @@ index e6ef63f..5107d10 100644
    // over-armour: two mismatched stolen plates bolted in front of the yoke as a gun shield, the guns in the gap between them
    b.at(-1.72,-.98,.62,0,q=>{slab(q,-.66,.66,0,2.5,2.15,0,.14,P.plateMil,{bot:true,back:true});if(hi){dress(q,'mil',-.66,.66,.1,2.1,.17,0);q.detail(()=>{for(const [u,v] of [[-.5,2.0],[.5,1.85],[-.5,.25],[.5,.25]])tack(q,u,v,.175,.08,P.gold);});}},-.16,.05);
    b.at(1.66,-.9,.7,0,q=>{slab(q,-.62,.62,0,1.55,1.9,0,.14,P.hazard,{bot:true,back:true});bars(q,-.58,.58,.08,1.5,.17,2,P.hazardD);if(hi)q.detail(()=>{for(const [u,v] of [[-.45,1.3],[.45,1.6]])tack(q,u,v,.175,.08,P.weld);});},-.22,-.08);
-@@ -271,7 +291,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
+@@ -271,7 +297,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
    b.tube([-.8,-1,-2.02],[-1,3.4,-2.2],.03,P.ironL,{n:3,r2:.015});for(const sg of [1,-1])T3(b,[-.99,3.3,-2.2],[-.97,2.75,-2.19],[-.2,3.05,-2.25],P.flagSet[3],[-.6,3,-2.2+9*sg]);
    // the infection: the growth swells out from under the breech, between the yoke's legs, split by glowing fissures; thick
    // roots climb the front legs to the trunnions and one runs out under the guns. The only glow on the head.
@@ -226,7 +250,7 @@ index e6ef63f..5107d10 100644
    for(const sx of [-1,1]){if(!hi&&sx>0)continue;vein(b,[[sx*.55,-.86,-.2],[sx*1.0,-.98,.34],[sx*1.3,-.5,.12],[sx*1.3,-.05,-.2],[sx*1.32,.42,-.42]],.1,.04,{seg:hi?2:1});}
    if(hi){vein(b,[[.1,-.5,-.2],[.2,-.2,.16],[.3,.12,.5],[.46,.36,1.1]],.09,.035,{seg:2});b.halo(0,-.5,-.6,1,RED,.1);}
   };
-@@ -284,16 +304,28 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
+@@ -284,16 +310,28 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
  // driven into a rusty collar; the growth sac swelling around the drill string inside the legs, split by glowing fissures,
  // a root mound where it enters the ground, veins running down the legs and out across the ground to the edge of the box;
  // a looted crate pile, a stolen LDF flag hung from a brace and the raiders' own black flag at the top (7.3 m).
@@ -241,7 +265,8 @@ index e6ef63f..5107d10 100644
  WK.model('raid-spire',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0;
   fit(b,o.w/8.8,o.h/7.4,o.d/7.6,()=>{const FEET=[[0,3.1],[-2.78,-1.72],[2.78,-1.72]],TOPY=5.35,leg=(k,t)=>[FEET[k][0]*(1-.9*t),.14+(TOPY-.14)*t,FEET[k][1]*(1-.9*t)];
    // the tripod: foot plates staked down, girder legs, braces
-   FEET.forEach(([fx,fz],k)=>{const a=Math.atan2(fz,fx);b.part();b.at(fx,0,fz,-a+Math.PI/2,q=>{qb(q,0,-.5,0,1.0,.64,1.0,P.ironD,'b');
+-  FEET.forEach(([fx,fz],k)=>{const a=Math.atan2(fz,fx);b.part();b.at(fx,0,fz,-a+Math.PI/2,q=>{qb(q,0,-.5,0,1.0,.64,1.0,P.ironD,'b');
++  FEET.forEach(([fx,fz],k)=>{const a=Math.atan2(fz,fx);b.part();b.at(fx,0,fz,-a+Math.PI/2,q=>{qb(q,0,-.5,0,1.0,.64,1.0,P.ironD,'b');qb(q,0,-4,0,.56,3.5,.56,P.iron,'tb');   // a pile under each foot (5E-2d2 critic round 2: two raid layouts stand it on a slope, and its downhill foot hung in the air)
      if(hi){qb(q,0,.14,.38,1.0,.05,.2,P.hazard,'b');for(const sx of [-1,1])q.tube([sx*.36,.5,.3],[sx*.3,-.3,.36],.045,P.ironL,{n:3});q.loft([{p:b.k.rect(.5,.5,0,0,-.05),y:.14},{p:b.k.rect(.34,.3,0,0,-.2),y:.62}],P.iron,{top:false});}});
 -   beam(b,leg(k,0),leg(k,1),.36,.3,i=>i%2?P.ironL:P.iron,{w2:.26,d2:.22});
 +   beam(b,leg(k,0),leg(k,.56),.36,.3,i=>i%2?P.ironL:P.iron,{w2:.3,d2:.26});beam(b,leg(k,.56),leg(k,1),.3,.26,i=>i%2?P.hazardD:P.hazard,{w2:.26,d2:.22});   // the upper half still in its hazard paint (round 2)
@@ -257,7 +282,7 @@ index e6ef63f..5107d10 100644
    if(hi){for(const sx of [-1,1])qb(b,sx*.6,TOPY+.3,0,.08,.66,.5,P.iron,'b');b.cyl(0,TOPY+.9,0,.2,.12,P.gold,{n:6});b.cyl(0,TOPY+1.4,0,.2,.07,P.ironD,{n:6});
     for(let k=0;k<3;k++){const a=k*TAU/3+.4;b.tube([Math.cos(a)*.2,TOPY+1.0,Math.sin(a)*.2],[Math.cos(a)*.2,TOPY+1.42,Math.sin(a)*.2],.02,P.ironL,{n:3});}}
    b.cyl(0,TOPY+1.02,0,.13,.36,P.red,{n:hi?6:4,top:!hi});b.halo(0,TOPY+1.2,0,.9,RED,.4);
-@@ -305,7 +337,7 @@ WK.model('raid-spire',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0
+@@ -305,7 +343,7 @@ WK.model('raid-spire',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0
    // the growth: the sac round the drill string (fissures on its flanks), a root mound at the collar
    const SC=[0,2.9,0],S=mass(b,SC,[1.36,1.66,1.3],sd+3,{na:hi?14:8,nr:hi?8:4,lob:.2});mass(b,[0,-.1,0],[1.55,.95,1.45],sd+5,{na:hi?12:8,nr:hi?4:2,t0:.5,lob:.22});
    const up=p=>{const x=p[0]-SC[0],y=(p[1]-SC[1])*.7,z=p[2]-SC[2],l=Math.hypot(x,y,z)||1;return [x/l,y/l,z/l];};
@@ -267,7 +292,7 @@ index e6ef63f..5107d10 100644
    // veins down the legs and out over the ground to the edge of the box
    FEET.forEach(([fx,fz],k)=>{const pts=[S(Math.atan2(fz,fx),.6,1)],n=hi?6:3;for(let j=0;j<=n;j++){const t=.5-.5*j/n,p=leg(k,t),a=j*1.25+k*2;pts.push([p[0]+Math.cos(a)*.22,p[1]+.05,p[2]+Math.sin(a)*.22]);}vein(b,pts,.11,.06,{seg:hi?2:1,open:true});
 diff --git a/js/conquest/kit/warmodels.js b/js/conquest/kit/warmodels.js
-index df08e9e..c3c779b 100644
+index df08e9e..914deb8 100644
 --- a/js/conquest/kit/warmodels.js
 +++ b/js/conquest/kit/warmodels.js
 @@ -263,12 +263,19 @@ WK.model('par-shuttle',shuttle,{aoH:1.6,aoMin:.72});
@@ -395,7 +420,7 @@ index df08e9e..c3c779b 100644
 +function ldfPost(b,o){const K=b.k,{mat,rect}=K,T=K.T,M=K.pal.mil,hi=b.hi,sd=(o.seed|0)||1,V=(ldfV(sd)+9)%9,mir=ldfMir(sd),PY=LDF.padY,D=Math.PI/180,
 +  bagM=mat(0xb3a982,'cloth',0,.12),bagD=mat(0x968c68,'cloth',0,.12),WH=0xe8f6ff,CY=0x22e6ff,
 +  BL=mat(0x2f6fd6,'paint',.25),BLd=mat(0x1c4594,'paint',.3),BLl=mat(0x6aa6f2,'paint',.15),WP=mat(0xdde5ee,'paint',.25),flB=mat(0x2f7fe6,'cloth',0),flW=mat(0xe9f0f7,'cloth',0),cv=mat(0xd6dde4,'cloth',0,.05),cvD=mat(0xaab4be,'cloth',0,.05),   // the LDF's blue and white (round 2)
-+  
++  BLc=mat(0x2f6fd6,'paint',0),   // the same blue with no wear, for one big flat face (5E-2d2 critic round 2: the radar's 3.8 m back showed the paint's wear as one rust-red blotch, which read as blood or infection on a human post)
    R=(w,d,y,ch=.14,cx=0,cz=0)=>({p:rect(w,d,hi?ch:0,cx,cz),y}),put=(x,z,ry,fn)=>b.at(mir*x,PY,z,mir*ry,fn),fly=s=>s*mir>0?0:Math.PI;   // fly(s): the yaw that sends a flag toward world x = s (mirrored with the layout)
   // ---- the pad ----
 - b.loft([{p:rect(7.8,7.8,1.3),y:-.5},{p:rect(7.8,7.8,1.3),y:.1},{p:rect(7.5,7.5,1.2),y:PY}],r=>r?M.trim:M.hull2,{topMat:M.conc});
@@ -566,7 +591,7 @@ index df08e9e..c3c779b 100644
 + const radar=q=>{hut(q,2.5,2,1.35);q.cyl(0,1.67,0,.3,1.05,M.trim,{n:hi?8:5,r2:.22,top:false});if(hi)q.cyl(0,1.67,0,.46,.18,M.hull,{n:8});
 +  q.at(0,2.72,0,.45,y=>{qb(y,0,0,-.1,1,.3,.6,M.hull2,'');
 +   y.at(0,.3,0,0,d=>{const W=1.9,H=2.1,ns=hi?6:4,zq=x=>.17*x*x-.5;
-+    for(let i=0;i<ns;i++){const x0=-W+i*2*W/ns,x1=x0+2*W/ns,z0=zq(x0),z1=zq(x1);face(d,[[x0,0,z0],[x1,0,z1],[x1,H,z1],[x0,H,z0]],i%2?WP:M.plate,[0,H/2,-9]);face(d,[[x0,0,z0-.05],[x1,0,z1-.05],[x1,H,z1-.05],[x0,H,z0-.05]],BL,[0,H/2,9]);
++    for(let i=0;i<ns;i++){const x0=-W+i*2*W/ns,x1=x0+2*W/ns,z0=zq(x0),z1=zq(x1);face(d,[[x0,0,z0],[x1,0,z1],[x1,H,z1],[x0,H,z0]],i%2?WP:M.plate,[0,H/2,-9]);face(d,[[x0,0,z0-.05],[x1,0,z1-.05],[x1,H,z1-.05],[x0,H,z0-.05]],BLc,[0,H/2,9]);
 +     if(hi&&i)d.tube([x0,0,z0-.04],[x0,H,z0-.04],.035,BLd,{n:3});}
 +    d.tube([-W,H*.5,zq(W)-.12],[W,H*.5,zq(W)-.12],.05,M.trim,{n:3});d.tube([0,.1,zq(0)],[0,H*.5,1.25],.035,M.bare,{n:3});d.gem(0,H*.5,1.3,.1,.1,.14,M.cyan);d.halo(0,H*.5,1.3,.7,CY,.4);},-.14);});};
 + // 5 the heavy gun: a faceted blue gun house on a wide turntable, a long barrel raised over the shields; its shells stand racked beside it
@@ -636,10 +661,21 @@ index f3c4cc7..038201f 100644
   // ---- the four consumables (the 64 px HUD / drop icons are rendered from these: dev/tests/conquest-item-sprites.py) ----
   'item-repair':S('prop','Repair Kit',[1.1,.9,.8],'none'),
 diff --git a/js/conquest/style.js b/js/conquest/style.js
-index 0a26b83..d2ff400 100644
+index 0a26b83..89968de 100644
 --- a/js/conquest/style.js
 +++ b/js/conquest/style.js
-@@ -937,19 +937,50 @@ function create(T,opts={}){
+@@ -930,29 +930,71 @@ function create(T,opts={}){
+   X.decal(cx,cz,15,12,0,AT.BLOB,[0,0,0],.6,low?6:10,.12);X.decal(cx,cz,21,18,0,AT.BLOB,E(PAR.red,.35),0,low?6:10,.16);}
+  S.installations=()=>F.installations.map(inst=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);hive(tk,X,inst);const g=kdone(pair(Sb,X),tk);g.name='cq-style-hive-'+inst.id;g.userData.site={x:inst.solid.x,z:inst.solid.z,range:1100};return g;});
+  S.cover=()=>{const groups=new Map();for(const o of F.obstacles){let e=groups.get(o.layout);if(!e){e={Sb:new Bld(),X:new Fx(),x:0,z:0,n:0};e.tk=kt(e.Sb,e.X);groups.set(o.layout,e);}coverWall(e.tk,e.X,o);e.x+=o.x;e.z+=o.z;e.n++;}
+-  return [...groups.entries()].map(([layout,e])=>{const g=kdone(pair(e.Sb,e.X),e.tk);g.name='cq-style-cover-'+layout;g.userData.site={x:e.x/e.n,z:e.z/e.n,range:900};return g;});};
++  // 5E-2d2 critic round 2: the walls are lit as the Parasite machines are (MAT.par: the same program with the Parasites' own warm light;
++  // no new program, no extra draw). Under the Moon's light a wall's shaded side was a black and teal block on LOW (the night sky's blue
++  // on tan and ochre plates) and one flat dark red on HIGH: its plundered plates lost their colours exactly where a pilot takes cover.
++  return [...groups.entries()].map(([layout,e])=>{const g=kdone(pair(e.Sb,e.X),e.tk);g.children[0].material=MAT.par;g.name='cq-style-cover-'+layout;g.userData.site={x:e.x/e.n,z:e.z/e.n,range:900};return g;});};
+  // ---------- the portal gate and the LDF posts (Session 5E-2d2; owner, Nov 21): SCENERY ONLY until the Living Front's visual
+  // session makes them active (ConquestWar.portalOf / ldfPosts). No collision, no layout change: every spot is open ground
+  // beside a military place (found by a search for flat ground clear of solids, roads, lots, fields, water and forest; the test
   // conquest-style.mjs checks each one), and a tank may pass through them like through every other dressing prop.
   //   the portal: dormant (a low red glow, no effect) on the flat west of the OXYGEN SPEAR hive, its face toward the Refuge
   //   the posts: the Refuge, the oxygen complex, both ends of the viaduct, the Command Base approach, the frontier wall and
@@ -695,8 +731,20 @@ index 0a26b83..d2ff400 100644
 +   out.push(g);});
    return out;};
   // Raid-only Parasite spire (decor where the live build places raid art): the kit's raid-spire, a growth nest on scavenged steel.
-  S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});return kdone(pair(Sb,X),tk);};
-@@ -1150,7 +1181,8 @@ function create(T,opts={}){
+- S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});return kdone(pair(Sb,X),tk);};
++ S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});const g=kdone(pair(Sb,X),tk);g.children[0].material=MAT.par;return g;};   // lit as the Parasite machines are, like the cover walls beside it (5E-2d2 critic round 2)
++ // Where a raid's spire is drawn (5E-2d2 critic round 2: the critic could not find the spire; in 4 of the 25 raids its spot, the raid's
++ // site + (45, 15), is inside a boulder and only its lamp showed): the nearest spot to (x, z) with 4.6 m of clear ground around it
++ // (no rock or structure, no cover wall, no water), the nearest and most level of the spots on rings 4 m apart; (x, z) itself where it is clear, so the other 21 raids
++ // are unchanged. Decor only: nothing collides with the spire, here as there.
++ S.raidSpireSpot=(x,z)=>{const W=root.ConquestWorld,ok=(px,pz)=>{for(let a=0;a<9;a++){const r=a?4.6:0,qx=px+Math.cos(a*TAU/8)*r,qz=pz+Math.sin(a*TAU/8)*r;if(W.solidAt(qx,qz)||W.raidSolidAt(qx,qz)||W.waterAt(qx,qz))return false;}return true;};
++  if(ok(x,z))return [x,z];let best=[x,z],bc=1e9;for(let r=4;r<=28;r+=4)for(let a=0;a<8;a++){const px=x+Math.cos(a*TAU/8)*r,pz=z+Math.sin(a*TAU/8)*r;if(!ok(px,pz))continue;
++   let lo=1e9,hi=-1e9;for(const [dx,dz] of [[0,0],[3.2,0],[-3.2,0],[0,3.2],[0,-3.2]]){const g=W.groundAt(px+dx,pz+dz);lo=Math.min(lo,g);hi=Math.max(hi,g);}const c=r+3*(hi-lo);if(c<bc){bc=c;best=[px,pz];}}   // near, and on the most level ground there (its tripod spans 6 m)
++  return best;};
+  // Blender-authored GLB (constrained parser) adopted into the style: per-mesh PBR factors become vertex colour + emission.
+  S.adopt=group=>{group.traverse(o=>{if(!o.isMesh||o.material===MAT.solid)return;const geo=o.geometry,m=o.material;if(!geo.attributes.aCol){const n=geo.attributes.position.count,a=new Float32Array(n*4),c=m.color||new T.Color(1,1,1),e=m.emissive||new T.Color(0,0,0),em=Math.max(e.r,e.g,e.b);
+    geo.computeBoundingBox();const y0=geo.boundingBox.min.y,h=Math.max(.01,geo.boundingBox.max.y-y0),p=geo.attributes.position;
+@@ -1150,7 +1192,8 @@ function create(T,opts={}){
     const b=Math.round(255*Math.min(1,Math.max(0,U.uAtmo.value))),d=guestAtmo.image.data;if(d[0]!==b){d[0]=d[1]=d[2]=b;guestAtmo.needsUpdate=true;}U.uShadowMap.value=guestNoShadow;U.uAtmoMap.value=guestAtmo;}
    else{if(!gSave.on)return;gSave.on=false;U.uShadowMap.value=gSave.sh;U.uAtmoMap.value=gSave.at;U.uSite.value.forEach((v,i)=>v.copy(gSave.sites[i]));}};
   S.atmoApply=(scene,near,far)=>{const k=U.uAtmo.value;if(!scene.fog)scene.fog=new T.Fog(0,near,far);scene.fog.color.copy(nightFog).lerp(dayFog,k);scene.fog.near=near*(1-.55*k);scene.fog.far=far*(1-.45*k);if(!scene.background)scene.background=new T.Color(0);scene.background.setRGB(.36*k,.27*k,.19*k);return k;};
@@ -706,3 +754,16 @@ index 0a26b83..d2ff400 100644
    const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)*100003+Math.round(p.z/32);if(siteKey.k===k&&siteKey.t===terr)return;siteKey.k=k;siteKey.t=terr;
    const list=allSites(F,terr).map(s=>[s,Math.hypot(s[0]-p.x,s[1]-p.z)-s[2]]).sort((a,b)=>a[1]-b[1]).slice(0,8);for(let i=0;i<8;i++){const s=list[i]?.[0];U.uSite.value[i].set(s?s[0]:0,s?s[1]:0,s?s[2]:0,s?s[3]:0);}};
   // HIGH shading can drop to the LOW branch at runtime (adaptive quality, LOW setting): same programs, no recompile.
+diff --git a/js/conquest/view.js b/js/conquest/view.js
+index 8dc47c7..3487aa5 100644
+--- a/js/conquest/view.js
++++ b/js/conquest/view.js
+@@ -303,7 +303,7 @@ class View {
+  fireSignature(B,ox,oz){const id=this.authority?.state?.cosmetics?.equipped?.trail,item=root.ConquestCatalog?.byId[id];if(!this.signatureMeshes)this.signatureMeshes=[];const shots=item?(B.projectiles||[]).filter(p=>p.team==='player').slice(0,8):[];for(let i=0;i<Math.max(shots.length,this.signatureMeshes.length);i++){let g=this.signatureMeshes[i];if(!g&&shots[i]){g=new this.T.Mesh(this.cylinder,this.effectMaterial(item.accent,true));this.scene.add(g);this.signatureMeshes.push(g);}if(!g)continue;const p=shots[i];g.visible=!!p;if(p){const d=Math.hypot(p.vx,p.vy,p.vz)||1,tail=1.4+item.design*.35;g.material=this.effectMaterial(item.accent,true);g.position.set(p.x-ox-p.vx/d*tail,p.y-p.vy/d*tail,p.z-oz-p.vz/d*tail);const axis=new this.T.Vector3(p.vx,p.vy,p.vz).normalize();g.quaternion.setFromUnitVectors(new this.T.Vector3(0,1,0),axis);g.scale.set(.05+item.design*.015,tail*1.6,.05+item.design*.015);}}}
+  warMonument(s,ox,oz){const m=s?.warfront?.monument;if(!m?.unlocked){if(this.monument)this.monument.visible=false;return;}if(!this.monument){const g=this.monument=new this.T.Group();this.form(g,this.cylinder,0,1,0,6,2,6,0x526774);this.cube(g,0,8,0,3,14,3,0xbccacf);this.form(g,this.cone,0,17,0,4,5,4,0xe2c586);for(const x of [-5,5])this.cube(g,x,4,0,1,8,2,0x8bded4);this.mergeArchitecture(g);this.scene.add(g);}this.monument.visible=Math.hypot(m.x-this.p.x,m.z-this.p.z)<350;this.monument.position.set(m.x-ox,W.groundAt(m.x,m.z),m.z-oz);}
+  raidArchitecture(B,ox,oz){const key=B.operation?.raid?B.operation.layout+':'+root.ConquestAssets?.status.state+':'+!!this.autoLow+':'+(typeof gfxMode==='function'?gfxMode():'auto'):null;if(key!==this.raidArtKey){this.raidArtKey=key;this.keepPrograms();if(this.raidArt){this.scene.remove(this.raidArt);this.raidArt.traverse(o=>{if(o.geometry&&!o.geometry.userData.hfShared&&!this.shared.includes(o.geometry))o.geometry.dispose();});}this.raidArt=null;if(key){const asset=root.ConquestAssets?.make(this.T,'raid',this.autoLow||typeof gfxMode==='function'&&gfxMode()==='low'?'low':'high');if(this.style)this.raidArt=this.style.raidSpire();   /* Session 5E-2d2 (owner, Nov 21): the raid's centrepiece is the kit's raid-spire, a growth nest on scavenged steel; the Blender raid art was the old alien crystal spire and is drawn only by the pre-style fallback now */
+-  else if(asset)this.raidArt=asset;else{this.raidArt=new this.T.Group();this.cube(this.raidArt,0,4,0,12,8,10,0x493e4f);this.form(this.raidArt,this.cone,0,10,0,9,5,7,0x76414a);this.mergeArchitecture(this.raidArt);}this.scene.add(this.raidArt);}}if(this.raidArt){const o=B.operation;this.raidArt.position.set(o.x-ox+45,W.groundAt(o.x+45,o.z+15),o.z-oz+15);}}
++  else if(asset)this.raidArt=asset;else{this.raidArt=new this.T.Group();this.cube(this.raidArt,0,4,0,12,8,10,0x493e4f);this.form(this.raidArt,this.cone,0,10,0,9,5,7,0x76414a);this.mergeArchitecture(this.raidArt);}this.scene.add(this.raidArt);}}if(this.raidArt){const o=B.operation,U=this.raidArt.userData,sp=U.spotX===o.x&&U.spotZ===o.z?U.spot:(U.spotX=o.x,U.spotZ=o.z,U.spot=this.style?.raidSpireSpot?this.style.raidSpireSpot(o.x+45,o.z+15):[o.x+45,o.z+15]);this.raidArt.position.set(sp[0]-ox,W.groundAt(sp[0],sp[1]),sp[1]-oz);}}   /* 5E-2d2 critic round 2: the spire stands on the nearest clear ground to its spot (it was inside a boulder in 4 of the 25 raids: style.js S.raidSpireSpot); decor, no collision, as before */
+  hazardRender(B,ox,oz){if(!this.hazardMeshes)this.hazardMeshes=[];if(!this.hazardGeometry){this.hazardGeometry=new this.T.RingGeometry(.88,1,32);this.shared.push(this.hazardGeometry);}const hazards=B.hazards||[];for(let i=0;i<Math.max(hazards.length,this.hazardMeshes.length);i++){let g=this.hazardMeshes[i];if(!g&&hazards[i]){g=new this.T.Group();const ring=new this.T.Mesh(this.hazardGeometry,this.effectMaterial(0xffab69));ring.rotation.x=-Math.PI/2;g.add(ring);this.cube(g,0,1,0,.3,2,.3,0xffe5b0);this.scene.add(g);this.hazardMeshes.push(g);}if(!g)continue;const h=hazards[i];g.visible=!!h;if(h){g.position.set(h.x-ox,h.y+.12,h.z-oz);g.children[0].scale.setScalar(h.radius);g.children[0].material=this.effectMaterial(h.kind==='plasma'?0xd78aff:h.kind==='drone'?0xb6ed92:h.kind==='drop'?0xff5f6b:0xffa36d);g.children[1].scale.y=Math.max(.1,h.remaining);}}}
+  mergeArchitecture(group){const positions=[],normals=[],colors=[],indices=[];group.updateWorldMatrix(true,true);const inverse=new this.T.Matrix4().copy(group.matrixWorld).invert();group.traverse(o=>{if(!o.isMesh)return;const g=o.geometry.clone().applyMatrix4(new this.T.Matrix4().multiplyMatrices(inverse,o.matrixWorld)),a=g.attributes.position,b=g.attributes.normal,offset=positions.length/3,c=o.material.color;for(let i=0;i<a.count;i++){positions.push(a.getX(i),a.getY(i),a.getZ(i));normals.push(b.getX(i),b.getY(i),b.getZ(i));const vc=g.attributes.color;colors.push(vc?vc.getX(i)*c.r:c.r,vc?vc.getY(i)*c.g:c.g,vc?vc.getZ(i)*c.b:c.b);}const ix=g.index?g.index.array:Array.from({length:a.count},(_,i)=>i);for(const i of ix)indices.push(i+offset);g.dispose();if(!this.shared.includes(o.geometry)&&!o.geometry.userData.hfShared)o.geometry.dispose();});const geo=new this.T.BufferGeometry();for(const [k,a] of [['position',positions],['normal',normals],['color',colors]])geo.setAttribute(k,new this.T.Float32BufferAttribute(a,3));geo.setIndex(indices);group.clear();group.add(new this.T.Mesh(geo,this.archMaterial));}
+  effectMaterial(color,halo=false){const key='fx'+color+halo;return this.materials[key]||(this.materials[key]=new this.T.MeshBasicMaterial({color,transparent:halo,opacity:halo?.3:1,depthWrite:!halo}));}
