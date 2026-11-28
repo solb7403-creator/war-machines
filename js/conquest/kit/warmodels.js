@@ -369,7 +369,7 @@ const LDF={size:[8,12,8],variants:9,padY:.22,mast:[-2.85,-2.85],lightY:10.1},ldf
 function ldfPost(b,o){const K=b.k,{mat,rect}=K,T=K.T,M=K.pal.mil,hi=b.hi,sd=(o.seed|0)||1,V=(ldfV(sd)+9)%9,mir=ldfMir(sd),PY=LDF.padY,D=Math.PI/180,
   bagM=mat(0xb3a982,'cloth',0,.12),bagD=mat(0x968c68,'cloth',0,.12),WH=0xe8f6ff,CY=0x22e6ff,
   BL=mat(0x2f6fd6,'paint',.25),BLd=mat(0x1c4594,'paint',.3),BLl=mat(0x6aa6f2,'paint',.15),WP=mat(0xdde5ee,'paint',.25),flB=mat(0x2f7fe6,'cloth',0),flW=mat(0xe9f0f7,'cloth',0),cv=mat(0xd6dde4,'cloth',0,.05),cvD=mat(0xaab4be,'cloth',0,.05),   // the LDF's blue and white (round 2)
-  
+  BLc=mat(0x2f6fd6,'paint',0),   // the same blue with no wear, for one big flat face (5E-2d2 critic round 2: the radar's 3.8 m back showed the paint's wear as one rust-red blotch, which read as blood or infection on a human post)
   R=(w,d,y,ch=.14,cx=0,cz=0)=>({p:rect(w,d,hi?ch:0,cx,cz),y}),put=(x,z,ry,fn)=>b.at(mir*x,PY,z,mir*ry,fn),fly=s=>s*mir>0?0:Math.PI;   // fly(s): the yaw that sends a flag toward world x = s (mirrored with the layout)
  // ---- the pad ----
  b.loft([{p:rect(7.8,7.8,1.3),y:-.5},{p:rect(7.8,7.8,1.3),y:.1},{p:rect(7.5,7.5,1.2),y:PY}],r=>r?BLd:M.hull2,{topMat:M.conc});
@@ -472,7 +472,7 @@ function ldfPost(b,o){const K=b.k,{mat,rect}=K,T=K.T,M=K.pal.mil,hi=b.hi,sd=(o.s
  const radar=q=>{hut(q,2.5,2,1.35);q.cyl(0,1.67,0,.3,1.05,M.trim,{n:hi?8:5,r2:.22,top:false});if(hi)q.cyl(0,1.67,0,.46,.18,M.hull,{n:8});
   q.at(0,2.72,0,.45,y=>{qb(y,0,0,-.1,1,.3,.6,M.hull2,'');
    y.at(0,.3,0,0,d=>{const W=1.9,H=2.1,ns=hi?6:4,zq=x=>.17*x*x-.5;
-    for(let i=0;i<ns;i++){const x0=-W+i*2*W/ns,x1=x0+2*W/ns,z0=zq(x0),z1=zq(x1);face(d,[[x0,0,z0],[x1,0,z1],[x1,H,z1],[x0,H,z0]],i%2?WP:M.plate,[0,H/2,-9]);face(d,[[x0,0,z0-.05],[x1,0,z1-.05],[x1,H,z1-.05],[x0,H,z0-.05]],BL,[0,H/2,9]);
+    for(let i=0;i<ns;i++){const x0=-W+i*2*W/ns,x1=x0+2*W/ns,z0=zq(x0),z1=zq(x1);face(d,[[x0,0,z0],[x1,0,z1],[x1,H,z1],[x0,H,z0]],i%2?WP:M.plate,[0,H/2,-9]);face(d,[[x0,0,z0-.05],[x1,0,z1-.05],[x1,H,z1-.05],[x0,H,z0-.05]],BLc,[0,H/2,9]);
      if(hi&&i)d.tube([x0,0,z0-.04],[x0,H,z0-.04],.035,BLd,{n:3});}
     d.tube([-W,H*.5,zq(W)-.12],[W,H*.5,zq(W)-.12],.05,M.trim,{n:3});d.tube([0,.1,zq(0)],[0,H*.5,1.25],.035,M.bare,{n:3});d.gem(0,H*.5,1.3,.1,.1,.14,M.cyan);d.halo(0,H*.5,1.3,.7,CY,.4);},-.14);});};
  // 5 the heavy gun: a faceted blue gun house on a wide turntable, a long barrel raised over the shields; its shells stand racked beside it
