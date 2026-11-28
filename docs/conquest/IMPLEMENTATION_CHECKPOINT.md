@@ -6550,6 +6550,43 @@ rail and dam (long repeating hard-surface pieces, which code builds well).
 
 ### Resume here (kept current after every slice)
 If your context was cleared, read docs/conquest/audit/SESSION_05E2D2_BRIEF.md first; it governs everything.
+- **NEWEST STATE: Nov 28, 07:15 UTC (resumed a fourth time after a `/clear`; the brief of Nov 28 is saved word for word and
+  supersedes every earlier one).** Branch `claude/conquest-models-addendum-yg3oj6`; main `25c83d6` is merged in (`a9a434f`).
+  Before release: merge current main again, both sides kept (Session 8, Payments, also edits `js/core.js`, `js/net.js`,
+  `js/ui.js`).
+  - **Done since the lines below were written (Nov 26):** the node list of every CI workflow, 149 of 149 commands PASS on
+    the tree before the round-2 builders (the last 20 with a longer limit; `conquest-fortress.mjs` alone takes 23 minutes
+    here). Critic rounds 1 and 2 with the lead's decisions ("Critic rounds").
+  - **In progress: the four round-2 builders.** The usage limit cut them on Nov 26 at about 10:05 UTC. Their git worktrees
+    were still on this container on Nov 28 (`.claude/worktrees/agent-*`, local branches `a3-units`, `g-ships`,
+    `s-structures`, `f2-leftovers`), and each was restarted in its own worktree by a fresh builder that reads the branch's
+    commits and uncommitted edits first. **If the container is new, the worktrees are gone:** recreate each from its base
+    (`docs/conquest/session5e2d2/wip/README.txt`), `git apply` its patch, and restart it from the decisions under "Critic
+    rounds". What each held on Nov 28:
+    - `a3-units` (decisions 1 to 4; base `4dacbc9`, 3 commits, `kit/parunits.js` and `worldkit.js`): the oxide red-brown
+      palette and the shared parts, all six units and the drone rebuilt or repainted, the town models repainted. LEFT: the
+      generals (ring outside the pool, a sail on each, the carrier's filled emblem, the orb, the marker), the wrecks (dark,
+      scorch, embers, smoke, no marker), the drone's rotor discs, the pictures looked at on HIGH and LOW, the tests.
+    - `g-ships` (decision 5; base `4dacbc9`, 3 commits, `dropship.js`, `kit/warmodels.js`, `slots.js`; uncommitted
+      `fx3d.js`): the timeline (a long unload, staggered riders), the crash pose, the hauler and the shuttle models. LEFT:
+      the effects wired into the drill and the Citadel (plume, dust ring, lit ramp, each unit's dust, the crash), the
+      drill's camera assist, the spawn-identity test and the browser tests, the pictures.
+    - `s-structures` (decision 6; base `4dacbc9`, 1 commit: the portal gate; uncommitted `kit/parstruct.js`,
+      `kit/warmodels.js`, `slots.js`, `style.js`): LEFT: the LDF posts (blue, flag, searchlight mast, a hero module a site),
+      the cover walls, the raid spire, the battery's growth, the pictures, the tests.
+    - `f2-leftovers` (section 7; base `560036f`, 3 commits: the leftovers capture tool, notes 3 and 10; uncommitted
+      `townkit.js` and its test): LEFT: a before / after picture and a verdict for each of the ten notes (most were built
+      in the snapshot, see "The Nov 26 resume"), the colony on LOW at most 197,849 triangles measured by
+      `conquest-session6c.py`.
+  - **Next, in order:** (1) the builders finish; the lead merges each branch (`kit/warmodels.js`, `slots.js` and `style.js`
+    are edited by more than one), runs the tests, re-captures only what changed; (2) the raid-view budget at CC10
+    (`conquest-base-builder.py`: 16 programs, 150 draw calls) and the relay fight (80 draw calls at 320 wide) on the merged
+    tree; (3) critic round 3, the last planned; (4) the whole test list; (5) two independent reviewers; (6) release
+    (`dev/bump.sh`, a new draft PR, ready + `auto-release`, the deploy verified, ROADMAP row, release record).
+  - The lead's scratch tools (not in the repo; rebuilt from this file if lost): `wipsnap.sh` (the worktrees' patches into
+    `docs/conquest/session5e2d2/wip`, committed and pushed), `nodelist.py` (every `node` command of every CI workflow, run
+    in order with a per-command time limit), `builder-common.md` (the builders' rules: gameplay unchanged, one Parasite
+    red, the budgets, no new shader program, look at your pictures on HIGH and LOW, the tests to run before reporting).
 - **State on Nov 26 (the session resumed a third time, with a new brief that supersedes the Nov 21 one; it is saved word
   for word in `docs/conquest/audit/SESSION_05E2D2_BRIEF.md`):** the work is on branch
   `claude/conquest-models-addendum-yg3oj6`, started from the safety snapshot `616fa50` of
