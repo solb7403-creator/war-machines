@@ -19,13 +19,15 @@
  *         has no turret: its gun is a pintle stub on the cab roof. The drone's is a twin gun under the chin.
  * o.town  1 = the light town-raid model (one piece, big shapes, 2-3 glow accents, the same on HIGH and LOW, nothing in the
  *         detail batch): raider, sentinel, swarm, brute, drone. It is fitted to the town raid's own footprint, not to the
- *         slot box (width x height x length, standing on y = 0): raider 3.4 x 2.9 x 4.4 (162 triangles), sentinel
- *         5.2 x 4.6 x 6.8 (228), swarm 1.6 x 1.1 x 2.2 (132), brute 6.8 x 5.4 x 7.6 (310), drone 3.4 x 1 x 2.6 centred on
- *         y = 0 (116; the town view lifts it). ConquestParUnits.townSize lists them.
+ *         slot box (width x height x length, standing on y = 0): raider 3.4 x 2.9 x 4.4 (156 triangles), sentinel
+ *         5.2 x 4.6 x 6.8 (232), swarm 1.6 x 1.1 x 2.2 (250), brute 6.8 x 5.4 x 7.6 (256), drone 3.4 x 1 x 2.6 centred on
+ *         y = 0 (116; the town view lifts it). ConquestParUnits.townSize lists them. (Counted Nov 28: before critic round
+ *         2 they were 162, 228, 252, 282 and 116.)
  * o.cmd   'shield' | 'ambush' | 'artillery' | 'carrier' | 'plasma' = a GENERAL (raider, command, sentinel): a tall standard
  *         (a doctrine-colour banner under a glowing 3D emblem: a hex shield, crossed blades, a trio of shells, a winged
  *         drone, an orb in a cage), doctrine light rails on both flanks, painted shoulder plates and gun plates, more gold.
- *         The hull stays in the slot box; the standard rises up to 2.6 m above it (ConquestParUnits.standardTop).
+ *         The hull stays in the slot box; the standard rises up to 2.6 m above it (ConquestParUnits.standardTop). The
+ *         Hoard Fortress carries its standard on the turret (the gun part), clear of the hoard.
  * o.seed  small variation of trophies and plate colours (silhouettes never change).
  * b.hi === false is LOW: the same silhouette and colour blocks, the small parts dropped. One material, vertex colours. */
 (function(root){
@@ -528,7 +530,7 @@ function swarmHull(b,o){const sd=o.seed|0,hi=b.hi,vi=((sd%3)+3)%3,V=SWARM_V[vi],
 function swarmGun(b,o){const hi=b.hi;b.cyl(0,.17,-.12,.1,.05,P.ironD,{n:hi?8:5,topMat:P.goldD});cb(b,0,.22,-.1,.15,.09,.2,P.hullD);
  for(const s of [-1,1]){b.tube([s*.04,.26,-.04],[s*.04,.26,.3],.024,P.ironD,{n:hi?5:3});if(hi)b.tube([s*.04,.26,.26],[s*.04,.26,.32],.034,P.goldD,{n:5,caps:true});}
 }
-// the town Grabber (one piece, at most the 132 triangles it had): the oxide hood, the bold yellow booms, the pale sack, the red seat
+// the town Grabber (one piece, 250 triangles; it had 252): the oxide hood, the bold yellow booms, the pale sack, the red seat
 function swarmTown(b,o){const sd=o.seed|0,vi=((sd%3)+3)%3,V=[{ang:.8,len:.7,open:1},{ang:.3,len:.58,open:.55},{ang:.55,len:.66,open:.8}][vi],   /* the town model keeps its old height (the raid fits it to its own footprint): the booms a little lower */pm=pick(P.hullSet,sd+1),cage=vi===1?P.rust:vi===2?P.ironL:P.iron;
  for(const s of [-1,1])for(const z of [.52,-.62])xwheel(b,s*.48,s*.78,.33,z,.33,5,P.tyre,null,{face:s>0===(z>0)?P.ironL:P.goldD,rot:.3});
  cb(b,0,.27,-.08,.62,.15,1.86,P.redDim);
@@ -699,19 +701,25 @@ const TOWN={raider:[3.4,2.9,4.4],sentinel:[5.2,4.6,6.8],swarm:[1.6,1.1,2.2],brut
 function fit(b,size,centred){const [w,h,d]=size,lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];for(const B of [b.buf.main,b.buf.det])for(let i=0;i<B.P.length;i+=3)for(let k=0;k<3;k++){const v=B.P[i+k];if(v<lo[k])lo[k]=v;if(v>hi[k])hi[k]=v;}
  const sx=w/2/Math.max(-lo[0],hi[0]),sy=h/(hi[1]-lo[1]),sz=d/2/Math.max(-lo[2],hi[2]),y0=centred?-h/2:0;
  for(const B of [b.buf.main,b.buf.det])for(let i=0;i<B.P.length;i+=3){B.P[i]*=sx;B.P[i+1]=(B.P[i+1]-lo[1])*sy+y0;B.P[i+2]*=sz;const nx=B.N[i]/sx,ny=B.N[i+1]/sy,nz=B.N[i+2]/sz,l=Math.hypot(nx,ny,nz)||1;B.N[i]=nx/l;B.N[i+1]=ny/l;B.N[i+2]=nz/l;}}
-function sentinelTown(b,o){const sd=o.seed|0,S=P.plateSet,R=K.rect,tm=tint(P.iron,1.6,.012),dk=tint(P.iron,1.2);
+// 5E-2d2 critic round 2 (the unload in the drill: "units 20 px of yellow on sand, no red on LOW"): the town Hoard Fortress was
+// still the pale bone-and-khaki machine under two big blue flags (the first repaint missed it). It is oxide red-brown like
+// the world's now: lit glacis, shaded flanks, ONE pale skirt slab and one pale turret slab, the gold parapet and cannon,
+// the turret ring glowing red (the heart), a red stern vent, a glowing skirt strip under each flank (two quads more than
+// it had: 232 triangles), and the two trophy flags in conquered settlers' colours (never the humans' blue).
+function sentinelTown(b,o){const sd=o.seed|0,S=P.plateSet,H=P.hullSet,R=K.rect;
  for(const s of [-1,1])track(b,s,1.82,1.0,-2.8,2.72,1.3,{cf:.7,hf:.72,cr:.55,hr:.62,lod:0});
- xpr(b,[[-2.8,.65],[2.3,.6],[2.82,1.0],[1.95,2.0],[-2.8,2.0]],-1.34,1.34,i=>i===0?null:P.ironL,{cap:tint(P.ironL,.8)});
- cb(b,1.83,1.3,-.05,1.0,.45,5.45,pick(S,sd+1));cb(b,-1.83,1.3,-.05,1.0,.45,5.45,P.plateMilD);
- const SM=[P.plateMil,P.hazard,pick(S,sd),P.rust,pick(S,sd+2)];
- for(const s of [-1,1])for(let k=0;k<3;k++){const z0=-2.62+k*1.78;b.quad([s*2.34,.72-k%2*.1,z0],[s*2.34,.72-k%2*.1,z0+1.66],[s*2.34,1.72,z0+1.66],[s*2.34,1.72,z0],SM[(k+(s>0?0:2))%5],[0,1,0]);}
- b.quad([-1.2,1.13,2.74],[1.2,1.13,2.74],[1.2,1.93,2.045],[-1.2,1.93,2.045],P.plateMil,[0,-2,0]);
+ xpr(b,[[-2.8,.65],[2.3,.6],[2.82,1.0],[1.95,2.0],[-2.8,2.0]],-1.34,1.34,i=>i===0?null:i===2?P.hullL:i===3?P.hull:P.hullD,{cap:P.hullD});
+ cb(b,1.83,1.3,-.05,1.0,.45,5.45,pick(H,sd+2));cb(b,-1.83,1.3,-.05,1.0,.45,5.45,pick(H,sd));
+ const SM=[pick(H,sd+1),pick(S,sd),pick(H,sd+3),P.ironL,pick(H,sd)];
+ for(const s of [-1,1]){for(let k=0;k<3;k++){const z0=-2.62+k*1.78;b.quad([s*2.34,.72-k%2*.1,z0],[s*2.34,.72-k%2*.1,z0+1.66],[s*2.34,1.72,z0+1.66],[s*2.34,1.72,z0],SM[(k+(s>0?0:2))%5],[0,1,0]);}
+  b.quad([s*2.4,.46,-2.7],[s*2.4,.46,2.6],[s*2.35,.64,2.6],[s*2.35,.64,-2.7],P.redDim,[0,.6,0]);}
+ b.quad([-1.2,1.13,2.74],[1.2,1.13,2.74],[1.2,1.93,2.045],[-1.2,1.93,2.045],pick(S,sd+2),[0,-2,0]);
  b.quad([-1.0,.76,-2.81],[1.0,.76,-2.81],[1.0,1.34,-2.81],[-1.0,1.34,-2.81],P.red,[0,1,0]);
- b.at(0,2.0,-.25,0,q=>{const CM=[pick(S,sd+1),P.hazard,P.plateMil,pick(S,sd+3)];
-  q.loft([{p:R(3.3,2.8,.5),y:.2},{p:R(4.0,3.3,.62),y:.68},{p:R(3.86,3.16,.6),y:1.72},{p:R(3.1,2.5,.5),y:2.1}],(r,i)=>r===0?P.red:r===2?P.gold:(i%2?CM[(i-1)/2]:tm),{topMat:dk});
+ b.at(0,2.0,-.25,0,q=>{const CM=[pick(H,sd+1),pick(S,sd+1),pick(H,sd+2),P.ironL];
+  q.loft([{p:R(3.3,2.8,.5),y:.2},{p:R(4.0,3.3,.62),y:.68},{p:R(3.86,3.16,.6),y:1.72},{p:R(3.1,2.5,.5),y:2.1}],(r,i)=>r===0?P.red:r===2?P.gold:(i%2?CM[(i-1)/2]:i===0?P.hullD:P.hull),{topMat:P.hullD});
   cb(q,0,.3,1.86,1.7,.9,.4,P.ironD);q.tube([0,.72,2.05],[0,.72,3.02],.34,P.ironD,{n:5});q.tube([0,.72,2.96],[0,.72,3.22],.46,P.gold,{n:5,caps:true});
-  cb(q,.55,2.1,-.5,.95,.56,.74,P.crate);cb(q,-.5,2.1,.3,.7,.46,.7,P.sack);});
- for(const s of [-1,1]){b.tube([s*2.0,1.75,-2.6],[s*2.0,4.7,-2.6],.06,P.ironD,{n:3});const m=s>0?P.flagLDF:pick(P.flagSet,sd);for(const z of [-9,9])b.quad([s*2.0,4.66,-2.6],[s*1.0,4.66,-2.6],[s*1.0,3.6,-2.6],[s*2.0,3.6,-2.6],m,[0,4,-2.6+z]);}
+  cb(q,.55,2.1,-.5,.95,.6,.74,P.crate);cb(q,-.5,2.1,.3,.7,.46,.7,P.sackL);});
+ for(const s of [-1,1]){b.tube([s*2.0,1.75,-2.6],[s*2.0,4.7,-2.6],.06,P.ironD,{n:3});const m=pick(P.flagSet,[1,3,4][(sd+(s>0?0:1))%3]);for(const z of [-9,9])b.quad([s*2.0,4.66,-2.6],[s*1.0,4.66,-2.6],[s*1.0,3.6,-2.6],[s*2.0,3.6,-2.6],m,[0,4,-2.6+z]);}
 }
 
 // ------------------------------------------------------------------ the generals -----------------------------------------
