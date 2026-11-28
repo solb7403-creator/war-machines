@@ -1,7 +1,7 @@
 """Session 5E-2d2 captures: the Parasite structures and the war scenery in the real Conquest world: the four hives (each on
 its own seed) with their masts, the dormant portal and its open and suppressed looks, the nine LDF posts, the raid cover
-walls, the raid spire (spire-<layout>: the style's raid-spire stood where the view stands a live raid's centrepiece, 45 m east
-and 15 m south of the raid's site, beside that layout's cover walls) and the plasma battery (battery: the style's own, on the
+walls, the raid spire (spire-<layout>: the style's raid-spire stood where the view stands a live raid's centrepiece: the clear
+ground nearest to 45 m east and 15 m south of the raid's site, style.js S.raidSpireSpot) and the plasma battery (battery: the style's own, on the
 flat south of the portal). Shipped client (index.html, local economy); the tank is stood near each place and the camera
 turned to it. A subject is framed from a side with a clear line of sight (5E-2d2 critic round 2: three LDF posts were tiny or
 hidden behind a lattice): after the world around it has streamed in, rays from each candidate camera spot to the subject
@@ -49,8 +49,8 @@ async def main(a):
   if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
   await page.wait_for_function('Conquest.view.pending===0',timeout=900000)
   if a.clean:await page.add_style_tag(content='.cq-hud,.cq-top,.cq-toast,.cq-guide,.cq-ticker,#cq-ui,.cq-ui{visibility:hidden!important}')
-  data=await page.evaluate('''()=>{const v=Conquest.view,S=v.style,C=ConquestCombat,W=ConquestWorld,L={};for(const id of C.raidIds){const o=C.operations[id];if(!L[o.layout])L[o.layout]={id:o.layout,x:o.x+45,z:o.z+15};}
-   return {ws:S.WAR_SCENERY||null,hives:C.installations.map(s=>({id:s.id,x:s.x,z:s.z+8})),spires:Object.values(L),cover:Object.values(W.raidObstacles.reduce((m,o)=>{(m[o.layout]=m[o.layout]||[]).push(o);return m;},{})).map(L=>({id:L[0].layout,x:L.reduce((n,o)=>n+o.x,0)/L.length,z:L.reduce((n,o)=>n+o.z,0)/L.length}))};}''')
+  data=await page.evaluate('''()=>{const v=Conquest.view,S=v.style,C=ConquestCombat,W=ConquestWorld,L={};for(const id of C.raidIds){const o=C.operations[id];if(!L[o.layout]){const sp=S.raidSpireSpot?S.raidSpireSpot(o.x+45,o.z+15):[o.x+45,o.z+15];L[o.layout]={id:o.layout,x:sp[0],z:sp[1]};}}
+   return {ws:S.WAR_SCENERY||null,hives:C.installations.map(s=>({id:s.id,x:s.x,z:s.z+8})),spires:Object.values(L),cover:Object.values(W.raidObstacles.reduce((m,o)=>{(m[o.layout]=m[o.layout]||[]).push(o);return m;},{})).map(L=>{const b=L.reduce((m,o)=>Math.max(o.width,o.depth)>Math.max(m.width,m.depth)?o:m);return {id:L[0].layout,x:b.x,z:b.z,top:b.height};})};}''')   # a layout's cover shot looks at its longest wall (5E-2d2 critic round 2: the middle of a layout's walls was open ground with a boulder on it)
   # a subject the world does not hold by itself: the raid spire (the view stands it only during a live raid, at the raid's site + (45, 15):
   # view.js raidArchitecture) and the plasma battery (a raid objective), stood by the style's own builders at a real spot
   STAND='''([kind,x,z])=>{const v=Conquest.view,S=v.style,W=ConquestWorld;for(const o of v.props.children.filter(o=>o.userData.captureSubject))v.props.remove(o);const g=kind==='spire'?S.raidSpire():S.battery();g.userData.captureSubject=true;g.position.set(x,W.groundAt(x,z),z);if(kind==='battery'&&g.userData.gun)g.userData.gun.rotation.y=.6;v.props.add(g);let n=0;g.traverse(m=>{if(m.isMesh&&m.geometry.index)n+=m.geometry.index.count/3;});return n;}'''
@@ -58,10 +58,10 @@ async def main(a):
   if data['ws']:
    P=data['ws']['portal'];shots+=[('portal-'+st,P['x'],P['z'],38 if h>w else 34,.3,23,st,'cq-style-portal',15) for st in ['dormant','open','suppressed']];shots+=[('portal-far',P['x'],P['z'],70,.34,24,'dormant','cq-style-portal',15)]
    shots+=[('ldf-'+q['id'],q['x'],q['z'],17 if h>w else 15,.3,15 if h>w else 13,None,'cq-style-ldf-'+q['id'],11) for q in data['ws']['posts']]
-   shots+=[('battery',P['x']-4,P['z']+34,20,.3,15,None,None,18)]
+   shots+=[('battery',P['x']-4,P['z']+34,27,.34,19,None,None,18)]
   shots+=[('hive-'+hv['id'],hv['x'],hv['z'],44,.32,24,None,None,0) for hv in data['hives']];shots+=[('cover-'+c['id'],c['x'],c['z'],30,.4,22,None,None,0) for c in data['cover'][:3]]
-  shots+=[('cover-near-'+c['id'],c['x'],c['z'],19,.3,13,None,None,0) for c in data['cover'][:2]]   # close enough to judge the plates, the veins and the trophies
-  shots+=[('spire-'+c['id'],c['x'],c['z'],15,.3,12,None,None,8) for c in data['spires'][:2]]
+  shots+=[('cover-near-'+c['id'],c['x'],c['z'],19,.3,13,None,None,c['top']) for c in data['cover']]   # close enough to judge the plates, the veins and the trophies
+  shots+=[('spire-'+c['id'],c['x'],c['z'],15,.3,12,None,None,8) for c in data['spires']]
   info={}
   for name,x,z,back,pitch,dist,st,own,top in shots:
    kind=name.split('-')[0]

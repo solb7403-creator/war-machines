@@ -930,7 +930,10 @@ function create(T,opts={}){
   X.decal(cx,cz,15,12,0,AT.BLOB,[0,0,0],.6,low?6:10,.12);X.decal(cx,cz,21,18,0,AT.BLOB,E(PAR.red,.35),0,low?6:10,.16);}
  S.installations=()=>F.installations.map(inst=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);hive(tk,X,inst);const g=kdone(pair(Sb,X),tk);g.name='cq-style-hive-'+inst.id;g.userData.site={x:inst.solid.x,z:inst.solid.z,range:1100};return g;});
  S.cover=()=>{const groups=new Map();for(const o of F.obstacles){let e=groups.get(o.layout);if(!e){e={Sb:new Bld(),X:new Fx(),x:0,z:0,n:0};e.tk=kt(e.Sb,e.X);groups.set(o.layout,e);}coverWall(e.tk,e.X,o);e.x+=o.x;e.z+=o.z;e.n++;}
-  return [...groups.entries()].map(([layout,e])=>{const g=kdone(pair(e.Sb,e.X),e.tk);g.name='cq-style-cover-'+layout;g.userData.site={x:e.x/e.n,z:e.z/e.n,range:900};return g;});};
+  // 5E-2d2 critic round 2: the walls are lit as the Parasite machines are (MAT.par: the same program with the Parasites' own warm light;
+  // no new program, no extra draw). Under the Moon's light a wall's shaded side was a black and teal block on LOW (the night sky's blue
+  // on tan and ochre plates) and one flat dark red on HIGH: its plundered plates lost their colours exactly where a pilot takes cover.
+  return [...groups.entries()].map(([layout,e])=>{const g=kdone(pair(e.Sb,e.X),e.tk);g.children[0].material=MAT.par;g.name='cq-style-cover-'+layout;g.userData.site={x:e.x/e.n,z:e.z/e.n,range:900};return g;});};
  // ---------- the portal gate and the LDF posts (Session 5E-2d2; owner, Nov 21): SCENERY ONLY until the Living Front's visual
  // session makes them active (ConquestWar.portalOf / ldfPosts). No collision, no layout change: every spot is open ground
  // beside a military place (found by a search for flat ground clear of solids, roads, lots, fields, water and forest; the test
@@ -983,7 +986,15 @@ function create(T,opts={}){
    out.push(g);});
   return out;};
  // Raid-only Parasite spire (decor where the live build places raid art): the kit's raid-spire, a growth nest on scavenged steel.
- S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});return kdone(pair(Sb,X),tk);};
+ S.raidSpire=()=>{const Sb=new Bld(),X=new Fx(),tk=kt(Sb,X);KW().place('raid-spire',tk,KM(0,0,0),{});const g=kdone(pair(Sb,X),tk);g.children[0].material=MAT.par;return g;};   // lit as the Parasite machines are, like the cover walls beside it (5E-2d2 critic round 2)
+ // Where a raid's spire is drawn (5E-2d2 critic round 2: the critic could not find the spire; in 4 of the 25 raids its spot, the raid's
+ // site + (45, 15), is inside a boulder and only its lamp showed): the nearest spot to (x, z) with 4.6 m of clear ground around it
+ // (no rock or structure, no cover wall, no water), the nearest and most level of the spots on rings 4 m apart; (x, z) itself where it is clear, so the other 21 raids
+ // are unchanged. Decor only: nothing collides with the spire, here as there.
+ S.raidSpireSpot=(x,z)=>{const W=root.ConquestWorld,ok=(px,pz)=>{for(let a=0;a<9;a++){const r=a?4.6:0,qx=px+Math.cos(a*TAU/8)*r,qz=pz+Math.sin(a*TAU/8)*r;if(W.solidAt(qx,qz)||W.raidSolidAt(qx,qz)||W.waterAt(qx,qz))return false;}return true;};
+  if(ok(x,z))return [x,z];let best=[x,z],bc=1e9;for(let r=4;r<=28;r+=4)for(let a=0;a<8;a++){const px=x+Math.cos(a*TAU/8)*r,pz=z+Math.sin(a*TAU/8)*r;if(!ok(px,pz))continue;
+   let lo=1e9,hi=-1e9;for(const [dx,dz] of [[0,0],[3.2,0],[-3.2,0],[0,3.2],[0,-3.2]]){const g=W.groundAt(px+dx,pz+dz);lo=Math.min(lo,g);hi=Math.max(hi,g);}const c=r+3*(hi-lo);if(c<bc){bc=c;best=[px,pz];}}   // near, and on the most level ground there (its tripod spans 6 m)
+  return best;};
  // Blender-authored GLB (constrained parser) adopted into the style: per-mesh PBR factors become vertex colour + emission.
  S.adopt=group=>{group.traverse(o=>{if(!o.isMesh||o.material===MAT.solid)return;const geo=o.geometry,m=o.material;if(!geo.attributes.aCol){const n=geo.attributes.position.count,a=new Float32Array(n*4),c=m.color||new T.Color(1,1,1),e=m.emissive||new T.Color(0,0,0),em=Math.max(e.r,e.g,e.b);
    geo.computeBoundingBox();const y0=geo.boundingBox.min.y,h=Math.max(.01,geo.boundingBox.max.y-y0),p=geo.attributes.position;

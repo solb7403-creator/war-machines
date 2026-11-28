@@ -193,10 +193,11 @@ WK.model('cover-wall',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,long=o.w>=o
       if(pi%3===1&&xb-xa>2.2){const pk=KINDS[(ki+3)%KINDS.length],px=xa+(xb-xa)*(.18+.2*hz(sd,pi+50)),pw=(xb-xa)*.46,py=h*(.16+.2*hz(sd,pi+60)),ph=h*.3;q.at(px+pw/2,py+ph/2,zc+p,0,r=>slab(r,-pw/2,pw/2,-ph/2,ph/2,ph/2,0,.05,plateMat(r,pk,ci+2),{bot:true}),0,(hz(sd,pi+80)-.5)*.3);}
       else if(rich||pi%2===0)q.detail(()=>{for(const [u2,v2] of [[.1,.9],[.9,.9]])tack(q,xa+(xb-xa)*u2,-.1+(Math.min(tl,tr)+.1)*v2,zc+p+.03,.09,P.weld);});}
      // the infection climbs the plate: a thick root out of the ground, kinked, with a fork (every other plate of a long face; LOW: flat strips)
-     if(Lf>=8&&(pi%2===0||np<3)){const w=xb-xa,dir=hz(sd,pi+201)<.5?-1:1,xs=xa+w*(.3+.4*hz(sd,pi+200)),yt=Math.min(tl,tr)*(.55+.35*hz(sd,pi+202)),z=zc+p+.012,cl=x=>clamp(x,xa+.22,xb-.22),
-       R=[[cl(xs),-sink*.35,z],[cl(xs+dir*w*.12),yt*.3,z],[cl(xs-dir*w*.1),yt*.64,z],[cl(xs+dir*w*.13),yt,z]];
+     if(Lf>=8&&(pi%2===0||np<3)){const w=xb-xa,dir=hz(sd,pi+201)<.5?-1:1,xs=xa+w*(.3+.4*hz(sd,pi+200)),yt=Math.min(tl,tr)*(.55+.35*hz(sd,pi+202)),z=zc+p+.012,cl=x=>clamp(x,xa+.22,xb-.22),kk=hi?1:.5,   // kk: LOW has no curve through the kinks, so they are half as wide (at full width the strips read as painted chevrons)
+       R=[[cl(xs),-sink*.35,z],[cl(xs+dir*w*.12*kk),yt*.3,z],[cl(xs-dir*w*.1*kk),yt*.64,z],[cl(xs+dir*w*.13*kk),yt,z]];
       if(hi){vein(q,R,.14,.04,{seg:2,up:[0,0,1],rise:.55});vein(q,[R[1],[cl(R[1][0]+dir*w*.2),R[1][1]+yt*.18,z],[cl(R[1][0]+dir*w*.3),R[1][1]+yt*.4,z]],.08,.03,{seg:2,up:[0,0,1],rise:.55});}
-      else for(let j=1;j<R.length;j++){const A=R[j-1],B=R[j],wa=.13-.03*(j-1),wb=.13-.03*j;q.quad([A[0]-wa,A[1],z],[A[0]+wa,A[1],z],[B[0]+wb,B[1],z],[B[0]-wb,B[1],z],P.red,[A[0],A[1],z-9]);}}
+      else{for(let j=1;j<R.length;j++){const A=R[j-1],B=R[j],wa=.16-.04*(j-1),wb=.16-.04*j;q.quad([A[0]-wa,A[1],z],[A[0]+wa,A[1],z],[B[0]+wb,B[1],z],[B[0]-wb,B[1],z],P.red,[A[0],A[1],z-9]);}
+       const A=R[1],B=[cl(A[0]+dir*w*.26),A[1]+yt*.34,z];q.quad([A[0]-.09,A[1],z],[A[0]+.09,A[1],z],[B[0]+.03,B[1],z],[B[0]-.03,B[1],z],P.red,[A[0],A[1],z-9]);}}   // LOW: a wider tapered strip and its fork (a root, not a line)
      pi++;}
     // the infection in the seams: a vein between two plates, kinked like a root
     for(let k=1;k<np;k++){const x=X[k],y1=Math.min(tops[k-1],tops[k])-.15,z=zc+.04,w=hi?.07:.08,K=hi?[[0,-.2],[.04,.33],[-.035,.68],[.02,1]]:[[0,-.2],[0,1]];
@@ -207,6 +208,11 @@ WK.model('cover-wall',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,long=o.w>=o
   // the loot behind the parapet
   {const nl=hi?(rich?3:2):1,along=L-2*PW-1.2;for(let k=0;k<nl;k++){const x=-along/2+along*(nl===1?.3:(k+.15+.7*hz(sd,k+120))/nl),z=(T-2*REC-1.1)*(hz(sd,k+130)-.5)*.8,s=clamp(T*.26,.62,1.05)*(.85+.3*hz(sd,k+140));
     if(k===1&&hi){sack(b,x,top,z,Math.min(s*.52,(lip-.04)/1.15),sd+k);sack(b,x+s*.8,top,z+.1,Math.min(s*.42,(lip-.04)/1.15),sd+k+3,tint(P.sack,.8));}else crate(b,x,top,z,s*1.25,Math.min(s*.72,lip-.06),s*.9,(hz(sd,k+150)-.5)*.9,k%2?P.crateD:P.crate,{plain:!hi});}
+   // the growth swells up through the wall (5E-2d2 critic round 2: "human wreckage the infection grows through"; the roots alone read as
+   // paint on a steel wall): bulbs split by glowing fissures sit on the bulkhead behind the parapet and show over every plate that
+   // stops short. Inside the box: under its top, within the bulkhead's width.
+   {const nb=hi&&L>=14?2:1,rb=Math.min((T-2*REC)/2-.14,(lip-.1)/1.45,.95);for(let k=0;k<nb;k++){const x=(L/2-PW-1.4)*(nb===1?(hz(sd,180)-.5)*1.2:(k?1:-1)*(.3+.5*hz(sd,181+k))),z=(T-2*REC-2*rb*1.16)*(hz(sd,184+k)-.5)*.8;
+     bulb(b,x,top-.1,z,rb*(k?.86:1),sd+k*5+2,{sy:1.25,na:hi?8:6,nr:hi?4:3,lob:.14,pole:.6});}}
    // trophies: a looted flag on a rail over one long face, a captured LDF shield hung askew on the other
    const sg=hz(sd,160)<.5?-1:1,fx=(L/2-PW-1.5)*sg*(.3+.5*hz(sd,161)),fz=T/2-.05,ldf=hz(sd,162)<.5,fm=ldf?P.flagLDF:P.flagSet[(hz(sd,163)*5)|0],fw=Math.min(2.2,L*.16),fy=HT-.04;
    flag(b,[fx-fw/2,fy,fz],[fx+fw/2,fy,fz],h*.46,fm,ldf?P.flagLDF2:P.strap);
@@ -315,7 +321,7 @@ WK.model('par-battery',(b,o)=>{const {pal,tint,circ,rect}=b.k,P=pal.par,hi=b.hi,
 WK.model('raid-spire',(b,o)=>{const {pal,tint}=b.k,P=pal.par,hi=b.hi,sd=o.seed|0;
  fit(b,o.w/8.8,o.h/7.4,o.d/7.6,()=>{const FEET=[[0,3.1],[-2.78,-1.72],[2.78,-1.72]],TOPY=5.35,leg=(k,t)=>[FEET[k][0]*(1-.9*t),.14+(TOPY-.14)*t,FEET[k][1]*(1-.9*t)];
   // the tripod: foot plates staked down, girder legs, braces
-  FEET.forEach(([fx,fz],k)=>{const a=Math.atan2(fz,fx);b.part();b.at(fx,0,fz,-a+Math.PI/2,q=>{qb(q,0,-.5,0,1.0,.64,1.0,P.ironD,'b');
+  FEET.forEach(([fx,fz],k)=>{const a=Math.atan2(fz,fx);b.part();b.at(fx,0,fz,-a+Math.PI/2,q=>{qb(q,0,-.5,0,1.0,.64,1.0,P.ironD,'b');qb(q,0,-4,0,.56,3.5,.56,P.iron,'tb');   // a pile under each foot (5E-2d2 critic round 2: two raid layouts stand it on a slope, and its downhill foot hung in the air)
     if(hi){qb(q,0,.14,.38,1.0,.05,.2,P.hazard,'b');for(const sx of [-1,1])q.tube([sx*.36,.5,.3],[sx*.3,-.3,.36],.045,P.ironL,{n:3});q.loft([{p:b.k.rect(.5,.5,0,0,-.05),y:.14},{p:b.k.rect(.34,.3,0,0,-.2),y:.62}],P.iron,{top:false});}});
    beam(b,leg(k,0),leg(k,.56),.36,.3,i=>i%2?P.ironL:P.iron,{w2:.3,d2:.26});beam(b,leg(k,.56),leg(k,1),.3,.26,i=>i%2?P.hazardD:P.hazard,{w2:.26,d2:.22});   // the upper half still in its hazard paint (round 2)
    const n=(k+1)%3;b.tube(leg(k,.3),leg(n,.3),.075,P.ironL,{n:hi?4:3});if(hi){b.tube(leg(k,.3),leg(n,.66),.05,P.rust,{n:3});b.tube(leg(k,.66),leg(n,.66),.06,P.ironL,{n:3});}});
