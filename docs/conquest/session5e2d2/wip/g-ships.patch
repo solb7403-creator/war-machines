@@ -1,5 +1,5 @@
 diff --git a/dev/tests/conquest-dropship-browser.py b/dev/tests/conquest-dropship-browser.py
-index ffd9c71..cf05da9 100644
+index ffd9c71..76897c9 100644
 --- a/dev/tests/conquest-dropship-browser.py
 +++ b/dev/tests/conquest-dropship-browser.py
 @@ -3,13 +3,19 @@ Shipped client (index.html), the real Worker on the fixture server, a fully buil
@@ -13,7 +13,7 @@ index ffd9c71..cf05da9 100644
 +    units are drawn), the lift-away. The moments follow ConquestDropship.TL (5E-2d2 critic round 2 made the unload long:
 +    the hauler is down 6.8 s before the moment, the shuttle hovers 5.6 s before; the test's sample times moved with it)
 + 2b. the drill camera's assist (critic round 2): from the drill's own camera, untouched for 3 s, the camera eases toward the
-+    first hauler's lane and in (by a third, on to 110 m when that is still farther) for the unload; a key or a press ends it at once and leaves the camera exactly
++    first hauler's lane and in (by a third, on to 95 m when that is still farther) for the unload; a key or a press ends it at once and leaves the camera exactly
 +    where the pilot sees it; never within 3 s of an input, never with reduced motion
   3. the whole raid view stays inside its budget with every ship of a wave on screen: 16 programs and 150 draw calls
   4. a ship shot down (X.dropshipHit: nothing shoots one in the drill today): the hit flash, the fall, the wreck; its units
@@ -30,7 +30,7 @@ index ffd9c71..cf05da9 100644
  STATE='''()=>{const X=ConquestPlotView.state,D=X.drill,R=X.R,S=R&&R.ships&&R.ships.stage;if(!D||!S)return null;const n={};for(const [k,im] of Object.entries(S.meshes))n[k]=im.visible?im.count:0;
   const alive={r:0,s:0,d:0,w:0,b:0};for(const q of D.now||[])alive[q[1]]++;const drawn={};for(const [k,im] of Object.entries(R.foes))drawn[k]=im.visible?im.count:0;
 - return {t:D.t,ships:D.ships?D.ships.ships.map(s=>({key:s.key,kind:s.kind,at:s.at,lane:s.lane,units:s.units.length,pad:s.flight.pad,hit:s.flight.hitAt})):[],now:(D.shipNow||[]).map(i=>({key:i.key,x:i.pose.x,z:i.pose.z,phase:i.pose.phase,ramp:i.pose.ramp,bay:i.pose.bay,y:i.pose.y,wreck:i.pose.wreck,flash:i.pose.flash})),n,alive,drawn,info:X.info,mats:Object.values(S.meshes).every(m=>m.material===R.S.MAT.par||m.material===R.S.MAT.parHit)};}'''
-+ return {t:D.t,ships:D.ships?D.ships.ships.map(s=>({key:s.key,kind:s.kind,at:s.at,lane:s.lane,units:s.units.length,pad:s.flight.pad,hit:s.flight.hitAt,imp:s.flight.impactAt})):[],now:(D.shipNow||[]).map(i=>({key:i.key,x:i.pose.x,z:i.pose.z,phase:i.pose.phase,ramp:i.pose.ramp,bay:i.pose.bay,y:i.pose.y,wreck:i.pose.wreck,flash:i.pose.flash,pod:!!i.pose.pod})),n,alive,drawn,info:X.info,quads:R.dfx?R.dfx.stats().quads:0,riders:(D.riders||[]).length,mats:Object.values(S.meshes).every(m=>m.material===R.S.MAT.par||m.material===R.S.MAT.parHit)};}'''
++ return {t:D.t,ships:D.ships?D.ships.ships.map(s=>({key:s.key,kind:s.kind,at:s.at,lane:s.lane,units:s.units.length,pad:s.flight.pad,hit:s.flight.hitAt,imp:s.flight.impactAt})):[],now:(D.shipNow||[]).map(i=>({key:i.key,scr:(()=>{const v=new R.T.Vector3(i.pose.x,i.pose.y,i.pose.z).project(R.cam);return [+(v.x*.5+.5).toFixed(3),+(.5-v.y*.5).toFixed(3)];})(),x:i.pose.x,z:i.pose.z,phase:i.pose.phase,ramp:i.pose.ramp,bay:i.pose.bay,y:i.pose.y,wreck:i.pose.wreck,flash:i.pose.flash,pod:!!i.pose.pod})),n,alive,drawn,info:X.info,quads:R.dfx?R.dfx.stats().quads:0,riders:(D.riders||[]).length,mats:Object.values(S.meshes).every(m=>m.material===R.S.MAT.par||m.material===R.S.MAT.parHit)};}'''
  SHARP='''for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){const v=g.call(this,p);return typeof v==='string'&&/swiftshader|llvmpipe|softpipe|software/i.test(v)?'Capture GPU':v;};}'''   # --sharp: the game holds a CPU rasterizer at .75x of the screen (js/graphics.js); a capture for LOOKS is drawn at the resolution a real device gets (HIGH on a phone: the device's own ratio, here the context's; LOW: 1x), by not telling the game the renderer is SwiftShader. Never used by a test that measures a budget.
  async def main(a):
   out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True)
@@ -55,7 +55,7 @@ index ffd9c71..cf05da9 100644
        me=next((i for i in s['now'] if ship and i['key']==ship['key']),None)
        if me and shot:
 -       await page.evaluate('([x,z])=>{const X=ConquestPlotView.state;X.cam.x=x*.9;X.cam.z=z*.9;X.cam.yaw=Math.atan2(x,z)+.5;}',[me['x'],me['z']])
-+       await page.evaluate('([x,z,turn])=>{const X=ConquestPlotView.state;const k=turn>2?.97:.9;X.cam.x=x*k;X.cam.z=z*k;X.cam.yaw=Math.atan2(x,z)+turn;if(turn>2)X.cam.tilt=.62;}',[me['x'],me['z'],turn])
++       await page.evaluate('([x,z,turn])=>{const X=ConquestPlotView.state;X.cam.yaw=Math.atan2(x,z)+turn;if(turn>2){X.cam.tilt=.62;const l=Math.hypot(x,z),bx=x-x/l*9,bz=z-z/l*9,up=X.drill.ships.ground(bx,bz)/Math.tan(.62);X.cam.x=bx-Math.sin(X.cam.yaw)*up;X.cam.z=bz-Math.cos(X.cam.yaw)*up;}else{X.cam.x=x*.9;X.cam.z=z*.9;}}',[me['x'],me['z'],turn])   # a front shot looks at the ship's bow (9 m toward the town from its middle), raised by the ground's height there (the build camera looks at the y = 0 plane)
         await page.evaluate('()=>new Promise(r=>{let n=0;const f=()=>{++n<4?requestAnimationFrame(f):r();};requestAnimationFrame(f);})');await page.wait_for_timeout(a.settle)
        if shot:await page.screenshot(path=str(out/f'{name}-{tag}.png'),timeout=180000)
        return s
@@ -748,7 +748,7 @@ index df08e9e..efbac3d 100644
  // ------------------------------------------------------------------ portal-gate -----------------------------------------
  // The Parasites' portal (16 x 14 x 6): a great ring of twelve mismatched plundered segments (no two alike in size or paint,
 diff --git a/js/conquest/plotview.js b/js/conquest/plotview.js
-index 35a9ce7..14a615f 100644
+index 35a9ce7..7302d2c 100644
 --- a/js/conquest/plotview.js
 +++ b/js/conquest/plotview.js
 @@ -136,7 +136,7 @@ function open(ctx){if(X)return;const {view,panel,el,button}=ctx;const st=()=>vie
@@ -778,7 +778,7 @@ index 35a9ce7..14a615f 100644
   F.end();}
  function startReplay(){const s=X?.ctx.view.authority?.state,p=s?.plot,e=p?.log?.[0];if(!e||X.simulating)return;const g=P.drillGen(p,e.seed,{threat:e.threat,yieldEvery:25}),t0=performance.now();let cpu=0;X.simulating=true;
   const pump=()=>{if(!X){return;}const a=performance.now();let r;do{r=g.next();}while(!r.done&&performance.now()-a<8);cpu+=performance.now()-a;
-@@ -586,15 +586,41 @@ function drillShips(D,R,p){D.ships=null;const DS=root.ConquestDropship,WK=root.C
+@@ -586,15 +586,42 @@ function drillShips(D,R,p){D.ships=null;const DS=root.ConquestDropship,WK=root.C
   try{const plan=DS.planDrill(P,p,D.r,{seed:(D.log?.seed|0)||(D.r.seed|0)||1,hit:X.dropshipHit||null});   /* X.dropshipHit {shipKey: time}: nothing shoots a ship in the drill today; the capture tool (and a later session) shows one shot down with it */if(!plan.ships.length)return;
    if(!R.ships||R.ships.variant!==plan.variant){if(R.ships)R.ships.stage.dispose();R.ships={variant:plan.variant,stage:DS.stage(R.S,WK.kit(R.S),{variant:plan.variant,max:8})};R.g.actors.add(R.ships.stage.group);}
    R.ships.stage.clear();D.ships=plan;D.shipEv=[];D.shipFx=0;}catch(e){D.ships=null;}}
@@ -802,24 +802,25 @@ index 35a9ce7..14a615f 100644
 +function drillShipsFx(D,F,dt){const DS=root.ConquestDropship,pl=D.ships,rate=X.drillRate||1.6,low=!!X.R?.S.low,p=plotOf();if(!F.ship||!DS.fxOf)return;
 + for(const e of D.shipEv.splice(0)){const big=e.kind==='hauler'?1:.6;if(e.k==='hit')F.killBurst(e.x,e.y+3,e.z,5*big);else if(e.k==='crash'){F.blast(e.x,e.y+.5,e.z,7*big,1);F.shatter('parasite',e.x,e.y,e.z,5*big,5*big,0,0);}}   // pooled extras: the flying plates, the shake
 + for(const it of D.shipNow||[]){const q=it.pose;F.ship(DS.fxOf(it.ship.flight,q,D.t,{gy:pl.ground(q.x,q.z),gnd:pl.ground,rate,low}));}
-+ for(const o of D.riders||[])F.shipRider(o.x,o.y,o.z,o.yaw,RIDER[o.k]||1.5,o.move,o.land>=0?o.land/rate:-1,o.air,1,o.ramp||o.tau<=0&&!o.air&&o.land<0?2:0);   // waiting in the hold, on the ramp or in the bay: its headlights only
++ for(const o of D.riders||[])F.shipRider(o.x,o.y,o.z,o.yaw,RIDER[o.k]||1.5,o.move,o.land>=0?o.land/rate:-1,o.air,1,o.ramp||o.tau<=0&&!o.air&&o.land<0?2:0,pl.ground(o.x,o.z));   // waiting in the hold, on the ramp or in the bay: its headlights only
 + const w=pl.waves.find(at=>D.t>=at&&D.t<at+1.6);if(w!==undefined&&p){const k=1-(D.t-w)/1.6;for(const [id,kind,x,z] of D.now||[]){const e=pl.byUnit.get(id);if(!e||e.ship.at!==w||e.ship.flight.hitAt!==null)continue;F.shipRider(x,P.heightAt(p.site,x,z)+(kind==='d'?7:0),z,Math.atan2(-x,-z),RIDER[kind]||1.5,true,-1,kind==='d',k);}}}
 +// The drill camera's assist (5E-2d2 critic round 2; the owner: "you see the Parasites getting off the ship"; from the drill's
 +// default camera they were 20 px). When the FIRST hauler of a drill comes down and the pilot has not touched anything for
 +// 3 s, the build camera eases toward that landing lane and in for the unload, then eases back. When several haulers land at
 +// once it is the one on the far side of the town from the camera: its bow ramp faces the camera, so the wave rolls down it
 +// toward the pilot, headlights first (on the near lane he saw the ship's stern and the units' backs). In: by a third, and on
-+// to 110 m when a third is still farther than that (the drill's own camera stands 164 to 254 m out to show the whole town;
-+// a third in from 254 m left a Hoard Fortress 18 px wide on a phone; 110 m is the build view's own distance, 95 to 120 m),
-+// never closer than 30% of where the pilot had it. It never writes X.cam: it is an offset on top of the pilot's camera (placeCam), a
++// to 95 m when a third is still farther than that (the drill's own camera stands 164 to 254 m out to show the whole town;
++// a third in from 254 m left a Hoard Fortress 18 px wide on a phone; 95 m is the build view's own distance, 95 to 120 m:
++// about 35 px), never closer than 30% of where the pilot had it. It looks at the bow (12 m out from the row). It never writes X.cam: it is an offset on top of the pilot's camera (placeCam), a
 +// function of the replay clock alone, so it changes nothing the drill simulates and nothing the pilot can do. Any press,
 +// drag, pinch, wheel or key ends it at once for the rest of the drill: camTouch leaves the camera exactly where the pilot
 +// sees it (the offset is written into X.cam at that instant), so nothing jumps and nothing fights him. Never with reduced
 +// motion. X.drillFocus=false switches it off (the capture tool frames its own pictures).
-+const FOCUS={near:.85,zoom:1/3,dist:110,lead:1.4,in:2,after:.5,out:2.4},focusDist=(d,k)=>Math.max(45,d+(Math.min(d*(1-FOCUS.zoom),Math.max(FOCUS.dist,d*.3))-d)*k);
++const FOCUS={near:1,zoom:1/3,dist:95,lead:1.4,in:2,after:.5,out:2.4},focusDist=(d,k)=>Math.max(45,d+(Math.min(d*(1-FOCUS.zoom),Math.max(FOCUS.dist,d*.3))-d)*k);
 +function drillFocus(D){const pl=D.ships;if(!pl||X.drillFocus===false||D.focusOff)return null;
-+ let f=D.focus;if(f===undefined){const c=X.cam,hs=pl.ships.filter(s=>s.kind==='hauler'&&s.flight.hitAt===null),t1=Math.min(...hs.map(s=>s.at)),near=s=>s.row.x*Math.sin(c.yaw)+s.row.z*Math.cos(c.yaw),s=hs.filter(s=>s.at===t1).sort((a,b)=>near(a)-near(b))[0],lim=(P.townH(plotOf()?.cc||1)+6)*P.GRID.cell,cl=v=>Math.max(-lim,Math.min(lim,v));
-+  f=D.focus=s?{key:s.key,x:cl(s.row.x+s.out[0]*12),z:cl(s.row.z+s.out[1]*12),t0:s.at+s.flight.T.down-FOCUS.lead,t1:s.at+FOCUS.after}:null;}
++ let f=D.focus;if(f===undefined){const c=X.cam,hs=pl.ships.filter(s=>s.kind==='hauler'&&s.flight.hitAt===null),t1=Math.min(...hs.map(s=>s.at)),near=s=>s.row.x*Math.sin(c.yaw)+s.row.z*Math.cos(c.yaw),s=hs.filter(s=>s.at===t1).sort((a,b)=>near(a)-near(b))[0];
++  const fx=s?s.row.x+s.out[0]*12:0,fz=s?s.row.z+s.out[1]*12:0,up=s?pl.ground(fx,fz)/Math.tan(Math.min(c.tilt,1.2)):0;   // the camera looks at a point on the y = 0 plane: a lane on a rise is centred by looking that much past it
++  f=D.focus=s?{key:s.key,x:fx-Math.sin(c.yaw)*up,z:fz-Math.cos(c.yaw)*up,t0:s.at+s.flight.T.down-FOCUS.lead,t1:s.at+FOCUS.after}:null;}
 + if(!f||D.t<f.t0||D.t>f.t1+FOCUS.out)return null;
 + if(!f.on){if(reduced()||performance.now()-(X.camAt||0)<3000||X.view==='drive'||X.mode!=='defend'||X.place||X.visit||X.tour){D.focusOff=true;return null;}f.on=true;}
 + const sm=v=>{v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);},k=sm((D.t-f.t0)/FOCUS.in)*(1-sm((D.t-f.t1)/FOCUS.out));return k>0?{x:f.x,z:f.z,k}:null;}
@@ -827,7 +828,7 @@ index 35a9ce7..14a615f 100644
  function drillStep(dt){const D=X.drill,R=X.R,p=plotOf();D.t+=dt*(X.drillRate??1.6);if(R&&D.ships===undefined)drillShips(D,R,p);   /* X.drillRate: the replay's speed (1.6; the capture tool holds a moment with 0) */const fr=D.r.frames;while(D.fi<fr.length-1&&fr[D.fi+1].t<=D.t)D.fi++;const a=fr[D.fi]||{f:[],s:[]},b=fr[Math.min(fr.length-1,D.fi+1)]||a,f=b.t>a.t?Math.max(0,Math.min(1,(D.t-a.t)/(b.t-a.t))):0;
   const bm=new Map(b.f.map(q=>[q[0],q]));D.now=a.f.map(q=>{const n=bm.get(q[0]);return n?[q[0],q[1],q[2]+(n[2]-q[2])*f,q[3]+(n[3]-q[3])*f]:q;});
   const ev=D.r.events;while(D.ei<ev.length&&ev[D.ei].t<=D.t){const e=ev[D.ei++];if(e.k==='shot')D.shots.push({...e,life:e.ty==='flame'?.35:.25});else if(e.k==='destroyed'){D.gone.add(e.id);const F=R&&townFx(R),b=F&&(R.dbox?.m.get(e.id)||structBox(e.id,p,R));if(b){F.shatter(b.mat,b.x,b.y,b.z,b.size,b.hh*2,0,0);if(b.hot)F.blast(b.x,b.y,b.z,b.size,1);}hideStruct(e.id,p);}}D.shots=D.shots.filter(x=>(x.life-=dt)>0);
-@@ -707,6 +733,7 @@ function pasteAt(c){const p=plotOf();if(!X.clip||!p)return;const by=new Map();fo
+@@ -707,13 +734,14 @@ function pasteAt(c){const p=plotOf();if(!X.clip||!p)return;const by=new Map();fo
  function input(){const el=X.stage,pts=new Map();let start=null,moved=0,pinch=0,mid=null;
   const drawing=()=>X.view!=='drive'&&X.mode==='walls'&&!X.pan&&!X.place,driving=()=>X.view==='drive'&&!!X.drive&&!X.tour;
   X.onKey=e=>{if(!X?.drive)return;if(e.target?.closest?.('input,textarea,select,[contenteditable]'))return;const k=String(e.key||'').toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){X.drive.keys[k]=e.type==='keydown'&&X.view==='drive';if(X.view==='drive')e.preventDefault();}};root.addEventListener?.('keydown',X.onKey);root.addEventListener?.('keyup',X.onKey);
@@ -835,6 +836,14 @@ index 35a9ce7..14a615f 100644
   // drive view: a drag on the map orbits the chase camera, like the world (the fixed DRIVE joystick drives)
   const orbit=e=>{const dx=e.clientX-start.lx,dy=e.clientY-(start.ly??e.clientY);start.lx=e.clientX;start.ly=e.clientY;if(X.chase){X.chase.yaw-=dx*.008;X.chase.lift=Math.max(-.2,Math.min(.7,(X.chase.lift||0)+dy*.004));}};
   el.addEventListener('pointerdown',e=>{if(e.target.closest?.('button'))return;   // ⟲ ⤢ ✥ sit on the map: tapping them never draws a wall cell
+   el.setPointerCapture?.(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;
+   if(pts.size===1){start={x:e.clientX,y:e.clientY,lx:e.clientX,cx:X.cam.x,cz:X.cam.z};if(drawing())drawStart(cellAt(e.clientX,e.clientY));}
+   else if(pts.size===2){const [a,b]=[...pts.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y);mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};start=null;if(X.draw){X.draw=null;holo();}}});
+- const panBy=(dx,dy,cx,cz)=>{const k=X.cam.dist/((el.clientHeight||600)*.9),cs=Math.cos(X.cam.yaw),sn=Math.sin(X.cam.yaw),lim=(P.townH(plotOf()?.cc||1)+6)*P.GRID.cell;X.cam.x=Math.max(-lim,Math.min(lim,cx-(dx*cs+dy*sn)*k));X.cam.z=Math.max(-lim,Math.min(lim,cz-(-dx*sn+dy*cs)*k));};
++ const panBy=(dx,dy,cx,cz)=>{const k=X.cam.dist/((el.clientHeight||600)*.9),cs=Math.cos(X.cam.yaw),sn=Math.sin(X.cam.yaw),lim=(P.townH(plotOf()?.cc||1)+6)*P.GRID.cell,lx=Math.max(lim,Math.abs(cx)),lz=Math.max(lim,Math.abs(cz));X.cam.x=Math.max(-lx,Math.min(lx,cx-(dx*cs+dy*sn)*k));X.cam.z=Math.max(-lz,Math.min(lz,cz-(-dx*sn+dy*cs)*k));};   // lx, lz (5E-2d2 critic round 2): a drag that starts past the pan limit (the drill camera's assist looks at a landing lane, a few metres outside it; a touch leaves the camera there) never snaps back to the limit: it only cannot go farther out
+  el.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+   if(pts.size===2){const [a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y),m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};if(pinch){if(X.view==='drive'&&X.chase)X.chase.dist=Math.max(9,Math.min(40,X.chase.dist*pinch/d));else X.cam.dist=Math.max(45,Math.min(330,X.cam.dist*pinch/d));}if(mid)panBy(m.x-mid.x,m.y-mid.y,X.cam.x,X.cam.z);pinch=d;mid=m;return;}
+   if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;moved=Math.max(moved,Math.hypot(dx,dy));
 diff --git a/js/conquest/slots.js b/js/conquest/slots.js
 index f3c4cc7..7b6c181 100644
 --- a/js/conquest/slots.js
@@ -849,10 +858,10 @@ index f3c4cc7..7b6c181 100644
   // ---- the Lunar Defense Force post (scenery until Session 7; o.seed varies each post) ----
   'ldf-post':S('military','LDF post',[8,7,8],'none (scenery until Session 7)'),
 diff --git a/js/fx3d.js b/js/fx3d.js
-index 3c66b41..340400a 100644
+index 3c66b41..de6bef5 100644
 --- a/js/fx3d.js
 +++ b/js/fx3d.js
-@@ -844,12 +844,103 @@ function create(T,host){
+@@ -844,12 +844,112 @@ function create(T,host){
   // The kill burst (5E addendum, a Session 6 hook): the infection bursting out of a destroyed Parasite machine. One pooled effect
   // of at most 24 quads (a ground flash, two core sprites, a 16-step ring and four star rays = 23) in the Parasite accent colour, plus at
   // most 14 pooled sparks; the white core is the short light flash (0.26 s).
@@ -885,14 +894,22 @@ index 3c66b41..340400a 100644
 + // ground, a haze each, so many of them build one cloud; the wave itself is dustRing, a wide soft band lying on the ground)
 + function dust(x,y,z,r,a,up){sprite(x,y+r*.95+(up||0),z,r,DUSTC,a*.2,a*.42);}
 + function dustFlat(x,y,z,r,a){disc(x,y+.1,z,r,DUSTC,a*.26,a*.5);}
-+ function dustRing(x,y,z,r,w,a){ring(x,y+.12,z,r,w,DUSTC,a*.34,lowQ?16:28,0,0,0,TAU,a*.6);}
++ // Everything that lies on the ground under a ship follows the ground (gnd(x,z) -> its height; the caller's own terrain): a
++ // flat ring or disc at one height was cut into hard-edged pieces by every rise of a crater's floor.
++ // gring: a soft ring lying on the terrain; gdisc: a soft disc on it (in four pieces when it is wide)
++ function gring(x,y,z,r,w,col,a,n,o,gnd){if(!gnd){ring(x,y+.12,z,r,w,col,a,n,0,0,0,TAU,o);return;}let ax=0,ay=0,az=0,bx=0,by=0,bz=0;
++  for(let i=0;i<=n;i++){const t=i/n*TAU,c=Math.cos(t),sn=Math.sin(t),ix=x+c*(r-w),iz=z+sn*(r-w),ox=x+c*(r+w),oz=z+sn*(r+w),iy=gnd(ix,iz)+.14,oy=gnd(ox,oz)+.14;
++   if(i)quad(ax,ay,az,ix,iy,iz,ox,oy,oz,bx,by,bz,0,-1,0,-1,0,1,0,1,col[0],col[1],col[2],a,o);ax=ix;ay=iy;az=iz;bx=ox;by=oy;bz=oz;}}
++ function gdisc(x,y,z,r,col,a,o,gnd){if(!gnd){disc(x,y+.1,z,r,col,a,o);return;}const m=r>5?2:1,st=2/m,G=(u,v)=>gnd(x+u*r,z+v*r)+.12;
++  for(let i=0;i<m;i++)for(let j=0;j<m;j++){const u0=-1+i*st,u1=u0+st,v0=-1+j*st,v1=v0+st;quad(x+u0*r,G(u0,v0),z+v0*r,x+u1*r,G(u1,v0),z+v0*r,x+u1*r,G(u1,v1),z+v1*r,x+u0*r,G(u0,v1),z+v1*r,u0,v0,u1,v0,u1,v1,u0,v1,col[0],col[1],col[2],a,o);}}
++ function dustRing(x,y,z,r,w,a,gnd){gring(x,y,z,r,w,DUSTC,a*.34,lowQ?16:28,a*.6,gnd);}
 + // black smoke: it hides what is behind it and adds almost no light
 + function soot(x,y,z,r,a){sprite(x,y,z,r,SOOT,.5,a);}
 + // thrustDust(x, ground y, z, r, k): a ring of dust rolling outward over the ground from under a ship (r = the ship's half
 + // width, k 0..1 how hard it blows). IMMEDIATE: call it every frame while it lasts.
 + // gnd(x,z) -> the ground's height there (the ring rolls over the terrain, not through it); without it, y everywhere.
 + function thrustDust(x,y,z,r,k,seed,gnd){if(!(k>.03))return;const n=lowQ?8:16,sd=seed||0;
-+  for(let j=0;j<2;j++){const f=fr(time*.5+j*.5+hsh(sd)*.5),al=k*(1-f)*Math.min(1,f*5);dustRing(x,y,z,r*.9+f*(6+r*.9),1.4+2.6*f,al*.8);}   // two waves rolling out, one behind the other
++  for(let j=0;j<2;j++){const f=fr(time*.5+j*.5+hsh(sd)*.5),al=k*(1-f)*Math.min(1,f*5);dustRing(x,y,z,r*.9+f*(6+r*.9),1.4+2.6*f,al*.8,gnd);}   // two waves rolling out, one behind the other
 +  for(let i=0;i<n;i++){const f=fr(time*.55+i*.618+hsh(sd+i)*.3),a=i/n*TAU+hsh(sd+i*7)*.5+time*.12,rr=r*.8+f*(6+r*.9),px=x+Math.cos(a)*rr,pz=z+Math.sin(a)*rr,py=gnd?gnd(px,pz):y,al=k*(1-f)*Math.min(1,f*5),sz=(2.6+3.4*f)*(.7+r*.05);
 +   dust(px,py,pz,sz,al,f*.6);}}
 + // a hull on fire (immediate) and its black smoke rising (immediate: three puffs cycling upward)
@@ -904,11 +921,12 @@ index 3c66b41..340400a 100644
 + // s = the unit's size (m), move = it is rolling or falling now, land = real seconds since it touched down (-1: it did not)
 + // bare 1 = the dust only (the world's units carry their own lamps and red pools: the Citadel's wave); 2 = its headlights only
 + // (a unit still waiting in the hold or on the ramp: every pool and halo at once made one red fog that hid the units)
-+ function shipRider(x,y,z,yaw,s,move,land,air,k,bare){k=k===undefined?1:k;if(!(k>0))return;const sx=Math.sin(yaw),cz=Math.cos(yaw);
++ // gy = the ground under it (a unit falling from a shuttle: its red pool waits on the ground and grows as it comes down)
++ function shipRider(x,y,z,yaw,s,move,land,air,k,bare,gy){k=k===undefined?1:k;if(!(k>0))return;const sx=Math.sin(yaw),cz=Math.cos(yaw),up=gy===undefined?0:Math.max(0,y-gy);
 +  if(bare===2){sprite(x+sx*s*.75,y+s*.7,z+cz*s*.75,s*.4,PARH,.9*k);return;}
-+  if(!bare){if(!air){disc(x,y+.14,z,s*2.5,PARC,.8*k);seg(x+sx*s*.9,y+.2,z+cz*s*.9,x+sx*s*3.4,y+.2,z+cz*s*3.4,s*.45,s*1.1,PARH,.5*k);}   // its red pool, and its headlights' beam on the ground ahead of it
++  if(!bare){if(!air){disc(x,y-up+.14,z,s*2.5,PARC,.8*k*clamp(1-up/9,.3,1));if(up<.4)seg(x+sx*s*.9,y+.2,z+cz*s*.9,x+sx*s*3.4,y+.2,z+cz*s*3.4,s*.45,s*1.1,PARH,.5*k);}   // its red pool, and its headlights' beam on the ground ahead of it
 +   sprite(x+sx*s*.75,y+s*.7,z+cz*s*.75,s*.55,PARH,.95*k);if(!lowQ)sprite(x+sx*s*.75,y+s*.7,z+cz*s*.75,s*1.2,PARC,.45*k);}
-+  if(move&&!air){dust(x-sx*s*1.2,y,z-cz*s*1.2,s*.9,.8*k);if(!lowQ){dust(x-sx*s*2.5,y,z-cz*s*2.5,s*1.25,.5*k,.3);dustFlat(x-sx*s*1.8,y,z-cz*s*1.8,s*1.6,.6*k);}}
++  if(move&&!air&&up<.4){dust(x-sx*s*1.2,y,z-cz*s*1.2,s*.9,.8*k);if(!lowQ){dust(x-sx*s*2.5,y,z-cz*s*2.5,s*1.25,.5*k,.3);dustFlat(x-sx*s*1.8,y,z-cz*s*1.8,s*1.6,.6*k);}}
 +  if(land>=0&&land<.8){const e=eo(land/.8),f=1-land/.8;if(lowQ)dustFlat(x,y,z,s*(1.2+2.6*e),f);else{ring(x,y+.12,z,s*(.7+2.4*e),.3+.5*f,DUSTC,.7*f,10,0,0,0,TAU,.35*f);dust(x,y,z,s*(.8+1.2*e),.8*f,e);}}}
 + // ship(o): one dropship's effects this frame (see ConquestDropship.fxOf for `o`). In flight: the lift engines' plumes in the
 + // one Parasite red with a hot core, their light on the ground, the dust ring of the flare and the touchdown; landed: the red
@@ -923,10 +941,10 @@ index 3c66b41..340400a 100644
 +   for(let i=0;i<o.noz.length;i++){if(o.fall&&i===(hv?0:1))continue;const nz=o.noz[i],p=shipAt(o,nz[0],nz[1],nz[2]),d=shipAt(o,nz[0],nz[1]-1,nz[2],S4),dx=d[0]-p[0],dy=d[1]-p[1],dz=d[2]-p[2],px=p[0],py=p[1],pz=p[2];
 +    const len=Math.min((2+7.5*th)*sc,Math.max(.5,(py-gy)/Math.max(.25,-dy))),f2=fl*(.9+.1*Math.sin(time*29+i*2.3));
 +    seg(px,py,pz,px+dx*len,py+dy*len,pz+dz*len,1.5*sc,.45*sc,PARC,.7*th*f2);seg(px,py,pz,px+dx*len*.6,py+dy*len*.6,pz+dz*len*.6,.7*sc,.14*sc,PARH,.9*th*f2);if(!lowQ)seg(px,py,pz,px+dx*len*.3,py+dy*len*.3,pz+dz*len*.3,.3*sc,.06*sc,FIRW,.7*th*f2);
-+    sprite(px,py,pz,2*sc,PARC,.55*th*f2);if(near>.02)disc(px+dx*(py-gy),gy+.1,pz+dz*(py-gy),(2.6+h*.25)*sc,PARC,.6*near*th);}}
++    sprite(px,py,pz,2*sc,PARC,.55*th*f2);if(near>.02)gdisc(px+dx*(py-gy),gy,pz+dz*(py-gy),(2.6+h*.25)*sc,PARC,.6*near*th,0,o.gnd);}}
 +  // ---- dust: the flare and the hover blow a ring out over the ground; the touchdown throws one ----
 +  if(!dead&&o.dust>.03&&h<20)thrustDust(o.x,gy,o.z,W*.5,o.dust*clamp(1.15-h/20,0,1),sd,o.gnd);
-+  if(!dead&&hv&&o.downK>=0&&o.downK<1.5*rate){const k=o.downK/rate/1.5,e=eo(k),f=1-k;dustRing(o.x,gy,o.z,W*.5+e*W*.95,1.2+2.6*e,f);
++  if(!dead&&hv&&o.downK>=0&&o.downK<1.5*rate){const k=o.downK/rate/1.5,e=eo(k),f=1-k;dustRing(o.x,gy,o.z,W*.5+e*W*.95,1.2+2.6*e,f,o.gnd);
 +   for(let i=0;i<(lowQ?5:10);i++){const a=i/(lowQ?5:10)*TAU+hsh(sd+i)*1;dust(o.x+Math.cos(a)*(W*.5+e*W*.8),gy,o.z+Math.sin(a)*(W*.5+e*W*.8),3+3.5*e,f*.9,e*1.2);}}
 +  // ---- the hauler's ramp: the hold's red light down the ramp and onto the ground at its foot ----
 +  if(hv&&!dead&&o.ramp>.05){const k=o.ramp,hw=o.rampW*.5,z0=o.foot-1.2,z1=o.foot+8,a=shipAt(o,-hw,0,z0,S4),ax=a[0],az=a[2],b=shipAt(o,-hw*1.9,0,z1,S4),bx=b[0],bz=b[2],c=shipAt(o,hw*1.9,0,z1,S4),cx=c[0],cz=c[2],d=shipAt(o,hw,0,z0,S4),y=gy+.12;
@@ -934,8 +952,8 @@ index 3c66b41..340400a 100644
 +   const m=shipAt(o,0,o.deckY+1.5,o.hinge[2]-1.5);sprite(m[0],m[1],m[2],o.rampW*.62,PARC,.42*k*fl);const ft=shipAt(o,0,0,o.foot+.6);disc(ft[0],y,ft[2],hw*1.5,PARC,.4*k);}
 +  // ---- the shuttle's bay: a cone of red light onto the drop circle ----
 +  if(!hv&&!dead&&o.bay>.05&&o.bayAt){const k=o.bay,p=shipAt(o,o.bayAt[0],o.bayAt[1]+.6,o.bayAt[2]),px=p[0],py=p[1],pz=p[2],r=o.bayW*1.5;
-+   seg(px,py,pz,px,gy+.2,pz,o.bayW*.5,r*1.05,PARC,.3*k*fl);seg(px,py,pz,px,gy+.2,pz,o.bayW*.3,r*.5,PARC,.26*k);sprite(px,py-.3,pz,o.bayW*.9,PARH,.55*k*fl);
-+   disc(px,gy+.1,pz,r*1.25,PARC,.6*k);ring(px,gy+.13,pz,r,.22,PARH,.9*k,lowQ?14:22);if(!lowQ)disc(px,gy+.11,pz,r*.45,PARH,.35*k);}
++   seg(px,py,pz,px,gy+.2,pz,o.bayW*.5,r*1.05,PARC,.2*k*fl);seg(px,py,pz,px,gy+.2,pz,o.bayW*.3,r*.5,PARC,.14*k);sprite(px,py-.3,pz,o.bayW*.9,PARH,.55*k*fl);
++   gdisc(px,gy,pz,r*1.3,PARC,.32*k,0,o.gnd);gring(px,gy,pz,r,.22,PARH,.9*k,lowQ?14:22,0,o.gnd);}   // the drop circle: a ring and a faint pool (a bright pool drowned the units landing in it)
 +  // ---- the hit: a burst at the hit point, with sparks ----
 +  if(o.hitK>=0){const t=o.hitK/rate,p=shipAt(o,W*.18,(o.H||6)*.45,L*.08),px=p[0],py=p[1],pz=p[2],R=W*.75;
 +   if(t<.12){const k=t/.12,f=1-k;sprite(px,py,pz,R*(.6+.4*k),FIRW,.95*f+.05);sprite(px,py,pz,R*(.85+.4*k),FIRO,.7*f);sprite(px,py,pz,R*(1.1+.5*k),PARC,.4*f);star(px,py,pz,R*(1.1+k),2,sd,FIRW,f,.12);}
@@ -952,17 +970,17 @@ index 3c66b41..340400a 100644
 +  // ---- the impact and the wreck ----
 +  if(o.wreck){const t=o.impK>=0?o.impK/rate:99,x=o.x,z=o.z,ix=o.ix===undefined?x:o.ix,iz=o.iz===undefined?z:o.iz,sm=Math.min(1,t/.4),life=clamp((24-t)/7,0,1);
 +   // the scorch it lies in: about 1.5 x the hull's length across, drawn out along the skid from where it struck
-+   disc(x,gy+.05,z,L*.75,BLK,.02,.62*sm);disc((x+ix)/2,gy+.045,(z+iz)/2,L*.5,BLK,.02,.5*sm);disc(ix,gy+.04,iz,L*.36,BLK,.02,.45*sm);
-+   if(t<.7){const e=eo(t/.7),f=1-t/.7;shock(ix,gy+.1,iz,L*(.3+1.5*e),1+2*f,FIRW,f,lowQ?18:30);disc(ix,gy+.09,iz,L*(.5+.8*e),FIRO,.6*f);}
-+   if(t<1.9){const e=eo(t/1.9),f=1-t/1.9,n=lowQ?6:10;dustRing(ix,gy,iz,L*(.3+.8*e),2+4*e,f);for(let i=0;i<n;i++){const a=i/n*TAU+hsh(sd+i)*.8,r=L*(.25+.75*e);dust(ix+Math.cos(a)*r,gy,iz+Math.sin(a)*r,3.2+4*e,f*.9,e*2);}}
-+   if(t<2){const e=eo(t/.45),f=1-t/2,y=gy+L*.1+t*L*.14;sprite(x,y,z,L*.44*(.45+.55*e),FIRD,.85*f);sprite(x,y+L*.02,z,L*.3*(.4+.6*e),FIRO,.8*f*fl);if(t<.6)sprite(x,y+L*.03,z,L*.13*(.4+.6*e),FIRW,.8*(1-t/.6));disc(x,gy+.1,z,L*.9,PARC,.45*f);}
++   gdisc(x,gy,z,L*.75,BLK,.02,.7*sm,o.gnd);gdisc((x+ix)/2,gy,(z+iz)/2,L*.5,BLK,.02,.55*sm,o.gnd);gdisc(ix,gy,iz,L*.36,BLK,.02,.5*sm,o.gnd);
++   if(t<.7){const e=eo(t/.7),f=1-t/.7,R=L*(.3+1.5*e);gring(ix,gy,iz,R,Math.min(1+2*f,R*.2),FIRW,.7*f,lowQ?18:30,0,o.gnd);gdisc(ix,gy,iz,L*(.5+.8*e),FIRO,.4*f,0,o.gnd);}   // the impact ring runs out over the terrain (a flat shock front was cut by every slope, and on LOW it was a white-hot filled circle)
++   if(t<1.9){const e=eo(t/1.9),f=1-t/1.9,n=lowQ?6:10;dustRing(ix,gy,iz,L*(.3+.8*e),2+4*e,f,o.gnd);for(let i=0;i<n;i++){const a=i/n*TAU+hsh(sd+i)*.8,r=L*(.25+.75*e);dust(ix+Math.cos(a)*r,gy,iz+Math.sin(a)*r,3.2+4*e,f*.9,e*2);}}
++   if(t<2){const e=eo(t/.45),f=1-t/2,y=gy+L*.1+t*L*.14;sprite(x,y,z,L*.44*(.45+.55*e),FIRD,.85*f);sprite(x,y+L*.02,z,L*.3*(.4+.6*e),FIRO,.8*f*fl);if(t<.6)sprite(x,y+L*.03,z,L*.13*(.4+.6*e),FIRW,.8*(1-t/.6));gdisc(x,gy,z,L*.9,PARC,.45*f,0,o.gnd);}
 +   // about 20 s of black smoke standing over it, the fire dying down to embers
 +   if(life>0){const n=lowQ?5:10,H=16+L*.45,up=Math.min(1,t/1.5);for(let i=0;i<n;i++){const f=fr(time*.17+i/n+hsh(sd+i*3)*.13);soot(x+f*f*L*.22+(hsh(sd+i)-.5)*2,gy+2+f*H*up,z+(hsh(sd+i*11)-.5)*2,(L*.11+L*.2*f)*(.6+.4*up),.9*life*(1-f*.7)*Math.min(1,f*7));}}
 +   const fk=(o.fire||.4)*(.35+.65*life);hullFlame(x,gy+L*.02,z,L*.2,fk);if(!lowQ)hullFlame(x+L*.16,gy,z-L*.1,L*.11,fk*.8);}}
   function fxKill(e){const k=e.t/e.d,f=1-k,c=col(e.P.a),w=col('#ffffff'),R=e.a;disc(e.x,e.y-R*.45,e.z,R*(1.4+1.2*k),c,.5*f);sprite(e.x,e.y,e.z,R*(.5+1.3*k),c,.9*f*f);sprite(e.x,e.y,e.z,R*.5*(1-.6*k),w,.85*f*f);ring(e.x,e.y-R*.4,e.z,R*(.5+1.9*k),.12*R*f+.03,c,f,16);star(e.x,e.y,e.z,R*(.9+k),2,e.ang,w,f*.8,.05);}
   function fxGlowBurst(e){const k=e.t/e.d,f=1-k,c=col(e.P.a),w=col('#ffffff');disc(e.x,e.y-.3,e.z,e.a*(1+k),c,.6*f);sprite(e.x,e.y,e.z,e.a*(.4+.7*k),c,.9*f*f);ring(e.x,e.y-.3,e.z,e.a*(.3+1.6*k),.1,w,f,30);if(e.b)star(e.x,e.y,e.z,e.a*(.8+k),4,e.ang,w,f,.06);}
   // damage stages on a box-shaped object (called every frame it is damaged; frac = health left 0..1).
-@@ -894,7 +985,7 @@ function create(T,host){
+@@ -894,7 +994,7 @@ function create(T,host){
   function dispose(){host.scene.remove(qMesh);host.scene.remove(dMesh);qg.dispose();dg.dispose();}
   const stats=()=>({quads:qn,debrisVerts:dn,particles:pn,chunks:cn,effects:E.filter(e=>e.on).length,marks:S.filter(s=>s.on).length,caps:{quads:QMAX,verts:VMAX,particles:pcap(),chunks:dcap()}});
   const SUP_API=CQO?{superCharge:superChargeO,superLock:superLockO,superBeam:superBeamO,superNova:superNovaO,superShell:superShellO,superBlast:superBlastO,superImpact:superImpactO}:{superCharge,superLock,superBeam,superNova,superShell,superBlast,superImpact};

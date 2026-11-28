@@ -246,17 +246,18 @@ index 0000000..3163398
 +ap=argparse.ArgumentParser();ap.add_argument('--mode',default='world');ap.add_argument('--quality',default='high');ap.add_argument('--size',default='390x844');ap.add_argument('--mouse',action='store_true');ap.add_argument('--out',default=str(HERE/'docs/conquest/session5e2d2/leftovers'));ap.add_argument('--tag',default='after');ap.add_argument('--only',default='');ap.add_argument('--dpr',type=float,default=2);ap.add_argument('--settle',type=int,default=900);ap.add_argument('--root',default='');ap.add_argument('--sharp',action='store_true')
 +asyncio.run(main(ap.parse_args()))
 diff --git a/dev/tests/conquest-townkit.mjs b/dev/tests/conquest-townkit.mjs
-index f845bef..cb09041 100644
+index f845bef..4b49536 100644
 --- a/dev/tests/conquest-townkit.mjs
 +++ b/dev/tests/conquest-townkit.mjs
-@@ -30,6 +30,15 @@ for(const q of ['high','low']){const S=CS.create(T,{low:q==='low'}),low=q==='low
+@@ -30,6 +30,16 @@ for(const q of ['high','low']){const S=CS.create(T,{low:q==='low'}),low=q==='low
    ok(bad===0,q+' '+site+': the diorama uses only the Conquest style materials (no new shader programs)');
    ok(draws<=20,q+' '+site+': the diorama is '+draws+' draws (merged static part + instanced walls)');
    if(site==='ridge')console.log(' '+q+' CC10 diorama: '+draws+' draws, '+Math.round(tris/1000)+'k triangles');
 +  // 5E-2d2 (owner, Nov 21: "hero pieces only: it is noise at phone size"): the model the world's pad draws (o.hero). The same
 +  // town (its counts are the plan's), every standing wall cell still in its place as one plain block, no turret, home, lamp or
 +  // rubble piece, the buildings drawn larger and never past the innermost wall; lighter than the whole model, style materials only.
-+  {const hd=TK.diorama(S,p,{low,scale:.1,hero:true});let hdraws=0,hbad=0,htris=0,hwalls=0,merged=0;hd.traverse(o=>{if(!o.isMesh)return;hdraws++;if(o.material!==S.MAT.solid&&o.material!==S.MAT.fx&&!o.material?.userData?.conquestStyle)hbad++;const ix=o.geometry.index,t=(ix?ix.count:o.geometry.attributes.position.count)/3;htris+=t*(o.isInstancedMesh?Math.max(1,o.count):1);if(o.isInstancedMesh)hwalls+=o.count;if(o.userData.merged)merged+=t;});
++  {const hd=TK.diorama(S,p,{low,scale:.1,hero:true});let hdraws=0,hbad=0,htris=0,hwalls=0,merged=0,cell=0;hd.traverse(o=>{if(!o.isMesh)return;hdraws++;if(o.material!==S.MAT.solid&&o.material!==S.MAT.fx&&!o.material?.userData?.conquestStyle)hbad++;const ix=o.geometry.index,t=(ix?ix.count:o.geometry.attributes.position.count)/3;htris+=t*(o.isInstancedMesh?Math.max(1,o.count):1);if(o.isInstancedMesh){hwalls+=o.count;cell=Math.max(cell,t);}if(o.userData.merged)merged+=t;});
++   ok(cell>0&&cell<=10,q+' '+site+': a wall cell of the hero model is the faces a pilot can see, '+cell+' triangles (5E-2d2 section 7: four sides and a top; the lights are the band\'s rim in the merged mesh)');
 +   ok(JSON.stringify(hd.userData.counts)===JSON.stringify(dc),q+' '+site+': the hero model is the same town (counts '+JSON.stringify(hd.userData.counts)+')');
 +   ok(hbad===0&&hdraws<=draws,q+' '+site+': the hero model uses only the style materials, in no more draws ('+hdraws+' against '+draws+')');
 +   ok(hwalls>=dc.walls&&hwalls<=dc.walls+dc.rubble+dc.posts,q+' '+site+': every standing wall cell is on the hero model ('+hwalls+' blocks for '+dc.walls+' cells)');
@@ -328,10 +329,22 @@ index 0a26b83..7c2d3e0 100644
  
  root.ConquestStyle=Object.freeze({id:'neon-frontline',version:1,create,footprints,allSites,map:mapPaint,MAP_LEGEND,resetMapCache(){if(MAPC.relief)MAPC.relief.canvas.width=MAPC.relief.canvas.height=0;MAPC.relief=null;}});
 diff --git a/js/conquest/townkit.js b/js/conquest/townkit.js
-index dc9735c..c50fdd8 100644
+index dc9735c..8f2378c 100644
 --- a/js/conquest/townkit.js
 +++ b/js/conquest/townkit.js
-@@ -213,6 +213,8 @@ function standIn(S,k,t,lvl){const T=S.T,b=new S.Bld();if(t==='home'){b.box(0,1.4
+@@ -158,8 +158,10 @@ const counts=pl=>({walls:[...pl.walls.values()].reduce((a,l)=>a+l.length,0),post
+ const cached=(m,key,make)=>{let g=m.get(key);if(!g){g=make();m.set(key,g);}return g;};
+ function inst(R,geo,n){const m=new R.T.InstancedMesh(geo,R.S.MAT.solid,Math.max(1,n));m.count=n;m.frustumCulled=false;return m;}
+ // R: {T,S,k,wgeo,hgeo,tgeo} (geometry caches kept across rebuilds). Each returns what the caller needs to hide or animate.
++// a box's four sides only (the pad's wall block: its bottom stands on the board and its top is a quad of the cap's colour)
++const SIDES=new WeakMap();function sideBox(S){let g=SIDES.get(S);if(!g){g=S.G.box.clone();g.setIndex(Array.from(S.G.box.index.array).filter((_,i)=>i<12||i>=24));SIDES.set(S,g);}return g;}
+ function walls(R,p,pl,low,group,mini){const {T,k}=R,M4=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_s=new T.Vector3(),wim=new Map(),wcell=new Map(),wpost=new Map();
+- for(const [c,keys] of pl.walls){const geo=mini==='hero'?cached(R.wgeo,'hero:'+c,()=>{const b=new R.S.Bld(),s=P.GRID.cell,h=wallH(c);b.box(0,h*.5,0,s,h,s,k.C.dark2);b.box(0,h+.1,0,s,.2,s,k.C.mid);b.box(0,h+.26,0,s*.3,.12,s*.3,k.C.cyan,.5);return b.geometry();}):mini?cached(R.wgeo,'mini:'+c,()=>k.wallMini(c)):cached(R.wgeo,c+':'+low,()=>k.wallGeo(c,low)),m=inst(R,geo,keys.length);   /* 'hero' (5E-2d2, the pad's model): one plain gunmetal block a cell with a small light on top, so the wall reads as one clean band with a string of lights */
++ for(const [c,keys] of pl.walls){const geo=mini==='hero'?cached(R.wgeo,'hero:'+c,()=>{const b=new R.S.Bld(),s=P.GRID.cell,h=wallH(c),e=s/2;b.add(sideBox(R.S),k.M(0,h*.5,0,0,0,0,s,h,s),k.C.dark2,.14);b.quad([-e,h,-e],[-e,h,e],[e,h,e],[e,h,-e],k.C.mid,.32);return b.geometry();}):mini?cached(R.wgeo,'mini:'+c,()=>k.wallMini(c)):cached(R.wgeo,c+':'+low,()=>k.wallGeo(c,low)),m=inst(R,geo,keys.length);   /* 'hero' (5E-2d2, the pad's model): one plain gunmetal block a cell, so the wall reads as one clean band. 5E-2d2 section 7 (note 8, seen at 390x844 and 320x568): a light on every cell made a wall five cells thick a field of dots that shimmers at phone size, and a block was three boxes (36 triangles, 72,000 for 2,000 cells, most of them faces no one can see); a block is its four sides and its top now (10 triangles), self-lit like the board it stands on (on LOW the band was black in the dark courtyard), and the lights are the band's lit rim, in the merged mesh (dioramaGen) */
+   const wv=R.wv||1;keys.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number);if(wv===1)M4.makeTranslation(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j));else M4.compose(_v.set(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j)),_q.identity(),_s.set(1,wv,1));m.setMatrixAt(n,M4);wcell.set(kk,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);wim.set(c,m);}
+  if(mini==='hero')return {wim,wcell,wpost};   // no posts, no rubble: at the pad's scale they are specks
+  if(pl.posts.length){const m=inst(R,mini?cached(R.wgeo,'post:mini',()=>k.postMini()):cached(R.wgeo,'post:'+low,()=>k.post(low)),pl.posts.length);pl.posts.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number),h=wallH(p.w[kk]|0);M4.compose(_v.set(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j)),_q.identity(),_s.set(1,(h+1.2)/5.2*(R.wv||1),1));m.setMatrixAt(n,M4);wpost.set(kk,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);}
+@@ -213,6 +215,8 @@ function standIn(S,k,t,lvl){const T=S.T,b=new S.Bld();if(t==='home'){b.box(0,1.4
  // the largest first), the banner and the halo. The buildings keep their places round the Command Center but are drawn larger
  // (up to 2.3x, as far as the innermost wall allows), since the homes, turrets, lamps and rocks that stood between them are not
  // drawn: about ten pieces that read at phone size instead of several hundred specks. counts stays the town's own plan.
@@ -340,7 +353,18 @@ index dc9735c..c50fdd8 100644
  function heroPick(pl){const sc=e=>{const z=P.sizeOf(e[1].t,0);return (e[1].t==='cc'?1e9:0)+(P.VITALS[e[1].t]?1e6:0)+z.w*z.d*1e3+e[2]*10;},seen=new Set(),out=[];
   for(const e of pl.builds.slice().sort((a,b)=>sc(b)-sc(a))){if(out.length>=10)break;const t=e[1].t;if(t==='gate'||seen.has(t))continue;seen.add(t);out.push(e);}return out;}
  function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,hero=!!o.hero,R={T,S,k,wv:o.wv||1,ymin:o.floor??-6,wgeo:o.cache?.wgeo||new Map(),hgeo:o.cache?.hgeo||new Map(),tgeo:o.cache?.tgeo||new Map()},g=new T.Group(),town=new T.Group(),pl=plan(p),h=P.townH(p.cc),c=P.GRID.cell,half=Math.min((h+2.5)*c,P.GRID.n*c/2);   // never past the site grid (its edge row took the off-grid heights)
-@@ -235,8 +237,8 @@ function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,hero=!!o.hero
+@@ -230,13 +234,19 @@ function* dioramaGen(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,hero=!!o.hero
+  {const b=new S.Bld();b.box(0,base-.2,0,2*half+2,.4,2*half+2,k.C.dark2);for(const [x,z,w,d] of [[0,-half-1,2*half+2.4,.5],[0,half+1,2*half+2.4,.5],[-half-1,0,.5,2*half+2.4],[half+1,0,.5,2*half+2.4]])b.box(x,base-.1,z,w,.3,d,k.C.cyan,.5);town.add(b.mesh());}
+  yield;   // terrain, skirts and plinth done
+  const hY=(x,z)=>Math.max(R.ymin,P.heightAt(p.site,x,z)),gY2=(i,j)=>Math.max(R.ymin,P.groundY(p.site,i,j)),W=walls(R,p,pl,true,town,hero?'hero':true),mg=Merge(T),M4=new T.Matrix4(),NM=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_z=new T.Vector3(),_one=new T.Vector3(1,bv,1),_nv=new T.Vector3(1,1/bv,1),up=new T.Vector3(0,1,0),theme=p.theme||null;let nT=0,nH=0,nB=0;
++ // 5E-2d2 section 7 (note 8): the wall band's lights are its rim: a lit strip along every side of a wall cell that has no wall
++ // beside it, so a wall of any thickness reads as one band drawn round with light (in the merged mesh: no draw more)
++ if(hero){const rb=new S.Bld(),e=c/2,t=c*.24,lit=k.C.cyan,has=(i,j)=>W.wcell.has(i+','+j);for(const kk of W.wcell.keys()){const [i,j]=kk.split(',').map(Number),x=P.cellX(i),z=P.cellZ(j),y=gY2(i,j)+wallH(p.w[kk]|0)*R.wv+.12;
++   if(!has(i-1,j))rb.quad([x-e,y,z-e],[x-e,y,z+e],[x-e+t,y,z+e],[x-e+t,y,z-e],lit,.6);if(!has(i+1,j))rb.quad([x+e-t,y,z-e],[x+e-t,y,z+e],[x+e,y,z+e],[x+e,y,z-e],lit,.6);
++   if(!has(i,j-1))rb.quad([x-e,y,z-e],[x-e,y,z-e+t],[x+e,y,z-e+t],[x+e,y,z-e],lit,.6);if(!has(i,j+1))rb.quad([x-e,y,z+e-t],[x-e,y,z+e],[x+e,y,z+e],[x+e,y,z+e-t],lit,.6);}
++  if(rb.n){const rg=rb.geometry();M4.identity();mg.add(rg,M4);rg.dispose();}}
+  yield;   // walls done
+  let yc=0,hz=1;const Cc=ccCenter(p),blds=hero?heroPick(pl):pl.builds;
   if(hero){let rm=0,lim=half-c;for(const e of blds){const f=fp(e[1]),z=P.sizeOf(e[1].t,e[1].r|0);rm=Math.max(rm,Math.max(Math.abs(f.x-Cc.x),Math.abs(f.z-Cc.z))+Math.max(z.w,z.d)*c*.6);}
    for(const kk of Object.keys(p.w||{})){const [i,j]=kk.split(',').map(Number);lim=Math.min(lim,Math.max(Math.abs(P.cellX(i)-Cc.x),Math.abs(P.cellZ(j)-Cc.z))-c);}
    hz=Math.max(1,Math.min(2.3,lim*.9/Math.max(1,rm)));_one.set(hz,bv,hz);_nv.set(1/hz,1/bv,1/hz);}
