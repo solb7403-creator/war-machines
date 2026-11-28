@@ -250,16 +250,22 @@ WK.model('moss-cushion',(b,o)=>{const hi=b.hi,sd=o.seed|0,w=o.w/2,d=o.d/1.6,h=o.
  lobe(b,.5*w,-.02,.3*d,.46*w,h*.72,.44*d,hi?5:4,M2,{prof:P2,seed:sd+2,yaw:.6});
  if(hi)lobe(b,-.56*w,-.02,-.5*d,.38*w,h*.5,.26*d,5,M2,{prof:P2,seed:sd+3});
 },{aoH:.25,aoMin:.75});
-// burnt-stump (.6 x 1.2 x .6): a charred stump, its top split in two prongs, one red blight vein (the Parasite red). HIGH <= 80 / LOW <= 40.
+// burnt-stump (.6 x 1.2 x .6): a charred stump snapped off short: a broad trunk with a flat burnt top and blunt broken slabs of
+// its rim, one red blight vein (the Parasite red). HIGH <= 80 / LOW <= 40.
+// 5E-2d2 critic round 2 (nothing may read as an alien spike): it was a thin cone with two pointed prongs, and by the dozen
+// round the hives, the portal and the battery it read as black thorns growing out of the ground. No point is left on it:
+// the trunk keeps its width to a flat top at half the box height, and what stands above is broken wood with square ends.
 WK.model('burnt-stump',(b,o)=>{const {pal,tint,mix,mat,glow}=b.k,N=pal.nat,hi=b.hi,r=Math.min(o.w,o.d)/.6,h=o.h/1.2,ash=mix(N.burnt,mat(0x6a645c,'bark',.9),.6),char=shade(tint(N.burnt,1.7,.01),ash,tint(N.burnt,1.2)),vein=glow(WK.PAR.red,.9),n=hi?6:4;
- sweep(b,[[0,-.05,0],[0,.2*h,0],[.02*r,.72*h,0]],[.29*r,.2*r,.17*r],n,char,{tip:[.02*r,.6*h,0],tipM:tint(N.burnt,.7),apexIns:[0,2,0]});
- sweep(b,[[.07*r,.66*h,.03*r],[.13*r,.95*h,.04*r]],[.09*r,.05*r],3,char,{tip:[.2*r,1.18*h,.05*r]});
- if(hi){sweep(b,[[-.08*r,.66*h,-.04*r],[-.12*r,.82*h,-.05*r]],[.08*r,.045*r],3,char,{tip:[-.1*r,.98*h,-.08*r]});
+ sweep(b,[[0,-.05,0],[0,.16*h,0],[.015*r,.5*h,0]],[.3*r,.25*r,.23*r],n,char,{tip:[.03*r,.47*h,.02*r],tipM:tint(N.burnt,.7),apexIns:[0,2,0]});   // the trunk; its top is a shallow burnt hollow
+ const slab=(x,z,y1,w,d,lean)=>{const x1=x+lean,T=[[x1-w,y1,z-d],[x1+w,y1,z-d],[x1+w,y1-.07*h,z+d],[x1-w,y1-.07*h,z+d]],B=[[x-w,.38*h,z-d],[x+w,.38*h,z-d],[x+w,.38*h,z+d],[x-w,.38*h,z+d]],c=[x,.5*h,z];   // a broken slab of the rim: square in plan, its top a slanted break (no point)
+  for(let i=0;i<4;i++){const j=(i+1)%4;T3(b,B[i],B[j],T[j],char,c);T3(b,B[i],T[j],T[i],char,c);}T3(b,T[0],T[1],T[2],tint(N.burnt,.7),[c[0],-9,c[2]]);T3(b,T[0],T[2],T[3],tint(N.burnt,.7),[c[0],-9,c[2]]);};
+ slab(.11*r,.05*r,.86*h,.085*r,.07*r,.03*r);
+ if(hi){slab(-.12*r,-.06*r,.68*h,.07*r,.06*r,-.02*r);
   for(const a of [.5,2.6,4.6]){const ca=Math.cos(a),sa=Math.sin(a);T3(b,[ca*.2*r-sa*.07*r,0,sa*.2*r+ca*.07*r],[ca*.2*r+sa*.07*r,0,sa*.2*r-ca*.07*r],[ca*.17*r,.26*h,sa*.17*r],char,[0,.1,0]);}
   // the blight vein: a raised glowing seam up the +z flank
-  const V=[[.04*r,.02,.255*r],[0,.22*h,.2*r],[.05*r,.48*h,.185*r],[.03*r,.7*h,.17*r]],wv=[.05*r,.04*r,.035*r,.012*r];
+  const V=[[.04*r,.02,.27*r],[0,.18*h,.245*r],[.05*r,.34*h,.24*r],[.03*r,.49*h,.228*r]],wv=[.05*r,.04*r,.035*r,.012*r];
   for(let k=0;k<3;k++){const p=V[k],q=V[k+1];for(const sg of [-1,1])T3(b,[p[0]+sg*wv[k],p[1],p[2]-.03*r],[q[0]+sg*wv[k+1],q[1],q[2]-.03*r],[q[0],q[1],q[2]+.035*r],vein,[0,p[1],0]),T3(b,[p[0]+sg*wv[k],p[1],p[2]-.03*r],[p[0],p[1],p[2]+.035*r],[q[0],q[1],q[2]+.035*r],vein,[0,p[1],0]);}}
- else T3(b,[-.04*r,.04,.25*r],[.05*r,.04,.25*r],[.03*r,.66*h,.2*r],vein,[0,.3,0]);
+ else T3(b,[-.04*r,.04,.275*r],[.05*r,.04,.275*r],[.03*r,.48*h,.235*r],vein,[0,.3,0]);
 },{aoH:1.1,aoMin:.7});
 // grass-tuft (.7 x .8 x .7): a clump of seven broad blades of varied height (six on LOW): a dark green base, green
 // bodies, light yellow-green tips (one blade in three drier). HIGH 48 / LOW 24.
