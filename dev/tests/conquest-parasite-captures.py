@@ -95,7 +95,7 @@ async def main(a):
   info={}
   for name in shots:
    spec,gap,ahead,pitch,dist,dead=TABLE[name]
-   if h>w and h<=700 and name in PHONE:ahead-=4;dist-=2   # a short phone: the HUD takes more of the screen, so the rows stand nearer and stay under it
+   if h>w and h<=700 and name in PHONE:ahead-=6;dist-=2;spec=[dict(u,dz=u.get('dz',0)*.72) for u in spec]   # a short phone: the HUD takes more of the screen, so the rows stand nearer, and the back row nearer the front one (5E-2d2 critic round 2: at 320x568 the back row stood behind the HULL and HEAT panels)
    if a.ratio:await ratio(.3)
    placed=await page.evaluate(PLACE,[spec,gap,ahead,pitch,dist,dead]);await page.wait_for_timeout(400)
    if not info:await page.wait_for_timeout(1500);placed=await page.evaluate(PLACE,[spec,gap,ahead,pitch,dist,dead]);await page.wait_for_timeout(400)   # the first shot: the jump to the capture ground settles first

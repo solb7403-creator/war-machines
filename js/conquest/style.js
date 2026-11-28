@@ -1110,11 +1110,11 @@ function create(T,opts={}){
        if(put(Uv,o*2,sx>0?r[2]:r[0])|put(Uv,o*2+1,sy>0?r[3]:r[1])|put(A,o*4,cr)|put(A,o*4+1,cg)|put(A,o*4+2,cb)|put(A,o*4+3,al)|put(B,o*3,bb?sx*hw:0)|put(B,o*3+1,bb?sy*hd:0)|put(B,o*3+2,bb))dO=true;}n++;};
     q4(wx,wy+.08,wz,R*.82,R*.82,0,0,0,0,.66*Math.min(1,wk/.5));   // the scorch mark
     const hot=Math.max(0,1-wk/12)*Math.min(1,wk/.3);if(hot>.01){const fl=.7+.3*Math.sin(now*7.3+sd);q4(wx,wy+H*.22,wz,R*.15,R*.15,1,emberCol[0]*.32*hot*fl,emberCol[1]*.32*hot*fl,emberCol[2]*.32*hot*fl,0);}   // the fire dying inside it
-    const NS=S.low?3:5,thick=wk<20?1:Math.max(.4,1-(wk-20)/10),TS=3.4;
+    const NS=low?3:6,thick=wk<20?1:Math.max(.4,1-(wk-20)/10),TS=3.4;
     for(let i=0;i<NS;i++){const ph=(now/TS+i/NS+hsh(sd,i)*.13)%1,born=wk-ph*TS;if(born<.25)continue;   // (a puff that would have left before the unit died is not there yet)
-     const f=Math.min(1,ph*6)*Math.pow(1-ph,1.2)*thick,sz=(.3+.75*ph)*R*.3,dx=(hsh(sd,i+7)-.5)*R*.26+ph*(1.1+.6*hsh(sd,i+3))*R*.24,dz=(hsh(sd,i+11)-.5)*R*.26+Math.sin(ph*4+i)*R*.05,gr=(.075+.14*ph)*f;   // a warm grey that stands off the night ground (at the ground's own value a puff was invisible), paler as it thins
+     const f=Math.min(1,ph*6)*Math.pow(1-ph,1.2)*thick,sz=(.36+.8*ph)*R*.3,dx=(hsh(sd,i+7)-.5)*R*.26+ph*(1.1+.6*hsh(sd,i+3))*R*.24,dz=(hsh(sd,i+11)-.5)*R*.26+Math.sin(ph*4+i)*R*.05,gr=(.085+.05*ph)*f;   // a warm grey that stands off the night ground (at the ground's own value a puff was invisible)
      q4(wx+dx,wy+H*.3+ph*(H*.4+R*.55),wz+dz,sz,sz,1,gr,gr*.93,gr*.86,.8*f);}
-    if(wk<25){const NE=S.low?3:5,TE=1.9,fade=Math.min(1,(25-wk)/6);for(let i=0;i<NE;i++){const ph=(now/TE+i/NE+hsh(sd,i+20)*.3)%1;if(wk-ph*TE<.2)continue;
+    if(wk<25){const NE=low?3:5,TE=1.9,fade=Math.min(1,(25-wk)/6);for(let i=0;i<NE;i++){const ph=(now/TE+i/NE+hsh(sd,i+20)*.3)%1;if(wk-ph*TE<.2)continue;
       const f=(1-ph)*fade*(.6+.4*Math.sin(now*11+i*2.1)),sz=(.11-.05*ph)*Math.max(1,R*.22);q4(wx+(hsh(sd,i+31)-.5)*R*.5+Math.sin(ph*5+i)*.2,wy+H*.25+ph*(1.6+R*.35),wz+(hsh(sd,i+41)-.5)*R*.5,sz,sz,1,emberCol[0]*f*1.6,emberCol[1]*f*1.6,emberCol[2]*f*1.6,0);}}}}
   if(shots&&shots.length){if(!P)open();const r=AT.BLOB;for(let k=0;k+4<shots.length&&n<GQ;k+=5,n++){const x=shots[k],y=shots[k+1],z=shots[k+2],sz=shots[k+3],col=shotCol[shots[k+4]?1:0];
     for(let v=0;v<4;v++){const o=n*4+v,sx=v===1||v===2?1:-1,sy=v>1?1:-1;
